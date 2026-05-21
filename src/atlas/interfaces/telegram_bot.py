@@ -34,6 +34,8 @@ class AtlasOps(Protocol):
     def recent_audit(self, n: int = 10) -> list[dict]: ...
     def list_tools(self) -> list[dict]: ...
     def triage(self) -> dict: ...
+    def pending_approvals(self) -> list[dict]: ...
+    def approve(self, task_id: str, approved: bool) -> dict: ...
 
 
 # ===========================================================================
@@ -56,6 +58,9 @@ class TelegramAuthorizer:
 
     def is_allowed(self, chat_id: int) -> bool:
         return int(chat_id) in self._allowed
+
+    def allowed_ids(self) -> list[int]:
+        return sorted(self._allowed)
 
 
 # ===========================================================================
@@ -139,9 +144,11 @@ class TelegramBot:
       /audit [n]           ultimas N entradas del Merkle Logger (default 10)
       /tools               lista de herramientas registradas
       /triage              OperationalMode + temperatura + RAM
+      /pending             lista approvals pendientes
     """
 
     AGENT = "telegram_bot"
+    CALLBACK_PREFIX = "approve"
 
     def __init__(
         self,
@@ -162,6 +169,7 @@ class TelegramBot:
             "/audit": self._cmd_audit,
             "/tools": self._cmd_tools,
             "/triage": self._cmd_triage,
+            "/pending": self._cmd_pending,
         }
 
     def run_polling(self, poll_interval_s: float = 0.0) -> None:
@@ -186,6 +194,11 @@ class TelegramBot:
         self._running = False
 
     def handle_update(self, update: dict) -> None:
+        callback = update.get("callback_query")
+        if isinstance(callback, dict):
+            self._handle_callback(callback)
+            return
+
         message = update.get("message") or update.get("edited_message")
         if not isinstance(message, dict):
             return
@@ -210,6 +223,103 @@ class TelegramBot:
         except Exception as exc:
             reply = f"Error ejecutando {command}: {exc}"
         self._safe_send(chat_id, reply)
+
+    def _handle_callback(self, callback: dict) -> None:
+        cb_id = callback.get("id", "")
+        from_user = callback.get("from") or {}
+        chat = (callback.get("message") or {}).get("chat") or {}
+        chat_id = chat.get("id") or from_user.get("id")
+        data = callback.get("data") or ""
+
+        if chat_id is None or not self._auth.is_allowed(int(chat_id)):
+            self._log_unauthorized(chat_id or 0, f"callback:{data}")
+            try:
+                self._client.answer_callback_query(cb_id, "denegado")
+            except TelegramAPIError:
+                pass
+            return
+
+        parts = data.split(":")
+        if len(parts) != 3 or parts[0] != self.CALLBACK_PREFIX:
+            try:
+                self._client.answer_callback_query(cb_id, "callback malformado")
+            except TelegramAPIError:
+                pass
+            return
+
+        task_id, decision = parts[1], parts[2]
+        approved = decision == "yes"
+        try:
+            result = self._ops.approve(task_id, approved)
+        except Exception as exc:
+            try:
+                self._client.answer_callback_query(cb_id, f"error: {exc}")
+            except TelegramAPIError:
+                pass
+            return
+
+        text = (
+            f"Aprobada (task_id={task_id})." if approved
+            else f"Rechazada (task_id={task_id})."
+        )
+        try:
+            self._client.answer_callback_query(cb_id, text)
+        except TelegramAPIError:
+            pass
+        if result.get("status") == "unknown":
+            text = f"No habia approval pendiente para {task_id}."
+        self._safe_send(int(chat_id), text)
+
+    # ------------------------------------------------------------------
+    # Notificaciones (subscriptores del EventBus)
+    # ------------------------------------------------------------------
+
+    def notify_all(self, text: str, reply_markup: dict | None = None) -> int:
+        """Envia 'text' a todos los chat_ids autorizados. Retorna cuantos OK."""
+        ok = 0
+        for chat_id in self._auth.allowed_ids():
+            try:
+                self._client.send_message(chat_id, text, reply_markup=reply_markup)
+                ok += 1
+            except TelegramAPIError:
+                continue
+        return ok
+
+    def on_thermal_alert(self, event: Any) -> None:
+        p = getattr(event, "payload", {}) or {}
+        self.notify_all(
+            f"[Thermal] mode={p.get('mode','?')} temp={p.get('temperature_c','?')}C "
+            f"ram_free={p.get('ram_free_mb','?')}MB — {p.get('policy','')}"
+        )
+
+    def on_shadow_alert(self, event: Any) -> None:
+        p = getattr(event, "payload", {}) or {}
+        self.notify_all(
+            f"[Shadow] Hermes no recibe ping de Atlas desde "
+            f"{p.get('elapsed_minutes','?')}min. Activado OfflineFallbackMode."
+        )
+
+    def on_approval_required(self, event: Any) -> None:
+        p = getattr(event, "payload", {}) or {}
+        task_id = p.get("task_id", "?")
+        intent = p.get("intent", "")
+        reason = p.get("reason", "")
+        text = f"Approval requerido\nIntent: {intent}\nMotivo: {reason}\nID: {task_id}"
+        markup = {
+            "inline_keyboard": [[
+                {"text": "Si", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:yes"},
+                {"text": "No", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:no"},
+            ]]
+        }
+        self.notify_all(text, reply_markup=markup)
+
+    def on_session_started(self, event: Any) -> None:
+        p = getattr(event, "payload", {}) or {}
+        version = p.get("version", "?")
+        pending = p.get("queued_tasks", 0)
+        self.notify_all(
+            f"Atlas Core v{version} online — {pending} tareas pendientes en cola."
+        )
 
     # ------------------------------------------------------------------
     # Handlers de comandos
@@ -241,6 +351,16 @@ class TelegramBot:
     def _cmd_triage(self, _arg: str) -> str:
         data = self._ops.triage()
         return self._format_triage(data)
+
+    def _cmd_pending(self, _arg: str) -> str:
+        items = self._ops.pending_approvals()
+        if not items:
+            return "Sin approvals pendientes."
+        out = [f"Approvals pendientes ({len(items)}):"]
+        for it in items:
+            out.append(f"  {it.get('task_id','?')} — {it.get('intent','')}"
+                       f" ({it.get('reason','')})")
+        return "\n".join(out)
 
     # ------------------------------------------------------------------
     # Formateo

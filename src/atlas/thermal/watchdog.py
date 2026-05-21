@@ -129,13 +129,13 @@ class ThermalWatchdog:
             prev_mode = None
             with self._lock:
                 if self._current_state:
-                    prev_mode = self._current_state.triage_mode
+                    prev_mode = self._current_state.operational_mode
                 self._current_state = state
 
             # Notificar si cambia el modo o hay emergencia
             if self._alert_callback and (
                 state.emergency
-                or (prev_mode is not None and prev_mode != state.triage_mode)
+                or (prev_mode is not None and prev_mode != state.operational_mode)
             ):
                 try:
                     self._alert_callback(state)
