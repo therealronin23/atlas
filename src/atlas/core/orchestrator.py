@@ -7,6 +7,7 @@ Decision final: Atlas decide. Todo lo demas sirve a Atlas.
 from __future__ import annotations
 
 import os
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -119,6 +120,44 @@ class Orchestrator:
     def tools(self) -> list[dict]:
         return [t.to_dict() for t in self._tool_registry.all()]
 
+    def pending_approvals(self) -> list[dict]:
+        with self._approvals_lock:
+            return [
+                {"task_id": t.id, "intent": t.intent,
+                 "reason": (t.result or {}).get("reason", "")}
+                for t in self._pending_approvals.values()
+            ]
+
+    def approve_pending(self, task_id: str, approved: bool) -> dict:
+        with self._approvals_lock:
+            task = self._pending_approvals.pop(task_id, None)
+        if task is None:
+            return {"task_id": task_id, "status": "unknown",
+                    "error": "no pending approval with this id"}
+
+        self._merkle.log(
+            action="task.approval",
+            agent="orchestrator",
+            result="approved" if approved else "denied",
+            risk_level="high",
+            payload={"approved": approved},
+            task_id=task.id,
+        )
+
+        if not approved:
+            task.transition(TaskStatus.CANCELLED)
+            task.result = {"approved": False, "message": "Usuario rechazo la accion."}
+            return {"task_id": task.id, "status": task.status.value, "approved": False}
+
+        task.transition(TaskStatus.EXECUTING)
+        try:
+            self._execute_task(task)
+        except Exception as e:
+            task.transition(TaskStatus.FAILED)
+            task.error = str(e)
+        return {"task_id": task.id, "status": task.status.value,
+                "approved": True, "result": task.result}
+
     def memory_read(self, layer: str) -> Any:
         layer_map = {
             "system_context": lambda: self._system_context.as_system_context(),
@@ -133,6 +172,91 @@ class Orchestrator:
     @property
     def bus(self) -> EventBus:
         return self._bus
+
+    # ------------------------------------------------------------------
+    # Lifecycle Gate C / C4-s2 (bot Telegram + OfflineMonitor)
+    # ------------------------------------------------------------------
+
+    def start_telegram_bot(self, token: str | None = None) -> bool:
+        """
+        Arranca el bot si hay TELEGRAM_BOT_TOKEN disponible.
+        Es opcional: si no hay token, registra un log y devuelve False.
+        Retorna True si el bot quedo corriendo.
+        """
+        token = token or os.environ.get("TELEGRAM_BOT_TOKEN")
+        if not token:
+            self._merkle.log(
+                action="telegram.skip", agent="orchestrator", result="no_token",
+                risk_level="safe", payload={"reason": "TELEGRAM_BOT_TOKEN no definido"},
+            )
+            return False
+
+        from atlas.interfaces.orchestrator_ops import OrchestratorOps
+        from atlas.interfaces.telegram_bot import (
+            TelegramAuthorizer, TelegramBot, TelegramClient,
+        )
+
+        client = TelegramClient(token=token)
+        authorizer = TelegramAuthorizer.from_permission_profile(self._permissions)
+        ops = OrchestratorOps(self)
+        bot = TelegramBot(
+            client=client, authorizer=authorizer, ops=ops, merkle=self._merkle,
+        )
+        self._wire_bus_to_bot(bot)
+        self._telegram_bot = bot
+        self._telegram_thread = threading.Thread(
+            target=bot.run_polling, daemon=True, name="atlas-telegram-bot",
+        )
+        self._telegram_thread.start()
+        # Notificacion de arranque
+        self._bus.publish_type(EventType.SESSION_STARTED, {
+            "version": self.VERSION,
+            "queued_tasks": self._offline_queue.depth,
+        })
+        return True
+
+    def stop_telegram_bot(self) -> None:
+        if self._telegram_bot is not None:
+            self._telegram_bot.stop()
+        if self._telegram_thread is not None:
+            self._telegram_thread.join(timeout=2)
+        self._telegram_bot = None
+        self._telegram_thread = None
+
+    def start_offline_monitor(self, poll_interval_seconds: int = 60) -> None:
+        from atlas.core.offline_monitor import OfflineMonitor
+        self._offline_monitor = OfflineMonitor(
+            hermes=self._hermes_mock, bus=self._bus,
+            poll_interval_seconds=poll_interval_seconds,
+        )
+        self._offline_monitor.start()
+
+    def stop_offline_monitor(self) -> None:
+        if self._offline_monitor is not None:
+            self._offline_monitor.stop()
+            self._offline_monitor = None
+
+    def attach_thermal_watchdog(self, watchdog: Any) -> None:
+        """Conecta un ThermalWatchdog ya construido para que emita THERMAL_ALERT."""
+        self._thermal_watchdog = watchdog
+
+    def thermal_alert_callback(self):
+        """Devuelve un callback para pasar a ThermalWatchdog(alert_callback=...)."""
+        def _cb(state) -> None:
+            self._bus.publish_type(EventType.THERMAL_ALERT, {
+                "mode": state.operational_mode.value,
+                "temperature_c": state.temperature_celsius,
+                "ram_free_mb": state.ram_free_mb,
+                "policy": state.policy,
+                "emergency": state.emergency,
+            })
+        return _cb
+
+    def _wire_bus_to_bot(self, bot: Any) -> None:
+        self._bus.subscribe(EventType.APPROVAL_REQUIRED, bot.on_approval_required)
+        self._bus.subscribe(EventType.THERMAL_ALERT, bot.on_thermal_alert)
+        self._bus.subscribe(EventType.SHADOW_ALERT, bot.on_shadow_alert)
+        self._bus.subscribe(EventType.SESSION_STARTED, bot.on_session_started)
 
     # ------------------------------------------------------------------
     # Pipeline interno
@@ -181,7 +305,10 @@ class Orchestrator:
             task.result = {
                 "message": f"Accion requiere aprobacion explicita. Razon: {result.reason}",
                 "approved": False,
+                "reason": result.reason,
             }
+            with self._approvals_lock:
+                self._pending_approvals[task.id] = task
             self._merkle.log(
                 action="task.routed",
                 agent="router",
@@ -190,6 +317,11 @@ class Orchestrator:
                 payload={"requires_approval": True, "reason": result.reason},
                 task_id=task.id,
             )
+            self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+                "task_id": task.id,
+                "intent": task.intent,
+                "reason": result.reason,
+            }, task.id)
             return
 
         # DETERMINISTIC_TOOL o LOCAL_SAFE → ejecutar
@@ -389,6 +521,16 @@ class Orchestrator:
 
         # Event Bus
         self._bus = EventBus()
+
+        # Approval flow (Gate C / C4-s2)
+        self._pending_approvals: dict[str, Task] = {}
+        self._approvals_lock = threading.Lock()
+
+        # Telegram bot + monitors (opcionales, se inician con start_*)
+        self._telegram_bot: Any = None
+        self._telegram_thread: threading.Thread | None = None
+        self._offline_monitor: Any = None
+        self._thermal_watchdog: Any = None
 
     def _copy_defaults(self, config_dir: Path) -> None:
         """Copia governance.json y permissions.yaml si no existen en el workspace."""
