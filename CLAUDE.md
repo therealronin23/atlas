@@ -14,8 +14,13 @@ components serve Atlas, not the other way around.
 ## Project Status
 
 - Gate A: SEALED — Vision, entities and principles locked.
-- Gate B: COMPLETE — 102 tests passing. Local core functional.
-- Gate C: NEXT — Real Hermes + Telegram + Tailscale.
+- Gate B: COMPLETE — Local core functional.
+- Gate C: IN PROGRESS — 129 tests passing.
+  - C1 code: DONE (`scripts/install_hermes_vps.sh` + `scripts/hermes_agent_stub/`). VPS rollout pending.
+  - C2 Tailscale: PENDING (needs VPS + auth key).
+  - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback.
+  - C4 Telegram bot skeleton: DONE (session 1). Orchestrator wiring + approval buttons + Thermal/Offline hooks pending in session 2.
+  - C5 cierre + tag v0.2-gate-c: PENDING (blocked by C2 and C4-s2).
 - Gate D: PENDING — Real InferenceHub + SLM classifier + vector memory + MemoryDistiller.
 - Gate E: PENDING — Local environment (Proxmox decision) + Dashboard + Voice.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
@@ -45,15 +50,22 @@ atlas-core/
 │   │   └── memory_system.py    # SystemContextLoader, ErrorRegistry, ApprovedPatternStore,
 │   │                           # ProviderMetricsStore, ToolRegistry
 │   ├── hermes/
-│   │   └── hermes.py           # HermesAdapter (abstract) + Mock + OfflineQueue
-│   │                           # + OfflineFallbackMode (Dead Man Switch)
+│   │   └── hermes.py           # HermesAdapter (abstract) + Mock + RestAdapter (Gate C)
+│   │                           # + OfflineQueue + OfflineFallbackMode (Dead Man Switch)
 │   ├── thermal/
 │   │   └── watchdog.py         # ThermalWatchdog + OperationalMode (NORMAL/DEGRADED/OMEGA)
 │   └── interfaces/
-│       └── cli.py              # CLI: atlas status/task/tools/memory/audit
+│       ├── cli.py              # CLI: atlas status/task/tools/memory/audit
+│       └── telegram_bot.py     # Bot stdlib (Gate C/C4-s1) — client + authorizer + dispatcher
 ├── tests/
-│   ├── test_atlas_core.py      # 64 tests
-│   └── test_gemini_components.py  # 38 tests
+│   ├── test_atlas_core.py            # 64 tests
+│   ├── test_gemini_components.py     # 38 tests
+│   ├── test_hermes_rest_adapter.py   # 11 tests — Gate C/C3
+│   └── test_telegram_bot.py          # 16 tests — Gate C/C4-s1
+├── scripts/
+│   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
+│   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
+│   └── hermes_agent_stub/      # Gate C/C1 — stub HTTP server speaking the REST contract
 ├── config/
 │   ├── governance.json         # Immutable constitution (NEVER modify via code)
 │   └── permissions.yaml        # Folder map and permission levels
