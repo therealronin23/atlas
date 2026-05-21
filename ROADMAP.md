@@ -34,7 +34,7 @@ bash ~/Downloads/setup_atlas.sh
 # 8. Verificar que todo está bien
 cd ~/atlas-core
 PYTHONPATH=src python -m pytest tests/ -q
-# Debe mostrar: 102 passed
+# Debe mostrar: 102 passed (baseline Gate B). Tras Gate C parcial: 129 passed.
 ```
 
 ---
@@ -109,9 +109,36 @@ del estado del proyecto: qué funciona, qué es stub, qué falta para Gate C.
 ## GATE C — Hermes real + Telegram + Tailscale
 ### Duración estimada: 3-6 semanas (sesiones de 2h, 2-3 veces/semana)
 
+### Estado (2026-05-22) — 129/129 tests passing
+
+| Sub | Estado | Commit | Notas |
+|---|---|---|---|
+| C1 | **DONE (parte código)** | `e4250f3` | Script + stub listos. Falta ejecutar en un VPS real. |
+| C2 | PENDIENTE | — | Bloqueado: Tailscale auth key + acceso al VPS. |
+| C3 | **DONE** | `b9e45ef` | HermesRestAdapter + 11 tests + smoke script. |
+| C4 sesión 1 | **DONE** | `e9ca05a` | Bot skeleton + 16 tests. Sin dep nueva (stdlib urllib). |
+| C4 sesión 2 | PENDIENTE | — | Integrar con Orchestrator + approval buttons + hooks Thermal/Offline. |
+| C5 | PENDIENTE | — | Bloqueado por C2 y C4 sesión 2. |
+
+### Para desbloquear C2 / C5
+
+1. VPS Ubuntu 22.04+ disponible.
+2. `curl -fsSL https://raw.githubusercontent.com/therealronin23/atlas/main/scripts/install_hermes_vps.sh | sudo bash` en el VPS. Anotar `HERMES_API_KEY` impreso.
+3. Tailscale instalado en VPS y HP Omen; anotar IPs Tailscale.
+4. Pasar a la siguiente sesión: IP Tailscale del VPS + `HERMES_API_KEY` + Telegram bot token + chat_id.
+
 ---
 
 ### C1 — Desplegar Hermes Agent en VPS (1-2 sesiones)
+
+**Estado:** código DONE (`e4250f3`). Ejecución en VPS PENDIENTE.
+
+**Entregado:**
+- `scripts/install_hermes_vps.sh` — instala Docker, crea usuario `hermes`, estructura `/opt/hermes/`, genera `.env` con `HERMES_API_KEY` aleatorio, despliega el stub vía docker-compose, configura systemd, verifica puerto. Idempotente.
+- `scripts/hermes_agent_stub/` — Dockerfile + `agent.py` (HTTP server stdlib con verificación HMAC-SHA256 y ventana antirreplay 300s) + docker-compose.yml. Implementa el contrato REST que espera `HermesRestAdapter`. **No** ejecuta tareas reales; devuelve respuestas simuladas. Sustitución real en Gate D.
+- Decisión: HTTP plano (sin TLS) porque Tailscale provee transporte cifrado (ADR-017).
+- Nota ROADMAP: la línea "Hermes Agent (Nous Research)" no se materializa — Nous publica modelos, no un agente. Hermes en Atlas es el agente-VPS propio.
+
 
 **Prerequisito:** Tener un VPS (Hetzner CX11 €4/mes o similar)
 
@@ -150,6 +177,8 @@ TELEGRAM_CHAT_ID=[TU_CHAT_ID]
 
 ### C2 — Tailscale tunnel (1 sesión)
 
+**Estado:** PENDIENTE. Requiere acceso simultáneo a VPS y HP Omen + Tailscale auth key.
+
 **Prompt:**
 ```
 Necesito conectar mi HP Omen con el VPS de Hermes usando Tailscale.
@@ -167,6 +196,20 @@ La clave de auth de Tailscale es: TAILSCALE_AUTH_KEY=[KEY]
 ---
 
 ### C3 — HermesRestAdapter real (1-2 sesiones)
+
+**Estado sesión 1:** DONE (`b9e45ef`). **Estado sesión 2:** PENDIENTE.
+
+**Entregado sesión 1:**
+- `HermesRestAdapter` en `src/atlas/hermes/hermes.py`. REST + HMAC-SHA256 + retry exponencial (1s, 2s, 4s). Cliente stdlib `urllib` (sin nuevas deps).
+- Tras 3 fallos en `enqueue_task` → cae en `OfflineQueue` + raise `HermesUnreachable`.
+- Excepciones tipadas: `HermesError`, `HermesUnreachable`, `HermesAuthError`, `HermesBadResponse`.
+- `tests/test_hermes_rest_adapter.py` — 11 tests con servidor HTTP mock local.
+- `scripts/hermes_smoke.py` — end-to-end contra un `HERMES_BASE_URL` real.
+
+**Pendiente sesión 2** (necesita Orchestrator integrado y bot Telegram activo):
+1. OfflineFallbackMode real disparando alerta a Telegram tras 15min sin ping.
+2. Drain de OfflineQueue al reconectar.
+3. CLI `atlas hermes status`.
 
 **Prompt sesión 1:**
 ```
@@ -199,6 +242,23 @@ El HermesRestAdapter está implementado. Ahora necesito:
 ---
 
 ### C4 — Telegram bot completo (1-2 sesiones)
+
+**Estado sesión 1:** DONE (`e9ca05a`). **Estado sesión 2:** PENDIENTE.
+
+**Entregado sesión 1** (`src/atlas/interfaces/telegram_bot.py`):
+- `TelegramClient` (stdlib urllib, sin dep nueva — desvío respecto al prompt original que sugería `python-telegram-bot`).
+- `TelegramAuthorizer` con whitelist `chat_id`, construible desde `PermissionProfile.telegram_config()`.
+- `TelegramBot` dispatcher de `/status /task /audit /tools /triage`, tolerante a updates malformados y errores de handler.
+- Protocolo `AtlasOps` que el Orchestrator implementará en sesión 2 — frontera limpia para testear ambos lados por separado.
+- Logging de accesos no autorizados vía `MerkleLogger` inyectado.
+- 16 tests con cliente y ops mockeados.
+
+**Pendiente sesión 2:**
+1. Implementar `AtlasOps` en el Orchestrator y arrancar el bot como hilo background.
+2. Botones inline Sí/No para `REQUIRES_APPROVAL` (callbacks ya recibidos por el dispatcher; falta el flujo de approval).
+3. Hook `ThermalWatchdog` → notificación Telegram automática.
+4. Hook `OfflineFallbackMode` → alerta a los 15min sin ping.
+5. Notificación de arranque "Atlas Core vX online — N tareas pendientes".
 
 **Prompt sesión 1:**
 ```
@@ -233,6 +293,8 @@ El bot de Telegram está implementado. Necesito:
 ---
 
 ### C5 — Cierre Gate C (1 sesión)
+
+**Estado:** PENDIENTE. Bloqueado por C2 (Tailscale) y C4 sesión 2 (integración con Orchestrator).
 
 **Prompt:**
 ```
