@@ -34,7 +34,7 @@ bash ~/Downloads/setup_atlas.sh
 # 8. Verificar que todo está bien
 cd ~/atlas-core
 PYTHONPATH=src python -m pytest tests/ -q
-# Debe mostrar: 102 passed (baseline Gate B). Tras Gate C parcial: 129 passed.
+# Debe mostrar: 102 passed (baseline Gate B). Tras Gate C parcial: 147 passed.
 ```
 
 ---
@@ -109,7 +109,7 @@ del estado del proyecto: qué funciona, qué es stub, qué falta para Gate C.
 ## GATE C — Hermes real + Telegram + Tailscale
 ### Duración estimada: 3-6 semanas (sesiones de 2h, 2-3 veces/semana)
 
-### Estado (2026-05-22) — 129/129 tests passing
+### Estado (2026-05-22) — 147/147 tests passing
 
 | Sub | Estado | Commit | Notas |
 |---|---|---|---|
@@ -117,8 +117,8 @@ del estado del proyecto: qué funciona, qué es stub, qué falta para Gate C.
 | C2 | PENDIENTE | — | Bloqueado: Tailscale auth key + acceso al VPS. |
 | C3 | **DONE** | `b9e45ef` | HermesRestAdapter + 11 tests + smoke script. |
 | C4 sesión 1 | **DONE** | `e9ca05a` | Bot skeleton + 16 tests. Sin dep nueva (stdlib urllib). |
-| C4 sesión 2 | PENDIENTE | — | Integrar con Orchestrator + approval buttons + hooks Thermal/Offline. |
-| C5 | PENDIENTE | — | Bloqueado por C2 y C4 sesión 2. |
+| C4 sesión 2 | **DONE** | `c9f9d0f` | Orchestrator↔bot via EventBus, approval flow con inline buttons, OfflineMonitor, /pending. +18 tests. Bug fix en watchdog. |
+| C5 | PENDIENTE | — | Bloqueado por C2 (Tailscale + VPS real). |
 
 ### Para desbloquear C2 / C5
 
@@ -243,7 +243,7 @@ El HermesRestAdapter está implementado. Ahora necesito:
 
 ### C4 — Telegram bot completo (1-2 sesiones)
 
-**Estado sesión 1:** DONE (`e9ca05a`). **Estado sesión 2:** PENDIENTE.
+**Estado sesión 1:** DONE (`e9ca05a`). **Estado sesión 2:** DONE (`c9f9d0f`).
 
 **Entregado sesión 1** (`src/atlas/interfaces/telegram_bot.py`):
 - `TelegramClient` (stdlib urllib, sin dep nueva — desvío respecto al prompt original que sugería `python-telegram-bot`).
@@ -253,12 +253,16 @@ El HermesRestAdapter está implementado. Ahora necesito:
 - Logging de accesos no autorizados vía `MerkleLogger` inyectado.
 - 16 tests con cliente y ops mockeados.
 
-**Pendiente sesión 2:**
-1. Implementar `AtlasOps` en el Orchestrator y arrancar el bot como hilo background.
-2. Botones inline Sí/No para `REQUIRES_APPROVAL` (callbacks ya recibidos por el dispatcher; falta el flujo de approval).
-3. Hook `ThermalWatchdog` → notificación Telegram automática.
-4. Hook `OfflineFallbackMode` → alerta a los 15min sin ping.
-5. Notificación de arranque "Atlas Core vX online — N tareas pendientes".
+**Entregado sesión 2** (`c9f9d0f`):
+- Patrón pub/sub vía EventBus. `Orchestrator` emite, bot se suscribe — ninguno conoce al otro.
+- Approval flow: `REQUIRES_APPROVAL` publica `APPROVAL_REQUIRED`; bot envía mensaje con inline keyboard Sí/No; `callback_query` con `approve:<task_id>:<yes|no>` llega de vuelta y dispara `orchestrator.approve_pending()`.
+- Comando `/pending` lista approvals abiertos.
+- `OfflineMonitor` (thread daemon) emite `SHADOW_ALERT` solo en transición False→True de `hermes.check_offline_fallback()`.
+- `Orchestrator.thermal_alert_callback()` bridge `ThermalWatchdog` → `THERMAL_ALERT` en el bus.
+- `Orchestrator.start_telegram_bot()` opcional: skip silencioso si no hay `TELEGRAM_BOT_TOKEN`. Publica `SESSION_STARTED` con versión + tareas en cola → notificación "Atlas Core vX online".
+- `OrchestratorOps` (`src/atlas/interfaces/orchestrator_ops.py`) adapta el `Orchestrator` al protocolo `AtlasOps`.
+- Bug fix incidental en `watchdog.py`: usaba `triage_mode` (atributo inexistente) en lugar de `operational_mode` — el loop crasheaba al primer ciclo sin esto.
+- 18 tests nuevos.
 
 **Prompt sesión 1:**
 ```
@@ -294,7 +298,7 @@ El bot de Telegram está implementado. Necesito:
 
 ### C5 — Cierre Gate C (1 sesión)
 
-**Estado:** PENDIENTE. Bloqueado por C2 (Tailscale) y C4 sesión 2 (integración con Orchestrator).
+**Estado:** PENDIENTE. Bloqueado por C2 (Tailscale + VPS real).
 
 **Prompt:**
 ```

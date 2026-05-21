@@ -15,12 +15,12 @@ components serve Atlas, not the other way around.
 
 - Gate A: SEALED — Vision, entities and principles locked.
 - Gate B: COMPLETE — Local core functional.
-- Gate C: IN PROGRESS — 129 tests passing.
+- Gate C: IN PROGRESS — 147 tests passing.
   - C1 code: DONE (`scripts/install_hermes_vps.sh` + `scripts/hermes_agent_stub/`). VPS rollout pending.
   - C2 Tailscale: PENDING (needs VPS + auth key).
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback.
-  - C4 Telegram bot skeleton: DONE (session 1). Orchestrator wiring + approval buttons + Thermal/Offline hooks pending in session 2.
-  - C5 cierre + tag v0.2-gate-c: PENDING (blocked by C2 and C4-s2).
+  - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
+  - C5 cierre + tag v0.2-gate-c: PENDING (blocked by C2).
 - Gate D: PENDING — Real InferenceHub + SLM classifier + vector memory + MemoryDistiller.
 - Gate E: PENDING — Local environment (Proxmox decision) + Dashboard + Voice.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
@@ -34,6 +34,7 @@ atlas-core/
 │   │   ├── contracts.py        # Task, Event, Tool, DelegationPayload, OperationalMode
 │   │   ├── orchestrator.py     # Executive coordinator — runs the full pipeline
 │   │   ├── event_bus.py        # Typed in-process event bus
+│   │   ├── offline_monitor.py  # Polls hermes.check_offline_fallback() -> SHADOW_ALERT (Gate C/C4-s2)
 │   │   └── inference_hub.py    # Model router L-det->L0->L1->L2 (stub in v0.1)
 │   ├── governance/
 │   │   ├── governance_l0.py    # Immutable constitution — singleton, tamper-detection
@@ -55,13 +56,15 @@ atlas-core/
 │   ├── thermal/
 │   │   └── watchdog.py         # ThermalWatchdog + OperationalMode (NORMAL/DEGRADED/OMEGA)
 │   └── interfaces/
-│       ├── cli.py              # CLI: atlas status/task/tools/memory/audit
-│       └── telegram_bot.py     # Bot stdlib (Gate C/C4-s1) — client + authorizer + dispatcher
+│       ├── cli.py                 # CLI: atlas status/task/tools/memory/audit
+│       ├── telegram_bot.py        # Bot stdlib (Gate C/C4) — dispatcher + approval inline keyboard + EventBus hooks
+│       └── orchestrator_ops.py    # OrchestratorOps: AtlasOps adapter over Orchestrator (Gate C/C4-s2)
 ├── tests/
-│   ├── test_atlas_core.py            # 64 tests
-│   ├── test_gemini_components.py     # 38 tests
-│   ├── test_hermes_rest_adapter.py   # 11 tests — Gate C/C3
-│   └── test_telegram_bot.py          # 16 tests — Gate C/C4-s1
+│   ├── test_atlas_core.py              # 64 tests
+│   ├── test_gemini_components.py       # 38 tests
+│   ├── test_hermes_rest_adapter.py     # 11 tests — Gate C/C3
+│   ├── test_telegram_bot.py            # 16 tests — Gate C/C4-s1
+│   └── test_telegram_orchestrator.py   # 18 tests — Gate C/C4-s2
 ├── scripts/
 │   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
 │   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
