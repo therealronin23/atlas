@@ -1,0 +1,61 @@
+# Atlas Core — Permission Profile (ADR-006)
+# Este archivo puede modificarse con nivel APPROVE.
+
+workspace:
+  # ATLAS_HOME se resuelve en tiempo de ejecucion (default: ~/atlas/)
+  # Todas las rutas son relativas a ATLAS_HOME salvo que empiecen con /
+
+  auto_write:
+    - tmp/         # Efimero, limpiado al inicio de sesion
+
+  confirm_write:
+    - projects/
+    - skills/
+    - memory/
+
+  read_only:
+    - config/governance.json  # Solo lectura incluso para Atlas
+
+  # Rutas fuera del workspace con acceso de lectura extendido
+  # El usuario anade aqui sus propias rutas.
+  read_extended: []
+
+# Rutas absolutamente fuera de alcance — hardcoded, no configurables
+absolute_blocks:
+  - ~/.ssh/
+  - ~/.gnupg/
+  - ~/.aws/
+  - /etc/
+  - /root/
+  - /boot/
+  - /proc/
+  - /dev/
+
+# Rutas del SO con acceso parcial permitido (solo lectura)
+system_read_allowed:
+  - /sys/class/hwmon/   # Thermal Watchdog
+
+telegram:
+  authorized_chat_ids: []
+  require_passphrase_for_approve: false
+  passphrase_hash: ""
+
+shell_allowlist:
+  - echo
+  - cat
+  - ls
+  - find
+  - pwd
+  - date
+  - wc
+  - head
+  - tail
+  - grep
+  - sort
+  - uniq
+  - diff
+  - "python3 -m pytest"
+  - "python3 -m mypy"
+  - "python3 -m flake8"
+  - "node --version"
+  - "npm test"
