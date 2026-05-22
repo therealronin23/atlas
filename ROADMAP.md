@@ -109,23 +109,21 @@ del estado del proyecto: qué funciona, qué es stub, qué falta para Gate C.
 ## GATE C — Hermes real + Telegram + Tailscale
 ### Duración estimada: 3-6 semanas (sesiones de 2h, 2-3 veces/semana)
 
-### Estado (2026-05-22) — 147/147 tests passing
+### Estado (2026-05-23) — Gate C COMPLETO — 147/147 tests + Hermes-VPS live
 
 | Sub | Estado | Commit | Notas |
 |---|---|---|---|
-| C1 | **DONE (parte código)** | `e4250f3` | Script + stub listos. Falta ejecutar en un VPS real. |
-| C2 | PENDIENTE | — | Bloqueado: Tailscale auth key + acceso al VPS. |
-| C3 | **DONE** | `b9e45ef` | HermesRestAdapter + 11 tests + smoke script. |
+| C1 | **DONE** | `e4250f3` + despliegue 2026-05-23 | Stub Hermes corriendo en VPS Hetzner CPX22 (Ubuntu 26.04 LTS, `/opt/hermes/`, systemd unit, puerto 8443). |
+| C2 | **DONE** | — | Tailnet `hermes-vps` ↔ `ronin-omen-by-hp-laptop`. Tráfico Atlas↔Hermes cifrado por WireGuard sobre IP `100.x`. |
+| C3 | **DONE** | `b9e45ef` | HermesRestAdapter + 11 tests + smoke script. Smoke end-to-end contra VPS real: PASS (health, enqueue, queue_status, cancel). |
 | C4 sesión 1 | **DONE** | `e9ca05a` | Bot skeleton + 16 tests. Sin dep nueva (stdlib urllib). |
 | C4 sesión 2 | **DONE** | `c9f9d0f` | Orchestrator↔bot via EventBus, approval flow con inline buttons, OfflineMonitor, /pending. +18 tests. Bug fix en watchdog. |
-| C5 | PENDIENTE | — | Bloqueado por C2 (Tailscale + VPS real). |
+| C5 | **DONE** | seal en `docs/gate_c_seal.md`, tag `v0.2-gate-c` | Gate C cerrado. |
 
-### Para desbloquear C2 / C5
+### Evidencia de cierre
 
-1. VPS Ubuntu 22.04+ disponible.
-2. `curl -fsSL https://raw.githubusercontent.com/therealronin23/atlas/main/scripts/install_hermes_vps.sh | sudo bash` en el VPS. Anotar `HERMES_API_KEY` impreso.
-3. Tailscale instalado en VPS y HP Omen; anotar IPs Tailscale.
-4. Pasar a la siguiente sesión: IP Tailscale del VPS + `HERMES_API_KEY` + Telegram bot token + chat_id.
+- `docs/gate_c_seal.md` — IPs Tailscale, contenedor running, salida smoke test.
+- `tag v0.2-gate-c` — snapshot del repo en cierre de Gate C.
 
 ---
 

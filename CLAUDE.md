@@ -15,12 +15,12 @@ components serve Atlas, not the other way around.
 
 - Gate A: SEALED — Vision, entities and principles locked.
 - Gate B: COMPLETE — Local core functional.
-- Gate C: IN PROGRESS — 147 tests passing.
-  - C1 code: DONE (`scripts/install_hermes_vps.sh` + `scripts/hermes_agent_stub/`). VPS rollout pending.
-  - C2 Tailscale: PENDING (needs VPS + auth key).
-  - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback.
+- Gate C: COMPLETE — 147 tests passing + Hermes-VPS live on Hetzner CPX22 + Tailscale tunnel verified end-to-end.
+  - C1 install_hermes_vps.sh: DONE + deployed (Hetzner CPX22, Ubuntu 26.04 LTS).
+  - C2 Tailscale: DONE — tailnet `hermes-vps` ↔ `ronin-omen-by-hp-laptop`. `HERMES_BASE_URL` apunta a IP `100.x` interna.
+  - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
-  - C5 cierre + tag v0.2-gate-c: PENDING (blocked by C2).
+  - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
 - Gate D: PENDING — Real InferenceHub + SLM classifier + vector memory + MemoryDistiller.
 - Gate E: PENDING — Local environment (Proxmox decision) + Dashboard + Voice.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
