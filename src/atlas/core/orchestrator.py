@@ -78,9 +78,16 @@ class Orchestrator:
     _timetravel: Any
     _pii_surrogate: Any
 
-    # Umbral de confianza del rule-based classifier por debajo del cual el
-    # SLMClassifier toma el relevo (cuando el pipeline Gate D esta activo).
-    SLM_CONFIDENCE_THRESHOLD: float = 0.7
+    # Politica del hybrid classifier:
+    # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
+    #   significa que una regla matched explicitamente: se confia y NO se
+    #   invoca al SLM.
+    # - Si el rule-based cae a su default LOCAL_SAFE (confidence 0.6), se
+    #   consulta al SLM. El SLM gana el empate cuando identifica una ruta
+    #   mas especifica que LOCAL_SAFE.
+    # Governance bloqueado del rule-based SIEMPRE prevalece — la constitucion
+    # no admite revision por LLM.
+    SLM_BYPASS_THRESHOLD: float = 1.0
 
     def __init__(self, workspace: Path | None = None) -> None:
         self._workspace = workspace or self._resolve_workspace()
@@ -509,7 +516,7 @@ class Orchestrator:
             return
 
         # 3. Hybrid classify
-        cls = self._hybrid_classify(task.intent, task.sensitivity)
+        cls = self._hybrid_classify(task.intent, task.sensitivity, task_id=task.id)
 
         if cls.governance_blocked:
             self._block_task(task, cls.reason, "critical")
@@ -521,13 +528,18 @@ class Orchestrator:
 
         task.transition(TaskStatus.ROUTING)
         task.route = cls.level
+        winner = "slm" if isinstance(cls.reason, str) and cls.reason.startswith("SLM:") else "rule"
         self._merkle.log(
             action="task.classified",
             agent="classifier_hybrid",
             result="success",
             risk_level="safe",
-            payload={"route": cls.level.value, "reason": cls.reason,
-                     "confidence": cls.confidence},
+            payload={
+                "route":      cls.level.value,
+                "reason":     cls.reason,
+                "confidence": cls.confidence,
+                "winner":     winner,
+            },
             task_id=task.id,
         )
         self._timetravel.record_step(
@@ -592,31 +604,60 @@ class Orchestrator:
                 {"tool": task.tool_name, "route": task.route.value if task.route else None},
             )
 
-    def _hybrid_classify(self, intent: str, sensitivity: str | None) -> ClassificationResult:
+    def _hybrid_classify(
+        self, intent: str, sensitivity: str | None, *, task_id: str | None = None,
+    ) -> ClassificationResult:
         """
-        Combina rule-based + SLM. La regla determinista corre primero
-        (microsegundos, sin red). Si su confidence cae por debajo del
-        umbral SLM_CONFIDENCE_THRESHOLD y el SLM da una verdadera con
-        mas confianza, se adopta la del SLM.
+        Combina rule-based + SLM con politica de empate refinada:
 
-        Nota: governance_blocked del rule-based siempre tiene prioridad
-        sobre el SLM (la constitucion no admite revision por LLM).
+        1. rule-based corre primero (microsegundos, sin red).
+        2. Si governance_blocked OR confidence >= SLM_BYPASS_THRESHOLD (1.0)
+           -> se confia en el rule, no se consulta SLM.
+        3. Si el rule cae al default LOCAL_SAFE -> se consulta SLM. El SLM
+           gana el empate cuando identifica una ruta MAS ESPECIFICA que
+           LOCAL_SAFE (incluso con la misma confidence) o cuando su
+           confidence es estrictamente mayor.
+
+        Cada consulta al SLM y el ganador final quedan registrados en
+        MerkleLogger para metricas.
         """
         rule = self._classifier.classify(intent, sensitivity=sensitivity or "default")
-        if rule.governance_blocked or rule.confidence >= self.SLM_CONFIDENCE_THRESHOLD:
+        if rule.governance_blocked or rule.confidence >= self.SLM_BYPASS_THRESHOLD:
             return rule
 
         assert self._slm_classifier is not None
         slm = self._slm_classifier.classify(intent)
-        if slm.confidence <= rule.confidence:
+        self._merkle.log(
+            action="classify.slm_consulted",
+            agent="classifier_hybrid",
+            result="success",
+            risk_level="safe",
+            payload={
+                "rule_level":      rule.level.value,
+                "rule_confidence": rule.confidence,
+                "slm_level":       slm.level.value,
+                "slm_confidence":  slm.confidence,
+                "slm_mode":        slm.mode,
+                "slm_reason":      slm.reason,
+            },
+            task_id=task_id,
+        )
+
+        slm_wins = (
+            slm.confidence > rule.confidence
+            or (
+                slm.level != RoutingLevel.LOCAL_SAFE
+                and slm.confidence >= rule.confidence
+            )
+        )
+        if not slm_wins:
             return rule
-        # Adoptar verdict del SLM. Sintetizamos un ClassificationResult.
         return ClassificationResult(
             level=slm.level,
             confidence=slm.confidence,
             matched_pattern=None,
             governance_blocked=(slm.level == RoutingLevel.BLOCKED),
-            reason=f"SLM: {slm.reason} (rule-based fallback: {rule.reason})",
+            reason=f"SLM: {slm.reason} (rule default: {rule.reason})",
         )
 
     def _execute_task(self, task: Task) -> None:
