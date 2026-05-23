@@ -199,6 +199,10 @@ PYTHONPATH=src python -m pytest tests/ -q           # full suite (361 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
+# Smoke real end-to-end del pipeline Gate D contra infra viva
+set -a && source .env && set +a
+PYTHONPATH=src python scripts/pipeline_smoke.py     # 5 intents, output estructurado
+
 ## Environment Variables
 
 ATLAS_HOME              ~/atlas/          Workspace root
