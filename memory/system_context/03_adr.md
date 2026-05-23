@@ -51,7 +51,24 @@ ADR-008  Vector and graph memory: KuzuDB (embedded, C++, MIT license).
          Tests: test_vector_store.py (19), test_embeddings.py (15),
            test_memory_kuzu_integration.py (7).
          Status: RESOLVED (Gate D/D4).
-ADR-010  SLM classifier model: Phi-4 vs Qwen-2.5-Coder — Gate D.
+ADR-010  SLM classifier.
+         Decision Gate D/D2 (2026-05-24): NO fijar un unico SLM local
+         por defecto. En su lugar, el SLMClassifier (src/atlas/router/
+         slm_classifier.py) se apoya en el InferenceHub (LiteLLM, ADR-016)
+         y funciona con cualquier modelo L1 disponible — Groq llama-3.3-70b
+         es la opcion natural por latencia (~180ms) y la chain Groq ->
+         OpenRouter -> Together -> Gemini absorbe fallos.
+         El clasificador NO reemplaza al rule-based Classifier
+         (router/classifier.py): es complemento. Patron previsto:
+            1. Classifier (regex, microsegundos) corre primero.
+            2. Si confidence < umbral o no match, SLMClassifier decide.
+            3. GhostReplay (ADR-022) cachea decisiones para intent repetidos.
+         Cableo hibrido en handle_intent queda como follow-up.
+         Tests: tests/test_slm_classifier.py (21 tests) — modo stub
+         determinista, modo live mockeado, parseo JSON robusto (fences,
+         prosa envolvente, confidence clamp), cache via GhostReplay,
+         fallbacks ante respuestas malformadas.
+         Status: RESOLVED (Gate D/D2).
 ADR-012  Memory sync Hermes <-> Atlas Core — Gate C to D (pull-on-reconnect default).
 ADR-015  [Merged into ADR-014] Escalation protocol for DEGRADED/OMEGA tiers.
 
