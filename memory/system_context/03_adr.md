@@ -76,18 +76,21 @@ ADR-019  Statistical Validation Framework.
   technical names exclusively (see CLAUDE.md naming table).
 
 ADR-020  Capability-based Security Tokens.
-         Objective: replace most conditional logic in the executor with immutable
-         Pydantic tokens (frozen=True). Each action type has its own token class
-         (ReadToken, WriteToken, NetworkToken, ExecToken) with validators that make
-         out-of-scope operations physically impossible at the Python type level.
-         The AtlasExecutor only accepts typed tokens — no raw strings, no open calls.
-         Reference design: see Gemini session discussion on capabilities.py + executor.py.
-         Target modules:
-           src/atlas/security/capabilities.py  (token definitions)
+         Tokens inmutables (Pydantic frozen=True) que encapsulan permiso
+         pre-validado para acciones concretas. CapabilityIssuer emite tokens
+         tras consultar PermissionProfile (ADR-006) y SSRFBridge.
+         AtlasExecutor acepta SOLO tokens tipados (Read/Write/Network/Exec),
+         hace el IO real y registra cada accion en MerkleLogger.
+         AST Guard sigue activo como backstop cuando la capability transporta
+         codigo Python ejecutable.
+         Modulos implementados:
+           src/atlas/security/capabilities.py  (token definitions + Issuer)
            src/atlas/security/executor.py      (AtlasExecutor)
-         Benefit: eliminates ~90% of conditional axiom checks; AST Guard becomes a
-         final backstop rather than the primary mechanism.
-         Status: DEFERRED to Gate D.
+         Tests: tests/test_capabilities.py (31 tests).
+         Cableado en Orchestrator via properties .executor y .capability_issuer.
+         Migracion del pipeline existente (Orchestrator y Hermes) para enrutar
+         IO via AtlasExecutor queda como follow-up tras D4.
+         Status: RESOLVED (Gate D/D3, 2026-05-23).
 
 ## Gate F concepts (not yet ADRs — require Gate D completion first)
 
