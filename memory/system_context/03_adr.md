@@ -60,11 +60,22 @@ ADR-015  [Merged into ADR-014] Escalation protocol for DEGRADED/OMEGA tiers.
 ADR-018  Memory Distiller.
          Objective: semantic compression of context before sending to inference model,
          reducing cost and latency for L1/L2 calls.
-         Reference implementation: atlas-experiments/ouroboros/memory_distiller.py
-         Target module: src/atlas/memory/distiller.py
-         Activation: once InferenceHub real is operational, this becomes a mandatory
-         pre-step before any L1 or L2 call.
-         Status: DEFERRED to Gate D.
+         Implementado Gate D (2026-05-24):
+           src/atlas/memory/distiller.py — MemoryDistiller + Chunk + ChunkSource +
+             DistillationResult. Estrategia v1 (sin LLM secundario):
+               1) SYSTEM chunks se preservan siempre (axiomaticos).
+               2) RECENT se conserva al final del contexto.
+               3) Resto se ranquea por cosine similarity contra el query y se
+                  admite mientras quepa en el budget de tokens (estimacion
+                  conservadora: ceil(len/4)).
+           Helpers: estimate_tokens, gather_relevant (puente con KuzuVectorStore
+             para extraer Patterns/Failures/Evidence indexados), build_context
+             (flujo end-to-end query -> string listo para inyectar).
+         Cableo automatico al Orchestrator (interceptar handle_intent antes
+         de cualquier L1/L2) queda como follow-up cuando el pipeline de
+         inferencia este consumido por mas codigo del sistema.
+         Tests: tests/test_distiller.py (17 tests).
+         Status: RESOLVED (Gate D, distiller v1).
 
 ADR-019  Statistical Validation Framework.
          Objective: evaluate router and InferenceHub performance using cross-validation

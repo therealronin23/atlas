@@ -21,15 +21,15 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: IN PROGRESS — 233 tests passing + mypy verde.
+- Gate D: IN PROGRESS — 250 tests passing + mypy verde.
   - D1 InferenceHub real (LiteLLM): DONE. Modo auto/live/stub, fallback chain, cooldown rate-limit, clasificación de errores. Smoke real PASS contra Groq (llama-3.3-70b + qwen3-32b) y OpenRouter (nemotron-nano-12b + liquid-1.2b).
   - D2 SLM classifier (reemplazar rule-based): PENDING — ADR-010 abierto.
   - D3 Capability tokens + AtlasExecutor (ADR-020): DONE. `src/atlas/security/{capabilities,executor}.py` + 31 tests + 5 integración Orchestrator. Issuer valida contra PermissionProfile/SSRFBridge, executor canaliza IO con audit log. Refactor del pipeline existente para enrutar via executor queda como follow-up.
   - D4 Memoria vectorial KuzuDB (ADR-008): DONE. `src/atlas/memory/{embeddings,vector_store}.py` + 34 tests + 7 integración. StubEmbedder (hash-based determinista) y LiteLLMEmbedder (auto/live/stub). KuzuVectorStore con schema Pattern/Failure/Evidence + REL tables. ErrorRegistry y ApprovedPatternStore aceptan vector_store opcional (mirror automático + `find_similar`).
+  - MemoryDistiller (ADR-018): DONE. `src/atlas/memory/distiller.py` + 17 tests. Comprime contexto pre-LLM por relevancia (cosine sim contra el query) respetando budget de tokens. System chunks intocables, recent preservado, scorables filtrados. Hook con KuzuVectorStore via gather_relevant() y build_context() end-to-end. Cableo automatico al Orchestrator queda como follow-up.
   - D5 Time-Travel Debugging + Ghost Replay: PENDING — ADR-021, ADR-022.
   - D6 PII Surrogate (temperature=0): PENDING — ADR-023.
   - D7 Cierre Gate D + tag v0.3-gate-d: PENDING.
-  - MemoryDistiller: PENDING — ADR-018, depende de D4 (ya desbloqueado).
 - Gate E: PENDING — Local environment (Proxmox decision) + Dashboard + Voice.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
 
@@ -61,7 +61,8 @@ atlas-core/
 │   │   ├── memory_system.py    # SystemContextLoader, ErrorRegistry, ApprovedPatternStore,
 │   │   │                       # ProviderMetricsStore, ToolRegistry
 │   │   ├── embeddings.py       # StubEmbedder + LiteLLMEmbedder (Gate D/D4)
-│   │   └── vector_store.py     # KuzuVectorStore — schema + búsqueda semántica (ADR-008)
+│   │   ├── vector_store.py     # KuzuVectorStore — schema + búsqueda semántica (ADR-008)
+│   │   └── distiller.py        # MemoryDistiller — compresión semántica pre-LLM (ADR-018)
 │   ├── hermes/
 │   │   └── hermes.py           # HermesAdapter (abstract) + Mock + RestAdapter (Gate C)
 │   │                           # + OfflineQueue + OfflineFallbackMode (Dead Man Switch)
@@ -83,7 +84,8 @@ atlas-core/
 │   ├── test_orchestrator_executor.py   #  5 tests — Gate D/D3 (integración)
 │   ├── test_embeddings.py              # 15 tests — Gate D/D4
 │   ├── test_vector_store.py            # 19 tests — Gate D/D4
-│   └── test_memory_kuzu_integration.py #  7 tests — Gate D/D4
+│   ├── test_memory_kuzu_integration.py #  7 tests — Gate D/D4
+│   └── test_distiller.py               # 17 tests — Gate D/MemoryDistiller
 ├── scripts/
 │   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
 │   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
@@ -138,6 +140,7 @@ ADR-005  Permissions: AUTO / CONFIRM / APPROVE / BLOCKED
 ADR-006  Workspace ~/atlas/ — .ssh, .gnupg, /etc, /root always blocked
 ADR-007  Autonomy: Governance > Permission > Sensitivity > Classify > Execute
 ADR-008  Vector + graph memory: KuzuDB (resuelto Gate D/D4 con vector_store.py)
+ADR-018  Memory Distiller (resuelto Gate D con distiller.py, compresión pre-LLM)
 ADR-009  SKILL.md format: agentskills.io standard
 ADR-011  Atlas->Hermes: REST HTTPS + HMAC-SHA256. Tailscale tunnel in production
 ADR-013  Telegram auth: chat_id whitelist
@@ -153,7 +156,6 @@ ADR-002  Local environment Proxmox vs alternatives — Gate E
 ADR-003  Voice module timing — Gate E/E3
 ADR-010  SLM classifier model selection — Gate D/D2
 ADR-012  Memory sync between Hermes and Atlas Core — Gate D
-ADR-018  Memory Distiller — Gate D (deferred, depende D4)
 ADR-019  Statistical Validation Framework — Gate D/E
 ADR-021  Time-Travel Debugging with checkpoints and branching — Gate D/D5
 ADR-022  Ghost Replay caching for cost/latency reduction — Gate D/D5
@@ -175,7 +177,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (233 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (250 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
