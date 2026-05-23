@@ -131,32 +131,48 @@ ColdUpdateManager  (formerly OuroborosUpdate): cold mutation protocol for Atlas
 
 ADR-021  Time-Travel Debugging with checkpoints and branching.
          Objective: persist agent execution as a continuous thread of checkpoints
-         so any frame can be paused, inspected, mutated, and resumed. Enables
-         counterfactual "what-if" experiments without restarting workflows.
-         Inspired by LangGraph checkpoint API and agent-vcr.
-         Implementation: extend Orchestrator with checkpoint serialization per
-         significant logical step. Checkpoints stored in
-         ~/atlas/memory/checkpoints/{task_id}/{step_id}.json with ACID guarantees.
-         Branching: forking from a checkpoint creates a new task_id linked to
-         parent. Git-backed: each checkpoint commit allows filesystem rollback
-         beyond memory state.
-         Target modules:
-           src/atlas/core/checkpoint.py     (serialization + storage)
-           src/atlas/core/timetravel.py     (resume + branching API)
-         Status: DEFERRED to Gate D.
+         so any frame can be paused, inspected, mutated, and resumed.
+         Implementado Gate D/D5.A (2026-05-24):
+           src/atlas/core/checkpoint.py — Checkpoint dataclass + CheckpointStore.
+             Persistencia JSON en <base>/<task_id>/<step_id>.json. Cada
+             checkpoint lleva hash_prev del paso anterior (GENESIS_HASH si es
+             el primero) y hash_self computado sobre la forma canonica del
+             registro. verify_chain(task_id) detecta tampering. fork(from_task,
+             from_step) clona estado a un nuevo task como punto de partida.
+           src/atlas/core/timetravel.py — TimeTravel facade. new_task crea
+             task + step "start". record_step persiste estado intermedio.
+             resume_from devuelve el state del checkpoint. fork crea rama
+             counterfactual. list_history (HistoryEntry resumido), list_tasks,
+             verify_chain. Cada save/fork queda registrado en MerkleLogger
+             con accion timetravel.task_started / .checkpoint / .fork.
+         Tests: tests/test_timetravel.py (22 tests).
+         Integracion automatica en Orchestrator (snapshot por cada accion de
+         handle_intent) queda como follow-up tras el cableo de D3/D4/Distiller.
+         Status: RESOLVED (Gate D/D5.A).
 
 ADR-022  Ghost Replay caching.
-         Objective: cache successful execution paths topologically. When the agent
-         faces a semantically identical task or sub-tree previously resolved, skip
-         the LLM inference call entirely and return the cached result.
-         100% cost savings on repeated subtasks, zero latency.
-         Cache key: hash of (task_intent, sensitivity, context_signature).
-         Cache value: final result + path of intermediate decisions.
-         Invalidation: TTL + manual purge command. The Ghost Replay layer is
-         consulted BEFORE InferenceHub. Memory pressure (OperationalMode.DEGRADED)
-         drops cache aggressively.
-         Target module: src/atlas/core/ghost_replay.py
-         Status: DEFERRED to Gate D.
+         Objective: cache successful execution paths topologically. Skip LLM
+         inference when a semantically identical task is repeated.
+         Implementado Gate D/D5.B (2026-05-24):
+           src/atlas/core/ghost_replay.py — GhostReplay + GhostEntry +
+             compute_cache_key. Cache key = SHA-256(intent | sensitivity |
+             context_signature) sobre separador 0x1F (unit separator).
+             Storage: <base>/<hash[:2]>/<hash>.json para distribuir en
+             subdirectorios. Politicas v1:
+               - TTL absoluto por entrada (default 24h, configurable).
+               - LRU por tamano via max_entries (default 10000, evict mas
+                 antiguo por last_accessed cuando se supera).
+               - purge(reason) para drop total (pensado para
+                 OperationalMode.DEGRADED).
+               - expire() borra solo entradas caducadas.
+             stats() devuelve hits/misses/evictions/expired/entries.
+             Thread-safe via lock de grano grueso.
+         Tests: tests/test_ghost_replay.py (21 tests) — cache key determinista,
+         lookup/record/hit/miss, TTL expiration y casos limite (ttl=0 no
+         expira), purge total, LRU eviction, tolerancia a JSON corruptos.
+         Integracion en el pipeline (consultar antes de InferenceHub.infer y
+         record() tras inferencias exitosas) queda como follow-up.
+         Status: RESOLVED (Gate D/D5.B).
 
 ADR-023  PII Surrogate substitution with deterministic temperature=0.
          Objective: when Atlas processes user data containing PII (personal
