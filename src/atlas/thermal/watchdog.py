@@ -234,8 +234,10 @@ class ThermalWatchdog:
             meminfo = Path("/proc/meminfo").read_text()
             for line in meminfo.splitlines():
                 if line.startswith("MemAvailable:"):
-                    kb = int(re.search(r"\d+", line).group())
-                    return kb // 1024
+                    match = re.search(r"\d+", line)
+                    if match is None:
+                        continue
+                    return int(match.group()) // 1024
         except Exception:
             pass
         return 9999   # Si no podemos leer, asumir que hay suficiente RAM
