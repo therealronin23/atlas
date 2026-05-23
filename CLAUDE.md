@@ -21,7 +21,11 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: COMPLETE — 347 tests passing + mypy verde + tag v0.3-gate-d.
+- Gate D: COMPLETE — 361 tests passing + mypy verde + tag v0.3-gate-d.
+  - Cableo Orchestrator integrando todas las piezas Gate D: DONE (opt-in).
+    `Orchestrator.enable_gate_d_pipeline()` o `ATLAS_PIPELINE_GATE_D=1`
+    activa la cadena: ghost-lookup -> hybrid-classify (rule+SLM) ->
+    route -> execute -> ghost-record -> timetravel-snapshot. `+14 tests`.
   - D1 InferenceHub real (LiteLLM): DONE. Modo auto/live/stub, fallback chain, cooldown rate-limit, clasificación de errores. Smoke real PASS contra Groq (llama-3.3-70b + qwen3-32b) y OpenRouter (nemotron-nano-12b + liquid-1.2b).
   - D2 SLM classifier (ADR-010): DONE. `src/atlas/router/slm_classifier.py` + 21 tests. Wrapper sobre InferenceHub con prompt estructurado, parseo robusto del JSON (tolera fences markdown y texto envolvente), modo auto/live/stub, cache opcional via GhostReplay. Pensado como complemento del rule-based — el cableo hibrido en el pipeline (regex primero, SLM si confidence baja) queda como follow-up.
   - D3 Capability tokens + AtlasExecutor (ADR-020): DONE. `src/atlas/security/{capabilities,executor}.py` + 31 tests + 5 integración Orchestrator. Issuer valida contra PermissionProfile/SSRFBridge, executor canaliza IO con audit log. Refactor del pipeline existente para enrutar via executor queda como follow-up.
@@ -97,7 +101,8 @@ atlas-core/
 │   ├── test_pii_surrogate.py           # 33 tests — Gate D/D6
 │   ├── test_timetravel.py              # 22 tests — Gate D/D5.A (ADR-021)
 │   ├── test_ghost_replay.py            # 21 tests — Gate D/D5.B (ADR-022)
-│   └── test_slm_classifier.py          # 21 tests — Gate D/D2 (ADR-010)
+│   ├── test_slm_classifier.py          # 21 tests — Gate D/D2 (ADR-010)
+│   └── test_orchestrator_pipeline_d.py # 14 tests — pipeline Gate D integrado
 ├── scripts/
 │   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
 │   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
@@ -190,7 +195,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (347 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (361 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
