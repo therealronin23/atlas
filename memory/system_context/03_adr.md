@@ -164,13 +164,29 @@ ADR-023  PII Surrogate substitution with deterministic temperature=0.
          synthetic surrogates BEFORE sending to any L1/L2 inference. Surrogates
          preserve semantic utility (a name stays a name, a city stays a city)
          unlike redaction (asterisks destroy context).
-         Implementation: local SLM (Phi-4-mini or Qwen-2.5-3B) running with
-         temperature=0.0 and fixed seed ensures the same input always produces
-         the same surrogate (deterministic mapping). Maintains ontology coherence
-         across multi-turn conversations.
-         Reverse mapping stored locally only, never sent to external APIs.
-         Target module: src/atlas/security/pii_surrogate.py
-         Status: DEFERRED to Gate D.
+         Implementado Gate D/D6 (2026-05-24) — v1 sin SLM (determinismo
+         puro):
+           src/atlas/security/pii_surrogate.py — PIISurrogate + PIIType +
+             PIIMatch + RedactionResult. Deteccion regex para EMAIL,
+             PHONE_ES (+34 prefix opcional), DNI (8 digits + checksum
+             letter), IBAN, IPV4/IPV6, y keys de proveedor (Groq /
+             OpenRouter / Hermes). Sustitucion determinista via
+             SHA-256(salt|tipo|original) + pools curados que preservan
+             formato (DNI con letra valida, IPv4 en TEST-NET-1 192.0.2/24,
+             IPv6 en 2001:db8::/32, telefonos con prefijo +34). Mismo
+             salt + mismo original -> mismo surrogate (coherencia ontologica
+             multi-turn). Salt configurable via ATLAS_PII_SALT.
+         Reverse mapping vive solo en RedactionResult.mapping (en memoria);
+         no se persiste por defecto.
+         v2 follow-up: detector basado en SLM (Phi-4-mini / Qwen-2.5-3B)
+         con temperature=0 y seed fijo para nombres, ciudades y otros
+         PII semanticos que el regex no captura. ADR-023 original menciona
+         esto como nucleo; aqui esta diferido a v2 porque requiere modelo
+         local y no es bloqueante para Gate D.
+         Tests: tests/test_pii_surrogate.py (33 tests) — deteccion por tipo,
+         determinismo, formato valido de surrogates, redact+restore roundtrip,
+         configurabilidad y edge cases.
+         Status: RESOLVED v1 (Gate D/D6). v2-SLM diferido sin bloquear.
 
 ## Architectural vocabulary (no code, naming convention)
 
