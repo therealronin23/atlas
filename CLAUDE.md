@@ -21,10 +21,10 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: IN PROGRESS — 156 tests passing + mypy verde.
+- Gate D: IN PROGRESS — 187 tests passing + mypy verde.
   - D1 InferenceHub real (LiteLLM): DONE. Modo auto/live/stub, fallback chain, cooldown rate-limit, clasificación de errores. Smoke real PASS contra Groq (llama-3.3-70b + qwen3-32b) y OpenRouter (nemotron-nano-12b + liquid-1.2b).
   - D2 SLM classifier (reemplazar rule-based): PENDING — ADR-010 abierto.
-  - D3 Capability tokens + AtlasExecutor: PENDING — ADR-020.
+  - D3 Capability tokens + AtlasExecutor (ADR-020): DONE. `src/atlas/security/{capabilities,executor}.py` + 31 tests. Issuer valida contra PermissionProfile/SSRFBridge, executor canaliza IO con audit log. Refactor del pipeline existente para enrutar via executor queda como follow-up.
   - D4 Memoria vectorial KuzuDB: PENDING — ADR-008 (decisión tomada, código no escrito).
   - D5 Time-Travel Debugging + Ghost Replay: PENDING — ADR-021, ADR-022.
   - D6 PII Surrogate (temperature=0): PENDING — ADR-023.
@@ -51,6 +51,8 @@ atlas-core/
 │   │   └── classifier.py       # Deterministic rule-based router
 │   ├── security/
 │   │   ├── ast_guard.py        # Static AST validation before execution (microseconds)
+│   │   ├── capabilities.py     # Frozen Pydantic tokens (Read/Write/Network/Exec) + CapabilityIssuer (ADR-020)
+│   │   ├── executor.py         # AtlasExecutor — IO con token tipado + audit log (ADR-020)
 │   │   ├── sandbox.py          # Layered isolation: NORMAL (subprocess) / DEGRADED (stub)
 │   │   └── ssrf_bridge.py      # Secure egress with domain allowlist
 │   ├── logging/
@@ -74,7 +76,8 @@ atlas-core/
 │   ├── test_hermes_rest_adapter.py     # 11 tests — Gate C/C3
 │   ├── test_telegram_bot.py            # 16 tests — Gate C/C4-s1
 │   ├── test_telegram_orchestrator.py   # 18 tests — Gate C/C4-s2
-│   └── test_inference_hub_real.py      #  9 tests — Gate D/D1
+│   ├── test_inference_hub_real.py      #  9 tests — Gate D/D1
+│   └── test_capabilities.py            # 31 tests — Gate D/D3
 ├── scripts/
 │   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
 │   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
@@ -136,6 +139,7 @@ ADR-013b Computer-use: Playwright + xdotool + Xvfb. Diferido a Gate F.
 ADR-014  Layered isolation: Proxmox VE > LXC Atlas Core > Docker NORMAL / VM DEGRADED
 ADR-016  InferenceHub: LiteLLM. Fallback chain: Groq>OpenRouter>Together>Gemini>L0
 ADR-017  Tunnel: Tailscale (WireGuard)
+ADR-020  Capability-based Security Tokens (resuelto Gate D/D3 con Capability* + AtlasExecutor)
 
 ## Open ADRs
 
@@ -145,7 +149,6 @@ ADR-010  SLM classifier model selection — Gate D/D2
 ADR-012  Memory sync between Hermes and Atlas Core — Gate D
 ADR-018  Memory Distiller — Gate D (deferred, depende D4)
 ADR-019  Statistical Validation Framework — Gate D/E
-ADR-020  Capability-based Security Tokens — Gate D/D3
 ADR-021  Time-Travel Debugging with checkpoints and branching — Gate D/D5
 ADR-022  Ghost Replay caching for cost/latency reduction — Gate D/D5
 ADR-023  PII Surrogate substitution with temperature=0 — Gate D/D6
@@ -166,7 +169,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (156 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (187 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 

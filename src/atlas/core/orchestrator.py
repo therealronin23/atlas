@@ -27,6 +27,10 @@ from atlas.memory.memory_system import (
 )
 from atlas.router.classifier import Classifier
 from atlas.security.ast_guard import ASTGuard
+from atlas.security.capabilities import CapabilityIssuer
+from atlas.security.executor import AtlasExecutor
+from atlas.security.sandbox import LayeredIsolationSandbox
+from atlas.security.ssrf_bridge import SSRFBridge
 
 
 @dataclass
@@ -179,6 +183,16 @@ class Orchestrator:
     @property
     def bus(self) -> EventBus:
         return self._bus
+
+    @property
+    def executor(self) -> AtlasExecutor:
+        """AtlasExecutor (ADR-020). Toda IO con efecto externo deberia ir aqui."""
+        return self._executor
+
+    @property
+    def capability_issuer(self) -> CapabilityIssuer:
+        """Issuer de capability tokens — equivalente a orchestrator.executor.issuer."""
+        return self._capability_issuer
 
     # ------------------------------------------------------------------
     # Lifecycle Gate C / C4-s2 (bot Telegram + OfflineMonitor)
@@ -512,6 +526,21 @@ class Orchestrator:
 
         # AST Guard
         self._ast_guard = ASTGuard()
+
+        # Sandbox + SSRF Bridge (consumidos por AtlasExecutor)
+        self._sandbox = LayeredIsolationSandbox(self._workspace)
+        self._ssrf_bridge = SSRFBridge()
+
+        # Capability Issuer + AtlasExecutor (ADR-020, Gate D/D3).
+        # Toda accion con efecto externo deberia pasar por aqui — la migracion
+        # del pipeline existente queda como follow-up de D3.
+        self._capability_issuer = CapabilityIssuer(self._permissions, self._ssrf_bridge)
+        self._executor = AtlasExecutor(
+            self._capability_issuer,
+            self._merkle,
+            self._sandbox,
+            self._ast_guard,
+        )
 
         # Memoria
         self._system_context = SystemContextLoader.load(
