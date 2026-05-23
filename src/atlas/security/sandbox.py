@@ -239,13 +239,14 @@ class LayeredIsolationSandbox:
 
     def _take_snapshot_stub(self) -> str:
         """
-        Stub de snapshot. Gate C: proxmox_api.snapshot(vmid, name=...).
+        Stub de snapshot. Gate E: proxmox_api.snapshot(vmid, name=...).
         Retorna un ID de snapshot simulado.
         """
         from datetime import datetime, timezone
         ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         snapshot_id = f"atlas-snap-{ts}"
-        # TODO Gate C: qm snapshot <vmid> <snapshot_id> --description "Atlas pre-exec"
+        # TODO Gate E: qm snapshot <vmid> <snapshot_id> --description "Atlas pre-exec"
+        # (depende de ADR-002: decidir si Proxmox VE en el host local).
         return snapshot_id
 
     def _safe_env(self) -> dict:

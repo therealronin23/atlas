@@ -27,7 +27,7 @@ from enum import Enum
 from typing import Any
 
 try:
-    import litellm  # type: ignore
+    import litellm
     _HAS_LITELLM = True
 except ImportError:  # pragma: no cover
     litellm = None  # type: ignore[assignment]

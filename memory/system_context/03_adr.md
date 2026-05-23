@@ -6,6 +6,13 @@ ADR-000  Atlas is the local sovereign. No external component has architectural a
 ADR-004  First vertical: status + task over Atlas-Hermes contracts.
 ADR-009  SKILL.md format: agentskills.io standard, native in Hermes Agent.
 
+## Resolved at Gate C
+
+ADR-001  Event Bus selection: in-process pub/sub (`src/atlas/core/event_bus.py`).
+         Decision empirica: el bus tipado in-process resolvio el caso Orchestrator
+         <-> TelegramBot <-> OfflineMonitor sin sumar dependencias. Redis/MQTT
+         quedan disponibles si futuras topologias multi-proceso lo justifican.
+
 ## Resolved at Gate B
 
 ADR-005  Permissions: AUTO / CONFIRM / APPROVE / BLOCKED with absolute blocked paths.
@@ -23,9 +30,8 @@ ADR-017  Atlas-Hermes tunnel: Tailscale (WireGuard). Hermes IP only visible insi
 
 ## Open ADRs
 
-ADR-001  Event Bus selection (Redis / MQTT / in-process) — Gate C.
-ADR-002  Local environment: Proxmox vs alternatives — Gate C (empirical decision on real hardware).
-ADR-003  Voice module: Whisper + Piper — deferred post Gate D.
+ADR-002  Local environment: Proxmox vs alternatives — Gate E (empirical decision on real hardware).
+ADR-003  Voice module: Whisper + Piper — Gate E/E3.
 ADR-008  Vector and graph memory: KuzuDB (embedded, C++, MIT license).
          Decision: KuzuDB chosen over ChromaDB/LanceDB/SQLite-vec for combining
          Cypher graph queries + native vector search + FTS5 in a single embedded

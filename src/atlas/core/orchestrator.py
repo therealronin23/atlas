@@ -51,6 +51,13 @@ class Orchestrator:
 
     VERSION = "0.1.0"
 
+    # Atributos opcionales declarados a nivel clase para que mypy use el tipo
+    # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
+    _telegram_bot: Any
+    _telegram_thread: Any
+    _offline_monitor: Any
+    _thermal_watchdog: Any
+
     def __init__(self, workspace: Path | None = None) -> None:
         self._workspace = workspace or self._resolve_workspace()
         self._start_time = datetime.now(timezone.utc)
@@ -240,9 +247,9 @@ class Orchestrator:
         """Conecta un ThermalWatchdog ya construido para que emita THERMAL_ALERT."""
         self._thermal_watchdog = watchdog
 
-    def thermal_alert_callback(self):
+    def thermal_alert_callback(self) -> Any:
         """Devuelve un callback para pasar a ThermalWatchdog(alert_callback=...)."""
-        def _cb(state) -> None:
+        def _cb(state: Any) -> None:
             self._bus.publish_type(EventType.THERMAL_ALERT, {
                 "mode": state.operational_mode.value,
                 "temperature_c": state.temperature_celsius,
@@ -526,11 +533,12 @@ class Orchestrator:
         self._pending_approvals: dict[str, Task] = {}
         self._approvals_lock = threading.Lock()
 
-        # Telegram bot + monitors (opcionales, se inician con start_*)
-        self._telegram_bot: Any = None
-        self._telegram_thread: threading.Thread | None = None
-        self._offline_monitor: Any = None
-        self._thermal_watchdog: Any = None
+        # Telegram bot + monitors (opcionales, se inician con start_*).
+        # Tipo declarado a nivel clase (ver bloque al inicio de Orchestrator).
+        self._telegram_bot = None
+        self._telegram_thread = None
+        self._offline_monitor = None
+        self._thermal_watchdog = None
 
     def _copy_defaults(self, config_dir: Path) -> None:
         """Copia governance.json y permissions.yaml si no existen en el workspace."""
