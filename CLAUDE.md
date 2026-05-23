@@ -21,15 +21,18 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: IN PROGRESS — 283 tests passing + mypy verde.
+- Gate D: IN PROGRESS — 326 tests passing + mypy verde.
   - D1 InferenceHub real (LiteLLM): DONE. Modo auto/live/stub, fallback chain, cooldown rate-limit, clasificación de errores. Smoke real PASS contra Groq (llama-3.3-70b + qwen3-32b) y OpenRouter (nemotron-nano-12b + liquid-1.2b).
   - D2 SLM classifier (reemplazar rule-based): PENDING — ADR-010 abierto.
   - D3 Capability tokens + AtlasExecutor (ADR-020): DONE. `src/atlas/security/{capabilities,executor}.py` + 31 tests + 5 integración Orchestrator. Issuer valida contra PermissionProfile/SSRFBridge, executor canaliza IO con audit log. Refactor del pipeline existente para enrutar via executor queda como follow-up.
   - D4 Memoria vectorial KuzuDB (ADR-008): DONE. `src/atlas/memory/{embeddings,vector_store}.py` + 34 tests + 7 integración. StubEmbedder (hash-based determinista) y LiteLLMEmbedder (auto/live/stub). KuzuVectorStore con schema Pattern/Failure/Evidence + REL tables. ErrorRegistry y ApprovedPatternStore aceptan vector_store opcional (mirror automático + `find_similar`).
   - MemoryDistiller (ADR-018): DONE. `src/atlas/memory/distiller.py` + 17 tests. Comprime contexto pre-LLM por relevancia (cosine sim contra el query) respetando budget de tokens. System chunks intocables, recent preservado, scorables filtrados. Hook con KuzuVectorStore via gather_relevant() y build_context() end-to-end. Cableo automatico al Orchestrator queda como follow-up.
-  - D5 Time-Travel Debugging + Ghost Replay: PENDING — ADR-021, ADR-022.
+  - D5 Time-Travel + Ghost Replay: DONE.
+    - ADR-021 (Time-Travel): `src/atlas/core/{checkpoint,timetravel}.py` + 22 tests. Checkpoints inmutables encadenados por hash (`hash_self`, `hash_prev`, `verify_chain`). Persistencia JSON. `fork()` para counterfactuales. Cada save/fork log a Merkle.
+    - ADR-022 (Ghost Replay): `src/atlas/core/ghost_replay.py` + 21 tests. Cache topológica con clave = SHA-256(intent, sensitivity, context_signature). TTL configurable, LRU automática por `max_entries`, `purge()` para presión de memoria. Stats hits/misses.
+    - Integración con Orchestrator (interceptar handle_intent para lookup en GhostReplay antes de inferir, snapshot a TimeTravel en cada paso) queda como follow-up.
   - D6 PII Surrogate (ADR-023): DONE. `src/atlas/security/pii_surrogate.py` + 33 tests. Detección regex (email, DNI ES, IBAN, teléfono ES, IPv4/v6, API keys Groq/OpenRouter/Hermes) + sustitución determinista por surrogates que preservan formato (DNI con letra válida, IPv4 en TEST-NET-1, IPv6 en 2001:db8::/32). Salt via `ATLAS_PII_SALT`. Redact + restore roundtrip. Detección por SLM (nombres, ciudades) queda como follow-up v2.
-  - D7 Cierre Gate D + tag v0.3-gate-d: PENDING.
+  - D7 Cierre Gate D + tag v0.3-gate-d: PENDING (solo queda D2).
 - Gate E: PENDING — Local environment (Proxmox decision) + Dashboard + Voice.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
 
@@ -43,7 +46,10 @@ atlas-core/
 │   │   ├── orchestrator.py     # Executive coordinator — runs the full pipeline
 │   │   ├── event_bus.py        # Typed in-process event bus
 │   │   ├── offline_monitor.py  # Polls hermes.check_offline_fallback() -> SHADOW_ALERT (Gate C/C4-s2)
-│   │   └── inference_hub.py    # Model router L-det->L0->L1->L2 (stub in v0.1)
+│   │   ├── inference_hub.py    # Model router L-det->L0->L1->L2 + LiteLLM (Gate D/D1)
+│   │   ├── checkpoint.py       # Hash-chained immutable checkpoints (ADR-021)
+│   │   ├── timetravel.py       # TimeTravel facade: record/resume/fork (ADR-021)
+│   │   └── ghost_replay.py     # Topological cache: TTL + LRU + purge (ADR-022)
 │   ├── governance/
 │   │   ├── governance_l0.py    # Immutable constitution — singleton, tamper-detection
 │   │   └── permission_profile.py  # Folder map ADR-006, AUTO/CONFIRM/APPROVE levels
@@ -87,7 +93,9 @@ atlas-core/
 │   ├── test_vector_store.py            # 19 tests — Gate D/D4
 │   ├── test_memory_kuzu_integration.py #  7 tests — Gate D/D4
 │   ├── test_distiller.py               # 17 tests — Gate D/MemoryDistiller
-│   └── test_pii_surrogate.py           # 33 tests — Gate D/D6
+│   ├── test_pii_surrogate.py           # 33 tests — Gate D/D6
+│   ├── test_timetravel.py              # 22 tests — Gate D/D5.A (ADR-021)
+│   └── test_ghost_replay.py            # 21 tests — Gate D/D5.B (ADR-022)
 ├── scripts/
 │   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
 │   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
@@ -143,6 +151,8 @@ ADR-006  Workspace ~/atlas/ — .ssh, .gnupg, /etc, /root always blocked
 ADR-007  Autonomy: Governance > Permission > Sensitivity > Classify > Execute
 ADR-008  Vector + graph memory: KuzuDB (resuelto Gate D/D4 con vector_store.py)
 ADR-018  Memory Distiller (resuelto Gate D con distiller.py, compresión pre-LLM)
+ADR-021  Time-Travel Debugging (resuelto Gate D/D5.A con checkpoint.py + timetravel.py)
+ADR-022  Ghost Replay caching (resuelto Gate D/D5.B con ghost_replay.py)
 ADR-023  PII Surrogate (resuelto Gate D/D6 con pii_surrogate.py)
 ADR-009  SKILL.md format: agentskills.io standard
 ADR-011  Atlas->Hermes: REST HTTPS + HMAC-SHA256. Tailscale tunnel in production
@@ -160,8 +170,6 @@ ADR-003  Voice module timing — Gate E/E3
 ADR-010  SLM classifier model selection — Gate D/D2
 ADR-012  Memory sync between Hermes and Atlas Core — Gate D
 ADR-019  Statistical Validation Framework — Gate D/E
-ADR-021  Time-Travel Debugging with checkpoints and branching — Gate D/D5
-ADR-022  Ghost Replay caching for cost/latency reduction — Gate D/D5
 
 ## Architectural Vocabulary
 
@@ -179,7 +187,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (283 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (326 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
