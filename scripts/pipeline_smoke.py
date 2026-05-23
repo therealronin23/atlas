@@ -56,6 +56,11 @@ class IntentResult:
     expected_status: str | None = None
     tt_steps: list[str] = field(default_factory=list)
     error: str | None = None
+    inference_provider: str | None = None
+    inference_latency_ms: int | None = None
+    inference_tokens: int | None = None
+    inference_excerpt: str | None = None
+    pii_redacted: int | None = None
 
     @property
     def matches_expectation(self) -> bool:
@@ -165,6 +170,20 @@ def run_intent(
     )
     tt = timetravel_labels(orch, task.id)
 
+    # Si la tarea pasó por inference_hub, extraemos los metadatos.
+    inference_provider = None
+    inference_latency_ms = None
+    inference_tokens = None
+    inference_excerpt = None
+    pii_redacted = None
+    if task.tool_name == "inference_hub.complete" and isinstance(task.result, dict):
+        inference_provider = task.result.get("provider")
+        inference_latency_ms = task.result.get("latency_ms")
+        inference_tokens = task.result.get("tokens_used")
+        txt = task.result.get("text") or ""
+        inference_excerpt = txt[:120] + "..." if len(txt) > 120 else txt
+        pii_redacted = task.result.get("pii_redacted")
+
     return IntentResult(
         label=label,
         intent=intent,
@@ -177,6 +196,11 @@ def run_intent(
         expected_status=expected_status,
         tt_steps=tt,
         error=task.error,
+        inference_provider=inference_provider,
+        inference_latency_ms=inference_latency_ms,
+        inference_tokens=inference_tokens,
+        inference_excerpt=inference_excerpt,
+        pii_redacted=pii_redacted,
     )
 
 
@@ -198,6 +222,13 @@ def print_result(idx: int, total: int, r: IntentResult) -> None:
     print(f"  classifier : {r.classifier_path}")
     print(f"  ghost      : {r.ghost}")
     print(f"  latency    : {r.latency_ms:.1f} ms")
+    if r.inference_provider is not None:
+        print(f"  inference  : provider={r.inference_provider} "
+              f"latency_hub={r.inference_latency_ms}ms tokens={r.inference_tokens}")
+        if r.pii_redacted:
+            print(f"  pii        : {r.pii_redacted} elemento(s) sustituido(s) ida + restaurado(s) vuelta")
+        if r.inference_excerpt:
+            print(f"  excerpt    : {r.inference_excerpt!r}")
     if r.tt_steps:
         print(f"  timetravel : {' -> '.join(r.tt_steps)}")
     if r.error and r.status != "blocked":

@@ -227,6 +227,108 @@ class TestHybridClassify:
         assert payload["rule_confidence"] == pytest.approx(0.6)
         assert "slm_level" in payload
 
+    def test_local_safe_passthrough_when_no_hub(self, orch: Orchestrator) -> None:
+        # Pipeline Gate D activo SIN inference_hub inyectado -> passthrough
+        orch.enable_gate_d_pipeline()  # sin hub
+        task = orch.handle_intent("explicame algo abstracto sin keywords")
+        assert task.status == TaskStatus.DONE
+        assert task.tool_name == "local_safe.passthrough"
+        assert "InferenceHub no inyectado" in task.result["message"]
+
+    def test_local_safe_via_inference_when_hub_present(self, orch: Orchestrator) -> None:
+        # Hub mockeado devolviendo respuesta exitosa
+        from unittest.mock import MagicMock
+        from atlas.core.inference_hub import (
+            InferenceHub, InferenceLevel, InferenceResponse,
+        )
+
+        hub = MagicMock(spec=InferenceHub)
+        hub.infer.return_value = InferenceResponse(
+            text="Un Merkle tree es una estructura de hash en arbol.",
+            provider="mock-groq",
+            model="llama-3.3-70b-versatile",
+            level=InferenceLevel.L1,
+            latency_ms=150,
+            success=True,
+            tokens_used=42,
+            mode="live",
+        )
+
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("explicame brevemente que es un Merkle tree")
+
+        assert task.status == TaskStatus.DONE
+        assert task.tool_name == "inference_hub.complete"
+        assert "Merkle tree" in task.result["text"]
+        assert task.result["provider"] == "mock-groq"
+        assert task.result["tokens_used"] == 42
+        hub.infer.assert_called_once()
+
+    def test_inference_failure_falls_back(self, orch: Orchestrator) -> None:
+        from unittest.mock import MagicMock
+        from atlas.core.inference_hub import (
+            InferenceHub, InferenceLevel, InferenceResponse,
+        )
+
+        hub = MagicMock(spec=InferenceHub)
+        hub.infer.return_value = InferenceResponse(
+            text="",
+            provider="all_failed",
+            model="none",
+            level=InferenceLevel.L1,
+            latency_ms=0,
+            success=False,
+            error="rate limit en todos los proveedores",
+            mode="live",
+        )
+
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("dame un consejo")
+
+        # Tarea termina DONE pero con tool_name indicando el fallo
+        assert task.status == TaskStatus.DONE
+        assert task.tool_name == "inference_hub.failed"
+        assert "rate limit" in task.result["message"].lower()
+
+    def test_pii_redact_restore_roundtrip(self, orch: Orchestrator) -> None:
+        # El intent lleva un email. El hub recibe el email REDACTED; su
+        # respuesta menciona el surrogate; el resultado final muestra el
+        # email ORIGINAL restaurado.
+        from unittest.mock import MagicMock
+        from atlas.core.inference_hub import (
+            InferenceHub, InferenceLevel, InferenceResponse,
+        )
+
+        captured: dict = {}
+        def fake_infer(request):  # noqa: ANN001
+            captured["prompt"] = request.prompt
+            # Suponemos que el LLM responde citando el surrogate del email
+            surrogate_email = None
+            for token in request.prompt.split():
+                if "@" in token:
+                    surrogate_email = token
+                    break
+            response_text = f"Recibido. Procesare tu mensaje sobre {surrogate_email}."
+            return InferenceResponse(
+                text=response_text,
+                provider="mock", model="m",
+                level=InferenceLevel.L1, latency_ms=10,
+                success=True, tokens_used=10, mode="live",
+            )
+
+        hub = MagicMock(spec=InferenceHub)
+        hub.infer.side_effect = fake_infer
+
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("contactame en ronin@example.com cuando puedas")
+
+        # En el prompt enviado al hub, el email original NO debe aparecer
+        assert "ronin@example.com" not in captured["prompt"]
+        # En la respuesta final restaurada, el email ORIGINAL si aparece
+        assert "ronin@example.com" in task.result["text"]
+        # Y el contador refleja al menos un PII redactado
+        assert task.result["pii_redacted"] >= 1
+
     def test_slm_specific_route_wins_tie(self, orch: Orchestrator) -> None:
         # Forzamos un escenario donde el rule devuelve LOCAL_SAFE 0.6 pero el
         # SLM lo identifica como DETERMINISTIC_TOOL con la MISMA confidence.
