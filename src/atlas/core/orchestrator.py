@@ -25,10 +25,17 @@ from atlas.logging.merkle_logger import MerkleLogger
 from atlas.memory.memory_system import (
     ErrorRegistry, ApprovedPatternStore, ProviderMetricsStore, SystemContextLoader, ToolRegistry,
 )
-from atlas.router.classifier import Classifier
+from atlas.core.ghost_replay import GhostReplay
+from atlas.core.inference_hub import InferenceHub
+from atlas.core.timetravel import TimeTravel
+from atlas.memory.distiller import ChunkSource, MemoryDistiller
+from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.router.classifier import Classifier, ClassificationResult
+from atlas.router.slm_classifier import SLMClassifier
 from atlas.security.ast_guard import ASTGuard
 from atlas.security.capabilities import CapabilityIssuer
 from atlas.security.executor import AtlasExecutor
+from atlas.security.pii_surrogate import PIISurrogate
 from atlas.security.sandbox import LayeredIsolationSandbox
 from atlas.security.ssrf_bridge import SSRFBridge
 
@@ -61,6 +68,19 @@ class Orchestrator:
     _telegram_thread: Any
     _offline_monitor: Any
     _thermal_watchdog: Any
+
+    # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
+    # Inicializados a None y poblados al activar.
+    _gate_d_enabled: bool
+    _distiller: Any
+    _ghost_replay: Any
+    _slm_classifier: Any
+    _timetravel: Any
+    _pii_surrogate: Any
+
+    # Umbral de confianza del rule-based classifier por debajo del cual el
+    # SLMClassifier toma el relevo (cuando el pipeline Gate D esta activo).
+    SLM_CONFIDENCE_THRESHOLD: float = 0.7
 
     def __init__(self, workspace: Path | None = None) -> None:
         self._workspace = workspace or self._resolve_workspace()
@@ -194,6 +214,80 @@ class Orchestrator:
         """Issuer de capability tokens — equivalente a orchestrator.executor.issuer."""
         return self._capability_issuer
 
+    @property
+    def gate_d_pipeline_enabled(self) -> bool:
+        return self._gate_d_enabled
+
+    @property
+    def distiller(self) -> Any:
+        return self._distiller
+
+    @property
+    def ghost_replay(self) -> Any:
+        return self._ghost_replay
+
+    @property
+    def slm_classifier(self) -> Any:
+        return self._slm_classifier
+
+    @property
+    def timetravel(self) -> Any:
+        return self._timetravel
+
+    @property
+    def pii_surrogate(self) -> PIISurrogate:
+        return self._pii_surrogate
+
+    # ------------------------------------------------------------------
+    # Gate D pipeline integrado (opt-in)
+    # ------------------------------------------------------------------
+
+    def enable_gate_d_pipeline(
+        self,
+        *,
+        embedder: Embedder | None = None,
+        inference_hub: InferenceHub | None = None,
+        ghost_ttl_s: int = 24 * 3600,
+        slm_mode: str = "auto",
+    ) -> None:
+        """
+        Activa el pipeline integrado con todas las piezas Gate D:
+        GhostReplay -> hybrid classifier -> MemoryDistiller ->
+        AtlasExecutor -> InferenceHub -> TimeTravel.
+
+        Idempotente: si ya esta activo, no reconstruye las piezas.
+        """
+        if self._gate_d_enabled:
+            return
+
+        emb = embedder or StubEmbedder()
+        self._distiller = MemoryDistiller(embedder=emb)
+        self._ghost_replay = GhostReplay(
+            cache_path=self._workspace / "memory" / "ghost_cache",
+            default_ttl_seconds=ghost_ttl_s,
+        )
+        self._slm_classifier = SLMClassifier(
+            hub=inference_hub,
+            mode=slm_mode,
+            ghost_replay=self._ghost_replay,
+        )
+        self._timetravel = TimeTravel(
+            store_path=self._workspace / "memory" / "checkpoints",
+            merkle=self._merkle,
+        )
+        self._gate_d_enabled = True
+        self._merkle.log(
+            action="pipeline.gate_d_enabled",
+            agent="orchestrator",
+            result="success",
+            risk_level="safe",
+            payload={
+                "embedder_dim": emb.dim,
+                "ghost_ttl_s":  ghost_ttl_s,
+                "slm_mode":     slm_mode,
+            },
+        )
+
     # ------------------------------------------------------------------
     # Lifecycle Gate C / C4-s2 (bot Telegram + OfflineMonitor)
     # ------------------------------------------------------------------
@@ -284,6 +378,10 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _run_pipeline(self, task: Task) -> None:
+        if self._gate_d_enabled:
+            self._run_pipeline_gate_d(task)
+            return
+
         # 1. Governance L0
         task.transition(TaskStatus.CLASSIFYING)
         gov = GovernanceL0.get_instance()
@@ -348,6 +446,178 @@ class Orchestrator:
         # DETERMINISTIC_TOOL o LOCAL_SAFE → ejecutar
         task.transition(TaskStatus.EXECUTING)
         self._execute_task(task)
+
+    # ------------------------------------------------------------------
+    # Gate D — pipeline integrado opt-in
+    # ------------------------------------------------------------------
+
+    def _run_pipeline_gate_d(self, task: Task) -> None:
+        """
+        Variante del pipeline que enlaza las piezas Gate D:
+
+            governance -> ghost.lookup -> hybrid_classify (rule+SLM)
+              -> route -> [execute|delegate|approve|block]
+              -> ghost.record -> timetravel.record_step
+        """
+        # 0. Snapshot inicial
+        assert self._timetravel is not None
+        assert self._ghost_replay is not None
+        assert self._slm_classifier is not None
+
+        self._timetravel.record_step(
+            task.id, "received",
+            {"intent": task.intent, "source": task.source.value},
+        )
+
+        # 1. Governance L0
+        task.transition(TaskStatus.CLASSIFYING)
+        gov = GovernanceL0.get_instance()
+        if gov.in_emergency_mode:
+            self._block_task(task, "Atlas en modo de emergencia.", "critical")
+            self._timetravel.record_step(task.id, "blocked_emergency", {"intent": task.intent})
+            return
+
+        # 2. Ghost cache lookup — solo intenta para tareas que NO requieran
+        # aprobacion ni delegacion. Para mantenerlo simple, consultamos
+        # siempre antes del classifier: si hit, devolvemos directamente.
+        sensitivity = task.sensitivity   # "low" | "medium" | "high"
+        ctx_sig = "pipeline-d-v1"
+        hit = self._ghost_replay.lookup(task.intent, sensitivity, ctx_sig)
+        if hit is not None:
+            # Camino corto: ya estamos en CLASSIFYING desde el paso 1.
+            # Cumplimos el state machine CLASSIFYING -> ROUTING -> EXECUTING
+            # -> DONE para mantener invariantes.
+            task.transition(TaskStatus.ROUTING)
+            task.route = RoutingLevel(hit.result.get("route", "local_safe"))
+            task.tool_name = hit.result.get("tool_name") or "ghost.cache"
+            task.transition(TaskStatus.EXECUTING)
+            task.result = hit.result.get("payload", {"cached": True})
+            task.transition(TaskStatus.DONE)
+            self._merkle.log(
+                action="task.ghost_hit",
+                agent="orchestrator",
+                result="success",
+                risk_level="safe",
+                payload={"intent": task.intent, "route": task.route.value},
+                task_id=task.id,
+            )
+            self._timetravel.record_step(
+                task.id, "ghost_hit",
+                {"route": task.route.value, "cached": True},
+            )
+            self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
+            return
+
+        # 3. Hybrid classify
+        cls = self._hybrid_classify(task.intent, task.sensitivity)
+
+        if cls.governance_blocked:
+            self._block_task(task, cls.reason, "critical")
+            self._bus.publish_type(EventType.SECURITY_VIOLATION, {
+                "reason": cls.reason, "intent": task.intent,
+            }, task.id)
+            self._timetravel.record_step(task.id, "blocked_governance", {"reason": cls.reason})
+            return
+
+        task.transition(TaskStatus.ROUTING)
+        task.route = cls.level
+        self._merkle.log(
+            action="task.classified",
+            agent="classifier_hybrid",
+            result="success",
+            risk_level="safe",
+            payload={"route": cls.level.value, "reason": cls.reason,
+                     "confidence": cls.confidence},
+            task_id=task.id,
+        )
+        self._timetravel.record_step(
+            task.id, "classified",
+            {"route": cls.level.value, "confidence": cls.confidence, "reason": cls.reason},
+        )
+
+        # 4. Route
+        if cls.level == RoutingLevel.BLOCKED:
+            self._block_task(task, cls.reason, "high")
+            return
+
+        if cls.level == RoutingLevel.DELEGATE_HERMES:
+            self._delegate_to_hermes(task)
+            self._timetravel.record_step(task.id, "delegated", {"target": "hermes"})
+            return
+
+        if cls.level == RoutingLevel.REQUIRES_APPROVAL:
+            task.transition(TaskStatus.AWAITING_APPROVAL)
+            task.result = {
+                "message": f"Accion requiere aprobacion explicita. Razon: {cls.reason}",
+                "approved": False,
+                "reason": cls.reason,
+            }
+            with self._approvals_lock:
+                self._pending_approvals[task.id] = task
+            self._merkle.log(
+                action="task.routed",
+                agent="router",
+                result="pending",
+                risk_level="high",
+                payload={"requires_approval": True, "reason": cls.reason},
+                task_id=task.id,
+            )
+            self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+                "task_id": task.id, "intent": task.intent, "reason": cls.reason,
+            }, task.id)
+            self._timetravel.record_step(task.id, "awaiting_approval", {"reason": cls.reason})
+            return
+
+        # 5. Execute (DETERMINISTIC_TOOL o LOCAL_SAFE)
+        task.transition(TaskStatus.EXECUTING)
+        self._execute_task(task)
+
+        # 6. Ghost record si la ejecucion fue OK
+        if task.status == TaskStatus.DONE:
+            try:
+                self._ghost_replay.record(
+                    task.intent, sensitivity, ctx_sig,
+                    {
+                        "route":     task.route.value if task.route else "local_safe",
+                        "tool_name": task.tool_name,
+                        "payload":   task.result or {},
+                    },
+                    metadata={"task_id": task.id},
+                )
+            except Exception:  # noqa: BLE001
+                # Cache no debe romper la tarea
+                pass
+            self._timetravel.record_step(
+                task.id, "done",
+                {"tool": task.tool_name, "route": task.route.value if task.route else None},
+            )
+
+    def _hybrid_classify(self, intent: str, sensitivity: str | None) -> ClassificationResult:
+        """
+        Combina rule-based + SLM. La regla determinista corre primero
+        (microsegundos, sin red). Si su confidence cae por debajo del
+        umbral SLM_CONFIDENCE_THRESHOLD y el SLM da una verdadera con
+        mas confianza, se adopta la del SLM.
+
+        Nota: governance_blocked del rule-based siempre tiene prioridad
+        sobre el SLM (la constitucion no admite revision por LLM).
+        """
+        rule = self._classifier.classify(intent, sensitivity=sensitivity or "default")
+        if rule.governance_blocked or rule.confidence >= self.SLM_CONFIDENCE_THRESHOLD:
+            return rule
+
+        assert self._slm_classifier is not None
+        slm = self._slm_classifier.classify(intent)
+        if slm.confidence <= rule.confidence:
+            return rule
+        # Adoptar verdict del SLM. Sintetizamos un ClassificationResult.
+        return ClassificationResult(
+            level=slm.level,
+            confidence=slm.confidence,
+            matched_pattern=None,
+            governance_blocked=(slm.level == RoutingLevel.BLOCKED),
+            reason=f"SLM: {slm.reason} (rule-based fallback: {rule.reason})",
+        )
 
     def _execute_task(self, task: Task) -> None:
         """Ejecuta la tarea con la herramienta deterministica correspondiente."""
@@ -568,6 +838,18 @@ class Orchestrator:
         self._telegram_thread = None
         self._offline_monitor = None
         self._thermal_watchdog = None
+
+        # Gate D pipeline integrado — desactivado por defecto. Se activa con
+        # enable_gate_d_pipeline() o con ATLAS_PIPELINE_GATE_D=1 en el env.
+        # PIISurrogate es siempre construible (sin dependencias externas).
+        self._distiller = None
+        self._ghost_replay = None
+        self._slm_classifier = None
+        self._timetravel = None
+        self._pii_surrogate = PIISurrogate()
+        self._gate_d_enabled = False
+        if os.environ.get("ATLAS_PIPELINE_GATE_D", "") == "1":
+            self.enable_gate_d_pipeline()
 
     def _copy_defaults(self, config_dir: Path) -> None:
         """Copia governance.json y permissions.yaml si no existen en el workspace."""
