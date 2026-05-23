@@ -21,7 +21,11 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: PENDING — Real InferenceHub + SLM classifier + vector memory + MemoryDistiller.
+- Gate D: IN PROGRESS — 156 tests passing.
+  - D1 InferenceHub real (LiteLLM): DONE. Modo auto/live/stub, fallback chain, cooldown rate-limit, clasificación de errores. Smoke real PASS contra OpenRouter (nemotron-nano-12b + liquid-1.2b free).
+  - D2 SLM classifier: PENDING — ADR-010 abierto.
+  - D3 Memoria vectorial KuzuDB: PENDING.
+  - D4 MemoryDistiller: PENDING — depende de D3.
 - Gate E: PENDING — Local environment (Proxmox decision) + Dashboard + Voice.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
 
