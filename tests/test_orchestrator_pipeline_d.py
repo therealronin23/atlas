@@ -198,3 +198,58 @@ class TestHybridClassify:
         recent = orch._merkle.tail(20)
         actions = [r.action for r in recent]
         assert "pipeline.gate_d_enabled" in actions
+
+    def test_rule_match_skips_slm_consultation(self, orch: Orchestrator) -> None:
+        # Rule-based matchea "git status" con confidence 1.0 -> el SLM NO debe
+        # consultarse y no debe haber `classify.slm_consulted` en el log.
+        orch.enable_gate_d_pipeline()
+        task = orch.handle_intent("git status")
+        recent = orch._merkle.tail(20)
+        consulted = [r for r in recent
+                     if r.task_id == task.id and r.action == "classify.slm_consulted"]
+        assert consulted == []
+        # winner debe ser 'rule' en el task.classified
+        classified = [r for r in recent
+                      if r.task_id == task.id and r.action == "task.classified"]
+        assert len(classified) == 1
+        assert classified[0].payload.get("winner") == "rule"
+
+    def test_default_local_safe_consults_slm(self, orch: Orchestrator) -> None:
+        # Intent sin patron concreto -> rule cae a LOCAL_SAFE 0.6 -> SLM consultado.
+        orch.enable_gate_d_pipeline()
+        task = orch.handle_intent("resume me brevemente que es un Merkle tree")
+        recent = orch._merkle.tail(30)
+        consulted = [r for r in recent
+                     if r.task_id == task.id and r.action == "classify.slm_consulted"]
+        assert len(consulted) == 1
+        payload = consulted[0].payload
+        assert payload["rule_level"] == "local_safe"
+        assert payload["rule_confidence"] == pytest.approx(0.6)
+        assert "slm_level" in payload
+
+    def test_slm_specific_route_wins_tie(self, orch: Orchestrator) -> None:
+        # Forzamos un escenario donde el rule devuelve LOCAL_SAFE 0.6 pero el
+        # SLM lo identifica como DETERMINISTIC_TOOL con la MISMA confidence.
+        # Con la regla de empate refinada, el SLM debe ganar (ruta mas
+        # especifica que LOCAL_SAFE).
+        orch.enable_gate_d_pipeline()
+        from atlas.core.contracts import RoutingLevel
+        from atlas.router.slm_classifier import SLMClassification
+
+        class FixedSLM:
+            mode = "stub"
+            def classify(self, intent: str) -> SLMClassification:
+                return SLMClassification(
+                    level=RoutingLevel.DETERMINISTIC_TOOL,
+                    confidence=0.6,
+                    reason="forzado por test",
+                    mode="stub",
+                )
+
+        orch._slm_classifier = FixedSLM()  # type: ignore[assignment]
+        task = orch.handle_intent("algo sin patron concreto en regla")
+        assert task.route == RoutingLevel.DETERMINISTIC_TOOL
+        recent = orch._merkle.tail(20)
+        classified = [r for r in recent
+                      if r.task_id == task.id and r.action == "task.classified"]
+        assert classified[0].payload["winner"] == "slm"

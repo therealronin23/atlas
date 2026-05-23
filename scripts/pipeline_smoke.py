@@ -104,21 +104,25 @@ def detect_provider_keys() -> dict[str, bool]:
 def classifier_path_from_merkle(orch: Orchestrator, task_id: str) -> str:
     """
     Inspecciona el audit log para deducir que rama del classifier corrio.
-      - ghost_hit  -> action 'task.ghost_hit' presente
-      - rule->slm  -> reason del task.classified empieza por 'SLM:'
-      - rule       -> caso por defecto si hubo classified
-      - n/a        -> nada (bloqueo temprano o aprobacion)
+      - ghost_hit       -> action 'task.ghost_hit' presente
+      - rule->slm[wins] -> SLM consultado y winner=slm en task.classified
+      - rule (slm-tied) -> SLM consultado pero rule gano el empate
+      - rule            -> rule directamente, sin consultar SLM
+      - n/a             -> nada (bloqueo temprano o aprobacion antes de clasificar)
     """
-    records = list(orch._merkle.tail(60))
+    records = list(orch._merkle.tail(80))
     relevant = [r for r in records if r.task_id == task_id]
     if any(r.action == "task.ghost_hit" for r in relevant):
         return "ghost_hit"
     classified = next((r for r in relevant if r.action == "task.classified"), None)
     if classified is None:
         return "n/a"
-    reason = (classified.payload or {}).get("reason", "")
-    if isinstance(reason, str) and reason.startswith("SLM:"):
-        return "rule->slm"
+    winner = (classified.payload or {}).get("winner", "rule")
+    slm_consulted = any(r.action == "classify.slm_consulted" for r in relevant)
+    if winner == "slm":
+        return "rule->slm[wins]"
+    if slm_consulted:
+        return "rule (slm-tied)"
     return "rule"
 
 
