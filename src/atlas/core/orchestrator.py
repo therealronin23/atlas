@@ -77,6 +77,8 @@ class Orchestrator:
     _slm_classifier: Any
     _timetravel: Any
     _pii_surrogate: Any
+    _inference_hub: Any  # se guarda en enable_gate_d_pipeline para que
+                         # _execute_task LOCAL_SAFE pueda invocarlo.
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -245,6 +247,11 @@ class Orchestrator:
     def pii_surrogate(self) -> PIISurrogate:
         return self._pii_surrogate
 
+    @property
+    def inference_hub(self) -> Any:
+        """InferenceHub asociado al pipeline Gate D (None si no fue inyectado)."""
+        return self._inference_hub
+
     # ------------------------------------------------------------------
     # Gate D pipeline integrado (opt-in)
     # ------------------------------------------------------------------
@@ -282,6 +289,7 @@ class Orchestrator:
             store_path=self._workspace / "memory" / "checkpoints",
             merkle=self._merkle,
         )
+        self._inference_hub = inference_hub
         self._gate_d_enabled = True
         self._merkle.log(
             action="pipeline.gate_d_enabled",
@@ -681,11 +689,17 @@ class Orchestrator:
             task.tool_name = "fs.list_dir"
             task.result = self._list_workspace()
         else:
-            task.tool_name = "local_safe.passthrough"
-            task.result = {
-                "message": "Tarea LOCAL_SAFE recibida. Modelo local requerido (no disponible en v0.1).",
-                "intent": task.intent,
-            }
+            # LOCAL_SAFE: si pipeline Gate D activo + InferenceHub disponible,
+            # responder via inferencia real con MemoryDistiller + PIISurrogate.
+            # Si no, fallback al passthrough informativo de v0.1.
+            if self._gate_d_enabled and self._inference_hub is not None:
+                self._execute_local_safe_via_inference(task)
+            else:
+                task.tool_name = "local_safe.passthrough"
+                task.result = {
+                    "message": "Tarea LOCAL_SAFE recibida. InferenceHub no inyectado en este Orchestrator.",
+                    "intent": task.intent,
+                }
 
         self._merkle.log(
             action="tool.invoked",
@@ -697,6 +711,104 @@ class Orchestrator:
         )
         task.transition(TaskStatus.DONE)
         self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
+
+    def _execute_local_safe_via_inference(self, task: Task) -> None:
+        """
+        Ejecuta una tarea LOCAL_SAFE invocando al InferenceHub.
+
+        Pipeline:
+          1. PIISurrogate.redact sobre el intent (no salen datos sensibles).
+          2. MemoryDistiller.build_context para curar el contexto del prompt
+             si hay vector_store conectado (sin vector_store cae a system+intent).
+          3. PIISurrogate.redact tambien sobre el contexto.
+          4. InferenceHub.infer con prompt + context redactados.
+          5. PIISurrogate.restore sobre el texto de respuesta.
+          6. Si la inferencia falla, fallback a passthrough con error.
+
+        El resultado se guarda en task.result con la respuesta restaurada y
+        metadatos del proveedor (provider, model, latency, tokens).
+        """
+        # Lazy imports para evitar cargar litellm si nadie usa esto
+        from atlas.core.inference_hub import InferenceLevel, InferenceRequest
+        from atlas.memory.distiller import ChunkSource
+
+        # 1. Redact intent
+        redacted_intent = self._pii_surrogate.redact(task.intent)
+
+        # 2. Distill context. Sin vector_store, gather_relevant devuelve [];
+        # el contexto sera basicamente el system context (si esta cargado).
+        system_text = ""
+        if self._system_context is not None:
+            system_text = self._system_context.as_system_context()
+        if self._distiller is not None and system_text:
+            ctx_text, _ = self._distiller.build_context(
+                query=task.intent,
+                system_chunks=[system_text] if system_text else None,
+            )
+        else:
+            ctx_text = system_text
+
+        # 3. Redact context
+        redacted_ctx = self._pii_surrogate.redact(ctx_text)
+
+        # 4. Inference call
+        request = InferenceRequest(
+            prompt=redacted_intent.text,
+            level=InferenceLevel.L1,
+            context=redacted_ctx.text,
+            max_tokens=512,
+            temperature=0.3,
+            task_id=task.id,
+        )
+        response = self._inference_hub.infer(request)
+
+        if not response.success:
+            task.tool_name = "inference_hub.failed"
+            task.result = {
+                "message": f"InferenceHub no devolvio respuesta: {response.error}",
+                "provider": response.provider,
+                "intent":   task.intent,
+            }
+            self._merkle.log(
+                action="inference.failed",
+                agent="orchestrator",
+                result="failure",
+                risk_level="moderate",
+                payload={"provider": response.provider, "error": response.error},
+                task_id=task.id,
+            )
+            return
+
+        # 5. Restore PII en la respuesta usando ambos mappings
+        combined: dict[str, str] = {}
+        combined.update(redacted_intent.mapping)
+        combined.update(redacted_ctx.mapping)
+        restored = self._pii_surrogate.restore(response.text, combined)
+
+        task.tool_name = "inference_hub.complete"
+        task.result = {
+            "text":         restored,
+            "provider":     response.provider,
+            "model":        response.model,
+            "latency_ms":   response.latency_ms,
+            "tokens_used":  response.tokens_used,
+            "mode":         response.mode,
+            "pii_redacted": len(redacted_intent.matches) + len(redacted_ctx.matches),
+        }
+        self._merkle.log(
+            action="inference.completed",
+            agent="orchestrator",
+            result="success",
+            risk_level="safe",
+            payload={
+                "provider":     response.provider,
+                "model":        response.model,
+                "latency_ms":   response.latency_ms,
+                "tokens_used":  response.tokens_used,
+                "pii_redacted": len(redacted_intent.matches) + len(redacted_ctx.matches),
+            },
+            task_id=task.id,
+        )
 
     def _delegate_to_hermes(self, task: Task) -> None:
         payload = DelegationBuilder.build(
@@ -887,6 +999,7 @@ class Orchestrator:
         self._ghost_replay = None
         self._slm_classifier = None
         self._timetravel = None
+        self._inference_hub = None
         self._pii_surrogate = PIISurrogate()
         self._gate_d_enabled = False
         if os.environ.get("ATLAS_PIPELINE_GATE_D", "") == "1":

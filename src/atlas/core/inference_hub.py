@@ -210,7 +210,11 @@ class InferenceHub:
             if self._rate_limited_until.get(p.name, 0.0) <= now
         ] or candidates
 
-        candidates.sort(key=lambda p: (p.error_count, -p.context_tokens))
+        # Orden estable por error_count: providers sanos mantienen el orden
+        # declarado en DEFAULT_PROVIDERS, lo cual es curable por el operador
+        # (poner primero los mas rapidos / preferidos). Si algun provider
+        # acumula errores, baja en la cola.
+        candidates.sort(key=lambda p: p.error_count)
 
         last_error: str | None = None
         for provider in candidates:
@@ -261,9 +265,26 @@ class InferenceHub:
     def _call_provider(
         self, provider: Provider, request: InferenceRequest
     ) -> InferenceResponse:
+        # Modo explicito stub: stub para todos.
+        if self._mode == "stub":
+            return self._call_provider_stub(provider, request)
+        # Modo explicito live: real (fallara si no hay key).
+        if self._mode == "live":
+            return self._call_provider_real(provider, request)
+        # Modo auto: usar real si hay key + litellm; en pytest cae a stub para
+        # mantener la suite hermetica. Si NO hay key (y no estamos en pytest)
+        # devolvemos un "skip" silencioso (success=False) para que infer()
+        # pruebe el siguiente provider sin enmascarar nada como stub-exitoso.
         if self._resolve_live_for(provider):
             return self._call_provider_real(provider, request)
-        return self._call_provider_stub(provider, request)
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return self._call_provider_stub(provider, request)
+        return InferenceResponse(
+            text="", provider=provider.name, model=provider.model_id,
+            level=provider.level, latency_ms=0, success=False,
+            error=f"sin key configurada ({provider.api_key_env})",
+            mode="auto-skip",
+        )
 
     def _call_provider_real(
         self, provider: Provider, request: InferenceRequest
