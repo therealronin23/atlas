@@ -1,17 +1,30 @@
 """
 Atlas Core — Sistema de Memoria
 SystemContextLoader, ErrorRegistry, ApprovedPatternStore, ProviderMetricsStore, ToolRegistry.
+
+Las clases ErrorRegistry y ApprovedPatternStore pueden recibir un
+KuzuVectorStore opcional. Cuando se proporciona, cada write se replica
+al indice semantico y queda disponible find_similar(query). La verdad
+bruta sigue siendo el JSON file — Kuzu es indice de busqueda, no
+sistema de record.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from atlas.core.contracts import Tool, ToolLevel, PermissionLevel
+
+if TYPE_CHECKING:
+    from atlas.memory.vector_store import KuzuVectorStore
+
+
+_log = logging.getLogger(__name__)
 
 
 # ===========================================================================
@@ -72,13 +85,34 @@ class FailureEntry:
 
 
 class ErrorRegistry:
-    def __init__(self, store_path: Path) -> None:
+    def __init__(
+        self,
+        store_path: Path,
+        vector_store: "KuzuVectorStore | None" = None,
+    ) -> None:
         self._path = store_path
         self._path.mkdir(parents=True, exist_ok=True)
+        self._vector_store = vector_store
 
     def record(self, entry: FailureEntry) -> None:
         file = self._path / f"{entry.id}.json"
         file.write_text(json.dumps(entry.to_dict(), indent=2, ensure_ascii=False))
+        if self._vector_store is not None:
+            try:
+                self._vector_store.add_failure(
+                    error_type=entry.error_type,
+                    description=entry.description,
+                    solution=entry.solution,
+                    failure_id=entry.id,
+                )
+            except Exception as e:  # noqa: BLE001 — vector index es opcional
+                _log.warning("vector_store.add_failure fallo para %s: %s", entry.id, e)
+
+    def find_similar(self, query: str, top_k: int = 5) -> list[Any]:
+        """Busqueda semantica si hay vector_store. Devuelve [] si no esta."""
+        if self._vector_store is None:
+            return []
+        return self._vector_store.find_similar_failures(query, top_k=top_k)
 
     def search(self, error_type: str) -> list[FailureEntry]:
         results = []
@@ -123,13 +157,33 @@ class PatternEntry:
 
 
 class ApprovedPatternStore:
-    def __init__(self, store_path: Path) -> None:
+    def __init__(
+        self,
+        store_path: Path,
+        vector_store: "KuzuVectorStore | None" = None,
+    ) -> None:
         self._path = store_path
         self._path.mkdir(parents=True, exist_ok=True)
+        self._vector_store = vector_store
 
     def add(self, entry: PatternEntry) -> None:
         file = self._path / f"{entry.id}.json"
         file.write_text(json.dumps(entry.to_dict(), indent=2, ensure_ascii=False))
+        if self._vector_store is not None:
+            try:
+                self._vector_store.add_pattern(
+                    text=f"{entry.name}\n{entry.description}\n{entry.content}",
+                    tags=entry.tags,
+                    pattern_id=entry.id,
+                )
+            except Exception as e:  # noqa: BLE001 — vector index es opcional
+                _log.warning("vector_store.add_pattern fallo para %s: %s", entry.id, e)
+
+    def find_similar(self, query: str, top_k: int = 5) -> list[Any]:
+        """Busqueda semantica si hay vector_store. Devuelve [] si no esta."""
+        if self._vector_store is None:
+            return []
+        return self._vector_store.find_similar_patterns(query, top_k=top_k)
 
     def get(self, pattern_id: str) -> PatternEntry | None:
         f = self._path / f"{pattern_id}.json"
