@@ -37,9 +37,20 @@ ADR-008  Vector and graph memory: KuzuDB (embedded, C++, MIT license).
          Cypher graph queries + native vector search + FTS5 in a single embedded
          engine. Multi-writer concurrent support enables future multi-agent
          topology without IPC overhead. Runs in-process (no network/server).
-         Up to 374x faster than Neo4j on path queries (zero RPC overhead).
-         Fallback: ChromaDB if KuzuDB fails on user hardware.
-         Status: RESOLVED (Gate D).
+         Implementado Gate D/D4 (2026-05-24):
+           src/atlas/memory/vector_store.py — KuzuVectorStore con schema
+             (Pattern, Failure, Evidence) + REL tables (DERIVED_FROM,
+             SUPPORTS, SIMILAR_TO). Cosine similarity calculada en Python
+             sobre los vectores almacenados (suficiente hasta ~10k filas;
+             HNSW extension de Kuzu queda como follow-up para escala mayor).
+           src/atlas/memory/embeddings.py — Embedder protocol + StubEmbedder
+             (hash-based determinista) + LiteLLMEmbedder (modo auto/live/stub
+             coherente con InferenceHub).
+           memory_system.py — ErrorRegistry y ApprovedPatternStore aceptan
+             vector_store opcional. Backward compatible.
+         Tests: test_vector_store.py (19), test_embeddings.py (15),
+           test_memory_kuzu_integration.py (7).
+         Status: RESOLVED (Gate D/D4).
 ADR-010  SLM classifier model: Phi-4 vs Qwen-2.5-Coder — Gate D.
 ADR-012  Memory sync Hermes <-> Atlas Core — Gate C to D (pull-on-reconnect default).
 ADR-015  [Merged into ADR-014] Escalation protocol for DEGRADED/OMEGA tiers.

@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml>=6.0",
     "cryptography>=42.0",
     "litellm>=1.49",
+    "kuzu>=0.11",
 ]
 
 [project.optional-dependencies]
