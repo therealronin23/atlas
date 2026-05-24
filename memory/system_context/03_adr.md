@@ -35,7 +35,12 @@ ADR-002  Local environment: bare metal + venv (RESOLVED Gate E, 2026-05-24).
          hypervisor overhead. Docker Engine unnecessary — Atlas runs perfectly in venv with
          LayeredIsolationSandbox handling process isolation from code. E1 (Proxmox) skipped.
          Gate E proceeds with E2 (dashboard) + E3 (voice) on bare metal Ubuntu.
-ADR-003  Voice module: Whisper + Piper — Gate E/E3.
+ADR-003  Voice module: faster-whisper (STT) + piper-tts (TTS) — RESOLVED Gate E/E3 (2026-05-24).
+         Decision: faster-whisper v1+ (CPU int8, modelo small, ~400ms en i7-6700HQ) para STT.
+         piper-tts (neural TTS, ~150ms CPU) para TTS. sounddevice para audio I/O.
+         Deps opcionales (pip install atlas-core[voice]). Hardware verificado: ALC295 OK.
+         Activación manual (Enter) en modo NORMAL. Implementado: src/atlas/interfaces/voice.py.
+         30 tests en stub mode (sin hardware). Modos: stub/real/auto.
 ADR-008  Vector and graph memory: KuzuDB (embedded, C++, MIT license).
          Decision: KuzuDB chosen over ChromaDB/LanceDB/SQLite-vec for combining
          Cypher graph queries + native vector search + FTS5 in a single embedded

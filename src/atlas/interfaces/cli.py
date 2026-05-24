@@ -184,5 +184,25 @@ def dashboard(host: str, port: int) -> None:
     serve(host=host, port=port)
 
 
+@cli.command()
+@click.option("--mode", default="auto", type=click.Choice(["auto", "real", "stub"]), show_default=True, help="Modo de voz.")
+@click.option("--whisper-model", default="small", show_default=True, help="Tamaño modelo Whisper (tiny|base|small|medium).")
+def voice(mode: str, whisper_model: str) -> None:
+    """Loop interactivo de voz: STT (Whisper) + TTS (Piper). Deps: pip install 'atlas-core[voice]'"""
+    from atlas.interfaces.voice import VoiceModule, VoiceConfig  # noqa: PLC0415
+    cfg = VoiceConfig(whisper_model=whisper_model)
+    try:
+        vm = VoiceModule(config=cfg, mode=mode)
+    except RuntimeError as e:
+        console.print(f"[red]{e}[/red]")
+        console.print("[dim]Instala las deps de voz: pip install 'atlas-core[voice]'[/dim]")
+        return
+    console.print(f"\n[bold cyan]Atlas Voz[/bold cyan] (modo={vm.mode}, whisper={whisper_model})")
+    if not vm.is_real:
+        console.print("[yellow]Modo stub: sin hardware real. Instala atlas-core[voice] para audio.[/yellow]")
+    orch = get_orchestrator()
+    vm.run_loop(orchestrator=orch)
+
+
 if __name__ == "__main__":
     cli()
