@@ -112,10 +112,17 @@ class SLMClassifier:
         intent = intent
         sensitivity = "classification"
         context_signature = "slm-classifier-v1"
+
+    Si se le pasa un MemoryDistiller (ADR-018 / FU-5), comprime el contexto
+    del sistema antes de enviarlo al SLM:
+        build_context(query=intent, system_chunks=[SLM_SYSTEM_PROMPT])
+    El resultado reemplaza a SLM_SYSTEM_PROMPT como context del InferenceRequest,
+    reduciendo tokens y inyectando patrones/errores relevantes del vault.
     """
 
     DEFAULT_TIMEOUT_S = 5
     DEFAULT_MAX_TOKENS = 200
+    _DISTILLER_BUDGET_TOKENS = 800   # deja margen para prompt + respuesta
 
     def __init__(
         self,
@@ -123,12 +130,14 @@ class SLMClassifier:
         *,
         mode: str = "auto",
         ghost_replay: Any = None,
+        distiller: Any = None,        # MemoryDistiller | None (lazy para evitar ciclos)
     ) -> None:
         if mode not in ("auto", "live", "stub"):
             raise ValueError(f"mode invalido: {mode}")
         self._hub = hub
         self._mode = os.environ.get("ATLAS_SLM_CLASSIFIER_MODE", mode)
         self._cache = ghost_replay
+        self._distiller = distiller
 
     @property
     def mode(self) -> str:
@@ -188,6 +197,24 @@ class SLMClassifier:
     # Live: llama al InferenceHub
     # ------------------------------------------------------------------
 
+    def _build_context(self, intent: str) -> str:
+        """
+        Construye el contexto del sistema para el SLM.
+        Si hay MemoryDistiller disponible, comprime el contexto por relevancia
+        con budget de tokens. Si no, devuelve SLM_SYSTEM_PROMPT sin modificar.
+        """
+        if self._distiller is None:
+            return SLM_SYSTEM_PROMPT
+        try:
+            ctx, _chunks = self._distiller.build_context(
+                query=intent,
+                system_chunks=[SLM_SYSTEM_PROMPT],
+                budget_tokens=self._DISTILLER_BUDGET_TOKENS,
+            )
+            return ctx if ctx.strip() else SLM_SYSTEM_PROMPT
+        except Exception:  # noqa: BLE001 — distiller nunca debe romper la clasificacion
+            return SLM_SYSTEM_PROMPT
+
     def _classify_live(self, intent: str) -> SLMClassification:
         assert self._hub is not None
         request = InferenceRequest(
@@ -195,7 +222,7 @@ class SLMClassifier:
             level=InferenceLevel.L1,
             max_tokens=self.DEFAULT_MAX_TOKENS,
             temperature=0.0,
-            context=SLM_SYSTEM_PROMPT,
+            context=self._build_context(intent),
         )
         resp = self._hub.infer(request)
         if not resp.success:
