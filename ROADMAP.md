@@ -26,6 +26,11 @@ Computer-use + Editor integration + Frontend.
 Plan operativo: [`docs/gate_f_plan.md`](docs/gate_f_plan.md).
 Plan maestro de absorción/forking selectivo:
 [`docs/absorption_master_plan.md`](docs/absorption_master_plan.md).
+Readiness bare-metal: [`docs/gate_f_real_world_readiness.md`](docs/gate_f_real_world_readiness.md).
+Arquitectura Atlas Box/flota: [`docs/atlas_box_architecture.md`](docs/atlas_box_architecture.md),
+[`docs/fleet_security_plan.md`](docs/fleet_security_plan.md).
+Notas de producto no legales:
+[`docs/product_strategy_notes.md`](docs/product_strategy_notes.md).
 
 ### F1 — Computer-use con Playwright
 - Browser automation con Playwright (navegar, rellenar formularios, screenshots): scaffold implementado en `src/atlas/tools/browser.py`.

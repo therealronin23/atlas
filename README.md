@@ -126,6 +126,14 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
   plan limpio de investigación/forking selectivo.
 - [docs/gate_f_plan.md](docs/gate_f_plan.md) — alcance y criterios de
   cierre de Gate F.
+- [docs/gate_f_real_world_readiness.md](docs/gate_f_real_world_readiness.md) —
+  checklist de host real para Gate F.
+- [docs/atlas_box_architecture.md](docs/atlas_box_architecture.md) —
+  notas de arquitectura hardware/topología.
+- [docs/fleet_security_plan.md](docs/fleet_security_plan.md) —
+  plan futuro para nodos Atlas distribuidos.
+- [docs/product_strategy_notes.md](docs/product_strategy_notes.md) —
+  notas no legales de posicionamiento y producto.
 - [docs/gate_c_seal.md](docs/gate_c_seal.md) — evidencia cierre Gate C.
 - [docs/gate_d_seal.md](docs/gate_d_seal.md) — evidencia cierre Gate D.
 - [docs/gate_e_seal.md](docs/gate_e_seal.md) — evidencia cierre Gate E.
