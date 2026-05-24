@@ -21,7 +21,7 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (449 total con Gate E)
+- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (494 total con Gate F in progress)
   - Cableo Orchestrator integrando todas las piezas Gate D: DONE (opt-in).
     `Orchestrator.enable_gate_d_pipeline(inference_hub=...)` o env var
     `ATLAS_PIPELINE_GATE_D=1` activa la cadena completa:
@@ -50,7 +50,11 @@ components serve Atlas, not the other way around.
   - E3 Voice: DONE. `atlas voice` → STT+TTS loop. faster-whisper+piper-tts como optional extras.
     `pip install 'atlas-core[voice]'` para modo real. Stub mode por defecto (sin hardware).
     `src/atlas/interfaces/voice.py`, 30 tests. ADR-003 sealed.
-- Gate F: PENDING — Computer-use + Editor integration + Frontend.
+- Gate F: IN PROGRESS — Computer-use + Editor integration + Frontend.
+  - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
+    Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
+  - F2 EditorTool scaffold: DONE. `src/atlas/tools/editor.py` + `tests/test_editor.py`.
+    Pendiente antes de cierre: read/write/apply_diff/run_task via PermissionProfile + AtlasExecutor + MerkleLogger.
 
 ## Project Structure
 
@@ -211,7 +215,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (449 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (494 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
@@ -240,12 +244,12 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 449)
+3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 494)
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate E COMPLETE, tag v0.4-gate-e, suite 449/449 green.
-Next logical work: Gate F.
+Current state at session start: Gate F IN PROGRESS, suite 494/494 green.
+Next logical work: Gate F hardening.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
@@ -262,36 +266,21 @@ These are known debts. Pick any or skip to Gate E. All have explicit file refs.
 
 FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
 
-## Gate F — NEXT GATE (PENDING)
+## Gate F — CURRENT WORK
 
-**Blocker:** ADR-002 must be decided first. Run these commands on the HP Omen and
-evaluate before writing a single line of Gate E code:
+F1/F2 scaffolds exist and are tested locally (suite 494/494 green):
 
-```bash
-lscpu | grep -E "Model name|CPU\(s\)|Thread"
-free -h
-df -h /
-uname -a
-```
+- F1 BrowserTool: Playwright navigation, fill, click, extract and screenshots.
+- F2 EditorTool: editor detection, open_project, read/write, apply_diff and run_task.
 
-ADR-002 options:
-- A) **Proxmox VE** — Type 1 hypervisor, best isolation, real LXC for Atlas Core + Docker inside.
-     Best if HP Omen has ≥16GB RAM and ≥256GB SSD. Requires reinstall of host OS.
-- B) **Docker Desktop / Docker Engine** — Simpler, less overhead. Good if RAM is tight.
-     Run Atlas Core in a container, no VM layer needed.
-- C) **Bare metal + venv (current state)** — Keep as-is, skip E1, go straight to E2+E3.
+Do not close Gate F until these hardening items are done:
 
-**Gate E sub-gates:**
-- E1: ADR-002 decision → Proxmox install (if chosen) → LXC Atlas Core container
-- E2: Dashboard — FastAPI + Jinja2, `src/atlas/interfaces/dashboard.py`, `atlas dashboard` CLI
-      Pages: / status, /tasks, /audit, /memory, /tools, /providers. Port 7331, localhost only.
-- E3: Voice — Whisper STT + Piper TTS, `src/atlas/interfaces/voice.py`. ADR-003.
-      Target: <500ms STT, <200ms TTS. Activation: keyword "Atlas" or hotkey.
-
-**Gate E entry checklist:**
-1. Run `PYTHONPATH=src python -m pytest tests/ -q` — must be 368 green.
-2. Run `lscpu && free -h && df -h` — needed for ADR-002 decision.
-3. Decide ADR-002 before writing any Gate E code.
+1. BrowserTool logs every external action to MerkleLogger.
+2. BrowserTool has explicit approval policy for extra allowlist/local URLs.
+3. EditorTool read/write/apply_diff/run_task go through PermissionProfile + AtlasExecutor.
+4. EditorTool command execution removes raw `shell=True` from the public path.
+5. Gate F optional dependencies are represented in packaging/docs.
+6. Full suite + mypy pass after hardening.
 
 ## What to NEVER do
 
