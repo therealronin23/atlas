@@ -386,7 +386,7 @@ class TestTaskLifecycle:
     def test_status_returns_all_fields(self, orch):
         """Criterio 1: status devuelve estado del core, permisos, tool registry y cola."""
         st = orch.status()
-        assert st.version == "0.1.0"
+        assert st.version == "0.5.0"
         assert st.tool_count > 0
         assert isinstance(st.governance_ok, bool)
         assert isinstance(st.chain_ok, bool)

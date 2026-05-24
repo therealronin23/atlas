@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate F COMPLETE** (F1/F2/F3 MVP + Orchestrator routing; suite local 509/509 green, mypy limpio).
-> Siguiente: **Gate G planning** (approval UX, ColdUpdateManager MVP decision, VLM loop design).
+> Estado actual: **Gate G IN PROGRESS** (operational readiness: Hermes live restored, GitHub synced, CLI approvals persistent).
+> Siguiente: **finish Telegram chat authorization**, then Gate G seal.
 
 ---
 
@@ -53,7 +53,7 @@ Notas futuras Gate H:
 - DONE: `run_task` elimina `shell=True` del path publico y usa comando estructurado allowlisted.
 - DONE: tests negativos de rutas y comandos bloqueados.
 
-### F3 — eBPF / seccomp (capa de seguridad final)
+### F3 — VisionLoop conservador
 - F3 visual loop MVP: `src/atlas/tools/computer_use/vision_loop.py` propone acciones tipadas desde screenshot y fuerza aprobación para acciones mutantes.
 - Tests: `tests/test_vision_loop.py`.
 
@@ -66,13 +66,27 @@ Notas futuras Gate H:
   quedan en `AWAITING_APPROVAL` y se ejecutan solo via `approve_pending`.
 - Tests: `tests/test_orchestrator_gate_f.py`.
 
-### F4 — eBPF / seccomp (capa de seguridad final)
+### Post-F — eBPF / seccomp (future hardening)
 - Compilar restricciones de syscalls directamente en el kernel.
 - Alternativa: seccomp profiles con Docker si eBPF no es viable en el hardware actual.
 
-### F5 — ColdUpdateManager (self-improvement protocol)
+### Gate G/H candidate — ColdUpdateManager (self-improvement protocol)
 - Snapshot completo → generar N+1 → ejecutar tests → si mejoran métricas, proponer swap vía Telegram.
 - HITL obligatorio (confirmación humana).
+
+---
+
+## Gate G — IN PROGRESS
+
+Operational readiness: make the sealed Gate F capabilities usable from local
+operations without losing state between commands.
+
+- DONE: Hermes-VPS restored on CPX22; Tailscale reachable; `scripts/hermes_smoke.py` PASS.
+- DONE: GitHub `main` and tag `v0.5-gate-f` pushed.
+- DONE: CLI pending approvals persist on disk.
+- DONE: `atlas pending` and `atlas approve <task_id>` implemented.
+- DONE: Telegram token configured locally in `.env`.
+- PENDING: user must send `/start` to `GodAtlas_bot` so Atlas can discover and authorize `TELEGRAM_CHAT_ID`.
 
 ---
 

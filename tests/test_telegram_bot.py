@@ -109,6 +109,19 @@ def test_authorizer_from_permission_profile():
     assert auth.is_allowed(30) is False
 
 
+def test_authorizer_merges_env_chat_id(monkeypatch: pytest.MonkeyPatch):
+    class FakeProfile:
+        def telegram_config(self):
+            return {"authorized_chat_ids": [10]}
+
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "42")
+
+    auth = TelegramAuthorizer.from_permission_profile(FakeProfile())
+
+    assert auth.is_allowed(10) is True
+    assert auth.is_allowed(42) is True
+
+
 # ---------------------------------------------------------------------------
 # Cliente: serializacion y errores
 # ---------------------------------------------------------------------------
