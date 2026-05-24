@@ -206,7 +206,12 @@ class CapabilityIssuer:
         timeout_s: int = DEFAULT_EXEC_TIMEOUT_S,
         code: str | None = None,
     ) -> ExecCapability:
-        decision = self._profile.evaluate_shell_command(command)
+        # Evaluar contra la allowlist con el comando + args completos para
+        # respetar entradas multi-palabra como "git status" o "python3 -m pytest".
+        # evaluate_shell_command hace prefix matching, asi que "git status --short"
+        # casa con "git status" pero no con "git push".
+        full_cmd = f"{command} {' '.join(args)}" if args else command
+        decision = self._profile.evaluate_shell_command(full_cmd)
         if not decision.allowed:
             raise CapabilityDenied(decision.reason, decision)
         if timeout_s <= 0 or timeout_s > 600:

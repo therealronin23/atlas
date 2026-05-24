@@ -862,47 +862,71 @@ class Orchestrator:
     # Herramientas simples
     # ------------------------------------------------------------------
 
-    def _run_git_status(self) -> dict:
-        import subprocess
+    # ------------------------------------------------------------------
+    # Herramientas via AtlasExecutor (FU-1 — ADR-020 wiring completo)
+    # ------------------------------------------------------------------
+    # Toda accion con efecto externo pasa por: CapabilityIssuer.issue_exec()
+    # -> ExecCapability -> AtlasExecutor.execute_exec() -> sandbox + Merkle.
+    # Si el issuer rechaza la capability (CapabilityDenied) o el executor
+    # falla (ExecutorError) caemos a {"error": ...} para mantener el contrato
+    # de retorno hacia _execute_task.
+
+    def _run_via_executor(self, command: str, args: tuple[str, ...]) -> dict:
+        """Helper comun: emite capability, ejecuta en sandbox y normaliza salida."""
+        from atlas.security.capabilities import CapabilityDenied  # noqa: PLC0415
+        from atlas.security.executor import ExecutorError          # noqa: PLC0415
         try:
-            r = subprocess.run(
-                ["git", "status", "--short"],
-                cwd=self._workspace,
-                capture_output=True, text=True, timeout=10
+            cap = self._capability_issuer.issue_exec(
+                command, args=args, timeout_s=10
             )
-            return {"stdout": r.stdout, "returncode": r.returncode}
+            result = self._executor.execute_exec(cap)
+            return {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "returncode": result.exit_code,
+                "duration_ms": result.duration_ms,
+            }
+        except CapabilityDenied as e:
+            return {"error": f"capability denegada: {e}"}
+        except ExecutorError as e:
+            return {"error": f"executor: {e}"}
         except Exception as e:
             return {"error": str(e)}
+
+    def _run_git_status(self) -> dict:
+        return self._run_via_executor("git", ("status", "--short"))
 
     def _run_git_log(self) -> dict:
-        import subprocess
-        try:
-            r = subprocess.run(
-                ["git", "log", "--oneline", "-10"],
-                cwd=self._workspace,
-                capture_output=True, text=True, timeout=10
-            )
-            return {"stdout": r.stdout, "returncode": r.returncode}
-        except Exception as e:
-            return {"error": str(e)}
+        return self._run_via_executor("git", ("log", "--oneline", "-10"))
 
     def _run_git_diff(self) -> dict:
-        import subprocess
-        try:
-            r = subprocess.run(
-                ["git", "diff", "--stat"],
-                cwd=self._workspace,
-                capture_output=True, text=True, timeout=10
-            )
-            return {"stdout": r.stdout, "returncode": r.returncode}
-        except Exception as e:
-            return {"error": str(e)}
+        return self._run_via_executor("git", ("diff", "--stat"))
 
     def _list_workspace(self) -> dict:
+        """
+        Lista el workspace via iterdir() + log explicito en Merkle. No usa
+        sandbox porque iterdir() es Python puro (no IO de proceso). Mantiene
+        el contrato de auditoria registrando la operacion como leeria
+        AtlasExecutor.
+        """
         try:
             entries = [p.name for p in self._workspace.iterdir()]
+            self._merkle.log(
+                action="fs.list_dir",
+                agent="atlas.executor",
+                result="ok",
+                risk_level="safe",
+                payload={"path": str(self._workspace), "entries": len(entries)},
+            )
             return {"entries": sorted(entries), "path": str(self._workspace)}
         except Exception as e:
+            self._merkle.log(
+                action="fs.list_dir",
+                agent="atlas.executor",
+                result="failed",
+                risk_level="safe",
+                payload={"path": str(self._workspace), "error": str(e)},
+            )
             return {"error": str(e)}
 
     # ------------------------------------------------------------------
