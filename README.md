@@ -18,13 +18,13 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
 - **Gate E — COMPLETE** (tag `v0.4-gate-e`, 449 tests verdes):
   ADR-002 sellado como bare metal + venv, dashboard web FastAPI/Jinja2
   en localhost:7331, voz STT/TTS con extras opcionales.
-- **Gate F — IN PROGRESS**: computer-use con Playwright y herramienta de
+- **Gate F — COMPLETE** (tag `v0.5-gate-f`, 509 tests verdes): computer-use con Playwright y herramienta de
   editor ya existen con tests; BrowserTool ya audita acciones en Merkle y
   EditorTool enruta IO/exec por AtlasExecutor. Visual loop MVP propone
   acciones tipadas sin ejecutarlas. Orchestrator ya enruta comandos Gate F
   explícitos (`browser`, `editor`, `vision`) y deja acciones mutantes en
-  approval flow. Falta smoke real de host y cierre ADR/seal antes de cerrar
-  el Gate. Playwright vive en el extra opcional `atlas-core[computer-use]`.
+  approval flow. ADR-013b está resuelto. Playwright vive en el extra opcional
+  `atlas-core[computer-use]`.
 
 ## Quick start
 
@@ -130,6 +130,9 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
   plan limpio de investigación/forking selectivo.
 - [docs/gate_f_plan.md](docs/gate_f_plan.md) — alcance y criterios de
   cierre de Gate F.
+- [docs/gate_f_seal.md](docs/gate_f_seal.md) — evidencia cierre Gate F.
+- [docs/adr_013b_computer_use.md](docs/adr_013b_computer_use.md) —
+  ADR de computer-use.
 - [docs/gate_f_real_world_readiness.md](docs/gate_f_real_world_readiness.md) —
   checklist de host real para Gate F.
 - [docs/atlas_box_architecture.md](docs/atlas_box_architecture.md) —

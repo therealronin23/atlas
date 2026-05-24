@@ -395,7 +395,7 @@ Atajo:
 | 011 | REST + HMAC Atlas↔Hermes | resolved (Gate C) |
 | 012 | Memory sync Hermes↔Atlas | **open** (Gate D→) |
 | 013 | Telegram chat_id whitelist | resolved |
-| 013b | Computer-use | diferido (Gate F) |
+| 013b | Computer-use | resolved (Gate F) |
 | 014 | Layered isolation | resolved |
 | 016 | LiteLLM backend | resolved (Gate D) |
 | 017 | Tailscale tunnel | resolved (Gate C) |

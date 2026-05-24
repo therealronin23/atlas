@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate F IN PROGRESS** (F1/F2/F3 MVP + Orchestrator routing; suite local 509/509 green, mypy limpio).
-> Siguiente: **real host smoke + ADR-013b/seal de Gate F**.
+> Estado actual: **Gate F COMPLETE** (F1/F2/F3 MVP + Orchestrator routing; suite local 509/509 green, mypy limpio).
+> Siguiente: **Gate G planning** (approval UX, ColdUpdateManager MVP decision, VLM loop design).
 
 ---
 
@@ -14,16 +14,19 @@
 | C | ✅ COMPLETE | `v0.2-gate-c` | Hermes-VPS en Hetzner CPX22 + Tailscale + Telegram bot + REST HMAC. 147 tests. |
 | D | ✅ COMPLETE | `v0.3-gate-d` | InferenceHub real (LiteLLM), KuzuDB vector+graph, MemoryDistiller, capability tokens, Time-Travel, Ghost Replay, PII Surrogate, SLM Classifier, pipeline integrado opt-in. 368 tests. |
 | E | ✅ COMPLETE | `v0.4-gate-e` | ADR-002 sealed (bare metal + venv), Dashboard web (FastAPI+Jinja2, localhost:7331), Voz (Whisper STT + Piper TTS). 449 tests. |
+| F | ✅ COMPLETE | `v0.5-gate-f` | Computer-use con BrowserTool, EditorTool, VisionLoop conservador, Orchestrator routing, approval states y smoke real de host. 509 tests. |
 
 Cada Gate tiene su documento de cierre en `docs/gate_*_seal.md`.
 
 ---
 
-## Gate F — IN PROGRESS
+## Gate F — COMPLETE
 
 Computer-use + Editor integration + Frontend.
 
 Plan operativo: [`docs/gate_f_plan.md`](docs/gate_f_plan.md).
+Seal: [`docs/gate_f_seal.md`](docs/gate_f_seal.md).
+ADR-013b: [`docs/adr_013b_computer_use.md`](docs/adr_013b_computer_use.md).
 Plan maestro de absorción/forking selectivo:
 [`docs/absorption_master_plan.md`](docs/absorption_master_plan.md).
 Readiness bare-metal: [`docs/gate_f_real_world_readiness.md`](docs/gate_f_real_world_readiness.md).

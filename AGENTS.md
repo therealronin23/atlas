@@ -21,7 +21,7 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (509 total con Gate F in progress)
+- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (509 total with Gate F complete)
   - Cableo Orchestrator integrando todas las piezas Gate D: DONE (opt-in).
     `Orchestrator.enable_gate_d_pipeline(inference_hub=...)` o env var
     `ATLAS_PIPELINE_GATE_D=1` activa la cadena completa:
@@ -50,7 +50,7 @@ components serve Atlas, not the other way around.
   - E3 Voice: DONE. `atlas voice` → STT+TTS loop. faster-whisper+piper-tts como optional extras.
     `pip install 'atlas-core[voice]'` para modo real. Stub mode por defecto (sin hardware).
     `src/atlas/interfaces/voice.py`, 30 tests. ADR-003 sealed.
-- Gate F: IN PROGRESS — Computer-use + Editor integration + Frontend.
+- Gate F: COMPLETE — Computer-use + Editor integration + Frontend. 509 tests + mypy verde. tag v0.5-gate-f.
   - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
     Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
   - F2 EditorTool scaffold: DONE. `src/atlas/tools/editor.py` + `tests/test_editor.py`.
@@ -186,7 +186,9 @@ ADR-010  SLM classifier (resuelto Gate D/D2 con slm_classifier.py)
 ADR-009  SKILL.md format: agentskills.io standard
 ADR-011  Atlas->Hermes: REST HTTPS + HMAC-SHA256. Tailscale tunnel in production
 ADR-013  Telegram auth: chat_id whitelist
-ADR-013b Computer-use: Playwright + xdotool + Xvfb. Diferido a Gate F.
+ADR-013b Computer-use: RESOLVED Gate F (2026-05-25). Playwright BrowserTool,
+EditorTool via AtlasExecutor, conservative VisionLoop, explicit Orchestrator
+routing and approval states.
 ADR-014  Layered isolation: Proxmox VE > LXC Atlas Core > Docker NORMAL / VM DEGRADED
 ADR-016  InferenceHub: LiteLLM. Fallback chain: Groq>OpenRouter>Together>Gemini>L0
 ADR-017  Tunnel: Tailscale (WireGuard)
@@ -248,8 +250,8 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate F IN PROGRESS, suite 509/509 green.
-Next logical work: Gate F real-host smoke + ADR-013b/seal.
+Current state at session start: Gate F COMPLETE, suite 509/509 green.
+Next logical work: Gate G planning.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
@@ -266,10 +268,10 @@ These are known debts. Pick any or skip to Gate E. All have explicit file refs.
 
 FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
 
-## Gate F — CURRENT WORK
+## Gate F — COMPLETE
 
 F1/F2/F3 MVP hardening plus explicit Orchestrator routing are tested locally
-(suite 509/509 green):
+and smoked on the real host (suite 509/509 green):
 
 - F1 BrowserTool: Playwright navigation, fill, click, extract and screenshots;
   Merkle logging for browser actions is implemented.
@@ -282,10 +284,14 @@ F1/F2/F3 MVP hardening plus explicit Orchestrator routing are tested locally
 - Orchestrator Gate F routing: explicit `browser`, `editor` and `vision`
   commands route through approval states; mutating browser/editor actions wait
   in `AWAITING_APPROVAL` until `approve_pending`.
+- Real-host smoke: editor read/write/run, browser navigate/screenshot/extract,
+  vision propose, Merkle verify, and Ollama L0 (`qwen2.5:0.5b`) passed.
 
 Canonical planning docs:
 
 - `docs/gate_f_plan.md` — Gate F scope, hardening order and acceptance criteria.
+- `docs/gate_f_seal.md` — Gate F close evidence.
+- `docs/adr_013b_computer_use.md` — resolved computer-use ADR.
 - `docs/absorption_master_plan.md` — cleaned absorption/forking strategy distilled from `grok.md`.
 - `docs/gate_f_real_world_readiness.md` — host readiness checklist distilled from Gemini notes.
 - `docs/atlas_box_architecture.md` — Atlas Box hardware/topology concept.
@@ -295,7 +301,7 @@ Canonical planning docs:
 - `docs/adr_024_observability_logging_v2.md` — proposed observability/logging v2.
 - `docs/adr_025_cold_update_manager.md` — proposed cold self-improvement protocol.
 
-Do not close Gate F until these hardening items are done:
+Gate F close checklist:
 
 1. BrowserTool logs every external action to MerkleLogger. DONE.
 2. BrowserTool has explicit approval policy for extra allowlist/local URLs. DONE via `allow_private_network=True`.
@@ -304,7 +310,7 @@ Do not close Gate F until these hardening items are done:
 5. Gate F optional dependencies are represented in packaging/docs. DONE for `computer-use`.
 6. Full suite + mypy pass after hardening. DONE (509 tests, 44 source files).
 7. Orchestrator routing and approval states for Browser/Editor/VisionLoop. DONE for explicit commands.
-8. Real host smoke + ADR-013b/seal remain pending.
+8. Real host smoke + ADR-013b/seal. DONE.
 
 ## What to NEVER do
 
