@@ -255,3 +255,60 @@ class TestConstructor:
         monkeypatch.setenv("ATLAS_SLM_CLASSIFIER_MODE", "stub")
         c = SLMClassifier(mode="live")
         assert c.mode == "stub"
+
+
+# ===========================================================================
+# MemoryDistiller integration (FU-5)
+# ===========================================================================
+
+
+class TestSLMClassifierWithDistiller:
+    """FU-5 — SLMClassifier acepta MemoryDistiller y lo usa en _build_context."""
+
+    def _mock_distiller(self, returns: str = "contexto comprimido por distiller") -> MagicMock:
+        d = MagicMock()
+        d.build_context.return_value = (returns, [])
+        return d
+
+    def test_build_context_without_distiller_returns_system_prompt(self) -> None:
+        from atlas.router.slm_classifier import SLM_SYSTEM_PROMPT
+        clf = SLMClassifier(mode="stub")
+        ctx = clf._build_context("cualquier intent")
+        assert ctx == SLM_SYSTEM_PROMPT
+
+    def test_build_context_with_distiller_returns_distilled(self) -> None:
+        d = self._mock_distiller("contexto distilado relevante")
+        clf = SLMClassifier(mode="stub", distiller=d)
+        ctx = clf._build_context("explícame el sistema de permisos de Atlas")
+        assert ctx == "contexto distilado relevante"
+        d.build_context.assert_called_once()
+
+    def test_build_context_distiller_called_with_intent_as_query(self) -> None:
+        d = self._mock_distiller()
+        clf = SLMClassifier(mode="stub", distiller=d)
+        clf._build_context("intent de prueba")
+        call_kwargs = d.build_context.call_args
+        assert call_kwargs.kwargs.get("query") == "intent de prueba"
+
+    def test_build_context_distiller_exception_falls_back_to_system_prompt(self) -> None:
+        from atlas.router.slm_classifier import SLM_SYSTEM_PROMPT
+        d = MagicMock()
+        d.build_context.side_effect = RuntimeError("distiller error")
+        clf = SLMClassifier(mode="stub", distiller=d)
+        ctx = clf._build_context("intent")
+        assert ctx == SLM_SYSTEM_PROMPT  # fallback silencioso
+
+    def test_live_classify_uses_distilled_context(self) -> None:
+        """En modo live, el context del InferenceRequest viene de _build_context."""
+        d = self._mock_distiller("contexto distilado para live")
+        hub = MagicMock(spec=InferenceHub)
+        hub.infer.return_value = InferenceResponse(
+            success=True,
+            text='{"level":"local_safe","confidence":0.8,"reason":"test"}',
+            provider="groq", model="llama-3.3", latency_ms=100,
+            level=InferenceLevel.L1,
+        )
+        clf = SLMClassifier(hub=hub, mode="live", distiller=d)
+        clf.classify("test intent live")
+        req = hub.infer.call_args[0][0]
+        assert req.context == "contexto distilado para live"
