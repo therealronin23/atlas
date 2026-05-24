@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.markup import escape as _markup_escape
 from rich.table import Table
 from rich import print as rprint
 
@@ -194,12 +195,12 @@ def voice(mode: str, whisper_model: str) -> None:
     try:
         vm = VoiceModule(config=cfg, mode=mode)
     except RuntimeError as e:
-        console.print(f"[red]{e}[/red]")
-        console.print("[dim]Instala las deps de voz: pip install 'atlas-core[voice]'[/dim]")
+        console.print(f"[red]{_markup_escape(str(e))}[/red]")
+        console.print("[dim]Instala las deps de voz: pip install 'atlas-core\\[voice]'[/dim]")
         return
     console.print(f"\n[bold cyan]Atlas Voz[/bold cyan] (modo={vm.mode}, whisper={whisper_model})")
     if not vm.is_real:
-        console.print("[yellow]Modo stub: sin hardware real. Instala atlas-core[voice] para audio.[/yellow]")
+        console.print("[yellow]Modo stub: sin hardware real. Instala atlas-core\\[voice] para audio.[/yellow]")
     orch = get_orchestrator()
     vm.run_loop(orchestrator=orch)
 
