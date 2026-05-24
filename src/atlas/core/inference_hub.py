@@ -187,6 +187,7 @@ class InferenceHub:
         self,
         providers: list[Provider] | None = None,
         mode: str = "auto",
+        merkle: "MerkleLogger" | None = None,
     ) -> None:
         if mode not in ("auto", "live", "stub"):
             raise ValueError(f"mode invalido: {mode}")
@@ -194,10 +195,40 @@ class InferenceHub:
         self._mode = os.environ.get("ATLAS_INFERENCE_MODE", mode)
         self._calls: list[dict[str, Any]] = []
         self._rate_limited_until: dict[str, float] = {}
+        self._merkle = merkle
 
     @property
     def mode(self) -> str:
         return self._mode
+
+    def _log_model_call(
+        self,
+        provider: Provider,
+        request: InferenceRequest,
+        *,
+        success: bool,
+        error: str | None = None,
+    ) -> None:
+        if self._merkle is None:
+            return
+        payload: dict[str, Any] = {
+            "provider": provider.name,
+            "model": provider.model_id,
+            "level": provider.level.value,
+            "task_id": request.task_id,
+            "mode": "live",
+            "success": success,
+        }
+        if error is not None:
+            payload["error"] = error
+        self._merkle.log(
+            action="model.called",
+            agent="atlas.inference_hub",
+            result="success" if success else "failed",
+            risk_level="moderate",
+            payload=payload,
+            task_id=request.task_id,
+        )
 
     def infer(self, request: InferenceRequest) -> InferenceResponse:
         candidates = [
@@ -239,6 +270,28 @@ class InferenceHub:
                 if provider.status == ProviderStatus.OK:
                     provider.status = ProviderStatus.DEGRADED
 
+        if request.level == InferenceLevel.L1:
+            l0_candidates = [
+                p for p in self._providers
+                if p.level == InferenceLevel.L0 and p.status != ProviderStatus.DOWN
+            ]
+            if l0_candidates:
+                l0_candidates = [
+                    p for p in l0_candidates
+                    if self._rate_limited_until.get(p.name, 0.0) <= now
+                ] or l0_candidates
+                l0_candidates.sort(key=lambda p: p.error_count)
+
+                for provider in l0_candidates:
+                    result = self._call_provider(provider, request)
+                    if result.success:
+                        return result
+                    last_error = result.error
+                    if provider.status != ProviderStatus.RATELIMITED:
+                        provider.error_count += 1
+                        if provider.status == ProviderStatus.OK:
+                            provider.status = ProviderStatus.DEGRADED
+
         return InferenceResponse(
             text="", provider="all_failed", model="none", level=request.level,
             latency_ms=0, success=False,
@@ -256,6 +309,7 @@ class InferenceHub:
                 "status": p.status.value,
                 "error_count": p.error_count,
                 "free_tier": p.free_tier,
+                "last_used": p.last_used,
                 "rate_limited_for_s": max(0, int(self._rate_limited_until.get(p.name, 0.0) - now)),
             }
             for p in self._providers
@@ -321,10 +375,8 @@ class InferenceHub:
             assert litellm is not None
             extra_kwargs: dict[str, Any] = {}
             if provider.api_key_env is None:
-                # L0 local (Ollama): sin key, apuntar explicitamente al base_url
-                # configurado. LiteLLM espera api_base para ollama/ prefix.
                 extra_kwargs["api_base"] = provider.base_url
-                extra_kwargs["api_key"] = "ollama"   # valor dummy requerido por LiteLLM
+                extra_kwargs["api_key"] = "ollama"
             else:
                 key = os.environ.get(provider.api_key_env)
                 if key:
@@ -341,6 +393,7 @@ class InferenceHub:
             err_name = type(exc).__name__
             err_msg = f"{err_name}: {exc}"
             self._classify_error(provider, exc)
+            self._log_model_call(provider, request, success=False, error=err_msg)
             self._calls.append({
                 "provider": provider.name,
                 "task_id": request.task_id,
@@ -363,6 +416,7 @@ class InferenceHub:
             provider.status = ProviderStatus.OK
             provider.error_count = 0
 
+        self._log_model_call(provider, request, success=True)
         self._calls.append({
             "provider": provider.name,
             "task_id": request.task_id,
