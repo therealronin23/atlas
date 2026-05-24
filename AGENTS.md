@@ -1,6 +1,6 @@
-# ATLAS CORE — Context for Claude Code
+# ATLAS CORE — Context for Codex
 
-> This file is the first thing Claude Code reads at the start of every session.
+> This file is the first thing Codex reads at the start of every session.
 > All component names here are technical and descriptive. Narrative aliases exist
 > only in human-facing documentation, never in code or instructions to AI tools.
 
@@ -236,13 +236,13 @@ TAILSCALE_AUTH_KEY      Gate C            Tailscale setup
 All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
   set -a && source ~/proyectos/atlas-core/.env && set +a
 
-## How to Resume (any AI tool: Claude Code, Cline, Cursor)
+## How to Resume (any AI tool: Codex, Cline, Cursor)
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
 3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 449)
-4. Read this file (CLAUDE.md) — it is the single source of truth.
-5. The ~/.claude/memory/ files are Claude Code-specific. Cline/Cursor must rely on this file only.
+4. Read this file (AGENTS.md) — it is the single source of truth.
+5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gate E COMPLETE, tag v0.4-gate-e, suite 449/449 green.
 Next logical work: Gate F.
@@ -295,10 +295,10 @@ ADR-002 options:
 
 ## What to NEVER do
 
-- Connect to Anthropic/Claude API as a runtime dependency of Atlas.
+- Connect to Anthropic/Codex API as a runtime dependency of Atlas.
 - Modify governance.json from code or agent instructions.
 - Skip the AST Guard to simplify anything.
 - Add features without mapping them to a Gate or ADR.
 - Merge untested code.
 - Use narrative names in code: use only the technical names from the naming table above.
-- Edit CLAUDE.md without running tests first (test count must match).
+- Edit AGENTS.md without running tests first (test count must match).

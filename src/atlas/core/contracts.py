@@ -139,6 +139,7 @@ class EventType(str, Enum):
     THERMAL_ALERT      = "thermal.alert"
     HERMES_MESSAGE     = "hermes.message"
     SHADOW_ALERT       = "shadow.alert"
+    HERMES_RECONNECTED = "hermes.reconnected"   # ADR-012: transicion offline->online
     APPROVAL_REQUIRED  = "approval.required"
     MEMORY_UPDATED     = "memory.updated"
     SESSION_STARTED    = "session.started"
