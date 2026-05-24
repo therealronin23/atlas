@@ -25,6 +25,9 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
   explícitos (`browser`, `editor`, `vision`) y deja acciones mutantes en
   approval flow. ADR-013b está resuelto. Playwright vive en el extra opcional
   `atlas-core[computer-use]`.
+- **Gate G — COMPLETE** (tag `v0.6-gate-g`, 513 tests verdes):
+  operacionalización local. Hermes-VPS restaurado y smoked, GitHub sincronizado,
+  approvals persistentes por CLI, Telegram autorizado y smoked.
 
 ## Quick start
 
@@ -44,7 +47,7 @@ cp .env.example .env
 # Verificar que todo funciona
 PYTHONPATH=src python -m pytest tests/ -q
 MYPYPATH=src python -m mypy src/atlas/
-# Estado local auditado: 512 tests verdes, mypy sobre 44 source files.
+# Estado local auditado: 513 tests verdes, mypy sobre 44 source files.
 ```
 
 ## Comandos básicos

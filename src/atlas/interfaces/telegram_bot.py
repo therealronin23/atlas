@@ -54,7 +54,8 @@ class TelegramAuthorizer:
 
     @classmethod
     def from_permission_profile(cls, profile: Any) -> "TelegramAuthorizer":
-        cfg = profile.telegram_config()
+        raw_cfg = profile.telegram_config
+        cfg = raw_cfg() if callable(raw_cfg) else raw_cfg
         ids = list(cfg.get("authorized_chat_ids") or [])
         env_ids = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_IDS")
         if env_ids:
