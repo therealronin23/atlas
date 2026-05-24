@@ -20,6 +20,7 @@ from typing import Any, Generator
 
 import pytest
 
+from atlas.logging.merkle_logger import MerkleLogger
 from atlas.security.ssrf_bridge import SSRFBridge, DEFAULT_ALLOWED_DOMAINS
 from atlas.tools.browser import BrowserTool
 
@@ -100,12 +101,18 @@ def browser(tmp_path: Path, bridge_with_localhost: SSRFBridge) -> Generator[Brow
         workspace=tmp_path,
         bridge=bridge_with_localhost,
         headless=True,
+        allow_private_network=True,
     )
     yield bt
     try:
         bt.close()
     except Exception:
         pass
+
+
+@pytest.fixture
+def merkle(tmp_path: Path) -> MerkleLogger:
+    return MerkleLogger(tmp_path / "logs")
 
 
 # ---------------------------------------------------------------------------
@@ -248,3 +255,72 @@ class TestSSRFBridge:
         # BrowserTool lanzaria realmente, pero solo probamos que check pasa
         decision = bridge.check("https://api.github.com/repos/therealronin23/atlas")
         assert decision.allowed is True
+
+
+class TestBrowserAudit:
+
+    def test_blocked_navigation_is_logged(
+        self,
+        tmp_path: Path,
+        merkle: MerkleLogger,
+    ) -> None:
+        bt = BrowserTool(workspace=tmp_path, headless=True, merkle=merkle)
+
+        with pytest.raises(PermissionError):
+            bt.navigate("http://evil.com/malware")
+
+        records = merkle.tail(5)
+        assert records[-1].action == "browser.navigate"
+        assert records[-1].result == "blocked"
+        assert records[-1].agent == "browser.tool"
+
+    def test_browser_actions_are_logged(
+        self,
+        http_server: str,
+        tmp_path: Path,
+        bridge_with_localhost: SSRFBridge,
+        merkle: MerkleLogger,
+    ) -> None:
+        bt = BrowserTool(
+            workspace=tmp_path,
+            bridge=bridge_with_localhost,
+            headless=True,
+            merkle=merkle,
+            allow_private_network=True,
+        )
+        try:
+            bt.navigate(http_server + "/form.html")
+            bt.fill("#name", "Atlas User")
+            bt.screenshot("audit")
+            bt.extract()
+        finally:
+            bt.close()
+
+        actions = [r.action for r in merkle.tail(10)]
+        assert "browser.launch" in actions
+        assert "browser.navigate" in actions
+        assert "browser.fill" in actions
+        assert "browser.screenshot" in actions
+        assert "browser.extract" in actions
+        assert "browser.close" in actions
+
+    def test_extra_allowed_localhost_still_requires_private_network_flag(
+        self,
+        http_server: str,
+        tmp_path: Path,
+        bridge_with_localhost: SSRFBridge,
+        merkle: MerkleLogger,
+    ) -> None:
+        bt = BrowserTool(
+            workspace=tmp_path,
+            bridge=bridge_with_localhost,
+            headless=True,
+            merkle=merkle,
+        )
+
+        with pytest.raises(PermissionError, match="allow_private_network"):
+            bt.navigate(http_server + "/index.html")
+
+        records = merkle.tail(5)
+        assert records[-1].action == "browser.navigate"
+        assert records[-1].result == "blocked"

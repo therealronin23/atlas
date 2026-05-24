@@ -268,10 +268,16 @@ FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
 
 ## Gate F — CURRENT WORK
 
-F1/F2 scaffolds exist and are tested locally (suite 494/494 green):
+F1/F2/F3 MVP hardening is partially complete and tested locally (suite 504/504 green):
 
-- F1 BrowserTool: Playwright navigation, fill, click, extract and screenshots.
-- F2 EditorTool: editor detection, open_project, read/write, apply_diff and run_task.
+- F1 BrowserTool: Playwright navigation, fill, click, extract and screenshots;
+  Merkle logging for browser actions is implemented.
+- F2 EditorTool: editor detection, open_project, read/write, apply_diff and
+  run_task; read/write/apply_diff/run_task now route through
+  PermissionProfile + AtlasExecutor and command execution no longer uses
+  public `shell=True`.
+- F3 VisionLoop MVP: screenshot -> deterministic/stub description ->
+  typed ProposedAction; mutating actions require approval and are not executed.
 
 Canonical planning docs:
 
@@ -287,12 +293,13 @@ Canonical planning docs:
 
 Do not close Gate F until these hardening items are done:
 
-1. BrowserTool logs every external action to MerkleLogger.
-2. BrowserTool has explicit approval policy for extra allowlist/local URLs.
-3. EditorTool read/write/apply_diff/run_task go through PermissionProfile + AtlasExecutor.
-4. EditorTool command execution removes raw `shell=True` from the public path.
-5. Gate F optional dependencies are represented in packaging/docs.
+1. BrowserTool logs every external action to MerkleLogger. DONE.
+2. BrowserTool has explicit approval policy for extra allowlist/local URLs. DONE via `allow_private_network=True`.
+3. EditorTool read/write/apply_diff/run_task go through PermissionProfile + AtlasExecutor. DONE.
+4. EditorTool command execution removes raw `shell=True` from the public path. DONE.
+5. Gate F optional dependencies are represented in packaging/docs. DONE for `computer-use`.
 6. Full suite + mypy pass after hardening.
+7. Orchestrator routing and approval states for Browser/Editor/VisionLoop remain pending.
 
 ## What to NEVER do
 

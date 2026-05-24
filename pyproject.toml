@@ -32,6 +32,9 @@ voice = [
     "sounddevice>=0.4",      # audio I/O (portaudio2 requerido en sistema: apt install libportaudio2)
     "numpy>=1.24",           # array audio
 ]
+computer-use = [
+    "playwright>=1.45",      # BrowserTool / Gate F F1 (requiere: python -m playwright install chromium)
+]
 
 [project.scripts]
 atlas = "atlas.interfaces.cli:cli"

@@ -140,6 +140,11 @@ class TestReadFile:
         assert result.success is True
         assert "# Sample App" in result.content
 
+    def test_read_blocked_system_path(self, editor: EditorTool) -> None:
+        result = editor.read_file(Path("/etc/passwd"))
+        assert result.success is False
+        assert "bloqueo absoluto" in result.error.lower()
+
 
 class TestWriteFile:
 
@@ -165,6 +170,12 @@ class TestWriteFile:
         assert result.success is True
         assert path.read_text() != original
         assert path.read_text() == "print('overwritten')"
+
+    def test_write_outside_workspace_is_blocked(self, tmp_path: Path, editor: EditorTool) -> None:
+        path = tmp_path.parent / "outside-workspace.txt"
+        result = editor.write_file(path, "nope")
+        assert result.success is False
+        assert "fuera del workspace" in result.error.lower()
 
 
 class TestApplyDiff:
@@ -233,17 +244,17 @@ class TestRunTask:
         assert result.success is False
         assert "no existe" in result.error.lower()
 
-    def test_run_task_with_timeout(self, sample_project: Path, editor: EditorTool) -> None:
-        """Tarea que excede timeout debe fallar."""
+    def test_run_task_blocks_unapproved_command(self, sample_project: Path, editor: EditorTool) -> None:
+        """Comandos fuera de allowlist deben bloquearse antes de ejecutarse."""
         result = editor.run_task(sample_project, "sleep 10", timeout_s=1)
         assert result.success is False
-        assert "Timeout" in result.error
+        assert "allowlist" in result.error
 
-    def test_run_python_script(self, sample_project: Path, editor: EditorTool) -> None:
-        """Ejecutar un script Python en el proyecto."""
+    def test_run_python_c_is_blocked(self, sample_project: Path, editor: EditorTool) -> None:
+        """Python arbitrario no debe ejecutarse desde EditorTool."""
         result = editor.run_task(sample_project, "python3 -c 'print(2+2)'")
-        assert result.success is True
-        assert "4" in result.stdout
+        assert result.success is False
+        assert "allowlist" in result.error
 
 
 class TestOpenProject:
