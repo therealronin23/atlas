@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Pre-commit hook: ejecuta tests antes de cada commit.
+# Si los tests fallan, el commit se aborta.
+#
+# Instalacion: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Activar venv
+if [ -f .venv/bin/activate ]; then
+    # shellcheck source=/dev/null
+    source .venv/bin/activate
+fi
+
+export PYTHONPATH=src
+
+echo "→ Ejecutando tests pre-commit..."
+if ! python -m pytest tests/ -q 2>&1; then
+    echo ""
+    echo "✗ TESTS FALLIDOS. Commit cancelado."
+    echo "  Corrige los tests antes de hacer commit."
+    exit 1
+fi
+
+echo "✓ Tests OK. Procediendo con el commit."
