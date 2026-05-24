@@ -99,6 +99,7 @@ class VoiceConfig:
     max_record_s:   float = 8.0                       # máximo de grabación
     silence_threshold_db: float = -40.0               # silencio para parar
     tts_speed:      float = 1.0
+    vad_threshold:  float = 0.3                       # 0.0–1.0; default faster-whisper=0.5, 0.3=más sensible
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +185,8 @@ class VoiceModule:
         if self._whisper is None and self._mode == "real":
             with self._lock:
                 if self._whisper is None:
+                    # Silenciar warning de HF Hub sobre tokens (no relevante para uso local)
+                    os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "1")
                     _log.info("Cargando Whisper modelo '%s'...", self._config.whisper_model)
                     t0 = time.monotonic()
                     self._whisper = WhisperModel(
@@ -257,25 +260,47 @@ class VoiceModule:
         # Convertir a float32 normalizado para Whisper
         audio_f32 = audio_int16.flatten().astype("float32") / 32768.0
 
-        _log.debug("Transcribiendo %d muestras...", len(audio_f32))
+        # Feedback de nivel — avisa si el mic está silencioso
+        peak = float(np.abs(audio_int16).max()) / 32768.0
+        if peak < 0.005:
+            _log.warning("Nivel de audio muy bajo (peak=%.4f) — sube el volumen del micrófono", peak)
+        else:
+            _log.debug("Nivel de audio: peak=%.3f", peak)
+
+        _log.debug("Transcribiendo %d muestras (vad_threshold=%.2f)...",
+                   len(audio_f32), self._config.vad_threshold)
         t1 = time.monotonic()
+
+        def _consume(segs: Any) -> tuple[str, float, int]:
+            parts, total_conf, n = [], 0.0, 0
+            for seg in segs:
+                parts.append(seg.text.strip())
+                total_conf += min(1.0, max(0.0, seg.avg_logprob + 1.0))
+                n += 1
+            txt = " ".join(parts).strip()
+            conf = (total_conf / n) if n > 0 else 0.0
+            return txt, conf, n
+
         segments, info = whisper.transcribe(
             audio_f32,
             language="es",
             beam_size=3,
             vad_filter=True,
+            vad_parameters={"threshold": self._config.vad_threshold},
         )
-        text_parts = []
-        total_conf = 0.0
-        n_seg = 0
-        for seg in segments:
-            text_parts.append(seg.text.strip())
-            # faster-whisper no expone prob directa; avg_logprob → conf aproximada
-            total_conf += min(1.0, max(0.0, seg.avg_logprob + 1.0))
-            n_seg += 1
+        text, confidence, n_seg = _consume(segments)
 
-        text = " ".join(text_parts).strip()
-        confidence = (total_conf / n_seg) if n_seg > 0 else 0.0
+        # Fallback sin VAD si el filtro descartó todo (threshold demasiado agresivo)
+        if n_seg == 0 and peak >= 0.005:
+            _log.debug("VAD sin segmentos — reintentando sin vad_filter (peak=%.3f)", peak)
+            segments2, info = whisper.transcribe(
+                audio_f32,
+                language="es",
+                beam_size=3,
+                vad_filter=False,
+            )
+            text, confidence, n_seg = _consume(segments2)
+
         transcribe_ms = int((time.monotonic() - t1) * 1000)
         total_ms = record_ms + transcribe_ms
 
