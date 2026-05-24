@@ -205,28 +205,88 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 
 ## Running Tests
 
-cd ~/atlas-core && source .venv/bin/activate
+cd ~/proyectos/atlas-core && source .venv/bin/activate
 PYTHONPATH=src python -m pytest tests/ -q           # full suite (368 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
 # Smoke real end-to-end del pipeline Gate D contra infra viva
-set -a && source .env && set +a
+set -a && source ~/proyectos/atlas-core/.env && set +a
 PYTHONPATH=src python scripts/pipeline_smoke.py     # 5 intents, output estructurado
 PYTHONPATH=src python scripts/inference_smoke.py    # ping por proveedor LLM
 PYTHONPATH=src python scripts/hermes_smoke.py       # REST + HMAC contra Hermes-VPS
 
 ## Environment Variables
 
-ATLAS_HOME              ~/atlas/          Workspace root
-PYTHONPATH              ~/atlas-core/src  Module resolution
+ATLAS_HOME              ~/atlas/                    Workspace root
+PYTHONPATH              ~/proyectos/atlas-core/src  Module resolution
 GROQ_API_KEY            Gate D            InferenceHub real
 OPENROUTER_API_KEY      Gate D            InferenceHub real
 TELEGRAM_BOT_TOKEN      Gate C            Bot token
 TELEGRAM_CHAT_ID        Gate C            Authorized chat ID
-HERMES_BASE_URL         Gate C            VPS endpoint
+HERMES_BASE_URL         Gate C            VPS endpoint (Tailscale: 100.108.132.116:8443)
 HERMES_API_KEY          Gate C            Shared HMAC secret
 TAILSCALE_AUTH_KEY      Gate C            Tailscale setup
+
+All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
+  set -a && source ~/proyectos/atlas-core/.env && set +a
+
+## How to Resume (any AI tool: Claude Code, Cline, Cursor)
+
+1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
+2. Load env:      set -a && source .env && set +a
+3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 368)
+4. Read this file (CLAUDE.md) — it is the single source of truth.
+5. The ~/.claude/memory/ files are Claude Code-specific. Cline/Cursor must rely on this file only.
+
+Current state at session start: Gate D COMPLETE, tag v0.3-gate-d, main clean.
+Next logical work: Gate D follow-ups (below) or Gate E start (see Gate E section below).
+
+## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
+
+These are known debts. Pick any or skip to Gate E. All have explicit file refs.
+
+| # | Task | File | Effort |
+|---|------|------|--------|
+| FU-1 | Wire AtlasExecutor into handle_intent (replace raw IO) | `core/orchestrator.py` (commit 2f443ac opened debt) | ~2h |
+| FU-2 | ADR-012 memory sync Hermes↔Atlas: on-reconnect pull from OfflineQueue | `hermes/hermes.py`, `core/orchestrator.py` | ~3h |
+| FU-3 | Suppress LiteLLM startup warnings | `core/inference_hub.py` — add `litellm.suppress_debug_info=True` before first call | 15min |
+| FU-4 | InferenceHub L0 real: Ollama HTTP client (today L0 is declarative/stub) | `core/inference_hub.py` `_call_provider("ollama", ...)` | ~2h |
+| FU-5 | SLMClassifier prompt via MemoryDistiller (context compression pre-SLM) | `router/slm_classifier.py` + `memory/distiller.py` | ~1h |
+| FU-6 | PIISurrogate v2: SLM detection for names/cities/addresses | `security/pii_surrogate.py` — new `detect_with_slm()` method | ~3h |
+
+FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
+
+## Gate E — NEXT GATE (PENDING)
+
+**Blocker:** ADR-002 must be decided first. Run these commands on the HP Omen and
+evaluate before writing a single line of Gate E code:
+
+```bash
+lscpu | grep -E "Model name|CPU\(s\)|Thread"
+free -h
+df -h /
+uname -a
+```
+
+ADR-002 options:
+- A) **Proxmox VE** — Type 1 hypervisor, best isolation, real LXC for Atlas Core + Docker inside.
+     Best if HP Omen has ≥16GB RAM and ≥256GB SSD. Requires reinstall of host OS.
+- B) **Docker Desktop / Docker Engine** — Simpler, less overhead. Good if RAM is tight.
+     Run Atlas Core in a container, no VM layer needed.
+- C) **Bare metal + venv (current state)** — Keep as-is, skip E1, go straight to E2+E3.
+
+**Gate E sub-gates:**
+- E1: ADR-002 decision → Proxmox install (if chosen) → LXC Atlas Core container
+- E2: Dashboard — FastAPI + Jinja2, `src/atlas/interfaces/dashboard.py`, `atlas dashboard` CLI
+      Pages: / status, /tasks, /audit, /memory, /tools, /providers. Port 7331, localhost only.
+- E3: Voice — Whisper STT + Piper TTS, `src/atlas/interfaces/voice.py`. ADR-003.
+      Target: <500ms STT, <200ms TTS. Activation: keyword "Atlas" or hotkey.
+
+**Gate E entry checklist:**
+1. Run `PYTHONPATH=src python -m pytest tests/ -q` — must be 368 green.
+2. Run `lscpu && free -h && df -h` — needed for ADR-002 decision.
+3. Decide ADR-002 before writing any Gate E code.
 
 ## What to NEVER do
 
@@ -236,3 +296,4 @@ TAILSCALE_AUTH_KEY      Gate C            Tailscale setup
 - Add features without mapping them to a Gate or ADR.
 - Merge untested code.
 - Use narrative names in code: use only the technical names from the naming table above.
+- Edit CLAUDE.md without running tests first (test count must match).
