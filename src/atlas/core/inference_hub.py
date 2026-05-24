@@ -26,9 +26,22 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+# Silenciar warnings cosmeticos de LiteLLM (bedrock/sagemaker pre-load, etc).
+# Se debe hacer ANTES del import porque algunos warnings se emiten al cargar el modulo.
+# No afecta a la chain Groq/OpenRouter/Together/Gemini que si usamos.
+import logging as _logging  # noqa: E402
+
+_logging.getLogger("LiteLLM").setLevel(_logging.ERROR)
+_logging.getLogger("litellm").setLevel(_logging.ERROR)
+
 try:
     import litellm
     _HAS_LITELLM = True
+    try:
+        litellm.suppress_debug_info = True
+        litellm.set_verbose = False
+    except Exception:  # pragma: no cover
+        pass
 except ImportError:  # pragma: no cover
     litellm = None  # type: ignore[assignment]
     _HAS_LITELLM = False
