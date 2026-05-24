@@ -516,11 +516,20 @@ class Orchestrator:
         """
         # 0. Snapshot inicial
         if self._timetravel is None:
-            raise RuntimeError("Gate D pipeline: _timetravel no inicializado (llama a enable_gate_d_pipeline)")
+            raise RuntimeError(
+                "Gate D pipeline: _timetravel no inicializado "
+                "(llama a enable_gate_d_pipeline)"
+            )
         if self._ghost_replay is None:
-            raise RuntimeError("Gate D pipeline: _ghost_replay no inicializado (llama a enable_gate_d_pipeline)")
+            raise RuntimeError(
+                "Gate D pipeline: _ghost_replay no inicializado "
+                "(llama a enable_gate_d_pipeline)"
+            )
         if self._slm_classifier is None:
-            raise RuntimeError("Gate D pipeline: _slm_classifier no inicializado (llama a enable_gate_d_pipeline)")
+            raise RuntimeError(
+                "Gate D pipeline: _slm_classifier no inicializado "
+                "(llama a enable_gate_d_pipeline)"
+            )
 
         self._timetravel.record_step(
             task.id, "received",

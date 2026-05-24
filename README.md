@@ -15,9 +15,12 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
   capability tokens + AtlasExecutor, Time-Travel checkpoints, Ghost
   Replay cache, PII Surrogate, SLM Classifier, pipeline integrado en
   Orchestrator.
-- **Gate E** — pendiente: entorno local definitivo (Proxmox), dashboard
-  de telemetría, voz (Whisper + Piper).
-- **Gate F** — pendiente: computer-use, integración editor, eBPF.
+- **Gate E — COMPLETE** (tag `v0.4-gate-e`, 449 tests verdes):
+  ADR-002 sellado como bare metal + venv, dashboard web FastAPI/Jinja2
+  en localhost:7331, voz STT/TTS con extras opcionales.
+- **Gate F — IN PROGRESS**: computer-use con Playwright y herramienta de
+  editor ya existen con tests; falta hardening completo vía capabilities,
+  MerkleLogger y approval flow antes de cerrar el Gate.
 
 ## Quick start
 
@@ -37,6 +40,7 @@ cp .env.example .env
 # Verificar que todo funciona
 PYTHONPATH=src python -m pytest tests/ -q
 MYPYPATH=src python -m mypy src/atlas/
+# Estado local auditado: 494 tests verdes, mypy sobre 42 source files.
 ```
 
 ## Comandos básicos
@@ -120,6 +124,7 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
   configuración, troubleshooting.
 - [docs/gate_c_seal.md](docs/gate_c_seal.md) — evidencia cierre Gate C.
 - [docs/gate_d_seal.md](docs/gate_d_seal.md) — evidencia cierre Gate D.
+- [docs/gate_e_seal.md](docs/gate_e_seal.md) — evidencia cierre Gate E.
 - [memory/system_context/](memory/system_context/) — visión, reglas y
   ADRs canónicos.
 
