@@ -7,6 +7,7 @@ Decision final: Atlas decide. Todo lo demas sirve a Atlas.
 from __future__ import annotations
 
 import logging
+import json
 import os
 import threading
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ _log = logging.getLogger(__name__)
 from atlas.core.contracts import (
     DelegationPayload, Event, EventType, RoutingLevel,
     Task, TaskSource, TaskStatus, Tool, ToolLevel, PermissionLevel,
+    OperationalMode,
 )
 from atlas.core.event_bus import EventBus
 from atlas.governance.governance_l0 import GovernanceL0
@@ -72,7 +74,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.1.0"
+    VERSION = "0.5.0"
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
@@ -83,6 +85,7 @@ class Orchestrator:
     _browser_tool: Any
     _editor_tool: Any
     _vision_loop: Any
+    _pending_approval_dir: Path
 
     # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
     # Inicializados a None y poblados al activar.
@@ -177,15 +180,16 @@ class Orchestrator:
 
     def pending_approvals(self) -> list[dict]:
         with self._approvals_lock:
-            return [
-                {"task_id": t.id, "intent": t.intent,
-                 "reason": (t.result or {}).get("reason", "")}
-                for t in self._pending_approvals.values()
-            ]
+            tasks = dict(self._pending_approvals)
+            for task in self._load_persisted_pending_approvals():
+                tasks.setdefault(task.id, task)
+            return [self._pending_summary(t) for t in tasks.values()]
 
     def approve_pending(self, task_id: str, approved: bool) -> dict:
         with self._approvals_lock:
             task = self._pending_approvals.pop(task_id, None)
+        if task is None:
+            task = self._load_pending_approval(task_id)
         if task is None:
             return {"task_id": task_id, "status": "unknown",
                     "error": "no pending approval with this id"}
@@ -202,6 +206,7 @@ class Orchestrator:
         if not approved:
             task.transition(TaskStatus.CANCELLED)
             task.result = {"approved": False, "message": "Usuario rechazo la accion."}
+            self._delete_pending_approval(task.id)
             return {"task_id": task.id, "status": task.status.value, "approved": False}
 
         task.transition(TaskStatus.EXECUTING)
@@ -210,6 +215,7 @@ class Orchestrator:
         except Exception as e:
             task.transition(TaskStatus.FAILED)
             task.error = str(e)
+        self._delete_pending_approval(task.id)
         return {"task_id": task.id, "status": task.status.value,
                 "approved": True, "result": task.result}
 
@@ -521,6 +527,7 @@ class Orchestrator:
             }
             with self._approvals_lock:
                 self._pending_approvals[task.id] = task
+            self._persist_pending_approval(task)
             self._merkle.log(
                 action="task.routed",
                 agent="router",
@@ -679,6 +686,7 @@ class Orchestrator:
             }
             with self._approvals_lock:
                 self._pending_approvals[task.id] = task
+            self._persist_pending_approval(task)
             self._merkle.log(
                 action="task.routed",
                 agent="router",
@@ -1011,6 +1019,7 @@ class Orchestrator:
             }
             with self._approvals_lock:
                 self._pending_approvals[task.id] = task
+            self._persist_pending_approval(task)
             self._merkle.log(
                 action="task.routed",
                 agent="router_gate_f",
@@ -1168,6 +1177,112 @@ class Orchestrator:
                 merkle=self._merkle,
             )
         return self._vision_loop
+
+    # ------------------------------------------------------------------
+    # Pending approval persistence (Gate G)
+    # ------------------------------------------------------------------
+
+    def _pending_summary(self, task: Task) -> dict:
+        return {
+            "task_id": task.id,
+            "intent": task.intent,
+            "reason": (task.result or {}).get("reason", "") if isinstance(task.result, dict) else "",
+            "tool": task.tool_name,
+            "route": task.route.value if task.route else None,
+            "created_at": task.created_at,
+        }
+
+    def _persist_pending_approval(self, task: Task) -> None:
+        try:
+            self._pending_approval_dir.mkdir(parents=True, exist_ok=True)
+            path = self._pending_approval_dir / f"{task.id}.json"
+            payload = self._serialize_task(task)
+            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            self._merkle.log(
+                action="approval.persisted",
+                agent="orchestrator",
+                result="success",
+                risk_level="safe",
+                payload={"task_id": task.id, "path": str(path)},
+                task_id=task.id,
+            )
+        except Exception as exc:  # noqa: BLE001
+            self._merkle.log(
+                action="approval.persist_failed",
+                agent="orchestrator",
+                result="failure",
+                risk_level="moderate",
+                payload={"task_id": task.id, "error": str(exc)[:500]},
+                task_id=task.id,
+            )
+
+    def _load_pending_approval(self, task_id: str) -> Task | None:
+        path = self._pending_approval_dir / f"{task_id}.json"
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return self._deserialize_task(data)
+        except Exception as exc:  # noqa: BLE001
+            self._merkle.log(
+                action="approval.load_failed",
+                agent="orchestrator",
+                result="failure",
+                risk_level="moderate",
+                payload={"task_id": task_id, "error": str(exc)[:500]},
+            )
+            return None
+
+    def _load_persisted_pending_approvals(self) -> list[Task]:
+        if not self._pending_approval_dir.exists():
+            return []
+        tasks: list[Task] = []
+        for path in sorted(self._pending_approval_dir.glob("*.json")):
+            task = self._load_pending_approval(path.stem)
+            if task is not None:
+                tasks.append(task)
+        return tasks
+
+    def _delete_pending_approval(self, task_id: str) -> None:
+        try:
+            (self._pending_approval_dir / f"{task_id}.json").unlink(missing_ok=True)
+        except Exception as exc:  # noqa: BLE001
+            self._merkle.log(
+                action="approval.delete_failed",
+                agent="orchestrator",
+                result="failure",
+                risk_level="moderate",
+                payload={"task_id": task_id, "error": str(exc)[:500]},
+            )
+
+    def _serialize_task(self, task: Task) -> dict:
+        data = task.to_dict()
+        data["operational_mode"] = task.operational_mode.value
+        data["metadata"] = task.metadata
+        return data
+
+    def _deserialize_task(self, data: dict) -> Task:
+        task = Task(
+            intent=str(data["intent"]),
+            source=TaskSource(str(data.get("source", TaskSource.CLI.value))),
+            id=str(data["id"]),
+            priority=int(data.get("priority", 3)),
+            sensitivity=str(data.get("sensitivity", "low")),
+            action=str(data.get("action", "")),
+            operational_mode=OperationalMode(str(data.get("operational_mode", OperationalMode.NORMAL.value))),
+            parent_id=data.get("parent_id"),
+            created_at=str(data.get("created_at", datetime.now(timezone.utc).isoformat())),
+            updated_at=str(data.get("updated_at", datetime.now(timezone.utc).isoformat())),
+            metadata=dict(data.get("metadata") or {}),
+        )
+        task.status = TaskStatus(str(data.get("status", TaskStatus.AWAITING_APPROVAL.value)))
+        route = data.get("route")
+        task.route = RoutingLevel(str(route)) if route else None
+        task.tool_name = data.get("tool_name")
+        task.result = data.get("result")
+        task.error = data.get("error")
+        task.audit_hash = data.get("audit_hash")
+        return task
 
     def _execute_local_safe_via_inference(self, task: Task) -> None:
         """
@@ -1397,7 +1512,8 @@ class Orchestrator:
     def _init_dirs(self) -> None:
         for sub in ["projects", "tmp", "skills", "memory/system_context",
                     "memory/error_registry", "memory/approved_patterns",
-                    "memory/performance", "memory/audit", "config"]:
+                    "memory/performance", "memory/audit",
+                    "memory/pending_approvals", "config"]:
             (self._workspace / sub).mkdir(parents=True, exist_ok=True)
 
     def _init_components(self) -> None:
@@ -1472,6 +1588,7 @@ class Orchestrator:
         # Approval flow (Gate C / C4-s2)
         self._pending_approvals: dict[str, Task] = {}
         self._approvals_lock = threading.Lock()
+        self._pending_approval_dir = self._workspace / "memory" / "pending_approvals"
 
         # Telegram bot + monitors (opcionales, se inician con start_*).
         # Tipo declarado a nivel clase (ver bloque al inicio de Orchestrator).

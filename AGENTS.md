@@ -217,7 +217,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (509 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (512 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
@@ -246,12 +246,19 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 509)
+3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 512)
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate F COMPLETE, suite 509/509 green.
-Next logical work: Gate G planning.
+Current state at session start: Gate G IN PROGRESS.
+Gate F is complete and tagged `v0.5-gate-f`; GitHub main/tag are pushed.
+Hermes-VPS was restored on CPX22 and `scripts/hermes_smoke.py` passes.
+CLI approvals now persist across process restarts via `atlas pending` and
+`atlas approve <task_id>`. Telegram bot token is configured locally in `.env`,
+but `TELEGRAM_CHAT_ID` remains pending until the operator sends `/start` to
+`GodAtlas_bot`.
+Next logical work: finish Telegram chat authorization, run Telegram smoke, then
+seal Gate G.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
@@ -294,6 +301,7 @@ Canonical planning docs:
 - `docs/adr_013b_computer_use.md` — resolved computer-use ADR.
 - `docs/absorption_master_plan.md` — cleaned absorption/forking strategy distilled from `grok.md`.
 - `docs/gate_f_real_world_readiness.md` — host readiness checklist distilled from Gemini notes.
+- `docs/gate_g_operational_readiness.md` — current Gate G operational status.
 - `docs/atlas_box_architecture.md` — Atlas Box hardware/topology concept.
 - `docs/fleet_security_plan.md` — future distributed-node security plan.
 - `docs/product_strategy_notes.md` — non-legal product/positioning notes.

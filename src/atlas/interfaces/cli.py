@@ -27,9 +27,9 @@ def get_orchestrator() -> Orchestrator:
 
 
 @click.group()
-@click.version_option("0.1.0", prog_name="atlas")
+@click.version_option("0.5.0", prog_name="atlas")
 def cli() -> None:
-    """Atlas Core v0.1 — Sistema operativo personal de inteligencia."""
+    """Atlas Core v0.5 — Sistema operativo personal de inteligencia."""
 
 
 @cli.command()
@@ -38,7 +38,7 @@ def status() -> None:
     orch = get_orchestrator()
     st = orch.status()
 
-    console.print("\n[bold cyan]Atlas Core v0.1[/bold cyan]")
+    console.print("\n[bold cyan]Atlas Core v0.5[/bold cyan]")
     console.print(f"  Workspace:       {st.workspace}")
     console.print(f"  Version:         {st.version}")
     console.print(f"  Uptime:          {st.uptime_seconds}s")
@@ -81,6 +81,43 @@ def task(intent: tuple, priority: int, source: str) -> None:
 
     if t.error:
         console.print(f"\n[bold red]Error:[/bold red] {t.error}")
+
+
+@cli.command("pending")
+def pending() -> None:
+    """Lista approvals pendientes persistidos por el Orchestrator."""
+    orch = get_orchestrator()
+    items = orch.pending_approvals()
+    if not items:
+        console.print("[green]Sin approvals pendientes.[/green]")
+        return
+
+    table = Table(title="Approvals pendientes", show_header=True)
+    table.add_column("Task ID", style="cyan")
+    table.add_column("Tool", style="magenta")
+    table.add_column("Reason")
+    table.add_column("Intent")
+    for item in items:
+        table.add_row(
+            str(item.get("task_id", "")),
+            str(item.get("tool") or ""),
+            str(item.get("reason") or ""),
+            str(item.get("intent") or ""),
+        )
+    console.print(table)
+
+
+@cli.command("approve")
+@click.argument("task_id", required=True)
+@click.option("--deny", is_flag=True, help="Rechaza la tarea en vez de aprobarla.")
+def approve(task_id: str, deny: bool) -> None:
+    """Aprueba o rechaza una tarea pendiente."""
+    orch = get_orchestrator()
+    result = orch.approve_pending(task_id, approved=not deny)
+    status = result.get("status", "unknown")
+    color = "green" if status == "done" else "yellow" if status == "cancelled" else "red"
+    console.print(f"Status: [{color}]{status}[/{color}]")
+    console.print_json(json.dumps(result, ensure_ascii=False, default=str))
 
 
 @cli.command()

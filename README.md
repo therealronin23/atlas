@@ -44,7 +44,7 @@ cp .env.example .env
 # Verificar que todo funciona
 PYTHONPATH=src python -m pytest tests/ -q
 MYPYPATH=src python -m mypy src/atlas/
-# Estado local auditado: 509 tests verdes, mypy sobre 44 source files.
+# Estado local auditado: 512 tests verdes, mypy sobre 44 source files.
 ```
 
 ## Comandos básicos

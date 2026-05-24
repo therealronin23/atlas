@@ -141,6 +141,27 @@ def test_approve_unknown_task_returns_error(orch):
     assert "error" in out
 
 
+def test_pending_approval_survives_orchestrator_restart(workspace: Path):
+    from atlas.core.orchestrator import Orchestrator
+    import atlas.governance.governance_l0 as g
+
+    g.GovernanceL0._instance = None
+    first = Orchestrator(workspace=workspace)
+    _force_requires_approval(first)
+    task = first.handle_intent("hacer X")
+
+    g.GovernanceL0._instance = None
+    second = Orchestrator(workspace=workspace)
+
+    pending = second.pending_approvals()
+    assert any(p["task_id"] == task.id for p in pending)
+
+    out = second.approve_pending(task.id, approved=False)
+    assert out["status"] == "cancelled"
+    assert second.pending_approvals() == []
+    g.GovernanceL0._instance = None
+
+
 # ---------------------------------------------------------------------------
 # Bot callback_query + notify_all
 # ---------------------------------------------------------------------------

@@ -15,6 +15,7 @@ poder testear ambos lados por separado.
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.error
 import urllib.parse
@@ -54,7 +55,14 @@ class TelegramAuthorizer:
     @classmethod
     def from_permission_profile(cls, profile: Any) -> "TelegramAuthorizer":
         cfg = profile.telegram_config()
-        return cls(cfg.get("authorized_chat_ids") or [])
+        ids = list(cfg.get("authorized_chat_ids") or [])
+        env_ids = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_IDS")
+        if env_ids:
+            for raw in env_ids.replace(";", ",").split(","):
+                raw = raw.strip()
+                if raw:
+                    ids.append(int(raw))
+        return cls(ids)
 
     def is_allowed(self, chat_id: int) -> bool:
         return int(chat_id) in self._allowed

@@ -21,14 +21,21 @@ ADR-007  Autonomy decision tree: Governance > Permission > Sensitivity > Classif
 ADR-011  Atlas->Hermes channel: REST HTTPS + HMAC-SHA256 + anti-replay timestamp.
          Tailscale tunnel in production (ADR-017).
 ADR-013  Telegram auth: chat_id whitelist + optional passphrase for APPROVE-level tasks.
-ADR-013b Computer-use: Playwright (browser) + xdotool (Linux GUI) + Xvfb. Deferred Gate F.
+ADR-013b Computer-use: RESOLVED Gate F (2026-05-25).
+         Decision: Playwright-backed BrowserTool, EditorTool via
+         PermissionProfile + capability tokens + AtlasExecutor, conservative
+         VisionLoop that proposes typed actions but does not run autonomous
+         loops, and explicit Orchestrator routes for `browser`, `editor` and
+         `vision` commands. Mutating actions require approval. Accepted
+         implementation and verification live in docs/adr_013b_computer_use.md
+         and docs/gate_f_seal.md.
 ADR-014  Layered isolation: Proxmox VE > LXC Atlas Core > Docker NORMAL / VM DEGRADED.
          NORMAL tier: subprocess isolated, --network none, 512MB RAM, 30s CPU.
          DEGRADED tier: VM + Snapshot + HITL Telegram confirmation.
 ADR-016  InferenceHub backend: LiteLLM. Fallback chain: Groq > OpenRouter > Together > Gemini > L0.
 ADR-017  Atlas-Hermes tunnel: Tailscale (WireGuard). Hermes IP only visible inside Tailscale network.
 
-## Open ADRs
+## Resolved at Gate E
 
 ADR-002  Local environment: bare metal + venv (RESOLVED Gate E, 2026-05-24).
          Decision: Proxmox rejected — i7-6700HQ (2015 laptop) + 15GB RAM insufficient for
@@ -41,6 +48,8 @@ ADR-003  Voice module: faster-whisper (STT) + piper-tts (TTS) — RESOLVED Gate 
          Deps opcionales (pip install atlas-core[voice]). Hardware verificado: ALC295 OK.
          Activación manual (Enter) en modo NORMAL. Implementado: src/atlas/interfaces/voice.py.
          30 tests en stub mode (sin hardware). Modos: stub/real/auto.
+## Resolved at Gate D
+
 ADR-008  Vector and graph memory: KuzuDB (embedded, C++, MIT license).
          Decision: KuzuDB chosen over ChromaDB/LanceDB/SQLite-vec for combining
          Cypher graph queries + native vector search + FTS5 in a single embedded
@@ -81,6 +90,16 @@ ADR-010  SLM classifier.
 ADR-012  Memory sync Hermes <-> Atlas Core — Gate C to D (pull-on-reconnect default).
 ADR-015  [Merged into ADR-014] Escalation protocol for DEGRADED/OMEGA tiers.
 
+## Open / Deferred ADRs
+
+ADR-019  Statistical Validation Framework.
+         Objective: evaluate router and InferenceHub performance using cross-validation
+         with multiple seeds and statistical tests. Adapts the scientific trainer
+         skeleton from the Omega project.
+         Reference implementation: atlas-experiments/omega/atlas_omega_entrenamiento.py
+         Target module: src/atlas/lab/evaluator.py
+         Status: DEFERRED to Gate G/J.
+
 ## Deferred to experiments (Gate D / E)
 
 ADR-018  Memory Distiller.
@@ -103,13 +122,6 @@ ADR-018  Memory Distiller.
          Tests: tests/test_distiller.py (17 tests).
          Status: RESOLVED (Gate D, distiller v1).
 
-ADR-019  Statistical Validation Framework.
-         Objective: evaluate router and InferenceHub performance using cross-validation
-         with multiple seeds and statistical tests. Adapts the scientific trainer
-         skeleton from the Omega project.
-         Reference implementation: atlas-experiments/omega/atlas_omega_entrenamiento.py
-         Target module: src/atlas/lab/evaluator.py
-         Status: DEFERRED to Gate D / E.
 
 ## Technical notes (permanent)
 
