@@ -21,7 +21,7 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d.
+- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (391 total con Gate E)
   - Cableo Orchestrator integrando todas las piezas Gate D: DONE (opt-in).
     `Orchestrator.enable_gate_d_pipeline(inference_hub=...)` o env var
     `ATLAS_PIPELINE_GATE_D=1` activa la cadena completa:
@@ -44,7 +44,10 @@ components serve Atlas, not the other way around.
     - Integración con Orchestrator (interceptar handle_intent para lookup en GhostReplay antes de inferir, snapshot a TimeTravel en cada paso) queda como follow-up.
   - D6 PII Surrogate (ADR-023): DONE. `src/atlas/security/pii_surrogate.py` + 33 tests. Detección regex (email, DNI ES, IBAN, teléfono ES, IPv4/v6, API keys Groq/OpenRouter/Hermes) + sustitución determinista por surrogates que preservan formato (DNI con letra válida, IPv4 en TEST-NET-1, IPv6 en 2001:db8::/32). Salt via `ATLAS_PII_SALT`. Redact + restore roundtrip. Detección por SLM (nombres, ciudades) queda como follow-up v2.
   - D7 Cierre Gate D + tag v0.3-gate-d: DONE. Evidencia en `docs/gate_d_seal.md`.
-- Gate E: IN PROGRESS — ADR-002 resolved (bare metal, skip E1) + E2 Dashboard + E3 Voice.
+- Gate E: IN PROGRESS — ADR-002 sealed (bare metal, E1 skipped) + E2 Dashboard DONE + E3 Voice pending.
+  - E2 Dashboard: DONE. `atlas dashboard` → localhost:7331. FastAPI+Jinja2, 6 páginas + JSON API.
+    391 tests. `src/atlas/interfaces/dashboard.py` + `interfaces/templates/`.
+  - E3 Voice: PENDING — ADR-003, Whisper STT + Piper TTS, `src/atlas/interfaces/voice.py`.
 - Gate F: PENDING — Computer-use + Editor integration + Frontend.
 
 ## Project Structure
@@ -206,7 +209,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (368 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (391 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
