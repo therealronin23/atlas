@@ -93,6 +93,18 @@ class SSRFBridge:
         # Eliminar puerto si existe
         domain = domain.split(":")[0]
 
+        # Verificar allowlist PRIMERO (dominios anadidos explicitamente via
+        # extra_allowed o add_domain tienen prioridad sobre BLOCKED_DOMAINS).
+        # Esto permite a tests y al operador desbloquear localhost cuando sea
+        # necesario (ej: servidor HTTP local de test).
+        if self._is_allowed(domain):
+            return BridgeDecision(
+                allowed=True,
+                url=url,
+                reason=f"Dominio en allowlist: {domain}",
+                domain=domain,
+            )
+
         # Bloquear dominios internos/privados absolutos
         if domain in BLOCKED_DOMAINS:
             return BridgeDecision(
@@ -108,15 +120,6 @@ class SSRFBridge:
                 allowed=False,
                 url=url,
                 reason=f"IP privada bloqueada: {domain} (SSRF protection).",
-                domain=domain,
-            )
-
-        # Verificar allowlist (dominio exacto o subdominio)
-        if self._is_allowed(domain):
-            return BridgeDecision(
-                allowed=True,
-                url=url,
-                reason=f"Dominio en allowlist: {domain}",
                 domain=domain,
             )
 
