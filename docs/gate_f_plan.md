@@ -1,6 +1,6 @@
 # Gate F Plan
 
-**Status:** in progress.
+**Status:** complete.
 **Current baseline:** F1 BrowserTool, F2 EditorTool and F3 VisionLoop MVP are
 implemented, with explicit Orchestrator routing and local suite `509/509`
 green.
@@ -14,12 +14,12 @@ auditable and approval-aware.
 
 | Area | Current state | Required before Gate F close |
 |---|---|---|
-| BrowserTool | Playwright scaffold, SSRFBridge checks, Merkle logging, local/private-network policy, tests, Orchestrator approval routing for explicit commands | real-host smoke |
-| EditorTool | open/read/write/apply_diff/run_task scaffold, tests, AtlasExecutor path, Orchestrator approval routing for explicit commands | real-host smoke |
+| BrowserTool | Playwright scaffold, SSRFBridge checks, Merkle logging, local/private-network policy, tests, Orchestrator approval routing for explicit commands, real-host smoke | complete |
+| EditorTool | open/read/write/apply_diff/run_task scaffold, tests, AtlasExecutor path, Orchestrator approval routing for explicit commands, real-host smoke | complete |
 | Code execution | AtlasExecutor exists; EditorTool uses structured command allowlist | no public raw shell path remains in Gate F tools |
 | Visual loop | screenshot -> stub description -> typed ProposedAction; mutating actions force approval; `vision propose` routed by Orchestrator | VLM backend and action-execution approval design |
 | Orchestrator integration | explicit routes and approval states for `browser`, `editor`, `vision` commands | CLI/Telegram UX and real-host smoke |
-| Packaging | Playwright represented as optional `computer-use` extra | docs/smoke coverage |
+| Packaging | Playwright represented as optional `computer-use` extra; smoke evidence captured in Gate F seal | complete |
 
 ## F1: Browser Hardening
 
@@ -88,3 +88,5 @@ must be cold:
 - Orchestrator has explicit routes and approval states for Browser/Editor/VisionLoop.
 - README/ROADMAP/AGENTS agree on Gate F status.
 - ADR-013b is updated or a Gate F seal explicitly references this plan.
+
+All Gate F acceptance criteria are satisfied by `docs/gate_f_seal.md`.

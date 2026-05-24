@@ -1,7 +1,7 @@
 # Gate F Real-World Readiness
 
 **Source material:** distilled from `Gemini-Temporary Chat.md`.
-**Status:** planning and operator checklist.
+**Status:** passed for Gate F close; remains as operator checklist.
 
 Gate F means Atlas starts touching the real host: browser automation, editor
 actions, local models, and eventually kernel-level monitoring. Passing tests is
@@ -90,3 +90,5 @@ Gate F should be considered ready for real host use only after:
 4. At least one local or live inference smoke test passes.
 5. The operator can reproduce the setup from documented commands.
 
+Gate F passed these signals on 2026-05-25. Evidence is recorded in
+[`docs/gate_f_seal.md`](gate_f_seal.md).
