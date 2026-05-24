@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import pytest
 
+from atlas.core.contracts import Task, TaskSource, TaskStatus
 from atlas.interfaces.voice import (
     STUB_STT_TEXT,
     STTResult,
@@ -141,6 +142,51 @@ class TestTTSStub:
     def test_speak_latency_positive(self, vm_stub: VoiceModule, capsys) -> None:
         result = vm_stub.speak("prueba")
         assert result.latency_ms >= 0
+
+
+# ---------------------------------------------------------------------------
+# Loop integration
+# ---------------------------------------------------------------------------
+
+class TestVoiceLoopIntegration:
+    def test_run_loop_sends_text_to_orchestrator(
+        self,
+        vm_stub: VoiceModule,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys,
+    ) -> None:
+        calls: list[tuple[str, TaskSource]] = []
+
+        class DummyOrchestrator:
+            def handle_intent(
+                self,
+                intent: str,
+                source: TaskSource = TaskSource.CLI,
+            ) -> Task:
+                calls.append((intent, source))
+                task = Task(intent=intent, source=source)
+                task.transition(TaskStatus.CLASSIFYING)
+                task.transition(TaskStatus.ROUTING)
+                task.transition(TaskStatus.EXECUTING)
+                task.transition(TaskStatus.DONE)
+                task.result = {"text": "respuesta de prueba"}
+                return task
+
+        inputs = iter(["", KeyboardInterrupt()])
+
+        def fake_input(_prompt: str) -> str:
+            value = next(inputs)
+            if isinstance(value, KeyboardInterrupt):
+                raise value
+            return value
+
+        monkeypatch.setattr("builtins.input", fake_input)
+
+        vm_stub.run_loop(orchestrator=DummyOrchestrator())
+
+        assert calls == [(STUB_STT_TEXT, TaskSource.CLI)]
+        captured = capsys.readouterr()
+        assert "respuesta de prueba" in captured.out
 
 
 # ---------------------------------------------------------------------------

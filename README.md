@@ -134,6 +134,8 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
   plan futuro para nodos Atlas distribuidos.
 - [docs/product_strategy_notes.md](docs/product_strategy_notes.md) —
   notas no legales de posicionamiento y producto.
+- [docs/gate_h_resilience_plan.md](docs/gate_h_resilience_plan.md) —
+  notas futuras sobre síntesis de software y resiliencia adaptativa.
 - [docs/gate_c_seal.md](docs/gate_c_seal.md) — evidencia cierre Gate C.
 - [docs/gate_d_seal.md](docs/gate_d_seal.md) — evidencia cierre Gate D.
 - [docs/gate_e_seal.md](docs/gate_e_seal.md) — evidencia cierre Gate E.

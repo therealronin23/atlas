@@ -281,6 +281,7 @@ Canonical planning docs:
 - `docs/atlas_box_architecture.md` — Atlas Box hardware/topology concept.
 - `docs/fleet_security_plan.md` — future distributed-node security plan.
 - `docs/product_strategy_notes.md` — non-legal product/positioning notes.
+- `docs/gate_h_resilience_plan.md` — future software synthesis and adaptive resilience plan.
 - `docs/adr_024_observability_logging_v2.md` — proposed observability/logging v2.
 - `docs/adr_025_cold_update_manager.md` — proposed cold self-improvement protocol.
 

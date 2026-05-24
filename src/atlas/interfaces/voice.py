@@ -424,10 +424,16 @@ class VoiceModule:
                 if on_text is not None:
                     response = on_text(stt.text)
                 elif orchestrator is not None:
-                    from atlas.core.contracts import Task, TaskSource  # noqa: PLC0415
-                    task = Task(intent=stt.text, source=TaskSource.CLI)
-                    result = orchestrator.handle_intent(task)
-                    response = result.get("output", result.get("message", str(result)))
+                    from atlas.core.contracts import TaskSource  # noqa: PLC0415
+                    task = orchestrator.handle_intent(stt.text, source=TaskSource.CLI)
+                    result = task.result if isinstance(task.result, dict) else {}
+                    response = str(
+                        result.get("output")
+                        or result.get("text")
+                        or result.get("message")
+                        or task.error
+                        or task.status.value
+                    )
                 else:
                     response = f"(sin orchestrator) Dijiste: {stt.text}"
 
