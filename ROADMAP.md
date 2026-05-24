@@ -31,6 +31,8 @@ Arquitectura Atlas Box/flota: [`docs/atlas_box_architecture.md`](docs/atlas_box_
 [`docs/fleet_security_plan.md`](docs/fleet_security_plan.md).
 Notas de producto no legales:
 [`docs/product_strategy_notes.md`](docs/product_strategy_notes.md).
+Notas futuras Gate H:
+[`docs/gate_h_resilience_plan.md`](docs/gate_h_resilience_plan.md).
 
 ### F1 — Computer-use con Playwright
 - Browser automation con Playwright (navegar, rellenar formularios, screenshots): scaffold implementado en `src/atlas/tools/browser.py`.
