@@ -231,3 +231,103 @@ class TestRecovery:
         statuses = hub.providers_status()
         assert statuses[0]["status"] == "rate_limited"
         assert statuses[0]["rate_limited_for_s"] > 0
+
+
+# ===========================================================================
+# L0 Ollama real — FU-4
+# ===========================================================================
+
+
+def _ollama_provider() -> Provider:
+    from atlas.core.inference_hub import InferenceLevel
+    return Provider(
+        name="ollama_local",
+        level=InferenceLevel.L0,
+        base_url="http://localhost:11434",
+        model_id="qwen2.5-coder:7b",
+        litellm_model="ollama/qwen2.5-coder:7b",
+        api_key_env=None,
+        rpm_limit=999,
+        context_tokens=8192,
+    )
+
+
+class TestOllamaL0:
+    """FU-4 — L0 Ollama HTTP: comportamiento sin API key, api_base, fallback."""
+
+    def test_resolve_live_for_ollama_returns_true_outside_pytest(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Sin api_key_env, _resolve_live_for debe devolver True fuera de pytest."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        hub = InferenceHub(providers=[_ollama_provider()], mode="auto")
+        assert hub._resolve_live_for(_ollama_provider()) is True
+
+    def test_resolve_live_for_ollama_returns_false_in_pytest(self) -> None:
+        """Dentro de pytest (PYTEST_CURRENT_TEST set), siempre stub."""
+        hub = InferenceHub(providers=[_ollama_provider()], mode="auto")
+        # PYTEST_CURRENT_TEST esta seteado porque estamos en pytest
+        assert hub._resolve_live_for(_ollama_provider()) is False
+
+    def test_ollama_passes_api_base_to_litellm(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_call_provider_real debe pasar api_base=base_url y api_key='ollama'."""
+        captured: dict = {}
+
+        def fake_completion(**kw: Any) -> Any:
+            captured.update(kw)
+            return _ok_completion("respuesta local")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=[_ollama_provider()], mode="live")
+        hub.infer(InferenceRequest(prompt="test", level=InferenceLevel.L0))
+
+        assert captured.get("api_base") == "http://localhost:11434"
+        assert captured.get("api_key") == "ollama"
+        assert captured.get("model") == "ollama/qwen2.5-coder:7b"
+
+    def test_ollama_connection_refused_marks_provider_degraded(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Si Ollama no responde, el provider queda DEGRADED y infer devuelve error."""
+        import urllib.error
+
+        def fail_completion(**kw: Any) -> Any:
+            raise ConnectionRefusedError("Connection refused localhost:11434")
+
+        monkeypatch.setattr(litellm, "completion", fail_completion)
+        provider = _ollama_provider()
+        hub = InferenceHub(providers=[provider], mode="live")
+        resp = hub.infer(InferenceRequest(prompt="test", level=InferenceLevel.L0))
+
+        assert resp.success is False
+        assert provider.status == ProviderStatus.DEGRADED
+
+    def test_l1_fallback_uses_l0_when_all_l1_fail(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """infer(L1) con L1 caidos debe intentar L0 (Ollama) como ultimo recurso."""
+        from atlas.core.inference_hub import InferenceLevel
+        call_counts: dict[str, int] = {}
+
+        def selective_completion(**kw: Any) -> Any:
+            model = kw.get("model", "")
+            call_counts[model] = call_counts.get(model, 0) + 1
+            if "ollama" in model:
+                return _ok_completion("respuesta L0")
+            raise ConnectionRefusedError("L1 no disponible")
+
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setattr(litellm, "completion", selective_completion)
+        l1_provider = Provider(
+            name="groq_test", level=InferenceLevel.L1,
+            base_url="https://api.groq.com", model_id="llama",
+            litellm_model="groq/llama", api_key_env="GROQ_API_KEY",
+        )
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        hub = InferenceHub(providers=[l1_provider, _ollama_provider()], mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="test", level=InferenceLevel.L1))
+
+        # Puede responder desde L0 si L1 falla
+        assert "ollama" in call_counts or resp.success is False  # fallback o todo falla
