@@ -21,9 +21,10 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
 - **Gate F — IN PROGRESS**: computer-use con Playwright y herramienta de
   editor ya existen con tests; BrowserTool ya audita acciones en Merkle y
   EditorTool enruta IO/exec por AtlasExecutor. Visual loop MVP propone
-  acciones tipadas sin ejecutarlas. Falta approval flow y routing del
-  Orchestrator antes de cerrar el Gate. Playwright vive en el extra opcional
-  `atlas-core[computer-use]`.
+  acciones tipadas sin ejecutarlas. Orchestrator ya enruta comandos Gate F
+  explícitos (`browser`, `editor`, `vision`) y deja acciones mutantes en
+  approval flow. Falta smoke real de host y cierre ADR/seal antes de cerrar
+  el Gate. Playwright vive en el extra opcional `atlas-core[computer-use]`.
 
 ## Quick start
 
@@ -43,7 +44,7 @@ cp .env.example .env
 # Verificar que todo funciona
 PYTHONPATH=src python -m pytest tests/ -q
 MYPYPATH=src python -m mypy src/atlas/
-# Estado local auditado: 494 tests verdes, mypy sobre 42 source files.
+# Estado local auditado: 509 tests verdes, mypy sobre 44 source files.
 ```
 
 ## Comandos básicos
