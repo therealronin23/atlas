@@ -19,8 +19,11 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
   ADR-002 sellado como bare metal + venv, dashboard web FastAPI/Jinja2
   en localhost:7331, voz STT/TTS con extras opcionales.
 - **Gate F — IN PROGRESS**: computer-use con Playwright y herramienta de
-  editor ya existen con tests; falta hardening completo vía capabilities,
-  MerkleLogger y approval flow antes de cerrar el Gate.
+  editor ya existen con tests; BrowserTool ya audita acciones en Merkle y
+  EditorTool enruta IO/exec por AtlasExecutor. Visual loop MVP propone
+  acciones tipadas sin ejecutarlas. Falta approval flow y routing del
+  Orchestrator antes de cerrar el Gate. Playwright vive en el extra opcional
+  `atlas-core[computer-use]`.
 
 ## Quick start
 

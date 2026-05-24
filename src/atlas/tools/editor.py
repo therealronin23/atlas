@@ -14,15 +14,20 @@ Todas las operaciones pasan por PermissionProfile (paths) y MerkleLogger.
 
 from __future__ import annotations
 
-import os
 import re
+import shlex
 import shutil
 import subprocess
-import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from atlas.governance.permission_profile import PermissionProfile
+from atlas.logging.merkle_logger import MerkleLogger
+from atlas.security.capabilities import CapabilityDenied
+from atlas.security.executor import AtlasExecutor, ExecutorError
+from atlas.security.sandbox import LayeredIsolationSandbox
 
 
 # ---------------------------------------------------------------------------
@@ -114,8 +119,9 @@ class EditorTool:
         ("nano", "nano"),
     ]
 
-    def __init__(self, workspace: Path) -> None:
-        self._workspace = workspace
+    def __init__(self, workspace: Path, executor: AtlasExecutor | None = None) -> None:
+        self._workspace = workspace.expanduser().resolve()
+        self._executor = executor or self._build_default_executor(self._workspace)
         self._editor: EditorInfo | None = None
 
     # ------------------------------------------------------------------
@@ -210,16 +216,35 @@ class EditorTool:
             )
 
         try:
-            size = resolved.stat().st_size
-            if size > max_bytes:
+            cap = self._executor.issuer.issue_read(resolved, max_bytes=max_bytes)
+            data = self._executor.execute_read(cap)
+            if resolved.stat().st_size > max_bytes:
                 return FileReadResult(
-                    success=False, path=str(resolved), content="", size_bytes=size,
-                    error=f"Archivo demasiado grande ({size}B > {max_bytes}B max)",
+                    success=False, path=str(resolved), content="", size_bytes=len(data),
+                    error=(
+                        f"Archivo demasiado grande "
+                        f"({resolved.stat().st_size}B > {max_bytes}B max)"
+                    ),
                 )
-            content = resolved.read_text(encoding="utf-8")
+            content = data.decode("utf-8")
             return FileReadResult(
                 success=True, path=str(resolved), content=content,
                 size_bytes=len(content.encode("utf-8")),
+            )
+        except CapabilityDenied as e:
+            return FileReadResult(
+                success=False, path=str(resolved), content="", size_bytes=0,
+                error=e.reason,
+            )
+        except ExecutorError as e:
+            return FileReadResult(
+                success=False, path=str(resolved), content="", size_bytes=0,
+                error=str(e),
+            )
+        except UnicodeDecodeError as e:
+            return FileReadResult(
+                success=False, path=str(resolved), content="", size_bytes=0,
+                error=f"No es texto UTF-8: {e}",
             )
         except Exception as e:
             return FileReadResult(
@@ -235,11 +260,22 @@ class EditorTool:
         """Escribe contenido en un archivo (crea directorios si es necesario)."""
         resolved = path.expanduser().resolve()
         try:
-            resolved.parent.mkdir(parents=True, exist_ok=True)
             encoded = content.encode("utf-8")
-            resolved.write_text(content, encoding="utf-8")
+            cap = self._executor.issuer.issue_write(
+                resolved,
+                max_bytes=max(len(encoded), 1),
+            )
+            bytes_written = self._executor.execute_write(cap, encoded)
             return FileWriteResult(
-                success=True, path=str(resolved), bytes_written=len(encoded),
+                success=True, path=str(resolved), bytes_written=bytes_written,
+            )
+        except CapabilityDenied as e:
+            return FileWriteResult(
+                success=False, path=str(resolved), bytes_written=0, error=e.reason,
+            )
+        except ExecutorError as e:
+            return FileWriteResult(
+                success=False, path=str(resolved), bytes_written=0, error=str(e),
             )
         except Exception as e:
             return FileWriteResult(
@@ -262,68 +298,50 @@ class EditorTool:
 
         try:
             if git_dir is not None:
-                # Usar git apply desde el directorio del repo
-                result = subprocess.run(
-                    ["git", "apply"],
-                    input=diff_text,
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    cwd=str(git_dir),
+                diff_path = self._write_tmp_diff(diff_text)
+                result = self._executor.execute_exec(
+                    self._executor.issuer.issue_exec(
+                        "git",
+                        args=("apply", str(diff_path)),
+                        working_dir=git_dir,
+                        timeout_s=10,
+                    )
                 )
-                if result.returncode == 0:
+                if result.exit_code == 0:
+                    diff_path.unlink(missing_ok=True)
                     return DiffResult(
                         success=True, file=str(resolved), applied=True,
                         stdout=result.stdout, stderr=result.stderr,
                     )
-                # Si git apply falla, intentar con --recount (tolerante a offsets)
-                result2 = subprocess.run(
-                    ["git", "apply", "--recount"],
-                    input=diff_text,
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    cwd=str(git_dir),
+                result2 = self._executor.execute_exec(
+                    self._executor.issuer.issue_exec(
+                        "git",
+                        args=("apply", "--recount", str(diff_path)),
+                        working_dir=git_dir,
+                        timeout_s=10,
+                    )
                 )
-                if result2.returncode == 0:
+                if result2.exit_code == 0:
+                    diff_path.unlink(missing_ok=True)
                     return DiffResult(
                         success=True, file=str(resolved), applied=True,
                         stdout=result2.stdout, stderr=result2.stderr,
                     )
+                diff_path.unlink(missing_ok=True)
                 return DiffResult(
                     success=False, file=str(resolved), applied=False,
                     stdout=result.stdout, stderr=result.stderr,
                     error=f"git apply fallo: {result.stderr[:500]}",
                 )
-            else:
-                # Usar patch command
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".diff", delete=False,
-                ) as f:
-                    f.write(diff_text)
-                    diff_path = f.name
-                result = subprocess.run(
-                    ["patch", "-p1", "-i", diff_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    cwd=str(resolved.parent),
-                )
-                Path(diff_path).unlink(missing_ok=True)
-                if result.returncode == 0:
-                    return DiffResult(
-                        success=True, file=str(resolved), applied=True,
-                        stdout=result.stdout, stderr=result.stderr,
-                    )
-                return DiffResult(
-                    success=False, file=str(resolved), applied=False,
-                    stdout=result.stdout, stderr=result.stderr,
-                    error=f"patch fallo: {result.stderr[:500]}",
-                )
-        except subprocess.TimeoutExpired:
             return DiffResult(
                 success=False, file=str(resolved), applied=False,
-                stdout="", stderr="", error="Timeout aplicando diff (10s)",
+                stdout="", stderr="",
+                error="apply_diff requiere un repositorio git para usar AtlasExecutor",
+            )
+        except (CapabilityDenied, ExecutorError) as e:
+            return DiffResult(
+                success=False, file=str(resolved), applied=False,
+                stdout="", stderr="", error=str(e),
             )
         except Exception as e:
             return DiffResult(
@@ -352,37 +370,45 @@ class EditorTool:
                 error=f"Directorio no existe: {resolved}",
             )
 
-        merged_env = os.environ.copy()
         if env:
-            merged_env.update(env)
+            return TaskResult(
+                success=False, command=command, working_dir=str(resolved),
+                stdout="", stderr="", exit_code=-1, duration_ms=0,
+                error="env custom no soportado por AtlasExecutor en Gate F",
+            )
 
         start = time.perf_counter()
         try:
-            result = subprocess.run(
-                command,
-                shell=True,
-                cwd=str(resolved),
-                capture_output=True,
-                text=True,
-                timeout=timeout_s,
-                env=merged_env,
+            parts = shlex.split(command)
+            if not parts:
+                return TaskResult(
+                    success=False, command=command, working_dir=str(resolved),
+                    stdout="", stderr="", exit_code=-1, duration_ms=0,
+                    error="Comando vacio",
+                )
+            cap = self._executor.issuer.issue_exec(
+                parts[0],
+                args=tuple(parts[1:]),
+                working_dir=resolved,
+                timeout_s=timeout_s,
             )
+            result = self._executor.execute_exec(cap)
             duration_ms = int((time.perf_counter() - start) * 1000)
             return TaskResult(
-                success=(result.returncode == 0),
+                success=result.success,
                 command=command,
                 working_dir=str(resolved),
                 stdout=result.stdout,
                 stderr=result.stderr,
-                exit_code=result.returncode,
+                exit_code=result.exit_code,
                 duration_ms=duration_ms,
             )
-        except subprocess.TimeoutExpired:
+        except (CapabilityDenied, ExecutorError) as e:
             duration_ms = int((time.perf_counter() - start) * 1000)
             return TaskResult(
                 success=False, command=command, working_dir=str(resolved),
                 stdout="", stderr="", exit_code=-1, duration_ms=duration_ms,
-                error=f"Timeout ({timeout_s}s)",
+                error=str(e),
             )
         except Exception as e:
             duration_ms = int((time.perf_counter() - start) * 1000)
@@ -395,6 +421,40 @@ class EditorTool:
     # ------------------------------------------------------------------
     # Helpers privados
     # ------------------------------------------------------------------
+
+    def _build_default_executor(self, workspace: Path) -> AtlasExecutor:
+        config_path = self._resolve_permissions_config()
+        profile = PermissionProfile(config_path=config_path, workspace=workspace)
+        merkle = MerkleLogger(workspace / "logs")
+        sandbox = LayeredIsolationSandbox(workspace=workspace)
+        from atlas.security.capabilities import CapabilityIssuer  # noqa: PLC0415
+
+        return AtlasExecutor(
+            issuer=CapabilityIssuer(profile),
+            merkle=merkle,
+            sandbox=sandbox,
+        )
+
+    def _resolve_permissions_config(self) -> Path:
+        candidates = [
+            Path.cwd() / "config" / "permissions.yaml",
+            Path(__file__).resolve().parents[3] / "config" / "permissions.yaml",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        raise FileNotFoundError("No se encontro config/permissions.yaml")
+
+    def _write_tmp_diff(self, diff_text: str) -> Path:
+        tmp_dir = self._workspace / "tmp" / "editor_diffs"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        diff_path = tmp_dir / f"diff_{time.time_ns()}.patch"
+        cap = self._executor.issuer.issue_write(
+            diff_path,
+            max_bytes=max(len(diff_text.encode("utf-8")), 1),
+        )
+        self._executor.execute_write(cap, diff_text.encode("utf-8"))
+        return diff_path
 
     def _get_version(self, binary: str) -> str | None:
         try:

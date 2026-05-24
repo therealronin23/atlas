@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate F IN PROGRESS** (F1/F2 scaffold + tests; suite local 494/494 green, mypy limpio).
-> Siguiente: **Gate F hardening**.
+> Estado actual: **Gate F IN PROGRESS** (F1/F2/F3 MVP; suite local 504/504 green, mypy limpio).
+> Siguiente: **approval flow + Orchestrator routing + real host smoke**.
 
 ---
 
@@ -39,19 +39,26 @@ Notas futuras Gate H:
 - Loop visual: screenshot → VLM (Gemini free / LLaVA local) → describe → Atlas decide acción.
 - Todo pasa por SSRF Bridge.
 - Tests con páginas estáticas locales: implementados en `tests/test_browser.py`.
-- Pendiente antes de cierre: logging Merkle de acciones browser y policy de aprobación para allowlist local/extra.
+- DONE: logging Merkle de acciones browser.
+- DONE: policy explícita para allowlist local/extra mediante `allow_private_network=True`.
 
 ### F2 — Integración Cursor/VS Code
 - `src/atlas/tools/editor.py`: open_project, apply_diff, run_task scaffold implementado.
 - Flujo: `atlas task "crea componente React"` → Atlas planifica → genera código → aplica via editor → abre Cursor.
 - Tests implementados en `tests/test_editor.py`.
-- Pendiente antes de cierre: enrutar read/write/apply_diff/run_task por PermissionProfile + AtlasExecutor + MerkleLogger.
+- DONE: read/write/apply_diff/run_task enrutados por PermissionProfile + AtlasExecutor + MerkleLogger.
+- DONE: `run_task` elimina `shell=True` del path publico y usa comando estructurado allowlisted.
+- DONE: tests negativos de rutas y comandos bloqueados.
 
 ### F3 — eBPF / seccomp (capa de seguridad final)
+- F3 visual loop MVP: `src/atlas/tools/computer_use/vision_loop.py` propone acciones tipadas desde screenshot y fuerza aprobación para acciones mutantes.
+- Tests: `tests/test_vision_loop.py`.
+
+### F4 — eBPF / seccomp (capa de seguridad final)
 - Compilar restricciones de syscalls directamente en el kernel.
 - Alternativa: seccomp profiles con Docker si eBPF no es viable en el hardware actual.
 
-### F4 — ColdUpdateManager (self-improvement protocol)
+### F5 — ColdUpdateManager (self-improvement protocol)
 - Snapshot completo → generar N+1 → ejecutar tests → si mejoran métricas, proponer swap vía Telegram.
 - HITL obligatorio (confirmación humana).
 
