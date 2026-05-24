@@ -122,6 +122,10 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
   Claude Code (estado de gates, ADRs, naming rules, coding rules).
 - [docs/USAGE.md](docs/USAGE.md) — guía de operación detallada,
   configuración, troubleshooting.
+- [docs/absorption_master_plan.md](docs/absorption_master_plan.md) —
+  plan limpio de investigación/forking selectivo.
+- [docs/gate_f_plan.md](docs/gate_f_plan.md) — alcance y criterios de
+  cierre de Gate F.
 - [docs/gate_c_seal.md](docs/gate_c_seal.md) — evidencia cierre Gate C.
 - [docs/gate_d_seal.md](docs/gate_d_seal.md) — evidencia cierre Gate D.
 - [docs/gate_e_seal.md](docs/gate_e_seal.md) — evidencia cierre Gate E.

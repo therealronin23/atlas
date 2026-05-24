@@ -273,6 +273,13 @@ F1/F2 scaffolds exist and are tested locally (suite 494/494 green):
 - F1 BrowserTool: Playwright navigation, fill, click, extract and screenshots.
 - F2 EditorTool: editor detection, open_project, read/write, apply_diff and run_task.
 
+Canonical planning docs:
+
+- `docs/gate_f_plan.md` — Gate F scope, hardening order and acceptance criteria.
+- `docs/absorption_master_plan.md` — cleaned absorption/forking strategy distilled from `grok.md`.
+- `docs/adr_024_observability_logging_v2.md` — proposed observability/logging v2.
+- `docs/adr_025_cold_update_manager.md` — proposed cold self-improvement protocol.
+
 Do not close Gate F until these hardening items are done:
 
 1. BrowserTool logs every external action to MerkleLogger.

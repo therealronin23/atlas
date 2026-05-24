@@ -23,6 +23,10 @@ Cada Gate tiene su documento de cierre en `docs/gate_*_seal.md`.
 
 Computer-use + Editor integration + Frontend.
 
+Plan operativo: [`docs/gate_f_plan.md`](docs/gate_f_plan.md).
+Plan maestro de absorción/forking selectivo:
+[`docs/absorption_master_plan.md`](docs/absorption_master_plan.md).
+
 ### F1 — Computer-use con Playwright
 - Browser automation con Playwright (navegar, rellenar formularios, screenshots): scaffold implementado en `src/atlas/tools/browser.py`.
 - Loop visual: screenshot → VLM (Gemini free / LLaVA local) → describe → Atlas decide acción.
