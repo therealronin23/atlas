@@ -27,9 +27,9 @@ def get_orchestrator() -> Orchestrator:
 
 
 @click.group()
-@click.version_option("0.5.0", prog_name="atlas")
+@click.version_option("0.6.0", prog_name="atlas")
 def cli() -> None:
-    """Atlas Core v0.5 — Sistema operativo personal de inteligencia."""
+    """Atlas Core v0.6 — Sistema operativo personal de inteligencia."""
 
 
 @cli.command()
@@ -38,7 +38,7 @@ def status() -> None:
     orch = get_orchestrator()
     st = orch.status()
 
-    console.print("\n[bold cyan]Atlas Core v0.5[/bold cyan]")
+    console.print("\n[bold cyan]Atlas Core v0.6[/bold cyan]")
     console.print(f"  Workspace:       {st.workspace}")
     console.print(f"  Version:         {st.version}")
     console.print(f"  Uptime:          {st.uptime_seconds}s")

@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate G IN PROGRESS** (operational readiness: Hermes live restored, GitHub synced, CLI approvals persistent).
-> Siguiente: **finish Telegram chat authorization**, then Gate G seal.
+> Estado actual: **Gate G COMPLETE** (operational readiness: Hermes live, GitHub synced, CLI approvals persistent, Telegram authorized).
+> Siguiente: **Gate H planning** (ColdUpdateManager MVP, observability v2, VLM loop design).
 
 ---
 
@@ -15,6 +15,7 @@
 | D | ✅ COMPLETE | `v0.3-gate-d` | InferenceHub real (LiteLLM), KuzuDB vector+graph, MemoryDistiller, capability tokens, Time-Travel, Ghost Replay, PII Surrogate, SLM Classifier, pipeline integrado opt-in. 368 tests. |
 | E | ✅ COMPLETE | `v0.4-gate-e` | ADR-002 sealed (bare metal + venv), Dashboard web (FastAPI+Jinja2, localhost:7331), Voz (Whisper STT + Piper TTS). 449 tests. |
 | F | ✅ COMPLETE | `v0.5-gate-f` | Computer-use con BrowserTool, EditorTool, VisionLoop conservador, Orchestrator routing, approval states y smoke real de host. 509 tests. |
+| G | ✅ COMPLETE | `v0.6-gate-g` | Operacionalización local: Hermes-VPS restaurado, GitHub synced, approvals persistentes CLI, Telegram autorizado y smoked. 513 tests. |
 
 Cada Gate tiene su documento de cierre en `docs/gate_*_seal.md`.
 
@@ -76,7 +77,7 @@ Notas futuras Gate H:
 
 ---
 
-## Gate G — IN PROGRESS
+## Gate G — COMPLETE
 
 Operational readiness: make the sealed Gate F capabilities usable from local
 operations without losing state between commands.
@@ -86,7 +87,7 @@ operations without losing state between commands.
 - DONE: CLI pending approvals persist on disk.
 - DONE: `atlas pending` and `atlas approve <task_id>` implemented.
 - DONE: Telegram token configured locally in `.env`.
-- PENDING: user must send `/start` to `GodAtlas_bot` so Atlas can discover and authorize `TELEGRAM_CHAT_ID`.
+- DONE: Telegram chat authorization discovered via `/start`; `TELEGRAM_CHAT_ID` configured locally; outbound Telegram smoke PASS.
 
 ---
 

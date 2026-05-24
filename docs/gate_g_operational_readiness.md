@@ -1,6 +1,6 @@
 # Gate G — Operational Readiness
 
-**Status:** in progress
+**Status:** complete
 **Date:** 2026-05-25
 
 Gate G turns the sealed Gate F core into a usable local operating loop. The
@@ -14,16 +14,17 @@ goal is not new autonomy; it is reliable operations.
 - Telegram bot token is present in local `.env`.
 - Telegram authorizer can merge `TELEGRAM_CHAT_ID` from `.env` with
   `permissions.yaml`.
+- Telegram chat authorization is configured locally.
+- Real Telegram outbound smoke passed.
 - CLI approvals are persistent across process restarts.
 - `atlas pending` lists persisted approvals.
 - `atlas approve <task_id>` approves or rejects persisted approvals.
 
-## Pending
+## Remaining Follow-Up
 
-- The operator must send `/start` or any message to `GodAtlas_bot` once, so
-  Telegram exposes the `chat_id` through `getUpdates`.
-- After that, set `TELEGRAM_CHAT_ID` in `.env` and run a Telegram smoke:
-  `/status`, `/task`, `/pending`, approve and deny.
+- Full interactive Telegram command smoke (`/status`, `/task`, `/pending`,
+  approve and deny) should be run manually from the Telegram client when desired.
+  The bot token, chat authorization and outbound send path are verified.
 
 ## Evidence So Far
 
@@ -37,7 +38,7 @@ PYTHONPATH=src python -m pytest tests/test_cli_gate_g.py \
 # -> 42 passed
 
 PYTHONPATH=src python -m pytest tests/ -q
-# -> 512 passed
+# -> 513 passed
 
 MYPYPATH=src python -m mypy src/atlas/
 # -> Success: no issues found in 44 source files

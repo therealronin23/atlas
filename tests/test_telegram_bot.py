@@ -122,6 +122,33 @@ def test_authorizer_merges_env_chat_id(monkeypatch: pytest.MonkeyPatch):
     assert auth.is_allowed(42) is True
 
 
+def test_authorizer_accepts_permission_profile_property(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    from atlas.governance.permission_profile import PermissionProfile
+
+    cfg = tmp_path / "permissions.yaml"
+    cfg.write_text(
+        "workspace:\n"
+        "  auto_write:\n    - tmp/\n"
+        "  confirm_write:\n    - projects/\n"
+        "  read_only:\n    - config/governance.json\n"
+        "  read_extended: []\n"
+        "absolute_blocks:\n  - /etc/\n"
+        "system_read_allowed: []\n"
+        "telegram:\n  authorized_chat_ids: [77]\n"
+        "shell_allowlist:\n  - echo\n"
+    )
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "88")
+    profile = PermissionProfile(config_path=cfg, workspace=tmp_path / "atlas")
+
+    auth = TelegramAuthorizer.from_permission_profile(profile)
+
+    assert auth.is_allowed(77) is True
+    assert auth.is_allowed(88) is True
+
+
 # ---------------------------------------------------------------------------
 # Cliente: serializacion y errores
 # ---------------------------------------------------------------------------

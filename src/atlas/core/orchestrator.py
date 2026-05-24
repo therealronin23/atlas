@@ -74,7 +74,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.5.0"
+    VERSION = "0.6.0"
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).

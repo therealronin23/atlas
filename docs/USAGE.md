@@ -85,9 +85,9 @@ atlas status
 
 Output:
 ```
-Atlas Core v0.5
+Atlas Core v0.6
   Workspace:       /home/usuario/atlas
-  Version:         0.5.0
+  Version:         0.6.0
   Uptime:          12.5s
   Governance:      OK
   Merkle chain:    OK
