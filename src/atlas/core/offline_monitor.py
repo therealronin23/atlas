@@ -57,8 +57,14 @@ class OfflineMonitor:
         """Comprueba el estado una vez. Util para tests. Retorna el estado actual."""
         current = bool(self._hermes.check_offline_fallback())
         if current and not self._last_state:
+            # Transicion online -> offline: activar shadow
             self._bus.publish_type(EventType.SHADOW_ALERT, {
                 "elapsed_minutes": getattr(self._hermes, "SHADOW_TIMEOUT_MINUTES", None),
+            })
+        elif not current and self._last_state:
+            # Transicion offline -> online: reconexion — ADR-012 pull-on-reconnect
+            self._bus.publish_type(EventType.HERMES_RECONNECTED, {
+                "note": "Hermes reachable — triggering offline queue sync",
             })
         self._last_state = current
         return current

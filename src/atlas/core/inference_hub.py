@@ -39,7 +39,6 @@ try:
     _HAS_LITELLM = True
     try:
         litellm.suppress_debug_info = True
-        litellm.set_verbose = False
     except Exception:  # pragma: no cover
         pass
 except ImportError:  # pragma: no cover

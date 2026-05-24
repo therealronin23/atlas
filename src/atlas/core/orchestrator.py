@@ -6,12 +6,15 @@ Decision final: Atlas decide. Todo lo demas sirve a Atlas.
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+_log = logging.getLogger(__name__)
 
 from atlas.core.contracts import (
     DelegationPayload, Event, EventType, RoutingLevel,
@@ -365,6 +368,43 @@ class Orchestrator:
         if self._offline_monitor is not None:
             self._offline_monitor.stop()
             self._offline_monitor = None
+
+    def sync_offline_queue(self) -> dict:
+        """
+        ADR-012 pull-on-reconnect — se llama cuando el OfflineMonitor detecta
+        que Hermes volvio a estar reachable (evento HERMES_RECONNECTED).
+
+        Drena la OfflineQueue: intenta re-enviar cada entrada pendiente a Hermes
+        via enqueue_task(). Marca la entrada como 'sent' o 'failed' segun resultado.
+        Devuelve un resumen {sent, failed, skipped}.
+
+        Tambien se puede invocar manualmente (CLI/Telegram) para forzar un sync.
+        """
+        pending = self._offline_queue.all_pending()
+        sent = failed = 0
+        for entry in pending:
+            try:
+                self._hermes_mock.enqueue_task(entry.delegation)
+                self._offline_queue.mark_sent(entry.delegation.id)
+                sent += 1
+            except Exception as e:  # noqa: BLE001
+                self._offline_queue.mark_failed(entry.delegation.id)
+                failed += 1
+                _log.warning("sync_offline_queue: fallo envio %s — %s",
+                             entry.delegation.id[:8], e)
+
+        skipped = len(pending) - sent - failed
+        self._merkle.log(
+            action="hermes.sync_offline_queue",
+            agent="orchestrator",
+            result="success" if failed == 0 else "partial",
+            risk_level="safe",
+            payload={"pending": len(pending), "sent": sent,
+                     "failed": failed, "skipped": skipped},
+        )
+        _log.info("sync_offline_queue: %d enviadas, %d fallidas (de %d pendientes)",
+                  sent, failed, len(pending))
+        return {"sent": sent, "failed": failed, "skipped": skipped}
 
     def attach_thermal_watchdog(self, watchdog: Any) -> None:
         """Conecta un ThermalWatchdog ya construido para que emita THERMAL_ALERT."""
@@ -1004,6 +1044,13 @@ class Orchestrator:
 
         # Event Bus
         self._bus = EventBus()
+        # ADR-012: suscribir sync offline al evento de reconexion con Hermes
+        def _on_hermes_reconnected(_evt: Event) -> None:
+            self.sync_offline_queue()
+        self._bus.subscribe(
+            EventType.HERMES_RECONNECTED,
+            _on_hermes_reconnected,
+        )
 
         # Approval flow (Gate C / C4-s2)
         self._pending_approvals: dict[str, Task] = {}
