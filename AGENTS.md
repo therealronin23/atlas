@@ -21,7 +21,7 @@ components serve Atlas, not the other way around.
   - C3 HermesRestAdapter: DONE. REST + HMAC-SHA256 + retry + OfflineQueue fallback. Smoke test contra el stub real PASS.
   - C4 Telegram bot: DONE (both sessions). Orchestrator↔bot via EventBus, approval flow with inline buttons, `OfflineMonitor`, `/pending`.
   - C5 cierre + tag v0.2-gate-c: DONE. Evidencia en `docs/gate_c_seal.md`.
-- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (494 total con Gate F in progress)
+- Gate D: COMPLETE — 368 tests passing + mypy verde + tag v0.3-gate-d. (509 total con Gate F in progress)
   - Cableo Orchestrator integrando todas las piezas Gate D: DONE (opt-in).
     `Orchestrator.enable_gate_d_pipeline(inference_hub=...)` o env var
     `ATLAS_PIPELINE_GATE_D=1` activa la cadena completa:
@@ -215,7 +215,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (494 tests)
+PYTHONPATH=src python -m pytest tests/ -q           # full suite (509 tests)
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
@@ -244,12 +244,12 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 494)
+3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 509)
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate F IN PROGRESS, suite 494/494 green.
-Next logical work: Gate F hardening.
+Current state at session start: Gate F IN PROGRESS, suite 509/509 green.
+Next logical work: Gate F real-host smoke + ADR-013b/seal.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
@@ -268,7 +268,8 @@ FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
 
 ## Gate F — CURRENT WORK
 
-F1/F2/F3 MVP hardening is partially complete and tested locally (suite 504/504 green):
+F1/F2/F3 MVP hardening plus explicit Orchestrator routing are tested locally
+(suite 509/509 green):
 
 - F1 BrowserTool: Playwright navigation, fill, click, extract and screenshots;
   Merkle logging for browser actions is implemented.
@@ -278,6 +279,9 @@ F1/F2/F3 MVP hardening is partially complete and tested locally (suite 504/504 g
   public `shell=True`.
 - F3 VisionLoop MVP: screenshot -> deterministic/stub description ->
   typed ProposedAction; mutating actions require approval and are not executed.
+- Orchestrator Gate F routing: explicit `browser`, `editor` and `vision`
+  commands route through approval states; mutating browser/editor actions wait
+  in `AWAITING_APPROVAL` until `approve_pending`.
 
 Canonical planning docs:
 
@@ -298,8 +302,9 @@ Do not close Gate F until these hardening items are done:
 3. EditorTool read/write/apply_diff/run_task go through PermissionProfile + AtlasExecutor. DONE.
 4. EditorTool command execution removes raw `shell=True` from the public path. DONE.
 5. Gate F optional dependencies are represented in packaging/docs. DONE for `computer-use`.
-6. Full suite + mypy pass after hardening.
-7. Orchestrator routing and approval states for Browser/Editor/VisionLoop remain pending.
+6. Full suite + mypy pass after hardening. DONE (509 tests, 44 source files).
+7. Orchestrator routing and approval states for Browser/Editor/VisionLoop. DONE for explicit commands.
+8. Real host smoke + ADR-013b/seal remain pending.
 
 ## What to NEVER do
 

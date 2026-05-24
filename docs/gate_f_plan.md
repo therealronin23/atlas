@@ -2,7 +2,8 @@
 
 **Status:** in progress.
 **Current baseline:** F1 BrowserTool, F2 EditorTool and F3 VisionLoop MVP are
-implemented, with local suite `504/504` green.
+implemented, with explicit Orchestrator routing and local suite `509/509`
+green.
 
 Gate F is where Atlas gains real computer-use. The risk is also much higher:
 browser automation, editor operations, command execution and future visual loops
@@ -13,11 +14,11 @@ auditable and approval-aware.
 
 | Area | Current state | Required before Gate F close |
 |---|---|---|
-| BrowserTool | Playwright scaffold, SSRFBridge checks, Merkle logging, local/private-network policy, tests | Orchestrator approval integration |
-| EditorTool | open/read/write/apply_diff/run_task scaffold, tests, AtlasExecutor path | approval/routing integration |
+| BrowserTool | Playwright scaffold, SSRFBridge checks, Merkle logging, local/private-network policy, tests, Orchestrator approval routing for explicit commands | real-host smoke |
+| EditorTool | open/read/write/apply_diff/run_task scaffold, tests, AtlasExecutor path, Orchestrator approval routing for explicit commands | real-host smoke |
 | Code execution | AtlasExecutor exists; EditorTool uses structured command allowlist | no public raw shell path remains in Gate F tools |
-| Visual loop | screenshot -> stub description -> typed ProposedAction; mutating actions force approval | VLM backend and Orchestrator approval integration |
-| Orchestrator integration | Browser/Editor not routed by Orchestrator | explicit routes and approval states |
+| Visual loop | screenshot -> stub description -> typed ProposedAction; mutating actions force approval; `vision propose` routed by Orchestrator | VLM backend and action-execution approval design |
+| Orchestrator integration | explicit routes and approval states for `browser`, `editor`, `vision` commands | CLI/Telegram UX and real-host smoke |
 | Packaging | Playwright represented as optional `computer-use` extra | docs/smoke coverage |
 
 ## F1: Browser Hardening
@@ -56,7 +57,7 @@ First version should be deliberately conservative:
    `stop`. DONE.
 4. Route proposed actions through approval if they mutate state or leave the
    current domain. PARTIAL: mutating proposals force `requires_approval=True`;
-   Orchestrator approval routing remains pending.
+   Orchestrator routes `vision propose`, but autonomous execution remains out of scope.
 5. Log every proposal and decision. PARTIAL: proposals are logged; decisions
    wait for Orchestrator integration.
 
@@ -84,5 +85,6 @@ must be cold:
 - Mypy passes.
 - BrowserTool and EditorTool have audit tests.
 - No public raw shell execution path remains in Gate F tools.
+- Orchestrator has explicit routes and approval states for Browser/Editor/VisionLoop.
 - README/ROADMAP/AGENTS agree on Gate F status.
 - ADR-013b is updated or a Gate F seal explicitly references this plan.

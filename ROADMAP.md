@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate F IN PROGRESS** (F1/F2/F3 MVP; suite local 504/504 green, mypy limpio).
-> Siguiente: **approval flow + Orchestrator routing + real host smoke**.
+> Estado actual: **Gate F IN PROGRESS** (F1/F2/F3 MVP + Orchestrator routing; suite local 509/509 green, mypy limpio).
+> Siguiente: **real host smoke + ADR-013b/seal de Gate F**.
 
 ---
 
@@ -53,6 +53,15 @@ Notas futuras Gate H:
 ### F3 — eBPF / seccomp (capa de seguridad final)
 - F3 visual loop MVP: `src/atlas/tools/computer_use/vision_loop.py` propone acciones tipadas desde screenshot y fuerza aprobación para acciones mutantes.
 - Tests: `tests/test_vision_loop.py`.
+
+### F4 — Orchestrator routing
+- `src/atlas/core/orchestrator.py` enruta comandos explícitos `browser`, `editor`
+  y `vision`.
+- Acciones observacionales (`editor read`, `browser screenshot/extract`,
+  `vision propose`) pueden ejecutarse directamente.
+- Acciones mutantes (`browser navigate/click/fill`, `editor write/run/apply_diff/open`)
+  quedan en `AWAITING_APPROVAL` y se ejecutan solo via `approve_pending`.
+- Tests: `tests/test_orchestrator_gate_f.py`.
 
 ### F4 — eBPF / seccomp (capa de seguridad final)
 - Compilar restricciones de syscalls directamente en el kernel.

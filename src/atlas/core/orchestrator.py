@@ -57,6 +57,15 @@ class AtlasStatus:
     emergency_mode: bool
 
 
+@dataclass(frozen=True)
+class GateFCommand:
+    tool: str
+    action: str
+    args: dict[str, Any]
+    requires_approval: bool
+    reason: str
+
+
 class Orchestrator:
     """
     Cerebro ejecutivo de Atlas Core.
@@ -71,6 +80,9 @@ class Orchestrator:
     _telegram_thread: Any
     _offline_monitor: Any
     _thermal_watchdog: Any
+    _browser_tool: Any
+    _editor_tool: Any
+    _vision_loop: Any
 
     # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
     # Inicializados a None y poblados al activar.
@@ -200,6 +212,27 @@ class Orchestrator:
             task.error = str(e)
         return {"task_id": task.id, "status": task.status.value,
                 "approved": True, "result": task.result}
+
+    def attach_gate_f_tools(
+        self,
+        *,
+        browser: Any | None = None,
+        editor: Any | None = None,
+        vision_loop: Any | None = None,
+    ) -> None:
+        """
+        Inyecta herramientas Gate F ya construidas.
+
+        Es principalmente util para tests y para integraciones que quieran
+        controlar el ciclo de vida del browser/editor. Si no se inyectan, el
+        Orchestrator construye instancias conservadoras bajo demanda.
+        """
+        if browser is not None:
+            self._browser_tool = browser
+        if editor is not None:
+            self._editor_tool = editor
+        if vision_loop is not None:
+            self._vision_loop = vision_loop
 
     def memory_read(self, layer: str) -> Any:
         layer_map = {
@@ -444,6 +477,11 @@ class Orchestrator:
             self._block_task(task, "Atlas en modo de emergencia.", "critical")
             return
 
+        gate_f = self._parse_gate_f_command(task.intent)
+        if gate_f is not None:
+            self._route_gate_f_command(task, gate_f)
+            return
+
         # 2. Clasificar
         result = self._classifier.classify(task.intent, sensitivity=task.sensitivity)
 
@@ -549,6 +587,21 @@ class Orchestrator:
         # siempre antes del classifier: si hit, devolvemos directamente.
         sensitivity = task.sensitivity   # "low" | "medium" | "high"
         ctx_sig = "pipeline-d-v1"
+
+        gate_f = self._parse_gate_f_command(task.intent)
+        if gate_f is not None:
+            self._route_gate_f_command(task, gate_f)
+            self._timetravel.record_step(
+                task.id,
+                "gate_f_routed",
+                {
+                    "tool": gate_f.tool,
+                    "action": gate_f.action,
+                    "requires_approval": gate_f.requires_approval,
+                },
+            )
+            return
+
         hit = self._ghost_replay.lookup(task.intent, sensitivity, ctx_sig)
         if hit is not None:
             # Camino corto: ya estamos en CLASSIFYING desde el paso 1.
@@ -722,6 +775,10 @@ class Orchestrator:
 
     def _execute_task(self, task: Task) -> None:
         """Ejecuta la tarea con la herramienta deterministica correspondiente."""
+        if "gate_f_command" in task.metadata:
+            self._execute_gate_f_task(task)
+            return
+
         intent_lower = task.intent.lower()
 
         # Mapear intencion a herramienta
@@ -763,6 +820,354 @@ class Orchestrator:
         )
         task.transition(TaskStatus.DONE)
         self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
+
+    # ------------------------------------------------------------------
+    # Gate F — Browser / Editor / VisionLoop routing
+    # ------------------------------------------------------------------
+
+    def _parse_gate_f_command(self, intent: str) -> GateFCommand | None:
+        """
+        Parser minimo y explicito para Gate F.
+
+        Formatos aceptados:
+          - browser navigate <url>
+          - browser screenshot [name]
+          - browser extract
+          - browser click <selector>
+          - browser fill <selector> :: <value>
+          - editor read <path>
+          - editor write <path> :: <content>
+          - editor run <working_dir> :: <command>
+          - editor apply_diff <path> :: <unified diff>
+          - editor open <path>
+          - vision propose [screenshot_name]
+        """
+        text = intent.strip()
+        if not text:
+            return None
+
+        head, sep, tail = text.partition(" ")
+        if not sep:
+            return None
+        tool = head.lower()
+        if tool not in {"browser", "editor", "vision"}:
+            return None
+
+        action, _, rest = tail.strip().partition(" ")
+        action = action.lower()
+        rest = rest.strip()
+
+        if tool == "browser":
+            return self._parse_browser_command(action, rest)
+        if tool == "editor":
+            return self._parse_editor_command(action, rest)
+        return self._parse_vision_command(action, rest)
+
+    def _parse_browser_command(self, action: str, rest: str) -> GateFCommand | None:
+        if action in {"navigate", "nav", "open", "abrir", "navegar"} and rest:
+            return GateFCommand(
+                tool="browser",
+                action="navigate",
+                args={"url": rest},
+                requires_approval=True,
+                reason="Browser navigation touches an external page.",
+            )
+        if action in {"screenshot", "captura"}:
+            return GateFCommand(
+                tool="browser",
+                action="screenshot",
+                args={"name": rest or None},
+                requires_approval=False,
+                reason="Browser screenshot observes current page only.",
+            )
+        if action in {"extract", "extrae", "leer"}:
+            return GateFCommand(
+                tool="browser",
+                action="extract",
+                args={},
+                requires_approval=False,
+                reason="Browser extract observes current page only.",
+            )
+        if action == "click" and rest:
+            return GateFCommand(
+                tool="browser",
+                action="click",
+                args={"selector": rest},
+                requires_approval=True,
+                reason="Browser click mutates page state.",
+            )
+        if action == "fill" and rest:
+            selector, value = self._split_payload(rest)
+            if selector and value is not None:
+                return GateFCommand(
+                    tool="browser",
+                    action="fill",
+                    args={"selector": selector, "value": value},
+                    requires_approval=True,
+                    reason="Browser fill mutates page state.",
+                )
+        return None
+
+    def _parse_editor_command(self, action: str, rest: str) -> GateFCommand | None:
+        if action in {"read", "lee", "leer"} and rest:
+            return GateFCommand(
+                tool="editor",
+                action="read",
+                args={"path": rest},
+                requires_approval=False,
+                reason="Editor read is observational and still goes through AtlasExecutor.",
+            )
+        if action in {"write", "escribe"} and rest:
+            path, content = self._split_payload(rest)
+            if path and content is not None:
+                return GateFCommand(
+                    tool="editor",
+                    action="write",
+                    args={"path": path, "content": content},
+                    requires_approval=True,
+                    reason="Editor write changes filesystem state.",
+                )
+        if action == "run" and rest:
+            working_dir, command = self._split_payload(rest)
+            if working_dir and command is not None:
+                return GateFCommand(
+                    tool="editor",
+                    action="run",
+                    args={"working_dir": working_dir, "command": command},
+                    requires_approval=True,
+                    reason="Editor run executes a command.",
+                )
+        if action == "apply_diff" and rest:
+            path, diff_text = self._split_payload(rest)
+            if path and diff_text is not None:
+                return GateFCommand(
+                    tool="editor",
+                    action="apply_diff",
+                    args={"path": path, "diff": diff_text},
+                    requires_approval=True,
+                    reason="Editor apply_diff changes filesystem state.",
+                )
+        if action == "open" and rest:
+            return GateFCommand(
+                tool="editor",
+                action="open",
+                args={"path": rest},
+                requires_approval=True,
+                reason="Editor open launches a host process.",
+            )
+        return None
+
+    def _parse_vision_command(self, action: str, rest: str) -> GateFCommand | None:
+        if action in {"propose", "proposal", "observa", "observe"}:
+            return GateFCommand(
+                tool="vision",
+                action="propose",
+                args={"screenshot_name": rest or "vision_loop"},
+                requires_approval=False,
+                reason="Vision loop proposes an action but does not execute it.",
+            )
+        return None
+
+    def _split_payload(self, rest: str) -> tuple[str, str | None]:
+        left, sep, right = rest.partition("::")
+        if not sep:
+            return rest.strip(), None
+        return left.strip(), right.lstrip()
+
+    def _route_gate_f_command(self, task: Task, command: GateFCommand) -> None:
+        task.transition(TaskStatus.ROUTING)
+        task.route = (
+            RoutingLevel.REQUIRES_APPROVAL
+            if command.requires_approval or task.sensitivity == "high"
+            else RoutingLevel.DETERMINISTIC_TOOL
+        )
+        task.tool_name = f"{command.tool}.{command.action}"
+        task.metadata["gate_f_command"] = {
+            "tool": command.tool,
+            "action": command.action,
+            "args": command.args,
+            "requires_approval": command.requires_approval,
+        }
+        self._merkle.log(
+            action="task.classified",
+            agent="classifier_gate_f",
+            result="success",
+            risk_level="safe",
+            payload={
+                "route": task.route.value,
+                "tool": task.tool_name,
+                "reason": command.reason,
+            },
+            task_id=task.id,
+        )
+
+        if task.route == RoutingLevel.REQUIRES_APPROVAL:
+            task.transition(TaskStatus.AWAITING_APPROVAL)
+            task.result = {
+                "message": f"Accion Gate F requiere aprobacion explicita. Razon: {command.reason}",
+                "approved": False,
+                "reason": command.reason,
+                "tool": task.tool_name,
+            }
+            with self._approvals_lock:
+                self._pending_approvals[task.id] = task
+            self._merkle.log(
+                action="task.routed",
+                agent="router_gate_f",
+                result="pending",
+                risk_level="high",
+                payload={"requires_approval": True, "tool": task.tool_name},
+                task_id=task.id,
+            )
+            self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+                "task_id": task.id,
+                "intent": task.intent,
+                "reason": command.reason,
+                "tool": task.tool_name,
+            }, task.id)
+            return
+
+        task.transition(TaskStatus.EXECUTING)
+        self._execute_gate_f_task(task)
+
+    def _execute_gate_f_task(self, task: Task) -> None:
+        raw = task.metadata.get("gate_f_command")
+        if not isinstance(raw, dict):
+            raise RuntimeError("Gate F command metadata missing or invalid")
+        tool = str(raw.get("tool", ""))
+        action = str(raw.get("action", ""))
+        args = raw.get("args", {})
+        if not isinstance(args, dict):
+            raise RuntimeError("Gate F command args missing or invalid")
+
+        try:
+            if tool == "browser":
+                result = self._execute_browser_command(action, args)
+            elif tool == "editor":
+                result = self._execute_editor_command(action, args)
+            elif tool == "vision":
+                result = self._execute_vision_command(action, args)
+            else:
+                raise RuntimeError(f"Unknown Gate F tool: {tool}")
+        except Exception as e:
+            self._merkle.log(
+                action="gate_f.tool_failed",
+                agent=f"{tool}.{action}" if tool and action else "gate_f",
+                result="failure",
+                risk_level="moderate",
+                payload={"error": str(e)[:500]},
+                task_id=task.id,
+            )
+            task.transition(TaskStatus.FAILED)
+            task.error = str(e)
+            self._bus.publish_type(EventType.TOOL_FAILED, {
+                "task_id": task.id, "tool": task.tool_name, "error": str(e),
+            }, task.id)
+            return
+
+        task.result = result
+        self._merkle.log(
+            action="tool.invoked",
+            agent=task.tool_name or "gate_f",
+            result="success",
+            risk_level="medium" if task.route == RoutingLevel.REQUIRES_APPROVAL else "safe",
+            payload={"tool": task.tool_name},
+            task_id=task.id,
+        )
+        task.transition(TaskStatus.DONE)
+        self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
+
+    def _execute_browser_command(self, action: str, args: dict[str, Any]) -> dict:
+        browser = self._get_browser_tool()
+        if action == "navigate":
+            return browser.navigate(str(args["url"])).__dict__
+        if action == "screenshot":
+            return browser.screenshot(args.get("name")).__dict__
+        if action == "extract":
+            return browser.extract().__dict__
+        if action == "click":
+            return browser.click(str(args["selector"])).__dict__
+        if action == "fill":
+            return browser.fill(str(args["selector"]), str(args["value"])).__dict__
+        raise RuntimeError(f"Unsupported browser action: {action}")
+
+    def _execute_editor_command(self, action: str, args: dict[str, Any]) -> dict:
+        editor = self._get_editor_tool()
+        if action == "read":
+            return editor.read_file(self._resolve_gate_f_path(str(args["path"]))).__dict__
+        if action == "write":
+            return editor.write_file(
+                self._resolve_gate_f_path(str(args["path"])),
+                str(args["content"]),
+            ).__dict__
+        if action == "run":
+            return editor.run_task(
+                self._resolve_gate_f_path(str(args["working_dir"])),
+                str(args["command"]),
+            ).__dict__
+        if action == "apply_diff":
+            return editor.apply_diff(
+                self._resolve_gate_f_path(str(args["path"])),
+                str(args["diff"]),
+            ).__dict__
+        if action == "open":
+            return editor.open_project(self._resolve_gate_f_path(str(args["path"]))).__dict__
+        raise RuntimeError(f"Unsupported editor action: {action}")
+
+    def _execute_vision_command(self, action: str, args: dict[str, Any]) -> dict:
+        if action != "propose":
+            raise RuntimeError(f"Unsupported vision action: {action}")
+        proposal = self._get_vision_loop().propose_next(
+            str(args.get("screenshot_name") or "vision_loop")
+        )
+        payload = proposal.__dict__
+        if proposal.requires_approval:
+            self._merkle.log(
+                action="vision.proposal_requires_approval",
+                agent="orchestrator",
+                result="pending",
+                risk_level="medium",
+                payload=payload,
+            )
+        return payload
+
+    def _resolve_gate_f_path(self, value: str) -> Path:
+        path = Path(value).expanduser()
+        if path.is_absolute():
+            return path
+        return (self._workspace / path).resolve()
+
+    def _get_browser_tool(self) -> Any:
+        if self._browser_tool is None:
+            from atlas.tools.browser import BrowserTool  # noqa: PLC0415
+
+            self._browser_tool = BrowserTool(
+                workspace=self._workspace,
+                bridge=self._ssrf_bridge,
+                merkle=self._merkle,
+                allow_private_network=False,
+            )
+        return self._browser_tool
+
+    def _get_editor_tool(self) -> Any:
+        if self._editor_tool is None:
+            from atlas.tools.editor import EditorTool  # noqa: PLC0415
+
+            self._editor_tool = EditorTool(
+                workspace=self._workspace,
+                executor=self._executor,
+            )
+        return self._editor_tool
+
+    def _get_vision_loop(self) -> Any:
+        if self._vision_loop is None:
+            from atlas.tools.computer_use.vision_loop import VisionLoop  # noqa: PLC0415
+
+            self._vision_loop = VisionLoop(
+                browser=self._get_browser_tool(),
+                merkle=self._merkle,
+            )
+        return self._vision_loop
 
     def _execute_local_safe_via_inference(self, task: Task) -> None:
         """
@@ -1074,6 +1479,9 @@ class Orchestrator:
         self._telegram_thread = None
         self._offline_monitor = None
         self._thermal_watchdog = None
+        self._browser_tool = None
+        self._editor_tool = None
+        self._vision_loop = None
 
         # Gate D pipeline integrado — desactivado por defecto. Se activa con
         # enable_gate_d_pipeline() o con ATLAS_PIPELINE_GATE_D=1 en el env.
