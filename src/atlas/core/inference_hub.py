@@ -271,8 +271,10 @@ class InferenceHub:
             return False
         if not _HAS_LITELLM:
             return False
+        # L0 local (Ollama): sin API key, intenta real en auto mode.
+        # Si Ollama no esta corriendo, _call_provider_real captura el error.
         if provider.api_key_env is None:
-            return False
+            return True
         return bool(os.environ.get(provider.api_key_env))
 
     def _call_provider(
@@ -318,12 +320,22 @@ class InferenceHub:
 
         try:
             assert litellm is not None
+            extra_kwargs: dict[str, Any] = {}
+            if provider.api_key_env is None:
+                # L0 local (Ollama): sin key, apuntar explicitamente al base_url
+                # configurado. LiteLLM espera api_base para ollama/ prefix.
+                extra_kwargs["api_base"] = provider.base_url
+                extra_kwargs["api_key"] = "ollama"   # valor dummy requerido por LiteLLM
+            else:
+                key = os.environ.get(provider.api_key_env)
+                if key:
+                    extra_kwargs["api_key"] = key
             completion = litellm.completion(
                 model=provider.litellm_model,
                 messages=messages,
                 max_tokens=request.max_tokens,
                 temperature=request.temperature,
-                api_key=os.environ.get(provider.api_key_env) if provider.api_key_env else None,
+                **extra_kwargs,
             )
         except Exception as exc:  # noqa: BLE001 — clasificamos abajo
             duration_ms = int((time.perf_counter() - start) * 1000)
