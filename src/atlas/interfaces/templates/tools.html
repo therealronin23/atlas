@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Herramientas{% endblock %}
+{% block content %}
+<h2>Tool Registry</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Descripción</th>
+      <th>Nivel</th>
+      <th>Permiso</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tools %}
+    <tr>
+      <td class="mono">{{ t.name }}</td>
+      <td class="dim">{{ t.description }}</td>
+      <td><span class="badge dim">{{ t.level }}</span></td>
+      <td>
+        {% set p = t.permission %}
+        <span class="badge {% if p == 'AUTO' %}ok{% elif p == 'CONFIRM' %}warn{% elif p == 'APPROVE' %}warn{% else %}err{% endif %}">
+          {{ p }}
+        </span>
+      </td>
+      <td>
+        <span class="badge {% if t.enabled %}ok{% else %}err{% endif %}">
+          {% if t.enabled %}activa{% else %}desactivada{% endif %}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

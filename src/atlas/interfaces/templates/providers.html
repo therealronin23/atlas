@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Proveedores{% endblock %}
+{% block content %}
+<h2>InferenceHub — Proveedores LLM</h2>
+
+<div class="stat-grid section">
+  <div class="card">
+    <div class="card-label">Proveedores configurados</div>
+    <div class="card-value">{{ providers|length }}</div>
+    <div class="card-sub">en cadena de fallback</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Con API key</div>
+    <div class="card-value">{{ providers|selectattr('has_key')|list|length }}</div>
+    <div class="card-sub">de {{ providers|length }} definidos</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Proveedor</th>
+      <th>Modelo</th>
+      <th>Ctx tokens</th>
+      <th>API key</th>
+      <th>Llamadas</th>
+      <th>Éxito</th>
+      <th>Lat. media</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in providers %}
+    <tr>
+      <td class="mono">{{ p.name }}</td>
+      <td class="dim mono">{{ p.model }}</td>
+      <td class="dim">{{ "{:,}".format(p.context_tokens) }}</td>
+      <td>
+        <span class="badge {% if p.has_key %}ok{% else %}err{% endif %}">
+          {% if p.has_key %}✓ configurada{% else %}✗ falta{% endif %}
+        </span>
+      </td>
+      <td>{{ p.stats.count }}</td>
+      <td>
+        {% if p.stats.count > 0 %}
+          <span class="badge {% if p.stats.success_rate >= 0.9 %}ok{% elif p.stats.success_rate >= 0.7 %}warn{% else %}err{% endif %}">
+            {{ "%.0f"|format(p.stats.success_rate * 100) }}%
+          </span>
+        {% else %}
+          <span class="dim">-</span>
+        {% endif %}
+      </td>
+      <td class="dim">
+        {% if p.stats.count > 0 %}{{ p.stats.avg_latency_ms }} ms{% else %}-{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

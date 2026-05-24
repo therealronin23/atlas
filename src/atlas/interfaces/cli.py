@@ -173,5 +173,16 @@ def audit(tail: int, verify: bool) -> None:
     console.print(table)
 
 
+@cli.command()
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address (solo localhost por seguridad).")
+@click.option("--port", default=7331, show_default=True, type=int, help="Puerto del dashboard.")
+def dashboard(host: str, port: int) -> None:
+    """Arranca el dashboard web local en localhost:7331."""
+    from atlas.interfaces.dashboard import serve  # noqa: PLC0415
+    console.print(f"\n[bold cyan]Atlas Dashboard[/bold cyan] → http://{host}:{port}")
+    console.print("[dim]Ctrl+C para detener. Auto-refresca cada 30s.[/dim]\n")
+    serve(host=host, port=port)
+
+
 if __name__ == "__main__":
     cli()

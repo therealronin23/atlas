@@ -30,7 +30,11 @@ ADR-017  Atlas-Hermes tunnel: Tailscale (WireGuard). Hermes IP only visible insi
 
 ## Open ADRs
 
-ADR-002  Local environment: Proxmox vs alternatives — Gate E (empirical decision on real hardware).
+ADR-002  Local environment: bare metal + venv (RESOLVED Gate E, 2026-05-24).
+         Decision: Proxmox rejected — i7-6700HQ (2015 laptop) + 15GB RAM insufficient for
+         hypervisor overhead. Docker Engine unnecessary — Atlas runs perfectly in venv with
+         LayeredIsolationSandbox handling process isolation from code. E1 (Proxmox) skipped.
+         Gate E proceeds with E2 (dashboard) + E3 (voice) on bare metal Ubuntu.
 ADR-003  Voice module: Whisper + Piper — Gate E/E3.
 ADR-008  Vector and graph memory: KuzuDB (embedded, C++, MIT license).
          Decision: KuzuDB chosen over ChromaDB/LanceDB/SQLite-vec for combining

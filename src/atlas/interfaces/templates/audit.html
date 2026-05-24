@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block content %}
+<h2>Audit Log — Merkle Chain</h2>
+
+<div class="stat-grid section">
+  <div class="card">
+    <div class="card-label">Integridad</div>
+    <div class="card-value">
+      <span class="badge {% if chain_ok %}ok{% else %}err{% endif %}">
+        {% if chain_ok %}VERIFICADA{% else %}CORRUPTA{% endif %}
+      </span>
+    </div>
+    <div class="card-sub">{{ chain_msg }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Registros totales</div>
+    <div class="card-value">{{ total }}</div>
+    <div class="card-sub">mostrando últimos {{ records|length }}</div>
+  </div>
+</div>
+
+{% if records %}
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Timestamp</th>
+      <th>Acción</th>
+      <th>Agente</th>
+      <th>Resultado</th>
+      <th>Hash (SHA-256 parcial)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in records %}
+    <tr>
+      <td class="dim">{{ loop.index }}</td>
+      <td class="dim mono">{{ r.timestamp[:19] if r.timestamp else '-' }}</td>
+      <td>{{ r.action }}</td>
+      <td class="dim">{{ r.agent }}</td>
+      <td>
+        {% set res = r.result %}
+        <span class="badge {% if res == 'success' %}ok{% elif res == 'pending' %}warn{% else %}err{% endif %}">{{ res }}</span>
+      </td>
+      <td class="mono dim">{{ r.hash_self[:16] if r.hash_self else 'genesis' }}…</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="card"><div class="card-sub">Audit log vacío.</div></div>
+{% endif %}
+{% endblock %}

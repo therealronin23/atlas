@@ -1,0 +1,325 @@
+"""Atlas Core — Dashboard web local (Gate E/E2).
+
+FastAPI + Jinja2, puerto 7331, solo localhost.
+Auto-refresca cada 30s via meta tag.
+Sin dependencias nuevas: fastapi, jinja2, uvicorn ya en pyproject.toml.
+
+Arrancar con:  atlas dashboard
+           o:  uvicorn atlas.interfaces.dashboard:app --host 127.0.0.1 --port 7331
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import re
+from pathlib import Path
+from typing import Any
+
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
+from atlas.core.inference_hub import DEFAULT_PROVIDERS
+from atlas.core.orchestrator import Orchestrator
+from atlas.memory.memory_system import (
+    ApprovedPatternStore,
+    ErrorRegistry,
+    ProviderMetricsStore,
+    SystemContextLoader,
+)
+
+_log = logging.getLogger(__name__)
+
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+PORT = 7331
+
+app = FastAPI(
+    title="Atlas Dashboard",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+_templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+# ---------------------------------------------------------------------------
+# Singleton Orchestrator (lazy, one per process)
+# ---------------------------------------------------------------------------
+
+_orch: Orchestrator | None = None
+
+
+def _get_orch() -> Orchestrator:
+    global _orch
+    if _orch is None:
+        _orch = Orchestrator()
+    return _orch
+
+
+def _workspace() -> Path:
+    env = os.environ.get("ATLAS_HOME")
+    return Path(env).expanduser().resolve() if env else Path.home() / "atlas"
+
+
+# ---------------------------------------------------------------------------
+# System metrics (sin psutil: lee /proc y /sys igual que ThermalWatchdog)
+# ---------------------------------------------------------------------------
+
+def _read_ram_free_mb() -> int:
+    try:
+        text = Path("/proc/meminfo").read_text(encoding="utf-8")
+        for line in text.splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) // 1024
+    except Exception:
+        pass
+    return -1
+
+
+def _read_temp_c() -> float:
+    hwmon = Path("/sys/class/hwmon")
+    if not hwmon.exists():
+        return 0.0
+    for sensor_dir in sorted(hwmon.iterdir()):
+        for temp_file in sorted(sensor_dir.glob("temp*_input")):
+            try:
+                raw = int(temp_file.read_text().strip())
+                val = raw / 1000.0
+                if 20.0 < val < 120.0:
+                    return val
+            except Exception:
+                continue
+    return 0.0
+
+
+def _thermal_data() -> dict[str, Any]:
+    temp = _read_temp_c()
+    ram = _read_ram_free_mb()
+    if temp >= 80.0 or (0 < ram < 1024):
+        mode = "DEGRADED"
+    else:
+        mode = "NORMAL"
+    return {"temp_c": temp, "ram_free_mb": ram, "mode": mode}
+
+
+# ---------------------------------------------------------------------------
+# Memory stats (reads workspace files directly)
+# ---------------------------------------------------------------------------
+
+def _memory_stats() -> dict[str, Any]:
+    ws = _workspace()
+    ctx = SystemContextLoader.load(ws / "memory" / "system_context")
+    has_context = bool(ctx.vision or ctx.rules or ctx.adr)
+
+    err_reg = ErrorRegistry(ws / "memory" / "error_registry")
+    errors = err_reg.all()
+
+    pat_store = ApprovedPatternStore(ws / "memory" / "approved_patterns")
+    patterns = pat_store.all()
+
+    perf = ProviderMetricsStore(ws / "memory" / "performance")
+    perf_path = ws / "memory" / "performance" / "performance.jsonl"
+    perf_count = 0
+    if perf_path.exists():
+        try:
+            perf_count = sum(1 for _ in perf_path.open())
+        except Exception:
+            pass
+
+    context_data: dict[str, str] = {}
+    if has_context:
+        if ctx.vision:
+            # first non-empty line as preview
+            first = next((l for l in ctx.vision.splitlines() if l.strip()), "")
+            context_data["vision"] = first
+        if ctx.rules:
+            first = next((l for l in ctx.rules.splitlines() if l.strip()), "")
+            context_data["rules"] = first
+        if ctx.adr:
+            first = next((l for l in ctx.adr.splitlines() if l.strip()), "")
+            context_data["adr"] = first
+
+    return {
+        "context_loaded": has_context,
+        "context_sections": sum([bool(ctx.vision), bool(ctx.rules), bool(ctx.adr)]),
+        "error_count": len(errors),
+        "pattern_count": len(patterns),
+        "kuzu_active": False,   # se activa si KuzuVectorStore está instanciado
+        "kuzu_patterns": 0,
+        "kuzu_failures": 0,
+        "kuzu_evidence": 0,
+        "perf_samples": perf_count,
+        "context_data": context_data,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Provider stats
+# ---------------------------------------------------------------------------
+
+def _provider_data() -> list[dict[str, Any]]:
+    ws = _workspace()
+    perf = ProviderMetricsStore(ws / "memory" / "performance")
+    result = []
+    for p in DEFAULT_PROVIDERS:
+        env_key = p.api_key_env
+        has_key = bool(env_key and os.environ.get(env_key))
+        stats = perf.get_stats(p.name) if p.api_key_env else {"count": 0}
+        result.append({
+            "name": p.name,
+            "model": p.model_id,
+            "context_tokens": p.context_tokens,
+            "has_key": has_key,
+            "stats": stats,
+        })
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Task filter from audit log
+# ---------------------------------------------------------------------------
+
+def _extract_tasks(records: list[dict]) -> list[dict]:
+    """Filtra y enriquece registros del Merkle log que representan tareas."""
+    tasks = []
+    for r in records:
+        action = r.get("action", "")
+        payload = r.get("payload", {})
+        if action in ("task.received", "task.completed", "task.blocked",
+                      "intent.classified", "intent.executed"):
+            intent = payload.get("intent", payload.get("task_intent", ""))
+            route = payload.get("route", payload.get("classification", ""))
+            tasks.append({
+                "timestamp": r.get("timestamp", ""),
+                "intent": intent or action,
+                "route": route,
+                "result": r.get("result", ""),
+                "risk_level": r.get("risk_level", ""),
+            })
+    return tasks
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse)
+async def status_page(request: Request) -> HTMLResponse:
+    orch = _get_orch()
+    status = orch.status()
+    thermal = _thermal_data()
+    audit = orch.audit_tail(8)
+    gate_d = getattr(orch, "_gate_d_enabled", False)
+    return _templates.TemplateResponse(
+        request,
+        "status.html",
+        {
+            "page": "status",
+            "status": status,
+            "thermal": thermal,
+            "audit_tail": audit,
+            "gate_d": gate_d,
+        },
+    )
+
+
+@app.get("/tasks", response_class=HTMLResponse)
+async def tasks_page(request: Request) -> HTMLResponse:
+    orch = _get_orch()
+    all_records = orch.audit_tail(100)
+    tasks = _extract_tasks(all_records)
+    return _templates.TemplateResponse(
+        request,
+        "tasks.html",
+        {"page": "tasks", "tasks": tasks},
+    )
+
+
+@app.get("/audit", response_class=HTMLResponse)
+async def audit_page(request: Request) -> HTMLResponse:
+    orch = _get_orch()
+    records = orch.audit_tail(50)
+    chain_ok, chain_msg = orch._merkle.verify_chain()
+    total = orch.status().record_count
+    return _templates.TemplateResponse(
+        request,
+        "audit.html",
+        {
+            "page": "audit",
+            "records": records,
+            "chain_ok": chain_ok,
+            "chain_msg": chain_msg,
+            "total": total,
+        },
+    )
+
+
+@app.get("/memory", response_class=HTMLResponse)
+async def memory_page(request: Request) -> HTMLResponse:
+    mem = _memory_stats()
+    return _templates.TemplateResponse(
+        request,
+        "memory.html",
+        {"page": "memory", "mem": mem},
+    )
+
+
+@app.get("/tools", response_class=HTMLResponse)
+async def tools_page(request: Request) -> HTMLResponse:
+    orch = _get_orch()
+    tools = orch.tools()
+    return _templates.TemplateResponse(
+        request,
+        "tools.html",
+        {"page": "tools", "tools": tools},
+    )
+
+
+@app.get("/providers", response_class=HTMLResponse)
+async def providers_page(request: Request) -> HTMLResponse:
+    providers = _provider_data()
+    return _templates.TemplateResponse(
+        request,
+        "providers.html",
+        {"page": "providers", "providers": providers},
+    )
+
+
+# ---------------------------------------------------------------------------
+# JSON API (útil para scripts y futuros widgets)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/status")
+async def api_status() -> dict:
+    orch = _get_orch()
+    st = orch.status()
+    thermal = _thermal_data()
+    return {
+        "version": st.version,
+        "governance_ok": st.governance_ok,
+        "chain_ok": st.chain_ok,
+        "record_count": st.record_count,
+        "tool_count": st.tool_count,
+        "hermes_mode": st.hermes_mode,
+        "queue_depth": st.queue_depth,
+        "uptime_seconds": st.uptime_seconds,
+        "emergency_mode": st.emergency_mode,
+        "temp_c": thermal["temp_c"],
+        "ram_free_mb": thermal["ram_free_mb"],
+        "operational_mode": thermal["mode"],
+    }
+
+
+@app.get("/api/providers")
+async def api_providers() -> list[dict]:
+    return _provider_data()
+
+
+# ---------------------------------------------------------------------------
+# Entry point for direct run
+# ---------------------------------------------------------------------------
+
+def serve(host: str = "127.0.0.1", port: int = PORT) -> None:
+    """Arranca el dashboard con uvicorn. Llamar desde CLI."""
+    import uvicorn  # noqa: PLC0415 — import tardío para no penalizar import
+    uvicorn.run(app, host=host, port=port, log_level="warning")
