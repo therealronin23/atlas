@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Estado{% endblock %}
+{% block content %}
+<h2>Estado del sistema</h2>
+
+<div class="stat-grid">
+  <div class="card">
+    <div class="card-label">Modo operacional</div>
+    <div class="card-value">
+      {% if status.emergency_mode %}
+        <span class="badge err">OMEGA</span>
+      {% elif thermal.mode == 'DEGRADED' %}
+        <span class="badge warn">DEGRADED</span>
+      {% else %}
+        <span class="badge ok">NORMAL</span>
+      {% endif %}
+    </div>
+    <div class="card-sub">{{ status.version }}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Temperatura CPU</div>
+    <div class="card-value {% if thermal.temp_c >= 80 %}err{% elif thermal.temp_c >= 70 %}warn{% else %}ok{% endif %}">
+      {{ "%.1f"|format(thermal.temp_c) }}°C
+    </div>
+    <div class="card-sub">RAM libre: {{ thermal.ram_free_mb }} MB</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Governance</div>
+    <div class="card-value">
+      <span class="badge {% if status.governance_ok %}ok{% else %}err{% endif %}">
+        {% if status.governance_ok %}OK{% else %}EMERGENCY{% endif %}
+      </span>
+    </div>
+    <div class="card-sub">governance.json validado</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Merkle Chain</div>
+    <div class="card-value">
+      <span class="badge {% if status.chain_ok %}ok{% else %}err{% endif %}">
+        {% if status.chain_ok %}INTEGRA{% else %}CORRUPTA{% endif %}
+      </span>
+    </div>
+    <div class="card-sub">{{ status.record_count }} registros</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Herramientas</div>
+    <div class="card-value">{{ status.tool_count }}</div>
+    <div class="card-sub">activas en registro</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Hermes</div>
+    <div class="card-value">
+      <span class="badge {% if status.hermes_mode == 'online' %}ok{% else %}warn{% endif %}">
+        {{ status.hermes_mode|upper }}
+      </span>
+    </div>
+    <div class="card-sub">cola offline: {{ status.queue_depth }}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Uptime</div>
+    <div class="card-value">{{ "%.0f"|format(status.uptime_seconds) }}s</div>
+    <div class="card-sub">workspace: {{ status.workspace }}</div>
+  </div>
+
+  {% if gate_d %}
+  <div class="card">
+    <div class="card-label">Pipeline Gate D</div>
+    <div class="card-value"><span class="badge ok">ACTIVO</span></div>
+    <div class="card-sub">ghost+SLM+PII+TimeTravel</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if audit_tail %}
+<div class="section">
+  <h2>Últimas actividades</h2>
+  <table>
+    <thead><tr><th>Timestamp</th><th>Acción</th><th>Agente</th><th>Resultado</th><th>Riesgo</th></tr></thead>
+    <tbody>
+      {% for r in audit_tail %}
+      <tr>
+        <td class="dim mono">{{ r.timestamp[:19] if r.timestamp else '-' }}</td>
+        <td>{{ r.action }}</td>
+        <td class="dim">{{ r.agent }}</td>
+        <td>
+          {% set res = r.result %}
+          <span class="badge {% if res == 'success' %}ok{% elif res == 'pending' %}warn{% else %}err{% endif %}">
+            {{ res }}
+          </span>
+        </td>
+        <td>
+          {% set risk = r.risk_level %}
+          <span class="badge {% if risk == 'safe' %}ok{% elif risk == 'moderate' %}warn{% else %}err{% endif %}">
+            {{ risk }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

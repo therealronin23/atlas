@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Memoria{% endblock %}
+{% block content %}
+<h2>Sistema de Memoria</h2>
+
+<div class="stat-grid section">
+  <div class="card">
+    <div class="card-label">System Context</div>
+    <div class="card-value">
+      <span class="badge {% if mem.context_loaded %}ok{% else %}warn{% endif %}">
+        {% if mem.context_loaded %}CARGADO{% else %}VACÍO{% endif %}
+      </span>
+    </div>
+    <div class="card-sub">{{ mem.context_sections }} secciones</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Error Registry</div>
+    <div class="card-value">{{ mem.error_count }}</div>
+    <div class="card-sub">fallos registrados</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Pattern Store</div>
+    <div class="card-value">{{ mem.pattern_count }}</div>
+    <div class="card-sub">patrones aprobados</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">KuzuDB Vector</div>
+    <div class="card-value">
+      <span class="badge {% if mem.kuzu_active %}ok{% else %}dim{% endif %}">
+        {% if mem.kuzu_active %}ACTIVO{% else %}N/A{% endif %}
+      </span>
+    </div>
+    <div class="card-sub">
+      {% if mem.kuzu_active %}
+        {{ mem.kuzu_patterns }} patterns · {{ mem.kuzu_failures }} failures · {{ mem.kuzu_evidence }} evidence
+      {% else %}
+        no inicializado
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Provider Metrics</div>
+    <div class="card-value">{{ mem.perf_samples }}</div>
+    <div class="card-sub">muestras de rendimiento</div>
+  </div>
+</div>
+
+{% if mem.context_data %}
+<div class="section">
+  <h2>System Context (preview)</h2>
+  <div class="card">
+    {% for k, v in mem.context_data.items() %}
+    <div style="margin-bottom:8px">
+      <span class="dim">{{ k }}: </span>
+      <span>{{ v|string|truncate(120) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

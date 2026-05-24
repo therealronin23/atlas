@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Tareas{% endblock %}
+{% block content %}
+<h2>Historial de tareas</h2>
+
+{% if tasks %}
+<table>
+  <thead>
+    <tr>
+      <th>Timestamp</th>
+      <th>Intent</th>
+      <th>Ruta</th>
+      <th>Resultado</th>
+      <th>Riesgo</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tasks %}
+    <tr>
+      <td class="dim mono">{{ t.timestamp[:19] if t.timestamp else '-' }}</td>
+      <td>{{ t.intent|truncate(60) }}</td>
+      <td><span class="badge {% if t.route == 'LOCAL_SAFE' %}ok{% elif t.route == 'REQUIRES_APPROVAL' %}warn{% else %}dim{% endif %}">
+        {{ t.route or '-' }}
+      </span></td>
+      <td>
+        {% set res = t.result %}
+        <span class="badge {% if res == 'success' %}ok{% elif res == 'pending' %}warn{% else %}err{% endif %}">
+          {{ res }}
+        </span>
+      </td>
+      <td>
+        {% set risk = t.risk_level %}
+        <span class="badge {% if risk == 'safe' %}ok{% elif risk == 'moderate' %}warn{% else %}err{% endif %}">
+          {{ risk }}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="card"><div class="card-sub">No hay tareas registradas todavía.</div></div>
+{% endif %}
+{% endblock %}
