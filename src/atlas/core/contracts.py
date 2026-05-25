@@ -124,6 +124,33 @@ class Task:
         return d
 
 
+@dataclass
+class ReasoningReceipt:
+    purpose: str
+    data_touched: list[str]
+    permissions_required: list[str]
+    safety_checks: list[str]
+    approval_path: str | None = None
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class TruthSnapshot:
+    id: str
+    tool_name: str
+    input_data: dict[str, Any]
+    expected_output_shape: dict[str, Any]
+    invariants: dict[str, Any] = field(default_factory=dict)
+    source_task_id: str | None = None
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
 # ===========================================================================
 # Event
 # ===========================================================================

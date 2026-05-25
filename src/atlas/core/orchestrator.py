@@ -20,7 +20,7 @@ _log = logging.getLogger(__name__)
 from atlas.core.contracts import (
     DelegationPayload, Event, EventType, RoutingLevel,
     Task, TaskSource, TaskStatus, Tool, ToolLevel, PermissionLevel,
-    OperationalMode,
+    OperationalMode, ReasoningReceipt,
 )
 from atlas.core.event_bus import EventBus
 from atlas.governance.governance_l0 import GovernanceL0
@@ -30,6 +30,7 @@ from atlas.logging.merkle_logger import MerkleLogger
 from atlas.memory.memory_system import (
     ErrorRegistry, ApprovedPatternStore, ProviderMetricsStore, SystemContextLoader, ToolRegistry,
 )
+from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.timetravel import TimeTravel
@@ -97,6 +98,7 @@ class Orchestrator:
     _pii_surrogate: Any
     _inference_hub: Any  # se guarda en enable_gate_d_pipeline para que
                          # _execute_task LOCAL_SAFE pueda invocarlo.
+    _gate_h: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -250,6 +252,16 @@ class Orchestrator:
         if fn is None:
             return {"error": f"Capa desconocida: {layer}"}
         return fn()
+
+    def gate_h_status(self) -> dict[str, Any]:
+        return {
+            "paused_tools": self._gate_h.paused_tools,
+            "failure_counts": self._gate_h.failure_counts,
+            "truth_snapshots": len(self._gate_h._snapshot_store.all()),
+        }
+
+    def rebuild_memory(self) -> dict[str, int]:
+        return self._gate_h.rebuild_memory()
 
     @property
     def bus(self) -> EventBus:
@@ -826,6 +838,14 @@ class Orchestrator:
             payload={"tool": task.tool_name},
             task_id=task.id,
         )
+        receipt = ReasoningReceipt(
+            purpose="Ejecucion de herramienta determinista",
+            data_touched=[task.tool_name or "unknown"],
+            permissions_required=[task.route.value if task.route else "unknown"],
+            safety_checks=["PermissionProfile", "MerkleLogger"],
+            approval_path="explicit" if task.route == RoutingLevel.REQUIRES_APPROVAL else "automatic",
+        )
+        self._gate_h.record_reasoning_receipt(task.id, task.tool_name or "unknown", receipt)
         task.transition(TaskStatus.DONE)
         self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
 
@@ -1065,6 +1085,13 @@ class Orchestrator:
                 result="failure",
                 risk_level="moderate",
                 payload={"error": str(e)[:500]},
+                task_id=task.id,
+            )
+            self._gate_h.record_failure(
+                tool_name=task.tool_name or "gate_f",
+                failure_type="gate_f_execution",
+                error=str(e),
+                context={"tool": tool, "action": action, "args": args},
                 task_id=task.id,
             )
             task.transition(TaskStatus.FAILED)
@@ -1566,10 +1593,22 @@ class Orchestrator:
         self._system_context = SystemContextLoader.load(
             self._workspace / "memory" / "system_context"
         )
-        self._error_registry = ErrorRegistry(self._workspace / "memory" / "error_registry")
-        self._approved_patterns = ApprovedPatternStore(self._workspace / "memory" / "approved_patterns")
+        self._error_registry = ErrorRegistry(
+            self._workspace / "memory" / "error_registry",
+            merkle=self._merkle,
+        )
+        self._approved_patterns = ApprovedPatternStore(
+            self._workspace / "memory" / "approved_patterns",
+            merkle=self._merkle,
+        )
         self._provider_metrics = ProviderMetricsStore(self._workspace / "memory" / "performance")
         self._tool_registry = ToolRegistry()
+        self._gate_h = GateHManager(
+            self._workspace,
+            self._merkle,
+            self._error_registry,
+            self._approved_patterns,
+        )
 
         # Hermes
         self._hermes_mock = HermesMockAdapter()

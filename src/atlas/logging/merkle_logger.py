@@ -70,6 +70,8 @@ AUDIT_ACTIONS = {
     "task.created", "task.classified", "task.routed", "task.approved",
     "task.blocked", "task.completed", "task.failed",
     "tool.invoked", "tool.failed",
+    "generated_tool.receipt", "approved_pattern.added",
+    "error_registry.recorded", "memory.rebuilt",
     "governance.violation", "permission.denied",
     "ast_guard.rejected", "sandbox.executed",
     "hermes.delegated", "hermes.mock_queued",

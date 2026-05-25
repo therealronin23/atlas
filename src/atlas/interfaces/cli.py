@@ -163,6 +163,30 @@ def memory(layer: str) -> None:
         console.print_json(json.dumps(result, ensure_ascii=False, default=str))
 
 
+@cli.group("gate-h")
+def gate_h() -> None:
+    """Comandos de Gate H para resiliencia y reconstruccion."""
+    pass
+
+
+@gate_h.command("status")
+def gate_h_status() -> None:
+    """Muestra el estado de Gate H."""
+    orch = get_orchestrator()
+    status = orch.gate_h_status()
+    console.print("\n[bold cyan]Gate H status[/bold cyan]\n")
+    console.print_json(json.dumps(status, ensure_ascii=False, default=str))
+
+
+@gate_h.command("rebuild-memory")
+def gate_h_rebuild_memory() -> None:
+    """Reconstruye la memoria derivada a partir del registro Merkle."""
+    orch = get_orchestrator()
+    result = orch.rebuild_memory()
+    console.print("\n[bold cyan]Gate H rebuild memory[/bold cyan]\n")
+    console.print_json(json.dumps(result, ensure_ascii=False, default=str))
+
+
 @cli.command()
 @click.option("--tail", "-n", default=20, help="Ultimas N entradas")
 @click.option("--verify", is_flag=True, help="Verificar integridad de la cadena")

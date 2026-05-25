@@ -65,6 +65,21 @@ class TestDetectByType:
         matches = surrogate.detect("v6 prefix 2a01:4f8:c015:488::1")
         assert any(m.type == PIIType.IPV6 for m in matches)
 
+    def test_detect_name(self, surrogate: PIISurrogate) -> None:
+        matches = surrogate.detect("Llamame Maria o Juan para confirmar")
+        assert any(m.type == PIIType.NAME for m in matches)
+        assert any(m.original.lower() in {"maria", "juan"} for m in matches)
+
+    def test_detect_city(self, surrogate: PIISurrogate) -> None:
+        matches = surrogate.detect("Estoy en Madrid y luego vuelvo a Valencia")
+        assert any(m.type == PIIType.CITY for m in matches)
+        assert any(m.original.lower() in {"madrid", "valencia"} for m in matches)
+
+    def test_detect_address(self, surrogate: PIISurrogate) -> None:
+        matches = surrogate.detect("Vivo en Calle Falsa 123 desde hace años")
+        assert any(m.type == PIIType.ADDRESS for m in matches)
+        assert matches[0].original.startswith("Calle Falsa")
+
     def test_detect_groq_key(self, surrogate: PIISurrogate) -> None:
         text = "GROQ_API_KEY=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"
         matches = surrogate.detect(text)
@@ -211,6 +226,17 @@ class TestRoundtrip:
         assert result.text == text
         assert result.matches == ()
 
+    def test_redact_restore_new_types_roundtrip(self, surrogate: PIISurrogate) -> None:
+        original = "Mi nombre es Juan. Vivo en Calle Falsa 123, Madrid."
+        result = surrogate.redact(original)
+        assert any(m.type == PIIType.NAME for m in result.matches)
+        assert any(m.type == PIIType.ADDRESS for m in result.matches)
+        assert any(m.type == PIIType.CITY for m in result.matches)
+        restored = surrogate.restore(result.text, result.mapping)
+        assert "Juan" in restored
+        assert "Calle Falsa 123" in restored
+        assert "Madrid" in restored
+
 
 # ===========================================================================
 # Configurabilidad
@@ -237,6 +263,12 @@ class TestConfiguration:
         s = PIISurrogate(salt="x", enabled_types={PIIType.EMAIL})
         matches = s.detect("email a@b.com y DNI 12345678Z")
         assert all(m.type == PIIType.EMAIL for m in matches)
+
+    def test_enabled_types_filter_for_new_types(self) -> None:
+        s = PIISurrogate(salt="x", enabled_types={PIIType.NAME})
+        matches = s.detect("Mi nombre es Juan y vivo en Madrid")
+        assert all(m.type == PIIType.NAME for m in matches)
+        assert any(m.original.lower() == "juan" for m in matches)
 
 
 # ===========================================================================
