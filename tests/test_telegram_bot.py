@@ -15,6 +15,7 @@ from atlas.interfaces.telegram_bot import (
     TelegramAuthorizer,
     TelegramBot,
     TelegramClient,
+    verify_telegram_passphrase,
 )
 
 
@@ -27,6 +28,7 @@ class FakeOps:
         self.calls: list[tuple[str, tuple]] = []
         self.status_data = {"mode": "NORMAL", "tasks_run": 7}
         self.task_response = {"status": "executed", "task_id": "t-1"}
+        self.approve_response = {"task_id": "t-approve", "status": "done", "approved": True}
         self.audit_entries = [
             {"timestamp": "2026-01-01T00:00:00Z", "agent": "cli",
              "action": "task.run", "result": "ok"},
@@ -53,6 +55,16 @@ class FakeOps:
     def triage(self):
         self.calls.append(("triage", ()))
         return self.triage_data
+
+    def pending_approvals(self):
+        self.calls.append(("pending_approvals", ()))
+        return []
+
+    def approve(self, task_id, approved=True):
+        self.calls.append(("approve", (task_id, approved)))
+        return self.approve_response if approved else {
+            "task_id": task_id, "status": "cancelled", "approved": False,
+        }
 
 
 class FakeClient:
@@ -301,3 +313,43 @@ def test_bot_swallows_handler_exceptions():
     ops.submit_task = raises  # type: ignore[assignment]
     bot.handle_update(_msg(42, "/task hacer X"))
     assert "Error" in client.sent[0][1]
+
+
+def test_verify_telegram_passphrase():
+    import hashlib
+
+    phrase = "atlas-secret"
+    expected = hashlib.sha256(f"atlas-telegram-approve:{phrase}".encode()).hexdigest()
+    assert verify_telegram_passphrase(phrase, expected) is True
+    assert verify_telegram_passphrase("wrong", expected) is False
+
+
+def test_callback_approve_blocked_when_passphrase_required():
+    bot, client, ops = _make_bot()
+    bot._telegram_cfg = {
+        "require_passphrase_for_approve": True,
+        "passphrase_hash": "abc",
+    }
+    callback = {
+        "id": "cb1",
+        "from": {"id": 42},
+        "message": {"chat": {"id": 42}},
+        "data": "approve:task-99:yes",
+    }
+    bot.handle_update({"callback_query": callback})
+    assert ("approve", ("task-99", True)) not in ops.calls
+    assert any("passphrase" in text.lower() for _, text in client.sent)
+
+
+def test_cmd_approve_with_passphrase():
+    import hashlib
+
+    phrase = "gate-g"
+    expected = hashlib.sha256(f"atlas-telegram-approve:{phrase}".encode()).hexdigest()
+    bot, client, ops = _make_bot()
+    bot._telegram_cfg = {
+        "require_passphrase_for_approve": True,
+        "passphrase_hash": expected,
+    }
+    bot.handle_update(_msg(42, "/approve t-approve gate-g"))
+    assert ("approve", ("t-approve", True)) in ops.calls

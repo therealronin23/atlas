@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from atlas.core.contracts import RoutingLevel, TaskStatus
+from atlas.core.contracts import RoutingLevel, Task, TaskSource, TaskStatus
 from atlas.core.orchestrator import Orchestrator
 
 
@@ -28,6 +28,46 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
 # ===========================================================================
 # Opt-in / default
 # ===========================================================================
+
+
+class TestMemoryVectorWiring:
+
+    def test_enable_gate_d_attaches_kuzu_by_default(self, orch: Orchestrator) -> None:
+        orch.enable_gate_d_pipeline()
+        assert orch.vector_store is not None
+        assert orch._distiller is not None
+        assert orch._distiller._vector_store is not None
+        assert orch._error_registry._vector_store is orch.vector_store
+        assert orch._approved_patterns._vector_store is orch.vector_store
+
+    def test_memory_vector_disabled_via_env(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("ATLAS_MEMORY_VECTOR", "0")
+        orch.enable_gate_d_pipeline()
+        assert orch.vector_store is None
+        assert orch._distiller._vector_store is None
+
+    def test_pattern_visible_to_distiller(self, orch: Orchestrator) -> None:
+        from atlas.memory.memory_system import PatternEntry
+
+        orch.enable_gate_d_pipeline()
+        store = orch._approved_patterns
+        store.add(
+            PatternEntry(
+                id="smoke-pattern-1",
+                name="pending_hmac",
+                description="always validate pending approvals with HMAC",
+                pattern_type="workflow",
+                content="verify mac before approve_pending",
+                tags=["security", "pending"],
+            ),
+        )
+        chunks = orch._distiller.gather_relevant(
+            "validate pending approvals HMAC security",
+            max_patterns=3,
+        )
+        assert any("HMAC" in c.text or "pending" in c.text.lower() for c in chunks)
 
 
 class TestOptIn:
@@ -70,6 +110,51 @@ class TestOptIn:
 # ===========================================================================
 # Pipeline activo: ghost hit corta el flujo
 # ===========================================================================
+
+
+class TestGhostApprovalBypass:
+
+    def test_high_sensitivity_skips_ghost_lookup(self, orch: Orchestrator) -> None:
+        orch.enable_gate_d_pipeline()
+        assert orch.ghost_replay is not None
+        orch.ghost_replay.record(
+            "borrar datos sensibles",
+            "high",
+            "pipeline-d-v1",
+            {
+                "route": "local_safe",
+                "tool_name": "ghost.cache",
+                "payload": {"cached": True, "danger": True},
+            },
+        )
+        task = Task(intent="borrar datos sensibles", sensitivity="high", source=TaskSource.CLI)
+        orch._run_pipeline_gate_d(task)
+        assert task.status == TaskStatus.AWAITING_APPROVAL
+        assert task.route == RoutingLevel.REQUIRES_APPROVAL
+
+    def test_requires_approval_route_not_recorded(self, orch: Orchestrator) -> None:
+        from dataclasses import replace
+        from atlas.core.contracts import RoutingLevel as RL
+
+        orch.enable_gate_d_pipeline()
+        assert orch.ghost_replay is not None
+        original = orch._classifier.classify
+
+        def patched(intent_: str, **kw: object):
+            result = original(intent_, **kw)
+            return replace(
+                result,
+                level=RL.REQUIRES_APPROVAL,
+                reason="test-approval",
+                governance_blocked=False,
+                confidence=1.0,
+            )
+
+        orch._classifier.classify = patched  # type: ignore[assignment]
+        intent = "accion que requiere aprobacion"
+        task = orch.handle_intent(intent)
+        assert task.status == TaskStatus.AWAITING_APPROVAL
+        assert orch.ghost_replay.lookup(intent, "low", "pipeline-d-v1") is None
 
 
 class TestGhostHitShortCircuit:

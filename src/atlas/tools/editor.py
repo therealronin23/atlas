@@ -256,7 +256,13 @@ class EditorTool:
     # write_file
     # ------------------------------------------------------------------
 
-    def write_file(self, path: Path, content: str) -> FileWriteResult:
+    def write_file(
+        self,
+        path: Path,
+        content: str,
+        *,
+        clearance: str | None = None,
+    ) -> FileWriteResult:
         """Escribe contenido en un archivo (crea directorios si es necesario)."""
         resolved = path.expanduser().resolve()
         try:
@@ -264,6 +270,7 @@ class EditorTool:
             cap = self._executor.issuer.issue_write(
                 resolved,
                 max_bytes=max(len(encoded), 1),
+                clearance=clearance,
             )
             bytes_written = self._executor.execute_write(cap, encoded)
             return FileWriteResult(
@@ -286,7 +293,13 @@ class EditorTool:
     # apply_diff
     # ------------------------------------------------------------------
 
-    def apply_diff(self, file_path: Path, diff_text: str) -> DiffResult:
+    def apply_diff(
+        self,
+        file_path: Path,
+        diff_text: str,
+        *,
+        clearance: str | None = None,
+    ) -> DiffResult:
         """
         Aplica un diff unificado a un archivo usando git apply o patch.
         Si el archivo esta bajo un repositorio git, intenta primero `git apply`.
@@ -304,6 +317,7 @@ class EditorTool:
                         args=("apply", str(diff_path)),
                         working_dir=git_dir,
                         timeout_s=10,
+                        clearance=clearance,
                     )
                 )
                 if result.exit_code == 0:
@@ -318,6 +332,7 @@ class EditorTool:
                         args=("apply", "--recount", str(diff_path)),
                         working_dir=git_dir,
                         timeout_s=10,
+                        clearance=clearance,
                     )
                 )
                 if result2.exit_code == 0:
@@ -326,9 +341,13 @@ class EditorTool:
                         stdout=result2.stdout, stderr=result2.stderr,
                     )
 
-                return self._try_patch_apply(diff_path, resolved.parent, str(resolved))
+                return self._try_patch_apply(
+                    diff_path, resolved.parent, str(resolved), clearance=clearance,
+                )
 
-            return self._try_patch_apply(diff_path, resolved.parent, str(resolved))
+            return self._try_patch_apply(
+                diff_path, resolved.parent, str(resolved), clearance=clearance,
+            )
         except (CapabilityDenied, ExecutorError) as e:
             return DiffResult(
                 success=False, file=str(resolved), applied=False,
@@ -353,6 +372,7 @@ class EditorTool:
         *,
         timeout_s: int = 60,
         env: dict[str, str] | None = None,
+        clearance: str | None = None,
     ) -> TaskResult:
         """Ejecuta un comando en el directorio del proyecto."""
         resolved = working_dir.expanduser().resolve()
@@ -382,6 +402,7 @@ class EditorTool:
             cap = self._executor.issuer.issue_exec(
                 parts[0],
                 args=tuple(parts[1:]),
+                clearance=clearance,
                 working_dir=resolved,
                 timeout_s=timeout_s,
             )
@@ -449,7 +470,14 @@ class EditorTool:
         self._executor.execute_write(cap, diff_text.encode("utf-8"))
         return diff_path
 
-    def _try_patch_apply(self, diff_path: Path, working_dir: Path, target_file: str) -> DiffResult:
+    def _try_patch_apply(
+        self,
+        diff_path: Path,
+        working_dir: Path,
+        target_file: str,
+        *,
+        clearance: str | None = None,
+    ) -> DiffResult:
         patch_binary = shutil.which("patch")
         if patch_binary is None:
             return DiffResult(
@@ -469,6 +497,7 @@ class EditorTool:
                     args=(strip_arg, "--input", str(diff_path)),
                     working_dir=working_dir,
                     timeout_s=10,
+                    clearance=clearance,
                 )
             except CapabilityDenied as e:
                 return DiffResult(

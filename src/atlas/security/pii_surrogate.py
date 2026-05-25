@@ -374,7 +374,7 @@ class PIISurrogate:
             return self._detect_slm_stub(text, claimed)
 
         request = InferenceRequest(
-            prompt=_build_pii_slm_prompt(text),
+            prompt=self._build_pii_slm_prompt(text),
             level=InferenceLevel.L1,
             max_tokens=256,
             temperature=0.0,

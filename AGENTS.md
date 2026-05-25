@@ -37,12 +37,12 @@ components serve Atlas, not the other way around.
   - D2 SLM classifier (ADR-010): DONE. `src/atlas/router/slm_classifier.py` + 21 tests. Wrapper sobre InferenceHub con prompt estructurado, parseo robusto del JSON (tolera fences markdown y texto envolvente), modo auto/live/stub, cache opcional via GhostReplay. Pensado como complemento del rule-based — el cableo hibrido en el pipeline (regex primero, SLM si confidence baja) queda como follow-up.
   - D3 Capability tokens + AtlasExecutor (ADR-020): DONE. `src/atlas/security/{capabilities,executor}.py` + 31 tests + 5 integración Orchestrator. Issuer valida contra PermissionProfile/SSRFBridge, executor canaliza IO con audit log. Refactor del pipeline existente para enrutar via executor queda como follow-up.
   - D4 Memoria vectorial KuzuDB (ADR-008): DONE. `src/atlas/memory/{embeddings,vector_store}.py` + 34 tests + 7 integración. StubEmbedder (hash-based determinista) y LiteLLMEmbedder (auto/live/stub). KuzuVectorStore con schema Pattern/Failure/Evidence + REL tables. ErrorRegistry y ApprovedPatternStore aceptan vector_store opcional (mirror automático + `find_similar`).
-  - MemoryDistiller (ADR-018): DONE. `src/atlas/memory/distiller.py` + 17 tests. Comprime contexto pre-LLM por relevancia (cosine sim contra el query) respetando budget de tokens. System chunks intocables, recent preservado, scorables filtrados. Hook con KuzuVectorStore via gather_relevant() y build_context() end-to-end. Cableo automatico al Orchestrator queda como follow-up.
+  - MemoryDistiller (ADR-018): DONE. `src/atlas/memory/distiller.py` + 17 tests. Comprime contexto pre-LLM por relevancia (cosine sim contra el query) respetando budget de tokens. System chunks intocables, recent preservado, scorables filtrados. Hook con KuzuVectorStore via gather_relevant() + build_context(). Cableo en `enable_gate_d_pipeline()` con `ATLAS_MEMORY_VECTOR` (default on).
   - D5 Time-Travel + Ghost Replay: DONE.
     - ADR-021 (Time-Travel): `src/atlas/core/{checkpoint,timetravel}.py` + 22 tests. Checkpoints inmutables encadenados por hash (`hash_self`, `hash_prev`, `verify_chain`). Persistencia JSON. `fork()` para counterfactuales. Cada save/fork log a Merkle.
     - ADR-022 (Ghost Replay): `src/atlas/core/ghost_replay.py` + 21 tests. Cache topológica con clave = SHA-256(intent, sensitivity, context_signature). TTL configurable, LRU automática por `max_entries`, `purge()` para presión de memoria. Stats hits/misses.
     - Integración con Orchestrator (interceptar handle_intent para lookup en GhostReplay antes de inferir, snapshot a TimeTravel en cada paso) queda como follow-up.
-  - D6 PII Surrogate (ADR-023): DONE. `src/atlas/security/pii_surrogate.py` + 33 tests. Detección regex (email, DNI ES, IBAN, teléfono ES, IPv4/v6, API keys Groq/OpenRouter/Hermes) + sustitución determinista por surrogates que preservan formato (DNI con letra válida, IPv4 en TEST-NET-1, IPv6 en 2001:db8::/32). Salt via `ATLAS_PII_SALT`. Redact + restore roundtrip. Detección por SLM (nombres, ciudades) queda como follow-up v2.
+  - D6 PII Surrogate (ADR-023): DONE. `src/atlas/security/pii_surrogate.py` + 38 tests. Detección regex (email, DNI ES, IBAN, teléfono ES, IPv4/v6, API keys Groq/OpenRouter/Hermes) + sustitución determinista por surrogates que preservan formato (DNI con letra válida, IPv4 en TEST-NET-1, IPv6 en 2001:db8::/32). Salt via `ATLAS_PII_SALT`. Redact + restore roundtrip. Detección SLM/heurística para NAME/CITY/ADDRESS implementada; cableo `InferenceHub` en Orchestrator Gate D pendiente (FU-6).
   - D7 Cierre Gate D + tag v0.3-gate-d: DONE. Evidencia en `docs/gate_d_seal.md`.
 - Gate E: COMPLETE — ADR-002 sealed + E2 Dashboard + E3 Voice. 449 tests. tag v0.4-gate-e.
   - E2 Dashboard: DONE. `atlas dashboard` → localhost:7331. FastAPI+Jinja2, 6 páginas + JSON API.
@@ -51,7 +51,9 @@ components serve Atlas, not the other way around.
     `pip install 'atlas-core[voice]'` para modo real. Stub mode por defecto (sin hardware).
     `src/atlas/interfaces/voice.py`, 30 tests. ADR-003 sealed.
 - Gate F: COMPLETE — Computer-use + Editor integration + Frontend. 509 tests + mypy verde. tag v0.5-gate-f.
-  - Gate G: COMPLETE — Operational readiness. Hermes-VPS restored/smoked, GitHub synced, CLI approvals persistent, Telegram authorized/smoked. 513 tests + mypy verde. tag v0.6-gate-g.
+- Gate G: COMPLETE — Operational readiness. Hermes-VPS restored/smoked, GitHub synced, CLI approvals persistent (HMAC v1 en `pending_approvals/`), Telegram authorized/smoked. `scripts/operational_smoke.py` + `docs/operational_runbook.md`. Suite: 534+ collected; 522+ core sin Playwright.     tag v0.6-gate-g. Auditoría: `docs/audit_2026-05-25.md`.
+- Gate H: MVP COMPLETE (2026-05-25) — H1–H6 audited synthesis. `docs/gate_h_seal.md`, `scripts/gate_h_smoke.py`, `atlas gate-h`. 538 core tests. tag `v0.7-gate-h` when released.
+- Gate F details:
   - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
     Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
   - F2 EditorTool scaffold: DONE. `src/atlas/tools/editor.py` + `tests/test_editor.py`.
@@ -115,7 +117,7 @@ atlas-core/
 │   ├── test_vector_store.py            # 19 tests — Gate D/D4
 │   ├── test_memory_kuzu_integration.py #  7 tests — Gate D/D4
 │   ├── test_distiller.py               # 17 tests — Gate D/MemoryDistiller
-│   ├── test_pii_surrogate.py           # 33 tests — Gate D/D6
+│   ├── test_pii_surrogate.py           # 38 tests — Gate D/D6
 │   ├── test_timetravel.py              # 22 tests — Gate D/D5.A (ADR-021)
 │   ├── test_ghost_replay.py            # 21 tests — Gate D/D5.B (ADR-022)
 │   ├── test_slm_classifier.py          # 21 tests — Gate D/D2 (ADR-010)
@@ -218,7 +220,8 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q           # full suite (513 tests)
+PYTHONPATH=src python -m pytest tests/ --ignore=tests/test_browser.py -q  # core (~522+)
+PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
 
@@ -238,6 +241,9 @@ TELEGRAM_BOT_TOKEN      Gate C            Bot token
 TELEGRAM_CHAT_ID        Gate C            Authorized chat ID
 HERMES_BASE_URL         Gate C            VPS endpoint (Tailscale: 100.108.132.116:8443)
 HERMES_API_KEY          Gate C            Shared HMAC secret
+ATLAS_PIPELINE_GATE_D   Gate D            `1` activa pipeline al arrancar Orchestrator
+ATLAS_MEMORY_VECTOR     Gate D            `1` (default) Kuzu con Gate D; `0` desactiva
+ATLAS_PENDING_HMAC_KEY  Gate G            Firma pending approvals; fallback HERMES_API_KEY
 TAILSCALE_AUTH_KEY      Gate C            Tailscale setup
 
 All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
@@ -247,17 +253,15 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  PYTHONPATH=src python -m pytest tests/ -q  (expect 513)
+3. Verify green:  pytest --ignore=test_browser.py -q  (expect 522+ core; 534+ con browser)
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate G COMPLETE, suite 513/513 green.
-Gate F is tagged `v0.5-gate-f`; Gate G is tagged `v0.6-gate-g`.
-Hermes-VPS is restored on CPX22 and `scripts/hermes_smoke.py` passes.
-CLI approvals persist across process restarts via `atlas pending` and
-`atlas approve <task_id>`. Telegram bot token and `TELEGRAM_CHAT_ID` are
-configured locally in `.env`; outbound Telegram smoke passed.
-Next logical work: Gate H planning.
+Current state at session start: Gate G COMPLETE + Sesion A/B (2026-05-25).
+Suite core 538 green (`--ignore=test_browser.py`); Gate H H1–H6 MVP; pending HMAC; Kuzu wired en Gate D.
+Hermes REST auto si `HERMES_BASE_URL`+`HERMES_API_KEY` en `.env`.
+`scripts/operational_smoke.py` + `docs/operational_runbook.md` para validacion operativa.
+Next logical work: post-H (ADR-025 ColdUpdateManager, ADR-024 observability v2).
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
@@ -270,7 +274,7 @@ These are known debts. Pick any or skip to Gate E. All have explicit file refs.
 | FU-3 | Suppress LiteLLM startup warnings | `core/inference_hub.py` | DONE (commit 64c878b) |
 | FU-4 | InferenceHub L0 real: Ollama HTTP client | `core/inference_hub.py` | DONE (commit c0e2733) |
 | FU-5 | SLMClassifier prompt via MemoryDistiller | `router/slm_classifier.py` + `memory/distiller.py` | DONE (commit 35d906f) |
-| FU-6 | PIISurrogate v2: SLM detection for names/cities/addresses | `security/pii_surrogate.py` | ~3h — PENDING |
+| FU-6 | PIISurrogate: wire InferenceHub en Orchestrator Gate D + hardening SLM live | `security/pii_surrogate.py`, `core/orchestrator.py` | ~3h — PARTIAL (detección existe; wiring pendiente) |
 
 FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
 

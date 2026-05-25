@@ -88,6 +88,7 @@ class WriteCapability(_BaseCapability):
     max_bytes: int = DEFAULT_MAX_WRITE_BYTES
     append: bool = False
     level: PermissionLevel = PermissionLevel.CONFIRM
+    clearance: str | None = None
 
 
 class NetworkCapability(_BaseCapability):
@@ -115,6 +116,7 @@ class ExecCapability(_BaseCapability):
     timeout_s: int = DEFAULT_EXEC_TIMEOUT_S
     code: str | None = None
     level: PermissionLevel = PermissionLevel.CONFIRM
+    clearance: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +162,7 @@ class CapabilityIssuer:
         *,
         max_bytes: int = DEFAULT_MAX_WRITE_BYTES,
         append: bool = False,
+        clearance: str | None = None,
     ) -> WriteCapability:
         decision = self._profile.evaluate_path(str(path), write=True)
         if not decision.allowed:
@@ -171,6 +174,7 @@ class CapabilityIssuer:
             max_bytes=max_bytes,
             append=append,
             level=decision.level,
+            clearance=clearance,
         )
 
     # -- NETWORK ----------------------------------------------------------
@@ -205,11 +209,11 @@ class CapabilityIssuer:
         working_dir: Path | str | None = None,
         timeout_s: int = DEFAULT_EXEC_TIMEOUT_S,
         code: str | None = None,
+        clearance: str | None = None,
     ) -> ExecCapability:
         # Evaluar contra la allowlist con el comando + args completos para
         # respetar entradas multi-palabra como "git status" o "python3 -m pytest".
-        # evaluate_shell_command hace prefix matching, asi que "git status --short"
-        # casa con "git status" pero no con "git push".
+        # evaluate_shell_command aplica reglas SEC-01 para subcomandos git.
         full_cmd = f"{command} {' '.join(args)}" if args else command
         decision = self._profile.evaluate_shell_command(full_cmd)
         if not decision.allowed:
@@ -233,6 +237,7 @@ class CapabilityIssuer:
             timeout_s=timeout_s,
             code=code,
             level=decision.level,
+            clearance=clearance,
         )
 
     # ---------------------------------------------------------------------

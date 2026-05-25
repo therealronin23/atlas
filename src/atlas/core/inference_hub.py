@@ -24,7 +24,10 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from atlas.logging.merkle_logger import MerkleLogger
 
 # Silenciar warnings cosmeticos de LiteLLM (bedrock/sagemaker pre-load, etc).
 # Se debe hacer ANTES del import porque algunos warnings se emiten al cargar el modulo.

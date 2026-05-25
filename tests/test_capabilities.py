@@ -173,6 +173,16 @@ class TestIssueExec:
         with pytest.raises(CapabilityDenied):
             issuer.issue_exec("rm")
 
+    def test_git_push_denied(self, issuer: CapabilityIssuer, workspace: Path) -> None:
+        with pytest.raises(CapabilityDenied) as exc:
+            issuer.issue_exec("git", args=("push", "origin", "main"), working_dir=workspace / "tmp")
+        assert "prohibido" in str(exc.value).lower() or "push" in str(exc.value).lower()
+
+    def test_git_status_allowed(self, issuer: CapabilityIssuer, workspace: Path) -> None:
+        cap = issuer.issue_exec("git", args=("status",), working_dir=workspace / "tmp")
+        assert cap.command == "git"
+        assert cap.level.value == "auto"
+
     def test_timeout_out_of_range_denied(
         self, issuer: CapabilityIssuer, workspace: Path
     ) -> None:
@@ -256,7 +266,8 @@ class TestExecuteWrite:
         self, executor: AtlasExecutor, issuer: CapabilityIssuer, workspace: Path
     ) -> None:
         path = workspace / "tmp" / "out.bin"
-        n = executor.execute_write(issuer.issue_write(path), b"abc")
+        cap = issuer.issue_write(path)
+        n = executor.execute_write(cap, b"abc")
         assert n == 3
         assert path.read_bytes() == b"abc"
 
@@ -323,6 +334,7 @@ class TestExecuteExec:
         cap = issuer.issue_exec(
             "echo", args=("hola",), working_dir=workspace / "tmp", timeout_s=5,
         )
+        issuer.profile.mark_confirmed(f"exec:echo hola")
         result = executor.execute_exec(cap)
         assert isinstance(result, SandboxResult)
         assert result.success is True
@@ -338,9 +350,33 @@ class TestExecuteExec:
             working_dir=workspace / "tmp",
             code="eval('1+1')",
         )
+        issuer.profile.mark_confirmed("exec:echo")
         with pytest.raises(ExecutorError) as exc:
             executor.execute_exec(cap)
-        assert "ast guard" in str(exc.value).lower()
+        msg = str(exc.value).lower()
+        assert "ast guard" in msg or "generated code policy" in msg
+
+    def test_confirm_write_blocked_until_marked(
+        self, executor: AtlasExecutor, issuer: CapabilityIssuer, workspace: Path
+    ) -> None:
+        cap = issuer.issue_write(workspace / "projects" / "x.py")
+        with pytest.raises(ExecutorError) as exc:
+            executor.execute_write(cap, b"x")
+        assert "confirmacion" in str(exc.value).lower()
+        issuer.profile.mark_confirmed(f"write:{cap.path}")
+        assert executor.execute_write(cap, b"x") == 1
+
+    def test_clearance_allows_write_after_task_approval(
+        self, executor: AtlasExecutor, issuer: CapabilityIssuer, workspace: Path
+    ) -> None:
+        cap = issuer.issue_write(
+            workspace / "projects" / "y.py",
+            clearance="task:abc-123",
+        )
+        with pytest.raises(ExecutorError):
+            executor.execute_write(cap, b"y")
+        issuer.profile.mark_confirmed("task:abc-123")
+        assert executor.execute_write(cap, b"y") == 1
 
 
 class TestExecutorTypeGuards:

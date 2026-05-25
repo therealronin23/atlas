@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
 > Estado actual: **Gate G COMPLETE** (operational readiness: Hermes live, GitHub synced, CLI approvals persistent, Telegram authorized).
-> Siguiente: **Gate H planning** (ColdUpdateManager MVP, observability v2, VLM loop design).
+> **Gate H MVP COMPLETE** (2026-05-25) — tag `v0.7-gate-h` when released. Siguiente: post-H (ADR-025 ColdUpdate, ADR-024 observability).
 
 ---
 

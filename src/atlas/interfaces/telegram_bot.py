@@ -14,6 +14,8 @@ poder testear ambos lados por separado.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import time
@@ -70,6 +72,19 @@ class TelegramAuthorizer:
 
     def allowed_ids(self) -> list[int]:
         return sorted(self._allowed)
+
+
+def verify_telegram_passphrase(
+    passphrase: str,
+    expected_hash: str,
+    *,
+    salt: str = "atlas-telegram-approve",
+) -> bool:
+    """Compara passphrase con hash SHA-256 almacenado en permissions.yaml."""
+    if not expected_hash:
+        return False
+    supplied = hashlib.sha256(f"{salt}:{passphrase}".encode()).hexdigest()
+    return hmac.compare_digest(supplied, expected_hash)
 
 
 # ===========================================================================
@@ -165,11 +180,14 @@ class TelegramBot:
         authorizer: TelegramAuthorizer,
         ops: AtlasOps,
         merkle: Any = None,
+        *,
+        telegram_config: dict[str, Any] | None = None,
     ) -> None:
         self._client = client
         self._auth = authorizer
         self._ops = ops
         self._merkle = merkle
+        self._telegram_cfg = telegram_config or {}
         self._offset: int | None = None
         self._running = False
         self._handlers = {
@@ -179,6 +197,7 @@ class TelegramBot:
             "/tools": self._cmd_tools,
             "/triage": self._cmd_triage,
             "/pending": self._cmd_pending,
+            "/approve": self._cmd_approve,
         }
 
     def run_polling(self, poll_interval_s: float = 0.0) -> None:
@@ -258,6 +277,20 @@ class TelegramBot:
 
         task_id, decision = parts[1], parts[2]
         approved = decision == "yes"
+        if approved and self._passphrase_required():
+            try:
+                self._client.answer_callback_query(
+                    cb_id,
+                    "Usa /approve <task_id> <passphrase>",
+                )
+            except TelegramAPIError:
+                pass
+            self._safe_send(
+                int(chat_id),
+                f"Aprobacion de {task_id} requiere passphrase. "
+                "Uso: /approve <task_id> <passphrase>",
+            )
+            return
         try:
             result = self._ops.approve(task_id, approved)
         except Exception as exc:
@@ -314,13 +347,20 @@ class TelegramBot:
         intent = p.get("intent", "")
         reason = p.get("reason", "")
         text = f"Approval requerido\nIntent: {intent}\nMotivo: {reason}\nID: {task_id}"
-        markup = {
-            "inline_keyboard": [[
-                {"text": "Si", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:yes"},
-                {"text": "No", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:no"},
-            ]]
-        }
-        self.notify_all(text, reply_markup=markup)
+        if self._passphrase_required():
+            text += (
+                "\n\nPassphrase requerida: usa /approve <task_id> <passphrase> "
+                "(los botones inline estan deshabilitados para aprobar)."
+            )
+            self.notify_all(text)
+        else:
+            markup = {
+                "inline_keyboard": [[
+                    {"text": "Si", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:yes"},
+                    {"text": "No", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:no"},
+                ]]
+            }
+            self.notify_all(text, reply_markup=markup)
 
     def on_session_started(self, event: Any) -> None:
         p = getattr(event, "payload", {}) or {}
@@ -370,6 +410,28 @@ class TelegramBot:
             out.append(f"  {it.get('task_id','?')} — {it.get('intent','')}"
                        f" ({it.get('reason','')})")
         return "\n".join(out)
+
+    def _cmd_approve(self, arg: str) -> str:
+        parts = arg.split(maxsplit=1)
+        if len(parts) < 2:
+            return "Uso: /approve <task_id> <passphrase>"
+        task_id, passphrase = parts[0].strip(), parts[1].strip()
+        if self._passphrase_required() and not self._verify_passphrase(passphrase):
+            return "Passphrase incorrecta."
+        try:
+            result = self._ops.approve(task_id, True)
+        except Exception as exc:
+            return f"Error aprobando {task_id}: {exc}"
+        if result.get("status") == "unknown":
+            return f"No habia approval pendiente para {task_id}."
+        return f"Aprobada (task_id={task_id}, status={result.get('status', '?')})."
+
+    def _passphrase_required(self) -> bool:
+        return bool(self._telegram_cfg.get("require_passphrase_for_approve"))
+
+    def _verify_passphrase(self, passphrase: str) -> bool:
+        expected = str(self._telegram_cfg.get("passphrase_hash") or "")
+        return verify_telegram_passphrase(passphrase, expected)
 
     # ------------------------------------------------------------------
     # Formateo

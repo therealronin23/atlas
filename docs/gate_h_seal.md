@@ -1,75 +1,48 @@
 # Gate H Seal — Resilience and Audited Synthesis
 
-**Status:** planning / future work
-
-This document defines what counts as closed for Gate H.
+**Status:** COMPLETE (MVP Opción B)  
+**Date:** 2026-05-25  
+**Tag:** `v0.7-gate-h` (when released)
 
 ## Goal
 
 Gate H proves that Atlas can safely generate, validate, audit and retire host-side tools without compromising the core safety model.
 
-Gate H is not about arbitrary autonomy. It is about safe, auditable software synthesis under human supervision.
+## MVP closure (H1–H6)
 
-## Acceptance criteria
+| Pilar | Status | Evidence |
+|-------|--------|----------|
+| H1 Result Auditor | DONE | `src/atlas/core/result_auditor.py`, `tests/test_result_auditor.py` |
+| H2 Reasoning Receipt | DONE | `generated_tool.receipt` on Gate F + generated run; `atlas gate-h receipts` |
+| H3 Rebuildable Memory | DONE | `GateHManager.rebuild_memory()` + `truth_snapshot.recorded` |
+| H4 Adaptive Fail-Safe | DONE | `memory/gate_h/state.json`, pause@3, diagnostic mode, CLI pause/resume |
+| H5 Meta-Governance | DONE | `src/atlas/security/generated_code_policy.py` |
+| H6 Environment Sensor | DONE | `src/atlas/core/environment_sensor.py`, fingerprint tags on promote |
 
-### 1. Result validation
+## PoC path
 
-- Generated tools are validated by output correctness, not only exit code.
-- A `TruthSnapshot` or equivalent witness is stored for generated tools.
-- New generated tool versions are shadow-run against the same snapshot and only promoted when outputs remain valid.
-- Validation results are stored in `ErrorRegistry` and/or `ApprovedPatternStore`.
+```
+editor run projects/.atlas/generated :: echo <message>
+  → AWAITING_APPROVAL → approve → Gate H audit → optional pattern promote
+```
 
-### 2. Reasoning receipts
+## Verification commands
 
-- Every generated tool execution produces a compact, structured receipt with:
-  - purpose of the tool
-  - data touched
-  - permissions required
-  - safety checks applied
-  - approval path taken
-- Receipts are recorded in Merkle logs or an equivalent audit store.
-- No raw chain-of-thought or hidden reasoning is persisted.
+```bash
+PYTHONPATH=src python -m pytest tests/test_gate_h.py tests/test_gate_h_extended.py \
+  tests/test_result_auditor.py tests/test_generated_code_policy.py \
+  tests/test_environment_sensor.py -q
 
-### 3. Rebuildable memory
+PYTHONPATH=src python scripts/gate_h_smoke.py
+atlas gate-h status
+atlas gate-h receipts --tail 5
+```
 
-- Derived memory state is reconstructible from trusted audit logs.
-- KuzuDB stores derived indexes, not the single source of truth.
-- A documented rebuild process exists that recreates memory/state from Merkle logs and approved evidence.
-- Rebuild operations are themselves auditable.
+## Post-H (not in this seal)
 
-### 4. Adaptive fail-safe
+- ADR-025 ColdUpdateManager full protocol
+- ADR-024 Observability v2 (MicroLedger, TelemetryBus)
+- FU-6 PII SLM wiring in Gate D pipeline
+- ADR-019 statistical validation framework
 
-- Repeated failures of generated tools are detected and counted.
-- The system pauses further synthesis after equivalent failures.
-- A diagnostic mode exists that only permits known-good tools.
-- Human review is required before retrying risky generated actions.
-- TimeTravel checkpoints are available for rollback candidates.
-
-### 5. Governance invariants
-
-- Generated code cannot disable Merkle logging.
-- Generated code cannot bypass capability tokens or AtlasExecutor controls.
-- Generated code cannot modify `governance.json`.
-- Generated tools cannot exfiltrate unredacted PII.
-- These invariants are enforced by AST Guard, capability enforcement, and audit logging.
-
-### 6. Environment sensor
-
-- Generated artifacts carry dependency/environment fingerprints.
-- The system detects material environment drift and marks generated patterns stale.
-- Stale generated tools are revalidated before reuse.
-- The system tracks compatibility and vulnerability signals for generated artifacts.
-
-## Evidence required
-
-- `docs/gate_h_action_plan.md` exists and defines the Gate H roadmap.
-- Implementation of a proof-of-concept audited generated tool workflow.
-- Tests covering generated tool validation, receipt logging, rebuildable memory, fail-safe behavior, governance invariants, and stale artifact detection.
-- Audit logs showing generated tool decisions, reasoning receipts, and approvals.
-- A `gate_h_seal.md` document like this one describing closure evidence.
-
-## Notes
-
-- Gate H depends on the Gate F safety foundation: BrowserTool, EditorTool, Merkle logging, AtlasExecutor, PermissionProfile, and AST Guard.
-- Gate H should be implemented incrementally, with the first milestone being a single trusted generated-tool class and audit loop.
-- This seal document is intentionally narrow: it defines the resilience and audit requirements, not a broad autonomy roadmap.
+See [`gate_h_mvp_scope.md`](gate_h_mvp_scope.md) and [`gate_h_action_plan.md`](gate_h_action_plan.md).

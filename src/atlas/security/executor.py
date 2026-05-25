@@ -19,6 +19,8 @@ from pathlib import Path
 
 from atlas.logging.merkle_logger import MerkleLogger
 from atlas.security.ast_guard import ASTGuard
+from atlas.security.generated_code_policy import GeneratedCodePolicy
+from atlas.governance.permission_profile import PermissionLevel
 from atlas.security.capabilities import (
     CapabilityIssuer,
     ExecCapability,
@@ -82,6 +84,7 @@ class AtlasExecutor:
     def execute_read(self, cap: ReadCapability) -> bytes:
         if not isinstance(cap, ReadCapability):
             raise ExecutorError(f"execute_read espera ReadCapability, recibio {type(cap).__name__}")
+        self._require_permission_cleared(cap)
 
         try:
             if not cap.path.exists():
@@ -119,6 +122,7 @@ class AtlasExecutor:
     def execute_write(self, cap: WriteCapability, data: bytes) -> int:
         if not isinstance(cap, WriteCapability):
             raise ExecutorError(f"execute_write espera WriteCapability, recibio {type(cap).__name__}")
+        self._require_permission_cleared(cap)
         if not isinstance(data, (bytes, bytearray)):
             raise ExecutorError(f"data debe ser bytes, recibio {type(data).__name__}")
         if len(data) > cap.max_bytes:
@@ -160,6 +164,7 @@ class AtlasExecutor:
     ) -> NetworkResponse:
         if not isinstance(cap, NetworkCapability):
             raise ExecutorError(f"execute_network espera NetworkCapability, recibio {type(cap).__name__}")
+        self._require_permission_cleared(cap)
 
         req_headers = dict(headers or {})
         req_headers.setdefault("User-Agent", "AtlasCore/0.3")
@@ -218,12 +223,14 @@ class AtlasExecutor:
     def execute_exec(self, cap: ExecCapability) -> SandboxResult:
         if not isinstance(cap, ExecCapability):
             raise ExecutorError(f"execute_exec espera ExecCapability, recibio {type(cap).__name__}")
+        self._require_permission_cleared(cap)
 
         # Si la capability transporta codigo Python, validar con AST Guard
         # antes de pasarlo a la sandbox (ultima linea de defensa).
         if cap.code is not None:
-            guard = self._ast_guard.validate(cap.code)
-            if not guard.passed:
+            policy = GeneratedCodePolicy(self._ast_guard)
+            check = policy.check_generated_source(cap.code)
+            if not check.passed:
                 self._merkle.log(
                     action="exec.ast_guard_rejected",
                     agent=self.AGENT,
@@ -231,11 +238,11 @@ class AtlasExecutor:
                     risk_level="high",
                     payload={
                         "command": cap.command,
-                        "violations": list(guard.violations),
+                        "violations": list(check.violations),
                     },
                 )
                 raise ExecutorError(
-                    f"AST Guard rechazo el codigo: {guard.sanitized_reason}"
+                    f"Generated code policy rechazo el codigo: {check.reason}"
                 )
 
         # Delegamos al sandbox para la ejecucion fisica.
@@ -294,3 +301,37 @@ class AtlasExecutor:
             risk_level="medium",
             payload={"url": cap.url, "domain": cap.domain, "error": error},
         )
+
+    def _session_key(self, cap: ReadCapability | WriteCapability | NetworkCapability | ExecCapability) -> str:
+        if isinstance(cap, ExecCapability):
+            args = " ".join(cap.args)
+            return f"exec:{cap.command} {args}".strip()
+        if isinstance(cap, WriteCapability):
+            return f"write:{cap.path}"
+        if isinstance(cap, ReadCapability):
+            return f"read:{cap.path}"
+        return f"network:{cap.url}"
+
+    def _require_permission_cleared(
+        self,
+        cap: ReadCapability | WriteCapability | NetworkCapability | ExecCapability,
+    ) -> None:
+        if cap.level == PermissionLevel.AUTO:
+            return
+        profile = self._issuer.profile
+        key = self._session_key(cap)
+        if profile.is_confirmed_this_session(key):
+            return
+        clearance = getattr(cap, "clearance", None)
+        if clearance and profile.is_confirmed_this_session(clearance):
+            return
+        if cap.level == PermissionLevel.CONFIRM:
+            raise ExecutorError(
+                f"Requiere confirmacion de sesion para: {key}. "
+                "Use mark_confirmed() tras aprobacion o confirmacion del usuario."
+            )
+        if cap.level == PermissionLevel.APPROVE:
+            raise ExecutorError(
+                f"Requiere aprobacion explicita para: {key}."
+            )
+        raise ExecutorError(f"Permiso bloqueado: {key}")

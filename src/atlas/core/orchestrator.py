@@ -6,6 +6,7 @@ Decision final: Atlas decide. Todo lo demas sirve a Atlas.
 
 from __future__ import annotations
 
+import fcntl
 import logging
 import json
 import os
@@ -25,7 +26,13 @@ from atlas.core.contracts import (
 from atlas.core.event_bus import EventBus
 from atlas.governance.governance_l0 import GovernanceL0
 from atlas.governance.permission_profile import PermissionProfile
-from atlas.hermes.hermes import DelegationBuilder, HermesMockAdapter, OfflineQueue
+from atlas.hermes.hermes import (
+    DelegationBuilder,
+    HermesAdapter,
+    HermesMockAdapter,
+    HermesRestAdapter,
+    OfflineQueue,
+)
 from atlas.logging.merkle_logger import MerkleLogger
 from atlas.memory.memory_system import (
     ErrorRegistry, ApprovedPatternStore, ProviderMetricsStore, SystemContextLoader, ToolRegistry,
@@ -36,11 +43,18 @@ from atlas.core.inference_hub import InferenceHub
 from atlas.core.timetravel import TimeTravel
 from atlas.memory.distiller import ChunkSource, MemoryDistiller
 from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.memory.vector_store import KuzuVectorStore
 from atlas.router.classifier import Classifier, ClassificationResult
 from atlas.router.slm_classifier import SLMClassifier
 from atlas.security.ast_guard import ASTGuard
 from atlas.security.capabilities import CapabilityIssuer
 from atlas.security.executor import AtlasExecutor
+from atlas.security.generated_code_policy import GeneratedCodePolicy
+from atlas.security.pending_store import (
+    is_legacy_pending_file,
+    unwrap_task_payload,
+    wrap_task_payload,
+)
 from atlas.security.pii_surrogate import PIISurrogate
 from atlas.security.sandbox import LayeredIsolationSandbox
 from atlas.security.ssrf_bridge import SSRFBridge
@@ -75,7 +89,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.6.0"
+    VERSION = "0.7.0"
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
@@ -99,6 +113,7 @@ class Orchestrator:
     _inference_hub: Any  # se guarda en enable_gate_d_pipeline para que
                          # _execute_task LOCAL_SAFE pueda invocarlo.
     _gate_h: Any
+    _vector_store: KuzuVectorStore | None
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -158,7 +173,7 @@ class Orchestrator:
         """Retorna el estado completo del core."""
         gov = GovernanceL0.get_instance()
         chain_ok, _ = self._merkle.verify_chain()
-        hermes_status = self._hermes_mock.health_check()
+        hermes_status = self._hermes.health_check()
         uptime = (datetime.now(timezone.utc) - self._start_time).total_seconds()
 
         return AtlasStatus(
@@ -188,13 +203,47 @@ class Orchestrator:
             return [self._pending_summary(t) for t in tasks.values()]
 
     def approve_pending(self, task_id: str, approved: bool) -> dict:
+        lock_fd, lock_path = self._acquire_pending_lock(task_id)
+        if lock_fd is None:
+            return {
+                "task_id": task_id,
+                "status": "in_progress",
+                "error": "otro proceso esta aprobando o ejecutando esta tarea",
+            }
+        try:
+            return self._approve_pending_locked(task_id, approved)
+        finally:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            os.close(lock_fd)
+            if lock_path is not None:
+                lock_path.unlink(missing_ok=True)
+
+    def _approve_pending_locked(self, task_id: str, approved: bool) -> dict:
         with self._approvals_lock:
             task = self._pending_approvals.pop(task_id, None)
+
+        pending_path = self._pending_approval_dir / f"{task_id}.json"
+        executing_path = self._pending_approval_dir / f"{task_id}.executing.json"
+
+        if executing_path.exists():
+            return {
+                "task_id": task_id,
+                "status": "in_progress",
+                "error": "la tarea ya esta en ejecucion",
+            }
+
         if task is None:
-            task = self._load_pending_approval(task_id)
+            if pending_path.exists():
+                task = self._load_pending_approval(task_id)
+            else:
+                task = None
+
         if task is None:
-            return {"task_id": task_id, "status": "unknown",
-                    "error": "no pending approval with this id"}
+            return {
+                "task_id": task_id,
+                "status": "unknown",
+                "error": "no pending approval with this id",
+            }
 
         self._merkle.log(
             action="task.approval",
@@ -211,15 +260,32 @@ class Orchestrator:
             self._delete_pending_approval(task.id)
             return {"task_id": task.id, "status": task.status.value, "approved": False}
 
+        try:
+            pending_path.replace(executing_path)
+        except OSError as exc:
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "error": f"no se pudo reservar ejecucion: {exc}",
+            }
+
+        self._permissions.mark_confirmed(f"task:{task.id}")
         task.transition(TaskStatus.EXECUTING)
         try:
             self._execute_task(task)
         except Exception as e:
             task.transition(TaskStatus.FAILED)
             task.error = str(e)
-        self._delete_pending_approval(task.id)
-        return {"task_id": task.id, "status": task.status.value,
-                "approved": True, "result": task.result}
+        finally:
+            executing_path.unlink(missing_ok=True)
+            pending_path.unlink(missing_ok=True)
+
+        return {
+            "task_id": task.id,
+            "status": task.status.value,
+            "approved": True,
+            "result": task.result,
+        }
 
     def attach_gate_f_tools(
         self,
@@ -254,14 +320,65 @@ class Orchestrator:
         return fn()
 
     def gate_h_status(self) -> dict[str, Any]:
-        return {
-            "paused_tools": self._gate_h.paused_tools,
-            "failure_counts": self._gate_h.failure_counts,
-            "truth_snapshots": len(self._gate_h._snapshot_store.all()),
-        }
+        return self._gate_h.status_summary()
 
     def rebuild_memory(self) -> dict[str, int]:
-        return self._gate_h.rebuild_memory()
+        return self._gate_h.rebuild_memory(self._vector_store)
+
+    def gate_h_receipts(self, n: int = 20) -> list[dict]:
+        return [
+            r.to_dict()
+            for r in self._merkle.tail(n * 3)
+            if r.action == "generated_tool.receipt"
+        ][-n:]
+
+    def _record_tool_receipt(
+        self,
+        task: Task,
+        *,
+        purpose: str,
+        data_touched: list[str] | None = None,
+        permissions_required: list[str] | None = None,
+        safety_checks: list[str] | None = None,
+        approval_path: str = "automatic",
+    ) -> None:
+        receipt = ReasoningReceipt(
+            purpose=purpose,
+            data_touched=data_touched or [task.tool_name or "unknown"],
+            permissions_required=permissions_required or [
+                task.route.value if task.route else "unknown"
+            ],
+            safety_checks=safety_checks or [
+                "PermissionProfile",
+                "AtlasExecutor",
+                "MerkleLogger",
+            ],
+            approval_path=approval_path,
+        )
+        self._gate_h.record_reasoning_receipt(
+            task.id,
+            task.tool_name or "unknown",
+            receipt,
+        )
+
+    def _check_gate_h_tool_allowed(self, tool_name: str, task_id: str | None = None) -> str | None:
+        if self._gate_h.is_tool_paused(tool_name):
+            return f"Herramienta pausada por Gate H: {tool_name}"
+        if not self._gate_h.is_allowed_in_diagnostic(tool_name):
+            return f"Modo diagnostico Gate H: solo tools conocidas ({tool_name} bloqueada)"
+        return None
+
+    @staticmethod
+    def _is_generated_tool_run(working_dir: str, command: str) -> bool:
+        wd = working_dir.replace("\\", "/").lower()
+        if ".atlas/generated" in wd:
+            return True
+        cmd_lower = command.lower()
+        if ".atlas/generated" in cmd_lower:
+            return True
+        if "python" in cmd_lower and ".py" in cmd_lower:
+            return True
+        return False
 
     @property
     def bus(self) -> EventBus:
@@ -306,6 +423,19 @@ class Orchestrator:
         """InferenceHub asociado al pipeline Gate D (None si no fue inyectado)."""
         return self._inference_hub
 
+    @property
+    def vector_store(self) -> KuzuVectorStore | None:
+        """KuzuVectorStore activo cuando Gate D + ATLAS_MEMORY_VECTOR (default on)."""
+        return self._vector_store
+
+    @staticmethod
+    def _memory_vector_enabled() -> bool:
+        return os.environ.get("ATLAS_MEMORY_VECTOR", "1").strip().lower() not in (
+            "0",
+            "false",
+            "no",
+        )
+
     # ------------------------------------------------------------------
     # Gate D pipeline integrado (opt-in)
     # ------------------------------------------------------------------
@@ -329,7 +459,26 @@ class Orchestrator:
             return
 
         emb = embedder or StubEmbedder()
-        self._distiller = MemoryDistiller(embedder=emb)
+        vector_store: KuzuVectorStore | None = None
+        if self._memory_vector_enabled():
+            kuzu_dir = self._workspace / "memory" / "kuzu"
+            kuzu_dir.mkdir(parents=True, exist_ok=True)
+            vector_store = KuzuVectorStore(
+                db_path=kuzu_dir / "atlas.kuzu",
+                embedder=emb,
+            )
+        self._vector_store = vector_store
+        self._distiller = MemoryDistiller(embedder=emb, vector_store=vector_store)
+        self._error_registry = ErrorRegistry(
+            self._workspace / "memory" / "error_registry",
+            merkle=self._merkle,
+            vector_store=vector_store,
+        )
+        self._approved_patterns = ApprovedPatternStore(
+            self._workspace / "memory" / "approved_patterns",
+            merkle=self._merkle,
+            vector_store=vector_store,
+        )
         self._ghost_replay = GhostReplay(
             cache_path=self._workspace / "memory" / "ghost_cache",
             default_ttl_seconds=ghost_ttl_s,
@@ -354,8 +503,21 @@ class Orchestrator:
                 "embedder_dim": emb.dim,
                 "ghost_ttl_s":  ghost_ttl_s,
                 "slm_mode":     slm_mode,
+                "memory_vector": vector_store is not None,
             },
         )
+        self._gate_h._vector_store = vector_store
+        if vector_store is not None:
+            self._merkle.log(
+                action="pipeline.memory_vector_enabled",
+                agent="orchestrator",
+                result="success",
+                risk_level="safe",
+                payload={
+                    "db_path": str(self._workspace / "memory" / "kuzu" / "atlas.kuzu"),
+                    "embedder_dim": emb.dim,
+                },
+            )
 
     # ------------------------------------------------------------------
     # Lifecycle Gate C / C4-s2 (bot Telegram + OfflineMonitor)
@@ -384,7 +546,11 @@ class Orchestrator:
         authorizer = TelegramAuthorizer.from_permission_profile(self._permissions)
         ops = OrchestratorOps(self)
         bot = TelegramBot(
-            client=client, authorizer=authorizer, ops=ops, merkle=self._merkle,
+            client=client,
+            authorizer=authorizer,
+            ops=ops,
+            merkle=self._merkle,
+            telegram_config=self._permissions.telegram_config,
         )
         self._wire_bus_to_bot(bot)
         self._telegram_bot = bot
@@ -410,7 +576,7 @@ class Orchestrator:
     def start_offline_monitor(self, poll_interval_seconds: int = 60) -> None:
         from atlas.core.offline_monitor import OfflineMonitor
         self._offline_monitor = OfflineMonitor(
-            hermes=self._hermes_mock, bus=self._bus,
+            hermes=self._hermes, bus=self._bus,
             poll_interval_seconds=poll_interval_seconds,
         )
         self._offline_monitor.start()
@@ -435,7 +601,7 @@ class Orchestrator:
         sent = failed = 0
         for entry in pending:
             try:
-                self._hermes_mock.enqueue_task(entry.delegation)
+                self._hermes.enqueue_task(entry.delegation)
                 self._offline_queue.mark_sent(entry.delegation.id)
                 sent += 1
             except Exception as e:  # noqa: BLE001
@@ -621,7 +787,10 @@ class Orchestrator:
             )
             return
 
-        hit = self._ghost_replay.lookup(task.intent, sensitivity, ctx_sig)
+        if self._ghost_cache_eligible(sensitivity):
+            hit = self._ghost_replay.lookup(task.intent, sensitivity, ctx_sig)
+        else:
+            hit = None
         if hit is not None:
             # Camino corto: ya estamos en CLASSIFYING desde el paso 1.
             # Cumplimos el state machine CLASSIFYING -> ROUTING -> EXECUTING
@@ -717,8 +886,10 @@ class Orchestrator:
         task.transition(TaskStatus.EXECUTING)
         self._execute_task(task)
 
-        # 6. Ghost record si la ejecucion fue OK
-        if task.status == TaskStatus.DONE:
+        # 6. Ghost record si la ejecucion fue OK (nunca cachear approval/high)
+        if task.status == TaskStatus.DONE and self._ghost_cache_eligible(
+            sensitivity, route=task.route,
+        ):
             try:
                 self._ghost_replay.record(
                     task.intent, sensitivity, ctx_sig,
@@ -795,6 +966,17 @@ class Orchestrator:
 
     def _execute_task(self, task: Task) -> None:
         """Ejecuta la tarea con la herramienta deterministica correspondiente."""
+        if self._thermal_watchdog is not None:
+            task.operational_mode = self._thermal_watchdog.current_operational_mode()
+
+        tool_key = task.tool_name or "legacy"
+        gate_h_block = self._check_gate_h_tool_allowed(tool_key, task.id)
+        if gate_h_block:
+            task.transition(TaskStatus.FAILED)
+            task.error = gate_h_block
+            task.result = {"error": gate_h_block, "paused": True}
+            return
+
         if "gate_f_command" in task.metadata:
             self._execute_gate_f_task(task)
             return
@@ -807,13 +989,13 @@ class Orchestrator:
             task.result = self.status().__dict__
         elif any(kw in intent_lower for kw in ["git status", "estado git"]):
             task.tool_name = "git.status"
-            task.result = self._run_git_status()
+            task.result = self._run_git_status(task)
         elif any(kw in intent_lower for kw in ["git log", "historial"]):
             task.tool_name = "git.log"
-            task.result = self._run_git_log()
+            task.result = self._run_git_log(task)
         elif any(kw in intent_lower for kw in ["git diff", "diferencias"]):
             task.tool_name = "git.diff"
-            task.result = self._run_git_diff()
+            task.result = self._run_git_diff(task)
         elif any(kw in intent_lower for kw in ["lista", "listar", "list"]):
             task.tool_name = "fs.list_dir"
             task.result = self._list_workspace()
@@ -838,14 +1020,11 @@ class Orchestrator:
             payload={"tool": task.tool_name},
             task_id=task.id,
         )
-        receipt = ReasoningReceipt(
+        self._record_tool_receipt(
+            task,
             purpose="Ejecucion de herramienta determinista",
-            data_touched=[task.tool_name or "unknown"],
-            permissions_required=[task.route.value if task.route else "unknown"],
-            safety_checks=["PermissionProfile", "MerkleLogger"],
             approval_path="explicit" if task.route == RoutingLevel.REQUIRES_APPROVAL else "automatic",
         )
-        self._gate_h.record_reasoning_receipt(task.id, task.tool_name or "unknown", receipt)
         task.transition(TaskStatus.DONE)
         self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
 
@@ -955,15 +1134,21 @@ class Orchestrator:
                     requires_approval=True,
                     reason="Editor write changes filesystem state.",
                 )
-        if action == "run" and rest:
+        if action in {"run", "run_task"} and rest:
             working_dir, command = self._split_payload(rest)
             if working_dir and command is not None:
+                generated = self._is_generated_tool_run(working_dir, command)
                 return GateFCommand(
                     tool="editor",
                     action="run",
-                    args={"working_dir": working_dir, "command": command},
+                    args={
+                        "working_dir": working_dir,
+                        "command": command,
+                        "generated": generated,
+                    },
                     requires_approval=True,
-                    reason="Editor run executes a command.",
+                    reason="Editor run executes a command."
+                    + (" (Gate H generated audit)" if generated else ""),
                 )
         if action == "apply_diff" and rest:
             path, diff_text = self._split_payload(rest)
@@ -1060,6 +1245,21 @@ class Orchestrator:
         self._execute_gate_f_task(task)
 
     def _execute_gate_f_task(self, task: Task) -> None:
+        tool_key = task.tool_name or "gate_f"
+        gate_h_block = self._check_gate_h_tool_allowed(tool_key, task.id)
+        if gate_h_block:
+            task.transition(TaskStatus.FAILED)
+            task.error = gate_h_block
+            task.result = {"error": task.error, "paused": True}
+            return
+
+        thermal_block = self._thermal_blocks_execution()
+        if thermal_block:
+            task.transition(TaskStatus.FAILED)
+            task.error = thermal_block
+            task.result = {"error": thermal_block, "thermal": True}
+            return
+
         raw = task.metadata.get("gate_f_command")
         if not isinstance(raw, dict):
             raise RuntimeError("Gate F command metadata missing or invalid")
@@ -1073,7 +1273,7 @@ class Orchestrator:
             if tool == "browser":
                 result = self._execute_browser_command(action, args)
             elif tool == "editor":
-                result = self._execute_editor_command(action, args)
+                result = self._execute_editor_command(action, args, task=task)
             elif tool == "vision":
                 result = self._execute_vision_command(action, args)
             else:
@@ -1094,6 +1294,11 @@ class Orchestrator:
                 context={"tool": tool, "action": action, "args": args},
                 task_id=task.id,
             )
+            if self._timetravel is not None:
+                self._timetravel.record_step(
+                    task.id, "gate_h_failure",
+                    {"tool": tool, "error": str(e)[:200]},
+                )
             task.transition(TaskStatus.FAILED)
             task.error = str(e)
             self._bus.publish_type(EventType.TOOL_FAILED, {
@@ -1109,6 +1314,12 @@ class Orchestrator:
             risk_level="medium" if task.route == RoutingLevel.REQUIRES_APPROVAL else "safe",
             payload={"tool": task.tool_name},
             task_id=task.id,
+        )
+        self._record_tool_receipt(
+            task,
+            purpose=f"Gate F {tool}.{action}",
+            safety_checks=["PermissionProfile", "AtlasExecutor", "GateH", "MerkleLogger"],
+            approval_path="explicit" if task.route == RoutingLevel.REQUIRES_APPROVAL else "automatic",
         )
         task.transition(TaskStatus.DONE)
         self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
@@ -1127,24 +1338,32 @@ class Orchestrator:
             return browser.fill(str(args["selector"]), str(args["value"])).__dict__
         raise RuntimeError(f"Unsupported browser action: {action}")
 
-    def _execute_editor_command(self, action: str, args: dict[str, Any]) -> dict:
+    def _execute_editor_command(
+        self,
+        action: str,
+        args: dict[str, Any],
+        *,
+        task: Task | None = None,
+    ) -> dict:
         editor = self._get_editor_tool()
+        clearance = f"task:{task.id}" if task is not None else None
         if action == "read":
             return editor.read_file(self._resolve_gate_f_path(str(args["path"]))).__dict__
         if action == "write":
             return editor.write_file(
                 self._resolve_gate_f_path(str(args["path"])),
                 str(args["content"]),
+                clearance=clearance,
             ).__dict__
         if action == "run":
-            return editor.run_task(
-                self._resolve_gate_f_path(str(args["working_dir"])),
-                str(args["command"]),
-            ).__dict__
+            return self._execute_editor_run_command(
+                task, args, editor, clearance=clearance,
+            )
         if action == "apply_diff":
             return editor.apply_diff(
                 self._resolve_gate_f_path(str(args["path"])),
                 str(args["diff"]),
+                clearance=clearance,
             ).__dict__
         if action == "open":
             return editor.open_project(self._resolve_gate_f_path(str(args["path"]))).__dict__
@@ -1166,6 +1385,75 @@ class Orchestrator:
                 payload=payload,
             )
         return payload
+
+    def _execute_editor_run_command(
+        self,
+        task: Task | None,
+        args: dict[str, Any],
+        editor: Any,
+        *,
+        clearance: str | None,
+    ) -> dict[str, Any]:
+        working_dir = self._resolve_gate_f_path(str(args["working_dir"]))
+        command = str(args["command"])
+        generated = bool(args.get("generated"))
+
+        if generated and task is not None:
+            self._record_tool_receipt(
+                task,
+                purpose="Generated editor run (pre-exec)",
+                safety_checks=["GeneratedCodePolicy", "AST Guard", "AtlasExecutor"],
+                approval_path="explicit",
+            )
+            self._validate_generated_script_source(command, working_dir)
+
+        result = editor.run_task(working_dir, command, clearance=clearance)
+        out: dict[str, Any] = dict(result.__dict__)
+        if generated and task is not None:
+            out = self._execute_generated_editor_run(
+                task,
+                {"working_dir": str(working_dir), "command": command},
+                out,
+            )
+        return out
+
+    def _validate_generated_script_source(self, command: str, working_dir: Path) -> None:
+        import shlex
+
+        policy = GeneratedCodePolicy()
+        for part in shlex.split(command):
+            if not part.endswith(".py"):
+                continue
+            script = Path(part)
+            if not script.is_absolute():
+                script = (working_dir / script).resolve()
+            if script.is_file():
+                check = policy.check_generated_source(script.read_text(encoding="utf-8"))
+                if not check.passed:
+                    raise RuntimeError(f"GeneratedCodePolicy: {check.reason}")
+
+    def _execute_generated_editor_run(
+        self,
+        task: Task,
+        input_data: dict[str, Any],
+        result: dict[str, Any],
+    ) -> dict[str, Any]:
+        tool_name = task.tool_name or "editor.run"
+        validation = self._gate_h.audit_generated_run(
+            tool_name,
+            input_data,
+            result,
+            task_id=task.id,
+            promote=True,
+        )
+        result = dict(result)
+        result["gate_h"] = {
+            "valid": validation.valid,
+            "reasons": list(validation.reasons),
+        }
+        if not validation.valid:
+            task.error = "; ".join(validation.reasons)
+        return result
 
     def _resolve_gate_f_path(self, value: str) -> Path:
         path = Path(value).expanduser()
@@ -1223,8 +1511,12 @@ class Orchestrator:
         try:
             self._pending_approval_dir.mkdir(parents=True, exist_ok=True)
             path = self._pending_approval_dir / f"{task.id}.json"
-            payload = self._serialize_task(task)
-            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            task_payload = self._serialize_task(task)
+            envelope = wrap_task_payload(task_payload)
+            path.write_text(
+                json.dumps(envelope, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
             self._merkle.log(
                 action="approval.persisted",
                 agent="orchestrator",
@@ -1248,8 +1540,34 @@ class Orchestrator:
         if not path.exists():
             return None
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            return self._deserialize_task(data)
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(raw, dict):
+                raise ValueError("pending file is not a JSON object")
+            if is_legacy_pending_file(raw):
+                self._merkle.log(
+                    action="approval.legacy_rejected",
+                    agent="orchestrator",
+                    result="failure",
+                    risk_level="high",
+                    payload={
+                        "task_id": task_id,
+                        "hint": "re-submit task; pending v1 requires HMAC envelope",
+                    },
+                    task_id=task_id,
+                )
+                return None
+            task_data = unwrap_task_payload(raw)
+            if task_data is None:
+                self._merkle.log(
+                    action="approval.tamper_detected",
+                    agent="orchestrator",
+                    result="failure",
+                    risk_level="critical",
+                    payload={"task_id": task_id, "path": str(path)},
+                    task_id=task_id,
+                )
+                return None
+            return self._deserialize_task(task_data)
         except Exception as exc:  # noqa: BLE001
             self._merkle.log(
                 action="approval.load_failed",
@@ -1265,6 +1583,8 @@ class Orchestrator:
             return []
         tasks: list[Task] = []
         for path in sorted(self._pending_approval_dir.glob("*.json")):
+            if ".executing" in path.name:
+                continue
             task = self._load_pending_approval(path.stem)
             if task is not None:
                 tasks.append(task)
@@ -1327,6 +1647,16 @@ class Orchestrator:
         El resultado se guarda en task.result con la respuesta restaurada y
         metadatos del proveedor (provider, model, latency, tokens).
         """
+        thermal_policy = self._thermal_blocks_local_llm()
+        if thermal_policy:
+            task.tool_name = "local_safe.thermal_blocked"
+            task.result = {
+                "error": thermal_policy,
+                "message": "Inferencia local pausada por modo termico (DEGRADED/OMEGA).",
+                "thermal": True,
+            }
+            return
+
         # Lazy imports para evitar cargar litellm si nadie usa esto
         from atlas.core.inference_hub import InferenceLevel, InferenceRequest
         from atlas.memory.distiller import ChunkSource
@@ -1415,11 +1745,20 @@ class Orchestrator:
             intent=task.intent,
             priority=task.priority,
         )
-        # enqueue_task firma el payload internamente; recuperamos el firmado
-        receipt = self._hermes_mock.enqueue_task(payload)
+        receipt = self._hermes.enqueue_task(payload)
 
-        # Recuperar el payload firmado del mock para persistirlo en la cola offline
-        signed_payload = self._hermes_mock._queue.get(payload.id, payload)
+        if isinstance(self._hermes, HermesMockAdapter):
+            signed_payload = self._hermes._queue.get(payload.id, payload)
+            mode_note = "Hermes mock (desarrollo)"
+            merkle_action = "hermes.mock_queued"
+        elif isinstance(self._hermes, HermesRestAdapter):
+            signed_payload = self._hermes._sign_payload(payload)
+            mode_note = f"Hermes REST ({os.environ.get('HERMES_BASE_URL', '').rstrip('/')})"
+            merkle_action = "hermes.delegated"
+        else:
+            signed_payload = payload
+            mode_note = "Hermes adapter desconocido"
+            merkle_action = "hermes.delegated"
 
         entry_cls = __import__(
             "atlas.hermes.hermes", fromlist=["QueueEntry"]
@@ -1431,10 +1770,10 @@ class Orchestrator:
             "delegation_id": receipt.delegation_id,
             "accepted": receipt.accepted,
             "queue_position": receipt.queue_position,
-            "note": "Payload generado y encolado. Hermes en modo mock (v0.1).",
+            "note": f"Payload firmado y encolado. {mode_note}.",
         }
         self._merkle.log(
-            action="hermes.mock_queued",
+            action=merkle_action,
             agent="hermes_adapter",
             result="success",
             risk_level="safe",
@@ -1470,13 +1809,20 @@ class Orchestrator:
     # falla (ExecutorError) caemos a {"error": ...} para mantener el contrato
     # de retorno hacia _execute_task.
 
-    def _run_via_executor(self, command: str, args: tuple[str, ...]) -> dict:
+    def _run_via_executor(
+        self,
+        command: str,
+        args: tuple[str, ...],
+        *,
+        task: Task | None = None,
+    ) -> dict:
         """Helper comun: emite capability, ejecuta en sandbox y normaliza salida."""
         from atlas.security.capabilities import CapabilityDenied  # noqa: PLC0415
         from atlas.security.executor import ExecutorError          # noqa: PLC0415
+        clearance = f"task:{task.id}" if task is not None else None
         try:
             cap = self._capability_issuer.issue_exec(
-                command, args=args, timeout_s=10
+                command, args=args, timeout_s=10, clearance=clearance,
             )
             result = self._executor.execute_exec(cap)
             return {
@@ -1492,14 +1838,14 @@ class Orchestrator:
         except Exception as e:
             return {"error": str(e)}
 
-    def _run_git_status(self) -> dict:
-        return self._run_via_executor("git", ("status", "--short"))
+    def _run_git_status(self, task: Task | None = None) -> dict:
+        return self._run_via_executor("git", ("status", "--short"), task=task)
 
-    def _run_git_log(self) -> dict:
-        return self._run_via_executor("git", ("log", "--oneline", "-10"))
+    def _run_git_log(self, task: Task | None = None) -> dict:
+        return self._run_via_executor("git", ("log", "--oneline", "-10"), task=task)
 
-    def _run_git_diff(self) -> dict:
-        return self._run_via_executor("git", ("diff", "--stat"))
+    def _run_git_diff(self, task: Task | None = None) -> dict:
+        return self._run_via_executor("git", ("diff", "--stat"), task=task)
 
     def _list_workspace(self) -> dict:
         """
@@ -1540,7 +1886,8 @@ class Orchestrator:
         for sub in ["projects", "tmp", "skills", "memory/system_context",
                     "memory/error_registry", "memory/approved_patterns",
                     "memory/performance", "memory/audit",
-                    "memory/pending_approvals", "config"]:
+                    "memory/pending_approvals", "memory/gate_h",
+                    "memory/truth_snapshots", "config"]:
             (self._workspace / sub).mkdir(parents=True, exist_ok=True)
 
     def _init_components(self) -> None:
@@ -1610,9 +1957,9 @@ class Orchestrator:
             self._approved_patterns,
         )
 
-        # Hermes
-        self._hermes_mock = HermesMockAdapter()
+        # Hermes (REST si HERMES_BASE_URL + HERMES_API_KEY en .env)
         self._offline_queue = OfflineQueue(self._workspace / "memory")
+        self._hermes = self._build_hermes_adapter()
 
         # Event Bus
         self._bus = EventBus()
@@ -1648,9 +1995,72 @@ class Orchestrator:
         self._timetravel = None
         self._inference_hub = None
         self._pii_surrogate = PIISurrogate()
+        self._vector_store = None
         self._gate_d_enabled = False
         if os.environ.get("ATLAS_PIPELINE_GATE_D", "") == "1":
             self.enable_gate_d_pipeline()
+
+    @property
+    def _hermes_mock(self) -> HermesMockAdapter:
+        """Compatibilidad tests: cola in-memory solo con mock."""
+        if isinstance(self._hermes, HermesMockAdapter):
+            return self._hermes
+        raise TypeError("HermesMockAdapter no activo — usa HermesRestAdapter (HERMES_BASE_URL)")
+
+    def _build_hermes_adapter(self) -> HermesAdapter:
+        base_url = os.environ.get("HERMES_BASE_URL", "").strip()
+        api_key = os.environ.get("HERMES_API_KEY", "").strip()
+        if base_url and api_key:
+            _log.info("Hermes: REST -> %s", base_url)
+            return HermesRestAdapter(
+                base_url=base_url,
+                shared_secret=api_key,
+                offline_queue=self._offline_queue,
+            )
+        _log.warning(
+            "Hermes: mock (faltan HERMES_BASE_URL/HERMES_API_KEY). "
+            "Carga .env para VPS real."
+        )
+        return HermesMockAdapter()
+
+    @staticmethod
+    def _ghost_cache_eligible(
+        sensitivity: str | None,
+        *,
+        route: RoutingLevel | None = None,
+    ) -> bool:
+        if (sensitivity or "low") == "high":
+            return False
+        if route == RoutingLevel.REQUIRES_APPROVAL:
+            return False
+        return True
+
+    def _acquire_pending_lock(self, task_id: str) -> tuple[int, Path] | tuple[None, None]:
+        self._pending_approval_dir.mkdir(parents=True, exist_ok=True)
+        lock_path = self._pending_approval_dir / f"{task_id}.lock"
+        fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            os.close(fd)
+            return None, None
+        return fd, lock_path
+
+    def _thermal_blocks_local_llm(self) -> str | None:
+        if self._thermal_watchdog is None:
+            return None
+        state = self._thermal_watchdog.current_state()
+        if state.should_pause_local_llm:
+            return state.policy
+        return None
+
+    def _thermal_blocks_execution(self) -> str | None:
+        if self._thermal_watchdog is None:
+            return None
+        state = self._thermal_watchdog.current_state()
+        if state.emergency:
+            return state.policy
+        return None
 
     def _copy_defaults(self, config_dir: Path) -> None:
         """Copia governance.json y permissions.yaml si no existen en el workspace."""

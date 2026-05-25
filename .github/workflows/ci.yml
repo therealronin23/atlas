@@ -1,0 +1,63 @@
+# Atlas Core — CI mínimo
+# test-and-types: suite core sin Playwright (517+ tests).
+# browser-optional: continue-on-error — no bloquea merge si falta Chromium.
+# operational_smoke.py es solo on-host (requiere HERMES_* reales); no corre en CI.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-and-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package and dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Pytest (core suite, sin browser/Playwright)
+        env:
+          PYTHONPATH: src
+          ATLAS_MEMORY_VECTOR: "0"
+          ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
+        run: |
+          python -m pytest tests/ \
+            --ignore=tests/test_browser.py \
+            -q --tb=line
+
+      - name: mypy
+        env:
+          MYPYPATH: src
+        run: python -m mypy src/atlas/
+
+  browser-optional:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install with computer-use extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,computer-use]"
+          python -m playwright install chromium
+
+      - name: Browser tests
+        env:
+          PYTHONPATH: src
+        run: python -m pytest tests/test_browser.py -q --tb=line
