@@ -60,7 +60,7 @@ components serve Atlas, not the other way around.
   `atlas update propose|validate|approve|apply`; `atlas self-audit run|status|proposals|report|stop`
   ejecuta ciclos fríos auditables sin hot-patch ni merge automático a main.
 - Auditoría completa: `docs/audit_complete_2026-05-25.md`, `scripts/audit_complete.py`.
-  563 core tests (25 computer_use deselected), mypy verde.
+  564 core tests + 25 computer_use tests (589 total), mypy verde.
 - Gate F details:
   - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
     Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
@@ -234,7 +234,8 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 563 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 564 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "computer_use"      # 25 Playwright/browser tests
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
@@ -273,7 +274,7 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gates A–I + ADR-024/025 MVP + SelfAuditLoop (2026-05-25). v0.9.0.
-Suite core 563 green; `atlas serve`, `atlas health`, `atlas update`, `atlas self-audit`,
+Suite core 564 green; `atlas serve`, `atlas health`, `atlas update`, `atlas self-audit`,
 observability dashboard.
 Next: ColdUpdate auto-patch generation from self-audit candidates, Hermes webhook,
 fleet/Atlas Box, ADR-024 production metrics.

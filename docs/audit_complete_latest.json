@@ -1,16 +1,23 @@
 {
   "root": "/home/ronin/proyectos/atlas-core",
+  "generated_at": "2026-05-25T19:29:03.561142+00:00",
   "checks": [
     {
       "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q -m not computer_use",
       "exit": 0,
-      "stdout_tail": "........................................................................ [ 12%]\n........................................................................ [ 25%]\n........................................................................ [ 38%]\n........................................................................ [ 51%]\n........................................................................ [ 64%]\n........................................................................ [ 77%]\n........................................................................ [ 90%]\n..................................................                       [100%]\n554 passed, 25 deselected in 26.53s\n",
+      "stdout_tail": "........................................................................ [ 12%]\n........................................................................ [ 25%]\n........................................................................ [ 38%]\n........................................................................ [ 51%]\n........................................................................ [ 63%]\n........................................................................ [ 76%]\n........................................................................ [ 89%]\n............................................................             [100%]\n564 passed, 25 deselected in 26.35s\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q -m computer_use",
+      "exit": 0,
+      "stdout_tail": ".........................                                                [100%]\n25 passed, 564 deselected in 68.37s (0:01:08)\n",
       "stderr_tail": ""
     },
     {
       "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m mypy src/atlas/",
       "exit": 0,
-      "stdout_tail": "Success: no issues found in 61 source files\n",
+      "stdout_tail": "Success: no issues found in 62 source files\n",
       "stderr_tail": ""
     },
     {
@@ -24,8 +31,21 @@
       "exit": 0,
       "stdout_tail": "[1/4] Gate H status: {'paused_tools': [], 'failure_counts': {}, 'truth_snapshots': 0, 'diagnostic_mode': False, 'stale_patterns_count': 0, 'known_good_tools': ['editor.read', 'fs.list_dir', 'git.status']}\n[2/4] generated run + audit OK\n[3/4] pause persistence OK\n[4/4] rebuild_memory: {'restored_patterns': 1, 'restored_snapshots': 1, 'kuzu_patterns': 0}\n=== Gate H smoke OK ===\n",
       "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m atlas.interfaces.cli self-audit run --hours 1 --profile quick --max-cycles 1 --dry-run",
+      "exit": 0,
+      "stdout_tail": ",\n          \"gate_h\": {\n            \"paused_tools\": [],\n            \"failure_counts\": {},\n            \"truth_snapshots\": 0,\n            \"diagnostic_mode\": false,\n            \"stale_patterns_count\": 0,\n            \"known_good_tools\": [\n              \"editor.read\",\n              \"fs.list_dir\",\n              \"git.status\"\n            ]\n          },\n          \"pending_approvals_count\": 0,\n          \"queue_depth\": 0,\n          \"telegram_running\": false,\n          \"offline_monitor_running\": false,\n          \"observability\": {\n            \"telemetry\": {\n              \"counters\": [],\n              \"gauges\": [],\n              \"recent_events\": []\n            },\n            \"microledger_tail\": [],\n            \"wal_tail\": [\n              {\n                \"ts\": \"2026-05-25T19:31:14.564785+00:00\",\n                \"component\": \"orchestrator\",\n                \"message\": \"session.started\",\n                \"fields\": {\n                  \"result\": \"success\",\n                  \"risk\": \"safe\",\n                  \"task_id\": null\n                }\n              },\n              {\n                \"ts\": \"2026-05-25T19:31:14.568467+00:00\",\n                \"component\": \"self_audit_runner\",\n                \"message\": \"self_audit.started\",\n                \"fields\": {\n                  \"result\": \"success\",\n                  \"risk\": \"high\",\n                  \"task_id\": null\n                }\n              }\n            ]\n          }\n        }\n      },\n      \"findings\": [],\n      \"candidates\": []\n    }\n  ]\n}\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python /home/ronin/proyectos/atlas-core/scripts/operational_smoke.py",
+      "exit": 0,
+      "stdout_tail": "[1/5] env OK: {\"HERMES_BASE_URL\": \"http://100.108.132.116:8443\", \"HERMES_API_KEY\": \"***\"}\n[2/5] orchestrator OK: {\"chain_ok\": true, \"governance_ok\": true, \"hermes_mode\": \"live\", \"hermes_reachable\": true, \"queue_depth\": 0, \"adapter_type\": \"HermesRestAdapter\"}\n[3/5] hermes REST OK: mode=live delegation_id=01c46c5d-025f-4c50-b7b6-26f266025c60\n[4/5] CLI approval OK: task_id=561b2504-8738-4ae8-814c-671cb681a1bb\n[5/5] telegram outbound OK: chat_id=***TELEGRAM_CHAT_ID***\n=== Summary ===\n  Operational smoke: OK\n",
+      "stderr_tail": ""
     }
   ],
   "passed": true,
-  "failed_count": 0
+  "failed_count": 0,
+  "skipped_count": 0
 }

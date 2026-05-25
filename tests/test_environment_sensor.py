@@ -19,6 +19,11 @@ def test_fingerprint_tag_roundtrip() -> None:
     assert restored.python_version == fp.python_version
 
 
+def test_default_fingerprint_uses_current_runtime_version() -> None:
+    fp = capture_fingerprint()
+    assert fp.atlas_version == "0.9.0"
+
+
 def test_is_stale_on_python_change() -> None:
     stored = EnvironmentFingerprint(
         python_version="0.0.0",
