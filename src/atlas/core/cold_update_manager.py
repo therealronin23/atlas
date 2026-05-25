@@ -26,6 +26,9 @@ class ColdUpdateProposal:
     worktree_path: str
     patch_path: str
     base_ref: str
+    origin: str = "manual"  # manual | self_audit
+    risk: str = "medium"    # low | medium | high | critical
+    evidence: dict[str, Any] = field(default_factory=dict)
     validation: dict[str, Any] | None = None
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
@@ -87,10 +90,15 @@ class ColdUpdateManager:
         patch_path: Path,
         *,
         base_ref: str = "HEAD",
+        origin: str = "manual",
+        risk: str = "medium",
+        evidence: dict[str, Any] | None = None,
     ) -> ColdUpdateProposal:
         patch_path = patch_path.resolve()
         if not patch_path.is_file():
             raise FileNotFoundError(f"Patch no encontrado: {patch_path}")
+        self._validate_origin(origin)
+        self._validate_risk(risk)
 
         proposal_id = str(uuid.uuid4())[:12]
         wt_dir = self._store_dir / f"worktree-{proposal_id}"
@@ -109,6 +117,9 @@ class ColdUpdateManager:
             worktree_path=str(wt_dir),
             patch_path=str(stored_patch),
             base_ref=base_ref,
+            origin=origin,
+            risk=risk,
+            evidence=evidence or {},
         )
         self._proposals[proposal_id] = proposal
         self._save()
@@ -117,7 +128,33 @@ class ColdUpdateManager:
             agent="cold_update_manager",
             result="success",
             risk_level="high",
-            payload={"proposal_id": proposal_id, "intent": intent[:200]},
+            payload={
+                "proposal_id": proposal_id,
+                "intent": intent[:200],
+                "origin": origin,
+                "risk": risk,
+            },
+        )
+        return proposal
+
+    def attach_evidence(
+        self,
+        proposal_id: str,
+        evidence: dict[str, Any],
+    ) -> ColdUpdateProposal:
+        proposal = self._require(proposal_id)
+        proposal.evidence.update(evidence)
+        proposal.updated_at = datetime.now(timezone.utc).isoformat()
+        self._save()
+        self._merkle.log(
+            action="cold_update.evidence_attached",
+            agent="cold_update_manager",
+            result="success",
+            risk_level="moderate",
+            payload={
+                "proposal_id": proposal_id,
+                "keys": sorted(evidence.keys()),
+            },
         )
         return proposal
 
@@ -217,6 +254,14 @@ class ColdUpdateManager:
             "proposal": proposal.to_dict(),
             "diff_stat": self._diff_stat(Path(proposal.worktree_path)),
         }
+
+    def _validate_origin(self, origin: str) -> None:
+        if origin not in {"manual", "self_audit"}:
+            raise ValueError("origin debe ser manual o self_audit")
+
+    def _validate_risk(self, risk: str) -> None:
+        if risk not in {"low", "medium", "high", "critical"}:
+            raise ValueError("risk debe ser low, medium, high o critical")
 
     def _require(self, proposal_id: str) -> ColdUpdateProposal:
         p = self._proposals.get(proposal_id)

@@ -56,8 +56,11 @@ components serve Atlas, not the other way around.
 - Debt closure (2026-05-25): FU-6, H6 reuse gating, H5 policy tests, ADR-019, OPS browser marker, SEC verify. `docs/debt_closure_2026-05-25.md`. tag `v0.7.1-debt-closure`.
 - Gate I: COMPLETE (2026-05-25) — `atlas serve`, `atlas health`, `/api/health`, `AtlasServiceRunner`, systemd unit. tag `v0.8-gate-i`.
 - ADR-024 Observability v2: SEALED MVP — TelemetryBus, MicroLedger, OperationalWAL, `ObservabilityStack`, Prometheus opt-in, dashboard `/observability`.
-- ADR-025 ColdUpdateManager: SEALED MVP — worktree aislado, `atlas update propose|validate|approve|apply`, sin auto-generación de código.
-- Auditoría completa: `docs/audit_complete_2026-05-25.md`, `scripts/audit_complete.py`. 554+ core tests, mypy verde.
+- ADR-025 ColdUpdateManager: SEALED MVP + SelfAuditLoop — worktree aislado,
+  `atlas update propose|validate|approve|apply`; `atlas self-audit run|status|proposals|report|stop`
+  ejecuta ciclos fríos auditables sin hot-patch ni merge automático a main.
+- Auditoría completa: `docs/audit_complete_2026-05-25.md`, `scripts/audit_complete.py`.
+  563 core tests (25 computer_use deselected), mypy verde.
 - Gate F details:
   - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
     Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
@@ -77,7 +80,9 @@ atlas-core/
 │   │   ├── inference_hub.py    # Model router L-det->L0->L1->L2 + LiteLLM (Gate D/D1)
 │   │   ├── checkpoint.py       # Hash-chained immutable checkpoints (ADR-021)
 │   │   ├── timetravel.py       # TimeTravel facade: record/resume/fork (ADR-021)
-│   │   └── ghost_replay.py     # Topological cache: TTL + LRU + purge (ADR-022)
+│   │   ├── ghost_replay.py     # Topological cache: TTL + LRU + purge (ADR-022)
+│   │   ├── cold_update_manager.py # ADR-025 patch intake, validation, HITL apply
+│   │   └── self_audit.py       # 24h SelfAuditLoop: observe/diagnose/report candidates
 │   ├── governance/
 │   │   ├── governance_l0.py    # Immutable constitution — singleton, tamper-detection
 │   │   └── permission_profile.py  # Folder map ADR-006, AUTO/CONFIRM/APPROVE levels
@@ -126,7 +131,10 @@ atlas-core/
 │   ├── test_timetravel.py              # 22 tests — Gate D/D5.A (ADR-021)
 │   ├── test_ghost_replay.py            # 21 tests — Gate D/D5.B (ADR-022)
 │   ├── test_slm_classifier.py          # 21 tests — Gate D/D2 (ADR-010)
-│   └── test_orchestrator_pipeline_d.py # 14 tests — pipeline Gate D integrado
+│   ├── test_orchestrator_pipeline_d.py # 14 tests — pipeline Gate D integrado
+│   ├── test_cold_update_manager.py     # ADR-025 ColdUpdate metadata/evidence
+│   ├── test_self_audit.py              # SelfAuditRunner reports/status/candidates
+│   └── test_cli_self_audit.py          # CLI self-audit commands
 ├── scripts/
 │   ├── install_hermes_vps.sh   # Gate C/C1 — Docker + stub agent + systemd in a VPS
 │   ├── hermes_smoke.py         # Gate C/C3 — adapter smoke test against real HERMES_BASE_URL
@@ -142,6 +150,7 @@ atlas-core/
 └── docs/
     ├── gate_c_seal.md          # Seal cierre Gate C (2026-05-23)
     ├── gate_d_seal.md          # Seal cierre Gate D (2026-05-24)
+    ├── self_audit_loop.md      # Operational guide for 24h cold self-audit
     └── USAGE.md                # Guía operacional (rama docs/readme-and-usage)
 ```
 
@@ -225,7 +234,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q  # core 550 (excluye marker computer_use por defecto)
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 563 core, 25 deselected
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
@@ -235,6 +244,7 @@ set -a && source ~/proyectos/atlas-core/.env && set +a
 PYTHONPATH=src python scripts/pipeline_smoke.py     # 5 intents, output estructurado
 PYTHONPATH=src python scripts/inference_smoke.py    # ping por proveedor LLM
 PYTHONPATH=src python scripts/hermes_smoke.py       # REST + HMAC contra Hermes-VPS
+PYTHONPATH=src atlas self-audit run --hours 1 --profile quick --max-cycles 1 --dry-run
 
 ## Environment Variables
 
@@ -262,9 +272,11 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gates A–I + ADR-024/025 MVP (2026-05-25). v0.9.0.
-Suite core 554 green; `atlas serve`, `atlas health`, `atlas update`, observability dashboard.
-Next: ColdUpdate auto-patch generation, Hermes webhook, fleet/Atlas Box, ADR-024 production metrics.
+Current state at session start: Gates A–I + ADR-024/025 MVP + SelfAuditLoop (2026-05-25). v0.9.0.
+Suite core 563 green; `atlas serve`, `atlas health`, `atlas update`, `atlas self-audit`,
+observability dashboard.
+Next: ColdUpdate auto-patch generation from self-audit candidates, Hermes webhook,
+fleet/Atlas Box, ADR-024 production metrics.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 

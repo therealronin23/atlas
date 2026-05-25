@@ -59,6 +59,8 @@ def test_propose_and_validate_patch(mgr: ColdUpdateManager, tmp_path: Path) -> N
         report = mgr.validate(proposal.id)
     assert report.passed
     assert mgr.get(proposal.id).status == "validated"
+    assert mgr.get(proposal.id).origin == "manual"
+    assert mgr.get(proposal.id).risk == "medium"
 
 
 def test_approve_requires_validation(mgr: ColdUpdateManager, tmp_path: Path) -> None:
@@ -67,3 +69,43 @@ def test_approve_requires_validation(mgr: ColdUpdateManager, tmp_path: Path) -> 
     p = mgr.propose("x", patch)
     with pytest.raises(RuntimeError, match="validacion previa"):
         mgr.approve(p.id)
+
+
+def test_self_audit_metadata_and_evidence_persist(
+    mgr: ColdUpdateManager,
+    tmp_path: Path,
+) -> None:
+    patch = tmp_path / "self.patch"
+    patch.write_text(
+        "--- /dev/null\n+++ b/docs/self.txt\n@@ -0,0 +1 @@\n+self-audit\n",
+        encoding="utf-8",
+    )
+    proposal = mgr.propose(
+        "self audit candidate",
+        patch,
+        origin="self_audit",
+        risk="low",
+        evidence={"finding": "docs_drift"},
+    )
+    assert proposal.origin == "self_audit"
+    assert proposal.risk == "low"
+    assert proposal.evidence["finding"] == "docs_drift"
+
+    updated = mgr.attach_evidence(proposal.id, {"validation_note": "ok"})
+    assert updated.evidence["finding"] == "docs_drift"
+    assert updated.evidence["validation_note"] == "ok"
+
+
+def test_propose_rejects_invalid_origin_and_risk(
+    mgr: ColdUpdateManager,
+    tmp_path: Path,
+) -> None:
+    patch = tmp_path / "bad.patch"
+    patch.write_text(
+        "--- /dev/null\n+++ b/docs/bad.txt\n@@ -0,0 +1 @@\n+bad\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="origin"):
+        mgr.propose("bad origin", patch, origin="daemon")
+    with pytest.raises(ValueError, match="risk"):
+        mgr.propose("bad risk", patch, risk="unknown")

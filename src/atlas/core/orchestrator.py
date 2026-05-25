@@ -116,6 +116,7 @@ class Orchestrator:
     _vector_store: KuzuVectorStore | None
     _observability: Any
     _cold_update_manager: Any
+    _self_audit_runner: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -226,6 +227,21 @@ class Orchestrator:
             ).expanduser().resolve()
             self._cold_update_manager = ColdUpdateManager(root, self._merkle)
         return self._cold_update_manager
+
+    def self_audit(self) -> Any:
+        """Atlas 24h self-audit loop (cold, auditable, no hot self-patch)."""
+        if self._self_audit_runner is None:
+            from atlas.core.self_audit import SelfAuditRunner
+
+            root = Path(
+                os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
+            ).expanduser().resolve()
+            self._self_audit_runner = SelfAuditRunner(
+                root,
+                self._merkle,
+                health_provider=self.health_report,
+            )
+        return self._self_audit_runner
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -1959,6 +1975,7 @@ class Orchestrator:
             MerkleLogger(self._workspace / "memory" / "audit")
         )
         self._cold_update_manager = None
+        self._self_audit_runner = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()
