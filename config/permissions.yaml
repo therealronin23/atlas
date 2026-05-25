@@ -55,6 +55,7 @@ shell_allowlist:
   - uniq
   - diff
   - git           # read-only inspection: status, log, diff (writes via APPROVE)
+  - patch
   - "python3 -m pytest"
   - "python3 -m mypy"
   - "python3 -m flake8"

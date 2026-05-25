@@ -260,8 +260,10 @@ class InferenceHub:
         candidates.sort(key=lambda p: p.error_count)
 
         last_error: str | None = None
+        last_resp: InferenceResponse | None = None
         for provider in candidates:
             result = self._call_provider(provider, request)
+            last_resp = result
             if result.success:
                 return result
             last_error = result.error
@@ -284,6 +286,7 @@ class InferenceHub:
 
                 for provider in l0_candidates:
                     result = self._call_provider(provider, request)
+                    last_resp = result
                     if result.success:
                         return result
                     last_error = result.error
@@ -292,11 +295,12 @@ class InferenceHub:
                         if provider.status == ProviderStatus.OK:
                             provider.status = ProviderStatus.DEGRADED
 
+        final_mode = last_resp.mode if last_resp is not None else self._mode
         return InferenceResponse(
             text="", provider="all_failed", model="none", level=request.level,
             latency_ms=0, success=False,
             error=last_error or "Todos los proveedores fallaron. Considera delegar a Hermes.",
-            mode=self._mode,
+            mode=final_mode,
         )
 
     def providers_status(self) -> list[dict[str, Any]]:

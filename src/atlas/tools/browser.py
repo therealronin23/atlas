@@ -93,6 +93,8 @@ class BrowserTool:
     """
 
     SCREENSHOT_DIR = "tmp/screenshots"
+    STORAGE_DIR = "tmp/browser_data"
+    STORAGE_STATE_FILE = "storage_state.json"
 
     def __init__(
         self,
@@ -112,7 +114,10 @@ class BrowserTool:
         self._context: Any = None
         self._page: Any = None
         self._screenshot_dir = workspace / self.SCREENSHOT_DIR
+        self._browser_data_dir = workspace / self.STORAGE_DIR
+        self._storage_state_file = self._browser_data_dir / self.STORAGE_STATE_FILE
         self._screenshot_dir.mkdir(parents=True, exist_ok=True)
+        self._browser_data_dir.mkdir(parents=True, exist_ok=True)
         self._launched = False
 
     # ------------------------------------------------------------------
@@ -135,17 +140,24 @@ class BrowserTool:
         self._browser = self._playwright.chromium.launch(
             headless=self._headless,
         )
-        self._context = self._browser.new_context(
-            viewport={"width": 1280, "height": 720},
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AtlasCore/0.4",
-            storage_state=None,
-        )
+        context_kwargs: dict[str, Any] = {
+            "viewport": {"width": 1280, "height": 720},
+            "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AtlasCore/0.4",
+        }
+        if self._storage_state_file.exists():
+            context_kwargs["storage_state"] = str(self._storage_state_file)
+        self._context = self._browser.new_context(**context_kwargs)
         self._page = self._context.new_page()
         self._launched = True
         self._log(
             "browser.launch",
             "ok",
-            payload={"headless": self._headless, "workspace": str(self._workspace)},
+            payload={
+                "headless": self._headless,
+                "workspace": str(self._workspace),
+                "storage_state": str(self._storage_state_file),
+                "storage_loaded": self._storage_state_file.exists(),
+            },
         )
 
     def close(self) -> None:
@@ -154,6 +166,10 @@ class BrowserTool:
             if self._page is not None:
                 self._page.close()
             if self._context is not None:
+                try:
+                    self._context.storage_state(path=str(self._storage_state_file))
+                except Exception:
+                    pass
                 self._context.close()
             if self._browser is not None:
                 self._browser.close()
@@ -167,7 +183,10 @@ class BrowserTool:
             self._context = None
             self._browser = None
             self._playwright = None
-            self._log("browser.close", "ok", payload={})
+            self._log("browser.close", "ok", payload={
+                "storage_state": str(self._storage_state_file),
+                "storage_saved": self._storage_state_file.exists(),
+            })
 
     # ------------------------------------------------------------------
     # Acciones
