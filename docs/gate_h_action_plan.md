@@ -105,8 +105,8 @@ Tasks:
 These are non-blocking but should be addressed in parallel or before Gate H closure:
 
 - [x] ADR-012: memory sync between Hermes and Atlas Core (FU-2 DONE; `test_hermes_adr012.py`).
-- [ ] ADR-019: statistical validation framework.
-- [ ] FU-6: wire `PIISurrogate` + `InferenceHub` in Orchestrator Gate D; SLM NAME/CITY/ADDRESS detection exists in code (see `docs/audit_2026-05-25.md`).
+- [x] ADR-019: statistical validation framework (`src/atlas/lab/evaluator.py`).
+- [x] FU-6: wire `PIISurrogate` + `InferenceHub` in Orchestrator Gate D (debt closure 2026-05-25).
 
 ## Recommended first engineering sprint
 

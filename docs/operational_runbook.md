@@ -37,6 +37,23 @@ PYTHONPATH=src python scripts/operational_smoke.py --skip-telegram
 PYTHONPATH=src python scripts/operational_smoke.py --workspace ~/atlas
 ```
 
+## Gate I — servicio 24/7
+
+```bash
+# Foreground (Telegram + OfflineMonitor)
+atlas serve
+
+# Health JSON
+atlas health
+curl -s http://127.0.0.1:7331/api/health   # si ATLAS_SERVE_DASHBOARD=1
+
+PYTHONPATH=src python scripts/gate_i_smoke.py
+```
+
+systemd user unit: copiar `scripts/atlas-core.service` a `~/.config/systemd/user/` y `systemctl --user enable --now atlas-core`.
+
+Env opcionales: `ATLAS_SERVE_DASHBOARD=1`, `ATLAS_THERMAL_MONITOR=1`, `ATLAS_PIPELINE_GATE_D=1`.
+
 Smokes individuales (regresion):
 
 ```bash

@@ -45,6 +45,28 @@ def test_rebuild_restores_truth_snapshot(orch: Orchestrator) -> None:
     assert snap.id in ids
 
 
+def test_assert_generated_reusable_blocks_stale_pattern(orch: Orchestrator) -> None:
+    from atlas.core.environment_sensor import EnvironmentFingerprint, fingerprint_tag
+    from atlas.memory.memory_system import PatternEntry
+
+    stored = EnvironmentFingerprint(
+        python_version="0.0.0",
+        atlas_version="0.0.0",
+        dependency_hash="stale-test",
+    )
+    entry = PatternEntry(
+        id="gen-stale-1",
+        name="editor.run",
+        description="stale",
+        pattern_type="generated_script",
+        content="echo stale-block",
+        tags=["generated_tool", "editor.run", fingerprint_tag(stored)],
+    )
+    orch._approved_patterns.add(entry)
+    with pytest.raises(RuntimeError, match="stale"):
+        orch._gate_h.assert_generated_reusable("echo stale-block")
+
+
 def test_gate_f_success_emits_receipt(orch: Orchestrator) -> None:
     target = Path(orch.status().workspace) / "projects" / "r.txt"
     target.parent.mkdir(parents=True, exist_ok=True)

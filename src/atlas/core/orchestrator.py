@@ -89,7 +89,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.7.0"
+    VERSION = "0.8.0"
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
@@ -188,6 +188,30 @@ class Orchestrator:
             uptime_seconds=round(uptime, 1),
             emergency_mode=gov.in_emergency_mode,
         )
+
+    def health_report(self) -> dict[str, Any]:
+        """JSON de salud operativa (Gate I)."""
+        st = self.status()
+        hermes = self._hermes.health_check()
+        thermal_mode = OperationalMode.NORMAL.value
+        if self._thermal_watchdog is not None:
+            thermal_mode = self._thermal_watchdog.current_operational_mode().value
+        return {
+            "version": st.version,
+            "uptime_s": st.uptime_seconds,
+            "governance_ok": st.governance_ok,
+            "merkle_chain_ok": st.chain_ok,
+            "emergency_mode": st.emergency_mode,
+            "hermes_mode": hermes.mode,
+            "hermes_reachable": hermes.reachable,
+            "thermal_mode": thermal_mode,
+            "gate_d_enabled": self._gate_d_enabled,
+            "gate_h": self._gate_h.status_summary(),
+            "pending_approvals_count": len(self.pending_approvals()),
+            "queue_depth": st.queue_depth,
+            "telegram_running": self._telegram_thread is not None and self._telegram_thread.is_alive(),
+            "offline_monitor_running": self._offline_monitor is not None,
+        }
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -483,8 +507,14 @@ class Orchestrator:
             cache_path=self._workspace / "memory" / "ghost_cache",
             default_ttl_seconds=ghost_ttl_s,
         )
+        hub = inference_hub
+        if hub is None:
+            from atlas.core.inference_hub import InferenceHub as _InferenceHub
+
+            hub = _InferenceHub(mode="auto")
+        self._inference_hub = hub
         self._slm_classifier = SLMClassifier(
-            hub=inference_hub,
+            hub=hub,
             mode=slm_mode,
             ghost_replay=self._ghost_replay,
         )
@@ -492,7 +522,8 @@ class Orchestrator:
             store_path=self._workspace / "memory" / "checkpoints",
             merkle=self._merkle,
         )
-        self._inference_hub = inference_hub
+        pii_mode = os.environ.get("ATLAS_PII_SURROGATE_MODE", "auto")
+        self._pii_surrogate = PIISurrogate(hub=hub, mode=pii_mode)
         self._gate_d_enabled = True
         self._merkle.log(
             action="pipeline.gate_d_enabled",
@@ -504,6 +535,7 @@ class Orchestrator:
                 "ghost_ttl_s":  ghost_ttl_s,
                 "slm_mode":     slm_mode,
                 "memory_vector": vector_store is not None,
+                "pii_mode":     self._pii_surrogate.mode,
             },
         )
         self._gate_h._vector_store = vector_store
@@ -1406,6 +1438,7 @@ class Orchestrator:
                 approval_path="explicit",
             )
             self._validate_generated_script_source(command, working_dir)
+            self._gate_h.assert_generated_reusable(command, task_id=task.id)
 
         result = editor.run_task(working_dir, command, clearance=clearance)
         out: dict[str, Any] = dict(result.__dict__)

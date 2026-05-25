@@ -312,13 +312,20 @@ class TestHybridClassify:
         assert payload["rule_confidence"] == pytest.approx(0.6)
         assert "slm_level" in payload
 
-    def test_local_safe_passthrough_when_no_hub(self, orch: Orchestrator) -> None:
-        # Pipeline Gate D activo SIN inference_hub inyectado -> passthrough
-        orch.enable_gate_d_pipeline()  # sin hub
+    def test_enable_gate_d_auto_creates_inference_hub(self, orch: Orchestrator) -> None:
+        orch.enable_gate_d_pipeline()
+        assert orch.inference_hub is not None
+        assert orch.pii_surrogate._hub is orch.inference_hub
+
+    def test_local_safe_uses_hub_when_gate_d_enabled(self, orch: Orchestrator) -> None:
+        orch.enable_gate_d_pipeline()
         task = orch.handle_intent("explicame algo abstracto sin keywords")
         assert task.status == TaskStatus.DONE
-        assert task.tool_name == "local_safe.passthrough"
-        assert "InferenceHub no inyectado" in task.result["message"]
+        assert task.tool_name in (
+            "inference_hub.complete",
+            "inference_hub.failed",
+            "local_safe.thermal_blocked",
+        )
 
     def test_local_safe_via_inference_when_hub_present(self, orch: Orchestrator) -> None:
         # Hub mockeado devolviendo respuesta exitosa

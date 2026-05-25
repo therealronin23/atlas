@@ -32,9 +32,7 @@ jobs:
           ATLAS_MEMORY_VECTOR: "0"
           ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
         run: |
-          python -m pytest tests/ \
-            --ignore=tests/test_browser.py \
-            -q --tb=line
+          python -m pytest tests/ -q --tb=line
 
       - name: mypy
         env:

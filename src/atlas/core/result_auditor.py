@@ -4,6 +4,7 @@ Gate H1 — Result Auditor: validate generated tool output against TruthSnapshot
 
 from __future__ import annotations
 
+import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -141,6 +142,17 @@ class ResultAuditor:
         if not validation.valid:
             return None
 
+        if self._stat_validate_enabled():
+            from atlas.lab.evaluator import StatisticalEvaluator
+
+            baseline = self._metric_samples_for_tool(tool_name, exclude_snapshot_id=snapshot.id)
+            candidate = [self._output_metric_ms(output)]
+            evaluator = StatisticalEvaluator()
+            if len(baseline) >= evaluator._min_samples:
+                cmp_result = evaluator.recommend_promotion(baseline, candidate)
+                if not cmp_result.recommended:
+                    return None
+
         fp = fingerprint or capture_fingerprint()
         tags = ["generated_tool", tool_name, fingerprint_tag(fp)]
         entry = PatternEntry(
@@ -161,3 +173,35 @@ class ResultAuditor:
         if stored is None:
             return False
         return is_stale(stored)
+
+    @staticmethod
+    def _stat_validate_enabled() -> bool:
+        return os.environ.get("ATLAS_STAT_VALIDATE", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+    @staticmethod
+    def _output_metric_ms(output: TaskOutput) -> float:
+        return 50.0 if output.success else 5000.0
+
+    def _metric_samples_for_tool(
+        self,
+        tool_name: str,
+        *,
+        exclude_snapshot_id: str | None = None,
+    ) -> list[float]:
+        samples: list[float] = []
+        for snap in self._snapshots.all():
+            if snap.tool_name != tool_name:
+                continue
+            if exclude_snapshot_id and snap.id == exclude_snapshot_id:
+                continue
+            inp = snap.input_data or {}
+            if "latency_ms" in inp:
+                samples.append(float(inp["latency_ms"]))
+            else:
+                success = bool(snap.expected_output_shape.get("success", True))
+                samples.append(50.0 if success else 5000.0)
+        return samples

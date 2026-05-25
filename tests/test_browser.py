@@ -20,6 +20,9 @@ from typing import Any, Generator
 
 import pytest
 
+pytest.importorskip("playwright")
+pytestmark = pytest.mark.computer_use
+
 from atlas.logging.merkle_logger import MerkleLogger
 from atlas.security.ssrf_bridge import SSRFBridge, DEFAULT_ALLOWED_DOMAINS
 from atlas.tools.browser import BrowserTool
