@@ -54,6 +54,8 @@ Copia `.env.example` a `.env` y rellena. Las relevantes:
 | `TOGETHERAI_API_KEY` | D | Opcional. Atlas no la pide; LiteLLM la usa si la encuentra. |
 | `GEMINI_API_KEY` | D | Opcional. Idem. |
 | `ATLAS_PIPELINE_GATE_D` | D | `1` para activar el pipeline integrado al construir Orchestrator. |
+| `ATLAS_MEMORY_VECTOR` | D | `1` (default) con Gate D: Kuzu + distiller + registros. `0` desactiva Kuzu. |
+| `ATLAS_PENDING_HMAC_KEY` | G | Firma HMAC de `pending_approvals/*.json`. Fallback: `HERMES_API_KEY`. |
 | `ATLAS_INFERENCE_MODE` | D | `auto` (default) / `live` / `stub`. |
 | `ATLAS_EMBEDDING_MODE` | D | Idem para embeddings (LiteLLMEmbedder). |
 | `ATLAS_SLM_CLASSIFIER_MODE` | D | Idem para SLMClassifier. |
@@ -62,11 +64,11 @@ Copia `.env.example` a `.env` y rellena. Las relevantes:
 ### 1.3 Verificar la instalación
 
 ```bash
-PYTHONPATH=src python -m pytest tests/ -q
-# debe imprimir: 368 passed
+PYTHONPATH=src python -m pytest tests/ --ignore=tests/test_browser.py -q
+# suite core (~522+ passed; browser tests requieren Playwright)
 
 MYPYPATH=src python -m mypy src/atlas/
-# debe imprimir: Success: no issues found in 38 source files
+# debe imprimir: Success
 ```
 
 ---
@@ -222,13 +224,49 @@ orch.slm_classifier    # SLMClassifier (None si pipeline off)
 orch.timetravel        # TimeTravel (None si pipeline off)
 orch.pii_surrogate     # PIISurrogate (siempre disponible)
 orch.inference_hub     # InferenceHub (None si no inyectado)
+orch.vector_store      # KuzuVectorStore (None si pipeline off o ATLAS_MEMORY_VECTOR=0)
+```
+
+### 3.4 Memoria vectorial (Kuzu)
+
+Con `enable_gate_d_pipeline()` (o `ATLAS_PIPELINE_GATE_D=1`), por defecto
+`ATLAS_MEMORY_VECTOR=1` crea `~/atlas/memory/kuzu/atlas.kuzu` y conecta
+`MemoryDistiller`, `ErrorRegistry` y `ApprovedPatternStore`.
+
+```bash
+export ATLAS_PIPELINE_GATE_D=1
+export ATLAS_MEMORY_VECTOR=1
+atlas task "busca patrones similares a este error"
+```
+
+Desactivar Kuzu (tests ligeros o host sin dependencia):
+
+```bash
+export ATLAS_MEMORY_VECTOR=0
 ```
 
 ---
 
 ## 4. Smoke tests reales
 
-Verificación contra infraestructura viva.
+Verificación contra infraestructura viva. Runbook completo:
+[docs/operational_runbook.md](operational_runbook.md).
+
+### 4.0 `operational_smoke.py` (recomendado)
+
+Checklist operativo: env, `Orchestrator.status`, Hermes REST, ciclo CLI
+approval (editor write), Telegram outbound opcional.
+
+```bash
+set -a && source .env && set +a
+PYTHONPATH=src python scripts/operational_smoke.py
+```
+
+Con workspace real:
+
+```bash
+PYTHONPATH=src python scripts/operational_smoke.py --workspace ~/atlas
+```
 
 ### 4.1 `hermes_smoke.py`
 

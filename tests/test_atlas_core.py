@@ -209,6 +209,30 @@ class TestPermissionProfile:
         assert result.allowed is False
         assert result.level == PermissionLevel.BLOCKED
 
+    def test_shell_git_push_denied(self, permission_profile):
+        from atlas.governance.permission_profile import PermissionLevel
+        result = permission_profile.evaluate_shell_command("git push origin main")
+        assert result.allowed is False
+        assert result.level == PermissionLevel.BLOCKED
+
+    def test_shell_git_status_allowed(self, permission_profile):
+        from atlas.governance.permission_profile import PermissionLevel
+        result = permission_profile.evaluate_shell_command("git status --short")
+        assert result.allowed is True
+        assert result.level == PermissionLevel.AUTO
+
+    def test_shell_chain_semicolon_blocked(self, permission_profile):
+        from atlas.governance.permission_profile import PermissionLevel
+        result = permission_profile.evaluate_shell_command("echo ok; rm -rf /")
+        assert result.allowed is False
+        assert result.level == PermissionLevel.BLOCKED
+
+    def test_shell_chain_pipe_blocked(self, permission_profile):
+        from atlas.governance.permission_profile import PermissionLevel
+        result = permission_profile.evaluate_shell_command("echo hello | cat")
+        assert result.allowed is False
+        assert result.level == PermissionLevel.BLOCKED
+
 
 # ===========================================================================
 # Router y Clasificador
@@ -386,7 +410,7 @@ class TestTaskLifecycle:
     def test_status_returns_all_fields(self, orch):
         """Criterio 1: status devuelve estado del core, permisos, tool registry y cola."""
         st = orch.status()
-        assert st.version == "0.6.0"
+        assert st.version == "0.7.0"
         assert st.tool_count > 0
         assert isinstance(st.governance_ok, bool)
         assert isinstance(st.chain_ok, bool)

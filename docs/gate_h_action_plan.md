@@ -3,7 +3,7 @@
 ## Status
 
 - `Gate G` is complete: the project is operationally ready and the main repo is stabilized.
-- `Gate H` is the next major milestone. It is focused on resilience, audited software synthesis, and safe self-improvement.
+- `Gate H` MVP (Opción B) implemented 2026-05-25 — see [`gate_h_seal.md`](gate_h_seal.md) and [`gate_h_mvp_scope.md`](gate_h_mvp_scope.md).
 
 ## Objective
 
@@ -104,9 +104,9 @@ Tasks:
 
 These are non-blocking but should be addressed in parallel or before Gate H closure:
 
-- [ ] ADR-012: memory sync between Hermes and Atlas Core.
+- [x] ADR-012: memory sync between Hermes and Atlas Core (FU-2 DONE; `test_hermes_adr012.py`).
 - [ ] ADR-019: statistical validation framework.
-- [ ] FU-6: PIISurrogate v2 with SLM detection for names / cities / addresses.
+- [ ] FU-6: wire `PIISurrogate` + `InferenceHub` in Orchestrator Gate D; SLM NAME/CITY/ADDRESS detection exists in code (see `docs/audit_2026-05-25.md`).
 
 ## Recommended first engineering sprint
 

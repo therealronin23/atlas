@@ -20,11 +20,17 @@ goal is not new autonomy; it is reliable operations.
 - `atlas pending` lists persisted approvals.
 - `atlas approve <task_id>` approves or rejects persisted approvals.
 
+## Operational runbook
+
+See [operational_runbook.md](operational_runbook.md) and `scripts/operational_smoke.py`
+for the full Sesion A checklist (automated + manual CLI/Telegram).
+
 ## Remaining Follow-Up
 
 - Full interactive Telegram command smoke (`/status`, `/task`, `/pending`,
   approve and deny) should be run manually from the Telegram client when desired.
-  The bot token, chat authorization and outbound send path are verified.
+  The bot token, chat authorization and outbound send path are verified via
+  `operational_smoke.py` (outbound) and the runbook (interactive).
 
 ## Evidence So Far
 

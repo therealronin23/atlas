@@ -54,7 +54,7 @@ shell_allowlist:
   - sort
   - uniq
   - diff
-  - git           # read-only inspection: status, log, diff (writes via APPROVE)
+  # git: evaluado por subcomando en permission_profile (status/log/diff/...); no usar "git" a secas
   - patch
   - "python3 -m pytest"
   - "python3 -m mypy"

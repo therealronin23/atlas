@@ -6,6 +6,7 @@ Mapa de carpetas, niveles de permiso y evaluacion de acceso.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -27,6 +28,22 @@ class AccessDecision:
     level: PermissionLevel
     reason: str
     path: str
+
+
+# Subcomandos git permitidos (solo inspeccion read-only). SEC-01.
+_GIT_ALLOWED_SUBCOMMANDS: frozenset[str] = frozenset({
+    "status", "log", "diff", "show", "rev-parse", "branch", "describe", "apply",
+})
+# Metacaracteres de encadenamiento shell (SEC shell-chain).
+_SHELL_CHAIN_PATTERN = re.compile(
+    r"(?:[;|]|&&|\|\||`|\$\(|\$\{|<\(|>\(|\n|\r)"
+)
+
+_GIT_DENIED_SUBCOMMANDS: frozenset[str] = frozenset({
+    "push", "pull", "fetch", "merge", "rebase", "reset", "checkout",
+    "commit", "am", "cherry-pick", "revert", "tag", "stash", "clone",
+    "remote", "submodule", "worktree",
+})
 
 
 class PermissionProfile:
@@ -124,9 +141,57 @@ class PermissionProfile:
 
     def evaluate_shell_command(self, command: str) -> AccessDecision:
         """Evalua si un comando shell esta en la allowlist."""
-        allowlist: list[str] = self._cfg.get("shell_allowlist", [])
         cmd_strip = command.strip()
+
+        if _SHELL_CHAIN_PATTERN.search(cmd_strip):
+            return AccessDecision(
+                allowed=False,
+                level=PermissionLevel.BLOCKED,
+                reason="Comando con encadenamiento shell prohibido (; | && || ` $() ).",
+                path=cmd_strip,
+            )
+
+        # SEC-01: git con subcomandos explicitos; nunca prefix-match sobre "git" a secas.
+        if cmd_strip == "git" or cmd_strip.startswith("git "):
+            parts = cmd_strip.split()
+            if len(parts) < 2:
+                return AccessDecision(
+                    allowed=False,
+                    level=PermissionLevel.BLOCKED,
+                    reason="git requiere un subcomando (p. ej. git status).",
+                    path=cmd_strip,
+                )
+            sub = parts[1]
+            if sub in _GIT_DENIED_SUBCOMMANDS:
+                return AccessDecision(
+                    allowed=False,
+                    level=PermissionLevel.BLOCKED,
+                    reason=f"Subcomando git prohibido: {sub}",
+                    path=cmd_strip,
+                )
+            if sub not in _GIT_ALLOWED_SUBCOMMANDS:
+                return AccessDecision(
+                    allowed=False,
+                    level=PermissionLevel.BLOCKED,
+                    reason=f"Subcomando git no permitido: {sub}",
+                    path=cmd_strip,
+                )
+            level = (
+                PermissionLevel.CONFIRM
+                if sub == "apply"
+                else PermissionLevel.AUTO
+            )
+            return AccessDecision(
+                allowed=True,
+                level=level,
+                reason=f"git {sub} permitido",
+                path=cmd_strip,
+            )
+
+        allowlist: list[str] = self._cfg.get("shell_allowlist", [])
         for allowed_cmd in allowlist:
+            if allowed_cmd.strip() == "git":
+                continue
             if cmd_strip == allowed_cmd or cmd_strip.startswith(allowed_cmd + " "):
                 return AccessDecision(
                     allowed=True,

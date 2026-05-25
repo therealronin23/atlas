@@ -257,7 +257,7 @@ class TruthSnapshotStore:
         file.write_text(json.dumps(snapshot.to_dict(), indent=2, ensure_ascii=False))
         if self._merkle is not None:
             self._merkle.log(
-                action="generated_tool.receipt",
+                action="truth_snapshot.recorded",
                 agent="truth_snapshot_store",
                 result="success",
                 risk_level="safe",

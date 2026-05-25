@@ -27,7 +27,7 @@ def get_orchestrator() -> Orchestrator:
 
 
 @click.group()
-@click.version_option("0.6.0", prog_name="atlas")
+@click.version_option("0.7.0", prog_name="atlas")
 def cli() -> None:
     """Atlas Core v0.6 — Sistema operativo personal de inteligencia."""
 
@@ -185,6 +185,72 @@ def gate_h_rebuild_memory() -> None:
     result = orch.rebuild_memory()
     console.print("\n[bold cyan]Gate H rebuild memory[/bold cyan]\n")
     console.print_json(json.dumps(result, ensure_ascii=False, default=str))
+
+
+@gate_h.command("receipts")
+@click.option("--tail", "-n", default=20, help="Ultimos N receipts")
+def gate_h_receipts(tail: int) -> None:
+    """Muestra reasoning receipts de herramientas generadas."""
+    orch = get_orchestrator()
+    items = orch.gate_h_receipts(tail)
+    console.print("\n[bold cyan]Gate H receipts[/bold cyan]\n")
+    console.print_json(json.dumps(items, ensure_ascii=False, default=str))
+
+
+@gate_h.command("pause")
+@click.argument("tool_name")
+def gate_h_pause(tool_name: str) -> None:
+    """Pausa manualmente una herramienta generada."""
+    orch = get_orchestrator()
+    orch._gate_h.pause_tool(tool_name)
+    console.print(f"[yellow]Pausada:[/yellow] {tool_name}")
+
+
+@gate_h.command("resume")
+@click.argument("tool_name")
+def gate_h_resume(tool_name: str) -> None:
+    """Reanuda una herramienta pausada."""
+    orch = get_orchestrator()
+    orch._gate_h.resume_tool(tool_name)
+    console.print(f"[green]Reanudada:[/green] {tool_name}")
+
+
+@gate_h.group("diagnostic")
+def gate_h_diagnostic() -> None:
+    """Modo diagnostico Gate H (solo known-good tools)."""
+    pass
+
+
+@gate_h_diagnostic.command("on")
+def gate_h_diagnostic_on() -> None:
+    orch = get_orchestrator()
+    orch._gate_h.set_diagnostic_mode(True)
+    console.print("[yellow]Gate H diagnostic mode ON[/yellow]")
+
+
+@gate_h_diagnostic.command("off")
+def gate_h_diagnostic_off() -> None:
+    orch = get_orchestrator()
+    orch._gate_h.set_diagnostic_mode(False)
+    console.print("[green]Gate H diagnostic mode OFF[/green]")
+
+
+@gate_h.command("validate")
+@click.argument("pattern_id")
+def gate_h_validate(pattern_id: str) -> None:
+    """Comprueba si un patron generado esta stale (H6) o vigente."""
+    orch = get_orchestrator()
+    pattern = orch._approved_patterns.get(pattern_id)
+    if pattern is None:
+        console.print(f"[red]Patron no encontrado:[/red] {pattern_id}")
+        return
+    stale = orch._gate_h._auditor.check_pattern_stale(pattern)
+    if stale:
+        orch._gate_h.record_stale_tool(pattern.name, pattern_id)
+        console.print(f"[yellow]STALE[/yellow] — fingerprint de entorno cambio; revalidar antes de reutilizar.")
+    else:
+        console.print(f"[green]OK[/green] — patron {pattern_id} vigente.")
+    console.print_json(json.dumps(pattern.to_dict(), ensure_ascii=False, default=str))
 
 
 @cli.command()

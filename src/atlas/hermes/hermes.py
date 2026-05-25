@@ -458,6 +458,17 @@ class HermesRestAdapter(HermesAdapter):
             raise
         return True
 
+    def check_offline_fallback(self) -> bool:
+        """
+        True si Hermes no es alcanzable (proxy de Dead Man Switch para REST).
+        El VPS puede activar su propia logica; aqui detectamos caida de red.
+        """
+        try:
+            status = self.health_check()
+        except HermesError:
+            return True
+        return not status.reachable
+
     def _sign_payload(self, payload: DelegationPayload) -> DelegationPayload:
         from dataclasses import replace as _replace
         sig = self._compute_payload_sig(payload.to_dict())

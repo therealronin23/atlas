@@ -25,9 +25,9 @@ from atlas.tools.editor import EditorTool
 
 @pytest.fixture
 def sample_project(tmp_path: Path) -> Path:
-    """Crea un proyecto de ejemplo con archivos."""
-    project = tmp_path / "sample-app"
-    project.mkdir()
+    """Crea un proyecto de ejemplo bajo workspace/tmp/ (escritura AUTO)."""
+    project = tmp_path / "tmp" / "sample-app"
+    project.mkdir(parents=True)
 
     # Archivo fuente simple
     src = project / "src"
@@ -158,7 +158,7 @@ class TestWriteFile:
         assert path.read_text() == "print('hello')"
 
     def test_write_creates_directories(self, tmp_path: Path, editor: EditorTool) -> None:
-        path = tmp_path / "deep" / "nested" / "file.py"
+        path = tmp_path / "tmp" / "deep" / "nested" / "file.py"
         result = editor.write_file(path, "x = 1")
         assert result.success is True
         assert path.exists()
@@ -194,7 +194,8 @@ class TestApplyDiff:
             " \n"
             " def add(a, b):\n"
         )
-        result = editor.apply_diff(main_py, diff)
+        editor._executor.issuer.profile.mark_confirmed("task:editor-test")
+        result = editor.apply_diff(main_py, diff, clearance="task:editor-test")
         assert result.success is True, f"git apply fallo: {result.stderr}"
         assert "Hello Atlas" in main_py.read_text()
         assert "Hello World" not in main_py.read_text()
@@ -209,7 +210,8 @@ class TestApplyDiff:
 
     def test_apply_diff_without_git(self, tmp_path: Path, editor: EditorTool) -> None:
         """Diff fuera de un repo git debe usar patch."""
-        target = tmp_path / "file.txt"
+        target = tmp_path / "tmp" / "file.txt"
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("line1\nline2\nline3\n")
 
         diff = (
@@ -221,7 +223,8 @@ class TestApplyDiff:
             "+line2-modified\n"
             " line3\n"
         )
-        result = editor.apply_diff(target, diff)
+        editor._executor.issuer.profile.mark_confirmed("task:patch-test")
+        result = editor.apply_diff(target, diff, clearance="task:patch-test")
         assert result is not None
 
         if shutil.which("patch") is None:
@@ -235,6 +238,7 @@ class TestApplyDiff:
 class TestRunTask:
 
     def test_run_successful_task(self, sample_project: Path, editor: EditorTool) -> None:
+        editor._executor.issuer.profile.mark_confirmed("exec:echo hello")
         result = editor.run_task(sample_project, "echo hello")
         assert result.success is True
         assert "hello" in result.stdout
