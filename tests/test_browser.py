@@ -111,6 +111,24 @@ def browser(tmp_path: Path, bridge_with_localhost: SSRFBridge) -> Generator[Brow
 
 
 @pytest.fixture
+def browser_with_merkle(tmp_path: Path, bridge_with_localhost: SSRFBridge) -> Generator[BrowserTool, None, None]:
+    """BrowserTool configurado con MerkleLogger para verificar audit logging."""
+    merkle_logger = MerkleLogger(tmp_path / "logs")
+    bt = BrowserTool(
+        workspace=tmp_path,
+        bridge=bridge_with_localhost,
+        headless=True,
+        allow_private_network=True,
+        merkle=merkle_logger,
+    )
+    yield bt
+    try:
+        bt.close()
+    except Exception:
+        pass
+
+
+@pytest.fixture
 def merkle(tmp_path: Path) -> MerkleLogger:
     return MerkleLogger(tmp_path / "logs")
 
@@ -137,6 +155,29 @@ class TestBrowserLifecycle:
         bt.launch()  # segunda llamada
         assert bt.is_launched is True
         bt.close()
+
+    def test_browser_storage_state_is_saved_on_close(
+        self,
+        http_server: str,
+        tmp_path: Path,
+        bridge_with_localhost: SSRFBridge,
+    ) -> None:
+        bt = BrowserTool(
+            workspace=tmp_path,
+            bridge=bridge_with_localhost,
+            headless=True,
+            allow_private_network=True,
+        )
+        try:
+            bt.navigate(http_server + "/index.html")
+        finally:
+            bt.close()
+
+        storage_file = tmp_path / "tmp/browser_data/storage_state.json"
+        assert storage_file.exists()
+        assert storage_file.stat().st_size > 0
+        data = json.loads(storage_file.read_text())
+        assert isinstance(data, dict)
 
     def test_navigate_without_launch_auto_launches(self, http_server: str, browser: BrowserTool) -> None:
         """navigate() debe auto-lanzar el browser si no lo esta."""
@@ -168,6 +209,29 @@ class TestNavigation:
         nav = browser.navigate(http_server + "/long.html")
         assert len(nav.text) <= 10000
         assert "Line 0" in nav.text
+
+    def test_navigate_localhost_requires_allow_private_network(
+        self,
+        http_server: str,
+        bridge_with_localhost: SSRFBridge,
+        tmp_path: Path,
+    ) -> None:
+        bt = BrowserTool(
+            workspace=tmp_path,
+            bridge=bridge_with_localhost,
+            headless=True,
+            allow_private_network=False,
+        )
+        with pytest.raises(PermissionError, match="requiere allow_private_network"):
+            bt.navigate(http_server + "/index.html")
+        bt.close()
+
+    def test_navigate_logs_to_merkle(self, http_server: str, browser_with_merkle: BrowserTool) -> None:
+        browser_with_merkle.navigate(http_server + "/index.html")
+        records = [r for r in browser_with_merkle._merkle.tail(10) if r.action == "browser.navigate"]
+        assert records
+        assert records[-1].result == "ok"
+        assert records[-1].payload["status_code"] == 200
 
 
 class TestScreenshot:

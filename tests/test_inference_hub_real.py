@@ -158,6 +158,50 @@ class TestLiveMode:
         resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
         assert resp.mode == "stub"
 
+    def test_auto_mode_outside_pytest_uses_live_when_key_present(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        captured: dict[str, Any] = {}
+
+        def fake_completion(**kwargs: Any) -> Any:
+            captured.update(kwargs)
+            return _ok_completion(text="live auto")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=providers, mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.mode == "live"
+        assert resp.success is True
+        assert resp.text == "live auto"
+        assert captured.get("api_key") == "test-groq"
+
+    def test_auto_mode_outside_pytest_skips_without_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = [
+            Provider(
+                name="groq_test",
+                level=InferenceLevel.L1,
+                base_url="https://api.groq.com",
+                model_id="llama-3.3-70b-versatile",
+                litellm_model="groq/llama-3.3-70b-versatile",
+                api_key_env="GROQ_API_KEY",
+                context_tokens=32768,
+            )
+        ]
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+        hub = InferenceHub(providers=providers, mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert resp.mode == "auto-skip"
+        assert "sin key configurada" in (resp.error or "").lower()
+
 
 class TestErrorClassification:
 
