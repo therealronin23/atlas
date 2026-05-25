@@ -316,6 +316,22 @@ async def api_health() -> dict[str, Any]:
     return _get_orch().health_report()
 
 
+@app.get("/api/observability")
+async def api_observability() -> dict[str, Any]:
+    """ADR-024 telemetry + microledger + WAL snapshot."""
+    return _get_orch()._observability.snapshot()
+
+
+@app.get("/observability", response_class=HTMLResponse)
+async def observability_page(request: Request) -> HTMLResponse:
+    snap = _get_orch()._observability.snapshot()
+    return _templates.TemplateResponse(
+        request,
+        "observability.html",
+        {"page": "observability", "snapshot": snap},
+    )
+
+
 @app.get("/api/providers")
 async def api_providers() -> list[dict]:
     return _provider_data()

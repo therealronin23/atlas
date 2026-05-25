@@ -54,7 +54,10 @@ components serve Atlas, not the other way around.
 - Gate G: COMPLETE — Operational readiness. Hermes-VPS restored/smoked, GitHub synced, CLI approvals persistent (HMAC v1 en `pending_approvals/`), Telegram authorized/smoked. `scripts/operational_smoke.py` + `docs/operational_runbook.md`. Suite: 534+ collected; 522+ core sin Playwright.     tag v0.6-gate-g. Auditoría: `docs/audit_2026-05-25.md`.
 - Gate H: MVP COMPLETE (2026-05-25) — H1–H6 audited synthesis. `docs/gate_h_seal.md`, `scripts/gate_h_smoke.py`, `atlas gate-h`. tag `v0.7-gate-h`.
 - Debt closure (2026-05-25): FU-6, H6 reuse gating, H5 policy tests, ADR-019, OPS browser marker, SEC verify. `docs/debt_closure_2026-05-25.md`. tag `v0.7.1-debt-closure`.
-- Gate I: COMPLETE (2026-05-25) — `atlas serve`, `atlas health`, `/api/health`, `AtlasServiceRunner`, systemd unit. `docs/gate_i_seal.md`, `scripts/gate_i_smoke.py`. tag `v0.8-gate-i`. 550 core tests.
+- Gate I: COMPLETE (2026-05-25) — `atlas serve`, `atlas health`, `/api/health`, `AtlasServiceRunner`, systemd unit. tag `v0.8-gate-i`.
+- ADR-024 Observability v2: SEALED MVP — TelemetryBus, MicroLedger, OperationalWAL, `ObservabilityStack`, Prometheus opt-in, dashboard `/observability`.
+- ADR-025 ColdUpdateManager: SEALED MVP — worktree aislado, `atlas update propose|validate|approve|apply`, sin auto-generación de código.
+- Auditoría completa: `docs/audit_complete_2026-05-25.md`, `scripts/audit_complete.py`. 554+ core tests, mypy verde.
 - Gate F details:
   - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
     Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
@@ -259,10 +262,9 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate I COMPLETE (2026-05-25).
-Suite core 550 green (pytest default excluye `computer_use`/Playwright); Gates A–I sellados.
-`atlas serve` para 24/7; `atlas health` y `GET /api/health` para supervision.
-Next logical work: ADR-025 ColdUpdateManager, ADR-024 observability v2, fleet/Atlas Box.
+Current state at session start: Gates A–I + ADR-024/025 MVP (2026-05-25). v0.9.0.
+Suite core 554 green; `atlas serve`, `atlas health`, `atlas update`, observability dashboard.
+Next: ColdUpdate auto-patch generation, Hermes webhook, fleet/Atlas Box, ADR-024 production metrics.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 

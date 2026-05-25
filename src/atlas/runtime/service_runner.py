@@ -9,7 +9,7 @@ import os
 import signal
 import threading
 import time
-from typing import Any
+from typing import Any  # noqa: TC003 — runtime prometheus handle
 
 from atlas.core.contracts import Event, EventType
 from atlas.core.orchestrator import Orchestrator
@@ -59,6 +59,25 @@ class AtlasServiceRunner:
         self._orch.attach_thermal_watchdog(watchdog)
         _log.info("ThermalWatchdog activo")
 
+    def _start_prometheus_if_enabled(self) -> None:
+        if os.environ.get("ATLAS_PROMETHEUS", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return
+        from atlas.monitoring.prometheus_exporter import PrometheusExporter
+
+        port = int(os.environ.get("ATLAS_PROMETHEUS_PORT", "9091"))
+        host = os.environ.get("ATLAS_PROMETHEUS_HOST", "127.0.0.1")
+        self._prometheus = PrometheusExporter(
+            self._orch._observability.telemetry,
+            host=host,
+            port=port,
+        )
+        self._prometheus.start()
+        _log.info("Prometheus metrics en http://%s:%s/metrics", host, port)
+
     def _start_dashboard_if_enabled(self) -> None:
         if os.environ.get("ATLAS_SERVE_DASHBOARD", "").strip().lower() not in (
             "1",
@@ -93,6 +112,7 @@ class AtlasServiceRunner:
             _log.info("Telegram bot no iniciado (sin token)")
         self._start_thermal_if_enabled()
         self._start_dashboard_if_enabled()
+        self._start_prometheus_if_enabled()
         self._running = True
         self._orch._merkle.log(
             action="service.started",
@@ -110,6 +130,8 @@ class AtlasServiceRunner:
         self._orch.stop_offline_monitor()
         if self._orch._thermal_watchdog is not None:
             self._orch._thermal_watchdog.stop()
+        if getattr(self, "_prometheus", None) is not None:
+            self._prometheus.stop()
         self._orch._merkle.log(
             action="service.stopped",
             agent="service_runner",

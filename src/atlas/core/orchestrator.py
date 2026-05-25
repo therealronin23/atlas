@@ -89,7 +89,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.8.0"
+    VERSION = "0.9.0"
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
@@ -114,6 +114,8 @@ class Orchestrator:
                          # _execute_task LOCAL_SAFE pueda invocarlo.
     _gate_h: Any
     _vector_store: KuzuVectorStore | None
+    _observability: Any
+    _cold_update_manager: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -211,7 +213,19 @@ class Orchestrator:
             "queue_depth": st.queue_depth,
             "telegram_running": self._telegram_thread is not None and self._telegram_thread.is_alive(),
             "offline_monitor_running": self._offline_monitor is not None,
+            "observability": self._observability.snapshot(),
         }
+
+    def cold_update(self) -> Any:
+        """ADR-025 ColdUpdateManager (project root via ATLAS_CORE_ROOT)."""
+        if self._cold_update_manager is None:
+            from atlas.core.cold_update_manager import ColdUpdateManager
+
+            root = Path(
+                os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
+            ).expanduser().resolve()
+            self._cold_update_manager = ColdUpdateManager(root, self._merkle)
+        return self._cold_update_manager
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -1937,8 +1951,14 @@ class Orchestrator:
             config_dir / "permissions.yaml", self._workspace
         )
 
-        # Merkle Logger
-        self._merkle = MerkleLogger(self._workspace / "memory" / "audit")
+        # Merkle Logger + ADR-024 observability stack
+        from atlas.logging.observability import ObservabilityStack
+
+        self._observability = ObservabilityStack(self._workspace)
+        self._merkle = self._observability.wrap_merkle(
+            MerkleLogger(self._workspace / "memory" / "audit")
+        )
+        self._cold_update_manager = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

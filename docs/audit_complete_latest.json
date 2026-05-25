@@ -1,0 +1,31 @@
+{
+  "root": "/home/ronin/proyectos/atlas-core",
+  "checks": [
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q -m not computer_use",
+      "exit": 0,
+      "stdout_tail": "........................................................................ [ 12%]\n........................................................................ [ 25%]\n........................................................................ [ 38%]\n........................................................................ [ 51%]\n........................................................................ [ 64%]\n........................................................................ [ 77%]\n........................................................................ [ 90%]\n..................................................                       [100%]\n554 passed, 25 deselected in 26.53s\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m mypy src/atlas/",
+      "exit": 0,
+      "stdout_tail": "Success: no issues found in 61 source files\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python /home/ronin/proyectos/atlas-core/scripts/gate_i_smoke.py",
+      "exit": 0,
+      "stdout_tail": "gate_i_smoke: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python /home/ronin/proyectos/atlas-core/scripts/gate_h_smoke.py",
+      "exit": 0,
+      "stdout_tail": "[1/4] Gate H status: {'paused_tools': [], 'failure_counts': {}, 'truth_snapshots': 0, 'diagnostic_mode': False, 'stale_patterns_count': 0, 'known_good_tools': ['editor.read', 'fs.list_dir', 'git.status']}\n[2/4] generated run + audit OK\n[3/4] pause persistence OK\n[4/4] rebuild_memory: {'restored_patterns': 1, 'restored_snapshots': 1, 'kuzu_patterns': 0}\n=== Gate H smoke OK ===\n",
+      "stderr_tail": ""
+    }
+  ],
+  "passed": true,
+  "failed_count": 0
+}

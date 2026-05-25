@@ -27,7 +27,7 @@ def get_orchestrator() -> Orchestrator:
 
 
 @click.group()
-@click.version_option("0.8.0", prog_name="atlas")
+@click.version_option("0.9.0", prog_name="atlas")
 def cli() -> None:
     """Atlas Core v0.6 — Sistema operativo personal de inteligencia."""
 
@@ -299,6 +299,73 @@ def audit(tail: int, verify: bool) -> None:
             f"[{risk_color.get(risk, 'white')}]{risk}[/{risk_color.get(risk, 'white')}]",
         )
     console.print(table)
+
+
+@cli.group()
+def update() -> None:
+    """ADR-025 ColdUpdateManager — parches aislados con validacion HITL."""
+
+
+@update.command("propose")
+@click.argument("intent", nargs=-1, required=True)
+@click.option("--patch", "patch_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--base-ref", default="HEAD", show_default=True)
+def update_propose(intent: tuple[str, ...], patch_path: Path, base_ref: str) -> None:
+    """Registra un parche en worktree aislado."""
+    orch = get_orchestrator()
+    proposal = orch.cold_update().propose(" ".join(intent), patch_path, base_ref=base_ref)
+    console.print(f"[green]Proposal {proposal.id}[/green] status={proposal.status}")
+
+
+@update.command("validate")
+@click.argument("proposal_id")
+def update_validate(proposal_id: str) -> None:
+    """Ejecuta pytest+mypy en el worktree."""
+    orch = get_orchestrator()
+    report = orch.cold_update().validate(proposal_id)
+    color = "green" if report.passed else "red"
+    console.print(f"[{color}]Validation passed={report.passed}[/{color}]")
+    console.print_json(json.dumps(report.to_dict(), ensure_ascii=False))
+
+
+@update.command("approve")
+@click.argument("proposal_id")
+def update_approve(proposal_id: str) -> None:
+    """Aprueba un proposal validado (HITL)."""
+    orch = get_orchestrator()
+    p = orch.cold_update().approve(proposal_id)
+    console.print(f"[yellow]Approved[/yellow] {p.id} — usar 'atlas update apply' para aplicar")
+
+
+@update.command("apply")
+@click.argument("proposal_id")
+def update_apply(proposal_id: str) -> None:
+    """Aplica parche al ATLAS_CORE_ROOT tras aprobacion."""
+    orch = get_orchestrator()
+    result = orch.cold_update().apply(proposal_id)
+    console.print_json(json.dumps(result, ensure_ascii=False, default=str))
+
+
+@update.command("reject")
+@click.argument("proposal_id")
+@click.option("--reason", default="")
+def update_reject(proposal_id: str, reason: str) -> None:
+    orch = get_orchestrator()
+    p = orch.cold_update().reject(proposal_id, reason=reason)
+    console.print(f"[red]Rejected[/red] {p.id}")
+
+
+@update.command("status")
+@click.option("--id", "proposal_id", default=None, help="Detalle de un proposal")
+def update_status(proposal_id: str | None) -> None:
+    orch = get_orchestrator()
+    mgr = orch.cold_update()
+    if proposal_id:
+        summary = mgr.review_summary(proposal_id)
+        console.print_json(json.dumps(summary, ensure_ascii=False, default=str))
+        return
+    for p in mgr.list_proposals():
+        console.print(f"  {p.id}  {p.status:10}  {p.intent[:60]}")
 
 
 @cli.command()

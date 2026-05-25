@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate I COMPLETE** (2026-05-25) — `atlas serve` 24/7, health JSON, systemd.
-> Gates H + debt closure: `v0.7-gate-h`, `v0.7.1-debt-closure`. Siguiente: ADR-025, ADR-024, fleet.
+> Estado actual: **v0.9.0** — Gate I + ADR-024 Observability MVP + ADR-025 ColdUpdate MVP.
+> Tags: `v0.8-gate-i`, `v0.9-adrs-024-025` (propuesto). Siguiente: fleet, Hermes webhook, ColdUpdate v2.
 
 ---
 

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Observability{% endblock %}
+{% block content %}
+<h1>Observability (ADR-024)</h1>
+<p class="card-label">Telemetry counters</p>
+<pre>{{ snapshot.telemetry.counters | tojson(indent=2) }}</pre>
+<p class="card-label">MicroLedger (tail)</p>
+<pre>{{ snapshot.microledger_tail | tojson(indent=2) }}</pre>
+<p class="card-label">Operational WAL (tail)</p>
+<pre>{{ snapshot.wal_tail | tojson(indent=2) }}</pre>
+<p><a href="/api/observability">JSON API</a></p>
+{% endblock %}
