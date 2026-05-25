@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
-from atlas.core.contracts import Tool, ToolLevel, PermissionLevel
+from atlas.core.contracts import TruthSnapshot, Tool, ToolLevel, PermissionLevel
+from atlas.logging.merkle_logger import MerkleLogger
 
 if TYPE_CHECKING:
     from atlas.memory.vector_store import KuzuVectorStore
@@ -89,10 +90,12 @@ class ErrorRegistry:
         self,
         store_path: Path,
         vector_store: "KuzuVectorStore | None" = None,
+        merkle: MerkleLogger | None = None,
     ) -> None:
         self._path = store_path
         self._path.mkdir(parents=True, exist_ok=True)
         self._vector_store = vector_store
+        self._merkle = merkle
 
     def record(self, entry: FailureEntry) -> None:
         file = self._path / f"{entry.id}.json"
@@ -107,6 +110,15 @@ class ErrorRegistry:
                 )
             except Exception as e:  # noqa: BLE001 — vector index es opcional
                 _log.warning("vector_store.add_failure fallo para %s: %s", entry.id, e)
+
+        if self._merkle is not None:
+            self._merkle.log(
+                action="error_registry.recorded",
+                agent="error_registry",
+                result="success",
+                risk_level="moderate",
+                payload={"entry": entry.to_dict()},
+            )
 
     def find_similar(self, query: str, top_k: int = 5) -> list[Any]:
         """Busqueda semantica si hay vector_store. Devuelve [] si no esta."""
@@ -161,10 +173,12 @@ class ApprovedPatternStore:
         self,
         store_path: Path,
         vector_store: "KuzuVectorStore | None" = None,
+        merkle: MerkleLogger | None = None,
     ) -> None:
         self._path = store_path
         self._path.mkdir(parents=True, exist_ok=True)
         self._vector_store = vector_store
+        self._merkle = merkle
 
     def add(self, entry: PatternEntry) -> None:
         file = self._path / f"{entry.id}.json"
@@ -178,6 +192,22 @@ class ApprovedPatternStore:
                 )
             except Exception as e:  # noqa: BLE001 — vector index es opcional
                 _log.warning("vector_store.add_pattern fallo para %s: %s", entry.id, e)
+
+        if self._merkle is not None:
+            self._merkle.log(
+                action="approved_pattern.added",
+                agent="approved_pattern_store",
+                result="success",
+                risk_level="safe",
+                payload={"entry": entry.to_dict()},
+            )
+
+    def clear(self) -> None:
+        for f in self._path.glob("*.json"):
+            try:
+                f.unlink()
+            except OSError:
+                continue
 
     def find_similar(self, query: str, top_k: int = 5) -> list[Any]:
         """Busqueda semantica si hay vector_store. Devuelve [] si no esta."""
@@ -210,6 +240,51 @@ class ApprovedPatternStore:
             except Exception:
                 continue
         return results
+
+
+class TruthSnapshotStore:
+    def __init__(
+        self,
+        store_path: Path,
+        merkle: MerkleLogger | None = None,
+    ) -> None:
+        self._path = store_path
+        self._path.mkdir(parents=True, exist_ok=True)
+        self._merkle = merkle
+
+    def add(self, snapshot: TruthSnapshot) -> None:
+        file = self._path / f"{snapshot.id}.json"
+        file.write_text(json.dumps(snapshot.to_dict(), indent=2, ensure_ascii=False))
+        if self._merkle is not None:
+            self._merkle.log(
+                action="generated_tool.receipt",
+                agent="truth_snapshot_store",
+                result="success",
+                risk_level="safe",
+                payload={"snapshot": snapshot.to_dict()},
+            )
+
+    def get(self, snapshot_id: str) -> TruthSnapshot | None:
+        f = self._path / f"{snapshot_id}.json"
+        if not f.exists():
+            return None
+        return TruthSnapshot(**json.loads(f.read_text(encoding="utf-8")))
+
+    def all(self) -> list[TruthSnapshot]:
+        results: list[TruthSnapshot] = []
+        for f in self._path.glob("*.json"):
+            try:
+                results.append(TruthSnapshot(**json.loads(f.read_text(encoding="utf-8"))))
+            except Exception:
+                continue
+        return results
+
+    def clear(self) -> None:
+        for f in self._path.glob("*.json"):
+            try:
+                f.unlink()
+            except OSError:
+                continue
 
 
 # ===========================================================================

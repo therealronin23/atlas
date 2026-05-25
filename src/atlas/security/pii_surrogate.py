@@ -36,10 +36,13 @@ Pendiente v2 (requiere SLM):
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
+
+from atlas.core.inference_hub import InferenceHub, InferenceLevel, InferenceRequest
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +60,9 @@ class PIIType(str, Enum):
     HERMES_API_KEY     = "hermes_api_key"
     GROQ_API_KEY       = "groq_api_key"
     OPENROUTER_API_KEY = "openrouter_api_key"
+    NAME               = "name"
+    CITY               = "city"
+    ADDRESS            = "address"
 
 
 @dataclass(frozen=True)
@@ -189,6 +195,49 @@ def _gen_openrouter_key(original: str, salt: str) -> str:
     return f"sk-or-v1-{hexstr[:64]}"
 
 
+_NAME_POOL = (
+    "Alicia", "Beatriz", "Carlos", "Daniel", "Elena", "Francisco",
+    "Gabriela", "Hugo", "Irene", "Jorge", "Juan", "Laura", "María",
+    "Maria", "Nuria", "Óscar", "Pablo", "Rocío", "Sofía", "Tomás",
+    "Uxía", "Víctor",
+)
+
+_CITY_POOL = (
+    "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza",
+    "Málaga", "Murcia", "Bilbao", "Alicante", "Córdoba", "Granada",
+    "Santander", "Salamanca", "Oviedo", "Pamplona", "Toledo",
+)
+
+_ADDRESS_STREET_TYPES = (
+    "Calle", "Avenida", "Avda.", "Plaza", "Paseo", "Camino",
+    "Carretera", "Ronda", "C/",
+)
+
+_ADDRESS_NAMES = (
+    "Falsa", "Libertad", "Constitución", "Sol", "Olmo",
+    "Princesa", "Arenal", "Gran Vía", "Margarita", "Alameda",
+)
+
+
+def _gen_name(original: str, salt: str) -> str:
+    seed = _seed_int(salt, "name", original)
+    name = _NAME_POOL[seed % len(_NAME_POOL)]
+    return name
+
+
+def _gen_city(original: str, salt: str) -> str:
+    seed = _seed_int(salt, "city", original)
+    return _CITY_POOL[seed % len(_CITY_POOL)]
+
+
+def _gen_address(original: str, salt: str) -> str:
+    seed = _seed_int(salt, "address", original)
+    street = _ADDRESS_STREET_TYPES[seed % len(_ADDRESS_STREET_TYPES)]
+    name = _ADDRESS_NAMES[(seed // 3) % len(_ADDRESS_NAMES)]
+    number = 1 + (seed // 7) % 299
+    return f"{street} {name} {number}"
+
+
 _GENERATORS = {
     PIIType.EMAIL:              _gen_email,
     PIIType.PHONE_ES:           _gen_phone_es,
@@ -199,6 +248,9 @@ _GENERATORS = {
     PIIType.HERMES_API_KEY:     _gen_hermes_key,
     PIIType.GROQ_API_KEY:       _gen_groq_key,
     PIIType.OPENROUTER_API_KEY: _gen_openrouter_key,
+    PIIType.NAME:               _gen_name,
+    PIIType.CITY:               _gen_city,
+    PIIType.ADDRESS:            _gen_address,
 }
 
 
@@ -231,9 +283,19 @@ class PIISurrogate:
         self,
         salt: str | None = None,
         enabled_types: set[PIIType] | None = None,
+        hub: InferenceHub | None = None,
+        mode: str = "auto",
     ) -> None:
         self._salt = salt or os.environ.get("ATLAS_PII_SALT", self.DEFAULT_SALT)
         self._enabled = enabled_types or set(PIIType)
+        self._hub = hub
+        if mode not in ("auto", "live", "stub"):
+            raise ValueError(f"mode invalido: {mode}")
+        self._mode = os.environ.get("ATLAS_PII_SURROGATE_MODE", mode)
+
+    @property
+    def mode(self) -> str:
+        return self._mode
 
     @property
     def salt(self) -> str:
@@ -270,12 +332,156 @@ class PIISurrogate:
                     start=start, end=end, type=pii_type,
                     original=original, surrogate=surrogate,
                 ))
+
+        if self._enabled & {PIIType.NAME, PIIType.CITY, PIIType.ADDRESS}:
+            matches.extend(self._detect_slm(text, claimed))
+
         matches.sort(key=lambda x: x.start)
         return matches
 
     # ------------------------------------------------------------------
-    # Redact + restore
+    # SLM-based detection
     # ------------------------------------------------------------------
+
+    def _resolve_mode(self) -> str:
+        if self._mode == "stub":
+            return "stub"
+        if self._mode == "live":
+            return "live"
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return "stub"
+        if self._hub is None:
+            return "stub"
+        return "live"
+
+    def _detect_slm(
+        self,
+        text: str,
+        claimed: list[tuple[int, int]],
+    ) -> list[PIIMatch]:
+        if not text.strip():
+            return []
+        if self._resolve_mode() == "live" and self._hub is not None:
+            return self._detect_slm_live(text, claimed)
+        return self._detect_slm_stub(text, claimed)
+
+    def _detect_slm_live(
+        self,
+        text: str,
+        claimed: list[tuple[int, int]],
+    ) -> list[PIIMatch]:
+        if self._hub is None:
+            return self._detect_slm_stub(text, claimed)
+
+        request = InferenceRequest(
+            prompt=_build_pii_slm_prompt(text),
+            level=InferenceLevel.L1,
+            max_tokens=256,
+            temperature=0.0,
+        )
+        response = self._hub.infer(request)
+        if not response.success:
+            return self._detect_slm_stub(text, claimed)
+
+        parsed = _parse_pii_slm_json(response.text)
+        if parsed is None:
+            return self._detect_slm_stub(text, claimed)
+
+        matches: list[PIIMatch] = []
+        for item in parsed:
+            pii_type = item.get("type")
+            if pii_type not in {PIIType.NAME.value, PIIType.CITY.value, PIIType.ADDRESS.value}:
+                continue
+            start = item.get("start")
+            end = item.get("end")
+            original = item.get("text")
+            if not isinstance(start, int) or not isinstance(end, int):
+                continue
+            if not isinstance(original, str):
+                continue
+            if any(_overlaps(start, end, s, e) for s, e in claimed):
+                continue
+            claimed.append((start, end))
+            match_type = PIIType(pii_type)
+            surrogate = _GENERATORS[match_type](original, self._salt)
+            matches.append(PIIMatch(
+                start=start,
+                end=end,
+                type=match_type,
+                original=original,
+                surrogate=surrogate,
+            ))
+        return matches
+
+    def _detect_slm_stub(
+        self,
+        text: str,
+        claimed: list[tuple[int, int]],
+    ) -> list[PIIMatch]:
+        matches: list[PIIMatch] = []
+        for matcher in (
+            self._find_stub_city_matches,
+            self._find_stub_name_matches,
+            self._find_stub_address_matches,
+        ):
+            for start, end, original, pii_type in matcher(text):
+                if pii_type not in self._enabled:
+                    continue
+                if any(_overlaps(start, end, s, e) for s, e in claimed):
+                    continue
+                claimed.append((start, end))
+                surrogate = _GENERATORS[pii_type](original, self._salt)
+                matches.append(PIIMatch(
+                    start=start,
+                    end=end,
+                    type=pii_type,
+                    original=original,
+                    surrogate=surrogate,
+                ))
+        return matches
+
+    def _find_stub_name_matches(self, text: str) -> list[tuple[int, int, str, PIIType]]:
+        matches: list[tuple[int, int, str, PIIType]] = []
+        pattern = re.compile(r"\b(" + "|".join(re.escape(n) for n in _NAME_POOL) + r")\b", re.IGNORECASE)
+        for m in pattern.finditer(text):
+            matches.append((m.start(), m.end(), m.group(0), PIIType.NAME))
+
+        intro_pattern = re.compile(
+            r"\b(?:mi nombre es|me llamo|soy|llamame|llámame)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+)\b",
+            re.IGNORECASE,
+        )
+        for m in intro_pattern.finditer(text):
+            matches.append((m.start(1), m.end(1), m.group(1), PIIType.NAME))
+
+        return matches
+
+    def _find_stub_city_matches(self, text: str) -> list[tuple[int, int, str, PIIType]]:
+        pattern = re.compile(r"\b(" + "|".join(re.escape(c) for c in _CITY_POOL) + r")\b", re.IGNORECASE)
+        return [
+            (m.start(), m.end(), m.group(0), PIIType.CITY)
+            for m in pattern.finditer(text)
+        ]
+
+    def _find_stub_address_matches(self, text: str) -> list[tuple[int, int, str, PIIType]]:
+        pattern = re.compile(
+            r"\b(?:Calle|Avenida|Avda\.|Plaza|Paseo|Camino|Carretera|Ronda|C/|Av\.)"
+            r"\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.]*?\s+\d+\b",
+            re.IGNORECASE,
+        )
+        return [
+            (m.start(), m.end(), m.group(0), PIIType.ADDRESS)
+            for m in pattern.finditer(text)
+        ]
+
+    def _build_pii_slm_prompt(self, text: str) -> str:
+        return (
+            "Eres Atlas Core. Dado el siguiente texto, detecta nombres propios, "
+            "ciudades y direcciones. Responde EXCLUSIVAMENTE con JSON valide "
+            "que contenga una lista 'matches' donde cada elemento tiene: "
+            "type ('name'|'city'|'address'), start, end, text.\n\n"
+            f"Texto:\n{text}\n"
+        )
+
 
     def redact(self, text: str) -> RedactionResult:
         matches = self.detect(text)
@@ -309,6 +515,32 @@ class PIISurrogate:
         for surrogate in ordered:
             out = out.replace(surrogate, mapping[surrogate])
         return out
+
+
+def _parse_pii_slm_json(text: str) -> list[dict[str, object]] | None:
+    if not text:
+        return None
+    candidate = text.strip()
+    candidate = re.sub(r"^```(?:json)?\s*", "", candidate)
+    candidate = re.sub(r"\s*```$", "", candidate)
+    for m in re.finditer(r"\{[^{}]*\}", candidate, re.DOTALL):
+        snippet = m.group(0)
+        try:
+            data = json.loads(snippet)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        matches = data.get("matches")
+        if not isinstance(matches, list):
+            continue
+        parsed: list[dict[str, object]] = []
+        for item in matches:
+            if not isinstance(item, dict):
+                continue
+            parsed.append(item)
+        return parsed
+    return None
 
 
 # ---------------------------------------------------------------------------
