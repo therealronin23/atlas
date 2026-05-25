@@ -27,7 +27,7 @@ def get_orchestrator() -> Orchestrator:
 
 
 @click.group()
-@click.version_option("0.7.0", prog_name="atlas")
+@click.version_option("0.8.0", prog_name="atlas")
 def cli() -> None:
     """Atlas Core v0.6 — Sistema operativo personal de inteligencia."""
 
@@ -299,6 +299,32 @@ def audit(tail: int, verify: bool) -> None:
             f"[{risk_color.get(risk, 'white')}]{risk}[/{risk_color.get(risk, 'white')}]",
         )
     console.print(table)
+
+
+@cli.command()
+def health() -> None:
+    """Estado de salud operativo (JSON). Gate I."""
+    orch = get_orchestrator()
+    console.print_json(json.dumps(orch.health_report(), ensure_ascii=False, default=str))
+
+
+@cli.command()
+@click.option(
+    "--poll-interval",
+    default=1.0,
+    show_default=True,
+    type=float,
+    help="Intervalo del loop principal (s).",
+)
+def serve(poll_interval: float) -> None:
+    """Proceso 24/7: Telegram + OfflineMonitor + alertas (+ dashboard opcional)."""
+    from atlas.runtime.service_runner import AtlasServiceRunner  # noqa: PLC0415
+
+    orch = get_orchestrator()
+    runner = AtlasServiceRunner(orch)
+    console.print("[bold cyan]Atlas serve[/bold cyan] — Ctrl+C para detener")
+    console.print("[dim]ATLAS_SERVE_DASHBOARD=1 para dashboard; ATLAS_THERMAL_MONITOR=1 para termico[/dim]")
+    runner.run_forever(poll_interval_s=poll_interval)
 
 
 @cli.command()

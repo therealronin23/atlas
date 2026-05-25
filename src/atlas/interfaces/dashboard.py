@@ -310,6 +310,12 @@ async def api_status() -> dict:
     }
 
 
+@app.get("/api/health")
+async def api_health() -> dict[str, Any]:
+    """Health JSON para Gate I (localhost/Tailscale only)."""
+    return _get_orch().health_report()
+
+
 @app.get("/api/providers")
 async def api_providers() -> list[dict]:
     return _provider_data()

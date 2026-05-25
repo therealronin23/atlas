@@ -178,6 +178,12 @@ class TestIssueExec:
             issuer.issue_exec("git", args=("push", "origin", "main"), working_dir=workspace / "tmp")
         assert "prohibido" in str(exc.value).lower() or "push" in str(exc.value).lower()
 
+    def test_evaluate_shell_git_push_blocked(self, issuer: CapabilityIssuer) -> None:
+        """SEC-01: git push no debe pasar evaluate_shell_command."""
+        decision = issuer.profile.evaluate_shell_command("git push origin main")
+        assert not decision.allowed
+        assert "push" in decision.reason.lower() or "prohibido" in decision.reason.lower()
+
     def test_git_status_allowed(self, issuer: CapabilityIssuer, workspace: Path) -> None:
         cap = issuer.issue_exec("git", args=("status",), working_dir=workspace / "tmp")
         assert cap.command == "git"

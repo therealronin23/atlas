@@ -1,0 +1,18 @@
+[Unit]
+Description=Atlas Core sovereign runtime (Gate I)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/proyectos/atlas-core
+EnvironmentFile=%h/proyectos/atlas-core/.env
+Environment=PYTHONPATH=%h/proyectos/atlas-core/src
+Environment=ATLAS_HOME=%h/atlas
+Environment=ATLAS_PIPELINE_GATE_D=1
+ExecStart=%h/proyectos/atlas-core/.venv/bin/atlas serve
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

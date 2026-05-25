@@ -2,7 +2,7 @@
 
 **Status:** COMPLETE (MVP Opción B)  
 **Date:** 2026-05-25  
-**Tag:** `v0.7-gate-h` (when released)
+**Tag:** `v0.7-gate-h`
 
 ## Goal
 
@@ -38,11 +38,12 @@ atlas gate-h status
 atlas gate-h receipts --tail 5
 ```
 
-## Post-H (not in this seal)
+## Post-H (closed in debt closure / Gate I)
 
-- ADR-025 ColdUpdateManager full protocol
-- ADR-024 Observability v2 (MicroLedger, TelemetryBus)
-- FU-6 PII SLM wiring in Gate D pipeline
-- ADR-019 statistical validation framework
+- FU-6 PII SLM wiring — DONE (`v0.7.1-debt-closure`)
+- ADR-019 statistical validation — DONE (`docs/adr_019_statistical_validation.md`)
+- H6 stale reuse gating — DONE
+- ADR-025 ColdUpdateManager — pending
+- ADR-024 Observability v2 — pending
 
 See [`gate_h_mvp_scope.md`](gate_h_mvp_scope.md) and [`gate_h_action_plan.md`](gate_h_action_plan.md).

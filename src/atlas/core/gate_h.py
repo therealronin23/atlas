@@ -211,6 +211,29 @@ class GateHManager:
     def is_tool_paused(self, tool_name: str) -> bool:
         return tool_name in self._paused_tools
 
+    def find_matching_generated_pattern(self, command: str) -> PatternEntry | None:
+        cmd = command.strip()
+        for pattern in self._approved_patterns.all():
+            tags = pattern.tags or []
+            if "generated_tool" not in tags:
+                continue
+            content = (pattern.content or "").strip()
+            if content == cmd or cmd in content or content in cmd:
+                return pattern
+        return None
+
+    def assert_generated_reusable(self, command: str, task_id: str | None = None) -> None:
+        pattern = self.find_matching_generated_pattern(command)
+        if pattern is None:
+            return
+        if not self._auditor.check_pattern_stale(pattern):
+            return
+        self.record_stale_tool(pattern.name, pattern.id, task_id=task_id)
+        raise RuntimeError(
+            f"Patron generado stale ({pattern.id}). "
+            f"Revalida con: atlas gate-h validate {pattern.id}"
+        )
+
     def record_stale_tool(self, tool_name: str, pattern_id: str, task_id: str | None = None) -> None:
         self._merkle.log(
             action="generated_tool.stale",

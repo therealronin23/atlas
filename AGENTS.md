@@ -42,7 +42,7 @@ components serve Atlas, not the other way around.
     - ADR-021 (Time-Travel): `src/atlas/core/{checkpoint,timetravel}.py` + 22 tests. Checkpoints inmutables encadenados por hash (`hash_self`, `hash_prev`, `verify_chain`). Persistencia JSON. `fork()` para counterfactuales. Cada save/fork log a Merkle.
     - ADR-022 (Ghost Replay): `src/atlas/core/ghost_replay.py` + 21 tests. Cache topológica con clave = SHA-256(intent, sensitivity, context_signature). TTL configurable, LRU automática por `max_entries`, `purge()` para presión de memoria. Stats hits/misses.
     - Integración con Orchestrator (interceptar handle_intent para lookup en GhostReplay antes de inferir, snapshot a TimeTravel en cada paso) queda como follow-up.
-  - D6 PII Surrogate (ADR-023): DONE. `src/atlas/security/pii_surrogate.py` + 38 tests. Detección regex (email, DNI ES, IBAN, teléfono ES, IPv4/v6, API keys Groq/OpenRouter/Hermes) + sustitución determinista por surrogates que preservan formato (DNI con letra válida, IPv4 en TEST-NET-1, IPv6 en 2001:db8::/32). Salt via `ATLAS_PII_SALT`. Redact + restore roundtrip. Detección SLM/heurística para NAME/CITY/ADDRESS implementada; cableo `InferenceHub` en Orchestrator Gate D pendiente (FU-6).
+  - D6 PII Surrogate (ADR-023): DONE. `src/atlas/security/pii_surrogate.py` + 38 tests. Detección regex + SLM NAME/CITY/ADDRESS via `InferenceHub` cuando Gate D activo (FU-6 DONE).
   - D7 Cierre Gate D + tag v0.3-gate-d: DONE. Evidencia en `docs/gate_d_seal.md`.
 - Gate E: COMPLETE — ADR-002 sealed + E2 Dashboard + E3 Voice. 449 tests. tag v0.4-gate-e.
   - E2 Dashboard: DONE. `atlas dashboard` → localhost:7331. FastAPI+Jinja2, 6 páginas + JSON API.
@@ -52,7 +52,9 @@ components serve Atlas, not the other way around.
     `src/atlas/interfaces/voice.py`, 30 tests. ADR-003 sealed.
 - Gate F: COMPLETE — Computer-use + Editor integration + Frontend. 509 tests + mypy verde. tag v0.5-gate-f.
 - Gate G: COMPLETE — Operational readiness. Hermes-VPS restored/smoked, GitHub synced, CLI approvals persistent (HMAC v1 en `pending_approvals/`), Telegram authorized/smoked. `scripts/operational_smoke.py` + `docs/operational_runbook.md`. Suite: 534+ collected; 522+ core sin Playwright.     tag v0.6-gate-g. Auditoría: `docs/audit_2026-05-25.md`.
-- Gate H: MVP COMPLETE (2026-05-25) — H1–H6 audited synthesis. `docs/gate_h_seal.md`, `scripts/gate_h_smoke.py`, `atlas gate-h`. 538 core tests. tag `v0.7-gate-h` when released.
+- Gate H: MVP COMPLETE (2026-05-25) — H1–H6 audited synthesis. `docs/gate_h_seal.md`, `scripts/gate_h_smoke.py`, `atlas gate-h`. tag `v0.7-gate-h`.
+- Debt closure (2026-05-25): FU-6, H6 reuse gating, H5 policy tests, ADR-019, OPS browser marker, SEC verify. `docs/debt_closure_2026-05-25.md`. tag `v0.7.1-debt-closure`.
+- Gate I: COMPLETE (2026-05-25) — `atlas serve`, `atlas health`, `/api/health`, `AtlasServiceRunner`, systemd unit. `docs/gate_i_seal.md`, `scripts/gate_i_smoke.py`. tag `v0.8-gate-i`. 550 core tests.
 - Gate F details:
   - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
     Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
@@ -220,7 +222,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ --ignore=tests/test_browser.py -q  # core (~522+)
+PYTHONPATH=src python -m pytest tests/ -q  # core 550 (excluye marker computer_use por defecto)
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
 MYPYPATH=src python -m mypy src/atlas/              # type check (debe pasar verde)
@@ -257,11 +259,10 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gate G COMPLETE + Sesion A/B (2026-05-25).
-Suite core 538 green (`--ignore=test_browser.py`); Gate H H1–H6 MVP; pending HMAC; Kuzu wired en Gate D.
-Hermes REST auto si `HERMES_BASE_URL`+`HERMES_API_KEY` en `.env`.
-`scripts/operational_smoke.py` + `docs/operational_runbook.md` para validacion operativa.
-Next logical work: post-H (ADR-025 ColdUpdateManager, ADR-024 observability v2).
+Current state at session start: Gate I COMPLETE (2026-05-25).
+Suite core 550 green (pytest default excluye `computer_use`/Playwright); Gates A–I sellados.
+`atlas serve` para 24/7; `atlas health` y `GET /api/health` para supervision.
+Next logical work: ADR-025 ColdUpdateManager, ADR-024 observability v2, fleet/Atlas Box.
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
@@ -274,7 +275,7 @@ These are known debts. Pick any or skip to Gate E. All have explicit file refs.
 | FU-3 | Suppress LiteLLM startup warnings | `core/inference_hub.py` | DONE (commit 64c878b) |
 | FU-4 | InferenceHub L0 real: Ollama HTTP client | `core/inference_hub.py` | DONE (commit c0e2733) |
 | FU-5 | SLMClassifier prompt via MemoryDistiller | `router/slm_classifier.py` + `memory/distiller.py` | DONE (commit 35d906f) |
-| FU-6 | PIISurrogate: wire InferenceHub en Orchestrator Gate D + hardening SLM live | `security/pii_surrogate.py`, `core/orchestrator.py` | ~3h — PARTIAL (detección existe; wiring pendiente) |
+| FU-6 | PIISurrogate: wire InferenceHub en Orchestrator Gate D + hardening SLM live | `security/pii_surrogate.py`, `core/orchestrator.py` | DONE (debt closure 2026-05-25) |
 
 FU-3 is cosmetic and trivial. FU-1 is highest-value correctness fix.
 

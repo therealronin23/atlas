@@ -1,7 +1,7 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **Gate G COMPLETE** (operational readiness: Hermes live, GitHub synced, CLI approvals persistent, Telegram authorized).
-> **Gate H MVP COMPLETE** (2026-05-25) — tag `v0.7-gate-h` when released. Siguiente: post-H (ADR-025 ColdUpdate, ADR-024 observability).
+> Estado actual: **Gate I COMPLETE** (2026-05-25) — `atlas serve` 24/7, health JSON, systemd.
+> Gates H + debt closure: `v0.7-gate-h`, `v0.7.1-debt-closure`. Siguiente: ADR-025, ADR-024, fleet.
 
 ---
 
@@ -16,6 +16,8 @@
 | E | ✅ COMPLETE | `v0.4-gate-e` | ADR-002 sealed (bare metal + venv), Dashboard web (FastAPI+Jinja2, localhost:7331), Voz (Whisper STT + Piper TTS). 449 tests. |
 | F | ✅ COMPLETE | `v0.5-gate-f` | Computer-use con BrowserTool, EditorTool, VisionLoop conservador, Orchestrator routing, approval states y smoke real de host. 509 tests. |
 | G | ✅ COMPLETE | `v0.6-gate-g` | Operacionalización local: Hermes-VPS restaurado, GitHub synced, approvals persistentes CLI, Telegram autorizado y smoked. 513 tests. |
+| H | ✅ COMPLETE (MVP) | `v0.7-gate-h` | Síntesis auditada H1–H6: ResultAuditor, receipts, rebuild, fail-safe, meta-gov, env sensor. |
+| I | ✅ COMPLETE (MVP) | `v0.8-gate-i` | Servicio 24/7: `atlas serve`, health, OfflineMonitor+Telegram, optional dashboard/thermal. |
 
 Cada Gate tiene su documento de cierre en `docs/gate_*_seal.md`.
 

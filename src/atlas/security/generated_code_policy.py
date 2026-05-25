@@ -29,6 +29,18 @@ _UNSAFE_OPEN_PATTERNS = (
     re.compile(r'open\s*\(\s*["\'].*\.ssh', re.IGNORECASE),
 )
 
+_EXEC_BYPASS_PATTERNS = (
+    re.compile(r"\bos\.system\s*\(", re.IGNORECASE),
+    re.compile(r"\bos\.popen\s*\(", re.IGNORECASE),
+    re.compile(r"\bsubprocess\.(run|call|Popen)\s*\(", re.IGNORECASE),
+)
+
+_PII_EXFIL_PATTERNS = (
+    re.compile(r"requests\.(post|put|patch)\s*\([^)]*@[^)]+\)", re.IGNORECASE),
+    re.compile(r"urllib\.request\.[^(]+\([^)]*@[^)]+\)", re.IGNORECASE),
+    re.compile(r"httpx\.(post|put|patch)\s*\([^)]*@[^)]+\)", re.IGNORECASE),
+)
+
 
 @dataclass(frozen=True)
 class GeneratedCodePolicyResult:
@@ -66,6 +78,16 @@ class GeneratedCodePolicy:
         for pattern in _UNSAFE_OPEN_PATTERNS:
             if pattern.search(code):
                 violations.append("open() a ruta de sistema prohibida")
+                break
+
+        for pattern in _EXEC_BYPASS_PATTERNS:
+            if pattern.search(code):
+                violations.append("ejecucion directa sin AtlasExecutor prohibida")
+                break
+
+        for pattern in _PII_EXFIL_PATTERNS:
+            if pattern.search(code):
+                violations.append("posible exfiltracion de PII sin redact")
                 break
 
         return GeneratedCodePolicyResult(
