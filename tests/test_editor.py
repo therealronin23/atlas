@@ -8,6 +8,7 @@ el fallback graceful cuando no hay editor.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Generator, Any
@@ -221,9 +222,14 @@ class TestApplyDiff:
             " line3\n"
         )
         result = editor.apply_diff(target, diff)
-        # patch puede fallar o funcionar segun el sistema
-        # Lo importante es que no lance excepcion
         assert result is not None
+
+        if shutil.which("patch") is None:
+            assert result.success is False
+            assert "patch" in (result.error or "").lower()
+        else:
+            assert result.success is True, result.error or result.stderr
+            assert target.read_text() == "line1\nline2-modified\nline3\n"
 
 
 class TestRunTask:
