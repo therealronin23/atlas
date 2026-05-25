@@ -5,6 +5,7 @@ Comprueba clasificacion de errores, fallback chain y cooldown.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -20,6 +21,7 @@ from atlas.core.inference_hub import (
     ProviderStatus,
     RATE_LIMIT_COOLDOWN_S,
 )
+from atlas.logging.merkle_logger import MerkleLogger
 
 
 def _ok_completion(text: str = "hola", tokens: int = 7) -> MagicMock:
@@ -85,6 +87,52 @@ class TestLiveMode:
         assert captured["model"].startswith("groq/")
         assert captured["api_key"] == "test-groq"
 
+    def test_live_mode_logs_model_calls_to_merkle(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def fake_completion(**kwargs: Any) -> Any:
+            return _ok_completion(text="respuesta real")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        merkle = MerkleLogger(tmp_path / "merkle")
+        hub = InferenceHub(providers=providers, mode="live", merkle=merkle)
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is True
+        records = merkle.read_all()
+        assert any(
+            r.action == "model.called" and r.result == "success"
+            and r.payload["provider"] == "groq_test"
+            for r in records
+        )
+
+    def test_live_mode_logs_failures_to_merkle(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def fail_completion(**kwargs: Any) -> Any:
+            raise RuntimeError("kaboom")
+
+        monkeypatch.setattr(litellm, "completion", fail_completion)
+        merkle = MerkleLogger(tmp_path / "merkle")
+        hub = InferenceHub(providers=providers, mode="live", merkle=merkle)
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        records = merkle.read_all()
+        assert any(
+            r.action == "model.called" and r.result == "failed"
+            and "error" in r.payload
+            for r in records
+        )
+
     def test_stub_mode_ignores_keys(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -109,6 +157,50 @@ class TestLiveMode:
         hub = InferenceHub(providers=providers, mode="auto")
         resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
         assert resp.mode == "stub"
+
+    def test_auto_mode_outside_pytest_uses_live_when_key_present(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        captured: dict[str, Any] = {}
+
+        def fake_completion(**kwargs: Any) -> Any:
+            captured.update(kwargs)
+            return _ok_completion(text="live auto")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=providers, mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.mode == "live"
+        assert resp.success is True
+        assert resp.text == "live auto"
+        assert captured.get("api_key") == "test-groq"
+
+    def test_auto_mode_outside_pytest_skips_without_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = [
+            Provider(
+                name="groq_test",
+                level=InferenceLevel.L1,
+                base_url="https://api.groq.com",
+                model_id="llama-3.3-70b-versatile",
+                litellm_model="groq/llama-3.3-70b-versatile",
+                api_key_env="GROQ_API_KEY",
+                context_tokens=32768,
+            )
+        ]
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+        hub = InferenceHub(providers=providers, mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert resp.mode == "auto-skip"
+        assert "sin key configurada" in (resp.error or "").lower()
 
 
 class TestErrorClassification:
@@ -232,6 +324,20 @@ class TestRecovery:
         assert statuses[0]["status"] == "rate_limited"
         assert statuses[0]["rate_limited_for_s"] > 0
 
+    def test_providers_status_reports_last_used(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        monkeypatch.setattr(
+            litellm, "completion",
+            lambda **kw: _ok_completion(text="ok again"),
+        )
+        hub = InferenceHub(providers=providers[:1], mode="live")
+        hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        statuses = hub.providers_status()
+        assert statuses[0]["last_used"] is not None
+        assert statuses[0]["last_used"] != ""
+
 
 # ===========================================================================
 # L0 Ollama real — FU-4
@@ -329,5 +435,6 @@ class TestOllamaL0:
         hub = InferenceHub(providers=[l1_provider, _ollama_provider()], mode="auto")
         resp = hub.infer(InferenceRequest(prompt="test", level=InferenceLevel.L1))
 
-        # Puede responder desde L0 si L1 falla
-        assert "ollama" in call_counts or resp.success is False  # fallback o todo falla
+        assert resp.success is True
+        assert resp.provider == "ollama_local"
+        assert resp.text == "respuesta L0"

@@ -289,16 +289,15 @@ class EditorTool:
     def apply_diff(self, file_path: Path, diff_text: str) -> DiffResult:
         """
         Aplica un diff unificado a un archivo usando git apply o patch.
-        Si el archivo esta bajo un repositorio git, usa `git apply`.
-        Si no, usa `patch`.
+        Si el archivo esta bajo un repositorio git, intenta primero `git apply`.
+        Si no hay repo git o git falla, usa `patch` si está disponible.
         """
         resolved = file_path.expanduser().resolve()
-        # Buscar si estamos dentro de un repo git
         git_dir = self._find_git_dir(resolved)
+        diff_path = self._write_tmp_diff(diff_text)
 
         try:
             if git_dir is not None:
-                diff_path = self._write_tmp_diff(diff_text)
                 result = self._executor.execute_exec(
                     self._executor.issuer.issue_exec(
                         "git",
@@ -308,11 +307,11 @@ class EditorTool:
                     )
                 )
                 if result.exit_code == 0:
-                    diff_path.unlink(missing_ok=True)
                     return DiffResult(
                         success=True, file=str(resolved), applied=True,
                         stdout=result.stdout, stderr=result.stderr,
                     )
+
                 result2 = self._executor.execute_exec(
                     self._executor.issuer.issue_exec(
                         "git",
@@ -322,22 +321,14 @@ class EditorTool:
                     )
                 )
                 if result2.exit_code == 0:
-                    diff_path.unlink(missing_ok=True)
                     return DiffResult(
                         success=True, file=str(resolved), applied=True,
                         stdout=result2.stdout, stderr=result2.stderr,
                     )
-                diff_path.unlink(missing_ok=True)
-                return DiffResult(
-                    success=False, file=str(resolved), applied=False,
-                    stdout=result.stdout, stderr=result.stderr,
-                    error=f"git apply fallo: {result.stderr[:500]}",
-                )
-            return DiffResult(
-                success=False, file=str(resolved), applied=False,
-                stdout="", stderr="",
-                error="apply_diff requiere un repositorio git para usar AtlasExecutor",
-            )
+
+                return self._try_patch_apply(diff_path, resolved.parent, str(resolved))
+
+            return self._try_patch_apply(diff_path, resolved.parent, str(resolved))
         except (CapabilityDenied, ExecutorError) as e:
             return DiffResult(
                 success=False, file=str(resolved), applied=False,
@@ -348,6 +339,8 @@ class EditorTool:
                 success=False, file=str(resolved), applied=False,
                 stdout="", stderr="", error=str(e),
             )
+        finally:
+            diff_path.unlink(missing_ok=True)
 
     # ------------------------------------------------------------------
     # run_task
@@ -455,6 +448,59 @@ class EditorTool:
         )
         self._executor.execute_write(cap, diff_text.encode("utf-8"))
         return diff_path
+
+    def _try_patch_apply(self, diff_path: Path, working_dir: Path, target_file: str) -> DiffResult:
+        patch_binary = shutil.which("patch")
+        if patch_binary is None:
+            return DiffResult(
+                success=False,
+                file=target_file,
+                applied=False,
+                stdout="",
+                stderr="",
+                error="El comando patch no esta disponible en el sistema.",
+            )
+
+        last_result = None
+        for strip_arg in ("-p1", "-p0"):
+            try:
+                cap = self._executor.issuer.issue_exec(
+                    "patch",
+                    args=(strip_arg, "--input", str(diff_path)),
+                    working_dir=working_dir,
+                    timeout_s=10,
+                )
+            except CapabilityDenied as e:
+                return DiffResult(
+                    success=False, file=target_file, applied=False,
+                    stdout="", stderr="", error=str(e),
+                )
+
+            last_result = self._executor.execute_exec(cap)
+            if last_result.exit_code == 0:
+                return DiffResult(
+                    success=True, file=target_file, applied=True,
+                    stdout=last_result.stdout, stderr=last_result.stderr,
+                )
+
+        if last_result is None:
+            return DiffResult(
+                success=False,
+                file=target_file,
+                applied=False,
+                stdout="",
+                stderr="",
+                error="No se pudo ejecutar patch.",
+            )
+
+        return DiffResult(
+            success=False,
+            file=target_file,
+            applied=False,
+            stdout=last_result.stdout,
+            stderr=last_result.stderr,
+            error=f"patch fallo: {last_result.stderr[:500]}",
+        )
 
     def _get_version(self, binary: str) -> str | None:
         try:
