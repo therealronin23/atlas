@@ -85,7 +85,11 @@ class AtlasServiceRunner:
             "yes",
         ):
             return
-        from atlas.interfaces.dashboard import serve
+        from atlas.interfaces.dashboard import serve, set_orchestrator
+
+        # Inject the runtime's Orchestrator so the dashboard does NOT spawn its
+        # own (which would corrupt the Merkle chain via dual writers).
+        set_orchestrator(self._orch)
 
         host = os.environ.get("ATLAS_DASHBOARD_HOST", "127.0.0.1")
         port = int(os.environ.get("ATLAS_DASHBOARD_PORT", "7331"))
