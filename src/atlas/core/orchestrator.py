@@ -590,7 +590,21 @@ class Orchestrator:
         Arranca el bot si hay TELEGRAM_BOT_TOKEN disponible.
         Es opcional: si no hay token, registra un log y devuelve False.
         Retorna True si el bot quedo corriendo.
+
+        ADR-026: si ATLAS_DISABLE_TELEGRAM=1, Atlas NO arranca el bot porque
+        Hermes-Agent en el VPS ya lo gestiona (twin architecture). Sin esto,
+        dos procesos harían long-polling sobre el mismo bot → respuestas
+        intermitentes y conflicto en getUpdates.
         """
+        if os.environ.get("ATLAS_DISABLE_TELEGRAM", "").strip().lower() in (
+            "1", "true", "yes",
+        ):
+            self._merkle.log(
+                action="telegram.skip", agent="orchestrator", result="disabled_by_env",
+                risk_level="safe",
+                payload={"reason": "ATLAS_DISABLE_TELEGRAM=1 (Hermes-Agent handles it)"},
+            )
+            return False
         token = token or os.environ.get("TELEGRAM_BOT_TOKEN")
         if not token:
             self._merkle.log(
