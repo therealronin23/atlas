@@ -106,6 +106,7 @@ class SelfAuditRunner:
         *,
         docs_dir: Path | None = None,
         health_provider: Callable[[], dict[str, Any]] | None = None,
+        patch_generator: Any = None,   # PatchGenerator | None (lazy to avoid import cycle)
     ) -> None:
         self._root = project_root.resolve()
         self._merkle = merkle
@@ -114,6 +115,7 @@ class SelfAuditRunner:
         self._state_file = self._docs_dir / "self_audit_latest.json"
         self._stop_file = self._root / ".atlas_self_audit_stop"
         self._health_provider = health_provider
+        self._patch_generator = patch_generator
 
     def run(
         self,
@@ -311,13 +313,38 @@ class SelfAuditRunner:
         candidates: list[SelfAuditCandidate] = []
         for finding in findings:
             risk = "high" if finding.severity in {"critical", "high"} else "medium"
-            candidates.append(SelfAuditCandidate(
+            candidate = SelfAuditCandidate(
                 id=f"candidate-{finding.id}",
                 title=f"Resolve {finding.title}",
                 risk=risk,
                 status="dry_run" if dry_run else "needs_patch",
                 rationale=finding.recommendation,
-            ))
+            )
+            # Item 3 MVP: if a PatchGenerator is wired in, try to auto-stub a
+            # patch for the candidate. Patches are .patch files awaiting HITL
+            # review (never hot-applied here).
+            if not dry_run and self._patch_generator is not None:
+                try:
+                    patch = self._patch_generator.generate_for_candidate(
+                        candidate, finding,
+                    )
+                except Exception as exc:  # noqa: BLE001 — gen failure must not break loop
+                    self._log("self_audit.patch_failed", "failure", {
+                        "candidate": candidate.id,
+                        "error": str(exc),
+                    })
+                    patch = None
+                if patch is not None:
+                    candidate.patch_path = patch.patch_path
+                    candidate.status = "patch_proposed"
+                    self._log("self_audit.patch_generated", "success", {
+                        "candidate": candidate.id,
+                        "category": finding.category,
+                        "patch_id": patch.id,
+                        "risk": patch.risk,
+                        "patch_path": patch.patch_path,
+                    })
+            candidates.append(candidate)
         return candidates
 
     def _write_report(self, report: SelfAuditReport) -> None:
