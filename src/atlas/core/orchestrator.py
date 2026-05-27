@@ -1018,6 +1018,37 @@ class Orchestrator:
         )
         if not slm_wins:
             return rule
+
+        # Safety net: only trust the SLM's BLOCKED verdict when the
+        # rule-based classifier ALSO suspects something. The rule classifier
+        # is deterministic and catches the real constitutional violations
+        # (sudo, rm -rf, governance edits). If the rule says "Sin patron
+        # especifico" (default LOCAL_SAFE) but the SLM hallucinates BLOCKED
+        # for an ambiguous/conversational intent, we degrade to LOCAL_SAFE
+        # to avoid bricking the bot on greetings or chitchat.
+        if slm.level == RoutingLevel.BLOCKED and rule.level == RoutingLevel.LOCAL_SAFE:
+            self._merkle.log(
+                action="classify.slm_blocked_overridden",
+                agent="classifier_hybrid",
+                result="downgraded_to_local_safe",
+                risk_level="safe",
+                payload={
+                    "slm_reason": slm.reason,
+                    "rule_reason": rule.reason,
+                },
+                task_id=task_id,
+            )
+            return ClassificationResult(
+                level=RoutingLevel.LOCAL_SAFE,
+                confidence=max(slm.confidence, rule.confidence),
+                matched_pattern=None,
+                governance_blocked=False,
+                reason=(
+                    f"SLM proposed BLOCKED but rule classifier saw no danger; "
+                    f"downgraded to LOCAL_SAFE. SLM: {slm.reason}"
+                ),
+            )
+
         return ClassificationResult(
             level=slm.level,
             confidence=slm.confidence,
