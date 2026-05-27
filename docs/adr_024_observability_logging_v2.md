@@ -1,6 +1,6 @@
 # ADR-024 — Observability and Logging v2
 
-**Status:** proposed.
+**Status:** SEALED (MVP v1, 2026-05-25).
 **Context:** Atlas already has MerkleLogger. `grok.md` proposes a richer stack:
 MerkleLogger + MicroLedger + TelemetryBus + Operational WAL, with inspiration
 from KERI/ACDC.

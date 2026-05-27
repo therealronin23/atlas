@@ -40,7 +40,7 @@ def _hash_dependency_files(*paths: Path) -> str:
 
 def capture_fingerprint(
     *,
-    atlas_version: str = "0.6.1",
+    atlas_version: str = "0.9.0",
     project_root: Path | None = None,
 ) -> EnvironmentFingerprint:
     root = project_root or Path.cwd()

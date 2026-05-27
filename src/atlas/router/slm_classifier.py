@@ -77,13 +77,18 @@ clasificalo en uno de estos niveles:
 - deterministic_tool: tarea simple y segura (leer ficheros del workspace,
   git status, listar directorios, consultar estado). Sin LLM.
 - local_safe: tarea que requiere razonamiento o LLM pero no efectos
-  externos peligrosos (ej. resumir codigo, explicar un concepto).
+  externos peligrosos. INCLUYE: saludos, charla, preguntas conversacionales,
+  resumir codigo, explicar un concepto, generar texto, traducir, definir.
+  USA ESTE NIVEL POR DEFECTO si dudas — Atlas responde conversando.
 - requires_approval: tarea con efectos destructivos o irreversibles
   (git push/reset, instalar, borrar archivos, modificar config).
 - delegate_hermes: tarea que necesita estar disponible cuando Atlas no
   esta (scraping, webhooks, monitoreo 24/7, recordatorios programados).
-- blocked: cualquier accion que viole la constitucion (sudo,
-  rm -rf, modificar governance.json, deshabilitar guards).
+- blocked: SOLO acciones que CLARAMENTE violan la constitucion
+  (sudo, rm -rf /, modificar governance.json, deshabilitar guards,
+  pedir credenciales/secretos, ejecutar codigo no-confiable). NO uses
+  blocked para intents ambiguos, vacios o conversacionales — esos son
+  local_safe.
 
 Responde EXCLUSIVAMENTE con un objeto JSON con esta forma exacta:
 {"level": "...", "confidence": 0.0, "reason": "..."}

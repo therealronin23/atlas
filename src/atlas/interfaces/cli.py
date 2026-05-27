@@ -27,7 +27,7 @@ def get_orchestrator() -> Orchestrator:
 
 
 @click.group()
-@click.version_option("0.8.0", prog_name="atlas")
+@click.version_option("0.9.0", prog_name="atlas")
 def cli() -> None:
     """Atlas Core v0.6 — Sistema operativo personal de inteligencia."""
 
@@ -299,6 +299,141 @@ def audit(tail: int, verify: bool) -> None:
             f"[{risk_color.get(risk, 'white')}]{risk}[/{risk_color.get(risk, 'white')}]",
         )
     console.print(table)
+
+
+@cli.group()
+def update() -> None:
+    """ADR-025 ColdUpdateManager — parches aislados con validacion HITL."""
+
+
+@update.command("propose")
+@click.argument("intent", nargs=-1, required=True)
+@click.option("--patch", "patch_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--base-ref", default="HEAD", show_default=True)
+def update_propose(intent: tuple[str, ...], patch_path: Path, base_ref: str) -> None:
+    """Registra un parche en worktree aislado."""
+    orch = get_orchestrator()
+    proposal = orch.cold_update().propose(" ".join(intent), patch_path, base_ref=base_ref)
+    console.print(f"[green]Proposal {proposal.id}[/green] status={proposal.status}")
+
+
+@update.command("validate")
+@click.argument("proposal_id")
+def update_validate(proposal_id: str) -> None:
+    """Ejecuta pytest+mypy en el worktree."""
+    orch = get_orchestrator()
+    report = orch.cold_update().validate(proposal_id)
+    color = "green" if report.passed else "red"
+    console.print(f"[{color}]Validation passed={report.passed}[/{color}]")
+    console.print_json(json.dumps(report.to_dict(), ensure_ascii=False))
+
+
+@update.command("approve")
+@click.argument("proposal_id")
+def update_approve(proposal_id: str) -> None:
+    """Aprueba un proposal validado (HITL)."""
+    orch = get_orchestrator()
+    p = orch.cold_update().approve(proposal_id)
+    console.print(f"[yellow]Approved[/yellow] {p.id} — usar 'atlas update apply' para aplicar")
+
+
+@update.command("apply")
+@click.argument("proposal_id")
+def update_apply(proposal_id: str) -> None:
+    """Aplica parche al ATLAS_CORE_ROOT tras aprobacion."""
+    orch = get_orchestrator()
+    result = orch.cold_update().apply(proposal_id)
+    console.print_json(json.dumps(result, ensure_ascii=False, default=str))
+
+
+@update.command("reject")
+@click.argument("proposal_id")
+@click.option("--reason", default="")
+def update_reject(proposal_id: str, reason: str) -> None:
+    orch = get_orchestrator()
+    p = orch.cold_update().reject(proposal_id, reason=reason)
+    console.print(f"[red]Rejected[/red] {p.id}")
+
+
+@update.command("status")
+@click.option("--id", "proposal_id", default=None, help="Detalle de un proposal")
+def update_status(proposal_id: str | None) -> None:
+    orch = get_orchestrator()
+    mgr = orch.cold_update()
+    if proposal_id:
+        summary = mgr.review_summary(proposal_id)
+        console.print_json(json.dumps(summary, ensure_ascii=False, default=str))
+        return
+    for p in mgr.list_proposals():
+        console.print(f"  {p.id}  {p.status:10}  {p.intent[:60]}")
+
+
+@cli.group("self-audit")
+def self_audit() -> None:
+    """Atlas 24h self-audit loop — cold, auditable, no hot self-patch."""
+
+
+@self_audit.command("run")
+@click.option("--hours", default=24.0, show_default=True, type=float)
+@click.option(
+    "--profile",
+    default="full",
+    show_default=True,
+    type=click.Choice(["quick", "full", "resilience", "autonomy"]),
+)
+@click.option("--cycle-minutes", default=60.0, show_default=True, type=float)
+@click.option("--max-cycles", default=None, type=int, help="Limite de ciclos para smoke/dry-run.")
+@click.option("--dry-run", is_flag=True, help="No marca candidatos como listos para patch.")
+def self_audit_run(
+    hours: float,
+    profile: str,
+    cycle_minutes: float,
+    max_cycles: int | None,
+    dry_run: bool,
+) -> None:
+    """Ejecuta ciclos de auditoria autonoma acotados."""
+    orch = get_orchestrator()
+    report = orch.self_audit().run(
+        hours=hours,
+        profile=profile,
+        cycle_interval_minutes=cycle_minutes,
+        max_cycles=max_cycles,
+        dry_run=dry_run,
+    )
+    console.print_json(json.dumps(report.to_dict(), ensure_ascii=False, default=str))
+
+
+@self_audit.command("status")
+def self_audit_status() -> None:
+    """Estado del ultimo loop y flag de stop."""
+    orch = get_orchestrator()
+    console.print_json(json.dumps(orch.self_audit().status(), ensure_ascii=False, default=str))
+
+
+@self_audit.command("proposals")
+def self_audit_proposals() -> None:
+    """Lista candidatos generados por el ultimo self-audit."""
+    orch = get_orchestrator()
+    console.print_json(json.dumps(orch.self_audit().proposals(), ensure_ascii=False, default=str))
+
+
+@self_audit.command("report")
+def self_audit_report() -> None:
+    """Muestra el ultimo reporte persistido."""
+    orch = get_orchestrator()
+    report = orch.self_audit().latest_report()
+    if report is None:
+        console.print("[yellow]No hay reporte self-audit todavia.[/yellow]")
+        return
+    console.print_json(json.dumps(report, ensure_ascii=False, default=str))
+
+
+@self_audit.command("stop")
+def self_audit_stop() -> None:
+    """Solicita parada cooperativa del loop."""
+    orch = get_orchestrator()
+    orch.self_audit().stop()
+    console.print("[yellow]Self-audit stop requested[/yellow]")
 
 
 @cli.command()

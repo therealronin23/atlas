@@ -58,4 +58,6 @@ jobs:
       - name: Browser tests
         env:
           PYTHONPATH: src
-        run: python -m pytest tests/test_browser.py -q --tb=line
+        # pyproject's default `addopts` deselects -m computer_use, so we
+        # have to opt back in here to actually run the 25 browser tests.
+        run: python -m pytest tests/test_browser.py -q --tb=line -m computer_use

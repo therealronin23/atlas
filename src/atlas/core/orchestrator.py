@@ -89,7 +89,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.8.0"
+    VERSION = "0.9.0"
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
@@ -114,6 +114,9 @@ class Orchestrator:
                          # _execute_task LOCAL_SAFE pueda invocarlo.
     _gate_h: Any
     _vector_store: KuzuVectorStore | None
+    _observability: Any
+    _cold_update_manager: Any
+    _self_audit_runner: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -211,7 +214,34 @@ class Orchestrator:
             "queue_depth": st.queue_depth,
             "telegram_running": self._telegram_thread is not None and self._telegram_thread.is_alive(),
             "offline_monitor_running": self._offline_monitor is not None,
+            "observability": self._observability.snapshot(),
         }
+
+    def cold_update(self) -> Any:
+        """ADR-025 ColdUpdateManager (project root via ATLAS_CORE_ROOT)."""
+        if self._cold_update_manager is None:
+            from atlas.core.cold_update_manager import ColdUpdateManager
+
+            root = Path(
+                os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
+            ).expanduser().resolve()
+            self._cold_update_manager = ColdUpdateManager(root, self._merkle)
+        return self._cold_update_manager
+
+    def self_audit(self) -> Any:
+        """Atlas 24h self-audit loop (cold, auditable, no hot self-patch)."""
+        if self._self_audit_runner is None:
+            from atlas.core.self_audit import SelfAuditRunner
+
+            root = Path(
+                os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
+            ).expanduser().resolve()
+            self._self_audit_runner = SelfAuditRunner(
+                root,
+                self._merkle,
+                health_provider=self.health_report,
+            )
+        return self._self_audit_runner
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -988,6 +1018,37 @@ class Orchestrator:
         )
         if not slm_wins:
             return rule
+
+        # Safety net: only trust the SLM's BLOCKED verdict when the
+        # rule-based classifier ALSO suspects something. The rule classifier
+        # is deterministic and catches the real constitutional violations
+        # (sudo, rm -rf, governance edits). If the rule says "Sin patron
+        # especifico" (default LOCAL_SAFE) but the SLM hallucinates BLOCKED
+        # for an ambiguous/conversational intent, we degrade to LOCAL_SAFE
+        # to avoid bricking the bot on greetings or chitchat.
+        if slm.level == RoutingLevel.BLOCKED and rule.level == RoutingLevel.LOCAL_SAFE:
+            self._merkle.log(
+                action="classify.slm_blocked_overridden",
+                agent="classifier_hybrid",
+                result="downgraded_to_local_safe",
+                risk_level="safe",
+                payload={
+                    "slm_reason": slm.reason,
+                    "rule_reason": rule.reason,
+                },
+                task_id=task_id,
+            )
+            return ClassificationResult(
+                level=RoutingLevel.LOCAL_SAFE,
+                confidence=max(slm.confidence, rule.confidence),
+                matched_pattern=None,
+                governance_blocked=False,
+                reason=(
+                    f"SLM proposed BLOCKED but rule classifier saw no danger; "
+                    f"downgraded to LOCAL_SAFE. SLM: {slm.reason}"
+                ),
+            )
+
         return ClassificationResult(
             level=slm.level,
             confidence=slm.confidence,
@@ -1937,8 +1998,15 @@ class Orchestrator:
             config_dir / "permissions.yaml", self._workspace
         )
 
-        # Merkle Logger
-        self._merkle = MerkleLogger(self._workspace / "memory" / "audit")
+        # Merkle Logger + ADR-024 observability stack
+        from atlas.logging.observability import ObservabilityStack
+
+        self._observability = ObservabilityStack(self._workspace)
+        self._merkle = self._observability.wrap_merkle(
+            MerkleLogger(self._workspace / "memory" / "audit")
+        )
+        self._cold_update_manager = None
+        self._self_audit_runner = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

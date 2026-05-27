@@ -241,15 +241,29 @@ class TelegramBot:
             self._safe_send(chat_id, "Acceso denegado.")
             return
 
-        command, _, arg = text.partition(" ")
-        handler = self._handlers.get(command.lower())
-        if handler is None:
-            self._safe_send(chat_id, f"Comando no reconocido: {command}")
-            return
-        try:
-            reply = handler(arg.strip())
-        except Exception as exc:
-            reply = f"Error ejecutando {command}: {exc}"
+        # Slash commands take priority; otherwise treat the whole message
+        # as a natural-language intent and route it through the task pipeline.
+        if text.startswith("/"):
+            command, _, arg = text.partition(" ")
+            handler = self._handlers.get(command.lower())
+            if handler is None:
+                self._safe_send(
+                    chat_id,
+                    f"Comando no reconocido: {command}\n"
+                    "Comandos: " + ", ".join(sorted(self._handlers.keys())) +
+                    "\nO escribe directamente sin /.",
+                )
+                return
+            try:
+                reply = handler(arg.strip())
+            except Exception as exc:
+                reply = f"Error ejecutando {command}: {exc}"
+        else:
+            # Natural-language intent → submit as task
+            try:
+                reply = self._cmd_task(text)
+            except Exception as exc:
+                reply = f"Error procesando intent: {exc}"
         self._safe_send(chat_id, reply)
 
     def _handle_callback(self, callback: dict) -> None:
@@ -451,7 +465,47 @@ class TelegramBot:
             return f"Delegado a Hermes (id={data.get('delegation_id', '?')})."
         if status == "requires_approval":
             return f"Requiere aprobacion (task_id={data.get('task_id', '?')})."
-        return f"Tarea aceptada: status={status} id={data.get('task_id', '?')}"
+
+        # Error path
+        if data.get("error"):
+            return f"❌ Error: {data['error']}"
+
+        result = data.get("result")
+
+        # No result payload — fall back to the old summary line
+        if result is None:
+            return f"Tarea aceptada: status={status} id={data.get('task_id', '?')}"
+
+        # String result (rare)
+        if isinstance(result, str):
+            return result[:3500]
+
+        # LLM response (LOCAL_SAFE pipeline)
+        if isinstance(result, dict):
+            text = result.get("text") or result.get("response") or result.get("answer")
+            if text:
+                meta = []
+                if result.get("model"): meta.append(result["model"])
+                if result.get("tokens"): meta.append(f"{result['tokens']}t")
+                if result.get("latency_ms"): meta.append(f"{result['latency_ms']}ms")
+                suffix = f"\n\n— {' · '.join(meta)}" if meta else ""
+                return str(text)[:3500] + suffix
+
+            # Command / exec output
+            stdout = result.get("stdout")
+            if stdout is not None:
+                rc = result.get("returncode", "?")
+                body = (stdout or "(sin salida)").rstrip()
+                stderr = (result.get("stderr") or "").strip()
+                tail = f"\n\nstderr:\n{stderr[:500]}" if stderr else ""
+                return f"$ rc={rc}\n{body[:3000]}{tail}"
+
+            # Generic dict fallback: compact pretty-print
+            import json as _json
+            return f"```\n{_json.dumps(result, ensure_ascii=False, indent=2)[:3500]}\n```"
+
+        # Anything else
+        return str(result)[:3500]
 
     @staticmethod
     def _format_audit(entries: list[dict]) -> str:
