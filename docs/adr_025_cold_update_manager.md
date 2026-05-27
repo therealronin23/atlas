@@ -1,6 +1,6 @@
 # ADR-025 — ColdUpdateManager
 
-**Status:** proposed.
+**Status:** SEALED (MVP v1, 2026-05-25).
 **Context:** `grok.md` repeatedly rejects hot self-patching and recommends a
 controlled cold-update protocol for Atlas self-improvement.
 

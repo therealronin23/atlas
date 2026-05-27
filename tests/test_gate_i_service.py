@@ -28,6 +28,10 @@ def test_health_report_fields(orch: Orchestrator) -> None:
 
 def test_service_runner_start_stop(orch: Orchestrator, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    # Disable Prometheus/dashboard/thermal so they don't try to bind real ports
+    monkeypatch.delenv("ATLAS_PROMETHEUS", raising=False)
+    monkeypatch.delenv("ATLAS_SERVE_DASHBOARD", raising=False)
+    monkeypatch.delenv("ATLAS_THERMAL_MONITOR", raising=False)
     runner = AtlasServiceRunner(orch)
     runner.start()
     assert runner._running

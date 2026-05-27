@@ -22,6 +22,7 @@ from fastapi.templating import Jinja2Templates
 
 from atlas.core.inference_hub import DEFAULT_PROVIDERS
 from atlas.core.orchestrator import Orchestrator
+from atlas.interfaces.hermes_webhook import HermesWebhookHandler
 from atlas.memory.memory_system import (
     ApprovedPatternStore,
     ErrorRegistry,
@@ -49,10 +50,29 @@ _templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 _orch: Orchestrator | None = None
 
 
+def set_orchestrator(orch: Orchestrator) -> None:
+    """Inject an externally-managed Orchestrator (used by AtlasServiceRunner).
+
+    Avoids the double-Orchestrator bug where the dashboard would otherwise
+    create its own instance and corrupt the Merkle chain by writing to the
+    same log file from a separate threading.Lock().
+
+    Also wires the Hermes webhook handler against the injected bus, so the
+    wiring no longer triggers eagerly at module import (which would spawn
+    a second Orchestrator before injection had a chance to run).
+    """
+    global _orch
+    _orch = orch
+    _wire_hermes_webhook(orch)
+
+
 def _get_orch() -> Orchestrator:
     global _orch
     if _orch is None:
         _orch = Orchestrator()
+        # Best-effort wiring for the standalone `atlas dashboard` case where
+        # there is no service_runner to call set_orchestrator first.
+        _wire_hermes_webhook(_orch)
     return _orch
 
 
@@ -200,6 +220,36 @@ def _extract_tasks(records: list[dict]) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Hermes Webhook (cableado opcional, solo si HERMES_API_KEY está configurada)
+# ---------------------------------------------------------------------------
+
+_hermes_api_key = os.environ.get("HERMES_API_KEY") or ""
+_webhook_handler: HermesWebhookHandler | None = None
+_webhook_wired = False
+
+
+def _wire_hermes_webhook(orch: Orchestrator) -> None:
+    """Lazy: cable Hermes webhook against an existing Orchestrator's bus.
+
+    Called from `set_orchestrator()` (preferred) or from the first `_get_orch()`
+    that happens to lazy-init. Idempotent.
+    """
+    global _webhook_handler, _webhook_wired
+    if _webhook_wired or not _hermes_api_key:
+        return
+    try:
+        _webhook_handler = HermesWebhookHandler(
+            orch._bus,
+            hmac_key=_hermes_api_key,
+        )
+        app.include_router(_webhook_handler.router)
+        _webhook_wired = True
+        _log.info("Hermes webhook handler cableado en /api/hermes/webhook")
+    except Exception as exc:
+        _log.warning(f"No se pudo cablear Hermes webhook: {exc}")
+
+
+# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 
@@ -314,6 +364,22 @@ async def api_status() -> dict:
 async def api_health() -> dict[str, Any]:
     """Health JSON para Gate I (localhost/Tailscale only)."""
     return _get_orch().health_report()
+
+
+@app.get("/api/observability")
+async def api_observability() -> dict[str, Any]:
+    """ADR-024 telemetry + microledger + WAL snapshot."""
+    return _get_orch()._observability.snapshot()
+
+
+@app.get("/observability", response_class=HTMLResponse)
+async def observability_page(request: Request) -> HTMLResponse:
+    snap = _get_orch()._observability.snapshot()
+    return _templates.TemplateResponse(
+        request,
+        "observability.html",
+        {"page": "observability", "snapshot": snap},
+    )
 
 
 @app.get("/api/providers")

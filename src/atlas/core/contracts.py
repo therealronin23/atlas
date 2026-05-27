@@ -168,9 +168,11 @@ class EventType(str, Enum):
     SHADOW_ALERT       = "shadow.alert"
     HERMES_RECONNECTED = "hermes.reconnected"   # ADR-012: transicion offline->online
     APPROVAL_REQUIRED  = "approval.required"
-    MEMORY_UPDATED     = "memory.updated"
-    SESSION_STARTED    = "session.started"
-    SESSION_ENDED      = "session.ended"
+    MEMORY_UPDATED         = "memory.updated"
+    SESSION_STARTED        = "session.started"
+    SESSION_ENDED          = "session.ended"
+    HERMES_WEBHOOK_RECEIVED = "hermes_webhook.received"
+    HERMES_ONLINE_CONFIRMED = "hermes_online.confirmed"
 
 
 @dataclass

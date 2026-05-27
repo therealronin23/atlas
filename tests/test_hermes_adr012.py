@@ -43,7 +43,7 @@ def queue(tmp_path: Path) -> OfflineQueue:
 
 def _make_payload(priority: int = 3) -> DelegationPayload:
     return DelegationBuilder.build(
-        task_id="task-test-123",
+        task_id=f"task-test-{priority}",
         intent="test intent",
         priority=priority,
     )

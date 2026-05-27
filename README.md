@@ -10,24 +10,33 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
 - **Gate B — COMPLETE**: core local funcional.
 - **Gate C — COMPLETE** (tag `v0.2-gate-c`): Hermes-VPS desplegado en
   Hetzner CPX22 con Tailscale, REST + HMAC-SHA256 end-to-end.
-- **Gate D — COMPLETE** (tag `v0.3-gate-d`, 368 tests verdes):
-  InferenceHub real (LiteLLM), KuzuDB vector + grafo, MemoryDistiller,
-  capability tokens + AtlasExecutor, Time-Travel checkpoints, Ghost
-  Replay cache, PII Surrogate, SLM Classifier, pipeline integrado en
-  Orchestrator.
-- **Gate E — COMPLETE** (tag `v0.4-gate-e`, 449 tests verdes):
-  ADR-002 sellado como bare metal + venv, dashboard web FastAPI/Jinja2
-  en localhost:7331, voz STT/TTS con extras opcionales.
-- **Gate F — COMPLETE** (tag `v0.5-gate-f`, 509 tests verdes): computer-use con Playwright y herramienta de
-  editor ya existen con tests; BrowserTool ya audita acciones en Merkle y
-  EditorTool enruta IO/exec por AtlasExecutor. Visual loop MVP propone
-  acciones tipadas sin ejecutarlas. Orchestrator ya enruta comandos Gate F
-  explícitos (`browser`, `editor`, `vision`) y deja acciones mutantes en
-  approval flow. ADR-013b está resuelto. Playwright vive en el extra opcional
-  `atlas-core[computer-use]`.
-- **Gate G — COMPLETE** (tag `v0.6-gate-g`, 529 tests collected / 513 core verdes sin Playwright):
-  operacionalización local. Hermes-VPS restaurado y smoked, GitHub sincronizado,
-  approvals persistentes por CLI, Telegram autorizado y smoked.
+- **Gate D — COMPLETE** (tag `v0.3-gate-d`): InferenceHub real (LiteLLM),
+  KuzuDB vector + grafo, MemoryDistiller, capability tokens + AtlasExecutor,
+  Time-Travel checkpoints, Ghost Replay cache, PII Surrogate, SLM Classifier,
+  pipeline integrado en Orchestrator.
+- **Gate E — COMPLETE** (tag `v0.4-gate-e`): ADR-002 sellado como bare metal +
+  venv, dashboard web FastAPI/Jinja2 en localhost:7331, voz STT/TTS con
+  extras opcionales.
+- **Gate F — COMPLETE** (tag `v0.5-gate-f`): computer-use con Playwright
+  (BrowserTool + EditorTool + VisionLoop), Merkle logging, Orchestrator routing
+  con approval flow, ADR-013b resuelto.
+- **Gate G — COMPLETE** (tag `v0.6-gate-g`): operacionalización local.
+  Hermes-VPS restaurado y smoked, GitHub sincronizado, approvals persistentes
+  por CLI, Telegram autorizado y smoked, runbook operacional.
+- **Gate H — MVP COMPLETE** (tag `v0.7-gate-h`): H1–H6 audited synthesis,
+  gate_h_smoke.py, `atlas gate-h` CLI.
+- **Gate I — COMPLETE** (tag `v0.8-gate-i`): `atlas serve`, `atlas health`,
+  `/api/health`, `AtlasServiceRunner`, systemd unit.
+- **ADR-024 — Observability v2**: MVP sellado. TelemetryBus, MicroLedger,
+  OperationalWAL, ObservabilityStack, Prometheus opt-in (`ATLAS_PROMETHEUS=1`),
+  dashboard `/observability`.
+- **ADR-025 — ColdUpdateManager**: MVP sellado + SelfAuditLoop. Worktree
+  aislado, `atlas update propose|validate|approve|apply`, `atlas self-audit
+  run|status|proposals|report|stop`. Ciclos fríos auditables sin hot-patch.
+- **Auditoría completa 2026-05-25**: 564 core tests + 25 computer_use = 589
+  total, mypy clean (62 source files), Hermes-VPS live, Telegram smoked,
+  Prometheus operativo.
+- **Versión actual**: `v0.9.0`
 
 ## Quick start
 
@@ -47,8 +56,6 @@ cp .env.example .env
 # Verificar que todo funciona
 PYTHONPATH=src python -m pytest tests/ -q
 MYPYPATH=src python -m mypy src/atlas/
-# Estado local auditado (2026-05-25): 529 collected, 513 core verdes sin Playwright;
-# mypy sobre 35+ módulos src/atlas/. Ver docs/audit_2026-05-25.md.
 ```
 
 ## Comandos básicos
@@ -66,6 +73,10 @@ atlas audit --tail 20                     # audit log
 atlas audit --verify                      # verificar integridad de la cadena
 atlas tools                               # listar tool registry
 atlas tools --level L1
+atlas health                              # health check del servicio
+atlas gate-h                              # validación Gate H
+atlas self-audit run --hours 1 --profile quick  # ciclo de auto-auditoría
+atlas update propose|validate|approve|apply      # cold update workflow
 ```
 
 Equivalente sin instalar entry-point: `PYTHONPATH=src python -m atlas.interfaces.cli <cmd>`.
@@ -92,6 +103,22 @@ task = orch.handle_intent("explicame que es un Merkle tree")
 # task.result["text"] == "<respuesta real de Groq>"
 ```
 
+## Observability + Prometheus
+
+La observabilidad v2 (ADR-024) está disponible vía env var:
+
+```bash
+ATLAS_PROMETHEUS=1 atlas serve  # habilita /metrics endpoint
+
+# En otra terminal:
+curl http://localhost:7331/metrics
+
+# Dashboard de observabilidad:
+curl http://localhost:7331/api/observability
+```
+
+Ver `docs/prometheus_setup.md` para guía de deploy de Prometheus + Grafana.
+
 ## Smoke tests reales (infra viva)
 
 ```bash
@@ -104,6 +131,15 @@ PYTHONPATH=src python scripts/inference_smoke.py
 
 # Pipeline Gate D end-to-end (5 intents, cubre cada bifurcación)
 PYTHONPATH=src python scripts/pipeline_smoke.py
+
+# Gate H smoke (síntesis auditada)
+PYTHONPATH=src python scripts/gate_h_smoke.py
+
+# Gate I smoke (service runner + health)
+PYTHONPATH=src python scripts/gate_i_smoke.py
+
+# Operacional completo (Hermes + CLI approvals + Telegram)
+PYTHONPATH=src python scripts/operational_smoke.py
 ```
 
 ## Arquitectura mínima
@@ -126,30 +162,24 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
 
 ## Documentación
 
-- [CLAUDE.md](CLAUDE.md) — contexto del proyecto para sesiones con
-  Claude Code (estado de gates, ADRs, naming rules, coding rules).
+- [AGENTS.md](AGENTS.md) — contexto completo del proyecto (estado de gates,
+  ADRs, naming rules, coding rules, estructura de proyecto).
+- [CLAUDE.md](CLAUDE.md) — contexto para Claude Code (sincronizado con AGENTS.md).
 - [docs/USAGE.md](docs/USAGE.md) — guía de operación detallada,
   configuración, troubleshooting.
-- [docs/absorption_master_plan.md](docs/absorption_master_plan.md) —
-  plan limpio de investigación/forking selectivo.
-- [docs/gate_f_plan.md](docs/gate_f_plan.md) — alcance y criterios de
-  cierre de Gate F.
-- [docs/gate_f_seal.md](docs/gate_f_seal.md) — evidencia cierre Gate F.
-- [docs/adr_013b_computer_use.md](docs/adr_013b_computer_use.md) —
-  ADR de computer-use.
-- [docs/gate_f_real_world_readiness.md](docs/gate_f_real_world_readiness.md) —
-  checklist de host real para Gate F.
-- [docs/atlas_box_architecture.md](docs/atlas_box_architecture.md) —
-  notas de arquitectura hardware/topología.
-- [docs/fleet_security_plan.md](docs/fleet_security_plan.md) —
-  plan futuro para nodos Atlas distribuidos.
-- [docs/product_strategy_notes.md](docs/product_strategy_notes.md) —
-  notas no legales de posicionamiento y producto.
-- [docs/gate_h_resilience_plan.md](docs/gate_h_resilience_plan.md) —
-  notas futuras sobre síntesis de software y resiliencia adaptativa.
+- [docs/auditoria_final_postmortem.md](docs/auditoria_final_postmortem.md) —
+  auditoría completa + postmortem técnico (verificación independiente).
+- [docs/AUDIT_COMPLETO_2026-05-25.md](docs/AUDIT_COMPLETO_2026-05-25.md) —
+  auditoría técnica de 8 partes (arquitectura, seguridad, tests, rendimiento).
+- [docs/prometheus_setup.md](docs/prometheus_setup.md) — guía operacional
+  Prometheus + alertas + Grafana.
 - [docs/gate_c_seal.md](docs/gate_c_seal.md) — evidencia cierre Gate C.
 - [docs/gate_d_seal.md](docs/gate_d_seal.md) — evidencia cierre Gate D.
 - [docs/gate_e_seal.md](docs/gate_e_seal.md) — evidencia cierre Gate E.
+- [docs/gate_f_seal.md](docs/gate_f_seal.md) — evidencia cierre Gate F.
+- [docs/gate_g_seal.md](docs/gate_g_seal.md) — evidencia cierre Gate G.
+- [docs/gate_h_seal.md](docs/gate_h_seal.md) — evidencia cierre Gate H.
+- [docs/gate_i_seal.md](docs/gate_i_seal.md) — evidencia cierre Gate I.
 - [memory/system_context/](memory/system_context/) — visión, reglas y
   ADRs canónicos.
 

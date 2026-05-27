@@ -32,7 +32,12 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
 
 class TestMemoryVectorWiring:
 
-    def test_enable_gate_d_attaches_kuzu_by_default(self, orch: Orchestrator) -> None:
+    def test_enable_gate_d_attaches_kuzu_by_default(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # CI sets ATLAS_MEMORY_VECTOR=0 globally to skip kuzu; force-enable
+        # here because this test asserts the *default-on* wiring.
+        monkeypatch.setenv("ATLAS_MEMORY_VECTOR", "1")
         orch.enable_gate_d_pipeline()
         assert orch.vector_store is not None
         assert orch._distiller is not None
@@ -48,9 +53,13 @@ class TestMemoryVectorWiring:
         assert orch.vector_store is None
         assert orch._distiller._vector_store is None
 
-    def test_pattern_visible_to_distiller(self, orch: Orchestrator) -> None:
+    def test_pattern_visible_to_distiller(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         from atlas.memory.memory_system import PatternEntry
 
+        # Same reason as test_enable_gate_d_attaches_kuzu_by_default
+        monkeypatch.setenv("ATLAS_MEMORY_VECTOR", "1")
         orch.enable_gate_d_pipeline()
         store = orch._approved_patterns
         store.add(
