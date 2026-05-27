@@ -81,7 +81,7 @@ systemctl daemon-reload
 
 # `hermes gateway service install` crea su propia unit con timeouts correctos
 # El --replace fuerza overwrite si existe
-"${HERMES_HOME}/venv/bin/hermes" gateway service install --replace 2>&1 | tail -10 || true
+"${HERMES_HOME}/venv/bin/hermes" gateway install 2>&1 | tail -10 || true
 
 # Si Hermes creó una unit con nombre distinto, identifícala y guárdala como alias
 NEW_UNIT=$(systemctl list-unit-files --no-pager 2>/dev/null | grep -i hermes | awk '{print $1}' | head -1)
