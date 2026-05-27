@@ -13,8 +13,17 @@ set -euo pipefail
 
 ENV_FILE="${ENV_FILE:-.env}"
 VPS_HOST="${VPS_HOST:-100.108.132.116}"
-VPS_USER="${VPS_USER:-ronin}"
+VPS_USER="${VPS_USER:-root}"   # Hetzner Ubuntu cloud image; ronin/ubuntu no existen como usuarios locales
 SCRIPT_REL="scripts/install_hermes_agent_vps.sh"
+
+# Si Tailscale SSH está en check-mode, la primera conexión imprime una URL de
+# autenticación. Avisamos al usuario para que no piense que se ha colgado.
+cat <<NOTE
+Nota: si Tailscale SSH del VPS está en check-mode, verás un mensaje del estilo
+  "Tailscale SSH requires an additional check. To authenticate, visit: https://..."
+Abre ese link en tu navegador (ya estás logged-in en Tailscale), apruebas la
+sesión, y el deploy continúa solo. Es un click, una vez.
+NOTE
 
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERROR: $ENV_FILE no existe. Lánzalo desde ~/proyectos/atlas-core/" >&2
