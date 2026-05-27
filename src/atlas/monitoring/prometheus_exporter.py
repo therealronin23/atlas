@@ -37,6 +37,9 @@ class PrometheusExporter:
             lbl = f"{{{labels}}}" if labels else ""
             lines.append(f"# TYPE {name} gauge")
             lines.append(f"{name}{lbl} {item['value']}")
+        # Always expose a basic up metric so monitoring can detect the exporter process
+        lines.append("# TYPE atlas_up gauge")
+        lines.append("atlas_up 1")
         return "\n".join(lines) + "\n"
 
     def start(self) -> None:

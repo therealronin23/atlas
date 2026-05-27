@@ -22,6 +22,7 @@ from fastapi.templating import Jinja2Templates
 
 from atlas.core.inference_hub import DEFAULT_PROVIDERS
 from atlas.core.orchestrator import Orchestrator
+from atlas.interfaces.hermes_webhook import HermesWebhookHandler
 from atlas.memory.memory_system import (
     ApprovedPatternStore,
     ErrorRegistry,
@@ -197,6 +198,25 @@ def _extract_tasks(records: list[dict]) -> list[dict]:
                 "risk_level": r.get("risk_level", ""),
             })
     return tasks
+
+
+# ---------------------------------------------------------------------------
+# Hermes Webhook (cableado opcional, solo si HERMES_API_KEY está configurada)
+# ---------------------------------------------------------------------------
+
+_hermes_api_key = os.environ.get("HERMES_API_KEY") or ""
+_webhook_handler: HermesWebhookHandler | None = None
+
+if _hermes_api_key:
+    try:
+        _webhook_handler = HermesWebhookHandler(
+            _get_orch()._bus,
+            hmac_key=_hermes_api_key,
+        )
+        app.include_router(_webhook_handler.router)
+        _log.info("Hermes webhook handler cableado en /api/hermes/webhook")
+    except Exception as exc:
+        _log.warning(f"No se pudo cablear Hermes webhook: {exc}")
 
 
 # ---------------------------------------------------------------------------

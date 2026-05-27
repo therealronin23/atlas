@@ -55,17 +55,25 @@ components serve Atlas, not the other way around.
 - Gate H: MVP COMPLETE (2026-05-25) — H1–H6 audited synthesis. `docs/gate_h_seal.md`, `scripts/gate_h_smoke.py`, `atlas gate-h`. tag `v0.7-gate-h`.
 - Debt closure (2026-05-25): FU-6, H6 reuse gating, H5 policy tests, ADR-019, OPS browser marker, SEC verify. `docs/debt_closure_2026-05-25.md`. tag `v0.7.1-debt-closure`.
 - Gate I: COMPLETE (2026-05-25) — `atlas serve`, `atlas health`, `/api/health`, `AtlasServiceRunner`, systemd unit. tag `v0.8-gate-i`.
-- ADR-024 Observability v2: SEALED MVP — TelemetryBus, MicroLedger, OperationalWAL, `ObservabilityStack`, Prometheus opt-in, dashboard `/observability`.
+- ADR-024 Observability v2: SEALED MVP — TelemetryBus, MicroLedger, OperationalWAL, `ObservabilityStack`, Prometheus opt-in (`ATLAS_PROMETHEUS=1`), dashboard `/observability`.
 - ADR-025 ColdUpdateManager: SEALED MVP + SelfAuditLoop — worktree aislado,
   `atlas update propose|validate|approve|apply`; `atlas self-audit run|status|proposals|report|stop`
   ejecuta ciclos fríos auditables sin hot-patch ni merge automático a main.
+- Prometheus: OPERATIVO — `start_prometheus.sh`, `alertmanager.yml`, `docs/prometheus_setup.md`.
+  Endpoint `/metrics` vía `ATLAS_PROMETHEUS=1`. Alert rules para CPU/memoria/Merkle verify.
 - Auditoría completa: `docs/audit_complete_2026-05-25.md`, `scripts/audit_complete.py`.
-  564 core tests + 25 computer_use tests (589 total), mypy verde.
+  564 core tests + 25 computer_use tests (589 total), mypy verde en 62 source files.
+- Auditoría independiente: `docs/auditoria_final_postmortem.md` — verificación por Cline
+  (tercer AI tool). 563/564 core tests green, mypy clean, postmortem técnico.
 - Gate F details:
-  - F1 BrowserTool scaffold: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
-    Pendiente antes de cierre: Merkle logging por accion browser y policy explicita para allowlist extra/local.
-  - F2 EditorTool scaffold: DONE. `src/atlas/tools/editor.py` + `tests/test_editor.py`.
-    Pendiente antes de cierre: read/write/apply_diff/run_task via PermissionProfile + AtlasExecutor + MerkleLogger.
+  - F1 BrowserTool: DONE. `src/atlas/tools/browser.py` + `tests/test_browser.py`.
+    Merkle logging para acciones browser implementado. Política allowlist extra/local vía `allow_private_network`.
+  - F2 EditorTool: DONE. `src/atlas/tools/editor.py` + `tests/test_editor.py`.
+    read/write/apply_diff/run_task enrutan via PermissionProfile + AtlasExecutor + MerkleLogger.
+  - F3 VisionLoop MVP: DONE. Screenshot → deterministic/stub description → typed ProposedAction.
+    Acciones mutantes requieren approval. `src/atlas/tools/computer_use/vision_loop.py`.
+  - Orchestrator Gate F routing: DONE. Comandos `browser`, `editor`, `vision` explícitos con approval states.
+  - Real-host smoke: DONE. Editor read/write/run, browser navigate/screenshot/extract, vision propose, Merkle verify, Ollama L0.
 
 ## Project Structure
 
