@@ -41,3 +41,4 @@ secrets/
 # Atlas runtime artifacts
 *.log
 merkle_log*.jsonl
+memory/audit/
