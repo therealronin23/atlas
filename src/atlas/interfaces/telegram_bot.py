@@ -241,15 +241,29 @@ class TelegramBot:
             self._safe_send(chat_id, "Acceso denegado.")
             return
 
-        command, _, arg = text.partition(" ")
-        handler = self._handlers.get(command.lower())
-        if handler is None:
-            self._safe_send(chat_id, f"Comando no reconocido: {command}")
-            return
-        try:
-            reply = handler(arg.strip())
-        except Exception as exc:
-            reply = f"Error ejecutando {command}: {exc}"
+        # Slash commands take priority; otherwise treat the whole message
+        # as a natural-language intent and route it through the task pipeline.
+        if text.startswith("/"):
+            command, _, arg = text.partition(" ")
+            handler = self._handlers.get(command.lower())
+            if handler is None:
+                self._safe_send(
+                    chat_id,
+                    f"Comando no reconocido: {command}\n"
+                    "Comandos: " + ", ".join(sorted(self._handlers.keys())) +
+                    "\nO escribe directamente sin /.",
+                )
+                return
+            try:
+                reply = handler(arg.strip())
+            except Exception as exc:
+                reply = f"Error ejecutando {command}: {exc}"
+        else:
+            # Natural-language intent → submit as task
+            try:
+                reply = self._cmd_task(text)
+            except Exception as exc:
+                reply = f"Error procesando intent: {exc}"
         self._safe_send(chat_id, reply)
 
     def _handle_callback(self, callback: dict) -> None:
