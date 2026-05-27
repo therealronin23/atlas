@@ -21,7 +21,14 @@ set -euo pipefail
 # Vars
 # ---------------------------------------------------------------------------
 HERMES_USER="${HERMES_USER:-$USER}"
-HERMES_HOME="${HERMES_HOME:-/home/${HERMES_USER}/.hermes}"
+# When run as root, $HOME is /root (NOT /home/root). Hermes-Agent itself uses
+# $HOME/.hermes for its own bootstrap, so we match that to avoid a split-brain
+# layout where the venv is in one path and the daemon's data dir is in another.
+if [[ "${HERMES_USER}" == "root" ]]; then
+    HERMES_HOME="${HERMES_HOME:-/root/.hermes}"
+else
+    HERMES_HOME="${HERMES_HOME:-/home/${HERMES_USER}/.hermes}"
+fi
 HERMES_PYBIN="${HERMES_PYBIN:-python3}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:1.5b}"   # ~1GB RAM, decente en CPU
 LOG_PREFIX="[hermes-install]"
@@ -63,6 +70,14 @@ if ! systemctl is-active --quiet ollama 2>/dev/null; then
     sudo systemctl enable ollama || true
     sudo systemctl start ollama || true
 fi
+
+log "Esperando que ollama daemon esté listo"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    if curl -sf http://127.0.0.1:11434/api/version >/dev/null 2>&1; then
+        break
+    fi
+    sleep 2
+done
 
 log "Descargando modelo Ollama: ${OLLAMA_MODEL}"
 ollama pull "${OLLAMA_MODEL}" || log "WARN: fallo al descargar ${OLLAMA_MODEL}, sigue"
