@@ -64,6 +64,7 @@ def set_orchestrator(orch: Orchestrator) -> None:
     global _orch
     _orch = orch
     _wire_hermes_webhook(orch)
+    _wire_exec_api(orch)
 
 
 def _get_orch() -> Orchestrator:
@@ -73,6 +74,7 @@ def _get_orch() -> Orchestrator:
         # Best-effort wiring for the standalone `atlas dashboard` case where
         # there is no service_runner to call set_orchestrator first.
         _wire_hermes_webhook(_orch)
+        _wire_exec_api(_orch)
     return _orch
 
 
@@ -226,6 +228,27 @@ def _extract_tasks(records: list[dict]) -> list[dict]:
 _hermes_api_key = os.environ.get("HERMES_API_KEY") or ""
 _webhook_handler: HermesWebhookHandler | None = None
 _webhook_wired = False
+_exec_api_wired = False
+
+
+def _wire_exec_api(orch: Orchestrator) -> None:
+    """ADR-027: mount /api/exec/* routes for Hermes-driven capability execution.
+
+    Idempotent. Only mounts if HERMES_API_KEY is present (the routes themselves
+    also check, returning 503 if it's later removed at runtime).
+    """
+    global _exec_api_wired
+    if _exec_api_wired or not _hermes_api_key:
+        return
+    try:
+        from atlas.interfaces.exec_api import build_router
+        # Pass _get_orch as the provider so the router resolves the orchestrator
+        # lazily on each request — survives orchestrator swaps in tests.
+        app.include_router(build_router(_get_orch))
+        _exec_api_wired = True
+        _log.info("Exec API cableado en /api/exec/* (ADR-027)")
+    except Exception as exc:
+        _log.warning(f"No se pudo cablear exec_api: {exc}")
 
 
 def _wire_hermes_webhook(orch: Orchestrator) -> None:
