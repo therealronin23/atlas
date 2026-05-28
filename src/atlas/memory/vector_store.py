@@ -108,6 +108,7 @@ class KuzuVectorStore:
         embedder: Embedder | None = None,
         *,
         recreate: bool = False,
+        max_db_size: int = 1 << 30,
     ) -> None:
         self._db_path = db_path
         self._embedder: Embedder = embedder or StubEmbedder()
@@ -120,7 +121,7 @@ class KuzuVectorStore:
                 db_path.unlink()
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._db = kuzu.Database(str(db_path))
+        self._db = kuzu.Database(str(db_path), max_db_size=max_db_size)
         self._conn = kuzu.Connection(self._db)
         self._init_schema()
         self._verify_dim()

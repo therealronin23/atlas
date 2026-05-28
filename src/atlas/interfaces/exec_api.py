@@ -308,6 +308,74 @@ def build_router(orch_provider: Any) -> APIRouter:
             raise HTTPException(status_code=403, detail=str(exc))
 
     # ------------------------------------------------------------------
+    # POST /api/exec/intent
+    # ------------------------------------------------------------------
+
+    @router.post("/intent")
+    async def exec_intent(request: Request) -> dict[str, Any]:
+        """
+        Run a natural-language intent through Atlas's full pipeline.
+
+        Hermes (VPS) delegates here when Telegram asks for anything beyond
+        small talk — search, exec, file, memory. Atlas owns the skills;
+        Hermes is just the I/O hemisphere.
+
+        Request body (JSON):
+          {"intent": "busca cuándo se inventó el teléfono"}
+
+        Returns:
+          {"ok": bool, "task_id": str, "status": str,
+           "result": Any, "error": str|None, "route": str|None,
+           "tool": str|None}
+        """
+        from atlas.core.contracts import TaskSource
+
+        orch = orch_provider()
+        body = await _authenticate(request, orch)
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="invalid json body")
+
+        intent = (payload.get("intent") or "").strip()
+        if not intent:
+            raise HTTPException(status_code=400, detail="intent required")
+
+        try:
+            task = orch.handle_intent(intent, source=TaskSource.API)
+        except Exception as exc:
+            orch._merkle.log(
+                action="exec.failed.intent",
+                agent="exec_api",
+                result="failure",
+                risk_level="moderate",
+                payload={"intent": intent[:200], "error": str(exc)},
+            )
+            raise HTTPException(status_code=500, detail=f"intent failed: {exc}")
+
+        orch._merkle.log(
+            action="exec.intent.via_hermes",
+            agent="exec_api",
+            result="success" if task.status.value == "done" else "failure",
+            risk_level="moderate",
+            payload={
+                "intent": intent[:200],
+                "task_id": task.id,
+                "status": task.status.value,
+                "route": task.route.value if task.route else None,
+            },
+        )
+        return {
+            "ok": task.status.value == "done",
+            "task_id": task.id,
+            "status": task.status.value,
+            "result": task.result if task.result is not None else "",
+            "error": task.error,
+            "route": task.route.value if task.route else None,
+            "tool": task.tool_name,
+        }
+
+    # ------------------------------------------------------------------
     # POST /api/exec/browser
     # ------------------------------------------------------------------
 
