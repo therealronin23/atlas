@@ -56,7 +56,7 @@ custom_providers:
 model:
   provider: custom:groq
   default: llama-3.3-70b-versatile
-  context_length: 32768
+  context_length: 131072
 
 # ---------------------------------------------------------------------------
 # Fallback chain: si el primario falla (rate-limit, auth, 5xx), Hermes intenta
