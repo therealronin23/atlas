@@ -190,6 +190,28 @@ class TestExecFile:
 # ---------------------------------------------------------------------------
 
 
+class TestExecIntent:
+
+    def test_intent_runs_pipeline(self, client: TestClient) -> None:
+        body = json.dumps({"intent": "echo test from hermes"}).encode()
+        r = client.post("/api/exec/intent", content=body, headers=_sign(body))
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "task_id" in data
+        assert "status" in data
+        assert data["status"] in {"done", "failed", "blocked"}
+
+    def test_intent_empty_returns_400(self, client: TestClient) -> None:
+        body = json.dumps({"intent": "   "}).encode()
+        r = client.post("/api/exec/intent", content=body, headers=_sign(body))
+        assert r.status_code == 400
+
+    def test_intent_missing_returns_400(self, client: TestClient) -> None:
+        body = json.dumps({}).encode()
+        r = client.post("/api/exec/intent", content=body, headers=_sign(body))
+        assert r.status_code == 400
+
+
 class TestMerkleAudit:
 
     def test_bad_signature_logged_to_merkle(
