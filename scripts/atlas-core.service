@@ -1,18 +1,19 @@
 [Unit]
-Description=Atlas Core sovereign runtime (Gate I)
+Description=Atlas Core — local orchestrator (laptop)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/proyectos/atlas-core
-EnvironmentFile=%h/proyectos/atlas-core/.env
-Environment=PYTHONPATH=%h/proyectos/atlas-core/src
-Environment=ATLAS_HOME=%h/atlas
-Environment=ATLAS_PIPELINE_GATE_D=1
-ExecStart=%h/proyectos/atlas-core/.venv/bin/atlas serve
-Restart=on-failure
+WorkingDirectory=/home/ronin/proyectos/atlas-core
+EnvironmentFile=/home/ronin/proyectos/atlas-core/.env
+ExecStart=/home/ronin/proyectos/atlas-core/.venv/bin/atlas serve --poll-interval 1.0
+Restart=always
 RestartSec=10
+StandardOutput=append:/home/ronin/proyectos/atlas-core/.atlas.log
+StandardError=append:/home/ronin/proyectos/atlas-core/.atlas.err
+# Heredar variables del shell del usuario al arrancar
+Environment="PYTHONPATH=/home/ronin/proyectos/atlas-core/src"
 
 [Install]
 WantedBy=default.target
