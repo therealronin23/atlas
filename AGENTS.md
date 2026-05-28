@@ -237,12 +237,16 @@ ADR-014  Layered isolation: Proxmox VE > LXC Atlas Core > Docker NORMAL / VM DEG
 ADR-016  InferenceHub: LiteLLM. Fallback chain: Groq>OpenRouter>Together>Gemini>L0
 ADR-017  Tunnel: Tailscale (WireGuard)
 ADR-020  Capability-based Security Tokens (resuelto Gate D/D3 con Capability* + AtlasExecutor)
+ADR-027  /api/exec/* inbound (Hermes→Atlas, HMAC). `interfaces/exec_api.py`
+ADR-028  Twin Kanban Bridge (Atlas→Hermes outbound, ssh+kanban). `hermes/kanban_bridge.py`.
+         Canal outbound del twin tras confirmarse `hermes mcp serve` roto upstream
+         (v0.14/0.15 ModuleNotFoundError). Inbound vía ADR-027 ya existía.
 
 ## Open ADRs
 
 ADR-002  RESOLVED Gate E (2026-05-24): bare metal + venv. E1 (Proxmox) skipped.
 ADR-003  RESOLVED Gate E/E3 (2026-05-24): faster-whisper + piper-tts. Optional extras [voice].
-ADR-012  Memory sync between Hermes and Atlas Core — Gate E
+ADR-012  Memory sync between Hermes and Atlas Core — Gate E (parcialmente resuelto por ADR-028 kanban compartido)
 ADR-019  Statistical Validation Framework — Gate E
 
 ## Architectural Vocabulary
@@ -366,6 +370,31 @@ Gate F close checklist:
 6. Full suite + mypy pass after hardening. DONE (509 tests, 44 source files).
 7. Orchestrator routing and approval states for Browser/Editor/VisionLoop. DONE for explicit commands.
 8. Real host smoke + ADR-013b/seal. DONE.
+
+## Hermes-Agent absorption (2026-05-29)
+
+Atlas and Hermes-Agent (Nous Research, VPS) are twins. Hermes ships mature
+features Atlas lacked; we absorb the transplantable ones as native Atlas code
+(Atlas stays sovereign — no runtime dependency on Hermes internals).
+
+DONE this session:
+- `atlas doctor` — unified diagnostics (`core/doctor.py`). Absorbs `hermes doctor`.
+- `atlas insights` — analytics over the Merkle ledger (`core/insights.py`). Absorbs `hermes insights`.
+- Twin Kanban Bridge (ADR-028) — outbound Atlas→Hermes channel.
+
+PENDING absorption targets (each its own ADR/PR — do NOT half-build):
+| Feature | Hermes source | Atlas target | Priority |
+|---------|---------------|--------------|----------|
+| FTS5 session search + LLM summary | `hermes sessions` | new `memory/session_search.py` | P1 |
+| Honcho dialectic user modeling | `hermes memory` | `memory/` extension | P1 |
+| `--worktree` isolation for Gate H synthesis | `hermes --worktree` | `core/gate_h.py` | P1 |
+| Background skill curator | `hermes curator` | `core/` | P2 |
+| OpenAI-compatible provider proxy | `hermes proxy` | `core/inference_hub.py` | P2 |
+| DM pairing codes | `hermes pairing` | `interfaces/` | P3 |
+| Multi-profile isolation | `hermes profile` | workspace refactor | P3 |
+
+Reverse (Atlas→Hermes, expose as Hermes skill): Merkle audit, governance.json
+limits, Gate D PII/ghost pipeline. Hermes runs unaudited today.
 
 ## What to NEVER do
 

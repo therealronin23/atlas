@@ -444,6 +444,71 @@ def health() -> None:
 
 
 @cli.command()
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+def doctor(as_json: bool) -> None:
+    """Diagnóstico operativo unificado: governance, Merkle, workspace, twin Hermes."""
+    from atlas.core.doctor import run_diagnostics  # noqa: PLC0415
+
+    orch = get_orchestrator()
+    report = run_diagnostics(orch)
+
+    if as_json:
+        console.print_json(json.dumps(report, ensure_ascii=False, default=str))
+        return
+
+    status = report["status"]
+    color = "green" if status == "ok" else "yellow"
+    console.print(f"\n[bold {color}]Atlas doctor — {status.upper()}[/bold {color}]\n")
+    table = Table(show_header=True)
+    table.add_column("Check", style="cyan", width=16)
+    table.add_column("Estado", width=8)
+    table.add_column("Detalle")
+    for c in report["checks"]:
+        if c["ok"]:
+            badge = "[green]OK[/green]"
+        elif c["advisory"]:
+            badge = "[yellow]WARN[/yellow]"
+        else:
+            badge = "[red]FAIL[/red]"
+        table.add_row(c["name"], badge, c["detail"])
+    console.print(table)
+    s = report["summary"]
+    console.print(f"\n[dim]{s['passed']}/{s['total']} checks passed[/dim]")
+
+
+@cli.command()
+@click.option("--hours", "-H", default=None, type=float, help="Ventana en horas (default: todo el historial).")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+def insights(hours: float | None, as_json: bool) -> None:
+    """Analytics de uso derivados del Merkle ledger."""
+    from atlas.core.insights import compute_insights  # noqa: PLC0415
+
+    orch = get_orchestrator()
+    records = orch.audit_tail(10_000)
+    report = compute_insights(records, window_hours=hours)
+
+    if as_json:
+        console.print_json(json.dumps(report, ensure_ascii=False, default=str))
+        return
+
+    win = f"últimas {hours}h" if hours else "histórico completo"
+    console.print(f"\n[bold cyan]Atlas insights[/bold cyan] — {win}\n")
+    console.print(f"  Eventos totales: {report['total_events']}")
+    rate = report["success_rate"]
+    console.print(f"  Tasa de éxito:   {f'{rate:.1%}' if rate is not None else 'N/A'}")
+    console.print(f"  Por resultado:   {report['by_result']}")
+    console.print(f"  Por riesgo:      {report['by_risk']}")
+
+    if report["top_actions"]:
+        table = Table(title="Top acciones", show_header=True)
+        table.add_column("Acción", style="cyan")
+        table.add_column("Conteo", justify="right")
+        for action, count in report["top_actions"]:
+            table.add_row(action, str(count))
+        console.print(table)
+
+
+@cli.command()
 @click.option(
     "--poll-interval",
     default=1.0,
