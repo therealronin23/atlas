@@ -154,23 +154,25 @@ class KanbanBridge:
         title: str,
         body: str = "",
         assignee: str | None = None,
-        board: str | None = None,
+        triage: bool = False,
     ) -> KanbanResult:
-        """Create a task on the board, optionally assigned to a Hermes profile."""
-        args = ["create", "--title", title]
+        """Create a task on the current board, optionally assigned to a profile.
+
+        ``title`` is positional. ``--triage`` parks the task so a Hermes
+        specifier fleshes out the spec before promoting it to ``todo``.
+        Emits ``--json`` so the created task id lands in ``.parsed``.
+        """
+        args = ["create", title, "--json"]
         if body:
             args += ["--body", body]
         if assignee:
             args += ["--assignee", assignee]
-        if board:
-            args = ["--board", board] + args
+        if triage:
+            args.append("--triage")
         return self.run(*args)
 
-    def list_tasks(self, status: str | None = None, board: str | None = None) -> KanbanResult:
-        args: list[str] = []
-        if board:
-            args += ["--board", board]
-        args.append("list")
+    def list_tasks(self, status: str | None = None) -> KanbanResult:
+        args = ["list"]
         if status:
             args += ["--status", status]
         return self.run(*args)
@@ -178,15 +180,22 @@ class KanbanBridge:
     def show_task(self, task_id: str) -> KanbanResult:
         return self.run("show", task_id)
 
-    def comment(self, task_id: str, text: str) -> KanbanResult:
-        return self.run("comment", task_id, "--text", text)
-
-    def complete(self, task_id: str) -> KanbanResult:
-        return self.run("complete", task_id)
-
-    def stats(self, board: str | None = None) -> KanbanResult:
-        args = (["--board", board] if board else []) + ["stats"]
+    def comment(self, task_id: str, text: str, author: str | None = None) -> KanbanResult:
+        """Append a comment. ``task_id`` and ``text`` are positional."""
+        args = ["comment", task_id, text]
+        if author:
+            args += ["--author", author]
         return self.run(*args)
+
+    def complete(self, task_id: str, result: str | None = None) -> KanbanResult:
+        """Close a task. ``task_id`` is positional; ``--result`` is optional."""
+        args = ["complete", task_id]
+        if result:
+            args += ["--result", result]
+        return self.run(*args)
+
+    def stats(self) -> KanbanResult:
+        return self.run("stats")
 
     # ------------------------------------------------------------------
     # Internal

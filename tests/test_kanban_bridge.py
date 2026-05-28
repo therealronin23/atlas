@@ -127,13 +127,31 @@ def test_non_json_stdout_parsed_none():
 def test_create_task_flags():
     runner = FakeRunner()
     bridge = KanbanBridge(runner=runner)
-    bridge.create_task("title", body="b", assignee="hermes", board="default")
+    bridge.create_task("title", body="b", assignee="hermes", triage=True)
     remote = runner.calls[0][-1]
-    assert "--board default" in remote
-    assert "create" in remote
-    assert "--title title" in remote
+    assert "kanban create title --json" in remote
     assert "--body b" in remote
     assert "--assignee hermes" in remote
+    assert "--triage" in remote
+    # title is positional — there is no --title flag
+    assert "--title" not in remote
+
+
+def test_comment_positional_text():
+    runner = FakeRunner()
+    bridge = KanbanBridge(runner=runner)
+    bridge.comment("T-1", "looks good", author="atlas")
+    remote = runner.calls[0][-1]
+    assert remote.endswith("kanban comment T-1 'looks good' --author atlas")
+    assert "--text" not in remote
+
+
+def test_complete_with_result():
+    runner = FakeRunner()
+    bridge = KanbanBridge(runner=runner)
+    bridge.complete("T-1", result="done")
+    remote = runner.calls[0][-1]
+    assert remote.endswith("kanban complete T-1 --result done")
 
 
 def test_list_tasks_status_filter():

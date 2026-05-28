@@ -49,12 +49,22 @@ channel until/unless a native RPC surface ships.
 
 ## Flag verification status
 
-The typed wrappers (`create_task`, `list_tasks`, `comment`, `complete`) encode
-the best-known `hermes kanban` flags. The read path is verified live
-(`reachable()` / `boards` returns rc=0 against the VPS). The write flags
-(`--title`, `--body`, `--assignee`, `--status`, `--text`) are pending a live
-write confirmation; adjust the wrappers if `hermes kanban create --help`
-diverges. The generic `run(*args)` is flag-agnostic and always correct.
+Verified live against `hermes kanban <sub> --help` on the VPS (v0.15.0,
+2026-05-29). The wrappers match the real CLI surface:
+
+- `create <title>` — `title` is **positional** (there is no `--title`).
+  Options used: `--body`, `--assignee`, `--triage`, `--json`. Other real
+  flags available via `run()`: `--parent`, `--workspace`, `--branch`,
+  `--priority`, `--idempotency-key`, `--max-runtime`, `--skill`,
+  `--initial-status`.
+- `comment <task_id> <text...>` — both **positional**; `--author` optional
+  (there is no `--text`).
+- `complete <task_ids...>` — **positional**; `--result`, `--summary`,
+  `--metadata` optional (there is no `--status`).
+- Board selection is **stateful** (current board, default `default`); no
+  per-command `--board` flag exists, so the wrappers do not pass one.
+
+The generic `run(*args)` is flag-agnostic and always correct.
 
 ## Diagnostics
 
