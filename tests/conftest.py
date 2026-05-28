@@ -44,3 +44,11 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
     # Pending approvals HMAC (tests; no secretos reales)
     monkeypatch.setenv("ATLAS_PENDING_HMAC_KEY", "test-pending-hmac-key")
+
+
+# Note: tried adding a singleton-reset autouse fixture (GovernanceL0._instance
+# = None at setup or teardown) to fix the 2-4 non-deterministic test_pending /
+# test_pipeline_d failures from test pollution. Both setup-only AND
+# teardown-only made things worse (more tests assume an initialized
+# Governance carried over). Real fix: per-test fixtures explicitly recreating
+# GovernanceL0 from the test's own tmp_path/governance.json. Deferred.
