@@ -42,3 +42,4 @@ secrets/
 *.log
 merkle_log*.jsonl
 memory/audit/
+.atlas.*

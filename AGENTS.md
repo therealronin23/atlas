@@ -13,6 +13,25 @@ components serve Atlas, not the other way around.
 
 ## Project Status
 
+> **Última sincronización: 2026-05-28** — Atlas+Hermes-Agent twin architecture
+> live (ADR-026). Atlas Core v0.10.0 on `main`; v0.11.0 in flight cleaning the
+> Hermes deployment debt. Both sides systemd-supervised:
+>
+> - **Atlas (laptop)**: `systemctl --user status atlas-core` — survives
+>   logout via `loginctl enable-linger ronin`. Unit at
+>   `~/.config/systemd/user/atlas-core.service`, template in
+>   `scripts/atlas-core.service`. Restart loop disabled `HERMES_BASE_URL`
+>   because the legacy stub on `:8443` no longer exists (Atlas health probe
+>   was hanging on it).
+> - **Hermes-Agent (VPS 100.108.132.116)**: `systemctl --user status
+>   hermes-gateway` — Nous Research agent with Telegram bot @GodAtlas_bot,
+>   Ollama qwen2.5:3b local fallback, Groq primary, Gemini/Groq/NVIDIA/Ollama
+>   chain. HuggingFace + OpenRouter free quotas were exhausted during
+>   debugging session 2026-05-27/28.
+>
+> 17 PRs (#5–#26) merged this session to land the twin architecture, plus
+> 19 one-shot fix scripts kept under `scripts/` (see `scripts/README.md`).
+
 - Gate A: SEALED — Vision, entities and principles locked.
 - Gate B: COMPLETE — Local core functional.
 - Gate C: COMPLETE — 147 tests passing + Hermes-VPS live on Hetzner CPX22 + Tailscale tunnel verified end-to-end.
