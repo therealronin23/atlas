@@ -212,6 +212,60 @@ class TestExecIntent:
         assert r.status_code == 400
 
 
+class TestExecAudit:
+
+    def test_records_hermes_action(self, client: TestClient, orch: Orchestrator) -> None:
+        body = json.dumps({
+            "action": "skill.run",
+            "result": "success",
+            "risk_level": "moderate",
+            "payload": {"skill": "weather"},
+        }).encode()
+        r = client.post("/api/exec/audit", content=body, headers=_sign(body))
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["ok"] is True
+        # provenance: namespaced action + chained hashes returned as a receipt
+        assert data["action"] == "hermes.skill.run"
+        assert len(data["hash_self"]) == 64
+        rec = orch._merkle.tail(1)[0]
+        assert rec.agent == "hermes_vps"
+        assert rec.action == "hermes.skill.run"
+
+    def test_already_namespaced_action_not_double_prefixed(self, client: TestClient) -> None:
+        body = json.dumps({"action": "hermes.cron.tick"}).encode()
+        r = client.post("/api/exec/audit", content=body, headers=_sign(body))
+        assert r.status_code == 200
+        assert r.json()["action"] == "hermes.cron.tick"
+
+    def test_missing_action_returns_400(self, client: TestClient) -> None:
+        body = json.dumps({"result": "success"}).encode()
+        r = client.post("/api/exec/audit", content=body, headers=_sign(body))
+        assert r.status_code == 400
+
+    def test_bad_result_returns_400(self, client: TestClient) -> None:
+        body = json.dumps({"action": "x", "result": "exploded"}).encode()
+        r = client.post("/api/exec/audit", content=body, headers=_sign(body))
+        assert r.status_code == 400
+
+    def test_bad_risk_returns_400(self, client: TestClient) -> None:
+        body = json.dumps({"action": "x", "risk_level": "nuclear"}).encode()
+        r = client.post("/api/exec/audit", content=body, headers=_sign(body))
+        assert r.status_code == 400
+
+    def test_non_dict_payload_returns_400(self, client: TestClient) -> None:
+        body = json.dumps({"action": "x", "payload": "not a dict"}).encode()
+        r = client.post("/api/exec/audit", content=body, headers=_sign(body))
+        assert r.status_code == 400
+
+    def test_unsigned_request_rejected(self, client: TestClient) -> None:
+        body = json.dumps({"action": "x"}).encode()
+        r = client.post("/api/exec/audit", content=body, headers={
+            HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+        })
+        assert r.status_code == 401
+
+
 class TestMerkleAudit:
 
     def test_bad_signature_logged_to_merkle(

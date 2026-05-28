@@ -509,6 +509,42 @@ def insights(hours: float | None, as_json: bool) -> None:
 
 
 @cli.command()
+@click.argument("query", nargs=-1, required=True)
+@click.option("--limit", "-n", default=20, show_default=True, type=int, help="Máximo de resultados.")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+def search(query: tuple[str, ...], limit: int, as_json: bool) -> None:
+    """Búsqueda full-text sobre el Merkle ledger (FTS5). Términos = AND implícito."""
+    from atlas.core.audit_search import search_records  # noqa: PLC0415
+
+    orch = get_orchestrator()
+    records = orch.audit_tail(50_000)
+    q = " ".join(query)
+    results = search_records(records, q, limit=limit)
+
+    if as_json:
+        console.print_json(json.dumps(results, ensure_ascii=False, default=str))
+        return
+
+    if not results:
+        console.print(f"[dim]Sin resultados para '{q}'.[/dim]")
+        return
+
+    table = Table(title=f"Búsqueda: '{q}' ({len(results)})", show_header=True)
+    table.add_column("Timestamp", width=26)
+    table.add_column("Action", style="cyan")
+    table.add_column("Agent")
+    table.add_column("Result")
+    for r in results:
+        table.add_row(
+            r.get("timestamp", "")[:26],
+            r.get("action", ""),
+            r.get("agent", ""),
+            r.get("result", ""),
+        )
+    console.print(table)
+
+
+@cli.command()
 @click.option(
     "--poll-interval",
     default=1.0,

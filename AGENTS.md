@@ -241,6 +241,9 @@ ADR-027  /api/exec/* inbound (Hermes→Atlas, HMAC). `interfaces/exec_api.py`
 ADR-028  Twin Kanban Bridge (Atlas→Hermes outbound, ssh+kanban). `hermes/kanban_bridge.py`.
          Canal outbound del twin tras confirmarse `hermes mcp serve` roto upstream
          (v0.14/0.15 ModuleNotFoundError). Inbound vía ADR-027 ya existía.
+ADR-029  Audit FTS5 search (`atlas search`, `core/audit_search.py`) + reverse twin
+         audit (`POST /api/exec/audit` + `scripts/hermes_skill_atlas_audit/`).
+         Absorbe `hermes sessions` search; cierra "Hermes corre sin auditoría".
 
 ## Open ADRs
 
@@ -381,20 +384,20 @@ DONE this session:
 - `atlas doctor` — unified diagnostics (`core/doctor.py`). Absorbs `hermes doctor`.
 - `atlas insights` — analytics over the Merkle ledger (`core/insights.py`). Absorbs `hermes insights`.
 - Twin Kanban Bridge (ADR-028) — outbound Atlas→Hermes channel.
+- `atlas search` — FTS5 full-text search over the Merkle ledger (`core/audit_search.py`, ADR-029). Absorbs `hermes sessions` search.
+- Reverse audit (ADR-029) — `POST /api/exec/audit` + `scripts/hermes_skill_atlas_audit/` so Hermes records its actions in Atlas's Merkle chain. Closes "Hermes runs unaudited".
 
 PENDING absorption targets (each its own ADR/PR — do NOT half-build):
-| Feature | Hermes source | Atlas target | Priority |
-|---------|---------------|--------------|----------|
-| FTS5 session search + LLM summary | `hermes sessions` | new `memory/session_search.py` | P1 |
-| Honcho dialectic user modeling | `hermes memory` | `memory/` extension | P1 |
-| `--worktree` isolation for Gate H synthesis | `hermes --worktree` | `core/gate_h.py` | P1 |
-| Background skill curator | `hermes curator` | `core/` | P2 |
-| OpenAI-compatible provider proxy | `hermes proxy` | `core/inference_hub.py` | P2 |
-| DM pairing codes | `hermes pairing` | `interfaces/` | P3 |
-| Multi-profile isolation | `hermes profile` | workspace refactor | P3 |
+| Feature | Hermes source | Atlas target | Priority | Note |
+|---------|---------------|--------------|----------|------|
+| OpenAI-compatible provider proxy | `hermes proxy` | `core/inference_hub.py` | P2 | only if other tools need Atlas models |
+| Background skill curator | `hermes curator` | `core/` | P2 | |
+| Honcho dialectic user modeling | `hermes memory` | `memory/` extension | DROP | master plan flags "conversational assumptions, do-not-absorb" |
+| `--worktree` isolation for Gate H | `hermes --worktree` | `core/gate_h.py` | DROP | already covered by ADR-025 `cold_update_manager` worktree |
+| DM pairing codes / multi-profile | `hermes pairing`/`profile` | `interfaces/` | DROP | multi-user; Atlas is single-sovereign-user |
 
-Reverse (Atlas→Hermes, expose as Hermes skill): Merkle audit, governance.json
-limits, Gate D PII/ghost pipeline. Hermes runs unaudited today.
+Reverse remaining (expose as Hermes skill): governance.json limits, Gate D
+PII/ghost pipeline. Audit receipt channel is DONE (ADR-029).
 
 ## What to NEVER do
 
