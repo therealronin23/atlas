@@ -376,6 +376,67 @@ def build_router(orch_provider: Any) -> APIRouter:
         }
 
     # ------------------------------------------------------------------
+    # POST /api/exec/audit
+    # ------------------------------------------------------------------
+
+    @router.post("/audit")
+    async def exec_audit(request: Request) -> dict[str, Any]:
+        """
+        Record a Hermes-origin action into Atlas's append-only Merkle ledger.
+
+        Reverse twin direction (ADR-029): Hermes-Agent runs unaudited natively,
+        so it POSTs each meaningful action here to gain a tamper-evident receipt
+        in Atlas's chain. Atlas stays the system of record; Hermes gains the
+        forensic guarantee it lacks.
+
+        Request body (JSON):
+          {"action": "skill.run", "result": "success",
+           "risk_level": "moderate", "payload": {"skill": "..."}}
+
+        Returns the chained receipt: {"ok", "id", "action", "hash_self", "hash_prev"}.
+        """
+        allowed_results = {"success", "failure", "blocked", "pending", "refused"}
+        allowed_risks = {"safe", "moderate", "high", "critical"}
+
+        orch = orch_provider()
+        body = await _authenticate(request, orch)
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="invalid json body")
+
+        action = (payload.get("action") or "").strip()
+        if not action:
+            raise HTTPException(status_code=400, detail="action required")
+        result = payload.get("result", "success")
+        if result not in allowed_results:
+            raise HTTPException(status_code=400, detail=f"result must be one of {sorted(allowed_results)}")
+        risk = payload.get("risk_level", "safe")
+        if risk not in allowed_risks:
+            raise HTTPException(status_code=400, detail=f"risk_level must be one of {sorted(allowed_risks)}")
+        data = payload.get("payload", {})
+        if not isinstance(data, dict):
+            raise HTTPException(status_code=400, detail="payload must be an object")
+
+        # Provenance: force the agent and namespace the action so a Hermes-origin
+        # record can never be mistaken for an Atlas-native one.
+        namespaced = action if action.startswith("hermes.") else f"hermes.{action}"
+        record = orch._merkle.log(
+            action=namespaced,
+            agent="hermes_vps",
+            result=result,
+            risk_level=risk,
+            payload=data,
+        )
+        return {
+            "ok": True,
+            "id": record.id,
+            "action": record.action,
+            "hash_self": record.hash_self,
+            "hash_prev": record.hash_prev,
+        }
+
+    # ------------------------------------------------------------------
     # POST /api/exec/browser
     # ------------------------------------------------------------------
 
