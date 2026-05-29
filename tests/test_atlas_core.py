@@ -430,6 +430,9 @@ class TestTaskLifecycle:
         assert isinstance(st.governance_ok, bool)
         assert isinstance(st.chain_ok, bool)
         assert isinstance(st.queue_depth, int)
+        # repo_root distingue el repo de código del workspace de runtime, para
+        # que el twin (Hermes) no atribuya los commits a ~/atlas (que no es repo).
+        assert st.repo_root is None or st.repo_root != st.workspace
 
     def test_task_creates_typed_task(self, orch):
         """Criterio 2: task convierte una intencion en una tarea tipada."""

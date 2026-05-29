@@ -70,6 +70,7 @@ from atlas.security.ssrf_bridge import SSRFBridge
 class AtlasStatus:
     version: str
     workspace: str
+    repo_root: str | None
     governance_ok: bool
     chain_ok: bool
     tool_count: int
@@ -184,9 +185,11 @@ class Orchestrator:
         hermes_status = self._hermes.health_check()
         uptime = (datetime.now(timezone.utc) - self._start_time).total_seconds()
 
+        repo_root = self._repo_root()
         return AtlasStatus(
             version=self.VERSION,
             workspace=str(self._workspace),
+            repo_root=str(repo_root) if repo_root else None,
             governance_ok=not gov.in_emergency_mode,
             chain_ok=chain_ok,
             tool_count=len(self._tool_registry.enabled()),
