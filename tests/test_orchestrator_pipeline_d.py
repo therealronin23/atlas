@@ -18,6 +18,32 @@ from atlas.core.contracts import RoutingLevel, Task, TaskSource, TaskStatus
 from atlas.core.orchestrator import Orchestrator
 
 
+class _ScriptedHub:
+    """Hub de inferencia falso que devuelve respuestas pre-escritas en orden.
+    Registra cada InferenceRequest recibida en `self.calls` para inspección.
+    Si se agota el guion, repite la última respuesta (útil para tope de loop)."""
+
+    def __init__(self, script: list) -> None:  # noqa: ANN001
+        self._script = list(script)
+        self.calls: list = []
+
+    def infer(self, request):  # noqa: ANN001, ANN201
+        self.calls.append(request)
+        if len(self._script) > 1:
+            return self._script.pop(0)
+        return self._script[0]
+
+
+def _resp(text: str = "", tool_calls: list | None = None):  # noqa: ANN001, ANN201
+    from atlas.core.inference_hub import InferenceLevel, InferenceResponse
+
+    return InferenceResponse(
+        text=text, provider="mock", model="m", level=InferenceLevel.L1,
+        latency_ms=1, success=True, tokens_used=1, mode="live",
+        tool_calls=tool_calls or [],
+    )
+
+
 @pytest.fixture
 def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
@@ -498,3 +524,90 @@ class TestHybridClassify:
         classified = [r for r in recent
                       if r.task_id == task.id and r.action == "task.classified"]
         assert classified[0].payload["winner"] == "slm"
+
+
+# ===========================================================================
+# ADR-031 — loop agéntico de tool-calls
+# ===========================================================================
+
+
+class TestAgenticLoop:
+    """El modelo puede pedir herramientas de grounding; el orquestador las
+    ejecuta (auditadas), reinyecta resultados y vuelve a llamar hasta respuesta
+    final. Resuelve la alucinación factual y la auto-edición de block memory."""
+
+    def test_loop_executes_git_log_and_returns_final_answer(
+        self, orch: Orchestrator
+    ) -> None:
+        hub = _ScriptedHub([
+            _resp(tool_calls=[{"id": "c1", "name": "git_log", "arguments": "{}"}]),
+            _resp(text="Estos son los commits reales del repo."),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("analiza el repositorio y cuéntame")
+
+        assert task.status == TaskStatus.DONE
+        assert task.tool_name == "inference_hub.complete"
+        assert task.result["iterations"] == 1
+        assert "git_log" in task.result["tools_used"]
+        assert "commits reales" in task.result["text"]
+        # Segunda llamada lleva el historial con el resultado de la tool
+        assert len(hub.calls) == 2
+        assert hub.calls[1].messages is not None
+        assert any(m["role"] == "tool" for m in hub.calls[1].messages)
+        # La invocación de la tool quedó auditada
+        recent = orch._merkle.tail(30)
+        invoked = [r for r in recent if r.action == "tool.invoked"
+                   and r.payload.get("tool") == "git_log"]
+        assert len(invoked) >= 1
+
+    def test_loop_can_autoedit_block_memory(self, orch: Orchestrator) -> None:
+        orch.block_memory.create("persona", "Soy Atlas.")
+        hub = _ScriptedHub([
+            _resp(tool_calls=[{
+                "id": "c1", "name": "append_memory_block",
+                "arguments": '{"label": "persona", "text": "Vivo en una laptop."}',
+            }]),
+            _resp(text="He actualizado mi memoria."),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("recuerda dónde vives y dímelo")
+
+        assert task.tool_name == "inference_hub.complete"
+        assert "append_memory_block" in task.result["tools_used"]
+        block = orch.block_memory.get("persona")
+        assert block is not None
+        assert "Vivo en una laptop." in block.value
+
+    def test_loop_block_limit_is_pressure_not_crash(
+        self, orch: Orchestrator
+    ) -> None:
+        orch.block_memory.create("note", "x" * 40, limit=50)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[{
+                "id": "c1", "name": "append_memory_block",
+                "arguments": '{"label": "note", "text": "' + "y" * 100 + '"}',
+            }]),
+            _resp(text="No cabía, lo dejo como estaba."),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("añade algo enorme a la nota")
+
+        # No crashea: termina bien y el bloque queda intacto
+        assert task.tool_name == "inference_hub.complete"
+        assert orch.block_memory.get("note").value == "x" * 40
+        # El error de límite se devolvió al modelo como texto (presión MemGPT)
+        tool_msgs = [m for m in hub.calls[1].messages if m["role"] == "tool"]
+        assert "límite" in tool_msgs[0]["content"].lower()
+
+    def test_loop_respects_max_iterations(self, orch: Orchestrator) -> None:
+        # Hub que SIEMPRE pide una tool: el loop debe cortar en max_iters=5.
+        always_tool = _ScriptedHub([
+            _resp(tool_calls=[{"id": "c", "name": "git_status", "arguments": "{}"}]),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=always_tool)
+        task = orch.handle_intent("haz algo en bucle infinito")
+
+        assert task.result["iterations"] == 5
+        # 1 llamada inicial + 5 del loop
+        assert len(always_tool.calls) == 6

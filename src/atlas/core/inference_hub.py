@@ -91,6 +91,12 @@ class InferenceRequest:
     temperature: float = 0.1
     context: str = ""
     task_id: str | None = None
+    # ADR-031: tool-calling agéntico. Si `tools` está presente se pasa a la
+    # API del proveedor. Si `messages` está presente, sustituye a la
+    # construcción prompt/context (para continuar una conversación multi-turno).
+    tools: list[dict[str, Any]] | None = None
+    messages: list[dict[str, Any]] | None = None
+    tool_choice: str = "auto"
 
 
 @dataclass
@@ -104,6 +110,10 @@ class InferenceResponse:
     error: str | None = None
     tokens_used: int = 0
     mode: str = "stub"
+    # ADR-031: si el modelo pide herramientas, vienen aquí normalizadas a
+    # {id, name, arguments(str JSON)}. Vacío = respuesta final (sin loop).
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    finish_reason: str = ""
 
 
 DEFAULT_PROVIDERS: list[Provider] = [
@@ -374,9 +384,14 @@ class InferenceHub:
         start = time.perf_counter()
         provider.last_used = datetime.now(timezone.utc).isoformat()
 
-        messages = [{"role": "user", "content": request.prompt}]
-        if request.context:
-            messages.insert(0, {"role": "system", "content": request.context})
+        # ADR-031: si el caller provee `messages` (continuación multi-turno del
+        # loop agéntico) se usan tal cual; si no, se construyen desde prompt/context.
+        if request.messages is not None:
+            messages = list(request.messages)
+        else:
+            messages = [{"role": "user", "content": request.prompt}]
+            if request.context:
+                messages.insert(0, {"role": "system", "content": request.context})
 
         try:
             assert litellm is not None
@@ -388,6 +403,9 @@ class InferenceHub:
                 key = os.environ.get(provider.api_key_env)
                 if key:
                     extra_kwargs["api_key"] = key
+            if request.tools:
+                extra_kwargs["tools"] = request.tools
+                extra_kwargs["tool_choice"] = request.tool_choice
             completion = litellm.completion(
                 model=provider.litellm_model,
                 messages=messages,
@@ -418,6 +436,8 @@ class InferenceHub:
         duration_ms = int((time.perf_counter() - start) * 1000)
         text = _extract_text(completion)
         tokens = _extract_tokens(completion)
+        tool_calls = _extract_tool_calls(completion)
+        finish_reason = _extract_finish_reason(completion)
 
         if provider.status in (ProviderStatus.DEGRADED, ProviderStatus.RATELIMITED):
             provider.status = ProviderStatus.OK
@@ -435,6 +455,7 @@ class InferenceHub:
             text=text, provider=provider.name, model=provider.model_id,
             level=provider.level, latency_ms=duration_ms, success=True,
             tokens_used=tokens, mode="live",
+            tool_calls=tool_calls, finish_reason=finish_reason,
         )
 
     def _call_provider_stub(
@@ -489,3 +510,34 @@ def _extract_tokens(completion: Any) -> int:
         return int(completion.usage.total_tokens)
     except (AttributeError, KeyError, TypeError):
         return 0
+
+
+def _extract_tool_calls(completion: Any) -> list[dict[str, Any]]:
+    """Normaliza los tool_calls del completion a {id, name, arguments(str)}.
+
+    LiteLLM expone los tool_calls en el formato OpenAI
+    (choices[0].message.tool_calls[*].function.{name,arguments}). Devuelve []
+    si el modelo no pidió herramientas (respuesta final).
+    """
+    try:
+        raw = completion.choices[0].message.tool_calls or []
+    except (AttributeError, IndexError, KeyError):
+        return []
+    out: list[dict[str, Any]] = []
+    for i, tc in enumerate(raw):
+        try:
+            out.append({
+                "id": getattr(tc, "id", None) or f"call_{i}",
+                "name": tc.function.name,
+                "arguments": tc.function.arguments or "{}",
+            })
+        except AttributeError:
+            continue
+    return out
+
+
+def _extract_finish_reason(completion: Any) -> str:
+    try:
+        return str(completion.choices[0].finish_reason or "")
+    except (AttributeError, IndexError, KeyError):
+        return ""
