@@ -163,13 +163,23 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   `repo_root` y `_stringify_tool_result` lo expone como línea de procedencia, así
   el gemelo tiene la verdad en el output y no inventa. Verificado en vivo: el bot
   cita `/home/ronin/proyectos/atlas-core` correctamente.
-- **Tools mutantes dentro del loop** — v1 solo expone lectura + block memory.
-  Browser/editor siguen por `AWAITING_APPROVAL`; meterlos en el loop requiere
-  HITL inline (futuro).
+- ✅ **Tools mutantes dentro del loop** — DECISIÓN DE DISEÑO (no es un cabo,
+  es scope intencional). El loop agéntico v1 expone **solo lectura** (git/fs/
+  status) + auto-edición de block memory. Browser/editor mutantes siguen por
+  `AWAITING_APPROVAL` **a propósito**: meterlos en el loop exige aprobación
+  HITL *inline* (pausar el loop, pedir confirmación humana, reanudar) que es un
+  diseño de seguridad en sí mismo, no un parche. Se difiere conscientemente a
+  un ADR futuro; el flujo actual (observacional directo, mutante vía approval)
+  es correcto y suficiente para v1. `_agentic_tool_specs` documenta el límite.
 
 ### Upstream / externos
-- **`mcp_serve` roto** (Hermes upstream, `hermes_cli/mcp_config.py:748`,
-  `ModuleNotFoundError`). Issue redactado, pendiente de publicar.
+- **`mcp_serve` roto** (Hermes upstream `NousResearch/hermes-agent`,
+  `hermes_cli/mcp_config.py:748` hace `from mcp_serve import run_mcp_server` pero
+  el módulo top-level `mcp_serve` no se empaqueta → `ModuleNotFoundError`).
+  Reproducido en vivo en VPS (hermes-agent 0.15.0, Py3.14, pip install, NO NixOS
+  → distinto de #22110). Causa raíz = misma clase que el refactor #14590
+  (top-level modules → `hermes_agent/`). Issue redactado y sanitizado; pendiente
+  de publicar (requiere OK explícito: escritura pública en repo externo).
 
 ### Infra / operación
 - **SSD SanDisk SD8SNAT** — `UDMA_CRC_Error_Count=24` (errores de enlace SATA,
