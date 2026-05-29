@@ -257,6 +257,10 @@ class TestExecIntent:
         assert data["tool"] == "git.log"
         blob = json.dumps(data["result"], ensure_ascii=False)
         assert "grounding marker commit" in blob
+        # Provenance: the result must carry the REAL repo_root so the twin
+        # (Hermes) never has to invent a path. Regression for the live bug
+        # where the bot confabulated `/home/rocio/Atlas-OS`.
+        assert data["result"].get("repo_root") == str(repo.resolve())
 
 
 class TestExecAudit:
