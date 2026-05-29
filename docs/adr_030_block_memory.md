@@ -49,15 +49,24 @@ rather than silently truncating. This is the MemGPT pressure signal: the caller
 
 ### CLI — `atlas blocks`
 
-`list` / `show` / `create` / `set` / `append` / `delete`. Instantiates
-`BlockMemory` directly from `workspace/memory/blocks`, wired to the same
-`MerkleLogger` the rest of Atlas uses, mirroring `atlas audit --verify`.
+`list` / `show` / `create` / `set` / `append` / `delete`. Delegates to the
+orchestrator's single `BlockMemory` instance (`orch.block_memory`), wired to the
+same `MerkleLogger` the rest of Atlas uses.
+
+### Phase 2 — always-in-context injection (read path)
+
+`Orchestrator` owns one `BlockMemory` (`memory/blocks`) exposed as
+`orch.block_memory`. In `_execute_local_safe_via_inference`, `render()` is
+prepended to the inference context (before archival/system context and before
+PII redaction), so every local-safe inference sees the agent's core memory.
+Empty render injects nothing, so the path is a no-op until blocks exist.
 
 ## Scope / Non-Goals
 
 - **Core memory only.** Archival memory and ranking are already covered by
   `KuzuVectorStore`; this ADR does not touch them.
-- **No automatic prompt injection yet.** `render()` exists and is tested, but
-  wiring it into the live system prompt is a deliberate follow-up rather than a
-  half-built change in this ADR.
+- **Read path wired; write path is CLI/API-driven.** The model does not yet edit
+  its own blocks autonomously — that needs an agentic tool-calling loop, which
+  the single-shot `InferenceHub.infer` path does not provide. Deferred on
+  purpose rather than half-built; blocks are curated via `atlas blocks` for now.
 - No new dependency; no second persistence engine.

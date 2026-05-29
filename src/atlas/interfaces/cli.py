@@ -555,12 +555,7 @@ def blocks() -> None:
 
 
 def _block_memory() -> "BlockMemory":  # noqa: F821
-    from atlas.logging.merkle_logger import MerkleLogger  # noqa: PLC0415
-    from atlas.memory.block_memory import BlockMemory  # noqa: PLC0415
-
-    workspace = Path(get_orchestrator().status().workspace)
-    merkle = MerkleLogger(workspace / "memory" / "audit")
-    return BlockMemory(workspace / "memory" / "blocks", merkle=merkle)
+    return get_orchestrator().block_memory
 
 
 @blocks.command("list")
