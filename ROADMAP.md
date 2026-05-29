@@ -171,6 +171,8 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   diseño de seguridad en sí mismo, no un parche. Se difiere conscientemente a
   un ADR futuro; el flujo actual (observacional directo, mutante vía approval)
   es correcto y suficiente para v1. `_agentic_tool_specs` documenta el límite.
+  📐 Diseño propuesto: [`docs/adr_032_mutating_tools_in_loop.md`](docs/adr_032_mutating_tools_in_loop.md)
+  (loop suspendible/reanudable con HITL inline). Status: Proposed.
 
 ### Upstream / externos
 - **`mcp_serve` roto** (Hermes upstream `NousResearch/hermes-agent`,
