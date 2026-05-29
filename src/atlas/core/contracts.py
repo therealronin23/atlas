@@ -53,7 +53,10 @@ VALID_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
                                    TaskStatus.DELEGATED, TaskStatus.BLOCKED, TaskStatus.FAILED},
     TaskStatus.AWAITING_APPROVAL: {TaskStatus.EXECUTING, TaskStatus.DELEGATED,
                                    TaskStatus.CANCELLED, TaskStatus.BLOCKED},
-    TaskStatus.EXECUTING:         {TaskStatus.DONE, TaskStatus.FAILED},
+    # ADR-032: un loop agéntico en ejecución puede SUSPENDERSE a la espera de
+    # aprobación humana inline cuando el modelo pide una mutación de host.
+    TaskStatus.EXECUTING:         {TaskStatus.DONE, TaskStatus.FAILED,
+                                   TaskStatus.AWAITING_APPROVAL},
     TaskStatus.DELEGATED:         {TaskStatus.DONE, TaskStatus.FAILED},
     TaskStatus.DONE:              set(),
     TaskStatus.FAILED:            set(),

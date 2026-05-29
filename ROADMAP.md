@@ -2,7 +2,8 @@
 
 > Estado actual: **v0.12.0** — Gates A–I sellados + arquitectura twin Atlas↔Hermes
 > viva (ADR-026..029) + block memory estilo Letta (ADR-030) + loop agéntico de
-> tool-calls (ADR-031). 695 tests verdes. Última sincronización: 2026-05-29.
+> tool-calls (ADR-031) + loop suspendible con HITL inline para mutaciones
+> (ADR-032). 708 tests verdes. Última sincronización: 2026-05-29.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -112,6 +113,7 @@ que extienden el runtime sellado.
 | ADR-029 | ✅ Accepted | `/api/exec/audit` (reverse-audit) + búsqueda FTS5. |
 | ADR-030 | ✅ Accepted | Block memory estilo Letta/MemGPT (core memory siempre-en-contexto). |
 | ADR-031 | ✅ Accepted | Loop agéntico de tool-calls (grounding factual + auto-edición de blocks). |
+| ADR-032 | ✅ Accepted | Loop agéntico suspendible/reanudable: HITL inline para tools mutantes de host. |
 
 Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_memory.md`.
 
@@ -163,16 +165,22 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   `repo_root` y `_stringify_tool_result` lo expone como línea de procedencia, así
   el gemelo tiene la verdad en el output y no inventa. Verificado en vivo: el bot
   cita `/home/ronin/proyectos/atlas-core` correctamente.
-- ✅ **Tools mutantes dentro del loop** — DECISIÓN DE DISEÑO (no es un cabo,
-  es scope intencional). El loop agéntico v1 expone **solo lectura** (git/fs/
-  status) + auto-edición de block memory. Browser/editor mutantes siguen por
-  `AWAITING_APPROVAL` **a propósito**: meterlos en el loop exige aprobación
-  HITL *inline* (pausar el loop, pedir confirmación humana, reanudar) que es un
-  diseño de seguridad en sí mismo, no un parche. Se difiere conscientemente a
-  un ADR futuro; el flujo actual (observacional directo, mutante vía approval)
-  es correcto y suficiente para v1. `_agentic_tool_specs` documenta el límite.
-  📐 Diseño propuesto: [`docs/adr_032_mutating_tools_in_loop.md`](docs/adr_032_mutating_tools_in_loop.md)
-  (loop suspendible/reanudable con HITL inline). Status: Proposed.
+- ✅ **Tools mutantes dentro del loop** — IMPLEMENTADO (ADR-032). El loop
+  agéntico es ahora **suspendible/reanudable**: cuando el modelo pide una tool
+  mutante de host (browser/editor) el loop serializa su estado completo
+  (`messages`, `iterations`, `tools_used`, mutaciones pendientes) en el registro
+  de pending approval bajo `agentic_state`, pasa a `AWAITING_APPROVAL` y notifica
+  por el canal de approvals existente. Al aprobar, `approve_pending` rehidrata el
+  estado, ejecuta la mutación con clearance (`mark_confirmed`) y **reanuda** el
+  loop exactamente donde quedó. DENY sin abort inyecta una denegación sintética
+  y reanuda (presión MemGPT → re-planifica); con `abort=True` → `CANCELLED`. El
+  presupuesto `max_iters` persiste a través de suspensiones. El estado vive en
+  disco → sobrevive reinicios del servicio. Las tools de lectura + block memory
+  siguen corriendo inline (sin cambios). Auditado en Merkle (`task.suspended` +
+  `task.approval` + `tool.invoked`).
+  📐 [`docs/adr_032_mutating_tools_in_loop.md`](docs/adr_032_mutating_tools_in_loop.md)
+  Status: **Accepted**. 8 tests dedicados (`tests/test_orchestrator_mutating_loop.py`)
+  + suite completa (708) en verde, mypy limpio.
 
 ### Upstream / externos
 - **`mcp_serve` roto** (Hermes upstream `NousResearch/hermes-agent`,

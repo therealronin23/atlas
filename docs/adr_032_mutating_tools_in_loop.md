@@ -1,6 +1,6 @@
 # ADR-032 — Tools mutantes dentro del loop agéntico (HITL inline)
 
-- Status: **Proposed** (2026-05-29)
+- Status: **Accepted** (2026-05-29) — implementado, 8 tests + suite completa (708) en verde
 - Módulos: `src/atlas/core/orchestrator.py`, `src/atlas/governance/permission_profile.py`
 - Depende de: ADR-031 (loop agéntico), Gate F (browser/editor + AWAITING_APPROVAL)
 
