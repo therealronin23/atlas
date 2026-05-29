@@ -152,11 +152,17 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   `~/atlas` (NO es repo git) → toda pregunta git devolvía `fatal`. Fix: `git -C
   <ATLAS_REPO_ROOT>` con SEC-01 endurecido (solo el repo propio, solo subcomandos
   read-only). Atlas es ahora **inmune** a que el intent traiga un path erróneo.
-- ⚠️ **Hermes atribuye ruta incorrecta en su prosa** — COSMÉTICO. Tras reescribir
-  `atlas-exec/SKILL.md` + `references/git-verification.md` en el VPS, Hermes ya no
-  hace `find /` local, pero todavía dice "commits de `/home/ronin/atlas`" (falso;
-  vienen de `~/proyectos/atlas-core`). El dato es correcto; solo miente la
-  procedencia. Probable origen: `SOUL.md`/memories del VPS. No bloquea nada.
+- ✅ **Hermes atribuía ruta incorrecta en su prosa** — RESUELTO (commit `d835231`,
+  2026-05-29). Diagnóstico real: NO era `SOUL.md`/memories (limpios). Para
+  preguntas de commits el modelo solo delega `git.log` y nunca lee `atlas status`,
+  así que no tenía la ruta en contexto: primero copiaba el literal del skill
+  (`/home/ronin/atlas`) y, al borrarlo, **confabulaba** uno nuevo
+  (`/home/rocio/Atlas-OS`). Cadena de fixes: (1) `git -C <repo_root>` (3f4f5d1);
+  (2) `repo_root` en `AtlasStatus` (81b1cf7); (3) skill del VPS con 0 literales de
+  ruta + regla "no nombrar ruta"; (4) **fix de raíz**: todo resultado git incluye
+  `repo_root` y `_stringify_tool_result` lo expone como línea de procedencia, así
+  el gemelo tiene la verdad en el output y no inventa. Verificado en vivo: el bot
+  cita `/home/ronin/proyectos/atlas-core` correctamente.
 - **Tools mutantes dentro del loop** — v1 solo expone lectura + block memory.
   Browser/editor siguen por `AWAITING_APPROVAL`; meterlos en el loop requiere
   HITL inline (futuro).
