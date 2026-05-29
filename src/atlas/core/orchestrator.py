@@ -1999,8 +1999,11 @@ class Orchestrator:
     def _stringify_tool_result(self, result: Any) -> str:
         if isinstance(result, dict):
             if "stdout" in result:
-                out = result.get("stdout") or ""
-                return out.strip() or "(salida vacía)"
+                out = (result.get("stdout") or "").strip()
+                repo = result.get("repo_root")
+                # Procedencia explícita: que el gemelo no invente la ruta del repo.
+                prefix = f"repo_root: {repo}\n" if repo else ""
+                return (prefix + out) if out else (prefix + "(salida vacía)")
             return json.dumps(result, ensure_ascii=False, default=str)[:2000]
         return str(result)
 
@@ -2166,14 +2169,32 @@ class Orchestrator:
             return ("-C", str(root), sub, *extra)
         return (sub, *extra)
 
+    def _with_repo_root(self, result: dict) -> dict:
+        """Inyecta el repo_root real en el resultado git.
+
+        Grounding de procedencia: el modelo gemelo (Hermes) NO debe inventar la
+        ruta del repo. Sin este campo, al pedir "dónde está el repo" confabula
+        un path inexistente. Con él, tiene la verdad en el output de la tool.
+        """
+        root = self._repo_root()
+        if root is not None and "error" not in result:
+            result["repo_root"] = str(root)
+        return result
+
     def _run_git_status(self, task: Task | None = None) -> dict:
-        return self._run_via_executor("git", self._git_args("status", "--short"), task=task)
+        return self._with_repo_root(
+            self._run_via_executor("git", self._git_args("status", "--short"), task=task)
+        )
 
     def _run_git_log(self, task: Task | None = None) -> dict:
-        return self._run_via_executor("git", self._git_args("log", "--oneline", "-10"), task=task)
+        return self._with_repo_root(
+            self._run_via_executor("git", self._git_args("log", "--oneline", "-10"), task=task)
+        )
 
     def _run_git_diff(self, task: Task | None = None) -> dict:
-        return self._run_via_executor("git", self._git_args("diff", "--stat"), task=task)
+        return self._with_repo_root(
+            self._run_via_executor("git", self._git_args("diff", "--stat"), task=task)
+        )
 
     def _list_workspace(self) -> dict:
         """
