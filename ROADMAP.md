@@ -178,8 +178,8 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   el módulo top-level `mcp_serve` no se empaqueta → `ModuleNotFoundError`).
   Reproducido en vivo en VPS (hermes-agent 0.15.0, Py3.14, pip install, NO NixOS
   → distinto de #22110). Causa raíz = misma clase que el refactor #14590
-  (top-level modules → `hermes_agent/`). Issue redactado y sanitizado; pendiente
-  de publicar (requiere OK explícito: escritura pública en repo externo).
+  (top-level modules → `hermes_agent/`). ✅ Issue PUBLICADO upstream:
+  `NousResearch/hermes-agent#34871`.
 
 ### Infra / operación
 - **SSD SanDisk SD8SNAT** — `UDMA_CRC_Error_Count=24` (errores de enlace SATA,
