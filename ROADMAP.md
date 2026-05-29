@@ -3,7 +3,9 @@
 > Estado actual: **v0.12.0** — Gates A–I sellados + arquitectura twin Atlas↔Hermes
 > viva (ADR-026..029) + block memory estilo Letta (ADR-030) + loop agéntico de
 > tool-calls (ADR-031) + loop suspendible con HITL inline para mutaciones
-> (ADR-032). 708 tests verdes. Última sincronización: 2026-05-29.
+> (ADR-032) + refinamientos del loop: auto-approve allowlist, aprobación
+> parcial, barrido TTL y traza de progreso (ADR-033). 717 tests verdes.
+> Última sincronización: 2026-05-30.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -114,6 +116,7 @@ que extienden el runtime sellado.
 | ADR-030 | ✅ Accepted | Block memory estilo Letta/MemGPT (core memory siempre-en-contexto). |
 | ADR-031 | ✅ Accepted | Loop agéntico de tool-calls (grounding factual + auto-edición de blocks). |
 | ADR-032 | ✅ Accepted | Loop agéntico suspendible/reanudable: HITL inline para tools mutantes de host. |
+| ADR-033 | ✅ Accepted | Refinamientos del loop: auto-approve allowlist, aprobación parcial, barrido TTL de loops abandonados, evento `agentic.progress`. |
 
 Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_memory.md`.
 
@@ -181,6 +184,19 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   📐 [`docs/adr_032_mutating_tools_in_loop.md`](docs/adr_032_mutating_tools_in_loop.md)
   Status: **Accepted**. 8 tests dedicados (`tests/test_orchestrator_mutating_loop.py`)
   + suite completa (708) en verde, mypy limpio.
+- ✅ **Refinamientos del loop suspendible** — IMPLEMENTADO (ADR-033). Cierra los
+  cuatro ítems que ADR-032 dejó fuera de MVP: (1) `sweep_expired_suspensions(ttl)`
+  cancela loops abandonados (opt-in `ATLAS_AGENTIC_SUSPENSION_TTL`, off por
+  defecto); (2) allowlist de auto-aprobación (`set_agentic_auto_approve` / env
+  `ATLAS_AGENTIC_AUTO_APPROVE`) — mutaciones de bajo riesgo corren inline con
+  clearance y auditadas (`task.auto_approved`), salvo sensibilidad alta; (3)
+  aprobación parcial vía `approve_pending(..., approve_only=[ids])` ejecuta un
+  subconjunto del lote y deniega el resto con presión sintética; (4) evento
+  `EventType.AGENTIC_PROGRESS` por iteración para dashboard/Telegram. Seguro por
+  defecto: allowlist vacía + TTL off → comportamiento idéntico a ADR-032.
+  📐 [`docs/adr_033_agentic_loop_refinements.md`](docs/adr_033_agentic_loop_refinements.md)
+  Status: **Accepted**. 9 tests dedicados (`tests/test_orchestrator_agentic_refinements.py`)
+  + suite completa (717) en verde.
 
 ### Upstream / externos
 - **`mcp_serve` roto** (Hermes upstream `NousResearch/hermes-agent`,

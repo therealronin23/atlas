@@ -171,6 +171,7 @@ class EventType(str, Enum):
     SHADOW_ALERT       = "shadow.alert"
     HERMES_RECONNECTED = "hermes.reconnected"   # ADR-012: transicion offline->online
     APPROVAL_REQUIRED  = "approval.required"
+    AGENTIC_PROGRESS   = "agentic.progress"    # ADR-033: traza por iteración del loop
     MEMORY_UPDATED         = "memory.updated"
     SESSION_STARTED        = "session.started"
     SESSION_ENDED          = "session.ended"
