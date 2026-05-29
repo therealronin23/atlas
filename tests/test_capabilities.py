@@ -189,6 +189,67 @@ class TestIssueExec:
         assert cap.command == "git"
         assert cap.level.value == "auto"
 
+    # SEC-01 `-C` retarget (grounding del repo de código propio) ----------
+
+    def test_git_dash_C_to_inspect_root_allowed(
+        self, workspace: Path, tmp_path: Path,
+    ) -> None:
+        """`git -C <repo>` permitido SOLO si el path == git_inspect_root y el
+        subcomando es read-only."""
+        repo = tmp_path / "code-repo"
+        repo.mkdir()
+        perms = workspace / "config" / "permissions.yaml"
+        perms.write_text(
+            "workspace:\n  auto_write:\n    - tmp/\n  read_extended: []\n"
+            "absolute_blocks: []\nsystem_read_allowed: []\n"
+            "telegram:\n  authorized_chat_ids: []\nshell_allowlist:\n  - echo\n"
+        )
+        profile = PermissionProfile(perms, workspace, git_inspect_root=repo)
+        d = profile.evaluate_shell_command(f"git -C {repo} log --oneline -10")
+        assert d.allowed, d.reason
+
+    def test_git_dash_C_arbitrary_path_blocked(
+        self, workspace: Path, tmp_path: Path,
+    ) -> None:
+        """`git -C <otra-ruta>` rechazado aunque el subcomando sea read-only."""
+        repo = tmp_path / "code-repo"
+        other = tmp_path / "elsewhere"
+        repo.mkdir()
+        other.mkdir()
+        perms = workspace / "config" / "permissions.yaml"
+        perms.write_text(
+            "workspace:\n  auto_write:\n    - tmp/\n  read_extended: []\n"
+            "absolute_blocks: []\nsystem_read_allowed: []\n"
+            "telegram:\n  authorized_chat_ids: []\nshell_allowlist:\n  - echo\n"
+        )
+        profile = PermissionProfile(perms, workspace, git_inspect_root=repo)
+        d = profile.evaluate_shell_command(f"git -C {other} log")
+        assert not d.allowed
+        assert "repo de atlas" in d.reason.lower()
+
+    def test_git_dash_C_without_inspect_root_blocked(
+        self, permission_profile: PermissionProfile, tmp_path: Path,
+    ) -> None:
+        """Sin git_inspect_root configurado, ningún `-C` pasa."""
+        d = permission_profile.evaluate_shell_command(f"git -C {tmp_path} log")
+        assert not d.allowed
+
+    def test_git_dash_C_apply_blocked(
+        self, workspace: Path, tmp_path: Path,
+    ) -> None:
+        """`git -C <repo> apply` rechazado: -C nunca para subcomandos mutantes."""
+        repo = tmp_path / "code-repo"
+        repo.mkdir()
+        perms = workspace / "config" / "permissions.yaml"
+        perms.write_text(
+            "workspace:\n  auto_write:\n    - tmp/\n  read_extended: []\n"
+            "absolute_blocks: []\nsystem_read_allowed: []\n"
+            "telegram:\n  authorized_chat_ids: []\nshell_allowlist:\n  - echo\n"
+        )
+        profile = PermissionProfile(perms, workspace, git_inspect_root=repo)
+        d = profile.evaluate_shell_command(f"git -C {repo} apply patch.diff")
+        assert not d.allowed
+
     def test_timeout_out_of_range_denied(
         self, issuer: CapabilityIssuer, workspace: Path
     ) -> None:

@@ -213,15 +213,20 @@ class TestExecIntent:
         assert r.status_code == 400
 
     def test_intent_grounds_git_log_not_hallucination(
-        self, client: TestClient, orch: Orchestrator,
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """ADR-031 twin seal: a factual intent delegated by Hermes returns the
-        REAL git history (grounding), not an invented one. Seeds the isolated
-        workspace as a git repo with a known commit and asserts that exact
-        subject flows back through /api/exec/intent."""
+        REAL git history (grounding), not an invented one.
+
+        Regression for the production bug found in the live twin smoke: git
+        grounding ran in the workspace (`~/atlas`, NOT a git repo) so every git
+        question returned `fatal: not a git repository`. The fix points git at
+        ATLAS_REPO_ROOT via `git -C`. Here we seed a tmp repo as that root and
+        assert its exact commit subject flows back through /api/exec/intent."""
         import subprocess
 
-        repo = orch._workspace
+        repo = tmp_path / "code-repo"
+        repo.mkdir()
         env = {
             **os.environ,
             "GIT_AUTHOR_NAME": "exec-test", "GIT_AUTHOR_EMAIL": "e@t.local",
@@ -229,11 +234,20 @@ class TestExecIntent:
         }
         for args in (
             ["init", "-q"],
-            ["add", "-A"],
             ["commit", "-q", "--allow-empty", "-m", "grounding marker commit"],
         ):
             subprocess.run(["git", *args], cwd=repo, check=True,
                            capture_output=True, env=env)
+
+        # Repo root must be set BEFORE building the Orchestrator: git_inspect_root
+        # (the SEC-01 `-C` allowlist target) is captured at construction.
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
+        monkeypatch.setenv("HERMES_API_KEY", SECRET)
+        monkeypatch.setenv("ATLAS_REPO_ROOT", str(repo))
+        orch = Orchestrator(workspace=tmp_path / "atlas")
+        app = FastAPI()
+        app.include_router(build_router(lambda: orch))
+        client = TestClient(app)
 
         body = json.dumps({"intent": "dame los últimos commits"}).encode()
         r = client.post("/api/exec/intent", content=body, headers=_sign(body))

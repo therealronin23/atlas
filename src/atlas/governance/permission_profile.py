@@ -68,12 +68,23 @@ class PermissionProfile:
         "/sys/class/hwmon/",
     )
 
-    def __init__(self, config_path: Path, workspace: Path | None = None) -> None:
+    def __init__(
+        self,
+        config_path: Path,
+        workspace: Path | None = None,
+        git_inspect_root: Path | None = None,
+    ) -> None:
         with config_path.open(encoding="utf-8") as f:
             self._cfg: dict[str, Any] = yaml.safe_load(f)
 
         self._workspace: Path = workspace or self._resolve_workspace()
         self._confirmed_this_session: set[str] = set()
+        # SEC-01: único repo extra sobre el que se permite `git -C <root> <sub>`
+        # con subcomandos read-only. Atlas inspecciona su PROPIO repo de código,
+        # que vive fuera del workspace. None => no se permite ningún `-C`.
+        self._git_inspect_root: Path | None = (
+            Path(git_inspect_root).expanduser().resolve() if git_inspect_root else None
+        )
 
     # ------------------------------------------------------------------
     # Evaluacion de rutas
@@ -154,14 +165,38 @@ class PermissionProfile:
         # SEC-01: git con subcomandos explicitos; nunca prefix-match sobre "git" a secas.
         if cmd_strip == "git" or cmd_strip.startswith("git "):
             parts = cmd_strip.split()
-            if len(parts) < 2:
+            rest = parts[1:]
+            # Opción global líder `-C <path>`: solo para inspeccionar el repo de
+            # código propio (git_inspect_root), nunca rutas arbitrarias. Mantiene
+            # el cwd del sandbox dentro del workspace mientras git lee el repo real.
+            git_dir_override: str | None = None
+            if len(rest) >= 2 and rest[0] == "-C":
+                git_dir_override = rest[1]
+                rest = rest[2:]
+            if not rest:
                 return AccessDecision(
                     allowed=False,
                     level=PermissionLevel.BLOCKED,
                     reason="git requiere un subcomando (p. ej. git status).",
                     path=cmd_strip,
                 )
-            sub = parts[1]
+            sub = rest[0]
+            if git_dir_override is not None:
+                target = Path(git_dir_override).expanduser().resolve()
+                if self._git_inspect_root is None or target != self._git_inspect_root:
+                    return AccessDecision(
+                        allowed=False,
+                        level=PermissionLevel.BLOCKED,
+                        reason=f"git -C solo permitido sobre el repo de Atlas, no {target}.",
+                        path=cmd_strip,
+                    )
+                if sub == "apply":
+                    return AccessDecision(
+                        allowed=False,
+                        level=PermissionLevel.BLOCKED,
+                        reason="git -C no permitido para subcomandos mutantes (apply).",
+                        path=cmd_strip,
+                    )
             if sub in _GIT_DENIED_SUBCOMMANDS:
                 return AccessDecision(
                     allowed=False,
