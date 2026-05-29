@@ -245,8 +245,11 @@ ADR-029  Audit FTS5 search (`atlas search`, `core/audit_search.py`) + reverse tw
          audit (`POST /api/exec/audit` + `scripts/hermes_skill_atlas_audit/`).
          Absorbe `hermes sessions` search; cierra "Hermes corre sin auditoría".
 ADR-030  Block memory (Letta/MemGPT core memory). `memory/block_memory.py` +
-         `atlas blocks` CLI. Bloques etiquetados, char-bounded, siempre-en-contexto;
-         over-limit lanza (pressure), no trunca. Último fork abierto del master plan.
+         `atlas blocks` CLI + `orch.block_memory`. Bloques etiquetados, char-bounded;
+         over-limit lanza (pressure), no trunca. Fase 2: `render()` se inyecta en el
+         contexto de inferencia local (siempre-en-contexto). Write path = CLI/API
+         (auto-edición por el modelo pendiente: requiere loop agéntico de tool-calls).
+         Último fork abierto del master plan.
 
 ## Open ADRs
 

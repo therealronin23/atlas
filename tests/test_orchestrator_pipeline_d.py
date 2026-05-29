@@ -391,6 +391,40 @@ class TestHybridClassify:
         assert task.tool_name == "inference_hub.failed"
         assert "rate limit" in task.result["message"].lower()
 
+    def test_block_memory_render_injected_into_context(self, orch: Orchestrator) -> None:
+        # ADR-030 fase 2: los bloques siempre-en-contexto deben aparecer en el
+        # context del InferenceRequest enviado al hub.
+        from unittest.mock import MagicMock
+        from atlas.core.inference_hub import (
+            InferenceHub, InferenceLevel, InferenceResponse,
+        )
+
+        orch.block_memory.create("persona", "Soy Atlas, runtime soberano local.")
+
+        captured: dict = {}
+
+        def fake_infer(request):  # noqa: ANN001
+            captured["context"] = request.context
+            return InferenceResponse(
+                text="ok",
+                provider="mock",
+                model="m",
+                level=InferenceLevel.L1,
+                latency_ms=1,
+                success=True,
+                tokens_used=1,
+                mode="live",
+            )
+
+        hub = MagicMock(spec=InferenceHub)
+        hub.infer.side_effect = fake_infer
+
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        orch.handle_intent("explicame algo abstracto sin keywords")
+
+        assert "<persona>" in captured["context"]
+        assert "runtime soberano local" in captured["context"]
+
     def test_pii_redact_restore_roundtrip(self, orch: Orchestrator) -> None:
         # El intent lleva un email. El hub recibe el email REDACTED; su
         # respuesta menciona el surrogate; el resultado final muestra el

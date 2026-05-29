@@ -41,6 +41,7 @@ from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.timetravel import TimeTravel
+from atlas.memory.block_memory import BlockMemory
 from atlas.memory.distiller import ChunkSource, MemoryDistiller
 from atlas.memory.embeddings import Embedder, StubEmbedder
 from atlas.memory.vector_store import KuzuVectorStore
@@ -481,6 +482,11 @@ class Orchestrator:
     def vector_store(self) -> KuzuVectorStore | None:
         """KuzuVectorStore activo cuando Gate D + ATLAS_MEMORY_VECTOR (default on)."""
         return self._vector_store
+
+    @property
+    def block_memory(self) -> BlockMemory:
+        """ADR-030 block memory — bloques siempre-en-contexto (Letta/MemGPT)."""
+        return self._block_memory
 
     @staticmethod
     def _memory_vector_enabled() -> bool:
@@ -1785,6 +1791,12 @@ class Orchestrator:
         else:
             ctx_text = system_text
 
+        # 2b. ADR-030: bloques de core memory siempre-en-contexto, antes del
+        # contexto archival. Vacio si no hay bloques (no inyecta nada).
+        blocks_text = self._block_memory.render()
+        if blocks_text:
+            ctx_text = f"{blocks_text}\n\n{ctx_text}" if ctx_text else blocks_text
+
         # 3. Redact context
         redacted_ctx = self._pii_surrogate.redact(ctx_text)
 
@@ -2054,6 +2066,12 @@ class Orchestrator:
         # Memoria
         self._system_context = SystemContextLoader.load(
             self._workspace / "memory" / "system_context"
+        )
+        # ADR-030 block memory: bloques siempre-en-contexto (persona/human/...).
+        # render() se inyecta en el prompt de inferencia local.
+        self._block_memory = BlockMemory(
+            self._workspace / "memory" / "blocks",
+            merkle=self._merkle,
         )
         self._error_registry = ErrorRegistry(
             self._workspace / "memory" / "error_registry",
