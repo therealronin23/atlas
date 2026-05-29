@@ -321,6 +321,14 @@ class TestHybridClassify:
         assert payload["rule_confidence"] == pytest.approx(0.6)
         assert "slm_level" in payload
 
+    def test_init_does_not_log_session_started(self, orch: Orchestrator) -> None:
+        # Fix A: construir el Orchestrator (lo hace cada comando CLI) NO debe
+        # escribir session.started; solo `atlas serve` via log_session_start().
+        actions = [r.get("action") for r in orch.audit_tail(200)]
+        assert "session.started" not in actions
+        orch.log_session_start()
+        assert "session.started" in [r.get("action") for r in orch.audit_tail(200)]
+
     def test_enable_gate_d_auto_creates_inference_hub(self, orch: Orchestrator) -> None:
         orch.enable_gate_d_pipeline()
         assert orch.inference_hub is not None

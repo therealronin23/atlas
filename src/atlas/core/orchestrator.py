@@ -135,7 +135,6 @@ class Orchestrator:
         self._start_time = datetime.now(timezone.utc)
         self._init_dirs()
         self._init_components()
-        self._log_session_start()
 
     # ------------------------------------------------------------------
     # API publica principal
@@ -2258,7 +2257,14 @@ class Orchestrator:
             "shell_allowlist:\n  - echo\n  - cat\n  - ls\n  - git status\n  - git log\n  - git diff\n"
         )
 
-    def _log_session_start(self) -> None:
+    def log_session_start(self) -> None:
+        """Registra el inicio de una sesion de larga duracion (serve).
+
+        NO se llama en ``__init__``: las invocaciones one-shot del CLI (incluso
+        de solo-lectura como ``search``/``audit``) construyen un Orchestrator y
+        antes ensuciaban el ledger con un ``session.started`` por comando. Ahora
+        solo ``atlas serve`` lo registra explicitamente.
+        """
         self._merkle.log(
             action="session.started",
             agent="orchestrator",
