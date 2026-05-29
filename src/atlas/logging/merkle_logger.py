@@ -6,8 +6,10 @@ Ningun componente de Atlas puede modificar o eliminar entradas.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
+import os
 import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -84,7 +86,7 @@ AUDIT_ACTIONS = {
     "memory.block.created", "memory.block.edited", "memory.block.deleted",
     "config.changed",
     "session.started", "session.ended",
-    "chain.rotated",
+    "chain.rotated", "chain.repaired",
 }
 
 
@@ -116,24 +118,35 @@ class MerkleLogger:
         Anade un AuditRecord a la cadena.
         Asigna hash_prev y recalcula hash_self.
         Retorna el record con hashes actualizados.
+
+        Seguro entre procesos: toma un ``flock`` exclusivo sobre el archivo y
+        relee el ultimo hash real desde disco antes de encadenar, en vez de
+        confiar en ``self._last_hash`` (que queda obsoleto si otro proceso
+        escribio mientras tanto). Sin esto, dos escritores concurrentes (p.ej.
+        el servicio + un comando CLI) forkean la cadena.
         """
         with self._lock:
-            # Reasignar hash_prev con el ultimo hash de la cadena
-            linked = AuditRecord(
-                action=record.action,
-                agent=record.agent,
-                result=record.result,
-                risk_level=record.risk_level,
-                payload=record.payload,
-                task_id=record.task_id,
-                id=record.id,
-                hash_prev=self._last_hash,
-                timestamp=record.timestamp,
-            )
-            line = json.dumps(linked.to_dict(), ensure_ascii=False)
             self._rotate_if_needed()
             with self._current_file.open("a", encoding="utf-8") as f:
-                f.write(line + "\n")
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    prev_hash = self._read_last_hash_from_disk()
+                    linked = AuditRecord(
+                        action=record.action,
+                        agent=record.agent,
+                        result=record.result,
+                        risk_level=record.risk_level,
+                        payload=record.payload,
+                        task_id=record.task_id,
+                        id=record.id,
+                        hash_prev=prev_hash,
+                        timestamp=record.timestamp,
+                    )
+                    f.write(json.dumps(linked.to_dict(), ensure_ascii=False) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
             self._last_hash = linked.hash_self
             self._record_count += 1
             return linked
@@ -224,6 +237,33 @@ class MerkleLogger:
 
     def _resolve_current_file(self) -> Path:
         return self._log_dir / "merkle.jsonl"
+
+    def _read_last_hash_from_disk(self) -> str:
+        """Devuelve el hash_self del ultimo record fisico del archivo actual.
+
+        Lee solo la cola del archivo (binario) para no recorrerlo entero. Si el
+        archivo no existe o esta vacio (p.ej. justo tras una rotacion), cae al
+        ``self._last_hash`` en memoria, que conserva el ultimo hash previo a la
+        rotacion; si tampoco lo hay, GENESIS.
+        """
+        path = self._current_file
+        if not path.exists():
+            return self._last_hash
+        with path.open("rb") as rf:
+            size = rf.seek(0, os.SEEK_END)
+            if size == 0:
+                return self._last_hash
+            block = min(size, 131072)
+            rf.seek(size - block)
+            chunk = rf.read()
+        text = chunk.decode("utf-8", errors="ignore")
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if not lines:
+            return self._last_hash
+        try:
+            return json.loads(lines[-1]).get("hash_self", self._last_hash)
+        except json.JSONDecodeError:
+            return self._last_hash
 
     def _load_last_hash(self) -> None:
         """Carga el ultimo hash de la cadena existente al arrancar."""

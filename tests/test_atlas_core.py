@@ -400,6 +400,21 @@ class TestMerkleLogger:
         ok, msg = ml2.verify_chain()
         assert ok is False
 
+    def test_interleaved_writers_keep_chain_valid(self, tmp_path):
+        """Dos loggers (simulan dos procesos) escriben alternados al mismo
+        archivo. Sin re-lectura del ultimo hash bajo flock esto forkearia la
+        cadena (el bug que corrompio merkle.jsonl en prod)."""
+        from atlas.logging.merkle_logger import MerkleLogger
+        a = MerkleLogger(tmp_path / "audit")
+        b = MerkleLogger(tmp_path / "audit")
+        for i in range(15):
+            a.log("task.created", "writer_a", "success", payload={"i": i})
+            b.log("session.started", "writer_b", "success", payload={"i": i})
+        checker = MerkleLogger(tmp_path / "audit")
+        ok, msg = checker.verify_chain()
+        assert ok is True, msg
+        assert len(checker.read_all()) == 30
+
 
 # ===========================================================================
 # Task lifecycle (criterios 1-5 de Gate B)

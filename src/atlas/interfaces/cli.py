@@ -667,6 +667,7 @@ def serve(poll_interval: float) -> None:
     from atlas.runtime.service_runner import AtlasServiceRunner  # noqa: PLC0415
 
     orch = get_orchestrator()
+    orch.log_session_start()
     runner = AtlasServiceRunner(orch)
     console.print("[bold cyan]Atlas serve[/bold cyan] — Ctrl+C para detener")
     console.print("[dim]ATLAS_SERVE_DASHBOARD=1 para dashboard; ATLAS_THERMAL_MONITOR=1 para termico[/dim]")
