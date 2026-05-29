@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -210,6 +211,38 @@ class TestExecIntent:
         body = json.dumps({}).encode()
         r = client.post("/api/exec/intent", content=body, headers=_sign(body))
         assert r.status_code == 400
+
+    def test_intent_grounds_git_log_not_hallucination(
+        self, client: TestClient, orch: Orchestrator,
+    ) -> None:
+        """ADR-031 twin seal: a factual intent delegated by Hermes returns the
+        REAL git history (grounding), not an invented one. Seeds the isolated
+        workspace as a git repo with a known commit and asserts that exact
+        subject flows back through /api/exec/intent."""
+        import subprocess
+
+        repo = orch._workspace
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "exec-test", "GIT_AUTHOR_EMAIL": "e@t.local",
+            "GIT_COMMITTER_NAME": "exec-test", "GIT_COMMITTER_EMAIL": "e@t.local",
+        }
+        for args in (
+            ["init", "-q"],
+            ["add", "-A"],
+            ["commit", "-q", "--allow-empty", "-m", "grounding marker commit"],
+        ):
+            subprocess.run(["git", *args], cwd=repo, check=True,
+                           capture_output=True, env=env)
+
+        body = json.dumps({"intent": "dame los últimos commits"}).encode()
+        r = client.post("/api/exec/intent", content=body, headers=_sign(body))
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["status"] == "done"
+        assert data["tool"] == "git.log"
+        blob = json.dumps(data["result"], ensure_ascii=False)
+        assert "grounding marker commit" in blob
 
 
 class TestExecAudit:
