@@ -12,8 +12,13 @@ from rich.markup import escape as _markup_escape
 from rich.table import Table
 from rich import print as rprint
 
+from typing import TYPE_CHECKING
+
 from atlas.core.contracts import TaskSource
 from atlas.core.orchestrator import Orchestrator
+
+if TYPE_CHECKING:
+    from atlas.memory.block_memory import BlockMemory
 
 console = Console()
 _orch: Orchestrator | None = None
@@ -542,6 +547,116 @@ def search(query: tuple[str, ...], limit: int, as_json: bool) -> None:
             r.get("result", ""),
         )
     console.print(table)
+
+
+@cli.group()
+def blocks() -> None:
+    """ADR-030 block memory — bloques etiquetados siempre-en-contexto (Letta/MemGPT)."""
+
+
+def _block_memory() -> "BlockMemory":  # noqa: F821
+    from atlas.logging.merkle_logger import MerkleLogger  # noqa: PLC0415
+    from atlas.memory.block_memory import BlockMemory  # noqa: PLC0415
+
+    workspace = Path(get_orchestrator().status().workspace)
+    merkle = MerkleLogger(workspace / "memory" / "audit")
+    return BlockMemory(workspace / "memory" / "blocks", merkle=merkle)
+
+
+@blocks.command("list")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+def blocks_list(as_json: bool) -> None:
+    """Lista los bloques con su ocupación."""
+    mem = _block_memory()
+    items = mem.all()
+    if as_json:
+        console.print_json(json.dumps([b.to_dict() for b in items], ensure_ascii=False))
+        return
+    if not items:
+        console.print("[dim]Sin bloques.[/dim]")
+        return
+    table = Table(title="Block memory")
+    table.add_column("Label", style="cyan")
+    table.add_column("Chars", justify="right")
+    table.add_column("Limit", justify="right")
+    table.add_column("Description")
+    for b in items:
+        color = "red" if b.is_full else "white"
+        table.add_row(b.label, f"[{color}]{b.chars}[/{color}]", str(b.limit), b.description)
+    console.print(table)
+
+
+@blocks.command("show")
+@click.argument("label")
+def blocks_show(label: str) -> None:
+    """Muestra el contenido de un bloque."""
+    block = _block_memory().get(label)
+    if block is None:
+        console.print(f"[red]Bloque '{label}' no existe.[/red]")
+        return
+    console.print(f"[bold cyan]<{block.label}>[/bold cyan] ({block.chars}/{block.limit})")
+    console.print(block.value or "[dim](vacío)[/dim]")
+
+
+@blocks.command("create")
+@click.argument("label")
+@click.argument("value", nargs=-1)
+@click.option("--limit", default=2000, show_default=True, type=int)
+@click.option("--description", default="", help="Para qué sirve el bloque.")
+def blocks_create(label: str, value: tuple[str, ...], limit: int, description: str) -> None:
+    """Crea un bloque nuevo."""
+    from atlas.memory.block_memory import BlockMemoryError  # noqa: PLC0415
+
+    try:
+        b = _block_memory().create(label, " ".join(value), limit=limit, description=description)
+    except BlockMemoryError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return
+    console.print(f"[green]Bloque '{b.label}' creado[/green] ({b.chars}/{b.limit})")
+
+
+@blocks.command("set")
+@click.argument("label")
+@click.argument("value", nargs=-1, required=True)
+def blocks_set(label: str, value: tuple[str, ...]) -> None:
+    """Reemplaza el contenido completo de un bloque."""
+    from atlas.memory.block_memory import BlockMemoryError  # noqa: PLC0415
+
+    try:
+        b = _block_memory().set(label, " ".join(value))
+    except BlockMemoryError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return
+    console.print(f"[green]'{b.label}' actualizado[/green] ({b.chars}/{b.limit})")
+
+
+@blocks.command("append")
+@click.argument("label")
+@click.argument("text", nargs=-1, required=True)
+def blocks_append(label: str, text: tuple[str, ...]) -> None:
+    """Añade texto al final de un bloque."""
+    from atlas.memory.block_memory import BlockMemoryError  # noqa: PLC0415
+
+    try:
+        b = _block_memory().append(label, " ".join(text))
+    except BlockMemoryError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return
+    console.print(f"[green]'{b.label}' ampliado[/green] ({b.chars}/{b.limit})")
+
+
+@blocks.command("delete")
+@click.argument("label")
+def blocks_delete(label: str) -> None:
+    """Elimina un bloque."""
+    from atlas.memory.block_memory import BlockMemoryError  # noqa: PLC0415
+
+    try:
+        _block_memory().delete(label)
+    except BlockMemoryError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return
+    console.print(f"[yellow]'{label}' eliminado[/yellow]")
 
 
 @cli.command()

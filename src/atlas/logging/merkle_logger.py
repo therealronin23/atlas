@@ -81,6 +81,7 @@ AUDIT_ACTIONS = {
     "model.called", "model.timeout",
     "thermal.alert",
     "memory.written",
+    "memory.block.created", "memory.block.edited", "memory.block.deleted",
     "config.changed",
     "session.started", "session.ended",
     "chain.rotated",
