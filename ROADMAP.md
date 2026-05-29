@@ -142,8 +142,12 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
 - ✅ **Auto-edición de block memory por el modelo** — RESUELTO (ADR-031).
   El modelo edita sus bloques vía `edit/append_memory_block` dentro del loop;
   `BlockLimitExceeded` se le devuelve como presión (resume), no como crash.
-- **E2E Telegram twin** — funciona mecánicamente; con grounding (ADR-031) el
-  contenido ya es fiable. Falta smoke real de punta a punta para sellarlo.
+- ✅ **E2E twin (lado Atlas)** — SELLADO. `scripts/twin_e2e_smoke.py` (in-process,
+  ATLAS_HOME aislado) y `tests/test_exec_api.py::test_intent_grounds_git_log_not_hallucination`
+  prueban el circuito Hermes→Atlas `/api/exec/intent` con grounding real
+  (git.log devuelve commits reales, sin alucinación) + auditoría Merkle.
+  Pendiente solo el tramo Telegram→Hermes en vivo (`--live <url>` cuando los
+  servicios estén arriba); el lado Atlas ya no puede regresionar en silencio.
 - **Tools mutantes dentro del loop** — v1 solo expone lectura + block memory.
   Browser/editor siguen por `AWAITING_APPROVAL`; meterlos en el loop requiere
   HITL inline (futuro).
