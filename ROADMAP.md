@@ -142,12 +142,21 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
 - ✅ **Auto-edición de block memory por el modelo** — RESUELTO (ADR-031).
   El modelo edita sus bloques vía `edit/append_memory_block` dentro del loop;
   `BlockLimitExceeded` se le devuelve como presión (resume), no como crash.
-- ✅ **E2E twin (lado Atlas)** — SELLADO. `scripts/twin_e2e_smoke.py` (in-process,
-  ATLAS_HOME aislado) y `tests/test_exec_api.py::test_intent_grounds_git_log_not_hallucination`
-  prueban el circuito Hermes→Atlas `/api/exec/intent` con grounding real
-  (git.log devuelve commits reales, sin alucinación) + auditoría Merkle.
-  Pendiente solo el tramo Telegram→Hermes en vivo (`--live <url>` cuando los
-  servicios estén arriba); el lado Atlas ya no puede regresionar en silencio.
+- ✅ **E2E twin Telegram→Hermes→Atlas** — SELLADO EN VIVO (2026-05-29). Mensaje
+  real al bot `@GodAtlas_bot` → Hermes delega `/api/exec/intent` → Atlas aterriza
+  `git.log` contra el repo real → el bot muestra los commits reales. Cadena Merkle
+  íntegra (547/547). Cubierto por `scripts/twin_e2e_smoke.py` (+ `--live <url>`) y
+  `tests/test_exec_api.py::test_intent_grounds_git_log_not_hallucination`.
+- ✅ **Grounding git apuntaba al directorio equivocado** — RESUELTO (commit
+  `3f4f5d1`). El smoke en vivo destapó que `_run_git_*` corría en el workspace
+  `~/atlas` (NO es repo git) → toda pregunta git devolvía `fatal`. Fix: `git -C
+  <ATLAS_REPO_ROOT>` con SEC-01 endurecido (solo el repo propio, solo subcomandos
+  read-only). Atlas es ahora **inmune** a que el intent traiga un path erróneo.
+- ⚠️ **Hermes atribuye ruta incorrecta en su prosa** — COSMÉTICO. Tras reescribir
+  `atlas-exec/SKILL.md` + `references/git-verification.md` en el VPS, Hermes ya no
+  hace `find /` local, pero todavía dice "commits de `/home/ronin/atlas`" (falso;
+  vienen de `~/proyectos/atlas-core`). El dato es correcto; solo miente la
+  procedencia. Probable origen: `SOUL.md`/memories del VPS. No bloquea nada.
 - **Tools mutantes dentro del loop** — v1 solo expone lectura + block memory.
   Browser/editor siguen por `AWAITING_APPROVAL`; meterlos en el loop requiere
   HITL inline (futuro).
