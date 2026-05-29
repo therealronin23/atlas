@@ -15,6 +15,7 @@ env/
 
 # Test / cache
 .pytest_cache/
+pytest-of-ronin/
 .coverage
 htmlcov/
 .tox/

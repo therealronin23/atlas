@@ -13,9 +13,12 @@ components serve Atlas, not the other way around.
 
 ## Project Status
 
-> **Última sincronización: 2026-05-28** — Atlas+Hermes-Agent twin architecture
-> live (ADR-026). Atlas Core v0.10.0 on `main`; v0.11.0 in flight cleaning the
-> Hermes deployment debt. Both sides systemd-supervised:
+> **Última sincronización: 2026-05-29** — Atlas+Hermes-Agent twin architecture
+> live (ADR-026..029) + block memory estilo Letta (ADR-030). Atlas Core
+> **v0.12.0** on `main`. 691 tests verdes. Lista viva de pendientes en
+> `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
+> cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
+> systemd-supervised:
 >
 > - **Atlas (laptop)**: `systemctl --user status atlas-core` — survives
 >   logout via `loginctl enable-linger ronin`. Unit at

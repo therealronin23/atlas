@@ -1,7 +1,11 @@
 # ATLAS — Hoja de Ruta
 
-> Estado actual: **v0.9.0** — Gate I + ADR-024 Observability MVP + ADR-025 ColdUpdate MVP.
-> Tags: `v0.8-gate-i`, `v0.9-adrs-024-025` (propuesto). Siguiente: fleet, Hermes webhook, ColdUpdate v2.
+> Estado actual: **v0.12.0** — Gates A–I sellados + arquitectura twin Atlas↔Hermes
+> viva (ADR-026..029) + block memory estilo Letta (ADR-030). 687 tests verdes.
+> Última sincronización del documento: 2026-05-29.
+>
+> **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
+> al final. Este es el único documento que mantiene la lista viva de "qué falta".
 
 ---
 
@@ -90,6 +94,71 @@ operations without losing state between commands.
 - DONE: `atlas pending` and `atlas approve <task_id>` implemented.
 - DONE: Telegram token configured locally in `.env`.
 - DONE: Telegram chat authorization discovered via `/start`; `TELEGRAM_CHAT_ID` configured locally; outbound Telegram smoke PASS.
+
+---
+
+## Post-Gate-I — Observabilidad, ColdUpdate y arquitectura Twin
+
+Trabajo posterior al sellado de los Gates A–I. No abre Gates nuevos; son ADRs
+que extienden el runtime sellado.
+
+| ADR | Estado | Descripción |
+|-----|--------|-------------|
+| ADR-024 | ✅ SEALED (MVP) | Observability/logging v2. |
+| ADR-025 | ✅ SEALED (MVP) | ColdUpdateManager (self-improvement, HITL). |
+| ADR-026 | ✅ Accepted | Arquitectura twin Atlas (laptop) ↔ Hermes-Agent (VPS). |
+| ADR-027 | ✅ Accepted | `/api/exec/intent` — Hermes delega intents a Atlas (HMAC). |
+| ADR-028 | ✅ Accepted | Twin kanban bridge Atlas→Hermes (SSH). |
+| ADR-029 | ✅ Accepted | `/api/exec/audit` (reverse-audit) + búsqueda FTS5. |
+| ADR-030 | ✅ Accepted | Block memory estilo Letta/MemGPT (core memory siempre-en-contexto). |
+
+Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_memory.md`.
+
+- **Twin operativo**: Hermes (Nous Research, VPS Hetzner) delega a Atlas vía
+  `/api/exec/intent`; Atlas devuelve resultados auditados. Bot Telegram
+  `@GodAtlas_bot` como front conversacional.
+- **Block memory**: bloques etiquetados con límite de caracteres, siempre
+  inyectados al contexto antes del archival. Mutación vía CLI `atlas blocks` y
+  API; auto-edición por el modelo **diferida** (necesita loop agéntico de
+  tool-calls, ver Pendientes).
+- **Endurecimiento Merkle** (commit dc497c7): `MerkleLogger.append` con
+  `flock` exclusivo + relectura de hash desde disco + `fsync`; `session.started`
+  fuera de `Orchestrator.__init__` (el CLI one-shot ya no escribe al arrancar).
+  Validado en el crash del 2026-05-29: cadena íntegra (528 records) pese a
+  apagado sucio.
+
+---
+
+## Pendientes / Cabos abiertos
+
+> Lista viva consolidada (la que antes no existía en ningún sitio). Actualizar
+> aquí cuando algo se cierre o aparezca.
+
+### Funcionales
+- **Grounding general factual** — El routing intención→tool es por keywords
+  ([`orchestrator.py`](src/atlas/core/orchestrator.py), `_execute_task`).
+  Las preguntas factuales sobre git (commits/cambios) ya enrutan a las tools
+  reales (fix 2026-05-29), pero **el patrón sigue abierto** para otras consultas
+  factuales que caen a inferencia LOCAL_SAFE y pueden alucinar. Solución de
+  fondo: loop agéntico de tool-calls en `InferenceHub.infer` (hoy single-shot).
+- **Auto-edición de block memory por el modelo** — diferida; mismo bloqueo
+  (necesita loop agéntico). Hoy solo mutación humana (CLI/API).
+- **E2E Telegram twin** — funciona mecánicamente; la fiabilidad del contenido
+  dependía del bug de grounding (mitigado para git).
+
+### Upstream / externos
+- **`mcp_serve` roto** (Hermes upstream, `hermes_cli/mcp_config.py:748`,
+  `ModuleNotFoundError`). Issue redactado, pendiente de publicar.
+
+### Infra / operación
+- **SSD SanDisk SD8SNAT** — `UDMA_CRC_Error_Count=24` (errores de enlace SATA,
+  no de medio). Disco SANO (PASSED, 0 reasignados). Vigilar; si reaparece el
+  `errors=remount-ro`, reasentar conector. journald ya persistente.
+
+### Roadmap previo (todavía válido)
+- Flota / Atlas Box (`docs/atlas_box_architecture.md`, `docs/fleet_security_plan.md`).
+- Hermes webhook; ColdUpdate v2.
+- eBPF / seccomp hardening (Post-F).
 
 ---
 

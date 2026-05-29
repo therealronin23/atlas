@@ -112,3 +112,25 @@ class TestHandleIntentRoutesThroughExecutor:
         list_logs = [r for r in recent if r.action == "fs.list_dir"]
         assert len(list_logs) >= 1
         assert list_logs[-1].agent == "atlas.executor"
+
+    @pytest.mark.parametrize(
+        "intent",
+        [
+            "dame los últimos commits",
+            "muéstrame los commits recientes",
+            "recent commits del proyecto",
+            "cuáles fueron los últimos cambios",
+        ],
+    )
+    def test_natural_commit_questions_route_to_git_log_not_inference(
+        self, orch: Orchestrator, intent: str
+    ) -> None:
+        """Grounding: preguntas factuales sobre commits ejecutan git real
+        (execute_exec → exec.command, agent atlas.executor) en vez de caer a
+        inferencia LOCAL_SAFE, que inventaría hashes/mensajes de commit."""
+        t = orch.handle_intent(intent)
+        assert t.tool_name == "git.log"
+        recent = orch._merkle.tail(10)
+        exec_logs = [r for r in recent if r.action == "exec.command"]
+        assert len(exec_logs) >= 1, f"{intent!r} debe pasar por execute_exec"
+        assert exec_logs[-1].payload.get("command") == "git"
