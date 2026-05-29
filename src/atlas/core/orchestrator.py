@@ -264,7 +264,9 @@ class Orchestrator:
                 tasks.setdefault(task.id, task)
             return [self._pending_summary(t) for t in tasks.values()]
 
-    def approve_pending(self, task_id: str, approved: bool) -> dict:
+    def approve_pending(
+        self, task_id: str, approved: bool, *, abort: bool = False
+    ) -> dict:
         lock_fd, lock_path = self._acquire_pending_lock(task_id)
         if lock_fd is None:
             return {
@@ -273,14 +275,16 @@ class Orchestrator:
                 "error": "otro proceso esta aprobando o ejecutando esta tarea",
             }
         try:
-            return self._approve_pending_locked(task_id, approved)
+            return self._approve_pending_locked(task_id, approved, abort=abort)
         finally:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             os.close(lock_fd)
             if lock_path is not None:
                 lock_path.unlink(missing_ok=True)
 
-    def _approve_pending_locked(self, task_id: str, approved: bool) -> dict:
+    def _approve_pending_locked(
+        self, task_id: str, approved: bool, *, abort: bool = False
+    ) -> dict:
         with self._approvals_lock:
             task = self._pending_approvals.pop(task_id, None)
 
@@ -316,7 +320,45 @@ class Orchestrator:
             task_id=task.id,
         )
 
+        is_agentic = isinstance(task.metadata.get("agentic_state"), dict)
+
         if not approved:
+            # ADR-032 dec.6/7: para un loop suspendido, un DENY sin abort inyecta
+            # una denegación sintética y REANUDA (presión MemGPT → el modelo
+            # re-planifica). Con abort=True (o tarea no-agéntica) → CANCELLED.
+            if is_agentic and not abort:
+                state = task.metadata["agentic_state"]
+                state["denied"] = True
+                state["deny_reason"] = "human"
+                try:
+                    pending_path.replace(executing_path)
+                except OSError as exc:
+                    return {
+                        "task_id": task_id,
+                        "status": "failed",
+                        "error": f"no se pudo reservar ejecucion: {exc}",
+                    }
+                # No mark_confirmed: las mutaciones denegadas no se ejecutan; se
+                # inyecta una denegación sintética y el modelo re-planifica.
+                task.transition(TaskStatus.EXECUTING)
+                resuspended = False
+                try:
+                    self._resume_agentic_loop(task)
+                    resuspended = task.status == TaskStatus.AWAITING_APPROVAL
+                except Exception as e:  # noqa: BLE001
+                    task.transition(TaskStatus.FAILED)
+                    task.error = str(e)
+                finally:
+                    executing_path.unlink(missing_ok=True)
+                    if not resuspended:
+                        pending_path.unlink(missing_ok=True)
+                return {
+                    "task_id": task.id,
+                    "status": task.status.value,
+                    "approved": False,
+                    "denied_and_resumed": True,
+                    "result": task.result,
+                }
             task.transition(TaskStatus.CANCELLED)
             task.result = {"approved": False, "message": "Usuario rechazo la accion."}
             self._delete_pending_approval(task.id)
@@ -333,14 +375,20 @@ class Orchestrator:
 
         self._permissions.mark_confirmed(f"task:{task.id}")
         task.transition(TaskStatus.EXECUTING)
+        # ADR-032: si el loop se vuelve a suspender (otra mutación más adelante),
+        # NO borramos el nuevo <id>.json que _suspend_agentic_loop acaba de
+        # persistir; solo limpiamos la reserva .executing.
+        resuspended = False
         try:
             self._execute_task(task)
+            resuspended = task.status == TaskStatus.AWAITING_APPROVAL
         except Exception as e:
             task.transition(TaskStatus.FAILED)
             task.error = str(e)
         finally:
             executing_path.unlink(missing_ok=True)
-            pending_path.unlink(missing_ok=True)
+            if not resuspended:
+                pending_path.unlink(missing_ok=True)
 
         return {
             "task_id": task.id,
@@ -1097,6 +1145,13 @@ class Orchestrator:
             task.result = {"error": gate_h_block, "paused": True}
             return
 
+        # ADR-032: reanudación de un loop agéntico suspendido. Si la tarea trae
+        # estado serializado, la aprobación HITL ya ejecutó mark_confirmed; aquí
+        # se ejecutan las mutaciones pendientes y el loop continúa.
+        if "agentic_state" in task.metadata:
+            self._resume_agentic_loop(task)
+            return
+
         if "gate_f_command" in task.metadata:
             self._execute_gate_f_task(task)
             return
@@ -1146,6 +1201,12 @@ class Orchestrator:
                     "message": "Tarea LOCAL_SAFE recibida. InferenceHub no inyectado en este Orchestrator.",
                     "intent": task.intent,
                 }
+
+        # ADR-032: el loop agéntico pudo SUSPENDERSE durante la inferencia
+        # (mutación pendiente de aprobación). En ese caso la tarea ya está
+        # AWAITING_APPROVAL y persistida; no la cerremos como DONE.
+        if task.status == TaskStatus.AWAITING_APPROVAL:
+            return
 
         self._merkle.log(
             action="tool.invoked",
@@ -1847,53 +1908,22 @@ class Orchestrator:
         # datos reales (git, fs, blocks) en vez de alucinarse.
         iterations = 0
         tools_used: list[str] = []
-        max_iters = 5
         if response.tool_calls:
             messages: list[dict[str, Any]] = []
             if redacted_ctx.text:
                 messages.append({"role": "system", "content": redacted_ctx.text})
             messages.append({"role": "user", "content": redacted_intent.text})
 
-            while response.tool_calls and iterations < max_iters:
-                iterations += 1
-                messages.append({
-                    "role": "assistant",
-                    "content": response.text or None,
-                    "tool_calls": [
-                        {
-                            "id": tc["id"],
-                            "type": "function",
-                            "function": {"name": tc["name"], "arguments": tc["arguments"]},
-                        }
-                        for tc in response.tool_calls
-                    ],
-                })
-                for tc in response.tool_calls:
-                    tools_used.append(tc["name"])
-                    raw_result = self._dispatch_agentic_tool(
-                        tc["name"], tc["arguments"], task
-                    )
-                    # Redactar PII del resultado antes de devolverlo al modelo.
-                    safe_result = self._pii_surrogate.redact(raw_result).text
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": safe_result,
-                    })
-
-                request = InferenceRequest(
-                    prompt="",
-                    level=InferenceLevel.L1,
-                    messages=messages,
-                    tools=tool_specs,
-                    max_tokens=512,
-                    temperature=0.3,
-                    task_id=task.id,
-                )
-                response = self._inference_hub.infer(request)
-                if not response.success:
-                    self._record_inference_failure(task, response)
-                    return
+            # ADR-032: el loop puede suspenderse si el modelo pide una mutación
+            # de host (browser/editor). En ese caso _drive_agentic_loop devuelve
+            # None tras dejar la tarea AWAITING_APPROVAL; reanudaremos en
+            # approve_pending. Si termina, devuelve (response, iterations).
+            loop_result = self._drive_agentic_loop(
+                task, messages, response, tool_specs, iterations, tools_used,
+            )
+            if loop_result is None:
+                return
+            response, iterations = loop_result
 
         # 5. Restore PII en la respuesta usando ambos mappings
         combined: dict[str, str] = {}
@@ -1994,7 +2024,59 @@ class Orchestrator:
                 {"label": {"type": "string"}, "text": {"type": "string"}},
                 ["label", "text"],
             ),
+            # ADR-032: herramientas mutantes de host. El modelo puede pedirlas
+            # dentro del razonamiento; el loop se SUSPENDE y pide aprobación
+            # humana inline antes de ejecutarlas (HITL).
+            fn(
+                "editor_write",
+                "Escribe (sobrescribe) un archivo. MUTA el host: requiere aprobación humana inline.",
+                {"path": {"type": "string"}, "content": {"type": "string"}},
+                ["path", "content"],
+            ),
+            fn(
+                "editor_apply_diff",
+                "Aplica un diff unificado a un archivo. MUTA el host: requiere aprobación inline.",
+                {"path": {"type": "string"}, "diff": {"type": "string"}},
+                ["path", "diff"],
+            ),
+            fn(
+                "editor_run",
+                "Ejecuta un comando en un working_dir (sandbox). MUTA el host: requiere aprobación inline.",
+                {"working_dir": {"type": "string"}, "command": {"type": "string"}},
+                ["working_dir", "command"],
+            ),
+            fn(
+                "browser_navigate",
+                "Navega el browser a una URL. MUTA estado de host: requiere aprobación inline.",
+                {"url": {"type": "string"}},
+                ["url"],
+            ),
+            fn(
+                "browser_click",
+                "Hace click en un selector. MUTA estado de host: requiere aprobación inline.",
+                {"selector": {"type": "string"}},
+                ["selector"],
+            ),
+            fn(
+                "browser_fill",
+                "Rellena un campo de formulario. MUTA estado de host: requiere aprobación inline.",
+                {"selector": {"type": "string"}, "value": {"type": "string"}},
+                ["selector", "value"],
+            ),
         ]
+
+    # ADR-032: herramientas del loop que mutan el host. Reusar una sola fuente
+    # de verdad de riesgo (no duplicar listas). El resto (git/fs/status/blocks)
+    # son lectura/auto-edición y corren inline sin suspender.
+    _AGENTIC_MUTATING_TOOLS = frozenset({
+        "editor_write", "editor_apply_diff", "editor_run",
+        "browser_navigate", "browser_click", "browser_fill",
+    })
+
+    def _agentic_tool_kind(self, name: str) -> str:
+        """ADR-032: clasifica una herramienta del loop como 'read' (corre inline)
+        o 'mutate' (suspende el loop para aprobación HITL)."""
+        return "mutate" if name in self._AGENTIC_MUTATING_TOOLS else "read"
 
     def _stringify_tool_result(self, result: Any) -> str:
         if isinstance(result, dict):
@@ -2058,6 +2140,278 @@ class Orchestrator:
             return f"error: falta argumento {exc}"
         except Exception as exc:  # noqa: BLE001 — devolvemos el error al modelo
             return f"error: {type(exc).__name__}: {exc}"
+
+    # ------------------------------------------------------------------
+    # ADR-032 — loop agéntico suspendible/reanudable (HITL inline)
+    # ------------------------------------------------------------------
+
+    def _drive_agentic_loop(
+        self,
+        task: Task,
+        messages: list[dict[str, Any]],
+        response: Any,
+        tool_specs: list[dict[str, Any]],
+        iterations: int,
+        tools_used: list[str],
+    ) -> tuple[Any, int] | None:
+        """Maneja el loop agéntico (ADR-031) con suspensión por mutación (ADR-032).
+
+        Las herramientas de lectura corren inline; si el modelo pide una o más
+        herramientas mutantes en un turno, se agrupan, el loop se SUSPENDE
+        (AWAITING_APPROVAL, estado persistido) y devuelve None. Si el loop
+        termina con normalidad devuelve (response_final, iterations). Si la
+        inferencia falla, registra el fallo y devuelve None.
+
+        El presupuesto `max_iters` cuenta a través de suspensiones: `iterations`
+        entra con el valor acumulado y persiste en el estado serializado.
+        """
+        from atlas.core.inference_hub import InferenceLevel, InferenceRequest
+
+        max_iters = 5
+        while response.tool_calls and iterations < max_iters:
+            iterations += 1
+            messages.append({
+                "role": "assistant",
+                "content": response.text or None,
+                "tool_calls": [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {"name": tc["name"], "arguments": tc["arguments"]},
+                    }
+                    for tc in response.tool_calls
+                ],
+            })
+            pending_mutations: list[dict[str, Any]] = []
+            for tc in response.tool_calls:
+                tools_used.append(tc["name"])
+                if self._agentic_tool_kind(tc["name"]) == "mutate":
+                    # ADR-032 dec.5: agrupar TODAS las mutaciones del turno en una
+                    # sola aprobación. No se ejecutan aún; se persiste el tool_call.
+                    pending_mutations.append({
+                        "id": tc["id"],
+                        "name": tc["name"],
+                        "arguments": tc["arguments"],
+                    })
+                    continue
+                raw_result = self._dispatch_agentic_tool(
+                    tc["name"], tc["arguments"], task
+                )
+                # Redactar PII del resultado antes de devolverlo al modelo.
+                safe_result = self._pii_surrogate.redact(raw_result).text
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "content": safe_result,
+                })
+
+            if pending_mutations:
+                self._suspend_agentic_loop(
+                    task, messages, iterations, tools_used, pending_mutations,
+                )
+                return None
+
+            request = InferenceRequest(
+                prompt="",
+                level=InferenceLevel.L1,
+                messages=messages,
+                tools=tool_specs,
+                max_tokens=512,
+                temperature=0.3,
+                task_id=task.id,
+            )
+            response = self._inference_hub.infer(request)
+            if not response.success:
+                self._record_inference_failure(task, response)
+                return None
+
+        return response, iterations
+
+    def _suspend_agentic_loop(
+        self,
+        task: Task,
+        messages: list[dict[str, Any]],
+        iterations: int,
+        tools_used: list[str],
+        pending_mutations: list[dict[str, Any]],
+    ) -> None:
+        """ADR-032: serializa el estado del loop y deja la tarea AWAITING_APPROVAL.
+
+        El `messages` array ES la memoria del loop (dec.3). Se persiste en el
+        registro de pending approval existente bajo `agentic_state` (dec.4); ya
+        viene redactado de PII (los tool results se redactan antes de añadirse),
+        así que no persistimos PII en claro. La reanudación ocurre en
+        approve_pending al detectar `agentic_state`.
+        """
+        names = [m["name"] for m in pending_mutations]
+        reason = (
+            f"El razonamiento agéntico requiere ejecutar {len(names)} "
+            f"mutación(es) de host: {', '.join(names)}"
+        )
+        task.metadata["agentic_state"] = {
+            "messages": messages,
+            "iterations": iterations,
+            "tools_used": tools_used,
+            "pending_mutations": pending_mutations,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        task.route = RoutingLevel.REQUIRES_APPROVAL
+        task.tool_name = names[0] if names else "agentic.mutation"
+        task.transition(TaskStatus.AWAITING_APPROVAL)
+        task.result = {
+            "message": "Loop agéntico suspendido; mutaciones requieren aprobación inline.",
+            "approved": False,
+            "reason": reason,
+            "pending_mutations": names,
+            "iterations": iterations,
+        }
+        with self._approvals_lock:
+            self._pending_approvals[task.id] = task
+        self._persist_pending_approval(task)
+        self._merkle.log(
+            action="task.suspended",
+            agent="orchestrator.agentic",
+            result="pending",
+            risk_level="high",
+            payload={"iterations": iterations, "pending_mutations": names},
+            task_id=task.id,
+        )
+        self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+            "task_id": task.id,
+            "intent": task.intent,
+            "reason": reason,
+            "tool": task.tool_name,
+        }, task.id)
+
+    def _dispatch_agentic_mutation(
+        self, name: str, arguments: str, task: Task
+    ) -> str:
+        """ADR-032: ejecuta una mutación de host APROBADA por la vía Gate F, con
+        el clearance ya concedido (mark_confirmed("task:<id>") en approve). El
+        AtlasExecutor sigue siendo el único que autoriza (dec.8). Devuelve el
+        resultado como texto para reinyectarlo al loop."""
+        try:
+            args = json.loads(arguments) if arguments else {}
+        except json.JSONDecodeError:
+            args = {}
+        if not isinstance(args, dict):
+            args = {}
+
+        tool, _, action = name.partition("_")
+        self._merkle.log(
+            action="tool.invoked",
+            agent=f"orchestrator.agentic.{name}",
+            result="ok",
+            risk_level="high",
+            payload={"tool": name},
+            task_id=task.id,
+        )
+        try:
+            if tool == "editor":
+                result = self._execute_editor_command(action, args, task=task)
+            elif tool == "browser":
+                result = self._execute_browser_command(action, args)
+            else:
+                return f"error: mutación desconocida '{name}'"
+            return self._stringify_tool_result(result)
+        except KeyError as exc:
+            return f"error: falta argumento {exc}"
+        except Exception as exc:  # noqa: BLE001 — devolvemos el error al modelo
+            return f"error: {type(exc).__name__}: {exc}"
+
+    def _resume_agentic_loop(self, task: Task) -> None:
+        """ADR-032: reanuda un loop suspendido. Ejecuta las mutaciones pendientes
+        (o inyecta denegación sintética si el humano las rechazó sin abortar),
+        reinyecta los resultados y continúa el loop hasta respuesta final o nueva
+        suspensión. `iterations` continúa desde el valor persistido (dec.9)."""
+        from atlas.core.inference_hub import InferenceLevel, InferenceRequest
+
+        state = task.metadata.get("agentic_state")
+        if not isinstance(state, dict):
+            raise RuntimeError("agentic_state ausente o inválido en resume")
+
+        messages = list(state.get("messages") or [])
+        iterations = int(state.get("iterations", 0))
+        tools_used = list(state.get("tools_used") or [])
+        pending_mutations = list(state.get("pending_mutations") or [])
+        denied = bool(state.get("denied"))
+        deny_reason = str(state.get("deny_reason", "human"))
+
+        # Limpiar el estado para no re-resumir por accidente; si el loop vuelve a
+        # suspender, _suspend_agentic_loop escribe un agentic_state nuevo.
+        task.metadata.pop("agentic_state", None)
+
+        for mut in pending_mutations:
+            if denied:
+                # dec.6: presión MemGPT — el modelo re-planifica, no crashea.
+                safe_result = json.dumps(
+                    {"denied": True, "reason": deny_reason}, ensure_ascii=False
+                )
+            else:
+                raw_result = self._dispatch_agentic_mutation(
+                    mut["name"], str(mut.get("arguments", "")), task
+                )
+                safe_result = self._pii_surrogate.redact(raw_result).text
+            messages.append({
+                "role": "tool",
+                "tool_call_id": mut["id"],
+                "content": safe_result,
+            })
+
+        tool_specs = self._agentic_tool_specs()
+        request = InferenceRequest(
+            prompt="",
+            level=InferenceLevel.L1,
+            messages=messages,
+            tools=tool_specs,
+            max_tokens=512,
+            temperature=0.3,
+            task_id=task.id,
+        )
+        response = self._inference_hub.infer(request)
+        if not response.success:
+            self._record_inference_failure(task, response)
+            return
+
+        loop_result = self._drive_agentic_loop(
+            task, messages, response, tool_specs, iterations, tools_used,
+        )
+        if loop_result is None:
+            return  # re-suspendido (nueva aprobación) o fallo ya registrado
+        response, iterations = loop_result
+
+        # PII: no persistimos el combined mapping (evitar PII en disco), así que
+        # los surrogates no se restauran tras una suspensión (documentado en ADR).
+        restored = self._pii_surrogate.restore(response.text, {})
+        task.tool_name = "inference_hub.complete"
+        task.result = {
+            "text":        restored,
+            "provider":    response.provider,
+            "model":       response.model,
+            "latency_ms":  response.latency_ms,
+            "tokens_used": response.tokens_used,
+            "mode":        response.mode,
+            "iterations":  iterations,
+            "tools_used":  tools_used,
+            "resumed":     True,
+            "denied":      denied,
+        }
+        self._merkle.log(
+            action="inference.completed",
+            agent="orchestrator",
+            result="success",
+            risk_level="safe",
+            payload={
+                "provider":   response.provider,
+                "model":      response.model,
+                "iterations": iterations,
+                "tools_used": tools_used,
+                "resumed":    True,
+            },
+            task_id=task.id,
+        )
+        task.transition(TaskStatus.DONE)
+        self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
 
     def _delegate_to_hermes(self, task: Task) -> None:
         payload = DelegationBuilder.build(
