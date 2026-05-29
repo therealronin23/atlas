@@ -14,8 +14,9 @@ components serve Atlas, not the other way around.
 ## Project Status
 
 > **Última sincronización: 2026-05-29** — Atlas+Hermes-Agent twin architecture
-> live (ADR-026..029) + block memory estilo Letta (ADR-030). Atlas Core
-> **v0.12.0** on `main`. 691 tests verdes. Lista viva de pendientes en
+> live (ADR-026..029) + block memory estilo Letta (ADR-030) + loop agéntico de
+> tool-calls (ADR-031: grounding factual + auto-edición de blocks). Atlas Core
+> **v0.12.0** on `main`. 695 tests verdes. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
@@ -250,9 +251,13 @@ ADR-029  Audit FTS5 search (`atlas search`, `core/audit_search.py`) + reverse tw
 ADR-030  Block memory (Letta/MemGPT core memory). `memory/block_memory.py` +
          `atlas blocks` CLI + `orch.block_memory`. Bloques etiquetados, char-bounded;
          over-limit lanza (pressure), no trunca. Fase 2: `render()` se inyecta en el
-         contexto de inferencia local (siempre-en-contexto). Write path = CLI/API
-         (auto-edición por el modelo pendiente: requiere loop agéntico de tool-calls).
-         Último fork abierto del master plan.
+         contexto de inferencia local (siempre-en-contexto). Write path = CLI/API +
+         auto-edición por el modelo (ADR-031). Último fork abierto del master plan.
+ADR-031  Loop agéntico de tool-calls. `InferenceRequest.tools/messages` +
+         `InferenceResponse.tool_calls`; loop en `orchestrator._execute_local_safe_via_inference`.
+         Always-on para LOCAL_SAFE (degrada a single-shot sin tool_calls). Tools v1:
+         git/fs/status/blocks (lectura) + edit/append_memory_block (escritura).
+         Resuelve alucinación factual + auto-edición de blocks. max_iters=5, auditado.
 
 ## Open ADRs
 

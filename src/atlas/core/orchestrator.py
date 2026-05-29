@@ -41,7 +41,12 @@ from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.timetravel import TimeTravel
-from atlas.memory.block_memory import BlockMemory
+from atlas.memory.block_memory import (
+    BlockLimitExceeded,
+    BlockMemory,
+    BlockMemoryError,
+    BlockNotFound,
+)
 from atlas.memory.distiller import ChunkSource, MemoryDistiller
 from atlas.memory.embeddings import Embedder, StubEmbedder
 from atlas.memory.vector_store import KuzuVectorStore
@@ -1814,7 +1819,10 @@ class Orchestrator:
         # 3. Redact context
         redacted_ctx = self._pii_surrogate.redact(ctx_text)
 
-        # 4. Inference call
+        # 4. Inference call. ADR-031: exponemos herramientas de grounding al
+        # modelo. La PRIMERA llamada usa prompt+context (idéntico a v0.x: si el
+        # modelo no pide tools, una sola iteración → comportamiento previo).
+        tool_specs = self._agentic_tool_specs()
         request = InferenceRequest(
             prompt=redacted_intent.text,
             level=InferenceLevel.L1,
@@ -1822,25 +1830,67 @@ class Orchestrator:
             max_tokens=512,
             temperature=0.3,
             task_id=task.id,
+            tools=tool_specs,
         )
         response = self._inference_hub.infer(request)
 
         if not response.success:
-            task.tool_name = "inference_hub.failed"
-            task.result = {
-                "message": f"InferenceHub no devolvio respuesta: {response.error}",
-                "provider": response.provider,
-                "intent":   task.intent,
-            }
-            self._merkle.log(
-                action="inference.failed",
-                agent="orchestrator",
-                result="failure",
-                risk_level="moderate",
-                payload={"provider": response.provider, "error": response.error},
-                task_id=task.id,
-            )
+            self._record_inference_failure(task, response)
             return
+
+        # ADR-031: loop agéntico. Si el modelo pidió herramientas, las ejecutamos
+        # (auditadas), reinyectamos resultados y volvemos a llamar hasta respuesta
+        # final o tope de iteraciones. Las preguntas factuales se contestan con
+        # datos reales (git, fs, blocks) en vez de alucinarse.
+        iterations = 0
+        tools_used: list[str] = []
+        max_iters = 5
+        if response.tool_calls:
+            messages: list[dict[str, Any]] = []
+            if redacted_ctx.text:
+                messages.append({"role": "system", "content": redacted_ctx.text})
+            messages.append({"role": "user", "content": redacted_intent.text})
+
+            while response.tool_calls and iterations < max_iters:
+                iterations += 1
+                messages.append({
+                    "role": "assistant",
+                    "content": response.text or None,
+                    "tool_calls": [
+                        {
+                            "id": tc["id"],
+                            "type": "function",
+                            "function": {"name": tc["name"], "arguments": tc["arguments"]},
+                        }
+                        for tc in response.tool_calls
+                    ],
+                })
+                for tc in response.tool_calls:
+                    tools_used.append(tc["name"])
+                    raw_result = self._dispatch_agentic_tool(
+                        tc["name"], tc["arguments"], task
+                    )
+                    # Redactar PII del resultado antes de devolverlo al modelo.
+                    safe_result = self._pii_surrogate.redact(raw_result).text
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": safe_result,
+                    })
+
+                request = InferenceRequest(
+                    prompt="",
+                    level=InferenceLevel.L1,
+                    messages=messages,
+                    tools=tool_specs,
+                    max_tokens=512,
+                    temperature=0.3,
+                    task_id=task.id,
+                )
+                response = self._inference_hub.infer(request)
+                if not response.success:
+                    self._record_inference_failure(task, response)
+                    return
 
         # 5. Restore PII en la respuesta usando ambos mappings
         combined: dict[str, str] = {}
@@ -1857,6 +1907,8 @@ class Orchestrator:
             "tokens_used":  response.tokens_used,
             "mode":         response.mode,
             "pii_redacted": len(redacted_intent.matches) + len(redacted_ctx.matches),
+            "iterations":   iterations,
+            "tools_used":   tools_used,
         }
         self._merkle.log(
             action="inference.completed",
@@ -1869,9 +1921,137 @@ class Orchestrator:
                 "latency_ms":   response.latency_ms,
                 "tokens_used":  response.tokens_used,
                 "pii_redacted": len(redacted_intent.matches) + len(redacted_ctx.matches),
+                "iterations":   iterations,
+                "tools_used":   tools_used,
             },
             task_id=task.id,
         )
+
+    def _record_inference_failure(self, task: Task, response: Any) -> None:
+        task.tool_name = "inference_hub.failed"
+        task.result = {
+            "message": f"InferenceHub no devolvio respuesta: {response.error}",
+            "provider": response.provider,
+            "intent":   task.intent,
+        }
+        self._merkle.log(
+            action="inference.failed",
+            agent="orchestrator",
+            result="failure",
+            risk_level="moderate",
+            payload={"provider": response.provider, "error": response.error},
+            task_id=task.id,
+        )
+
+    # ------------------------------------------------------------------
+    # ADR-031 — herramientas del loop agéntico
+    # ------------------------------------------------------------------
+
+    def _agentic_tool_specs(self) -> list[dict[str, Any]]:
+        """Especificaciones de herramientas (formato OpenAI/LiteLLM) que el
+        modelo puede invocar durante el loop agéntico. v1: lectura/grounding
+        (git, fs, status, blocks) + escritura de block memory (auto-edición,
+        ADR-030 fase 2). Las herramientas mutantes de host (browser/editor)
+        siguen por el flujo AWAITING_APPROVAL, fuera del loop."""
+        def fn(
+            name: str,
+            desc: str,
+            props: dict[str, Any] | None = None,
+            required: list[str] | None = None,
+        ) -> dict[str, Any]:
+            return {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": desc,
+                    "parameters": {
+                        "type": "object",
+                        "properties": props or {},
+                        "required": required or [],
+                    },
+                },
+            }
+
+        return [
+            fn("git_log", "Últimos commits reales del repo (git log --oneline -10). Úsalo para preguntas sobre commits o historial; nunca inventes hashes."),
+            fn("git_status", "Estado git real del árbol de trabajo (git status --short)."),
+            fn("git_diff", "Diff resumido real (git diff --stat)."),
+            fn("list_workspace", "Lista los archivos del workspace de Atlas."),
+            fn("atlas_status", "Estado del runtime Atlas (componentes, versión)."),
+            fn("read_memory_blocks", "Lee los bloques de core memory siempre-en-contexto."),
+            fn(
+                "edit_memory_block",
+                "Reemplaza por completo el valor de un bloque de core memory.",
+                {"label": {"type": "string"}, "value": {"type": "string"}},
+                ["label", "value"],
+            ),
+            fn(
+                "append_memory_block",
+                "Añade texto al final de un bloque de core memory existente.",
+                {"label": {"type": "string"}, "text": {"type": "string"}},
+                ["label", "text"],
+            ),
+        ]
+
+    def _stringify_tool_result(self, result: Any) -> str:
+        if isinstance(result, dict):
+            if "stdout" in result:
+                out = result.get("stdout") or ""
+                return out.strip() or "(salida vacía)"
+            return json.dumps(result, ensure_ascii=False, default=str)[:2000]
+        return str(result)
+
+    def _dispatch_agentic_tool(
+        self, name: str, arguments: str, task: Task
+    ) -> str:
+        """Ejecuta una herramienta pedida por el modelo y devuelve su resultado
+        como texto. Cada invocación se audita. Los errores (incl. límite de
+        bloque excedido = presión MemGPT) se devuelven como texto para que el
+        modelo reaccione, no como excepción."""
+        try:
+            args = json.loads(arguments) if arguments else {}
+        except json.JSONDecodeError:
+            args = {}
+        if not isinstance(args, dict):
+            args = {}
+
+        self._merkle.log(
+            action="tool.invoked",
+            agent="orchestrator.agentic",
+            result="ok",
+            risk_level="safe",
+            payload={"tool": name},
+            task_id=task.id,
+        )
+
+        try:
+            if name == "git_log":
+                return self._stringify_tool_result(self._run_git_log(task))
+            if name == "git_status":
+                return self._stringify_tool_result(self._run_git_status(task))
+            if name == "git_diff":
+                return self._stringify_tool_result(self._run_git_diff(task))
+            if name == "list_workspace":
+                return self._stringify_tool_result(self._list_workspace())
+            if name == "atlas_status":
+                return self._stringify_tool_result(self.status().__dict__)
+            if name == "read_memory_blocks":
+                return self._block_memory.render() or "(sin bloques de memoria)"
+            if name == "edit_memory_block":
+                block = self._block_memory.set(args["label"], args["value"])
+                return f"ok: bloque '{block.label}' actualizado ({block.chars} chars)"
+            if name == "append_memory_block":
+                block = self._block_memory.append(args["label"], args["text"])
+                return f"ok: bloque '{block.label}' ampliado ({block.chars} chars)"
+            return f"error: herramienta desconocida '{name}'"
+        except BlockLimitExceeded as exc:
+            return f"error: límite del bloque excedido — resume o acorta el contenido. {exc}"
+        except (BlockNotFound, BlockMemoryError) as exc:
+            return f"error: {exc}"
+        except KeyError as exc:
+            return f"error: falta argumento {exc}"
+        except Exception as exc:  # noqa: BLE001 — devolvemos el error al modelo
+            return f"error: {type(exc).__name__}: {exc}"
 
     def _delegate_to_hermes(self, task: Task) -> None:
         payload = DelegationBuilder.build(

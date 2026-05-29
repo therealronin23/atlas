@@ -1,8 +1,8 @@
 # ATLAS — Hoja de Ruta
 
 > Estado actual: **v0.12.0** — Gates A–I sellados + arquitectura twin Atlas↔Hermes
-> viva (ADR-026..029) + block memory estilo Letta (ADR-030). 687 tests verdes.
-> Última sincronización del documento: 2026-05-29.
+> viva (ADR-026..029) + block memory estilo Letta (ADR-030) + loop agéntico de
+> tool-calls (ADR-031). 695 tests verdes. Última sincronización: 2026-05-29.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -111,6 +111,7 @@ que extienden el runtime sellado.
 | ADR-028 | ✅ Accepted | Twin kanban bridge Atlas→Hermes (SSH). |
 | ADR-029 | ✅ Accepted | `/api/exec/audit` (reverse-audit) + búsqueda FTS5. |
 | ADR-030 | ✅ Accepted | Block memory estilo Letta/MemGPT (core memory siempre-en-contexto). |
+| ADR-031 | ✅ Accepted | Loop agéntico de tool-calls (grounding factual + auto-edición de blocks). |
 
 Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_memory.md`.
 
@@ -135,16 +136,17 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
 > aquí cuando algo se cierre o aparezca.
 
 ### Funcionales
-- **Grounding general factual** — El routing intención→tool es por keywords
-  ([`orchestrator.py`](src/atlas/core/orchestrator.py), `_execute_task`).
-  Las preguntas factuales sobre git (commits/cambios) ya enrutan a las tools
-  reales (fix 2026-05-29), pero **el patrón sigue abierto** para otras consultas
-  factuales que caen a inferencia LOCAL_SAFE y pueden alucinar. Solución de
-  fondo: loop agéntico de tool-calls en `InferenceHub.infer` (hoy single-shot).
-- **Auto-edición de block memory por el modelo** — diferida; mismo bloqueo
-  (necesita loop agéntico). Hoy solo mutación humana (CLI/API).
-- **E2E Telegram twin** — funciona mecánicamente; la fiabilidad del contenido
-  dependía del bug de grounding (mitigado para git).
+- ✅ **Grounding factual** — RESUELTO (ADR-031). Loop agéntico de tool-calls:
+  el modelo consulta git/fs/status/blocks reales en vez de alucinar. El routing
+  por keywords de `_execute_task` se mantiene como fast-path determinista.
+- ✅ **Auto-edición de block memory por el modelo** — RESUELTO (ADR-031).
+  El modelo edita sus bloques vía `edit/append_memory_block` dentro del loop;
+  `BlockLimitExceeded` se le devuelve como presión (resume), no como crash.
+- **E2E Telegram twin** — funciona mecánicamente; con grounding (ADR-031) el
+  contenido ya es fiable. Falta smoke real de punta a punta para sellarlo.
+- **Tools mutantes dentro del loop** — v1 solo expone lectura + block memory.
+  Browser/editor siguen por `AWAITING_APPROVAL`; meterlos en el loop requiere
+  HITL inline (futuro).
 
 ### Upstream / externos
 - **`mcp_serve` roto** (Hermes upstream, `hermes_cli/mcp_config.py:748`,
