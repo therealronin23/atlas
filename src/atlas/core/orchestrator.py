@@ -108,6 +108,8 @@ class Orchestrator:
     _editor_tool: Any
     _vision_loop: Any
     _pending_approval_dir: Path
+    _agentic_auto_approve: frozenset[str]   # ADR-033
+    _agentic_suspension_ttl: float | None   # ADR-033
 
     # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
     # Inicializados a None y poblados al activar.
@@ -265,7 +267,12 @@ class Orchestrator:
             return [self._pending_summary(t) for t in tasks.values()]
 
     def approve_pending(
-        self, task_id: str, approved: bool, *, abort: bool = False
+        self,
+        task_id: str,
+        approved: bool,
+        *,
+        abort: bool = False,
+        approve_only: list[str] | None = None,
     ) -> dict:
         lock_fd, lock_path = self._acquire_pending_lock(task_id)
         if lock_fd is None:
@@ -275,7 +282,9 @@ class Orchestrator:
                 "error": "otro proceso esta aprobando o ejecutando esta tarea",
             }
         try:
-            return self._approve_pending_locked(task_id, approved, abort=abort)
+            return self._approve_pending_locked(
+                task_id, approved, abort=abort, approve_only=approve_only,
+            )
         finally:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             os.close(lock_fd)
@@ -283,7 +292,12 @@ class Orchestrator:
                 lock_path.unlink(missing_ok=True)
 
     def _approve_pending_locked(
-        self, task_id: str, approved: bool, *, abort: bool = False
+        self,
+        task_id: str,
+        approved: bool,
+        *,
+        abort: bool = False,
+        approve_only: list[str] | None = None,
     ) -> dict:
         with self._approvals_lock:
             task = self._pending_approvals.pop(task_id, None)
@@ -372,6 +386,12 @@ class Orchestrator:
                 "status": "failed",
                 "error": f"no se pudo reservar ejecucion: {exc}",
             }
+
+        # ADR-033 #3: aprobación parcial. Si el llamante pasa `approve_only`, solo
+        # esas tool_call ids del lote se ejecutan; el resto recibe denegación
+        # sintética al reanudar. Sin `approve_only` → se aprueba el lote entero.
+        if is_agentic and approve_only is not None:
+            task.metadata["agentic_state"]["approve_only"] = list(approve_only)
 
         self._permissions.mark_confirmed(f"task:{task.id}")
         task.transition(TaskStatus.EXECUTING)
@@ -2078,6 +2098,112 @@ class Orchestrator:
         o 'mutate' (suspende el loop para aprobación HITL)."""
         return "mutate" if name in self._AGENTIC_MUTATING_TOOLS else "read"
 
+    # ------------------------------------------------------------------
+    # ADR-033 — refinamientos del loop suspendible
+    # ------------------------------------------------------------------
+
+    def set_agentic_auto_approve(self, tools: list[str] | set[str]) -> None:
+        """ADR-033 #2: configura la allowlist de mutaciones auto-aprobadas (sin
+        HITL). Pensado para tools de bajo riesgo en las que ya confías. NO se
+        persiste en governance.json; vive solo en este proceso/sesión."""
+        self._agentic_auto_approve = frozenset(t.strip() for t in tools if t.strip())
+
+    def _is_agentic_auto_approved(self, name: str, task: Task) -> bool:
+        """Una mutación corre inline (sin suspender) solo si está en la allowlist
+        Y la tarea no es de sensibilidad alta. Seguro por defecto: allowlist
+        vacía → siempre False → todo mutante exige HITL."""
+        if name not in self._agentic_auto_approve:
+            return False
+        return task.sensitivity != "high"
+
+    def _run_auto_approved_mutation(self, tc: dict[str, Any], task: Task) -> str:
+        """Ejecuta una mutación auto-aprobada con clearance concedido al vuelo.
+        Audita `task.auto_approved` para que no haya ejecución silenciosa."""
+        self._merkle.log(
+            action="task.auto_approved",
+            agent="orchestrator.agentic",
+            result="approved",
+            risk_level="high",
+            payload={"tool": tc["name"], "auto": True},
+            task_id=task.id,
+        )
+        self._permissions.mark_confirmed(f"task:{task.id}")
+        return self._dispatch_agentic_mutation(tc["name"], tc["arguments"], task)
+
+    def _emit_agentic_progress(
+        self, task: Task, iteration: int, tool: str, result: str,
+    ) -> None:
+        """ADR-033 #4: publica una traza de progreso por iteración del loop para
+        que dashboard/Telegram puedan seguir el razonamiento en vivo."""
+        self._bus.publish_type(EventType.AGENTIC_PROGRESS, {
+            "task_id": task.id,
+            "iteration": iteration,
+            "tool": tool,
+            "summary": (result or "")[:200],
+        }, task.id)
+
+    def sweep_expired_suspensions(
+        self, ttl_seconds: float | None = None,
+    ) -> list[str]:
+        """ADR-033 #1: cancela loops suspendidos cuyo `agentic_state.created_at`
+        supera el TTL. Opt-in: si `ttl_seconds` (o el TTL configurado) es None/<=0
+        no hace nada. Devuelve los task_id cancelados. Pensado para invocarse
+        desde el tick de `atlas serve` o `atlas pending --sweep`."""
+        ttl = ttl_seconds if ttl_seconds is not None else self._agentic_suspension_ttl
+        if not ttl or ttl <= 0:
+            return []
+        now = datetime.now(timezone.utc)
+        cancelled: list[str] = []
+        with self._approvals_lock:
+            in_memory = list(self._pending_approvals.values())
+        candidates = {t.id: t for t in in_memory}
+        for t in self._load_persisted_pending_approvals():
+            candidates.setdefault(t.id, t)
+
+        for task in candidates.values():
+            state = task.metadata.get("agentic_state")
+            if not isinstance(state, dict):
+                continue
+            created_raw = state.get("created_at")
+            if not created_raw:
+                continue
+            try:
+                created = datetime.fromisoformat(str(created_raw))
+            except ValueError:
+                continue
+            if (now - created).total_seconds() < ttl:
+                continue
+            # Expirado → cancelar y limpiar.
+            lock_fd, lock_path = self._acquire_pending_lock(task.id)
+            if lock_fd is None:
+                continue  # otro proceso lo está tocando; sáltalo
+            try:
+                with self._approvals_lock:
+                    self._pending_approvals.pop(task.id, None)
+                if task.status == TaskStatus.AWAITING_APPROVAL:
+                    task.transition(TaskStatus.CANCELLED)
+                task.result = {
+                    "approved": False,
+                    "message": "Loop suspendido expirado (TTL) — cancelado.",
+                    "expired": True,
+                }
+                self._delete_pending_approval(task.id)
+                self._merkle.log(
+                    action="task.suspension_expired",
+                    agent="orchestrator.agentic",
+                    result="cancelled",
+                    risk_level="moderate",
+                    payload={"ttl_seconds": ttl, "created_at": created_raw},
+                    task_id=task.id,
+                )
+                cancelled.append(task.id)
+            finally:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+                os.close(lock_fd)
+                if lock_path is not None:
+                    lock_path.unlink(missing_ok=True)
+        return cancelled
+
     def _stringify_tool_result(self, result: Any) -> str:
         if isinstance(result, dict):
             if "stdout" in result:
@@ -2186,17 +2312,23 @@ class Orchestrator:
             for tc in response.tool_calls:
                 tools_used.append(tc["name"])
                 if self._agentic_tool_kind(tc["name"]) == "mutate":
-                    # ADR-032 dec.5: agrupar TODAS las mutaciones del turno en una
-                    # sola aprobación. No se ejecutan aún; se persiste el tool_call.
-                    pending_mutations.append({
-                        "id": tc["id"],
-                        "name": tc["name"],
-                        "arguments": tc["arguments"],
-                    })
-                    continue
-                raw_result = self._dispatch_agentic_tool(
-                    tc["name"], tc["arguments"], task
-                )
+                    if self._is_agentic_auto_approved(tc["name"], task):
+                        # ADR-033 #2: mutación en allowlist de confianza → corre
+                        # inline (con clearance) sin suspender. Auditada aparte.
+                        raw_result = self._run_auto_approved_mutation(tc, task)
+                    else:
+                        # ADR-032 dec.5: agrupar las mutaciones que SÍ requieren
+                        # HITL; no se ejecutan aún, se persiste el tool_call.
+                        pending_mutations.append({
+                            "id": tc["id"],
+                            "name": tc["name"],
+                            "arguments": tc["arguments"],
+                        })
+                        continue
+                else:
+                    raw_result = self._dispatch_agentic_tool(
+                        tc["name"], tc["arguments"], task
+                    )
                 # Redactar PII del resultado antes de devolverlo al modelo.
                 safe_result = self._pii_surrogate.redact(raw_result).text
                 messages.append({
@@ -2204,6 +2336,7 @@ class Orchestrator:
                     "tool_call_id": tc["id"],
                     "content": safe_result,
                 })
+                self._emit_agentic_progress(task, iterations, tc["name"], safe_result)
 
             if pending_mutations:
                 self._suspend_agentic_loop(
@@ -2336,16 +2469,27 @@ class Orchestrator:
         pending_mutations = list(state.get("pending_mutations") or [])
         denied = bool(state.get("denied"))
         deny_reason = str(state.get("deny_reason", "human"))
+        # ADR-033 #3: aprobación parcial. Si está presente, solo estas ids se
+        # ejecutan; el resto del lote recibe denegación sintética. None → lote
+        # entero (compat ADR-032).
+        approve_only = state.get("approve_only")
+        approved_ids: set[str] | None = (
+            set(approve_only) if isinstance(approve_only, list) else None
+        )
 
         # Limpiar el estado para no re-resumir por accidente; si el loop vuelve a
         # suspender, _suspend_agentic_loop escribe un agentic_state nuevo.
         task.metadata.pop("agentic_state", None)
 
         for mut in pending_mutations:
-            if denied:
+            mut_denied = denied or (
+                approved_ids is not None and mut["id"] not in approved_ids
+            )
+            if mut_denied:
                 # dec.6: presión MemGPT — el modelo re-planifica, no crashea.
+                reason = deny_reason if denied else "human_partial"
                 safe_result = json.dumps(
-                    {"denied": True, "reason": deny_reason}, ensure_ascii=False
+                    {"denied": True, "reason": reason}, ensure_ascii=False
                 )
             else:
                 raw_result = self._dispatch_agentic_mutation(
@@ -2357,6 +2501,7 @@ class Orchestrator:
                 "tool_call_id": mut["id"],
                 "content": safe_result,
             })
+            self._emit_agentic_progress(task, iterations, mut["name"], safe_result)
 
         tool_specs = self._agentic_tool_specs()
         request = InferenceRequest(
@@ -2713,6 +2858,24 @@ class Orchestrator:
         self._pending_approvals: dict[str, Task] = {}
         self._approvals_lock = threading.Lock()
         self._pending_approval_dir = self._workspace / "memory" / "pending_approvals"
+
+        # ADR-033: allowlist de auto-aprobación de mutaciones del loop agéntico.
+        # VACÍA por defecto → todo mutante sigue exigiendo HITL (seguro). Se
+        # puebla vía env ATLAS_AGENTIC_AUTO_APPROVE (csv de nombres de tool) o
+        # set_agentic_auto_approve(). NO vive en governance.json (regla 3).
+        raw_allow = os.environ.get("ATLAS_AGENTIC_AUTO_APPROVE", "")
+        self._agentic_auto_approve: frozenset[str] = frozenset(
+            t.strip() for t in raw_allow.split(",") if t.strip()
+        )
+        # ADR-033: TTL (segundos) para barrer loops suspendidos abandonados.
+        # Ausente/<=0 → barrido desactivado (no-op).
+        ttl_raw = os.environ.get("ATLAS_AGENTIC_SUSPENSION_TTL", "").strip()
+        try:
+            self._agentic_suspension_ttl: float | None = (
+                float(ttl_raw) if ttl_raw else None
+            )
+        except ValueError:
+            self._agentic_suspension_ttl = None
 
         # Telegram bot + monitors (opcionales, se inician con start_*).
         # Tipo declarado a nivel clase (ver bloque al inicio de Orchestrator).
