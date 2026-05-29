@@ -1102,10 +1102,25 @@ class Orchestrator:
         elif any(kw in intent_lower for kw in ["git status", "estado git"]):
             task.tool_name = "git.status"
             task.result = self._run_git_status(task)
-        elif any(kw in intent_lower for kw in ["git log", "historial"]):
+        elif any(
+            kw in intent_lower
+            for kw in [
+                "git log",
+                "historial",
+                "commit",  # cubre "commits", "último commit", "recent commits"
+                "últimos cambios",
+                "ultimos cambios",
+                "recent commits",
+            ]
+        ):
+            # Grounding: preguntas factuales sobre commits van a la tool git real,
+            # NO a inferencia LOCAL_SAFE (que inventaría hashes/mensajes).
             task.tool_name = "git.log"
             task.result = self._run_git_log(task)
-        elif any(kw in intent_lower for kw in ["git diff", "diferencias"]):
+        elif any(
+            kw in intent_lower
+            for kw in ["git diff", "diferencias", "qué cambió", "que cambio", "what changed"]
+        ):
             task.tool_name = "git.diff"
             task.result = self._run_git_diff(task)
         elif any(kw in intent_lower for kw in ["lista", "listar", "list"]):
