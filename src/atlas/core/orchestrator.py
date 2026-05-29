@@ -2152,14 +2152,25 @@ class Orchestrator:
         except Exception as e:
             return {"error": str(e)}
 
+    def _git_args(self, sub: str, *extra: str) -> tuple[str, ...]:
+        """Prefija `-C <repo_root>` cuando hay repo de código (grounding real).
+
+        Sin repo (None) cae al comportamiento previo: git corre en el cwd del
+        sandbox (workspace/tmp).
+        """
+        root = self._repo_root()
+        if root is not None:
+            return ("-C", str(root), sub, *extra)
+        return (sub, *extra)
+
     def _run_git_status(self, task: Task | None = None) -> dict:
-        return self._run_via_executor("git", ("status", "--short"), task=task)
+        return self._run_via_executor("git", self._git_args("status", "--short"), task=task)
 
     def _run_git_log(self, task: Task | None = None) -> dict:
-        return self._run_via_executor("git", ("log", "--oneline", "-10"), task=task)
+        return self._run_via_executor("git", self._git_args("log", "--oneline", "-10"), task=task)
 
     def _run_git_diff(self, task: Task | None = None) -> dict:
-        return self._run_via_executor("git", ("diff", "--stat"), task=task)
+        return self._run_via_executor("git", self._git_args("diff", "--stat"), task=task)
 
     def _list_workspace(self) -> dict:
         """
@@ -2196,6 +2207,26 @@ class Orchestrator:
         env = os.environ.get("ATLAS_HOME")
         return Path(env).expanduser().resolve() if env else Path.home() / "atlas"
 
+    def _repo_root(self) -> Path | None:
+        """Raíz del repo de código de Atlas, para grounding git real.
+
+        El workspace (`~/atlas`) NO es un repo git: es estado de runtime. Las
+        preguntas factuales sobre commits/historial deben aterrizarse contra el
+        repo de código (`~/proyectos/atlas-core`). Se resuelve por `ATLAS_REPO_ROOT`
+        si está, o derivando de la ubicación del paquete. Devuelve None si no es
+        un repo git (instalación pip no-editable): entonces las tools git caen al
+        comportamiento previo (cwd=workspace).
+        """
+        env = os.environ.get("ATLAS_REPO_ROOT")
+        if env:
+            cand = Path(env).expanduser().resolve()
+        else:
+            try:
+                cand = Path(__file__).resolve().parents[3]
+            except IndexError:
+                return None
+        return cand if (cand / ".git").exists() else None
+
     def _init_dirs(self) -> None:
         for sub in ["projects", "tmp", "skills", "memory/system_context",
                     "memory/error_registry", "memory/approved_patterns",
@@ -2215,7 +2246,9 @@ class Orchestrator:
 
         # Permission Profile
         self._permissions = PermissionProfile(
-            config_dir / "permissions.yaml", self._workspace
+            config_dir / "permissions.yaml",
+            self._workspace,
+            git_inspect_root=self._repo_root(),
         )
 
         # Merkle Logger + ADR-024 observability stack

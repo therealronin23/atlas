@@ -110,15 +110,20 @@ def run_local() -> int:
         workspace = Path(td) / "atlas"
         os.environ["ATLAS_HOME"] = str(workspace)
         os.environ["HERMES_API_KEY"] = secret
+        # El grounding git apunta a ATLAS_REPO_ROOT (no al workspace, que no es
+        # repo). Sembramos un repo aislado y lo fijamos como root para que el
+        # smoke valide contra commits conocidos, no contra el repo real.
+        repo = Path(td) / "code-repo"
+        os.environ["ATLAS_REPO_ROOT"] = str(repo)
 
-        print(f"[1/4] sembrando repo git aislado en {workspace} ...")
-        _seed_repo(workspace)
+        print(f"[1/4] sembrando repo git aislado en {repo} ...")
+        _seed_repo(repo)
 
         print("[2/4] arrancando Orchestrator + router /api/exec (in-process) ...")
         orch = Orchestrator(workspace=workspace)
-        # El repo se siembra ANTES de _init_dirs? Orchestrator ya creo subdirs;
-        # reaseguramos que .git sigue ahi (init_dirs no lo borra).
-        assert (workspace / ".git").exists(), ".git desaparecio tras init del orquestador"
+        assert orch._repo_root() == repo.resolve(), (
+            f"repo root no resuelto a {repo}: {orch._repo_root()}"
+        )
         app = FastAPI()
         app.include_router(build_router(lambda: orch))
         client = TestClient(app)
