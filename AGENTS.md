@@ -244,6 +244,9 @@ ADR-028  Twin Kanban Bridge (Atlas→Hermes outbound, ssh+kanban). `hermes/kanba
 ADR-029  Audit FTS5 search (`atlas search`, `core/audit_search.py`) + reverse twin
          audit (`POST /api/exec/audit` + `scripts/hermes_skill_atlas_audit/`).
          Absorbe `hermes sessions` search; cierra "Hermes corre sin auditoría".
+ADR-030  Block memory (Letta/MemGPT core memory). `memory/block_memory.py` +
+         `atlas blocks` CLI. Bloques etiquetados, char-bounded, siempre-en-contexto;
+         over-limit lanza (pressure), no trunca. Último fork abierto del master plan.
 
 ## Open ADRs
 
@@ -386,6 +389,7 @@ DONE this session:
 - Twin Kanban Bridge (ADR-028) — outbound Atlas→Hermes channel.
 - `atlas search` — FTS5 full-text search over the Merkle ledger (`core/audit_search.py`, ADR-029). Absorbs `hermes sessions` search.
 - Reverse audit (ADR-029) — `POST /api/exec/audit` + `scripts/hermes_skill_atlas_audit/` so Hermes records its actions in Atlas's Merkle chain. Closes "Hermes runs unaudited".
+- Block memory (ADR-030) — Letta/MemGPT core memory: `memory/block_memory.py` + `atlas blocks` CLI. Last open fork item from the absorption master plan.
 
 PENDING absorption targets (each its own ADR/PR — do NOT half-build):
 | Feature | Hermes source | Atlas target | Priority | Note |
