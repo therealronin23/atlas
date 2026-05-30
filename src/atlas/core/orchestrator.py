@@ -2428,6 +2428,12 @@ class Orchestrator:
             "intent": task.intent,
             "reason": reason,
             "tool": task.tool_name,
+            # ADR-033: el lote de mutaciones, para que Telegram pueda ofrecer
+            # botones de aprobación parcial (uno por mutación) además del lote.
+            "pending_mutations": [
+                {"id": m.get("id"), "name": m.get("name")}
+                for m in pending_mutations
+            ],
         }, task.id)
 
     def _dispatch_agentic_mutation(

@@ -85,7 +85,10 @@ cableados así (`tests/test_adr033_surfaces.py`):
 - **ops** (`OrchestratorOps`): `approve(..., abort=, approve_only=)` +
   `sweep_suspensions()` para Telegram/futuras superficies.
 - **Telegram**: `on_agentic_progress` (opt-in `ATLAS_TELEGRAM_PROGRESS=1` o
-  `telegram.progress_updates`); `/pending` muestra las mutaciones.
+  `telegram.progress_updates`); `/pending` muestra las mutaciones; el teclado
+  inline de aprobación ofrece un botón **'Solo &lt;mutación&gt;'** por cada
+  mutación del lote (→ `approve_only`) más **'Cancelar (abort)'**, además de
+  Sí/No. callback_data se mantiene &lt;=64 bytes.
 - **Dashboard**: feed en memoria + `GET /api/agentic/progress` (últimas 50
   trazas, sin tocar la cadena Merkle).
 

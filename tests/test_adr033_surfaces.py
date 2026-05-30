@@ -252,6 +252,54 @@ def test_telegram_pending_lists_mutations() -> None:
     assert "a:editor_write" in out
 
 
+def test_telegram_approval_keyboard_per_mutation() -> None:
+    """Con >1 mutación, el teclado ofrece un botón 'Solo <name>' por mutación
+    + Cancelar, todos con callback_data <=64 bytes."""
+    from tests.test_telegram_bot import _make_bot
+
+    bot, _, _ = _make_bot()
+    payload = {
+        "task_id": "t1",
+        "pending_mutations": [
+            {"id": "a", "name": "editor_write"},
+            {"id": "b", "name": "browser_click"},
+        ],
+    }
+    kb = bot._approval_keyboard("t1", payload)
+    flat = [btn for row in kb["inline_keyboard"] for btn in row]
+    cbs = [b["callback_data"] for b in flat]
+    assert "approve:t1:only:a" in cbs
+    assert "approve:t1:only:b" in cbs
+    assert "approve:t1:abort" in cbs
+    assert all(len(c.encode("utf-8")) <= 64 for c in cbs)
+
+
+def test_telegram_callback_partial_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tests.test_telegram_bot import _make_bot
+
+    bot, _, ops = _make_bot()
+    cb = {
+        "id": "cb1", "from": {"id": 42}, "message": {"chat": {"id": 42}},
+        "data": "approve:t1:only:a",
+    }
+    bot.handle_update({"callback_query": cb})
+    # Se llamó approve con approve_only=["a"]
+    assert ops.approve_kwargs[-1]["approve_only"] == ["a"]
+    assert ops.approve_kwargs[-1]["abort"] is False
+
+
+def test_telegram_callback_abort(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tests.test_telegram_bot import _make_bot
+
+    bot, _, ops = _make_bot()
+    cb = {
+        "id": "cb2", "from": {"id": 42}, "message": {"chat": {"id": 42}},
+        "data": "approve:t1:abort",
+    }
+    bot.handle_update({"callback_query": cb})
+    assert ops.approve_kwargs[-1]["abort"] is True
+
+
 # ===========================================================================
 # Dashboard — /api/agentic/progress
 # ===========================================================================

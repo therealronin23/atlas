@@ -175,7 +175,7 @@ def _make_bot(authorized=(1, 2), ops=None):
             def list_tools(self): return []
             def triage(self): return {}
             def pending_approvals(self): return []
-            def approve(self, task_id, approved):
+            def approve(self, task_id, approved, *, abort=False, approve_only=None):
                 return {"task_id": task_id, "status": "done", "approved": approved}
         ops = Ops()
     client = FakeClient()
@@ -256,7 +256,7 @@ def test_bot_pending_command_lists():
         def triage(self): return {}
         def pending_approvals(self):
             return [{"task_id": "abc", "intent": "X", "reason": "Y"}]
-        def approve(self, t, a): return {}
+        def approve(self, t, a, *, abort=False, approve_only=None): return {}
     bot, client, _ = _make_bot(ops=Ops())
     bot.handle_update({"update_id": 1, "message": {"chat": {"id": 1}, "text": "/pending"}})
     assert client.sent and "abc" in client.sent[0][1]

@@ -217,10 +217,16 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   no de medio). Disco SANO (PASSED, 0 reasignados). Vigilar; si reaparece el
   `errors=remount-ro`, reasentar conector. journald ya persistente.
 
-### Roadmap previo (todavía válido)
-- Flota / Atlas Box (`docs/atlas_box_architecture.md`, `docs/fleet_security_plan.md`).
-- Hermes webhook; ColdUpdate v2.
-- eBPF / seccomp hardening (Post-F).
+### Roadmap previo
+- ✅ **Hermes webhook** — HECHO. `HermesWebhookHandler` (HMAC + online/offline →
+  EventBus), montado en el dashboard/API. 21 tests (`tests/test_hermes_webhook.py`).
+- ✅ **ColdUpdate v2** — HECHO. `ColdUpdateManager` (propose/validate/approve/
+  apply/rollback en worktree git aislado) + CLI `atlas update *`. ADR-025,
+  6 tests (`tests/test_cold_update_manager.py`).
+- ⏳ **eBPF / seccomp hardening (Post-F)** — pendiente. Sandboxing a nivel kernel
+  para tools mutantes; requiere ADR propio.
+- ⏳ **Flota / Atlas Box** (`docs/atlas_box_architecture.md`,
+  `docs/fleet_security_plan.md`) — diseño; despliegue bloqueado por hardware.
 
 ---
 
