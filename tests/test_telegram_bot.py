@@ -26,6 +26,7 @@ from atlas.interfaces.telegram_bot import (
 class FakeOps:
     def __init__(self) -> None:
         self.calls: list[tuple[str, tuple]] = []
+        self.approve_kwargs: list[dict] = []
         self.status_data = {"mode": "NORMAL", "tasks_run": 7}
         self.task_response = {"status": "executed", "task_id": "t-1"}
         self.approve_response = {"task_id": "t-approve", "status": "done", "approved": True}
@@ -60,8 +61,13 @@ class FakeOps:
         self.calls.append(("pending_approvals", ()))
         return []
 
-    def approve(self, task_id, approved=True):
+    def approve(self, task_id, approved=True, *, abort=False, approve_only=None):
         self.calls.append(("approve", (task_id, approved)))
+        # ADR-033: registrar kwargs de aprobación parcial/cancelación aparte
+        # para que los tests puedan inspeccionarlos sin romper aserciones viejas.
+        self.approve_kwargs.append({"abort": abort, "approve_only": approve_only})
+        if abort:
+            return {"task_id": task_id, "status": "cancelled", "approved": False}
         return self.approve_response if approved else {
             "task_id": task_id, "status": "cancelled", "approved": False,
         }

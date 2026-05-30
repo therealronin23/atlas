@@ -38,7 +38,14 @@ class AtlasOps(Protocol):
     def list_tools(self) -> list[dict]: ...
     def triage(self) -> dict: ...
     def pending_approvals(self) -> list[dict]: ...
-    def approve(self, task_id: str, approved: bool) -> dict: ...
+    def approve(
+        self,
+        task_id: str,
+        approved: bool,
+        *,
+        abort: bool = False,
+        approve_only: list[str] | None = None,
+    ) -> dict: ...
 
 
 # ===========================================================================
@@ -282,7 +289,8 @@ class TelegramBot:
             return
 
         parts = data.split(":")
-        if len(parts) != 3 or parts[0] != self.CALLBACK_PREFIX:
+        # Formatos: <pfx>:<id>:yes | :no | :abort | :only:<tc_id>  (ADR-033)
+        if len(parts) < 3 or parts[0] != self.CALLBACK_PREFIX:
             try:
                 self._client.answer_callback_query(cb_id, "callback malformado")
             except TelegramAPIError:
@@ -290,7 +298,16 @@ class TelegramBot:
             return
 
         task_id, decision = parts[1], parts[2]
-        approved = decision == "yes"
+        only_id = parts[3] if decision == "only" and len(parts) >= 4 else None
+        if decision == "only" and not only_id:
+            try:
+                self._client.answer_callback_query(cb_id, "callback malformado")
+            except TelegramAPIError:
+                pass
+            return
+
+        approved = decision in ("yes", "only")
+        abort = decision == "abort"
         if approved and self._passphrase_required():
             try:
                 self._client.answer_callback_query(
@@ -306,7 +323,10 @@ class TelegramBot:
             )
             return
         try:
-            result = self._ops.approve(task_id, approved)
+            result = self._ops.approve(
+                task_id, approved, abort=abort,
+                approve_only=[only_id] if only_id else None,
+            )
         except Exception as exc:
             try:
                 self._client.answer_callback_query(cb_id, f"error: {exc}")
@@ -314,10 +334,14 @@ class TelegramBot:
                 pass
             return
 
-        text = (
-            f"Aprobada (task_id={task_id})." if approved
-            else f"Rechazada (task_id={task_id})."
-        )
+        if only_id:
+            text = f"Aprobada solo {only_id} (task_id={task_id})."
+        elif approved:
+            text = f"Aprobada (task_id={task_id})."
+        elif abort:
+            text = f"Cancelada (task_id={task_id})."
+        else:
+            text = f"Rechazada (task_id={task_id})."
         try:
             self._client.answer_callback_query(cb_id, text)
         except TelegramAPIError:
@@ -368,13 +392,31 @@ class TelegramBot:
             )
             self.notify_all(text)
         else:
-            markup = {
-                "inline_keyboard": [[
-                    {"text": "Si", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:yes"},
-                    {"text": "No", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:no"},
-                ]]
-            }
-            self.notify_all(text, reply_markup=markup)
+            self.notify_all(text, reply_markup=self._approval_keyboard(task_id, p))
+
+    def _approval_keyboard(self, task_id: str, payload: dict) -> dict:
+        """Teclado inline de aprobación. Para loops agénticos con >1 mutación
+        (ADR-033) añade una fila por mutación ('Solo <name>' → approve_only) y
+        un 'Cancelar' (deny+abort). callback_data se mantiene <64 bytes."""
+        rows = [[
+            {"text": "Si", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:yes"},
+            {"text": "No", "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:no"},
+        ]]
+        muts = payload.get("pending_mutations") or []
+        if len(muts) > 1:
+            for m in muts:
+                mid = str(m.get("id") or "")
+                cb = f"{self.CALLBACK_PREFIX}:{task_id}:only:{mid}"
+                if mid and len(cb.encode("utf-8")) <= 64:
+                    rows.append([{
+                        "text": f"Solo {m.get('name', mid)}",
+                        "callback_data": cb,
+                    }])
+            rows.append([{
+                "text": "Cancelar (abort)",
+                "callback_data": f"{self.CALLBACK_PREFIX}:{task_id}:abort",
+            }])
+        return {"inline_keyboard": rows}
 
     def on_agentic_progress(self, event: Any) -> None:
         """ADR-033 #4: traza de progreso del loop agéntico. OPT-IN: silencioso
