@@ -20,7 +20,6 @@ v0.1: Implementa modo NORMAL como subprocess con timeout y resource limits.
 
 from __future__ import annotations
 
-import resource
 import subprocess
 import tempfile
 import time
@@ -29,6 +28,7 @@ from pathlib import Path
 
 from atlas.core.contracts import OperationalMode
 from atlas.security.ast_guard import ASTGuard
+from atlas.security.process_hardening import apply_in_child
 
 
 @dataclass
@@ -52,6 +52,7 @@ class LayeredIsolationSandbox:
     RAM_LIMIT_ALFA_BYTES  = 512 * 1024 * 1024   # 512 MB
     CPU_TIME_LIMIT_ALFA_S = 30                   # 30 segundos CPU
     WALL_TIMEOUT_NORMAL_S   = 60                   # 60 segundos real
+    FSIZE_LIMIT_NORMAL_BYTES = 64 * 1024 * 1024  # ADR-034: 64 MB por archivo
 
     def __init__(self, workspace: Path) -> None:
         self._workspace = workspace
@@ -158,22 +159,13 @@ class LayeredIsolationSandbox:
             script_path = f.name
 
         def _set_limits() -> None:
-            """Aplicar limits POSIX (Linux only)."""
-            try:
-                # Limitar memoria virtual
-                resource.setrlimit(
-                    resource.RLIMIT_AS,
-                    (self.RAM_LIMIT_ALFA_BYTES, self.RAM_LIMIT_ALFA_BYTES)
-                )
-                # Limitar tiempo CPU
-                resource.setrlimit(
-                    resource.RLIMIT_CPU,
-                    (self.CPU_TIME_LIMIT_ALFA_S, self.CPU_TIME_LIMIT_ALFA_S)
-                )
-                # Sin archivos de core
-                resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-            except Exception:
-                pass  # En sistemas donde no aplica, continuar sin limits
+            """ADR-034: endurecimiento del hijo (rlimits + no-new-privs).
+            Tolerante a fallo; ver process_hardening.apply_in_child."""
+            apply_in_child(
+                ram_bytes=self.RAM_LIMIT_ALFA_BYTES,
+                cpu_seconds=self.CPU_TIME_LIMIT_ALFA_S,
+                fsize_bytes=self.FSIZE_LIMIT_NORMAL_BYTES,
+            )
 
         try:
             result = subprocess.run(
@@ -183,6 +175,7 @@ class LayeredIsolationSandbox:
                 text=True,
                 timeout=self.WALL_TIMEOUT_NORMAL_S,
                 preexec_fn=_set_limits,
+                start_new_session=True,  # ADR-034 dec.3: sesión aislada
                 env=self._safe_env(),
             )
             duration_ms = int((time.perf_counter() - start) * 1000)
