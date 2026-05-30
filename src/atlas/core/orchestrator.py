@@ -40,6 +40,7 @@ from atlas.memory.memory_system import (
 from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
+from atlas.core.orchestrator_parts.git_read_tools import GitReadTools
 from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
 from atlas.core.timetravel import TimeTravel
 from atlas.memory.block_memory import (
@@ -2605,70 +2606,17 @@ class Orchestrator:
         except Exception as e:
             return {"error": str(e)}
 
-    def _git_args(self, sub: str, *extra: str) -> tuple[str, ...]:
-        """Prefija `-C <repo_root>` cuando hay repo de código (grounding real).
-
-        Sin repo (None) cae al comportamiento previo: git corre en el cwd del
-        sandbox (workspace/tmp).
-        """
-        root = self._repo_root()
-        if root is not None:
-            return ("-C", str(root), sub, *extra)
-        return (sub, *extra)
-
-    def _with_repo_root(self, result: dict) -> dict:
-        """Inyecta el repo_root real en el resultado git.
-
-        Grounding de procedencia: el modelo gemelo (Hermes) NO debe inventar la
-        ruta del repo. Sin este campo, al pedir "dónde está el repo" confabula
-        un path inexistente. Con él, tiene la verdad en el output de la tool.
-        """
-        root = self._repo_root()
-        if root is not None and "error" not in result:
-            result["repo_root"] = str(root)
-        return result
-
     def _run_git_status(self, task: Task | None = None) -> dict:
-        return self._with_repo_root(
-            self._run_via_executor("git", self._git_args("status", "--short"), task=task)
-        )
+        return self._git.status(task)
 
     def _run_git_log(self, task: Task | None = None) -> dict:
-        return self._with_repo_root(
-            self._run_via_executor("git", self._git_args("log", "--oneline", "-10"), task=task)
-        )
+        return self._git.log(task)
 
     def _run_git_diff(self, task: Task | None = None) -> dict:
-        return self._with_repo_root(
-            self._run_via_executor("git", self._git_args("diff", "--stat"), task=task)
-        )
+        return self._git.diff(task)
 
     def _list_workspace(self) -> dict:
-        """
-        Lista el workspace via iterdir() + log explicito en Merkle. No usa
-        sandbox porque iterdir() es Python puro (no IO de proceso). Mantiene
-        el contrato de auditoria registrando la operacion como leeria
-        AtlasExecutor.
-        """
-        try:
-            entries = [p.name for p in self._workspace.iterdir()]
-            self._merkle.log(
-                action="fs.list_dir",
-                agent="atlas.executor",
-                result="ok",
-                risk_level="safe",
-                payload={"path": str(self._workspace), "entries": len(entries)},
-            )
-            return {"entries": sorted(entries), "path": str(self._workspace)}
-        except Exception as e:
-            self._merkle.log(
-                action="fs.list_dir",
-                agent="atlas.executor",
-                result="failed",
-                risk_level="safe",
-                payload={"path": str(self._workspace), "error": str(e)},
-            )
-            return {"error": str(e)}
+        return self._git.list_workspace()
 
     # ------------------------------------------------------------------
     # Inicializacion
@@ -2807,6 +2755,12 @@ class Orchestrator:
         self._approvals_lock = threading.Lock()
         self._pending_approval_dir = self._workspace / "memory" / "pending_approvals"
         self._tasks = TaskPersistence(self._pending_approval_dir, self._merkle)
+        self._git = GitReadTools(
+            workspace=self._workspace,
+            merkle=self._merkle,
+            repo_root=self._repo_root,
+            run_via_executor=self._run_via_executor,
+        )
 
         # ADR-033: allowlist de auto-aprobación de mutaciones del loop agéntico.
         # VACÍA por defecto → todo mutante sigue exigiendo HITL (seguro). Se
