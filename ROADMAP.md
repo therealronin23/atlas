@@ -238,6 +238,12 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   Hook dejado en `apply_in_child` (ADR-034 dec.6).
 - ⏳ **Flota / Atlas Box** (`docs/atlas_box_architecture.md`,
   `docs/fleet_security_plan.md`) — diseño; despliegue bloqueado por hardware.
+- 📐 **Cliente MCP + murallas defensivas + auto-mantenimiento** — PLAN MAESTRO en
+  `docs/plan_mcp_y_murallas_defensivas.md`. Consolida ADR-035 (cliente MCP
+  híbrido-ready), ADR-036 (threat model/murallas), ADR-037 (frontera de contenido
+  no confiable, P0), ADR-038 (gate de adopción "Atlas Sentinel") y el agente de
+  auto-mantenimiento. Anclado en literatura (CaMeL arXiv:2503.18813, arXiv:2601.17548,
+  CoSAI, NSA, CSA). Pendiente de ejecución por fases.
 
 ---
 
