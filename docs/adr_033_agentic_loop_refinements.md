@@ -71,6 +71,24 @@ loop corriendo
 - Aprobación parcial con re-ordenación (se respeta el orden del lote).
 - Scheduler propio para el barrido TTL (se invoca externamente).
 
+## Cableado a superficies
+
+El motor de los 4 refinamientos no sirve de nada si no se expone. Quedan
+cableados así (`tests/test_adr033_surfaces.py`):
+
+- **serve** (`AtlasServiceRunner.tick`): barre loops suspendidos expirados en
+  cada vuelta del loop principal, throttled por `ATLAS_AGENTIC_SWEEP_S`
+  (default 300s). No-op si el TTL no está configurado.
+- **CLI**: `atlas approve --only id1,id2` (parcial), `atlas approve --deny
+  --abort` (cancela), `atlas sweep [--ttl]`, y `atlas pending` lista las
+  mutaciones del lote (`id:nombre`).
+- **ops** (`OrchestratorOps`): `approve(..., abort=, approve_only=)` +
+  `sweep_suspensions()` para Telegram/futuras superficies.
+- **Telegram**: `on_agentic_progress` (opt-in `ATLAS_TELEGRAM_PROGRESS=1` o
+  `telegram.progress_updates`); `/pending` muestra las mutaciones.
+- **Dashboard**: feed en memoria + `GET /api/agentic/progress` (últimas 50
+  trazas, sin tocar la cadena Merkle).
+
 ## Tests
 
 `tests/test_orchestrator_agentic_refinements.py`:

@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,7 @@ def set_orchestrator(orch: Orchestrator) -> None:
     _orch = orch
     _wire_hermes_webhook(orch)
     _wire_exec_api(orch)
+    _wire_agentic_progress(orch)
 
 
 def _get_orch() -> Orchestrator:
@@ -75,7 +77,39 @@ def _get_orch() -> Orchestrator:
         # there is no service_runner to call set_orchestrator first.
         _wire_hermes_webhook(_orch)
         _wire_exec_api(_orch)
+        _wire_agentic_progress(_orch)
     return _orch
+
+
+# ---------------------------------------------------------------------------
+# ADR-033 #4 — feed en memoria de progreso del loop agéntico
+# ---------------------------------------------------------------------------
+
+# Ring buffer de las últimas trazas AGENTIC_PROGRESS, alimentado por el EventBus.
+# Vive solo en este proceso (igual que el dashboard); se expone vía API JSON
+# para que el front lo pinte sin tocar la cadena Merkle.
+_progress_feed: deque[dict[str, Any]] = deque(maxlen=50)
+_progress_wired = False
+
+
+def _wire_agentic_progress(orch: Orchestrator) -> None:
+    global _progress_wired
+    if _progress_wired:
+        return
+
+    def _on_progress(event: Any) -> None:
+        p = getattr(event, "payload", {}) or {}
+        _progress_feed.appendleft({
+            "task_id": p.get("task_id"),
+            "iteration": p.get("iteration"),
+            "tool": p.get("tool"),
+            "summary": p.get("summary"),
+            "timestamp": getattr(event, "timestamp", None),
+        })
+
+    from atlas.core.contracts import EventType  # noqa: PLC0415
+    orch._bus.subscribe(EventType.AGENTIC_PROGRESS, _on_progress)
+    _progress_wired = True
 
 
 def _workspace() -> Path:
@@ -408,6 +442,14 @@ async def observability_page(request: Request) -> HTMLResponse:
 @app.get("/api/providers")
 async def api_providers() -> list[dict]:
     return _provider_data()
+
+
+@app.get("/api/agentic/progress")
+async def api_agentic_progress() -> list[dict]:
+    """ADR-033 #4: últimas trazas de progreso del loop agéntico (más reciente
+    primero). Vacío si no se ha emitido ninguna en este proceso."""
+    _get_orch()  # asegura que el feed está cableado al bus
+    return list(_progress_feed)
 
 
 # ---------------------------------------------------------------------------

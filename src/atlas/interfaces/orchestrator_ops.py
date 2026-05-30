@@ -61,5 +61,20 @@ class OrchestratorOps:
     def pending_approvals(self) -> list[dict]:
         return self._orch.pending_approvals()
 
-    def approve(self, task_id: str, approved: bool) -> dict:
-        return self._orch.approve_pending(task_id, approved)
+    def approve(
+        self,
+        task_id: str,
+        approved: bool,
+        *,
+        abort: bool = False,
+        approve_only: list[str] | None = None,
+    ) -> dict:
+        # ADR-033 #3: `abort` cancela del todo; `approve_only` ejecuta solo un
+        # subconjunto del lote de mutaciones (aprobación parcial).
+        return self._orch.approve_pending(
+            task_id, approved, abort=abort, approve_only=approve_only,
+        )
+
+    def sweep_suspensions(self, ttl_seconds: float | None = None) -> list[str]:
+        """ADR-033 #1: barre loops suspendidos expirados. Devuelve task_ids."""
+        return self._orch.sweep_expired_suspensions(ttl_seconds=ttl_seconds)

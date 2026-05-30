@@ -24,6 +24,17 @@ class AtlasServiceRunner:
         self._orch = orchestrator
         self._running = False
         self._dashboard_thread: threading.Thread | None = None
+        # ADR-033 #1: barrido periódico de loops agénticos suspendidos y
+        # abandonados. Throttled por ATLAS_AGENTIC_SWEEP_S (default 300s). El
+        # barrido es no-op salvo que ATLAS_AGENTIC_SUSPENSION_TTL esté fijado,
+        # así que es seguro llamarlo aunque la feature esté desactivada.
+        try:
+            self._sweep_interval_s = float(
+                os.environ.get("ATLAS_AGENTIC_SWEEP_S", "300")
+            )
+        except ValueError:
+            self._sweep_interval_s = 300.0
+        self._last_sweep_at = 0.0
 
     def _wire_operational_alerts(self) -> None:
         def _on_alert(event: Event) -> None:
@@ -144,6 +155,20 @@ class AtlasServiceRunner:
             payload={},
         )
 
+    def tick(self, *, force: bool = False) -> list[str]:
+        """ADR-033: trabajo periódico del loop principal. Hoy: barrer loops
+        agénticos suspendidos cuyo TTL expiró. Throttled por
+        `_sweep_interval_s`; `force=True` lo salta (útil en tests). Devuelve los
+        task_id cancelados (vacío si no toca barrer o no hay nada que barrer)."""
+        now = time.monotonic()
+        if not force and (now - self._last_sweep_at) < self._sweep_interval_s:
+            return []
+        self._last_sweep_at = now
+        cancelled = self._orch.sweep_expired_suspensions()
+        if cancelled:
+            _log.info("Barrido TTL: %d loop(s) suspendido(s) cancelado(s)", len(cancelled))
+        return cancelled
+
     def run_forever(self, poll_interval_s: float = 1.0) -> None:
         self.start()
 
@@ -156,6 +181,7 @@ class AtlasServiceRunner:
 
         try:
             while self._running:
+                self.tick()
                 time.sleep(poll_interval_s)
         finally:
             self.stop()

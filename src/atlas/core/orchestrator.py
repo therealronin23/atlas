@@ -801,6 +801,9 @@ class Orchestrator:
         self._bus.subscribe(EventType.THERMAL_ALERT, bot.on_thermal_alert)
         self._bus.subscribe(EventType.SHADOW_ALERT, bot.on_shadow_alert)
         self._bus.subscribe(EventType.SESSION_STARTED, bot.on_session_started)
+        # ADR-033 #4: progreso del loop agéntico (el handler decide opt-in).
+        if hasattr(bot, "on_agentic_progress"):
+            self._bus.subscribe(EventType.AGENTIC_PROGRESS, bot.on_agentic_progress)
 
     # ------------------------------------------------------------------
     # Pipeline interno
@@ -1715,7 +1718,7 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _pending_summary(self, task: Task) -> dict:
-        return {
+        summary = {
             "task_id": task.id,
             "intent": task.intent,
             "reason": (task.result or {}).get("reason", "") if isinstance(task.result, dict) else "",
@@ -1723,6 +1726,17 @@ class Orchestrator:
             "route": task.route.value if task.route else None,
             "created_at": task.created_at,
         }
+        # ADR-033: si es un loop agéntico suspendido, exponer las mutaciones
+        # pendientes (id + nombre) para que CLI/Telegram puedan listar el lote
+        # y ofrecer aprobación parcial (`approve_only`).
+        state = task.metadata.get("agentic_state")
+        if isinstance(state, dict):
+            muts = state.get("pending_mutations") or []
+            summary["agentic"] = True
+            summary["pending_mutations"] = [
+                {"id": m.get("id"), "name": m.get("name")} for m in muts
+            ]
+        return summary
 
     def _persist_pending_approval(self, task: Task) -> None:
         try:
