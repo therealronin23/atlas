@@ -40,6 +40,7 @@ from atlas.memory.memory_system import (
 from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
+from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
 from atlas.core.timetravel import TimeTravel
 from atlas.memory.block_memory import (
     BlockLimitExceeded,
@@ -56,11 +57,6 @@ from atlas.security.ast_guard import ASTGuard
 from atlas.security.capabilities import CapabilityIssuer
 from atlas.security.executor import AtlasExecutor
 from atlas.security.generated_code_policy import GeneratedCodePolicy
-from atlas.security.pending_store import (
-    is_legacy_pending_file,
-    unwrap_task_payload,
-    wrap_task_payload,
-)
 from atlas.security.pii_surrogate import PIISurrogate
 from atlas.security.sandbox import LayeredIsolationSandbox
 from atlas.security.ssrf_bridge import SSRFBridge
@@ -1718,149 +1714,25 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _pending_summary(self, task: Task) -> dict:
-        summary = {
-            "task_id": task.id,
-            "intent": task.intent,
-            "reason": (task.result or {}).get("reason", "") if isinstance(task.result, dict) else "",
-            "tool": task.tool_name,
-            "route": task.route.value if task.route else None,
-            "created_at": task.created_at,
-        }
-        # ADR-033: si es un loop agéntico suspendido, exponer las mutaciones
-        # pendientes (id + nombre) para que CLI/Telegram puedan listar el lote
-        # y ofrecer aprobación parcial (`approve_only`).
-        state = task.metadata.get("agentic_state")
-        if isinstance(state, dict):
-            muts = state.get("pending_mutations") or []
-            summary["agentic"] = True
-            summary["pending_mutations"] = [
-                {"id": m.get("id"), "name": m.get("name")} for m in muts
-            ]
-        return summary
+        return TaskPersistence.summary(task)
 
     def _persist_pending_approval(self, task: Task) -> None:
-        try:
-            self._pending_approval_dir.mkdir(parents=True, exist_ok=True)
-            path = self._pending_approval_dir / f"{task.id}.json"
-            task_payload = self._serialize_task(task)
-            envelope = wrap_task_payload(task_payload)
-            path.write_text(
-                json.dumps(envelope, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-            self._merkle.log(
-                action="approval.persisted",
-                agent="orchestrator",
-                result="success",
-                risk_level="safe",
-                payload={"task_id": task.id, "path": str(path)},
-                task_id=task.id,
-            )
-        except Exception as exc:  # noqa: BLE001
-            self._merkle.log(
-                action="approval.persist_failed",
-                agent="orchestrator",
-                result="failure",
-                risk_level="moderate",
-                payload={"task_id": task.id, "error": str(exc)[:500]},
-                task_id=task.id,
-            )
+        self._tasks.persist(task)
 
     def _load_pending_approval(self, task_id: str) -> Task | None:
-        path = self._pending_approval_dir / f"{task_id}.json"
-        if not path.exists():
-            return None
-        try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
-            if not isinstance(raw, dict):
-                raise ValueError("pending file is not a JSON object")
-            if is_legacy_pending_file(raw):
-                self._merkle.log(
-                    action="approval.legacy_rejected",
-                    agent="orchestrator",
-                    result="failure",
-                    risk_level="high",
-                    payload={
-                        "task_id": task_id,
-                        "hint": "re-submit task; pending v1 requires HMAC envelope",
-                    },
-                    task_id=task_id,
-                )
-                return None
-            task_data = unwrap_task_payload(raw)
-            if task_data is None:
-                self._merkle.log(
-                    action="approval.tamper_detected",
-                    agent="orchestrator",
-                    result="failure",
-                    risk_level="critical",
-                    payload={"task_id": task_id, "path": str(path)},
-                    task_id=task_id,
-                )
-                return None
-            return self._deserialize_task(task_data)
-        except Exception as exc:  # noqa: BLE001
-            self._merkle.log(
-                action="approval.load_failed",
-                agent="orchestrator",
-                result="failure",
-                risk_level="moderate",
-                payload={"task_id": task_id, "error": str(exc)[:500]},
-            )
-            return None
+        return self._tasks.load(task_id)
 
     def _load_persisted_pending_approvals(self) -> list[Task]:
-        if not self._pending_approval_dir.exists():
-            return []
-        tasks: list[Task] = []
-        for path in sorted(self._pending_approval_dir.glob("*.json")):
-            if ".executing" in path.name:
-                continue
-            task = self._load_pending_approval(path.stem)
-            if task is not None:
-                tasks.append(task)
-        return tasks
+        return self._tasks.load_all()
 
     def _delete_pending_approval(self, task_id: str) -> None:
-        try:
-            (self._pending_approval_dir / f"{task_id}.json").unlink(missing_ok=True)
-        except Exception as exc:  # noqa: BLE001
-            self._merkle.log(
-                action="approval.delete_failed",
-                agent="orchestrator",
-                result="failure",
-                risk_level="moderate",
-                payload={"task_id": task_id, "error": str(exc)[:500]},
-            )
+        self._tasks.delete(task_id)
 
     def _serialize_task(self, task: Task) -> dict:
-        data = task.to_dict()
-        data["operational_mode"] = task.operational_mode.value
-        data["metadata"] = task.metadata
-        return data
+        return TaskPersistence.serialize(task)
 
     def _deserialize_task(self, data: dict) -> Task:
-        task = Task(
-            intent=str(data["intent"]),
-            source=TaskSource(str(data.get("source", TaskSource.CLI.value))),
-            id=str(data["id"]),
-            priority=int(data.get("priority", 3)),
-            sensitivity=str(data.get("sensitivity", "low")),
-            action=str(data.get("action", "")),
-            operational_mode=OperationalMode(str(data.get("operational_mode", OperationalMode.NORMAL.value))),
-            parent_id=data.get("parent_id"),
-            created_at=str(data.get("created_at", datetime.now(timezone.utc).isoformat())),
-            updated_at=str(data.get("updated_at", datetime.now(timezone.utc).isoformat())),
-            metadata=dict(data.get("metadata") or {}),
-        )
-        task.status = TaskStatus(str(data.get("status", TaskStatus.AWAITING_APPROVAL.value)))
-        route = data.get("route")
-        task.route = RoutingLevel(str(route)) if route else None
-        task.tool_name = data.get("tool_name")
-        task.result = data.get("result")
-        task.error = data.get("error")
-        task.audit_hash = data.get("audit_hash")
-        return task
+        return TaskPersistence.deserialize(data)
 
     def _execute_local_safe_via_inference(self, task: Task) -> None:
         """
@@ -2934,6 +2806,7 @@ class Orchestrator:
         self._pending_approvals: dict[str, Task] = {}
         self._approvals_lock = threading.Lock()
         self._pending_approval_dir = self._workspace / "memory" / "pending_approvals"
+        self._tasks = TaskPersistence(self._pending_approval_dir, self._merkle)
 
         # ADR-033: allowlist de auto-aprobación de mutaciones del loop agéntico.
         # VACÍA por defecto → todo mutante sigue exigiendo HITL (seguro). Se
@@ -3013,15 +2886,7 @@ class Orchestrator:
         return True
 
     def _acquire_pending_lock(self, task_id: str) -> tuple[int, Path] | tuple[None, None]:
-        self._pending_approval_dir.mkdir(parents=True, exist_ok=True)
-        lock_path = self._pending_approval_dir / f"{task_id}.lock"
-        fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            os.close(fd)
-            return None, None
-        return fd, lock_path
+        return self._tasks.acquire_lock(task_id)
 
     def _thermal_blocks_local_llm(self) -> str | None:
         if self._thermal_watchdog is None:
