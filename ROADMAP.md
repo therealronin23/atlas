@@ -5,7 +5,9 @@
 > tool-calls (ADR-031) + loop suspendible con HITL inline para mutaciones
 > (ADR-032) + refinamientos del loop: auto-approve allowlist, aprobación
 > parcial, barrido TTL y traza de progreso (ADR-033), cableados a CLI/serve/
-> Telegram/dashboard. 725 tests verdes. Última sincronización: 2026-05-30.
+> Telegram/dashboard + endurecimiento del subprocess de ejecución: no-new-privs,
+> rlimits fsize/nproc/nofile y sesión aislada (ADR-034). 734 tests verdes.
+> Última sincronización: 2026-05-30.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -76,9 +78,13 @@ Notas futuras Gate H:
   quedan en `AWAITING_APPROVAL` y se ejecutan solo via `approve_pending`.
 - Tests: `tests/test_orchestrator_gate_f.py`.
 
-### Post-F — eBPF / seccomp (future hardening)
-- Compilar restricciones de syscalls directamente en el kernel.
-- Alternativa: seccomp profiles con Docker si eBPF no es viable en el hardware actual.
+### Post-F — endurecimiento del subprocess (ADR-034) ✅ parcial
+- ✅ HECHO: no-new-privs (`prctl`), rlimits `FSIZE`/`NPROC`/`NOFILE` añadidos a
+  `AS`/`CPU`/`CORE`, y `start_new_session=True` (sesión aislada). Stdlib-only,
+  `src/atlas/security/process_hardening.py`, 6 tests.
+- ⏳ PENDIENTE: filtrado de syscalls vía seccomp-bpf — exige dep nueva
+  (`pyseccomp`/`libseccomp`, choca con regla 6) y validación con tooling de
+  kernel no disponible en local. Hook dejado en `apply_in_child`.
 
 ### Gate G/H candidate — ColdUpdateManager (self-improvement protocol)
 - Snapshot completo → generar N+1 → ejecutar tests → si mejoran métricas, proponer swap vía Telegram.
@@ -117,6 +123,7 @@ que extienden el runtime sellado.
 | ADR-031 | ✅ Accepted | Loop agéntico de tool-calls (grounding factual + auto-edición de blocks). |
 | ADR-032 | ✅ Accepted | Loop agéntico suspendible/reanudable: HITL inline para tools mutantes de host. |
 | ADR-033 | ✅ Accepted | Refinamientos del loop: auto-approve allowlist, aprobación parcial, barrido TTL de loops abandonados, evento `agentic.progress`. |
+| ADR-034 | ✅ Accepted | Endurecimiento del subprocess de ejecución: `PR_SET_NO_NEW_PRIVS`, rlimits `FSIZE`/`NPROC`/`NOFILE` + sesión aislada. seccomp como hook futuro. |
 
 Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_memory.md`.
 
@@ -223,8 +230,12 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
 - ✅ **ColdUpdate v2** — HECHO. `ColdUpdateManager` (propose/validate/approve/
   apply/rollback en worktree git aislado) + CLI `atlas update *`. ADR-025,
   6 tests (`tests/test_cold_update_manager.py`).
-- ⏳ **eBPF / seccomp hardening (Post-F)** — pendiente. Sandboxing a nivel kernel
-  para tools mutantes; requiere ADR propio.
+- ✅ **Endurecimiento del subprocess (Post-F, ADR-034)** — HECHO en lo factible
+  con stdlib: no-new-privs, rlimits `FSIZE`/`NPROC`/`NOFILE`, sesión aislada.
+  6 tests (`tests/test_process_hardening.py`).
+- ⏳ **seccomp-bpf (filtrado de syscalls)** — pendiente. Exige dep nueva
+  (`pyseccomp`, choca con regla 6) + tooling de kernel no disponible en local.
+  Hook dejado en `apply_in_child` (ADR-034 dec.6).
 - ⏳ **Flota / Atlas Box** (`docs/atlas_box_architecture.md`,
   `docs/fleet_security_plan.md`) — diseño; despliegue bloqueado por hardware.
 
