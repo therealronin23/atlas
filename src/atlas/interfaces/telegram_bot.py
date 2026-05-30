@@ -376,6 +376,25 @@ class TelegramBot:
             }
             self.notify_all(text, reply_markup=markup)
 
+    def on_agentic_progress(self, event: Any) -> None:
+        """ADR-033 #4: traza de progreso del loop agéntico. OPT-IN: silencioso
+        salvo `ATLAS_TELEGRAM_PROGRESS=1` o `telegram.progress_updates: true`
+        en governance, para no inundar el chat en cada iteración."""
+        if not self._progress_enabled():
+            return
+        p = getattr(event, "payload", {}) or {}
+        tool = p.get("tool", "?")
+        it = p.get("iteration", "?")
+        summary = str(p.get("summary", "") or "")[:160]
+        self.notify_all(
+            f"[Progreso] task {p.get('task_id','?')} · iter {it} · {tool}\n{summary}"
+        )
+
+    def _progress_enabled(self) -> bool:
+        if os.environ.get("ATLAS_TELEGRAM_PROGRESS", "") == "1":
+            return True
+        return bool(self._telegram_cfg.get("progress_updates"))
+
     def on_session_started(self, event: Any) -> None:
         p = getattr(event, "payload", {}) or {}
         version = p.get("version", "?")
@@ -421,8 +440,13 @@ class TelegramBot:
             return "Sin approvals pendientes."
         out = [f"Approvals pendientes ({len(items)}):"]
         for it in items:
-            out.append(f"  {it.get('task_id','?')} — {it.get('intent','')}"
-                       f" ({it.get('reason','')})")
+            line = (f"  {it.get('task_id','?')} — {it.get('intent','')}"
+                    f" ({it.get('reason','')})")
+            muts = it.get("pending_mutations") or []
+            if muts:
+                names = ", ".join(f"{m.get('id')}:{m.get('name')}" for m in muts)
+                line += f"\n    mutaciones: {names}"
+            out.append(line)
         return "\n".join(out)
 
     def _cmd_approve(self, arg: str) -> str:

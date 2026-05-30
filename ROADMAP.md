@@ -4,8 +4,8 @@
 > viva (ADR-026..029) + block memory estilo Letta (ADR-030) + loop agéntico de
 > tool-calls (ADR-031) + loop suspendible con HITL inline para mutaciones
 > (ADR-032) + refinamientos del loop: auto-approve allowlist, aprobación
-> parcial, barrido TTL y traza de progreso (ADR-033). 717 tests verdes.
-> Última sincronización: 2026-05-30.
+> parcial, barrido TTL y traza de progreso (ADR-033), cableados a CLI/serve/
+> Telegram/dashboard. 725 tests verdes. Última sincronización: 2026-05-30.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -194,9 +194,14 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   subconjunto del lote y deniega el resto con presión sintética; (4) evento
   `EventType.AGENTIC_PROGRESS` por iteración para dashboard/Telegram. Seguro por
   defecto: allowlist vacía + TTL off → comportamiento idéntico a ADR-032.
+  Cableado a superficies: `atlas serve` barre loops expirados en su tick
+  (`ATLAS_AGENTIC_SWEEP_S`); `atlas approve --only/--abort` + `atlas sweep` +
+  `atlas pending` con mutaciones; Telegram `on_agentic_progress` (opt-in) y
+  `/pending` enriquecido; dashboard `GET /api/agentic/progress`.
   📐 [`docs/adr_033_agentic_loop_refinements.md`](docs/adr_033_agentic_loop_refinements.md)
-  Status: **Accepted**. 9 tests dedicados (`tests/test_orchestrator_agentic_refinements.py`)
-  + suite completa (717) en verde.
+  Status: **Accepted**. 9 tests de motor (`tests/test_orchestrator_agentic_refinements.py`)
+  + 8 tests de superficie (`tests/test_adr033_surfaces.py`) + suite completa (725)
+  en verde.
 
 ### Upstream / externos
 - **`mcp_serve` roto** (Hermes upstream `NousResearch/hermes-agent`,

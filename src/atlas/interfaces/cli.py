@@ -100,12 +100,20 @@ def pending() -> None:
     table = Table(title="Approvals pendientes", show_header=True)
     table.add_column("Task ID", style="cyan")
     table.add_column("Tool", style="magenta")
+    table.add_column("Mutaciones")
     table.add_column("Reason")
     table.add_column("Intent")
     for item in items:
+        # ADR-033: muestra el lote de mutaciones (id:nombre) si es un loop
+        # agéntico suspendido, para poder usar `approve --only <ids>`.
+        muts = item.get("pending_mutations") or []
+        muts_str = ", ".join(
+            f"{m.get('id')}:{m.get('name')}" for m in muts
+        ) if muts else "-"
         table.add_row(
             str(item.get("task_id", "")),
             str(item.get("tool") or ""),
+            muts_str,
             str(item.get("reason") or ""),
             str(item.get("intent") or ""),
         )
@@ -115,14 +123,45 @@ def pending() -> None:
 @cli.command("approve")
 @click.argument("task_id", required=True)
 @click.option("--deny", is_flag=True, help="Rechaza la tarea en vez de aprobarla.")
-def approve(task_id: str, deny: bool) -> None:
-    """Aprueba o rechaza una tarea pendiente."""
+@click.option("--abort", is_flag=True,
+              help="Con --deny: cancela el loop del todo (CANCELLED) en vez de re-planificar.")
+@click.option("--only", "only", default="",
+              help="Aprobación parcial: ids de tool_call separados por coma a ejecutar; "
+                   "el resto del lote se deniega. Implica aprobación.")
+def approve(task_id: str, deny: bool, abort: bool, only: str) -> None:
+    """Aprueba o rechaza una tarea pendiente.
+
+    Loops agénticos (ADR-032/033): --only id1,id2 ejecuta solo esas mutaciones
+    del lote; --deny --abort cancela el loop suspendido por completo.
+    """
     orch = get_orchestrator()
-    result = orch.approve_pending(task_id, approved=not deny)
+    approve_only = [s.strip() for s in only.split(",") if s.strip()] or None
+    approved = not deny
+    if approve_only is not None:
+        approved = True  # aprobación parcial implica aprobar
+    result = orch.approve_pending(
+        task_id, approved=approved, abort=abort, approve_only=approve_only,
+    )
     status = result.get("status", "unknown")
     color = "green" if status == "done" else "yellow" if status == "cancelled" else "red"
     console.print(f"Status: [{color}]{status}[/{color}]")
     console.print_json(json.dumps(result, ensure_ascii=False, default=str))
+
+
+@cli.command("sweep")
+@click.option("--ttl", type=float, default=None,
+              help="Segundos de antigüedad para cancelar loops suspendidos. "
+                   "Sin valor usa ATLAS_AGENTIC_SUSPENSION_TTL.")
+def sweep(ttl: float | None) -> None:
+    """Cancela loops agénticos suspendidos y abandonados (ADR-033)."""
+    orch = get_orchestrator()
+    cancelled = orch.sweep_expired_suspensions(ttl_seconds=ttl)
+    if not cancelled:
+        console.print("[green]Nada que barrer.[/green]")
+        return
+    console.print(f"[yellow]Cancelados {len(cancelled)} loop(s) suspendido(s):[/yellow]")
+    for tid in cancelled:
+        console.print(f"  {tid}")
 
 
 @cli.command()
