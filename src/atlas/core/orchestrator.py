@@ -40,6 +40,11 @@ from atlas.memory.memory_system import (
 from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
+from atlas.core.orchestrator_parts.gate_f_parser import (
+    GateFCommand,
+    parse_gate_f_command,
+    resolve_path as _resolve_gate_f_path_fn,
+)
 from atlas.core.orchestrator_parts.git_read_tools import GitReadTools
 from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
 from atlas.core.timetravel import TimeTravel
@@ -76,15 +81,6 @@ class AtlasStatus:
     record_count: int
     uptime_seconds: float
     emergency_mode: bool
-
-
-@dataclass(frozen=True)
-class GateFCommand:
-    tool: str
-    action: str
-    args: dict[str, Any]
-    requires_approval: bool
-    reason: str
 
 
 class Orchestrator:
@@ -1249,159 +1245,9 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _parse_gate_f_command(self, intent: str) -> GateFCommand | None:
-        """
-        Parser minimo y explicito para Gate F.
-
-        Formatos aceptados:
-          - browser navigate <url>
-          - browser screenshot [name]
-          - browser extract
-          - browser click <selector>
-          - browser fill <selector> :: <value>
-          - editor read <path>
-          - editor write <path> :: <content>
-          - editor run <working_dir> :: <command>
-          - editor apply_diff <path> :: <unified diff>
-          - editor open <path>
-          - vision propose [screenshot_name]
-        """
-        text = intent.strip()
-        if not text:
-            return None
-
-        head, sep, tail = text.partition(" ")
-        if not sep:
-            return None
-        tool = head.lower()
-        if tool not in {"browser", "editor", "vision"}:
-            return None
-
-        action, _, rest = tail.strip().partition(" ")
-        action = action.lower()
-        rest = rest.strip()
-
-        if tool == "browser":
-            return self._parse_browser_command(action, rest)
-        if tool == "editor":
-            return self._parse_editor_command(action, rest)
-        return self._parse_vision_command(action, rest)
-
-    def _parse_browser_command(self, action: str, rest: str) -> GateFCommand | None:
-        if action in {"navigate", "nav", "open", "abrir", "navegar"} and rest:
-            return GateFCommand(
-                tool="browser",
-                action="navigate",
-                args={"url": rest},
-                requires_approval=True,
-                reason="Browser navigation touches an external page.",
-            )
-        if action in {"screenshot", "captura"}:
-            return GateFCommand(
-                tool="browser",
-                action="screenshot",
-                args={"name": rest or None},
-                requires_approval=False,
-                reason="Browser screenshot observes current page only.",
-            )
-        if action in {"extract", "extrae", "leer"}:
-            return GateFCommand(
-                tool="browser",
-                action="extract",
-                args={},
-                requires_approval=False,
-                reason="Browser extract observes current page only.",
-            )
-        if action == "click" and rest:
-            return GateFCommand(
-                tool="browser",
-                action="click",
-                args={"selector": rest},
-                requires_approval=True,
-                reason="Browser click mutates page state.",
-            )
-        if action == "fill" and rest:
-            selector, value = self._split_payload(rest)
-            if selector and value is not None:
-                return GateFCommand(
-                    tool="browser",
-                    action="fill",
-                    args={"selector": selector, "value": value},
-                    requires_approval=True,
-                    reason="Browser fill mutates page state.",
-                )
-        return None
-
-    def _parse_editor_command(self, action: str, rest: str) -> GateFCommand | None:
-        if action in {"read", "lee", "leer"} and rest:
-            return GateFCommand(
-                tool="editor",
-                action="read",
-                args={"path": rest},
-                requires_approval=False,
-                reason="Editor read is observational and still goes through AtlasExecutor.",
-            )
-        if action in {"write", "escribe"} and rest:
-            path, content = self._split_payload(rest)
-            if path and content is not None:
-                return GateFCommand(
-                    tool="editor",
-                    action="write",
-                    args={"path": path, "content": content},
-                    requires_approval=True,
-                    reason="Editor write changes filesystem state.",
-                )
-        if action in {"run", "run_task"} and rest:
-            working_dir, command = self._split_payload(rest)
-            if working_dir and command is not None:
-                generated = self._is_generated_tool_run(working_dir, command)
-                return GateFCommand(
-                    tool="editor",
-                    action="run",
-                    args={
-                        "working_dir": working_dir,
-                        "command": command,
-                        "generated": generated,
-                    },
-                    requires_approval=True,
-                    reason="Editor run executes a command."
-                    + (" (Gate H generated audit)" if generated else ""),
-                )
-        if action == "apply_diff" and rest:
-            path, diff_text = self._split_payload(rest)
-            if path and diff_text is not None:
-                return GateFCommand(
-                    tool="editor",
-                    action="apply_diff",
-                    args={"path": path, "diff": diff_text},
-                    requires_approval=True,
-                    reason="Editor apply_diff changes filesystem state.",
-                )
-        if action == "open" and rest:
-            return GateFCommand(
-                tool="editor",
-                action="open",
-                args={"path": rest},
-                requires_approval=True,
-                reason="Editor open launches a host process.",
-            )
-        return None
-
-    def _parse_vision_command(self, action: str, rest: str) -> GateFCommand | None:
-        if action in {"propose", "proposal", "observa", "observe"}:
-            return GateFCommand(
-                tool="vision",
-                action="propose",
-                args={"screenshot_name": rest or "vision_loop"},
-                requires_approval=False,
-                reason="Vision loop proposes an action but does not execute it.",
-            )
-        return None
-
-    def _split_payload(self, rest: str) -> tuple[str, str | None]:
-        left, sep, right = rest.partition("::")
-        if not sep:
-            return rest.strip(), None
-        return left.strip(), right.lstrip()
+        return parse_gate_f_command(
+            intent, is_generated_tool_run=self._is_generated_tool_run,
+        )
 
     def _route_gate_f_command(self, task: Task, command: GateFCommand) -> None:
         task.transition(TaskStatus.ROUTING)
@@ -1673,10 +1519,7 @@ class Orchestrator:
         return result
 
     def _resolve_gate_f_path(self, value: str) -> Path:
-        path = Path(value).expanduser()
-        if path.is_absolute():
-            return path
-        return (self._workspace / path).resolve()
+        return _resolve_gate_f_path_fn(self._workspace, value)
 
     def _get_browser_tool(self) -> Any:
         if self._browser_tool is None:
