@@ -6,8 +6,9 @@
 > (ADR-032) + refinamientos del loop: auto-approve allowlist, aprobación
 > parcial, barrido TTL y traza de progreso (ADR-033), cableados a CLI/serve/
 > Telegram/dashboard + endurecimiento del subprocess de ejecución: no-new-privs,
-> rlimits fsize/nproc/nofile y sesión aislada (ADR-034). 734 tests verdes.
-> Última sincronización: 2026-05-30.
+> rlimits fsize/nproc/nofile y sesión aislada (ADR-034) + modelo de amenazas y
+> hoja de murallas (ADR-036) + frontera de contenido no confiable, P0, slice 1
+> (ADR-037). 738 tests verdes. Última sincronización: 2026-05-30.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -124,6 +125,8 @@ que extienden el runtime sellado.
 | ADR-032 | ✅ Accepted | Loop agéntico suspendible/reanudable: HITL inline para tools mutantes de host. |
 | ADR-033 | ✅ Accepted | Refinamientos del loop: auto-approve allowlist, aprobación parcial, barrido TTL de loops abandonados, evento `agentic.progress`. |
 | ADR-034 | ✅ Accepted | Endurecimiento del subprocess de ejecución: `PR_SET_NO_NEW_PRIVS`, rlimits `FSIZE`/`NPROC`/`NOFILE` + sesión aislada. seccomp como hook futuro. |
+| ADR-036 | ✅ Accepted | Modelo de amenazas y hoja de murallas defensivas priorizada (anclado en CoSAI/NSA/CSA + CVEs reales). |
+| ADR-037 | ✅ Accepted | Frontera de contenido no confiable (muralla P0): procedencia, envoltura de datos externos y taint que anula auto-approve post-ingesta. Slice 1. |
 
 Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_memory.md`.
 
