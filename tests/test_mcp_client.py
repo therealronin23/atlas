@@ -79,6 +79,20 @@ def test_stdio_transport_server_dead_raises() -> None:
     t.close()
 
 
+def test_stdio_transport_times_out_on_silent_server() -> None:
+    """ADR-035: un server que acepta el request pero nunca responde no
+    bloquea el loop — ``timeout_seconds`` se aplica en la I/O."""
+    t = StdioTransport(
+        cmd=[sys.executable, "-c", "import sys, time; sys.stdin.readline(); time.sleep(30)"],
+        timeout_seconds=0.3,
+    )
+    try:
+        with pytest.raises(McpProtocolError, match="timed out"):
+            t.request("initialize", {})
+    finally:
+        t.close()
+
+
 # ===========================================================================
 # Config / secrets
 # ===========================================================================
