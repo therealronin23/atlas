@@ -42,6 +42,7 @@ from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.core.orchestrator_parts.approvals import ApprovalManager
+from atlas.core.orchestrator_parts.classifier import HybridClassifier
 from atlas.mcp import McpRegistry, load_servers
 from atlas.core.orchestrator_parts.gate_f_executor import GateFExecutor
 from atlas.core.orchestrator_parts.gate_f_parser import (
@@ -937,89 +938,7 @@ class Orchestrator:
     def _hybrid_classify(
         self, intent: str, sensitivity: str | None, *, task_id: str | None = None,
     ) -> ClassificationResult:
-        """
-        Combina rule-based + SLM con politica de empate refinada:
-
-        1. rule-based corre primero (microsegundos, sin red).
-        2. Si governance_blocked OR confidence >= SLM_BYPASS_THRESHOLD (1.0)
-           -> se confia en el rule, no se consulta SLM.
-        3. Si el rule cae al default LOCAL_SAFE -> se consulta SLM. El SLM
-           gana el empate cuando identifica una ruta MAS ESPECIFICA que
-           LOCAL_SAFE (incluso con la misma confidence) o cuando su
-           confidence es estrictamente mayor.
-
-        Cada consulta al SLM y el ganador final quedan registrados en
-        MerkleLogger para metricas.
-        """
-        rule = self._classifier.classify(intent, sensitivity=sensitivity or "default")
-        if rule.governance_blocked or rule.confidence >= self.SLM_BYPASS_THRESHOLD:
-            return rule
-
-        assert self._slm_classifier is not None
-        slm = self._slm_classifier.classify(intent)
-        self._merkle.log(
-            action="classify.slm_consulted",
-            agent="classifier_hybrid",
-            result="success",
-            risk_level="safe",
-            payload={
-                "rule_level":      rule.level.value,
-                "rule_confidence": rule.confidence,
-                "slm_level":       slm.level.value,
-                "slm_confidence":  slm.confidence,
-                "slm_mode":        slm.mode,
-                "slm_reason":      slm.reason,
-            },
-            task_id=task_id,
-        )
-
-        slm_wins = (
-            slm.confidence > rule.confidence
-            or (
-                slm.level != RoutingLevel.LOCAL_SAFE
-                and slm.confidence >= rule.confidence
-            )
-        )
-        if not slm_wins:
-            return rule
-
-        # Safety net: only trust the SLM's BLOCKED verdict when the
-        # rule-based classifier ALSO suspects something. The rule classifier
-        # is deterministic and catches the real constitutional violations
-        # (sudo, rm -rf, governance edits). If the rule says "Sin patron
-        # especifico" (default LOCAL_SAFE) but the SLM hallucinates BLOCKED
-        # for an ambiguous/conversational intent, we degrade to LOCAL_SAFE
-        # to avoid bricking the bot on greetings or chitchat.
-        if slm.level == RoutingLevel.BLOCKED and rule.level == RoutingLevel.LOCAL_SAFE:
-            self._merkle.log(
-                action="classify.slm_blocked_overridden",
-                agent="classifier_hybrid",
-                result="downgraded_to_local_safe",
-                risk_level="safe",
-                payload={
-                    "slm_reason": slm.reason,
-                    "rule_reason": rule.reason,
-                },
-                task_id=task_id,
-            )
-            return ClassificationResult(
-                level=RoutingLevel.LOCAL_SAFE,
-                confidence=max(slm.confidence, rule.confidence),
-                matched_pattern=None,
-                governance_blocked=False,
-                reason=(
-                    f"SLM proposed BLOCKED but rule classifier saw no danger; "
-                    f"downgraded to LOCAL_SAFE. SLM: {slm.reason}"
-                ),
-            )
-
-        return ClassificationResult(
-            level=slm.level,
-            confidence=slm.confidence,
-            matched_pattern=None,
-            governance_blocked=(slm.level == RoutingLevel.BLOCKED),
-            reason=f"SLM: {slm.reason} (rule default: {rule.reason})",
-        )
+        return self._hybrid.classify(intent, sensitivity, task_id=task_id)
 
     def _execute_task(self, task: Task) -> None:
         """Ejecuta la tarea con la herramienta deterministica correspondiente."""
@@ -2204,6 +2123,12 @@ class Orchestrator:
         self._distiller = None
         self._ghost_replay = None
         self._slm_classifier = None
+        self._hybrid = HybridClassifier(
+            rule_classifier=self._classifier,
+            slm_getter=lambda: self._slm_classifier,
+            merkle=self._merkle,
+            bypass_threshold=self.SLM_BYPASS_THRESHOLD,
+        )
         self._timetravel = None
         self._inference_hub = None
         self._pii_surrogate = PIISurrogate()
