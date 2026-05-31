@@ -42,10 +42,10 @@ from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.mcp import McpRegistry, load_servers
+from atlas.core.orchestrator_parts.gate_f_executor import GateFExecutor
 from atlas.core.orchestrator_parts.gate_f_parser import (
     GateFCommand,
     parse_gate_f_command,
-    resolve_path as _resolve_gate_f_path_fn,
 )
 from atlas.core.orchestrator_parts.git_read_tools import GitReadTools
 from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
@@ -99,9 +99,7 @@ class Orchestrator:
     _telegram_thread: Any
     _offline_monitor: Any
     _thermal_watchdog: Any
-    _browser_tool: Any
-    _editor_tool: Any
-    _vision_loop: Any
+    _gate_f_exec: GateFExecutor
     _pending_approval_dir: Path
     _agentic_auto_approve: frozenset[str]   # ADR-033
     _agentic_suspension_ttl: float | None   # ADR-033
@@ -428,12 +426,9 @@ class Orchestrator:
         controlar el ciclo de vida del browser/editor. Si no se inyectan, el
         Orchestrator construye instancias conservadoras bajo demanda.
         """
-        if browser is not None:
-            self._browser_tool = browser
-        if editor is not None:
-            self._editor_tool = editor
-        if vision_loop is not None:
-            self._vision_loop = vision_loop
+        self._gate_f_exec.attach(
+            browser=browser, editor=editor, vision_loop=vision_loop,
+        )
 
     def start_mcp_servers(self) -> None:
         """ADR-035: arranca los servers MCP del registry (opt-in, idempotente).
@@ -1329,98 +1324,10 @@ class Orchestrator:
         self._execute_gate_f_task(task)
 
     def _execute_gate_f_task(self, task: Task) -> None:
-        tool_key = task.tool_name or "gate_f"
-        gate_h_block = self._check_gate_h_tool_allowed(tool_key, task.id)
-        if gate_h_block:
-            task.transition(TaskStatus.FAILED)
-            task.error = gate_h_block
-            task.result = {"error": task.error, "paused": True}
-            return
-
-        thermal_block = self._thermal_blocks_execution()
-        if thermal_block:
-            task.transition(TaskStatus.FAILED)
-            task.error = thermal_block
-            task.result = {"error": thermal_block, "thermal": True}
-            return
-
-        raw = task.metadata.get("gate_f_command")
-        if not isinstance(raw, dict):
-            raise RuntimeError("Gate F command metadata missing or invalid")
-        tool = str(raw.get("tool", ""))
-        action = str(raw.get("action", ""))
-        args = raw.get("args", {})
-        if not isinstance(args, dict):
-            raise RuntimeError("Gate F command args missing or invalid")
-
-        try:
-            if tool == "browser":
-                result = self._execute_browser_command(action, args)
-            elif tool == "editor":
-                result = self._execute_editor_command(action, args, task=task)
-            elif tool == "vision":
-                result = self._execute_vision_command(action, args)
-            else:
-                raise RuntimeError(f"Unknown Gate F tool: {tool}")
-        except Exception as e:
-            self._merkle.log(
-                action="gate_f.tool_failed",
-                agent=f"{tool}.{action}" if tool and action else "gate_f",
-                result="failure",
-                risk_level="moderate",
-                payload={"error": str(e)[:500]},
-                task_id=task.id,
-            )
-            self._gate_h.record_failure(
-                tool_name=task.tool_name or "gate_f",
-                failure_type="gate_f_execution",
-                error=str(e),
-                context={"tool": tool, "action": action, "args": args},
-                task_id=task.id,
-            )
-            if self._timetravel is not None:
-                self._timetravel.record_step(
-                    task.id, "gate_h_failure",
-                    {"tool": tool, "error": str(e)[:200]},
-                )
-            task.transition(TaskStatus.FAILED)
-            task.error = str(e)
-            self._bus.publish_type(EventType.TOOL_FAILED, {
-                "task_id": task.id, "tool": task.tool_name, "error": str(e),
-            }, task.id)
-            return
-
-        task.result = result
-        self._merkle.log(
-            action="tool.invoked",
-            agent=task.tool_name or "gate_f",
-            result="success",
-            risk_level="medium" if task.route == RoutingLevel.REQUIRES_APPROVAL else "safe",
-            payload={"tool": task.tool_name},
-            task_id=task.id,
-        )
-        self._record_tool_receipt(
-            task,
-            purpose=f"Gate F {tool}.{action}",
-            safety_checks=["PermissionProfile", "AtlasExecutor", "GateH", "MerkleLogger"],
-            approval_path="explicit" if task.route == RoutingLevel.REQUIRES_APPROVAL else "automatic",
-        )
-        task.transition(TaskStatus.DONE)
-        self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
+        self._gate_f_exec.execute_task(task)
 
     def _execute_browser_command(self, action: str, args: dict[str, Any]) -> dict:
-        browser = self._get_browser_tool()
-        if action == "navigate":
-            return browser.navigate(str(args["url"])).__dict__
-        if action == "screenshot":
-            return browser.screenshot(args.get("name")).__dict__
-        if action == "extract":
-            return browser.extract().__dict__
-        if action == "click":
-            return browser.click(str(args["selector"])).__dict__
-        if action == "fill":
-            return browser.fill(str(args["selector"]), str(args["value"])).__dict__
-        raise RuntimeError(f"Unsupported browser action: {action}")
+        return self._gate_f_exec.execute_browser_command(action, args)
 
     def _execute_editor_command(
         self,
@@ -1429,151 +1336,19 @@ class Orchestrator:
         *,
         task: Task | None = None,
     ) -> dict:
-        editor = self._get_editor_tool()
-        clearance = f"task:{task.id}" if task is not None else None
-        if action == "read":
-            return editor.read_file(self._resolve_gate_f_path(str(args["path"]))).__dict__
-        if action == "write":
-            return editor.write_file(
-                self._resolve_gate_f_path(str(args["path"])),
-                str(args["content"]),
-                clearance=clearance,
-            ).__dict__
-        if action == "run":
-            return self._execute_editor_run_command(
-                task, args, editor, clearance=clearance,
-            )
-        if action == "apply_diff":
-            return editor.apply_diff(
-                self._resolve_gate_f_path(str(args["path"])),
-                str(args["diff"]),
-                clearance=clearance,
-            ).__dict__
-        if action == "open":
-            return editor.open_project(self._resolve_gate_f_path(str(args["path"]))).__dict__
-        raise RuntimeError(f"Unsupported editor action: {action}")
+        return self._gate_f_exec.execute_editor_command(action, args, task=task)
 
     def _execute_vision_command(self, action: str, args: dict[str, Any]) -> dict:
-        if action != "propose":
-            raise RuntimeError(f"Unsupported vision action: {action}")
-        proposal = self._get_vision_loop().propose_next(
-            str(args.get("screenshot_name") or "vision_loop")
-        )
-        payload = proposal.__dict__
-        if proposal.requires_approval:
-            self._merkle.log(
-                action="vision.proposal_requires_approval",
-                agent="orchestrator",
-                result="pending",
-                risk_level="medium",
-                payload=payload,
-            )
-        return payload
-
-    def _execute_editor_run_command(
-        self,
-        task: Task | None,
-        args: dict[str, Any],
-        editor: Any,
-        *,
-        clearance: str | None,
-    ) -> dict[str, Any]:
-        working_dir = self._resolve_gate_f_path(str(args["working_dir"]))
-        command = str(args["command"])
-        generated = bool(args.get("generated"))
-
-        if generated and task is not None:
-            self._record_tool_receipt(
-                task,
-                purpose="Generated editor run (pre-exec)",
-                safety_checks=["GeneratedCodePolicy", "AST Guard", "AtlasExecutor"],
-                approval_path="explicit",
-            )
-            self._validate_generated_script_source(command, working_dir)
-            self._gate_h.assert_generated_reusable(command, task_id=task.id)
-
-        result = editor.run_task(working_dir, command, clearance=clearance)
-        out: dict[str, Any] = dict(result.__dict__)
-        if generated and task is not None:
-            out = self._execute_generated_editor_run(
-                task,
-                {"working_dir": str(working_dir), "command": command},
-                out,
-            )
-        return out
-
-    def _validate_generated_script_source(self, command: str, working_dir: Path) -> None:
-        import shlex
-
-        policy = GeneratedCodePolicy()
-        for part in shlex.split(command):
-            if not part.endswith(".py"):
-                continue
-            script = Path(part)
-            if not script.is_absolute():
-                script = (working_dir / script).resolve()
-            if script.is_file():
-                check = policy.check_generated_source(script.read_text(encoding="utf-8"))
-                if not check.passed:
-                    raise RuntimeError(f"GeneratedCodePolicy: {check.reason}")
-
-    def _execute_generated_editor_run(
-        self,
-        task: Task,
-        input_data: dict[str, Any],
-        result: dict[str, Any],
-    ) -> dict[str, Any]:
-        tool_name = task.tool_name or "editor.run"
-        validation = self._gate_h.audit_generated_run(
-            tool_name,
-            input_data,
-            result,
-            task_id=task.id,
-            promote=True,
-        )
-        result = dict(result)
-        result["gate_h"] = {
-            "valid": validation.valid,
-            "reasons": list(validation.reasons),
-        }
-        if not validation.valid:
-            task.error = "; ".join(validation.reasons)
-        return result
-
-    def _resolve_gate_f_path(self, value: str) -> Path:
-        return _resolve_gate_f_path_fn(self._workspace, value)
+        return self._gate_f_exec.execute_vision_command(action, args)
 
     def _get_browser_tool(self) -> Any:
-        if self._browser_tool is None:
-            from atlas.tools.browser import BrowserTool  # noqa: PLC0415
-
-            self._browser_tool = BrowserTool(
-                workspace=self._workspace,
-                bridge=self._ssrf_bridge,
-                merkle=self._merkle,
-                allow_private_network=False,
-            )
-        return self._browser_tool
+        return self._gate_f_exec.get_browser_tool()
 
     def _get_editor_tool(self) -> Any:
-        if self._editor_tool is None:
-            from atlas.tools.editor import EditorTool  # noqa: PLC0415
-
-            self._editor_tool = EditorTool(
-                workspace=self._workspace,
-                executor=self._executor,
-            )
-        return self._editor_tool
+        return self._gate_f_exec.get_editor_tool()
 
     def _get_vision_loop(self) -> Any:
-        if self._vision_loop is None:
-            from atlas.tools.computer_use.vision_loop import VisionLoop  # noqa: PLC0415
-
-            self._vision_loop = VisionLoop(
-                browser=self._get_browser_tool(),
-                merkle=self._merkle,
-            )
-        return self._vision_loop
+        return self._gate_f_exec.get_vision_loop()
 
     # ------------------------------------------------------------------
     # Pending approval persistence (Gate G)
@@ -2552,9 +2327,18 @@ class Orchestrator:
         self._telegram_thread = None
         self._offline_monitor = None
         self._thermal_watchdog = None
-        self._browser_tool = None
-        self._editor_tool = None
-        self._vision_loop = None
+        self._gate_f_exec = GateFExecutor(
+            workspace=self._workspace,
+            executor=self._executor,
+            ssrf_bridge=self._ssrf_bridge,
+            merkle=self._merkle,
+            gate_h=self._gate_h,
+            timetravel=lambda: self._timetravel,
+            bus=self._bus,
+            check_gate_h_allowed=self._check_gate_h_tool_allowed,
+            record_receipt=self._record_tool_receipt,
+            thermal_blocks=self._thermal_blocks_execution,
+        )
 
         # Gate D pipeline integrado — desactivado por defecto. Se activa con
         # enable_gate_d_pipeline() o con ATLAS_PIPELINE_GATE_D=1 en el env.
