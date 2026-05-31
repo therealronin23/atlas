@@ -1,6 +1,11 @@
 # Plan Maestro — Cliente MCP, Murallas Defensivas y Auto-Mantenimiento
 
-- Status: **Draft / planificación** (2026-05-30)
+- Status: **Ciclo MCP cerrado** (2026-05-31) — consumo (035) + frontera P0 (037)
+  + gate de adopción (038 slice 1) + registro dinámico landed y verdes. Quedan
+  abiertas murallas P1/P2 (egress full, Merkle anchoring, confused-deputy,
+  integridad de aprobación) y el agente de auto-mantenimiento (§5, ADR-039
+  diseñado). El siguiente hito es la autonomía human-on-the-loop (ADR-040, se
+  abre al cerrar también el lazo Hermes). Originalmente: Draft (2026-05-30).
 - Autor: sesión de diseño Atlas (Tomás + Claude)
 - Alcance: consolidar TODO lo discutido en la sesión sobre (1) Atlas como cliente
   MCP, (2) gate de adopción "Atlas Sentinel", (3) frontera de contenido no
@@ -115,9 +120,9 @@ servidores MCP ──initialize→tools/list──> McpRegistry
 ### Murallas priorizadas (de Atlas)
 | Prioridad | Muralla | Amenaza | Estado | ADR |
 |---|---|---|---|---|
-| **P0** | Frontera de contenido no confiable | Inyección indirecta (resultados de tools/archivos/**foros** re-entran al contexto) | ❌ | 037 |
+| **P0** | Frontera de contenido no confiable | Inyección indirecta (resultados de tools/archivos/**foros** re-entran al contexto) | 🟢 slice 1 (provenance+wrap+taint del loop; `mcp__*`=untrusted). Dual-LLM CaMeL diferido al agente de §5 | 037 |
 | **P0** | Gate de adopción (Atlas Sentinel) | Supply chain skills/MCP (Postmark, ToxicSkills 36%) | 🟢 slice 1 (identidad+IOC+tiering, fail-closed) | 038 |
-| **P1** | Manejo de secretos MCP | Robo desde env/logs/Merkle | ❌ | 035 |
+| **P1** | Manejo de secretos MCP | Robo desde env/logs/Merkle | 🟡 config (`env_passthrough`, nunca loggear `env` resuelto) | 035 |
 | **P1** | Control de egress (allowlist + IOC) | Exfiltración por server fuera de sandbox | ❌ | 035/038 |
 | **P1** | Anclaje cadena Merkle | Atlas comprometido reescribe su auditoría | 🟡 parcial | 036 |
 | **P2** | Confused-deputy en el loop | Colisión de nombres con allowlist auto-approve | ❌ | 035 |
