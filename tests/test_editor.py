@@ -15,7 +15,7 @@ from typing import Generator, Any
 
 import pytest
 
-from atlas.tools.editor import EditorTool
+from atlas.tools.editor import EditorInfo, EditorTool
 
 
 # ---------------------------------------------------------------------------
@@ -283,14 +283,33 @@ class TestOpenProject:
         assert result.success is False
         assert "no se detecto" in result.error.lower()
 
-    def test_open_creates_process(self, sample_project: Path, editor: EditorTool) -> None:
-        """Si hay code detectado, debe lanzar proceso (verificamos que no explota)."""
-        info = editor.detect_editor()
-        if not info.available:
-            pytest.skip("No hay editor disponible en este entorno")
+    def test_open_creates_process(
+        self,
+        sample_project: Path,
+        editor: EditorTool,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Con un editor detectado, open_project lanza el proceso.
+
+        NUNCA lanzamos un editor real: mockeamos subprocess.Popen para no
+        abrir Cursor/VS Code durante la suite (era la causa de que se abriera
+        Cursor en cada `pytest`). Forzamos un EditorInfo disponible para que
+        el test sea determinista en cualquier entorno.
+        """
+        editor._editor = EditorInfo(
+            name="cursor", binary="/usr/bin/cursor", version="x", available=True,
+        )
+        calls: list[list[str]] = []
+
+        def _fake_popen(args: list[str], *a: Any, **k: Any) -> Any:
+            calls.append(args)
+            return object()
+
+        monkeypatch.setattr(subprocess, "Popen", _fake_popen)
         result = editor.open_project(sample_project)
         assert result.success is True
-        assert result.editor != "none"
+        assert result.editor == "cursor"
+        assert calls and calls[0][0] == "/usr/bin/cursor"
 
 
 class TestReadWriteRoundtrip:
