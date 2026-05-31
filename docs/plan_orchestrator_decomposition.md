@@ -1,8 +1,27 @@
 # Plan — Descomposición de `orchestrator.py` (god-object)
 
+> **Estado a 2026-05-31:** `orchestrator.py` **3.120 → 2.272 LOC** (−27 %, −848
+> LOC). Extraídos 7 colaboradores: `TaskPersistence`, `GitReadTools`,
+> `gate_f_parser`, `agentic_helpers`, `GateFExecutor`, `ApprovalManager`
+> (cluster D, slice 5), `HybridClassifier` (slice 6). 754 tests verdes + mypy 0
+> en cada slice.
+>
+> **Parada deliberada (no se persigue el objetivo <800 LOC).** Lo que queda
+> (`_execute_task` + `_run_pipeline*` + `_execute_local_safe_via_inference` +
+> todo el loop agéntico ADR-031/032/033/037) es **un único núcleo de ejecución
+> mutuamente recursivo**, no dos colaboradores separables. Extraerlo como
+> `AgenticExecutor` exigiría inyectar ~20 dependencias/callbacks y toca la
+> frontera de contenido no confiable (ADR-037, seguridad P0). Es trabajo de
+> **sesión dedicada y alto cuidado**, no de un barrido mecánico. Forzar el
+> split F/E del plan original (PipelineRunner vs AgenticLoop) **añadiría**
+> acoplamiento por callbacks en vez de quitarlo — contradice el objetivo del
+> refactor. Por eso se cierra aquí la fase mecánica y el núcleo queda como
+> responsabilidad central explícita del `Orchestrator` hasta una sesión
+> dedicada. Ver tarea "DEFERRED: extract AgenticExecutor".
+
 - Fecha: 2026-05-30
 - Origen: H1 de la auditoría 2026-05-30 (P0).
-- Estado actual: `orchestrator.py` = **3.120 LOC, 113 métodos** en una sola clase.
+- Estado inicial: `orchestrator.py` = **3.120 LOC, 113 métodos** en una sola clase.
 - Objetivo: dejar `Orchestrator` como **fachada delgada** (<800 LOC) que delega
   en colaboradores con responsabilidad única. Sin cambiar API pública ni
   comportamiento. Sin nuevos tests inicialmente — la red de seguridad son los

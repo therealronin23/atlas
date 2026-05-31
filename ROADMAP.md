@@ -227,6 +227,15 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   no de medio). Disco SANO (PASSED, 0 reasignados). Vigilar; si reaparece el
   `errors=remount-ro`, reasentar conector. journald ya persistente.
 
+### Decomposición del god-object (auditoría H1/H2)
+- 🟡 **`orchestrator.py` 3.120 → 2.272 LOC** (−27 %). 7 colaboradores extraídos a
+  `core/orchestrator_parts/` (TaskPersistence, GitReadTools, gate_f_parser,
+  agentic_helpers, GateFExecutor, ApprovalManager, HybridClassifier). Fase
+  mecánica **cerrada deliberadamente**: lo que queda es el núcleo de ejecución
+  mutuamente recursivo (`_execute_task` + loop agéntico ADR-037). Extraerlo como
+  `AgenticExecutor` = sesión dedicada de alto riesgo. Ver
+  `docs/plan_orchestrator_decomposition.md`.
+
 ### Roadmap previo
 - ✅ **Hermes webhook** — HECHO. `HermesWebhookHandler` (HMAC + online/offline →
   EventBus), montado en el dashboard/API. 21 tests (`tests/test_hermes_webhook.py`).
