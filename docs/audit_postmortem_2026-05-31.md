@@ -122,7 +122,7 @@ workspace vivo) está cerrado y reflejado en memoria
 
 | # | Sev | Hallazgo | Acción |
 |---|---|---|---|
-| H1 | P2 | ~21 `except …: pass` silencian errores | Auditar uno a uno; loggear o re-lanzar donde proceda |
+| H1 | ✅ | ~30 `except …: pass` | **Auditado: no es deuda.** Todos best-effort legítimos: cleanup de `unlink`, lecturas de `/proc` con fallback, aislamiento de subscribers pub/sub, notificaciones Telegram que no deben tumbar el bot. Ninguno oculta un bug. Sin cambio de código |
 | H2 | P2 | `orchestrator.py` 2.272 LOC (núcleo de ejecución cohesivo) | Extraer `AgenticExecutor` en sesión dedicada (alto riesgo, ADR-037). Ya no es P1: −27 % y 7 colaboradores fuera |
 | H3 | P3 | Sin cobertura medida (no hay `pytest-cov`) | Opcional: añadir cobertura puntual para mapear zonas frías |
 | H4 | P3 | `sandbox.py:241` TODO Gate E (qm snapshot) | Deuda documentada; depende de infra Proxmox |
