@@ -13,10 +13,15 @@ components serve Atlas, not the other way around.
 
 ## Project Status
 
-> **Última sincronización: 2026-05-29** — Atlas+Hermes-Agent twin architecture
+> **Última sincronización: 2026-05-31** — Atlas+Hermes-Agent twin architecture
 > live (ADR-026..029) + block memory estilo Letta (ADR-030) + loop agéntico de
-> tool-calls (ADR-031: grounding factual + auto-edición de blocks). Atlas Core
-> **v0.12.0** on `main`. 695 tests verdes. Lista viva de pendientes en
+> tool-calls (ADR-031) con HITL suspendible para mutaciones (ADR-032/033) +
+> hardening de subprocess (ADR-034) + **muralla de contenido no confiable**
+> (ADR-036 threat model, ADR-037 frontera por provenance) + **cliente MCP**
+> stdio genérico (ADR-035; n8n/calendar son solo ejemplos del template, el
+> transporte habla con cualquier servidor MCP). Refactor del god-object
+> `orchestrator.py` en curso (slices 1–4 de 6; ver `docs/plan_orchestrator_decomposition.md`).
+> Atlas Core **v0.12.0** on `main`. **753 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
@@ -258,6 +263,22 @@ ADR-031  Loop agéntico de tool-calls. `InferenceRequest.tools/messages` +
          Always-on para LOCAL_SAFE (degrada a single-shot sin tool_calls). Tools v1:
          git/fs/status/blocks (lectura) + edit/append_memory_block (escritura).
          Resuelve alucinación factual + auto-edición de blocks. max_iters=5, auditado.
+ADR-032  Mutating tools en el loop vía HITL suspendible. Las tools que mutan el
+         host (editor/browser) suspenden el loop a AWAITING_APPROVAL; el humano
+         aprueba inline y el loop reanuda. `orchestrator._suspend/_resume_agentic_loop`.
+ADR-033  Refinements del loop: auto-approve allowlist (sin persistir), aprobación
+         parcial por mutación, TTL sweep de suspensiones, traza de progreso por
+         iteración. Cableado a CLI/serve/Telegram/dashboard.
+ADR-034  Hardening del subprocess de ejecución: no-new-privs, rlimits
+         (fsize/nproc/nofile), aislamiento de sesión. `security/executor.py`.
+ADR-035  Cliente MCP sobre stdio con stdlib (sin dep `mcp`). `src/atlas/mcp/`.
+         Tools namespaced `mcp__<server>__<tool>`, mutate-by-default + allowlist
+         read-only, secretos por `env_passthrough` (nunca en JSON). El transporte
+         es GENÉRICO: n8n/calendar en `mcp_servers.example.json` son solo ejemplos.
+ADR-036  Threat model (inyección indirecta de prompt como amenaza #1). `docs/adr_036_threat_model.md`.
+ADR-037  Frontera de contenido no confiable: todo `mcp__*` es untrusted; su
+         resultado se envuelve por PROVENANCE (no kind) → taintea el loop →
+         anula auto-approve tras ingerir lo no confiable. `docs/adr_037_*.md`.
 
 ## Open ADRs
 
@@ -282,7 +303,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 564 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 753 core, 25 deselected
 PYTHONPATH=src python -m pytest tests/ -q -m "computer_use"      # 25 Playwright/browser tests
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
@@ -317,15 +338,17 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  pytest --ignore=test_browser.py -q  (expect 522+ core; 534+ con browser)
+3. Verify green:  python3 -m pytest -q  (expect 753 core, 25 deselected) + python3 -m mypy src
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
-Current state at session start: Gates A–I + ADR-024/025 MVP + SelfAuditLoop (2026-05-25). v0.9.0.
-Suite core 564 green; `atlas serve`, `atlas health`, `atlas update`, `atlas self-audit`,
-observability dashboard.
-Next: ColdUpdate auto-patch generation from self-audit candidates, Hermes webhook,
-fleet/Atlas Box, ADR-024 production metrics.
+Current state at session start: Gates A–I + twin (ADR-026..030) + loop agéntico
+con HITL + muralla de seguridad (ADR-032..037) + cliente MCP (ADR-035). **v0.12.0**.
+Suite **753 green + mypy 0**; `atlas serve`, `atlas health`, `atlas update`,
+`atlas self-audit`, observability dashboard.
+Next: terminar decomposición del orchestrator (slices 5–6), ADR-038 (gate de
+adopción Atlas Sentinel), agente de auto-mantenimiento. **Pendiente de deuda
+explícita: `timeout_seconds` del transporte MCP no se aplica aún en la I/O (ADR-035).**
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 

@@ -10,4 +10,4 @@
 >
 > Si estás en una sesión local: `cat AGENTS.md`
 >
-> Última sincronización: 2026-05-24 (commit cab4993)
+> Última sincronización: 2026-05-31 (v0.12.0, 753 tests, ADR-035 MCP + ADR-037 muralla)
