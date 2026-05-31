@@ -99,16 +99,27 @@ class SentinelGate:
 
     # ------------------------------------------------------------------ API
 
-    def vet(self, cfg: McpServerConfig, tools: list[dict[str, Any]]) -> VetResult:
-        """Veta un server y sus tools. Fail-closed: lo que no se puede vetar
-        no se admite. No arranca nada — solo decide."""
-        # Capa 2 (server-level): el cmd es argv; metacaracteres de shell o un
-        # comando en la IOC blocklist vetan el server entero.
-        cmd_reason = self._scan_command(cfg.cmd)
-        if cmd_reason is not None:
-            self._audit("sentinel.server_vetoed", cfg.name, cmd_reason, "blocked")
-            return VetResult(server=cfg.name, admitted=False, server_reason=cmd_reason)
+    def vet_command(self, cfg: McpServerConfig) -> str | None:
+        """Capa 2, **pre-spawn**: el ``cmd`` es argv (nunca shell, ADR-035).
+        Metacaracteres de shell o un comando en la IOC blocklist vetan el server
+        ANTES de arrancar el subproceso. Devuelve la razón del veto o None."""
+        reason = self._scan_command(cfg.cmd)
+        if reason is not None:
+            self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
+        return reason
 
+    def vet(self, cfg: McpServerConfig, tools: list[dict[str, Any]]) -> VetResult:
+        """Conveniencia: comando + tools en una llamada (para callers que ya
+        tienen la lista de tools). El registry usa ``vet_command`` pre-spawn y
+        ``vet_tools`` post-list por separado."""
+        cmd_reason = self.vet_command(cfg)
+        if cmd_reason is not None:
+            return VetResult(server=cfg.name, admitted=False, server_reason=cmd_reason)
+        return self.vet_tools(cfg, tools)
+
+    def vet_tools(self, cfg: McpServerConfig, tools: list[dict[str, Any]]) -> VetResult:
+        """Capa 1+3, **post-list**: identidad/snapshot (anti rug-pull) y tiering.
+        Asume que el comando ya pasó ``vet_command``. Fail-closed por tool."""
         snapshot = self._load_snapshot(cfg.name)
         first_adoption = snapshot is None
         known = snapshot or {}

@@ -80,6 +80,14 @@ class McpRegistry:
                 self._audit("mcp.server_failed", cfg.name, str(exc)[:300], "failure")
 
     def _start_one(self, cfg: McpServerConfig) -> None:
+        # Gate Atlas Sentinel (ADR-038), capa 2 pre-spawn: si el comando es
+        # peligroso NO se arranca el subproceso (vetar después de spawn sería
+        # tarde — el proceso ya habría corrido).
+        if self._sentinel is not None:
+            cmd_reason = self._sentinel.vet_command(cfg)
+            if cmd_reason is not None:
+                self._audit("mcp.server_vetoed", cfg.name, cmd_reason[:300], "failure")
+                return
         transport = self._factory(cfg)
         # initialize handshake
         result = transport.request("initialize", {
@@ -92,21 +100,12 @@ class McpRegistry:
         tools_resp = transport.request("tools/list", {})
         tools = (tools_resp or {}).get("tools", []) if isinstance(tools_resp, dict) else []
 
-        # Gate de adopción Atlas Sentinel (ADR-038): vetar server + tools antes
-        # de registrarlas. Fail-closed: lo que no pasa, no se adopta.
+        # Gate Atlas Sentinel (ADR-038), capas 1+3 post-list: vetar las tools
+        # antes de registrarlas. Fail-closed: lo que no pasa, no se adopta.
         admitted_tools: set[str] | None = None
         if self._sentinel is not None:
             clean = [t for t in tools if isinstance(t, dict)]
-            vet = self._sentinel.vet(cfg, clean)
-            if not vet.admitted:
-                try:
-                    transport.close()
-                except Exception:  # noqa: BLE001
-                    pass
-                self._audit(
-                    "mcp.server_vetoed", cfg.name, vet.server_reason[:300], "failure",
-                )
-                return
+            vet = self._sentinel.vet_tools(cfg, clean)
             admitted_tools = {v.tool_name for v in vet.tools if v.admitted}
 
         self._transports[cfg.name] = transport
@@ -150,6 +149,53 @@ class McpRegistry:
         self._tool_specs.clear()
         self._read_only.clear()
         self._tool_index.clear()
+
+    # ------------------------------------------------------------------ dynamic
+
+    def add_server(self, cfg: McpServerConfig) -> str:
+        """Adopta un server en caliente, sin reiniciar el resto. Pasa por el
+        mismo gate Sentinel que ``start_all``. Devuelve un estado textual
+        (``ok`` / ``skipped`` / ``vetoed`` / ``error``) para que el llamante
+        (Telegram, auto-mantenimiento) lo reporte. Fail-safe: un fallo no
+        afecta a los servers ya activos."""
+        if cfg.name in self._transports:
+            return f"skipped: server '{cfg.name}' ya está activo"
+        if not cfg.enabled:
+            return f"skipped: server '{cfg.name}' deshabilitado"
+        try:
+            self._start_one(cfg)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("MCP server '%s' failed to start: %s", cfg.name, exc)
+            self._audit("mcp.server_failed", cfg.name, str(exc)[:300], "failure")
+            return f"error: {exc}"
+        if cfg.name not in self._transports:
+            # _start_one volvió sin registrar ⇒ el gate lo vetó.
+            return f"vetoed: server '{cfg.name}' rechazado por el gate de adopción"
+        if cfg.name not in {c.name for c in self._configs}:
+            self._configs.append(cfg)
+        return f"ok: server '{cfg.name}' adoptado"
+
+    def remove_server(self, name: str) -> bool:
+        """Retira un server en caliente: cierra su transporte y descarta sus
+        tools del surface. Devuelve False si no estaba activo."""
+        transport = self._transports.pop(name, None)
+        if transport is None:
+            return False
+        try:
+            transport.close()
+        except Exception:  # noqa: BLE001
+            pass
+        fulls = {f for f, (srv, _t) in self._tool_index.items() if srv == name}
+        for full in fulls:
+            self._tool_index.pop(full, None)
+            self._read_only.discard(full)
+        self._tool_specs = [
+            s for s in self._tool_specs
+            if s.get("function", {}).get("name") not in fulls
+        ]
+        self._configs = [c for c in self._configs if c.name != name]
+        self._audit("mcp.server_removed", name, f"tools={len(fulls)}", "success")
+        return True
 
     # ------------------------------------------------------------------ surface
 
