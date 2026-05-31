@@ -86,12 +86,16 @@ está en `.gitignore`. Ejemplo:
 
 ## Limitaciones conocidas (deuda explícita, no bloqueante)
 
-- **`timeout_seconds` aún no se aplica en la I/O**: `StdioTransport` lo guarda
-  pero `readline()` bloquea sin deadline. Un server colgado puede colgar el
-  thread del loop. Pendiente: lectura con deadline (poll/select o thread con
-  `join(timeout)`). Riesgo: disponibilidad local, no breach.
 - Solo stdio (no HTTP/SSE). Cubierto por la interfaz `McpTransport` para cuando
   haga falta.
+
+## Deuda cerrada
+
+- **`timeout_seconds` se aplica en la I/O** (2026-05-31): `_read_line` lee a
+  nivel de fd con `os.read` + `select`, acotado por un deadline = `timeout_seconds`
+  por línea de respuesta. Un server colgado ya no bloquea el thread del loop:
+  lanza `McpProtocolError("server response timed out after Ns")`. Stdlib pura.
+  Test: `test_stdio_transport_times_out_on_silent_server`.
 
 ## Tests
 

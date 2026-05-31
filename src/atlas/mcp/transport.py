@@ -12,8 +12,11 @@ Atlas — es responsabilidad del Registry (config + egress) acotarlo.
 from __future__ import annotations
 
 import json
+import os
+import select
 import subprocess
 import threading
+import time
 from typing import Any, Protocol
 
 
@@ -53,6 +56,7 @@ class StdioTransport:
         self._proc: subprocess.Popen[str] | None = None
         self._next_id = 1
         self._lock = threading.Lock()
+        self._buf = ""  # líneas no consumidas (leemos por fd con os.read)
 
     # ------------------------------------------------------------------ lifecycle
 
@@ -101,21 +105,42 @@ class StdioTransport:
             raise McpProtocolError(f"send failed: {exc}") from exc
 
     def _read_line(self) -> str:
+        """Lee una línea acotada por ``self._timeout`` (ADR-035 dec.: el
+        budget por request se aplica de verdad). Lee a nivel de fd con
+        ``os.read`` + ``select`` para que un server colgado no bloquee el
+        loop agéntico indefinidamente. El deadline es por línea de respuesta.
+        """
         if self._proc is None or self._proc.stdout is None:
             raise McpProtocolError("transport not started")
-        line = self._proc.stdout.readline()
-        if not line:
-            # EOF — server murió. Recogemos stderr para diagnóstico.
-            stderr = ""
+        fd = self._proc.stdout.fileno()
+        deadline = time.monotonic() + self._timeout
+        while "\n" not in self._buf:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise McpProtocolError(
+                    f"server response timed out after {self._timeout}s"
+                )
+            ready, _, _ = select.select([fd], [], [], remaining)
+            if not ready:
+                continue
             try:
-                if self._proc.stderr is not None:
-                    stderr = self._proc.stderr.read() or ""
-            except Exception:  # noqa: BLE001
-                pass
-            raise McpProtocolError(
-                f"server closed stdout (rc={self._proc.poll()}). stderr: {stderr[:500]}"
-            )
-        return line.rstrip("\n")
+                chunk = os.read(fd, 4096)
+            except OSError as exc:
+                raise McpProtocolError(f"read failed: {exc}") from exc
+            if not chunk:
+                # EOF — server murió. Recogemos stderr para diagnóstico.
+                stderr = ""
+                try:
+                    if self._proc.stderr is not None:
+                        stderr = self._proc.stderr.read() or ""
+                except Exception:  # noqa: BLE001
+                    pass
+                raise McpProtocolError(
+                    f"server closed stdout (rc={self._proc.poll()}). stderr: {stderr[:500]}"
+                )
+            self._buf += chunk.decode("utf-8", errors="replace")
+        line, self._buf = self._buf.split("\n", 1)
+        return line
 
     def request(self, method: str, params: dict[str, Any] | None = None) -> Any:
         with self._lock:

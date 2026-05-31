@@ -21,7 +21,7 @@ components serve Atlas, not the other way around.
 > stdio genérico (ADR-035; n8n/calendar son solo ejemplos del template, el
 > transporte habla con cualquier servidor MCP). Refactor del god-object
 > `orchestrator.py` en curso (slices 1–4 de 6; ver `docs/plan_orchestrator_decomposition.md`).
-> Atlas Core **v0.12.0** on `main`. **753 tests verdes + mypy 0**. Lista viva de pendientes en
+> Atlas Core **v0.12.0** on `main`. **754 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
@@ -303,7 +303,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 753 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 754 core, 25 deselected
 PYTHONPATH=src python -m pytest tests/ -q -m "computer_use"      # 25 Playwright/browser tests
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
@@ -338,17 +338,18 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  python3 -m pytest -q  (expect 753 core, 25 deselected) + python3 -m mypy src
+3. Verify green:  python3 -m pytest -q  (expect 754 core, 25 deselected) + python3 -m mypy src
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gates A–I + twin (ADR-026..030) + loop agéntico
 con HITL + muralla de seguridad (ADR-032..037) + cliente MCP (ADR-035). **v0.12.0**.
-Suite **753 green + mypy 0**; `atlas serve`, `atlas health`, `atlas update`,
+Suite **754 green + mypy 0**; `atlas serve`, `atlas health`, `atlas update`,
 `atlas self-audit`, observability dashboard.
 Next: terminar decomposición del orchestrator (slices 5–6), ADR-038 (gate de
-adopción Atlas Sentinel), agente de auto-mantenimiento. **Pendiente de deuda
-explícita: `timeout_seconds` del transporte MCP no se aplica aún en la I/O (ADR-035).**
+adopción Atlas Sentinel), agente de auto-mantenimiento. La deuda del
+`timeout_seconds` del transporte MCP **ya se aplica en la I/O** (`select`+`os.read`
+acotados por deadline; ADR-035).
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 
