@@ -64,6 +64,37 @@ class _FakeEditor:
         return SimpleNamespace(ok=True, path=str(path), bytes_written=len(content))
 
 
+class _FakeMcp:
+    """Registry MCP mínimo para tests de la frontera ADR-037.
+
+    El transporte real (subprocess + JSON-RPC) se cubre en
+    test_mcp_client.py; aquí solo necesitamos la clasificación read-only y un
+    resultado de dispatch para ejercitar el taint del orchestrator.
+    """
+
+    def __init__(self, read_only: set[str], results: dict[str, str]) -> None:
+        self._read_only = set(read_only)
+        self._results = dict(results)
+
+    def tool_specs(self) -> list:  # noqa: ANN201
+        return []
+
+    def is_read_only(self, name: str) -> bool:
+        return name in self._read_only
+
+    def knows(self, name: str) -> bool:
+        return name in self._results
+
+    def dispatch(self, name, arguments) -> str:  # noqa: ANN001
+        return self._results.get(name, "")
+
+    def start_all(self) -> None:
+        pass
+
+    def close_all(self) -> None:
+        pass
+
+
 def _write_call(tc_id: str = "m1", content: str = "hola") -> dict:
     return {
         "id": tc_id,
@@ -134,6 +165,12 @@ def test_untrusted_read_blocks_auto_approve(orch: Orchestrator) -> None:
     editor = _FakeEditor()
     orch.attach_gate_f_tools(editor=editor)
     orch.set_agentic_auto_approve(["editor_write"])  # confiada... salvo post-ingesta
+    # ADR-035: list_events es una lectura externa → registrada read-only (corre
+    # inline). ADR-037: su resultado se envuelve por provenance untrusted.
+    orch._mcp = _FakeMcp(
+        read_only={"mcp__cal__list_events"},
+        results={"mcp__cal__list_events": "Evento: dentista 15:00"},
+    )
     hub = _ScriptedHub([
         _resp(tool_calls=[_mcp_read_call()]),          # turno 1: lectura externa
         _resp(tool_calls=[_write_call(content="x")]),  # turno 2: mutación
@@ -152,6 +189,50 @@ def test_untrusted_read_blocks_auto_approve(orch: Orchestrator) -> None:
         m.get("role") == "tool" and orch._UNTRUSTED_MARKER in (m.get("content") or "")
         for m in msgs
     )
+
+
+def _mcp_mutate_call(tc_id: str = "m0", name: str = "mcp__n8n__trigger") -> dict:
+    return {"id": tc_id, "name": name, "arguments": "{}"}
+
+
+def test_mcp_mutation_executes_and_taints(orch: Orchestrator) -> None:
+    """Regresión (revisión de seguridad): una tool MCP MUTANTE auto-aprobada
+    (a) se ejecuta de verdad vía registry — no 'mutación desconocida' — y
+    (b) su resultado, dato externo no confiable, se envuelve y taintea el loop,
+    de modo que la siguiente mutación auto-aprobada cae a HITL.
+
+    Esto cierra el agujero de envolver solo por kind=='read': una mutante MCP
+    no es confiable solo por mutar.
+    """
+    editor = _FakeEditor()
+    orch.attach_gate_f_tools(editor=editor)
+    orch.set_agentic_auto_approve(["mcp__n8n__trigger", "editor_write"])
+    orch._mcp = _FakeMcp(
+        read_only=set(),  # n8n trigger NO es read-only → mutate (ADR-035)
+        results={"mcp__n8n__trigger": "workflow lanzado: ok"},
+    )
+    hub = _ScriptedHub([
+        _resp(tool_calls=[_mcp_mutate_call()]),         # turno 1: mutación MCP inline
+        _resp(tool_calls=[_write_call(content="y")]),   # turno 2: mutación local
+        _resp(text="no debería llegar"),
+    ])
+    orch.enable_gate_d_pipeline(inference_hub=hub)
+    task = orch.handle_intent("lanza el workflow y escribe el resultado")
+
+    # La mutación MCP se ejecutó (resultado real, no error de routing) y quedó
+    # envuelta como no confiable.
+    msgs = task.metadata["agentic_state"]["messages"]
+    wrapped = [
+        m for m in msgs
+        if m.get("role") == "tool" and orch._UNTRUSTED_MARKER in (m.get("content") or "")
+    ]
+    assert wrapped, "el resultado de la mutación MCP debe ir envuelto"
+    assert "workflow lanzado: ok" in wrapped[0]["content"]
+    assert "desconocida" not in wrapped[0]["content"]
+    # El loop quedó tainted → la mutación local auto-aprobada NO corrió inline.
+    assert task.status == TaskStatus.AWAITING_APPROVAL
+    assert editor.writes == []
+    assert orch.pending_approvals() != []
 
 
 def test_trusted_read_keeps_auto_approve_inline(orch: Orchestrator) -> None:

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "cal",
+    "cmd": ["python3", "-m", "mcp_calendar"],
+    "cwd": null,
+    "env_passthrough": ["GOOGLE_CALENDAR_TOKEN"],
+    "env_extra": {},
+    "read_only_tools": ["list_events", "get_event"],
+    "enabled": true,
+    "timeout_seconds": 15.0
+  },
+  {
+    "name": "n8n",
+    "cmd": ["node", "/opt/mcp-n8n/server.js"],
+    "env_passthrough": ["N8N_API_KEY"],
+    "read_only_tools": ["list_workflows", "get_execution"],
+    "enabled": false,
+    "timeout_seconds": 30.0
+  }
+]

@@ -41,6 +41,7 @@ from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
+from atlas.mcp import McpRegistry, load_servers
 from atlas.core.orchestrator_parts.gate_f_parser import (
     GateFCommand,
     parse_gate_f_command,
@@ -104,6 +105,8 @@ class Orchestrator:
     _pending_approval_dir: Path
     _agentic_auto_approve: frozenset[str]   # ADR-033
     _agentic_suspension_ttl: float | None   # ADR-033
+    _mcp: McpRegistry                       # ADR-035
+    _mcp_started: bool                      # ADR-035
 
     # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
     # Inicializados a None y poblados al activar.
@@ -431,6 +434,24 @@ class Orchestrator:
             self._editor_tool = editor
         if vision_loop is not None:
             self._vision_loop = vision_loop
+
+    def start_mcp_servers(self) -> None:
+        """ADR-035: arranca los servers MCP del registry (opt-in, idempotente).
+
+        Pensado para ``atlas serve`` y CLI interactivos. Tests y flows
+        unitarios pueden no llamarlo: el registry vacío hace que las tools
+        MCP no aparezcan en specs ni en dispatch.
+        """
+        if self._mcp_started:
+            return
+        self._mcp.start_all()
+        self._mcp_started = True
+
+    def stop_mcp_servers(self) -> None:
+        if not self._mcp_started:
+            return
+        self._mcp.close_all()
+        self._mcp_started = False
 
     def memory_read(self, layer: str) -> Any:
         layer_map = {
@@ -1736,9 +1757,15 @@ class Orchestrator:
     _AGENTIC_UNTRUSTED_READERS = _ah.UNTRUSTED_READERS
 
     def _agentic_tool_specs(self) -> list[dict[str, Any]]:
-        return _ah.tool_specs()
+        return _ah.tool_specs() + self._mcp.tool_specs()
 
     def _agentic_tool_kind(self, name: str) -> str:
+        # ADR-035 dec.5: tools MCP son mutate por defecto. La allowlist por
+        # server (read_only_tools en mcp_servers.json) marca cuáles corren
+        # inline. Esto convive con ADR-037: la procedencia 'untrusted' (que
+        # también es mcp__*) sigue activando taint y envoltura.
+        if name.startswith("mcp__"):
+            return "read" if self._mcp.is_read_only(name) else "mutate"
         return _ah.tool_kind(name)
 
     def _agentic_tool_provenance(self, name: str) -> str:
@@ -1901,6 +1928,9 @@ class Orchestrator:
             if name == "append_memory_block":
                 block = self._block_memory.append(args["label"], args["text"])
                 return f"ok: bloque '{block.label}' ampliado ({block.chars} chars)"
+            # ADR-035: tools de servers MCP.
+            if name.startswith("mcp__") and self._mcp.knows(name):
+                return self._mcp.dispatch(name, args)
             return f"error: herramienta desconocida '{name}'"
         except BlockLimitExceeded as exc:
             return f"error: límite del bloque excedido — resume o acorta el contenido. {exc}"
@@ -1979,12 +2009,12 @@ class Orchestrator:
                     )
                 # Redactar PII del resultado antes de devolverlo al modelo.
                 safe_result = self._pii_surrogate.redact(raw_result).text
-                # ADR-037: envolver resultados de lectores externos como dato no
-                # confiable (marca el loop como tainted para el siguiente turno).
-                if (
-                    self._agentic_tool_kind(tc["name"]) == "read"
-                    and self._agentic_tool_provenance(tc["name"]) == "untrusted"
-                ):
+                # ADR-037: envolver TODO resultado de fuente no confiable según
+                # provenance, no kind. Una tool MCP mutante (ADR-035 mutate-by-
+                # default) también devuelve datos externos manipulables;
+                # clasificarla 'mutate' no la hace confiable. Cualquier ingesta
+                # untrusted marca el loop como tainted para el siguiente turno.
+                if self._agentic_tool_provenance(tc["name"]) == "untrusted":
                     safe_result = self._wrap_untrusted(safe_result)
                 messages.append({
                     "role": "tool",
@@ -2101,6 +2131,11 @@ class Orchestrator:
             task_id=task.id,
         )
         try:
+            # ADR-035: mutaciones MCP (mutate-by-default) ejecutan vía registry
+            # tras la aprobación HITL/auto. Sin esta ruta, una tool MCP mutante
+            # aprobada nunca correría (partition('_') la mandaría a 'mcp').
+            if name.startswith("mcp__") and self._mcp.knows(name):
+                return self._mcp.dispatch(name, args)
             if tool == "editor":
                 result = self._execute_editor_command(action, args, task=task)
             elif tool == "browser":
@@ -2157,6 +2192,11 @@ class Orchestrator:
                     mut["name"], str(mut.get("arguments", "")), task
                 )
                 safe_result = self._pii_surrogate.redact(raw_result).text
+                # ADR-037: una mutación MCP aprobada por HITL devuelve datos
+                # externos no confiables; envolver para que tainte el loop tras
+                # la reanudación (mismo criterio provenance que la ruta inline).
+                if self._agentic_tool_provenance(mut["name"]) == "untrusted":
+                    safe_result = self._wrap_untrusted(safe_result)
             messages.append({
                 "role": "tool",
                 "tool_call_id": mut["id"],
@@ -2491,6 +2531,20 @@ class Orchestrator:
             )
         except ValueError:
             self._agentic_suspension_ttl = None
+
+        # ADR-035: cliente MCP. Config en $ATLAS_MCP_SERVERS o
+        # ~/atlas/mcp_servers.json. Si no existe, registry vacío → 0 tools MCP
+        # expuestas (Atlas funciona sin MCP). start_all() es perezoso para no
+        # arrancar subprocesos en CLI/tests por defecto.
+        mcp_config_path = (
+            os.environ.get("ATLAS_MCP_SERVERS")
+            or str(self._workspace / "mcp_servers.json")
+        )
+        self._mcp = McpRegistry(
+            load_servers(mcp_config_path),
+            merkle_log=self._merkle.log,
+        )
+        self._mcp_started = False
 
         # Telegram bot + monitors (opcionales, se inician con start_*).
         # Tipo declarado a nivel clase (ver bloque al inicio de Orchestrator).
