@@ -41,6 +41,7 @@ from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
+from atlas.core.orchestrator_parts.approvals import ApprovalManager
 from atlas.mcp import McpRegistry, load_servers
 from atlas.core.orchestrator_parts.gate_f_executor import GateFExecutor
 from atlas.core.orchestrator_parts.gate_f_parser import (
@@ -255,11 +256,7 @@ class Orchestrator:
         return [t.to_dict() for t in self._tool_registry.all()]
 
     def pending_approvals(self) -> list[dict]:
-        with self._approvals_lock:
-            tasks = dict(self._pending_approvals)
-            for task in self._load_persisted_pending_approvals():
-                tasks.setdefault(task.id, task)
-            return [self._pending_summary(t) for t in tasks.values()]
+        return self._approvals.pending()
 
     def approve_pending(
         self,
@@ -269,148 +266,9 @@ class Orchestrator:
         abort: bool = False,
         approve_only: list[str] | None = None,
     ) -> dict:
-        lock_fd, lock_path = self._acquire_pending_lock(task_id)
-        if lock_fd is None:
-            return {
-                "task_id": task_id,
-                "status": "in_progress",
-                "error": "otro proceso esta aprobando o ejecutando esta tarea",
-            }
-        try:
-            return self._approve_pending_locked(
-                task_id, approved, abort=abort, approve_only=approve_only,
-            )
-        finally:
-            fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            os.close(lock_fd)
-            if lock_path is not None:
-                lock_path.unlink(missing_ok=True)
-
-    def _approve_pending_locked(
-        self,
-        task_id: str,
-        approved: bool,
-        *,
-        abort: bool = False,
-        approve_only: list[str] | None = None,
-    ) -> dict:
-        with self._approvals_lock:
-            task = self._pending_approvals.pop(task_id, None)
-
-        pending_path = self._pending_approval_dir / f"{task_id}.json"
-        executing_path = self._pending_approval_dir / f"{task_id}.executing.json"
-
-        if executing_path.exists():
-            return {
-                "task_id": task_id,
-                "status": "in_progress",
-                "error": "la tarea ya esta en ejecucion",
-            }
-
-        if task is None:
-            if pending_path.exists():
-                task = self._load_pending_approval(task_id)
-            else:
-                task = None
-
-        if task is None:
-            return {
-                "task_id": task_id,
-                "status": "unknown",
-                "error": "no pending approval with this id",
-            }
-
-        self._merkle.log(
-            action="task.approval",
-            agent="orchestrator",
-            result="approved" if approved else "denied",
-            risk_level="high",
-            payload={"approved": approved},
-            task_id=task.id,
+        return self._approvals.approve(
+            task_id, approved, abort=abort, approve_only=approve_only,
         )
-
-        is_agentic = isinstance(task.metadata.get("agentic_state"), dict)
-
-        if not approved:
-            # ADR-032 dec.6/7: para un loop suspendido, un DENY sin abort inyecta
-            # una denegación sintética y REANUDA (presión MemGPT → el modelo
-            # re-planifica). Con abort=True (o tarea no-agéntica) → CANCELLED.
-            if is_agentic and not abort:
-                state = task.metadata["agentic_state"]
-                state["denied"] = True
-                state["deny_reason"] = "human"
-                try:
-                    pending_path.replace(executing_path)
-                except OSError as exc:
-                    return {
-                        "task_id": task_id,
-                        "status": "failed",
-                        "error": f"no se pudo reservar ejecucion: {exc}",
-                    }
-                # No mark_confirmed: las mutaciones denegadas no se ejecutan; se
-                # inyecta una denegación sintética y el modelo re-planifica.
-                task.transition(TaskStatus.EXECUTING)
-                resuspended = False
-                try:
-                    self._resume_agentic_loop(task)
-                    resuspended = task.status == TaskStatus.AWAITING_APPROVAL
-                except Exception as e:  # noqa: BLE001
-                    task.transition(TaskStatus.FAILED)
-                    task.error = str(e)
-                finally:
-                    executing_path.unlink(missing_ok=True)
-                    if not resuspended:
-                        pending_path.unlink(missing_ok=True)
-                return {
-                    "task_id": task.id,
-                    "status": task.status.value,
-                    "approved": False,
-                    "denied_and_resumed": True,
-                    "result": task.result,
-                }
-            task.transition(TaskStatus.CANCELLED)
-            task.result = {"approved": False, "message": "Usuario rechazo la accion."}
-            self._delete_pending_approval(task.id)
-            return {"task_id": task.id, "status": task.status.value, "approved": False}
-
-        try:
-            pending_path.replace(executing_path)
-        except OSError as exc:
-            return {
-                "task_id": task_id,
-                "status": "failed",
-                "error": f"no se pudo reservar ejecucion: {exc}",
-            }
-
-        # ADR-033 #3: aprobación parcial. Si el llamante pasa `approve_only`, solo
-        # esas tool_call ids del lote se ejecutan; el resto recibe denegación
-        # sintética al reanudar. Sin `approve_only` → se aprueba el lote entero.
-        if is_agentic and approve_only is not None:
-            task.metadata["agentic_state"]["approve_only"] = list(approve_only)
-
-        self._permissions.mark_confirmed(f"task:{task.id}")
-        task.transition(TaskStatus.EXECUTING)
-        # ADR-032: si el loop se vuelve a suspender (otra mutación más adelante),
-        # NO borramos el nuevo <id>.json que _suspend_agentic_loop acaba de
-        # persistir; solo limpiamos la reserva .executing.
-        resuspended = False
-        try:
-            self._execute_task(task)
-            resuspended = task.status == TaskStatus.AWAITING_APPROVAL
-        except Exception as e:
-            task.transition(TaskStatus.FAILED)
-            task.error = str(e)
-        finally:
-            executing_path.unlink(missing_ok=True)
-            if not resuspended:
-                pending_path.unlink(missing_ok=True)
-
-        return {
-            "task_id": task.id,
-            "status": task.status.value,
-            "approved": True,
-            "result": task.result,
-        }
 
     def attach_gate_f_tools(
         self,
@@ -873,8 +731,7 @@ class Orchestrator:
                 "approved": False,
                 "reason": result.reason,
             }
-            with self._approvals_lock:
-                self._pending_approvals[task.id] = task
+            self._approvals.register(task)
             self._persist_pending_approval(task)
             self._merkle.log(
                 action="task.routed",
@@ -1035,8 +892,7 @@ class Orchestrator:
                 "approved": False,
                 "reason": cls.reason,
             }
-            with self._approvals_lock:
-                self._pending_approvals[task.id] = task
+            self._approvals.register(task)
             self._persist_pending_approval(task)
             self._merkle.log(
                 action="task.routed",
@@ -1301,8 +1157,7 @@ class Orchestrator:
                 "reason": command.reason,
                 "tool": task.tool_name,
             }
-            with self._approvals_lock:
-                self._pending_approvals[task.id] = task
+            self._approvals.register(task)
             self._persist_pending_approval(task)
             self._merkle.log(
                 action="task.routed",
@@ -1608,8 +1463,7 @@ class Orchestrator:
             return []
         now = datetime.now(timezone.utc)
         cancelled: list[str] = []
-        with self._approvals_lock:
-            in_memory = list(self._pending_approvals.values())
+        in_memory = self._approvals.snapshot()
         candidates = {t.id: t for t in in_memory}
         for t in self._load_persisted_pending_approvals():
             candidates.setdefault(t.id, t)
@@ -1632,8 +1486,7 @@ class Orchestrator:
             if lock_fd is None:
                 continue  # otro proceso lo está tocando; sáltalo
             try:
-                with self._approvals_lock:
-                    self._pending_approvals.pop(task.id, None)
+                self._approvals.discard(task.id)
                 if task.status == TaskStatus.AWAITING_APPROVAL:
                     task.transition(TaskStatus.CANCELLED)
                 task.result = {
@@ -1858,8 +1711,7 @@ class Orchestrator:
             "pending_mutations": names,
             "iterations": iterations,
         }
-        with self._approvals_lock:
-            self._pending_approvals[task.id] = task
+        self._approvals.register(task)
         self._persist_pending_approval(task)
         self._merkle.log(
             action="task.suspended",
@@ -2278,10 +2130,16 @@ class Orchestrator:
         )
 
         # Approval flow (Gate C / C4-s2)
-        self._pending_approvals: dict[str, Task] = {}
-        self._approvals_lock = threading.Lock()
         self._pending_approval_dir = self._workspace / "memory" / "pending_approvals"
         self._tasks = TaskPersistence(self._pending_approval_dir, self._merkle)
+        self._approvals = ApprovalManager(
+            pending_dir=self._pending_approval_dir,
+            tasks=self._tasks,
+            merkle=self._merkle,
+            permissions=self._permissions,
+            on_execute=self._execute_task,
+            on_resume=self._resume_agentic_loop,
+        )
         self._git = GitReadTools(
             workspace=self._workspace,
             merkle=self._merkle,
