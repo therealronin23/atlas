@@ -44,6 +44,7 @@ from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.core.orchestrator_parts.approvals import ApprovalManager
 from atlas.core.orchestrator_parts.classifier import HybridClassifier
 from atlas.mcp import McpRegistry, load_servers
+from atlas.security.sentinel_gate import SentinelGate
 from atlas.core.orchestrator_parts.gate_f_executor import GateFExecutor
 from atlas.core.orchestrator_parts.gate_f_parser import (
     GateFCommand,
@@ -2092,9 +2093,14 @@ class Orchestrator:
             os.environ.get("ATLAS_MCP_SERVERS")
             or str(self._workspace / "mcp_servers.json")
         )
+        self._sentinel = SentinelGate(
+            self._workspace / "memory" / "sentinel",
+            merkle_log=self._merkle.log,
+        )
         self._mcp = McpRegistry(
             load_servers(mcp_config_path),
             merkle_log=self._merkle.log,
+            sentinel=self._sentinel,
         )
         self._mcp_started = False
 
