@@ -20,6 +20,7 @@ from typing import Any, Callable
 
 from atlas.mcp.config import McpServerConfig
 from atlas.mcp.transport import McpProtocolError, McpTransport, StdioTransport
+from atlas.security.sentinel_gate import SentinelGate
 
 _log = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class McpRegistry:
         *,
         transport_factory: Callable[[McpServerConfig], McpTransport] | None = None,
         merkle_log: Callable[..., None] | None = None,
+        sentinel: SentinelGate | None = None,
     ) -> None:
         self._configs = list(configs)
         self._transports: dict[str, McpTransport] = {}
@@ -46,6 +48,7 @@ class McpRegistry:
         self._read_only: set[str] = set()
         self._tool_index: dict[str, tuple[str, str]] = {}  # full → (server, tool)
         self._merkle_log = merkle_log
+        self._sentinel = sentinel
         self._factory = transport_factory or self._default_factory
 
     @staticmethod
@@ -88,6 +91,24 @@ class McpRegistry:
         # tools/list
         tools_resp = transport.request("tools/list", {})
         tools = (tools_resp or {}).get("tools", []) if isinstance(tools_resp, dict) else []
+
+        # Gate de adopción Atlas Sentinel (ADR-038): vetar server + tools antes
+        # de registrarlas. Fail-closed: lo que no pasa, no se adopta.
+        admitted_tools: set[str] | None = None
+        if self._sentinel is not None:
+            clean = [t for t in tools if isinstance(t, dict)]
+            vet = self._sentinel.vet(cfg, clean)
+            if not vet.admitted:
+                try:
+                    transport.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._audit(
+                    "mcp.server_vetoed", cfg.name, vet.server_reason[:300], "failure",
+                )
+                return
+            admitted_tools = {v.tool_name for v in vet.tools if v.admitted}
+
         self._transports[cfg.name] = transport
         read_only = set(cfg.read_only_tools)
         for t in tools:
@@ -95,6 +116,8 @@ class McpRegistry:
                 continue
             tool_name = str(t.get("name") or "")
             if not tool_name:
+                continue
+            if admitted_tools is not None and tool_name not in admitted_tools:
                 continue
             full = f"mcp__{cfg.name}__{tool_name}"
             self._tool_index[full] = (cfg.name, tool_name)

@@ -116,7 +116,7 @@ servidores MCP ──initialize→tools/list──> McpRegistry
 | Prioridad | Muralla | Amenaza | Estado | ADR |
 |---|---|---|---|---|
 | **P0** | Frontera de contenido no confiable | Inyección indirecta (resultados de tools/archivos/**foros** re-entran al contexto) | ❌ | 037 |
-| **P0** | Gate de adopción (Atlas Sentinel) | Supply chain skills/MCP (Postmark, ToxicSkills 36%) | 🟡 diseñado | 038 |
+| **P0** | Gate de adopción (Atlas Sentinel) | Supply chain skills/MCP (Postmark, ToxicSkills 36%) | 🟢 slice 1 (identidad+IOC+tiering, fail-closed) | 038 |
 | **P1** | Manejo de secretos MCP | Robo desde env/logs/Merkle | ❌ | 035 |
 | **P1** | Control de egress (allowlist + IOC) | Exfiltración por server fuera de sandbox | ❌ | 035/038 |
 | **P1** | Anclaje cadena Merkle | Atlas comprometido reescribe su auditoría | 🟡 parcial | 036 |
