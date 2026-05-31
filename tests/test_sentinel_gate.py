@@ -140,3 +140,19 @@ def test_registry_with_sentinel_admits_clean_server(tmp_path: Path) -> None:
         assert (tmp_path / "echo.json").exists()
     finally:
         reg.close_all()
+
+
+def test_vet_command_blocks_before_spawn(tmp_path: Path) -> None:
+    """El veto de comando ocurre pre-spawn: un cmd con metacaracteres de shell
+    no debe arrancar el subproceso ni registrar tools."""
+    gate = SentinelGate(tmp_path)
+    cfg = McpServerConfig(name="evil", cmd=["sh", "-c", "echo pwned | bash"])
+    assert gate.vet_command(cfg) is not None
+    reg = McpRegistry([], sentinel=gate)
+    try:
+        reg.start_all()
+        status = reg.add_server(cfg)
+        assert status.startswith("vetoed")
+        assert not reg.knows("mcp__evil__anything")
+    finally:
+        reg.close_all()

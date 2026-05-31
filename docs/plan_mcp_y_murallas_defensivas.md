@@ -69,7 +69,7 @@ servidores MCP ──initialize→tools/list──> McpRegistry
 |---|------|----------|-------------------|
 | 1 | Transporte | stdio JSON-RPC, stdlib (`subprocess`+`json`), tras interfaz `McpTransport` | Regla 6; cubre Calendar/n8n; SDK drop-in futuro |
 | 2 | Híbrido | "hybrid-ready": `StdioTransport` ahora; `SdkTransport` (dep `mcp` **opcional**, lazy) como hueco documentado | Mejor de ambos sin dead code; SDK solo si aparece un server HTTP/SSE |
-| 3 | Descubrimiento | `tools/list` al arranque **+ registro dinámico** (añadir/quitar en caliente) | El registro dinámico es materia prima del agente de auto-mantenimiento (§5) |
+| 3 | Descubrimiento | `tools/list` al arranque **+ registro dinámico** (✅ `add_server`/`remove_server` en caliente, vetados por el gate) | El registro dinámico es materia prima del agente de auto-mantenimiento (§5) |
 | 4 | Selección autónoma | Vía *description engineering* (lección Sentinel §6.2); sin routing nuevo | Confirmado por Sentinel: "security-optimized descriptions help models pick" |
 | 5 | Riesgo | **Mutate/HITL por defecto**; allowlist marca cuáles son `read` (inline) | Tiered HITL del paper: silent reads / confirmed writes+net |
 | 6 | Colecciones | Agrupar tools en *colecciones de capacidad* con permiso por colección | Lección Sentinel §6.1; least-privilege |

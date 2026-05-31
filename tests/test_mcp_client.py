@@ -224,3 +224,58 @@ def test_registry_failed_server_does_not_block_others() -> None:
         assert not any(n.startswith("mcp__bad__") for n in names)
     finally:
         reg.close_all()
+
+
+# ===========================================================================
+# Registro dinámico (hot add/remove)
+# ===========================================================================
+
+
+def test_add_server_hot() -> None:
+    reg = McpRegistry([])
+    try:
+        reg.start_all()
+        assert reg.tool_specs() == []
+        status = reg.add_server(_echo_cfg())
+        assert status.startswith("ok")
+        assert reg.knows("mcp__echo__echo")
+        assert reg.dispatch("mcp__echo__echo", json.dumps({"text": "hi"})) == "hi"
+    finally:
+        reg.close_all()
+
+
+def test_add_server_duplicate_is_skipped() -> None:
+    reg = McpRegistry([_echo_cfg()])
+    try:
+        reg.start_all()
+        status = reg.add_server(_echo_cfg())
+        assert status.startswith("skipped")
+    finally:
+        reg.close_all()
+
+
+def test_remove_server_hot() -> None:
+    reg = McpRegistry([_echo_cfg()])
+    try:
+        reg.start_all()
+        assert reg.knows("mcp__echo__echo")
+        assert reg.remove_server("echo") is True
+        assert reg.knows("mcp__echo__echo") is False
+        assert reg.knows("mcp__echo__append_file") is False
+        assert reg.tool_specs() == []
+        # idempotente: quitar lo ya quitado no rompe
+        assert reg.remove_server("echo") is False
+    finally:
+        reg.close_all()
+
+
+def test_add_then_remove_then_readd() -> None:
+    reg = McpRegistry([])
+    try:
+        reg.start_all()
+        assert reg.add_server(_echo_cfg()).startswith("ok")
+        assert reg.remove_server("echo") is True
+        assert reg.add_server(_echo_cfg()).startswith("ok")
+        assert reg.knows("mcp__echo__echo")
+    finally:
+        reg.close_all()
