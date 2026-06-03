@@ -12,6 +12,7 @@ from atlas.core.decider.decider import (
     Deny,
     RequiresHuman,
     Verdict,
+    action_hash,
 )
 from atlas.core.decider.human_decider import HumanDecider
 
@@ -23,4 +24,5 @@ __all__ = [
     "HumanDecider",
     "RequiresHuman",
     "Verdict",
+    "action_hash",
 ]

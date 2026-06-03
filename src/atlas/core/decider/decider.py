@@ -12,6 +12,8 @@ el HITL de hoy y que las slices futuras irán retirando a medida que el
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
@@ -60,6 +62,28 @@ class RequiresHuman:
 
 
 Verdict = Allow | Deny | RequiresHuman
+
+
+def action_hash(action: DecisionAction, sanctioned_intent: str) -> str:
+    """Hash determinista que ata un veredicto a la acción exacta decidida.
+
+    ADR-036 P2 / ADR-040 slice 3: el veredicto queda ligado a este hash. Si la
+    acción o la intención sancionada cambian, el hash cambia y un OK previo deja
+    de aplicar. ``reason`` se excluye: es explicativo, no parte de la identidad.
+    """
+    canonical = json.dumps(
+        {
+            "kind": action.kind,
+            "descriptor": action.descriptor,
+            "mutating": action.mutating,
+            "sensitivity": action.sensitivity,
+            "requires_approval": action.requires_approval,
+            "sanctioned_intent": sanctioned_intent,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 @runtime_checkable
