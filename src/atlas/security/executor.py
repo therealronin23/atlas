@@ -246,21 +246,20 @@ class AtlasExecutor:
                 )
 
         # Delegamos al sandbox para la ejecucion fisica.
-        # Nota: el sandbox tiene su propio AST Guard interno cuando se invoca
+        # El sandbox tiene su propio AST Guard interno cuando se invoca
         # execute(code=...). El chequeo de arriba es defensivo (idempotente).
-        # El sandbox actual no respeta timeout_s parametrizado — usa
-        # WALL_TIMEOUT_NORMAL_S (60s). cap.timeout_s queda como hint para
-        # auditoria hasta que el sandbox lo cablee (Gate E/E1).
         if cap.code is not None:
             result = self._sandbox.execute(
                 code=cap.code,
                 working_dir=cap.working_dir,
+                timeout_s=cap.timeout_s,
             )
         else:
             full_command = [cap.command, *cap.args]
             result = self._sandbox.execute_command(
                 command=full_command,
                 working_dir=cap.working_dir,
+                timeout_s=cap.timeout_s,
             )
 
         self._merkle.log(
