@@ -10,7 +10,7 @@
 > hoja de murallas (ADR-036) + frontera de contenido no confiable, P0
 > (ADR-037) + gate de adopción Atlas Sentinel fail-closed (ADR-038) + cliente MCP
 > con registro dinámico add/remove en caliente (ADR-035 dec.3). Decomposición del
-> orchestrator: 6 slices mecánicas cerradas. 769 tests verdes + mypy 0.
+> orchestrator: 6 slices mecánicas cerradas. 780 tests verdes + mypy 0.
 > Última sincronización: 2026-06-04.
 >
 > **Diseñado, sin implementar:** ADR-039 (agente de auto-mantenimiento) y ADR-040
@@ -267,12 +267,15 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   (Scout→Analyst dual-LLM→Proposer→HITL→Executor) reusando ColdUpdate (code/deps)
   y Sentinel+add_server (MCP). 7 slices; **slice 1 = Scout autoritativo read-only**
   (pequeño, bajo riesgo, no muta nada). El back-half ya existe.
-- 📐 **ADR-040 — Decisor central + human-ON-the-loop** — DISEÑO cerrado, sin
-  implementar (`docs/adr_040_decider_human_on_the_loop.md`). Seam único
+- 🟡 **ADR-040 — Decisor central + human-ON-the-loop** — EN CURSO
+  (`docs/adr_040_decider_human_on_the_loop.md`). Seam único
   `decide(action,intent,ctx)->Allow|Deny` (sin `Escalate` bloqueante) que
-  des-dispersa los 4 call-sites de aprobación del orchestrator. 6 slices;
-  **slice 1 = seam Decider + HumanDecider con paridad** (riesgo cero, sin cambio
-  de conducta). Materializa el rumbo de autonomía (elimina el HITL hardcodeado).
+  des-dispersa los 4 call-sites de aprobación del orchestrator. 6 slices.
+  **✅ Slice 1 (seam `Decider` + `HumanDecider`, paridad):** `core/decider/`
+  + 11 tests (`tests/test_decider.py`). Riesgo cero, call-sites aún sin enrutar.
+  **⏳ Slice 2:** enrutar los 4 call-sites (730/891/1073/1626) por `Decider.decide`,
+  siempre `HumanDecider` → verde sin cambio observable. Materializa el rumbo de
+  autonomía (elimina el HITL hardcodeado).
 - 🟡 **`AgenticExecutor`** — extraer el núcleo recursivo de ejecución que quedó
   tras las 6 slices del orchestrator. Alto riesgo (mutuamente recursivo con el
   loop agéntico ADR-037); requiere sesión dedicada. Ver
