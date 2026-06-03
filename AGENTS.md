@@ -24,7 +24,7 @@ components serve Atlas, not the other way around.
 > 7 colaboradores en `core/orchestrator_parts/`). Fase mecánica **cerrada
 > deliberadamente**; el núcleo recursivo de ejecución (`AgenticExecutor`) queda
 > como sesión dedicada de alto riesgo. Ver `docs/plan_orchestrator_decomposition.md`.
-> Atlas Core **v0.12.0** on `main`. **780 tests verdes + mypy 0**. Lista viva de pendientes en
+> Atlas Core **v0.12.0** on `main`. **785 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
@@ -295,9 +295,11 @@ ADR-039  Agente de auto-mantenimiento (front-half: Scout→Analyst dual-LLM→Pr
          →HITL→Executor reusando ColdUpdate/Sentinel). 7 slices; slice 1 = Scout
          autoritativo read-only. `docs/adr_039_self_maintenance_agent.md`.
 ADR-040  Decisor central intercambiable (`decide(action,intent,ctx)->Allow|Deny`
-         sin Escalate) + human-ON-the-loop. 6 slices. **Slice 1 DONE**: seam
-         `Decider` + `HumanDecider` en `core/decider/` (paridad, sin enrutar
-         call-sites). Slice 2 = enrutar los 4 call-sites. `docs/adr_040_*.md`.
+         sin Escalate) + human-ON-the-loop. 6 slices. **Slices 1-2 DONE**: seam
+         `Decider` + `HumanDecider` en `core/decider/` (slice 1) + los 4 call-sites
+         del orquestador enrutados por `_consult_decider` con paridad bit-a-bit
+         (slice 2: route x2, gate_f, loop agéntico). Slice 3 = `action_hash` +
+         coherencia intención↔acción + telemetría. `docs/adr_040_*.md`.
 
 ## Architectural Vocabulary
 
@@ -315,7 +317,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 780 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 785 core, 25 deselected
 PYTHONPATH=src python -m pytest tests/ -q -m "computer_use"      # 25 Playwright/browser tests
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
@@ -350,13 +352,13 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  python3 -m pytest -q  (expect 780 core, 25 deselected) + python3 -m mypy src
+3. Verify green:  python3 -m pytest -q  (expect 785 core, 25 deselected) + python3 -m mypy src
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gates A–I + twin (ADR-026..030) + loop agéntico
 con HITL + muralla de seguridad (ADR-032..038) + cliente MCP (ADR-035 con registro
-dinámico). **v0.12.0**. Suite **780 green + mypy 0**; `atlas serve`, `atlas health`,
+dinámico). **v0.12.0**. Suite **785 green + mypy 0**; `atlas serve`, `atlas health`,
 `atlas update`, `atlas self-audit`, observability dashboard.
 Ciclo MCP/murallas **cerrado**: ADR-035 (cliente + add/remove en caliente), ADR-037
 (frontera de contenido no confiable), ADR-038 (gate de adopción Atlas Sentinel,

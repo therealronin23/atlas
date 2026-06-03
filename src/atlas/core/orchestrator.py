@@ -40,6 +40,14 @@ from atlas.memory.memory_system import (
 from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
+from atlas.core.decider import (
+    DecisionAction,
+    Decider,
+    Deny,
+    HumanDecider,
+    RequiresHuman,
+    Verdict,
+)
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.core.orchestrator_parts.approvals import ApprovalManager
 from atlas.core.orchestrator_parts.classifier import HybridClassifier
@@ -108,6 +116,7 @@ class Orchestrator:
     _agentic_suspension_ttl: float | None   # ADR-033
     _mcp: McpRegistry                       # ADR-035
     _mcp_started: bool                      # ADR-035
+    _decider: Decider                       # ADR-040 — seam de decisión central
 
     # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
     # Inicializados a None y poblados al activar.
@@ -145,6 +154,26 @@ class Orchestrator:
     # ------------------------------------------------------------------
     # API publica principal
     # ------------------------------------------------------------------
+
+    def set_decider(self, decider: Decider) -> None:
+        """Sustituye el decisor central (ADR-040).
+
+        El humano (``HumanDecider``) es la implementación por defecto. El pivote
+        a autonomía es inyectar otra implementación aquí (``AutonomousDecider``,
+        ``hybrid``) — no refactorizar los call-sites.
+        """
+        self._decider = decider
+
+    def _consult_decider(
+        self, action: DecisionAction, task: Task
+    ) -> Verdict:
+        """Punto único de decisión. Slice 3 atará el ``action_hash`` y la
+        telemetría no bloqueante al veredicto."""
+        return self._decider.decide(
+            action,
+            sanctioned_intent=task.intent,
+            context={"source": task.source.value, "task_id": task.id},
+        )
 
     def handle_intent(self, intent: str, source: TaskSource = TaskSource.CLI) -> Task:
         """
@@ -727,30 +756,44 @@ class Orchestrator:
             return
 
         if result.level == RoutingLevel.REQUIRES_APPROVAL:
-            task.transition(TaskStatus.AWAITING_APPROVAL)
-            task.result = {
-                "message": f"Accion requiere aprobacion explicita. Razon: {result.reason}",
-                "approved": False,
-                "reason": result.reason,
-            }
-            self._approvals.register(task)
-            self._persist_pending_approval(task)
-            self._merkle.log(
-                action="task.routed",
-                agent="router",
-                result="pending",
-                risk_level="high",
-                payload={"requires_approval": True, "reason": result.reason},
-                task_id=task.id,
+            verdict = self._consult_decider(
+                DecisionAction(
+                    kind="route",
+                    requires_approval=True,
+                    sensitivity=task.sensitivity,
+                    reason=result.reason,
+                ),
+                task,
             )
-            self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
-                "task_id": task.id,
-                "intent": task.intent,
-                "reason": result.reason,
-            }, task.id)
-            return
+            if isinstance(verdict, RequiresHuman):
+                task.transition(TaskStatus.AWAITING_APPROVAL)
+                task.result = {
+                    "message": f"Accion requiere aprobacion explicita. Razon: {result.reason}",
+                    "approved": False,
+                    "reason": result.reason,
+                }
+                self._approvals.register(task)
+                self._persist_pending_approval(task)
+                self._merkle.log(
+                    action="task.routed",
+                    agent="router",
+                    result="pending",
+                    risk_level="high",
+                    payload={"requires_approval": True, "reason": result.reason},
+                    task_id=task.id,
+                )
+                self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+                    "task_id": task.id,
+                    "intent": task.intent,
+                    "reason": result.reason,
+                }, task.id)
+                return
+            if isinstance(verdict, Deny):
+                self._block_task(task, verdict.reason or result.reason, "high")
+                return
+            # Allow → el decisor autoriza sin humano; cae a ejecución.
 
-        # DETERMINISTIC_TOOL o LOCAL_SAFE → ejecutar
+        # DETERMINISTIC_TOOL o LOCAL_SAFE (o Allow del decisor) → ejecutar
         task.transition(TaskStatus.EXECUTING)
         self._execute_task(task)
 
@@ -888,29 +931,44 @@ class Orchestrator:
             return
 
         if cls.level == RoutingLevel.REQUIRES_APPROVAL:
-            task.transition(TaskStatus.AWAITING_APPROVAL)
-            task.result = {
-                "message": f"Accion requiere aprobacion explicita. Razon: {cls.reason}",
-                "approved": False,
-                "reason": cls.reason,
-            }
-            self._approvals.register(task)
-            self._persist_pending_approval(task)
-            self._merkle.log(
-                action="task.routed",
-                agent="router",
-                result="pending",
-                risk_level="high",
-                payload={"requires_approval": True, "reason": cls.reason},
-                task_id=task.id,
+            verdict = self._consult_decider(
+                DecisionAction(
+                    kind="route",
+                    requires_approval=True,
+                    sensitivity=task.sensitivity,
+                    reason=cls.reason,
+                ),
+                task,
             )
-            self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
-                "task_id": task.id, "intent": task.intent, "reason": cls.reason,
-            }, task.id)
-            self._timetravel.record_step(task.id, "awaiting_approval", {"reason": cls.reason})
-            return
+            if isinstance(verdict, RequiresHuman):
+                task.transition(TaskStatus.AWAITING_APPROVAL)
+                task.result = {
+                    "message": f"Accion requiere aprobacion explicita. Razon: {cls.reason}",
+                    "approved": False,
+                    "reason": cls.reason,
+                }
+                self._approvals.register(task)
+                self._persist_pending_approval(task)
+                self._merkle.log(
+                    action="task.routed",
+                    agent="router",
+                    result="pending",
+                    risk_level="high",
+                    payload={"requires_approval": True, "reason": cls.reason},
+                    task_id=task.id,
+                )
+                self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+                    "task_id": task.id, "intent": task.intent, "reason": cls.reason,
+                }, task.id)
+                self._timetravel.record_step(task.id, "awaiting_approval", {"reason": cls.reason})
+                return
+            if isinstance(verdict, Deny):
+                self._block_task(task, verdict.reason or cls.reason, "high")
+                self._timetravel.record_step(task.id, "denied", {"reason": verdict.reason or cls.reason})
+                return
+            # Allow → el decisor autoriza sin humano; cae a ejecución.
 
-        # 5. Execute (DETERMINISTIC_TOOL o LOCAL_SAFE)
+        # 5. Execute (DETERMINISTIC_TOOL o LOCAL_SAFE o Allow del decisor)
         task.transition(TaskStatus.EXECUTING)
         self._execute_task(task)
 
@@ -1070,30 +1128,46 @@ class Orchestrator:
         )
 
         if task.route == RoutingLevel.REQUIRES_APPROVAL:
-            task.transition(TaskStatus.AWAITING_APPROVAL)
-            task.result = {
-                "message": f"Accion Gate F requiere aprobacion explicita. Razon: {command.reason}",
-                "approved": False,
-                "reason": command.reason,
-                "tool": task.tool_name,
-            }
-            self._approvals.register(task)
-            self._persist_pending_approval(task)
-            self._merkle.log(
-                action="task.routed",
-                agent="router_gate_f",
-                result="pending",
-                risk_level="high",
-                payload={"requires_approval": True, "tool": task.tool_name},
-                task_id=task.id,
+            verdict = self._consult_decider(
+                DecisionAction(
+                    kind="gate_f",
+                    requires_approval=command.requires_approval,
+                    sensitivity=task.sensitivity,
+                    mutating=True,
+                    reason=command.reason,
+                    descriptor=task.tool_name or "",
+                ),
+                task,
             )
-            self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
-                "task_id": task.id,
-                "intent": task.intent,
-                "reason": command.reason,
-                "tool": task.tool_name,
-            }, task.id)
-            return
+            if isinstance(verdict, RequiresHuman):
+                task.transition(TaskStatus.AWAITING_APPROVAL)
+                task.result = {
+                    "message": f"Accion Gate F requiere aprobacion explicita. Razon: {command.reason}",
+                    "approved": False,
+                    "reason": command.reason,
+                    "tool": task.tool_name,
+                }
+                self._approvals.register(task)
+                self._persist_pending_approval(task)
+                self._merkle.log(
+                    action="task.routed",
+                    agent="router_gate_f",
+                    result="pending",
+                    risk_level="high",
+                    payload={"requires_approval": True, "tool": task.tool_name},
+                    task_id=task.id,
+                )
+                self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
+                    "task_id": task.id,
+                    "intent": task.intent,
+                    "reason": command.reason,
+                    "tool": task.tool_name,
+                }, task.id)
+                return
+            if isinstance(verdict, Deny):
+                self._block_task(task, verdict.reason or command.reason, "high")
+                return
+            # Allow → el decisor autoriza sin humano; cae a ejecución.
 
         task.transition(TaskStatus.EXECUTING)
         self._execute_gate_f_task(task)
@@ -1538,11 +1612,25 @@ class Orchestrator:
             for tc in response.tool_calls:
                 tools_used.append(tc["name"])
                 if self._agentic_tool_kind(tc["name"]) == "mutate":
-                    if self._is_agentic_auto_approved(tc["name"], task) and not tainted:
-                        # ADR-033 #2: mutación en allowlist de confianza → corre
-                        # inline (con clearance) sin suspender. Auditada aparte.
-                        raw_result = self._run_auto_approved_mutation(tc, task)
-                    else:
+                    # ADR-040 slice 2: la decisión "¿esta mutación necesita
+                    # humano?" pasa por el seam. requires_approval = NO está
+                    # auto-aprobada (allowlist ADR-033 + sin taint ADR-037), que
+                    # es exactamente la condición que hoy fuerza HITL. Con el
+                    # HumanDecider esto reproduce la conducta previa bit a bit.
+                    auto_ok = (
+                        self._is_agentic_auto_approved(tc["name"], task)
+                        and not tainted
+                    )
+                    verdict = self._consult_decider(
+                        DecisionAction(
+                            kind="agentic_tool",
+                            requires_approval=not auto_ok,
+                            mutating=True,
+                            descriptor=tc["name"],
+                        ),
+                        task,
+                    )
+                    if isinstance(verdict, RequiresHuman):
                         # ADR-032 dec.5: agrupar las mutaciones que SÍ requieren
                         # HITL; no se ejecutan aún, se persiste el tool_call.
                         pending_mutations.append({
@@ -1551,6 +1639,17 @@ class Orchestrator:
                             "arguments": tc["arguments"],
                         })
                         continue
+                    if isinstance(verdict, Deny):
+                        # El decisor rechaza la mutación: no se ejecuta y se
+                        # devuelve el motivo al modelo para que re-planifique.
+                        raw_result = (
+                            f"error: decisor denegó la mutación '{tc['name']}'"
+                            f": {verdict.reason}"
+                        )
+                    else:
+                        # Allow: mutación auto-aprobada (ADR-033 #2) o autorizada
+                        # por el decisor → corre inline con clearance, auditada.
+                        raw_result = self._run_auto_approved_mutation(tc, task)
                 else:
                     raw_result = self._dispatch_agentic_tool(
                         tc["name"], tc["arguments"], task
@@ -2060,6 +2159,13 @@ class Orchestrator:
             on_execute=self._execute_task,
             on_resume=self._resume_agentic_loop,
         )
+
+        # ADR-040 slice 2: todos los puntos de decisión se enrutan por este
+        # seam. Por defecto el HumanDecider reproduce el HITL de hoy (paridad).
+        # El pivote a autonomía es set_decider(...) + flip de config, no tocar
+        # los call-sites de nuevo.
+        self._decider = HumanDecider()
+
         self._git = GitReadTools(
             workspace=self._workspace,
             merkle=self._merkle,
