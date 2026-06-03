@@ -20,7 +20,10 @@ components serve Atlas, not the other way around.
 > (ADR-036 threat model, ADR-037 frontera por provenance) + **cliente MCP**
 > stdio genérico (ADR-035; n8n/calendar son solo ejemplos del template, el
 > transporte habla con cualquier servidor MCP). Refactor del god-object
-> `orchestrator.py` en curso (slices 1–4 de 6; ver `docs/plan_orchestrator_decomposition.md`).
+> `orchestrator.py`: 6 slices mecánicas cerradas (3.120→2.272 LOC, −27 %;
+> 7 colaboradores en `core/orchestrator_parts/`). Fase mecánica **cerrada
+> deliberadamente**; el núcleo recursivo de ejecución (`AgenticExecutor`) queda
+> como sesión dedicada de alto riesgo. Ver `docs/plan_orchestrator_decomposition.md`.
 > Atlas Core **v0.12.0** on `main`. **769 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
@@ -279,13 +282,21 @@ ADR-036  Threat model (inyección indirecta de prompt como amenaza #1). `docs/ad
 ADR-037  Frontera de contenido no confiable: todo `mcp__*` es untrusted; su
          resultado se envuelve por PROVENANCE (no kind) → taintea el loop →
          anula auto-approve tras ingerir lo no confiable. `docs/adr_037_*.md`.
+ADR-038  Atlas Sentinel adoption gate: vetting fail-closed de comandos/tools MCP
+         antes de adoptarlos (`vet_command`/`vet_tools`). `docs/adr_038_*.md`.
 
-## Open ADRs
+## Open ADRs (diseño aprobado, sin implementar)
 
 ADR-002  RESOLVED Gate E (2026-05-24): bare metal + venv. E1 (Proxmox) skipped.
 ADR-003  RESOLVED Gate E/E3 (2026-05-24): faster-whisper + piper-tts. Optional extras [voice].
 ADR-012  Memory sync between Hermes and Atlas Core — Gate E (parcialmente resuelto por ADR-028 kanban compartido)
 ADR-019  Statistical Validation Framework — Gate E
+ADR-039  Agente de auto-mantenimiento (front-half: Scout→Analyst dual-LLM→Proposer
+         →HITL→Executor reusando ColdUpdate/Sentinel). 7 slices; slice 1 = Scout
+         autoritativo read-only. `docs/adr_039_self_maintenance_agent.md`.
+ADR-040  Decisor central intercambiable (`decide(action,intent,ctx)->Allow|Deny`
+         sin Escalate) + human-ON-the-loop. 6 slices; slice 1 = seam Decider +
+         HumanDecider con paridad de comportamiento. `docs/adr_040_*.md`.
 
 ## Architectural Vocabulary
 
@@ -343,13 +354,17 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gates A–I + twin (ADR-026..030) + loop agéntico
-con HITL + muralla de seguridad (ADR-032..037) + cliente MCP (ADR-035). **v0.12.0**.
-Suite **754 green + mypy 0**; `atlas serve`, `atlas health`, `atlas update`,
-`atlas self-audit`, observability dashboard.
-Next: terminar decomposición del orchestrator (slices 5–6), ADR-038 (gate de
-adopción Atlas Sentinel), agente de auto-mantenimiento. La deuda del
-`timeout_seconds` del transporte MCP **ya se aplica en la I/O** (`select`+`os.read`
-acotados por deadline; ADR-035).
+con HITL + muralla de seguridad (ADR-032..038) + cliente MCP (ADR-035 con registro
+dinámico). **v0.12.0**. Suite **769 green + mypy 0**; `atlas serve`, `atlas health`,
+`atlas update`, `atlas self-audit`, observability dashboard.
+Ciclo MCP/murallas **cerrado**: ADR-035 (cliente + add/remove en caliente), ADR-037
+(frontera de contenido no confiable), ADR-038 (gate de adopción Atlas Sentinel,
+fail-closed) ya en `main`. Decomposición del orchestrator cerrada (6 slices).
+Next (solo diseño, sin implementar): ADR-039 (agente de auto-mantenimiento,
+front-half del pipeline) y ADR-040 (decisor central intercambiable + human-ON-the-
+loop). El núcleo recursivo del orchestrator (`AgenticExecutor`) sigue sin extraer
+(alto riesgo). La deuda del `timeout_seconds` del transporte MCP **ya se aplica en
+la I/O** (`select`+`os.read` acotados por deadline; ADR-035).
 
 ## Gate D Follow-ups (NON-blocking for Gate E, ordered by effort)
 

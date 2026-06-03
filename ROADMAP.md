@@ -7,8 +7,14 @@
 > parcial, barrido TTL y traza de progreso (ADR-033), cableados a CLI/serve/
 > Telegram/dashboard + endurecimiento del subprocess de ejecución: no-new-privs,
 > rlimits fsize/nproc/nofile y sesión aislada (ADR-034) + modelo de amenazas y
-> hoja de murallas (ADR-036) + frontera de contenido no confiable, P0, slice 1
-> (ADR-037). 738 tests verdes. Última sincronización: 2026-05-30.
+> hoja de murallas (ADR-036) + frontera de contenido no confiable, P0
+> (ADR-037) + gate de adopción Atlas Sentinel fail-closed (ADR-038) + cliente MCP
+> con registro dinámico add/remove en caliente (ADR-035 dec.3). Decomposición del
+> orchestrator: 6 slices mecánicas cerradas. 769 tests verdes + mypy 0.
+> Última sincronización: 2026-06-04.
+>
+> **Diseñado, sin implementar:** ADR-039 (agente de auto-mantenimiento) y ADR-040
+> (decisor central intercambiable + human-ON-the-loop). Son los próximos hitos.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -250,12 +256,27 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   Hook dejado en `apply_in_child` (ADR-034 dec.6).
 - ⏳ **Flota / Atlas Box** (`docs/atlas_box_architecture.md`,
   `docs/fleet_security_plan.md`) — diseño; despliegue bloqueado por hardware.
-- 📐 **Cliente MCP + murallas defensivas + auto-mantenimiento** — PLAN MAESTRO en
-  `docs/plan_mcp_y_murallas_defensivas.md`. Consolida ADR-035 (cliente MCP
-  híbrido-ready), ADR-036 (threat model/murallas), ADR-037 (frontera de contenido
-  no confiable, P0), ADR-038 (gate de adopción "Atlas Sentinel") y el agente de
-  auto-mantenimiento. Anclado en literatura (CaMeL arXiv:2503.18813, arXiv:2601.17548,
-  CoSAI, NSA, CSA). Pendiente de ejecución por fases.
+- 🟢 **Cliente MCP + murallas defensivas** — PLAN MAESTRO en
+  `docs/plan_mcp_y_murallas_defensivas.md`. Anclado en literatura (CaMeL
+  arXiv:2503.18813, arXiv:2601.17548, CoSAI, NSA, CSA). Ciclo **cerrado**:
+  ADR-035 (cliente MCP + registro dinámico add/remove en caliente), ADR-036
+  (threat model/murallas), ADR-037 (frontera de contenido no confiable, P0),
+  ADR-038 (gate de adopción "Atlas Sentinel", fail-closed) ya en `main`.
+- 📐 **ADR-039 — Agente de auto-mantenimiento** — DISEÑO cerrado, sin implementar
+  (`docs/adr_039_self_maintenance_agent.md`). Front-half del pipeline
+  (Scout→Analyst dual-LLM→Proposer→HITL→Executor) reusando ColdUpdate (code/deps)
+  y Sentinel+add_server (MCP). 7 slices; **slice 1 = Scout autoritativo read-only**
+  (pequeño, bajo riesgo, no muta nada). El back-half ya existe.
+- 📐 **ADR-040 — Decisor central + human-ON-the-loop** — DISEÑO cerrado, sin
+  implementar (`docs/adr_040_decider_human_on_the_loop.md`). Seam único
+  `decide(action,intent,ctx)->Allow|Deny` (sin `Escalate` bloqueante) que
+  des-dispersa los 4 call-sites de aprobación del orchestrator. 6 slices;
+  **slice 1 = seam Decider + HumanDecider con paridad** (riesgo cero, sin cambio
+  de conducta). Materializa el rumbo de autonomía (elimina el HITL hardcodeado).
+- 🟡 **`AgenticExecutor`** — extraer el núcleo recursivo de ejecución que quedó
+  tras las 6 slices del orchestrator. Alto riesgo (mutuamente recursivo con el
+  loop agéntico ADR-037); requiere sesión dedicada. Ver
+  `docs/plan_orchestrator_decomposition.md`.
 
 ---
 
