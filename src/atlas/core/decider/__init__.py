@@ -14,10 +14,12 @@ from atlas.core.decider.decider import (
     Verdict,
     action_hash,
 )
+from atlas.core.decider.autonomous_decider import AutonomousDecider
 from atlas.core.decider.human_decider import HumanDecider
 
 __all__ = [
     "Allow",
+    "AutonomousDecider",
     "DecisionAction",
     "Decider",
     "Deny",
