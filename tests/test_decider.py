@@ -176,3 +176,83 @@ class TestDeciderRoutesCallSites:
         fake = FakeDecider(Allow())
         orch.set_decider(fake)
         assert orch._decider is fake
+
+
+# ---------------------------------------------------------------------------
+# Slice 3 — action_hash + telemetría no bloqueante.
+# ---------------------------------------------------------------------------
+
+from atlas.core.contracts import EventType
+from atlas.core.decider import action_hash
+
+
+class TestActionHash:
+    def test_deterministic(self) -> None:
+        a = DecisionAction(kind="route", descriptor="git push", mutating=True)
+        assert action_hash(a, "intent X") == action_hash(a, "intent X")
+
+    def test_changes_with_action_field(self) -> None:
+        a = DecisionAction(kind="route", descriptor="git push")
+        b = DecisionAction(kind="route", descriptor="git pull")
+        assert action_hash(a, "i") != action_hash(b, "i")
+
+    def test_changes_with_intent(self) -> None:
+        a = DecisionAction(kind="route", descriptor="x")
+        assert action_hash(a, "intent A") != action_hash(a, "intent B")
+
+    def test_reason_excluded_from_identity(self) -> None:
+        a = DecisionAction(kind="route", descriptor="x", reason="r1")
+        b = DecisionAction(kind="route", descriptor="x", reason="r2")
+        assert action_hash(a, "i") == action_hash(b, "i")
+
+    def test_is_sha256_hex(self) -> None:
+        h = action_hash(DecisionAction(kind="route"), "i")
+        assert len(h) == 64
+        assert all(c in "0123456789abcdef" for c in h)
+
+
+class TestDeciderTelemetry:
+    def test_action_hash_in_decider_context(self, orch) -> None:
+        fake = FakeDecider(RequiresHuman(reason="x"))
+        orch.set_decider(fake)
+        orch.handle_intent(_APPROVAL_INTENT)
+        _, _, context = fake.calls[0]
+        assert "action_hash" in context
+        assert len(str(context["action_hash"])) == 64
+
+    def test_verdict_emits_merkle_record(self, orch) -> None:
+        fake = FakeDecider(Allow(reason="autónomo"))
+        orch.set_decider(fake)
+        task = orch.handle_intent(_APPROVAL_INTENT)
+        records = [r.to_dict() for r in orch._merkle.tail(50)]
+        verdicts = [r for r in records if r["action"] == "decider.verdict"]
+        assert verdicts, "no se registró el veredicto en Merkle"
+        assert verdicts[-1]["task_id"] == task.id
+        payload = verdicts[-1]["payload"]
+        assert payload["verdict"] == "Allow"
+        assert payload["action_hash"]
+
+    def test_verdict_publishes_bus_event(self, orch) -> None:
+        seen: list = []
+        orch._bus.subscribe(EventType.DECIDER_VERDICT, lambda e: seen.append(e))
+        fake = FakeDecider(Deny(reason="incoherente"))
+        orch.set_decider(fake)
+        orch.handle_intent(_APPROVAL_INTENT)
+        assert seen, "no se publicó evento DECIDER_VERDICT"
+        assert seen[0].payload["verdict"] == "Deny"
+        assert seen[0].payload["action_hash"]
+
+    def test_telemetry_failure_is_swallowed(self, orch, monkeypatch) -> None:
+        # Si la telemetría revienta, _emit no debe propagar (D7: no bloquea).
+        from atlas.core.contracts import Task, TaskSource
+
+        def _boom(*a, **k):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(orch._merkle, "log", _boom)
+        orch._emit_decider_telemetry(
+            DecisionAction(kind="route"),
+            Task(intent="x", source=TaskSource.CLI),
+            Allow(reason="r"),
+            "deadbeef",
+        )

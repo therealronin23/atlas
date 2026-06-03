@@ -177,6 +177,7 @@ class EventType(str, Enum):
     SESSION_ENDED          = "session.ended"
     HERMES_WEBHOOK_RECEIVED = "hermes_webhook.received"
     HERMES_ONLINE_CONFIRMED = "hermes_online.confirmed"
+    DECIDER_VERDICT         = "decider.verdict"   # ADR-040: canal on-the-loop
 
 
 @dataclass

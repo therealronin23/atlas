@@ -47,6 +47,7 @@ from atlas.core.decider import (
     HumanDecider,
     RequiresHuman,
     Verdict,
+    action_hash,
 )
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.core.orchestrator_parts.approvals import ApprovalManager
@@ -167,13 +168,58 @@ class Orchestrator:
     def _consult_decider(
         self, action: DecisionAction, task: Task
     ) -> Verdict:
-        """Punto único de decisión. Slice 3 atará el ``action_hash`` y la
-        telemetría no bloqueante al veredicto."""
-        return self._decider.decide(
+        """Punto único de decisión (ADR-040).
+
+        Slice 3: calcula el ``action_hash`` (ata el veredicto a la acción
+        exacta, ADR-036 P2), lo pasa al decisor en el contexto y emite
+        telemetría no bloqueante (D7) en cada veredicto.
+        """
+        act_hash = action_hash(action, task.intent)
+        verdict = self._decider.decide(
             action,
             sanctioned_intent=task.intent,
-            context={"source": task.source.value, "task_id": task.id},
+            context={
+                "source": task.source.value,
+                "task_id": task.id,
+                "action_hash": act_hash,
+            },
         )
+        self._emit_decider_telemetry(action, task, verdict, act_hash)
+        return verdict
+
+    def _emit_decider_telemetry(
+        self, action: DecisionAction, task: Task, verdict: Verdict, act_hash: str
+    ) -> None:
+        """Canal on-the-loop (ADR-040 D7): nunca bloquea la decisión."""
+        verdict_name = type(verdict).__name__
+        try:
+            self._merkle.log(
+                action="decider.verdict",
+                agent="orchestrator",
+                result=verdict_name.lower(),
+                risk_level="high" if action.sensitivity == "high" else "medium",
+                payload={
+                    "action_kind": action.kind,
+                    "descriptor": action.descriptor,
+                    "mutating": action.mutating,
+                    "verdict": verdict_name,
+                    "reason": verdict.reason,
+                    "action_hash": act_hash,
+                },
+                task_id=task.id,
+            )
+            self._bus.publish_type(
+                EventType.DECIDER_VERDICT,
+                {
+                    "verdict": verdict_name,
+                    "action_kind": action.kind,
+                    "action_hash": act_hash,
+                    "reason": verdict.reason,
+                },
+                task.id,
+            )
+        except Exception:
+            pass  # la telemetría no bloquea la decisión (D7)
 
     def handle_intent(self, intent: str, source: TaskSource = TaskSource.CLI) -> Task:
         """
