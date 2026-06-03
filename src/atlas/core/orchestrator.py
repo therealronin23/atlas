@@ -44,10 +44,10 @@ from atlas.core.decider import (
     DecisionAction,
     Decider,
     Deny,
-    HumanDecider,
     RequiresHuman,
     Verdict,
     action_hash,
+    make_decider,
 )
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.core.orchestrator_parts.approvals import ApprovalManager
@@ -2206,11 +2206,11 @@ class Orchestrator:
             on_resume=self._resume_agentic_loop,
         )
 
-        # ADR-040 slice 2: todos los puntos de decisión se enrutan por este
-        # seam. Por defecto el HumanDecider reproduce el HITL de hoy (paridad).
-        # El pivote a autonomía es set_decider(...) + flip de config, no tocar
-        # los call-sites de nuevo.
-        self._decider = HumanDecider()
+        # ADR-040: todos los puntos de decisión se enrutan por este seam. El
+        # decisor se elige por config (ATLAS_DECIDER = human | autonomous |
+        # hybrid); default human → paridad con el HITL de hoy. El pivote a
+        # autonomía es el flip de env, no tocar los call-sites de nuevo.
+        self._decider = make_decider(os.environ.get("ATLAS_DECIDER"))
 
         self._git = GitReadTools(
             workspace=self._workspace,

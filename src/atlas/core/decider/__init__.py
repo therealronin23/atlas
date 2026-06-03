@@ -16,6 +16,22 @@ from atlas.core.decider.decider import (
 )
 from atlas.core.decider.autonomous_decider import AutonomousDecider
 from atlas.core.decider.human_decider import HumanDecider
+from atlas.core.decider.hybrid_decider import HybridDecider
+
+
+def make_decider(name: str | None) -> Decider:
+    """Selecciona la implementación del decisor por config (ADR-040 slice 5).
+
+    ``human`` (default) | ``autonomous`` | ``hybrid``. Un valor desconocido cae a
+    ``human`` (fail-safe a la conducta actual).
+    """
+    key = (name or "human").strip().lower()
+    if key == "autonomous":
+        return AutonomousDecider()
+    if key == "hybrid":
+        return HybridDecider()
+    return HumanDecider()
+
 
 __all__ = [
     "Allow",
@@ -24,7 +40,9 @@ __all__ = [
     "Decider",
     "Deny",
     "HumanDecider",
+    "HybridDecider",
     "RequiresHuman",
     "Verdict",
     "action_hash",
+    "make_decider",
 ]
