@@ -95,7 +95,7 @@ class TestConstitutionalInvariant:
 class TestCoherenceInvariant:
     def test_mutation_anchored_in_intent_allows(self) -> None:
         verdict = _decide(
-            DecisionAction(kind="gate_f", mutating=True, descriptor="commit"),
+            DecisionAction(kind="gate_f", mutating=True, reversible=True, descriptor="commit"),
             intent="por favor haz un commit con los cambios",
         )
         assert isinstance(verdict, Allow)
@@ -115,15 +115,50 @@ class TestCoherenceInvariant:
     def test_accent_folding_anchors(self) -> None:
         # "módulo" en la intención debe anclar el descriptor "modulo".
         verdict = _decide(
-            DecisionAction(kind="gate_f", mutating=True, descriptor="modulo"),
+            DecisionAction(kind="gate_f", mutating=True, reversible=True, descriptor="modulo"),
             intent="edita el módulo de pagos",
         )
         assert isinstance(verdict, Allow)
 
     def test_snake_case_descriptor_token_anchors(self) -> None:
         verdict = _decide(
-            DecisionAction(kind="agentic_tool", mutating=True, descriptor="browser_click"),
+            DecisionAction(
+                kind="agentic_tool", mutating=True, reversible=True, descriptor="browser_click"
+            ),
             intent="haz click en el botón del browser",
+        )
+        assert isinstance(verdict, Allow)
+
+
+class TestReversibilityInvariant:
+    def test_irreversible_mutation_denies(self) -> None:
+        verdict = _decide(
+            DecisionAction(kind="gate_f", mutating=True, reversible=False, descriptor="commit"),
+            intent="haz un commit con los cambios",
+        )
+        assert isinstance(verdict, Deny)
+        assert "irreversible" in verdict.reason
+
+    def test_reversible_anchored_mutation_allows(self) -> None:
+        verdict = _decide(
+            DecisionAction(kind="gate_f", mutating=True, reversible=True, descriptor="commit"),
+            intent="haz un commit con los cambios",
+        )
+        assert isinstance(verdict, Allow)
+
+    def test_coherence_precedes_reversibility(self) -> None:
+        # Una mutación reversible pero sin anclaje cae por coherencia, no por undo.
+        verdict = _decide(
+            DecisionAction(kind="gate_f", mutating=True, reversible=True, descriptor="write_file"),
+            intent="resume el informe",
+        )
+        assert isinstance(verdict, Deny)
+        assert "anclada" in verdict.reason
+
+    def test_reversible_irrelevant_for_non_mutating(self) -> None:
+        verdict = _decide(
+            DecisionAction(kind="route", mutating=False, reversible=False, descriptor="read"),
+            intent="cualquier cosa",
         )
         assert isinstance(verdict, Allow)
 
