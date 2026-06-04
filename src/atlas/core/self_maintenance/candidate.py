@@ -59,6 +59,21 @@ class McpCandidate:
 
 
 @dataclass(frozen=True)
+class DepCandidate:
+    """Dependencia PyPI con un bump disponible (ADR-039 slice 6).
+
+    ``current`` es el piso declarado en ``pyproject`` (p.ej. ``8.1`` de
+    ``click>=8.1``); ``latest`` la última estable publicada en PyPI. ``source``
+    es siempre autoritativa (el JSON de PyPI). El bump se materializa como patch
+    revisable vía ColdUpdate — nunca se aplica solo."""
+
+    name: str
+    current: str
+    latest: str
+    source: Source
+
+
+@dataclass(frozen=True)
 class TypedSummary:
     """Resumen TIPADO que el processing-LLM extrae de una fuente no confiable.
 

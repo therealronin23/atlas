@@ -144,6 +144,8 @@ class Orchestrator:
     _maintenance_adopter: Any
     _maintenance_registry_scout: Any
     _maintenance_scheduler: Any
+    _maintenance_dep_scout: Any
+    _maintenance_dep_proposer: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -558,6 +560,68 @@ class Orchestrator:
                 notify=_notify,
             )
         return self._maintenance_scheduler
+
+    def maintenance_dep_scout(self) -> Any:
+        """ADR-039 slice 6 — Scout de bumps de dependencias PyPI (read-only).
+
+        Lee los pisos de ``[project.dependencies]`` del ``pyproject`` y consulta
+        PyPI (autoritativo, egress gateado) por la última estable. No muta:
+        emite ``DepCandidate``; la materialización del patch es del proposer."""
+        if self._maintenance_dep_scout is None:
+            from atlas.core.self_maintenance import DepScout
+
+            self._maintenance_dep_scout = DepScout(
+                merkle=self._merkle,
+                bridge=self._ssrf_bridge,
+                fetch=self._egress_fetch_text,
+                deps_provider=self._pyproject_dep_floors,
+            )
+        return self._maintenance_dep_scout
+
+    def maintenance_dep_proposer(self) -> Any:
+        """ADR-039 slice 6 — Materializa un bump como patch revisable de ColdUpdate.
+
+        Construye el diff del bump y lo entrega a ``ColdUpdateManager.propose``
+        con ``origin="self_audit"``. Nunca aplica: ColdUpdate valida en worktree
+        y la adopción exige el seam del decisor (ADR-040)."""
+        if self._maintenance_dep_proposer is None:
+            from atlas.core.self_maintenance import DepProposer
+
+            self._maintenance_dep_proposer = DepProposer(
+                merkle=self._merkle,
+                propose=self.cold_update().propose,
+                pyproject_path=self._project_root() / "pyproject.toml",
+            )
+        return self._maintenance_dep_proposer
+
+    @staticmethod
+    def _project_root() -> Path:
+        return Path(
+            os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
+        ).expanduser().resolve()
+
+    def _pyproject_dep_floors(self) -> list[tuple[str, str]]:
+        """Pares (nombre, piso ``>=``) de las deps de ``pyproject``. Vacío si falla."""
+        import tomllib
+
+        from packaging.requirements import Requirement
+
+        path = self._project_root() / "pyproject.toml"
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError):
+            return []
+        floors: list[tuple[str, str]] = []
+        for raw in data.get("project", {}).get("dependencies", []):
+            try:
+                req = Requirement(raw)
+            except Exception:  # noqa: BLE001 — un requirement raro no tumba el resto
+                continue
+            for spec in req.specifier:
+                if spec.operator == ">=":
+                    floors.append((req.name, spec.version))
+                    break
+        return floors
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -1789,6 +1853,8 @@ class Orchestrator:
         self._maintenance_adopter = None
         self._maintenance_registry_scout = None
         self._maintenance_scheduler = None
+        self._maintenance_dep_scout = None
+        self._maintenance_dep_proposer = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()
