@@ -88,7 +88,7 @@ Se mapea sobre `ColdUpdateProposal.status` (reusado, no nuevo):
 | **D3** | Separación datos/control | **Dual-LLM obligatorio** (CaMeL, ADR-037 capa 5). El processing-LLM digiere foros sin tools ni system prompt; el control-LLM solo ve un resumen **tipado** | Single-LLM con taint: más barato pero el contenido hostil tocaría el razonamiento de control. Rechazado para este agente (es el blanco de mayor valor) |
 | **D4** | Fuentes (egress allowlist) | **Registry MCP oficial + arxiv (autoritativas) Y foros controlados (community).** Pero con **corroboración obligatoria** (ver §Gate de corroboración): los foros solo *surgen* candidatos; nada llega a HITL sin estar contrastado por una fuente autoritativa | Tratar foros como fuente de verdad → exactamente el vector que el corroboration gate cierra |
 | **D5** | Materialización | **Reusar** `ColdUpdateManager` (code/deps) y `add_server`+`SentinelGate` (MCP). Cero pipeline de apply nuevo | Construir un applier propio → duplicación + nueva superficie de bug. Rechazado |
-| **D6** | Readers del Scout | **Registrarlos en `UNTRUSTED_READERS`** (hoy `frozenset()` vacío) → `wrap_untrusted` + taint automáticos sin lógica nueva | — |
+| **D6** | Readers del Scout | **Untrusted-data en la capa del Analyst** (`wrap_untrusted` sobre cada `raw_excerpt`), no en `UNTRUSTED_READERS`. Ese set solo aplica a tools del loop agéntico; los Scouts son componentes y no pasan por `tool_provenance` (ver slice 1, cabos resueltos por diseño) | Forzar entradas en `UNTRUSTED_READERS` → config muerta sin protección real |
 | **D7** | Codegen autónomo | **No en v1.** Las propuestas de código exigen patch revisable por humano, nunca generación libre aplicada sola | Respeta ADR-025 y la línea infranqueable |
 
 ### Por qué el dual-LLM aquí no es opcional
@@ -139,8 +139,18 @@ Cadencia y fuentes son config, no código.
    (descripción) viaja como dato NO confiable para el Analyst (CaMeL intacto). El
    Scout no muta ni propone. Accessor `Orchestrator.maintenance_registry_scout()`;
    fetch stdlib (`_egress_fetch_text`); tests con fetcher falso (cero red real).
-   **Pendiente del slice:** fuente arxiv y registro de readers en
-   `UNTRUSTED_READERS` (hoy el wrap untrusted lo aplica el Analyst, no el Scout).
+   **Cabos resueltos por diseño (2026-06-04):**
+   - *`UNTRUSTED_READERS`* — no aplica a los Scouts. Ese set lo consulta solo
+     `tool_provenance(name)` dentro del **loop agéntico** (taint por `mcp__`/membresía).
+     Los Scouts son **componentes** del pipeline, no tools del loop: su salida nunca
+     pasa por `tool_provenance`, así que una entrada ahí sería config muerta. El
+     invariante ("prosa externa = dato, nunca instrucción") ya está cubierto una capa
+     abajo: `analyst.py` envuelve cada `raw_excerpt` en `wrap_untrusted()` antes del
+     processing-LLM (CaMeL/ADR-037). Defensa presente, en la capa correcta.
+   - *arxiv* — **diferido (no encaja en este pipeline).** arxiv produce *papers*, que
+     no mapean a `McpCandidate` (name/version/cmd/declared_tools); es una fuente de
+     *señal de investigación*, no de adopción MCP. Pertenece a un path futuro aparte,
+     no a este slice.
 2. **Analyst dual-LLM + gate de corroboración → propuesta MCP tipada** +
    presentación en Telegram. Solo pasa lo corroborado por fuente autoritativa. Sin
    auto-apply. Tests con LLM mockeado.
