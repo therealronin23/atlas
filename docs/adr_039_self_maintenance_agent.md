@@ -181,6 +181,16 @@ Cadencia y fuentes son config, no código.
    `Orchestrator.maintenance_dep_scout()` / `maintenance_dep_proposer()`.
 7. **Codegen como patch dirigido.** El agente propone un patch contra un objetivo
    apuntado; ColdUpdate valida; el humano revisa el diff y aprueba. Nunca apply solo.
+   **LANDED:** `CodegenProposer` (`core/self_maintenance/codegen_proposer.py`). El
+   humano apunta el objetivo (`CodegenTarget`: qué y en qué fichero — intención
+   sancionada, no contenido de foro). El LLM de control (vía hub) genera un diff;
+   el proposer **impone fail-closed que el patch solo toca el fichero apuntado**
+   (dentro de los prefijos `src/tests/scripts/docs/config`) y lo entrega a
+   `ColdUpdateManager.propose` con `origin="self_audit"`, `risk="high"`. Extrae el
+   diff aunque venga en fences ` ```diff `. **Nunca aplica:** ColdUpdate valida en
+   worktree y la adopción exige el seam del decisor (ADR-040). Accessor
+   `Orchestrator.maintenance_codegen_proposer()`. Coherencia con ADR-025 anotada
+   abajo.
 
 ## Riesgos honestos y no-objetivos
 

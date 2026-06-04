@@ -15,6 +15,7 @@ from atlas.core.self_maintenance.analyst import MaintenanceAnalyst
 from atlas.core.self_maintenance.candidate import (
     PROVENANCE_AUTHORITATIVE,
     PROVENANCE_COMMUNITY,
+    CodegenTarget,
     DepCandidate,
     Evidence,
     McpCandidate,
@@ -22,6 +23,7 @@ from atlas.core.self_maintenance.candidate import (
     Source,
     TypedSummary,
 )
+from atlas.core.self_maintenance.codegen_proposer import CodegenProposer
 from atlas.core.self_maintenance.dep_proposer import DepProposer
 from atlas.core.self_maintenance.dep_scout import PYPI_JSON_URL, DepScout
 from atlas.core.self_maintenance.presentation import format_proposal
@@ -41,6 +43,8 @@ __all__ = [
     "PROVENANCE_COMMUNITY",
     "PYPI_JSON_URL",
     "REGISTRY_URL",
+    "CodegenProposer",
+    "CodegenTarget",
     "DepCandidate",
     "DepProposer",
     "DepScout",

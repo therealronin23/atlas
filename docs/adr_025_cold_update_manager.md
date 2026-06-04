@@ -49,6 +49,14 @@ The MVP should not generate code autonomously. It should:
 
 Only after this is stable should Atlas generate candidate patches itself.
 
+> **Nota (2026-06-04, ADR-039 slice 7):** Atlas ya genera patches candidatos
+> (`CodegenProposer`). Esto **no** relaja el "no autonomous code generation":
+> entra como *post-MVP* y **solo** como patch revisable, gateado idéntico a un
+> patch manual — generación libre, **aplicación nunca autónoma**. El objetivo lo
+> apunta el humano (`CodegenTarget`), el patch se restringe fail-closed al fichero
+> apuntado, y la adopción exige el seam del decisor (ADR-040). La invariante de
+> este ADR sigue intacta: el ejecutor solo aplica tras validación + aprobación.
+
 ## Open Questions
 
 - Should this live in Gate F or Gate G?

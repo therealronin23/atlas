@@ -74,6 +74,20 @@ class DepCandidate:
 
 
 @dataclass(frozen=True)
+class CodegenTarget:
+    """Objetivo de codegen **apuntado por el humano** (ADR-039 slice 7).
+
+    No surge de contenido no confiable: es una intención sancionada (el humano
+    dice *qué* y *dónde*). ``path`` es el único fichero que el patch generado
+    puede tocar — el proposer lo impone fail-closed. ``context`` es opcional
+    (extracto del código actual u otra guía)."""
+
+    goal: str
+    path: str
+    context: str = ""
+
+
+@dataclass(frozen=True)
 class TypedSummary:
     """Resumen TIPADO que el processing-LLM extrae de una fuente no confiable.
 
