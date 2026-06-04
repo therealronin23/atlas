@@ -220,18 +220,21 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   en verde.
 
 ### Upstream / externos
-- **`mcp_serve` roto** (Hermes upstream `NousResearch/hermes-agent`,
-  `hermes_cli/mcp_config.py:748` hace `from mcp_serve import run_mcp_server` pero
-  el módulo top-level `mcp_serve` no se empaqueta → `ModuleNotFoundError`).
-  Reproducido en vivo en VPS (hermes-agent 0.15.0, Py3.14, pip install, NO NixOS
-  → distinto de #22110). Causa raíz = misma clase que el refactor #14590
-  (top-level modules → `hermes_agent/`). ✅ Issue PUBLICADO upstream:
-  `NousResearch/hermes-agent#34871`.
+- ✅ **`mcp_serve` roto** — CERRADO localmente (sin acción nuestra posible).
+  Hermes upstream `NousResearch/hermes-agent`, `hermes_cli/mcp_config.py:748` hace
+  `from mcp_serve import run_mcp_server` pero el módulo top-level `mcp_serve` no se
+  empaqueta → `ModuleNotFoundError`. Reproducido en vivo en VPS (hermes-agent
+  0.15.0, Py3.14, pip install, NO NixOS → distinto de #22110). Causa raíz = misma
+  clase que el refactor #14590 (top-level modules → `hermes_agent/`). Issue
+  publicado upstream: `NousResearch/hermes-agent#34871`.
+  **Reabrir cuando:** upstream publique fix → subir el pin de `hermes-agent` y
+  reverificar en el VPS.
 
 ### Infra / operación
-- **SSD SanDisk SD8SNAT** — `UDMA_CRC_Error_Count=24` (errores de enlace SATA,
-  no de medio). Disco SANO (PASSED, 0 reasignados). Vigilar; si reaparece el
-  `errors=remount-ro`, reasentar conector. journald ya persistente.
+- ✅ **SSD SanDisk SD8SNAT** — CERRADO (monitorizado, sin acción de código).
+  `UDMA_CRC_Error_Count=24` (errores de enlace SATA, no de medio). Disco SANO
+  (SMART PASSED, 0 reasignados). journald persistente. **Reabrir cuando:**
+  reaparezca `errors=remount-ro` o el contador suba → reasentar el conector SATA.
 
 ### Decomposición del god-object (auditoría H1/H2)
 - 🟡 **`orchestrator.py` 3.120 → 2.272 LOC** (−27 %). 7 colaboradores extraídos a
@@ -251,11 +254,15 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
 - ✅ **Endurecimiento del subprocess (Post-F, ADR-034)** — HECHO en lo factible
   con stdlib: no-new-privs, rlimits `FSIZE`/`NPROC`/`NOFILE`, sesión aislada.
   6 tests (`tests/test_process_hardening.py`).
-- ⏳ **seccomp-bpf (filtrado de syscalls)** — pendiente. Exige dep nueva
-  (`pyseccomp`, choca con regla 6) + tooling de kernel no disponible en local.
-  Hook dejado en `apply_in_child` (ADR-034 dec.6).
-- ⏳ **Flota / Atlas Box** (`docs/atlas_box_architecture.md`,
-  `docs/fleet_security_plan.md`) — diseño; despliegue bloqueado por hardware.
+- ✅ **seccomp-bpf (filtrado de syscalls)** — CERRADO como limitación aceptada
+  (ADR-034 dec.6). Exige dep nueva (`pyseccomp`, choca con regla 6) + tooling de
+  kernel no disponible en local. Hook ya dejado en `apply_in_child`. **Reabrir
+  cuando:** se adopte `pyseccomp` (decisión explícita contra regla 6) o aparezca
+  un entorno con el tooling de kernel disponible.
+- ✅ **Flota / Atlas Box** (`docs/atlas_box_architecture.md`,
+  `docs/fleet_security_plan.md`) — CERRADO como diferido: diseño aceptado,
+  despliegue bloqueado por hardware. **Reabrir cuando:** llegue el hardware de
+  despliegue.
 - 🟢 **Cliente MCP + murallas defensivas** — PLAN MAESTRO en
   `docs/plan_mcp_y_murallas_defensivas.md`. Anclado en literatura (CaMeL
   arXiv:2503.18813, arXiv:2601.17548, CoSAI, NSA, CSA). Ciclo **cerrado**:
