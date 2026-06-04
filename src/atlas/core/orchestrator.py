@@ -142,6 +142,7 @@ class Orchestrator:
     _self_audit_runner: Any
     _maintenance_scout: Any
     _maintenance_adopter: Any
+    _maintenance_registry_scout: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -484,6 +485,41 @@ class Orchestrator:
                 merkle=self._merkle,
             )
         return self._maintenance_adopter
+
+    def maintenance_registry_scout(self) -> Any:
+        """ADR-039 slice 1 (literal) — Scout externo autoritativo (read-only).
+
+        Descubre candidatos de server MCP en el registro MCP oficial. Gatea el
+        egress por ``SSRFBridge`` y transporta la prosa de cada entrada como
+        ``Source`` no confiable (la digiere el Analyst, no el Scout). No muta ni
+        propone: emite ``McpCandidate`` etiquetados como autoritativos para el
+        gate de corroboración (slice 2)."""
+        if self._maintenance_registry_scout is None:
+            from atlas.core.self_maintenance import RegistryScout
+
+            self._maintenance_registry_scout = RegistryScout(
+                merkle=self._merkle,
+                bridge=self._ssrf_bridge,
+                fetch=self._egress_fetch_text,
+            )
+        return self._maintenance_registry_scout
+
+    # Cota del cuerpo descargado (mismo criterio que SecureExecutor: no leer
+    # respuestas ilimitadas aunque la URL esté en la allowlist).
+    _EGRESS_MAX_BYTES = 5 * 1024 * 1024
+
+    @staticmethod
+    def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
+        """Descarga el cuerpo de una URL ya autorizada por el bridge (stdlib).
+
+        El gateo de egress lo hace el llamador vía ``SSRFBridge.check`` antes de
+        invocar esto; aquí solo se hace el GET HTTP, acotando el tamaño leído."""
+        import urllib.request
+
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — gateado por SSRFBridge
+            raw = resp.read(Orchestrator._EGRESS_MAX_BYTES)
+        return raw.decode("utf-8", errors="replace")
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -1713,6 +1749,7 @@ class Orchestrator:
         self._self_audit_runner = None
         self._maintenance_scout = None
         self._maintenance_adopter = None
+        self._maintenance_registry_scout = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

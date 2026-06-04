@@ -131,6 +131,16 @@ Cadencia y fuentes son config, no código.
 1. **Scout autoritativo (read-only).** Registry MCP + arxiv; registrar sus readers
    en `UNTRUSTED_READERS`; devolver candidatos con fuentes etiquetadas. Sin
    propuesta, sin apply. Tests.
+   **LANDED (parcial — registry MCP oficial):** `RegistryScout`
+   (`core/self_maintenance/registry_scout.py`) descubre candidatos en
+   `registry.modelcontextprotocol.io/v0/servers`. Egress gateado por `SSRFBridge`
+   (dominio añadido a la allowlist por defecto); fail-closed en egress y parseo.
+   Cada entrada emite `McpCandidate` con `Source(authoritative)` cuyo `raw_excerpt`
+   (descripción) viaja como dato NO confiable para el Analyst (CaMeL intacto). El
+   Scout no muta ni propone. Accessor `Orchestrator.maintenance_registry_scout()`;
+   fetch stdlib (`_egress_fetch_text`); tests con fetcher falso (cero red real).
+   **Pendiente del slice:** fuente arxiv y registro de readers en
+   `UNTRUSTED_READERS` (hoy el wrap untrusted lo aplica el Analyst, no el Scout).
 2. **Analyst dual-LLM + gate de corroboración → propuesta MCP tipada** +
    presentación en Telegram. Solo pasa lo corroborado por fuente autoritativa. Sin
    auto-apply. Tests con LLM mockeado.
