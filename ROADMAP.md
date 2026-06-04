@@ -318,10 +318,16 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   `register_undo(action_hash, …)`; `revert(action_hash)` cierra el ciclo. El resto
   de call-sites sigue `reversible=False` → en `autonomous` se deniegan (fail-safe
   invariante 4 intacto). E2E verde con `ATLAS_DECIDER=autonomous`.
-- 🟡 **`AgenticExecutor`** — extraer el núcleo recursivo de ejecución que quedó
-  tras las 6 slices del orchestrator. Alto riesgo (mutuamente recursivo con el
-  loop agéntico ADR-037); requiere sesión dedicada. Ver
-  `docs/plan_orchestrator_decomposition.md`.
+- ✅ **`AgenticExecutor`** — núcleo recursivo de ejecución extraído tras las 6
+  slices mecánicas del orchestrator (`core/orchestrator_parts/agentic_executor.py`).
+  El loop de tool-calls suspendible (ADR-031/032/033/037) —
+  `drive`↔`resume`↔`_suspend`↔dispatch más `execute_local_safe`— se movió
+  **bit-a-bit**: el executor guarda el `Orchestrator` host y lee sus colaboradores
+  en tiempo de llamada (preserva swaps de `host._mcp`/`_agentic_auto_approve` en
+  tests). Los helpers puros y predicados (`_agentic_tool_*`, `_wrap_untrusted`,
+  `_is_agentic_auto_approved`, `sweep_expired_suspensions`, `_stringify_tool_result`)
+  se quedan en el host. orchestrator.py 2.272→2.007 LOC. Paridad: 897 tests +
+  mypy 0. Ver `docs/plan_orchestrator_decomposition.md`.
 
 ---
 

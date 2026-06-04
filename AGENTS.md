@@ -20,10 +20,12 @@ components serve Atlas, not the other way around.
 > (ADR-036 threat model, ADR-037 frontera por provenance) + **cliente MCP**
 > stdio genérico (ADR-035; n8n/calendar son solo ejemplos del template, el
 > transporte habla con cualquier servidor MCP). Refactor del god-object
-> `orchestrator.py`: 6 slices mecánicas cerradas (3.120→2.272 LOC, −27 %;
-> 7 colaboradores en `core/orchestrator_parts/`). Fase mecánica **cerrada
-> deliberadamente**; el núcleo recursivo de ejecución (`AgenticExecutor`) queda
-> como sesión dedicada de alto riesgo. Ver `docs/plan_orchestrator_decomposition.md`.
+> `orchestrator.py`: 6 slices mecánicas + el núcleo recursivo (`AgenticExecutor`)
+> extraídos (3.120→2.007 LOC, −36 %; 8 colaboradores en
+> `core/orchestrator_parts/`). El loop de tool-calls suspendible (drive↔resume↔
+> _suspend↔dispatch) vive en `agentic_executor.py`, leyendo colaboradores del
+> host en tiempo de llamada para paridad bit-a-bit. Ver
+> `docs/plan_orchestrator_decomposition.md`.
 > Atlas Core **v0.12.0** on `main`. **897 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides

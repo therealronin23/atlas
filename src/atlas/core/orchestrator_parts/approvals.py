@@ -205,7 +205,7 @@ class ApprovalManager:
         self._permissions.mark_confirmed(f"task:{task.id}")
         task.transition(TaskStatus.EXECUTING)
         # ADR-032: si el loop se vuelve a suspender (otra mutación más adelante),
-        # NO borramos el nuevo <id>.json que _suspend_agentic_loop acaba de
+        # NO borramos el nuevo <id>.json que AgenticExecutor._suspend acaba de
         # persistir; solo limpiamos la reserva .executing.
         resuspended = False
         try:
