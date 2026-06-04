@@ -11,7 +11,7 @@
 > (ADR-037) + gate de adopción Atlas Sentinel fail-closed (ADR-038) + cliente MCP
 > con registro dinámico add/remove en caliente (ADR-035 dec.3). Decomposición del
 > orchestrator: 6 slices mecánicas + núcleo recursivo (`AgenticExecutor`)
-> extraídos. 920 tests verdes + mypy 0.
+> extraídos. 929 tests verdes + mypy 0.
 > Última sincronización: 2026-06-04.
 >
 > **En curso:** ADR-039 (agente de auto-mantenimiento) — slices 1-3 landed

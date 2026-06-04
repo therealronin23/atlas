@@ -15,12 +15,15 @@ from atlas.core.self_maintenance.analyst import MaintenanceAnalyst
 from atlas.core.self_maintenance.candidate import (
     PROVENANCE_AUTHORITATIVE,
     PROVENANCE_COMMUNITY,
+    DepCandidate,
     Evidence,
     McpCandidate,
     McpProposal,
     Source,
     TypedSummary,
 )
+from atlas.core.self_maintenance.dep_proposer import DepProposer
+from atlas.core.self_maintenance.dep_scout import PYPI_JSON_URL, DepScout
 from atlas.core.self_maintenance.presentation import format_proposal
 from atlas.core.self_maintenance.registry_scout import REGISTRY_URL, RegistryScout
 from atlas.core.self_maintenance.scheduler import MaintenanceScheduler
@@ -36,7 +39,11 @@ from atlas.core.self_maintenance.scout import (
 __all__ = [
     "PROVENANCE_AUTHORITATIVE",
     "PROVENANCE_COMMUNITY",
+    "PYPI_JSON_URL",
     "REGISTRY_URL",
+    "DepCandidate",
+    "DepProposer",
+    "DepScout",
     "RegistryScout",
     "SEVERITY_ALERT",
     "SEVERITY_INFO",

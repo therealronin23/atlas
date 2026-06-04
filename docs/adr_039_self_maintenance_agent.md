@@ -167,6 +167,18 @@ Cadencia y fuentes son config, no código.
 5. **Foros controlados como fuente community.** Egress allowlist + corroboración
    obligatoria (un candidato de foro necesita respaldo autoritativo para proponerse).
 6. **Deps vía ColdUpdate** (patches de bump PyPI). Diff revisable + suite/mypy.
+   **LANDED:** dos piezas acopladas. `DepScout`
+   (`core/self_maintenance/dep_scout.py`) lee los pisos `>=` de
+   `[project.dependencies]` y consulta PyPI (autoritativo, egress gateado por
+   `SSRFBridge`, fetch inyectado → cero red en tests); fail-closed en egress, red
+   y parseo; descarta pre-releases y solo emite `DepCandidate` si la última
+   estable es estrictamente mayor (comparación con `packaging.version`).
+   `DepProposer` (`dep_proposer.py`) materializa el bump como **diff unificado
+   revisable** (`a/ b/`, verificado aplicable por `git apply`) y lo entrega a
+   `ColdUpdateManager.propose` con `origin="self_audit"`; **nunca aplica** —
+   ColdUpdate valida en worktree (pytest+mypy) y la adopción exige el seam del
+   decisor (ADR-040). Fail-closed si el piso no está en el `pyproject`. Accessors
+   `Orchestrator.maintenance_dep_scout()` / `maintenance_dep_proposer()`.
 7. **Codegen como patch dirigido.** El agente propone un patch contra un objetivo
    apuntado; ColdUpdate valida; el humano revisa el diff y aprueba. Nunca apply solo.
 
