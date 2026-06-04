@@ -1,23 +1,26 @@
 # Plan — Descomposición de `orchestrator.py` (god-object)
 
-> **Estado a 2026-05-31:** `orchestrator.py` **3.120 → 2.272 LOC** (−27 %, −848
-> LOC). Extraídos 7 colaboradores: `TaskPersistence`, `GitReadTools`,
-> `gate_f_parser`, `agentic_helpers`, `GateFExecutor`, `ApprovalManager`
-> (cluster D, slice 5), `HybridClassifier` (slice 6). 754 tests verdes + mypy 0
-> en cada slice.
+> **Estado a 2026-06-04:** `orchestrator.py` **3.120 → 2.007 LOC** (−36 %,
+> −1.113 LOC). Extraídos 7 colaboradores mecánicos (`TaskPersistence`,
+> `GitReadTools`, `gate_f_parser`, `agentic_helpers`, `GateFExecutor`,
+> `ApprovalManager`, `HybridClassifier`) **más el núcleo recursivo**
+> (`AgenticExecutor`, sesión dedicada). 897 tests verdes + mypy 0.
 >
-> **Parada deliberada (no se persigue el objetivo <800 LOC).** Lo que queda
-> (`_execute_task` + `_run_pipeline*` + `_execute_local_safe_via_inference` +
-> todo el loop agéntico ADR-031/032/033/037) es **un único núcleo de ejecución
-> mutuamente recursivo**, no dos colaboradores separables. Extraerlo como
-> `AgenticExecutor` exigiría inyectar ~20 dependencias/callbacks y toca la
-> frontera de contenido no confiable (ADR-037, seguridad P0). Es trabajo de
-> **sesión dedicada y alto cuidado**, no de un barrido mecánico. Forzar el
-> split F/E del plan original (PipelineRunner vs AgenticLoop) **añadiría**
-> acoplamiento por callbacks en vez de quitarlo — contradice el objetivo del
-> refactor. Por eso se cierra aquí la fase mecánica y el núcleo queda como
-> responsabilidad central explícita del `Orchestrator` hasta una sesión
-> dedicada. Ver tarea "DEFERRED: extract AgenticExecutor".
+> **`AgenticExecutor` (sesión dedicada — CERRADA).** El loop de tool-calls
+> suspendible (`execute_local_safe` + `drive`↔`resume`↔`_suspend`↔dispatch,
+> ADR-031/032/033/037) se movió a `core/orchestrator_parts/agentic_executor.py`
+> **bit-a-bit, sin cambiar lógica**. Clave del enfoque: en vez de inyectar ~20
+> dependencias/callbacks, el executor guarda una referencia al `Orchestrator`
+> host y **lee sus colaboradores en tiempo de llamada** (`host._mcp`,
+> `host._inference_hub`, `host._consult_decider`, …). Eso preserva la paridad
+> exacta con los tests que swappean `host._mcp` o ajustan
+> `host._agentic_auto_approve` tras construir el Orchestrator, sin añadir el
+> acoplamiento por callbacks que habría introducido el split F/E del plan
+> original. Los helpers puros y predicados testeados (`_agentic_tool_*`,
+> `_wrap_untrusted`, `_is_agentic_auto_approved`, `sweep_expired_suspensions`,
+> `_stringify_tool_result`) se quedan en el host y se invocan vía `self._host`.
+> El Orchestrator instancia `self._agentic_executor = AgenticExecutor(self)` y
+> delega en 3 call-sites (`execute_local_safe`, `resume`, `on_resume`).
 
 - Fecha: 2026-05-30
 - Origen: H1 de la auditoría 2026-05-30 (P0).
