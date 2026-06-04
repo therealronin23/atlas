@@ -269,11 +269,22 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   ADR-035 (cliente MCP + registro dinámico add/remove en caliente), ADR-036
   (threat model/murallas), ADR-037 (frontera de contenido no confiable, P0),
   ADR-038 (gate de adopción "Atlas Sentinel", fail-closed) ya en `main`.
-- 📐 **ADR-039 — Agente de auto-mantenimiento** — DISEÑO cerrado, sin implementar
+- 🟡 **ADR-039 — Agente de auto-mantenimiento** — slice 1 LANDED; resto en diseño
   (`docs/adr_039_self_maintenance_agent.md`). Front-half del pipeline
   (Scout→Analyst dual-LLM→Proposer→HITL→Executor) reusando ColdUpdate (code/deps)
-  y Sentinel+add_server (MCP). 7 slices; **slice 1 = Scout autoritativo read-only**
-  (pequeño, bajo riesgo, no muta nada). El back-half ya existe.
+  y Sentinel+add_server (MCP). El back-half ya existe.
+  **Slice 1 — Scout read-only (LANDED):** `MaintenanceScout` en
+  `core/self_maintenance/scout.py`. Colector por inyección de dependencias que
+  reusa las primitivas read-only existentes (`health_report`, `GitReadTools`,
+  `ErrorRegistry`); deriva señales de deuda deterministas (cadena Merkle,
+  emergency/governance, thermal, hermes, backlog offline/aprobaciones, fallos
+  recientes, git sucio) → `ScoutReport` auditado en Merkle. No muta ni propone.
+  Accessor `Orchestrator.maintenance_scout()`.
+  **Desvío consciente del slice 1 del ADR:** el ADR descubre candidatos
+  *externos* (registry MCP + arxiv, egress, `UNTRUSTED_READERS`, contenido no
+  confiable); esta entrega es un Scout *interno* de salud/deuda — sin red ni
+  ingesta untrusted, aún más pequeño. El Scout externo (con gate de corroboración
+  + dual-LLM) entra en slices siguientes. Analyst/Proposer NO adelantados.
 - ✅ **ADR-040 — Decisor central + human-ON-the-loop** — COMPLETO (6 slices,
   `docs/adr_040_decider_human_on_the_loop.md`). Seam único
   `decide(action,intent,ctx)->Allow|Deny` (sin `Escalate` bloqueante) que
