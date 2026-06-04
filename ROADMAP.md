@@ -272,10 +272,18 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   ADR-035 (cliente MCP + registro dinámico add/remove en caliente), ADR-036
   (threat model/murallas), ADR-037 (frontera de contenido no confiable, P0),
   ADR-038 (gate de adopción "Atlas Sentinel", fail-closed) ya en `main`.
-- 🟡 **ADR-039 — Agente de auto-mantenimiento** — slices 1-3 LANDED; resto en diseño
-  (`docs/adr_039_self_maintenance_agent.md`). Front-half del pipeline
-  (Scout→Analyst dual-LLM→Proposer→HITL→Executor) reusando ColdUpdate (code/deps)
-  y Sentinel+add_server (MCP). El back-half ya existe.
+- 🟢 **ADR-039 — Agente de auto-mantenimiento** — **COMPLETO (slices 1-7 + lazo autónomo)**
+  (`docs/adr_039_self_maintenance_agent.md`). Pipeline Scout→Analyst dual-LLM→
+  Proposer→seam decisor→Executor. Tres fuentes de descubrimiento (registry
+  autoritativo, deps PyPI, community con corroboración obligatoria) + dos proposers
+  (DepProposer, CodegenProposer) sobre seams reusados (ColdUpdate, add_server).
+  **Lazo autónomo cerrado (2026-06-04):** el scheduler notifica propuestas **y** las
+  enruta al ``MaintenanceAdopter`` vía el seam del decisor (ADR-040). Bajo
+  ``HumanDecider`` (default) → "requiere aprobación humana", paridad HITL; bajo
+  autónomo/híbrido → adopta reversible. El punto de decisión es el decisor
+  intercambiable, no un botón hardcodeado. El ``AtlasServiceRunner`` arranca el cron
+  cuando ``ATLAS_MAINTENANCE_SCHEDULER=1`` (off por defecto); ``ATLAS_DECIDER``
+  controla el nivel de autonomía. Auditoría Merkle en cada seam.
   **Slice 1 — Scout read-only (LANDED):** `MaintenanceScout` en
   `core/self_maintenance/scout.py`. Colector por inyección de dependencias que
   reusa las primitivas read-only existentes (`health_report`, `GitReadTools`,

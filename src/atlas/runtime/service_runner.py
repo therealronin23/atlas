@@ -70,6 +70,30 @@ class AtlasServiceRunner:
         self._orch.attach_thermal_watchdog(watchdog)
         _log.info("ThermalWatchdog activo")
 
+    def _start_maintenance_scheduler_if_enabled(self) -> None:
+        """ADR-039 — cron de auto-mantenimiento (off por defecto).
+
+        Activar con ``ATLAS_MAINTENANCE_SCHEDULER=1``. Descubre/analiza/propone y
+        enruta cada propuesta corroborada al seam del decisor (ADR-040): bajo
+        ``HumanDecider`` (default) nada se adopta — solo se surfa el evento; bajo
+        autónomo/híbrido adopta lo reversible. La cadencia es ``ATLAS_MAINTENANCE_POLL_S``
+        (default 24h)."""
+        if os.environ.get("ATLAS_MAINTENANCE_SCHEDULER", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return
+        scheduler = self._orch.maintenance_scheduler()
+        poll = os.environ.get("ATLAS_MAINTENANCE_POLL_S")
+        if poll:
+            try:
+                scheduler._poll_interval = float(poll)
+            except ValueError:
+                pass
+        scheduler.start()
+        _log.info("MaintenanceScheduler activo (cron auto-mantenimiento)")
+
     def _start_prometheus_if_enabled(self) -> None:
         if os.environ.get("ATLAS_PROMETHEUS", "").strip().lower() not in (
             "1",
@@ -128,6 +152,7 @@ class AtlasServiceRunner:
         self._start_thermal_if_enabled()
         self._start_dashboard_if_enabled()
         self._start_prometheus_if_enabled()
+        self._start_maintenance_scheduler_if_enabled()
         self._running = True
         self._orch._merkle.log(
             action="service.started",
@@ -147,6 +172,9 @@ class AtlasServiceRunner:
             self._orch._thermal_watchdog.stop()
         if getattr(self, "_prometheus", None) is not None:
             self._prometheus.stop()
+        sched = self._orch._maintenance_scheduler
+        if sched is not None and getattr(sched, "_running", False):
+            sched.stop()
         self._orch._merkle.log(
             action="service.stopped",
             agent="service_runner",
