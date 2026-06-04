@@ -146,6 +146,7 @@ class Orchestrator:
     _maintenance_scheduler: Any
     _maintenance_dep_scout: Any
     _maintenance_dep_proposer: Any
+    _maintenance_codegen_proposer: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -593,6 +594,45 @@ class Orchestrator:
                 pyproject_path=self._project_root() / "pyproject.toml",
             )
         return self._maintenance_dep_proposer
+
+    def maintenance_codegen_proposer(self) -> Any:
+        """ADR-039 slice 7 — Codegen como patch dirigido (revisable, nunca apply solo).
+
+        El humano apunta el objetivo (``CodegenTarget``); el LLM de control genera
+        un diff; el proposer impone que solo toque el fichero apuntado y lo entrega
+        a ColdUpdate con ``origin="self_audit"``. Coherente con ADR-025: la
+        generación es libre, la aplicación nunca es autónoma."""
+        if self._maintenance_codegen_proposer is None:
+            from atlas.core.inference_hub import (
+                InferenceHub,
+                InferenceLevel,
+                InferenceRequest,
+            )
+            from atlas.core.self_maintenance import CodegenProposer, CodegenTarget
+
+            hub = self._inference_hub or InferenceHub(mode="auto")
+
+            def _generate(target: CodegenTarget) -> str:
+                prompt = (
+                    "Genera SOLO un diff unificado (git apply) que logre el objetivo, "
+                    f"tocando únicamente el fichero {target.path}. No expliques.\n\n"
+                    f"Objetivo: {target.goal}\n"
+                )
+                resp = hub.infer(InferenceRequest(
+                    prompt=prompt,
+                    level=InferenceLevel.L0,
+                    temperature=0.0,
+                    context=target.context,
+                    task_id="codegen.patch",
+                ))
+                return resp.text if resp.success else ""
+
+            self._maintenance_codegen_proposer = CodegenProposer(
+                merkle=self._merkle,
+                generate=_generate,
+                propose=self.cold_update().propose,
+            )
+        return self._maintenance_codegen_proposer
 
     @staticmethod
     def _project_root() -> Path:
@@ -1855,6 +1895,7 @@ class Orchestrator:
         self._maintenance_scheduler = None
         self._maintenance_dep_scout = None
         self._maintenance_dep_proposer = None
+        self._maintenance_codegen_proposer = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()
