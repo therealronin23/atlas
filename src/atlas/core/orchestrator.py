@@ -141,6 +141,7 @@ class Orchestrator:
     _cold_update_manager: Any
     _self_audit_runner: Any
     _maintenance_scout: Any
+    _maintenance_adopter: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -466,6 +467,23 @@ class Orchestrator:
                 failure_provider=self._error_registry.all,
             )
         return self._maintenance_scout
+
+    def maintenance_adopter(self) -> Any:
+        """ADR-039 slice 3 — wire propuesta → ``add_server`` (reuso puro del seam).
+
+        Traduce una ``McpProposal`` corroborada (slice 2) en una adopción real
+        vía ``adopt_mcp_server``, que consulta el decisor (ADR-040). El adopter
+        no decide: bajo ``HumanDecider`` el seam exige aprobación humana y nada
+        se adopta; bajo autónomo/híbrido con la intención anclada, adopta y
+        registra el undo reversible (``remove_server``)."""
+        if self._maintenance_adopter is None:
+            from atlas.core.self_maintenance import MaintenanceAdopter
+
+            self._maintenance_adopter = MaintenanceAdopter(
+                adopt=self.adopt_mcp_server,
+                merkle=self._merkle,
+            )
+        return self._maintenance_adopter
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -1694,6 +1712,7 @@ class Orchestrator:
         self._cold_update_manager = None
         self._self_audit_runner = None
         self._maintenance_scout = None
+        self._maintenance_adopter = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

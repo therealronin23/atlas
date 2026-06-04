@@ -6,8 +6,11 @@ slice 2:
 - slice 1: ``MaintenanceScout`` read-only (observa salud/deuda, no muta ni propone).
 - slice 2: ``MaintenanceAnalyst`` dual-LLM + gate de corroboración → ``McpProposal``
   tipada (solo lo corroborado por fuente autoritativa; sin auto-apply).
+- slice 3: ``MaintenanceAdopter`` cablea propuesta → ``add_server`` reusando el
+  seam del decisor (ADR-040). No decide; traduce, invoca y audita.
 """
 
+from atlas.core.self_maintenance.adopter import MaintenanceAdopter
 from atlas.core.self_maintenance.analyst import MaintenanceAnalyst
 from atlas.core.self_maintenance.candidate import (
     PROVENANCE_AUTHORITATIVE,
@@ -35,6 +38,7 @@ __all__ = [
     "SEVERITY_INFO",
     "SEVERITY_WARN",
     "Evidence",
+    "MaintenanceAdopter",
     "MaintenanceAnalyst",
     "MaintenanceScout",
     "MaintenanceSignal",
