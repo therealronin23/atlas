@@ -22,6 +22,7 @@ from atlas.core.self_maintenance.candidate import (
     TypedSummary,
 )
 from atlas.core.self_maintenance.presentation import format_proposal
+from atlas.core.self_maintenance.registry_scout import REGISTRY_URL, RegistryScout
 from atlas.core.self_maintenance.scout import (
     SEVERITY_ALERT,
     SEVERITY_INFO,
@@ -34,6 +35,8 @@ from atlas.core.self_maintenance.scout import (
 __all__ = [
     "PROVENANCE_AUTHORITATIVE",
     "PROVENANCE_COMMUNITY",
+    "REGISTRY_URL",
+    "RegistryScout",
     "SEVERITY_ALERT",
     "SEVERITY_INFO",
     "SEVERITY_WARN",
