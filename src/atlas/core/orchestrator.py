@@ -527,13 +527,20 @@ class Orchestrator:
         return raw.decode("utf-8", errors="replace")
 
     def maintenance_scheduler(self) -> Any:
-        """ADR-039 slice 4 — Scheduler cron del front-half. Nunca aplica.
+        """ADR-039 slice 4 — Scheduler cron del front-half. Cierra el lazo vía el decisor.
 
         Ata las piezas ya existentes: descubre con el ``RegistryScout``
         autoritativo, analiza con el ``MaintenanceAnalyst`` (dual-LLM + gate de
-        corroboración) y notifica las propuestas corroboradas publicando
-        ``MAINTENANCE_PROPOSED`` en el bus. La adopción real es del Adopter tras
-        el seam del decisor (ADR-040): el cron solo descubre/propone/notifica."""
+        corroboración) y, por cada propuesta corroborada, (1) la surfa publicando
+        ``MAINTENANCE_PROPOSED`` en el bus y (2) la enruta al ``MaintenanceAdopter``.
+
+        El cron no decide ni aplica por sí mismo: la adopción pasa SIEMPRE por
+        ``adopt_mcp_server`` → seam del decisor (ADR-040). Bajo ``HumanDecider``
+        (default) el seam devuelve "requiere aprobación humana" y nada se adopta
+        — paridad exacta con el HITL de hoy, surfado por el evento. Bajo
+        autónomo/híbrido con la intención anclada, adopta en caliente y registra
+        el undo reversible. Esto es human-ON-the-loop: el punto de decisión es el
+        decisor intercambiable, no un botón hardcodeado."""
         if self._maintenance_scheduler is None:
             from atlas.core.inference_hub import InferenceHub
             from atlas.core.self_maintenance import (
@@ -554,6 +561,13 @@ class Orchestrator:
                         "count": len(proposals),
                     },
                 )
+                # Cierre del lazo: cada propuesta pasa por el seam del decisor.
+                # Bajo HumanDecider es no-op (requiere aprobación); bajo autónomo
+                # adopta lo reversible. El adopter no lanza: el veredicto es un
+                # resultado, no un fallo.
+                adopter = self.maintenance_adopter()
+                for proposal in proposals:
+                    adopter.adopt(proposal)
 
             self._maintenance_scheduler = MaintenanceScheduler(
                 merkle=self._merkle,
