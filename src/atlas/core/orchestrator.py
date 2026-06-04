@@ -143,6 +143,7 @@ class Orchestrator:
     _maintenance_scout: Any
     _maintenance_adopter: Any
     _maintenance_registry_scout: Any
+    _maintenance_scheduler: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -520,6 +521,43 @@ class Orchestrator:
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — gateado por SSRFBridge
             raw = resp.read(Orchestrator._EGRESS_MAX_BYTES)
         return raw.decode("utf-8", errors="replace")
+
+    def maintenance_scheduler(self) -> Any:
+        """ADR-039 slice 4 — Scheduler cron del front-half. Nunca aplica.
+
+        Ata las piezas ya existentes: descubre con el ``RegistryScout``
+        autoritativo, analiza con el ``MaintenanceAnalyst`` (dual-LLM + gate de
+        corroboración) y notifica las propuestas corroboradas publicando
+        ``MAINTENANCE_PROPOSED`` en el bus. La adopción real es del Adopter tras
+        el seam del decisor (ADR-040): el cron solo descubre/propone/notifica."""
+        if self._maintenance_scheduler is None:
+            from atlas.core.inference_hub import InferenceHub
+            from atlas.core.self_maintenance import (
+                MaintenanceAnalyst,
+                MaintenanceScheduler,
+                McpProposal,
+            )
+
+            hub = self._inference_hub or InferenceHub(mode="auto")
+            analyst = MaintenanceAnalyst(merkle=self._merkle, hub=hub)
+
+            def _notify(proposals: list[McpProposal]) -> None:
+                self._bus.publish_type(
+                    EventType.MAINTENANCE_PROPOSED,
+                    {
+                        "proposal_ids": [p.id for p in proposals],
+                        "capabilities": [p.capability for p in proposals],
+                        "count": len(proposals),
+                    },
+                )
+
+            self._maintenance_scheduler = MaintenanceScheduler(
+                merkle=self._merkle,
+                discover=self.maintenance_registry_scout().discover,
+                analyze=analyst.analyze,
+                notify=_notify,
+            )
+        return self._maintenance_scheduler
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -1750,6 +1788,7 @@ class Orchestrator:
         self._maintenance_scout = None
         self._maintenance_adopter = None
         self._maintenance_registry_scout = None
+        self._maintenance_scheduler = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

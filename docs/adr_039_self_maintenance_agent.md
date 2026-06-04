@@ -153,6 +153,17 @@ Cadencia y fuentes son config, no código.
    `Orchestrator.maintenance_adopter()`; resultado auditado en Merkle.
 4. **Scheduler cron** Atlas-side → escaneo periódico → propuestas → notificación
    Telegram. El cron solo propone.
+   **LANDED:** `MaintenanceScheduler` (`core/self_maintenance/scheduler.py`)
+   sigue el patrón de `OfflineMonitor` (hilo daemon + `tick()` testable). Ata por
+   inyección las piezas ya existentes: `discover`=`RegistryScout.discover`,
+   `analyze`=`MaintenanceAnalyst.analyze` (dual-LLM + gate de corroboración),
+   `notify` publica `EventType.MAINTENANCE_PROPOSED` en el bus (los suscriptores
+   —Telegram— deciden cómo notificar). **El cron jamás aplica:** su única salida
+   es la lista de propuestas + la notificación; no hay seam de adopción/ejecución
+   en el scheduler (la adopción es del Adopter tras el decisor). Solo notifica si
+   hay propuestas corroboradas; cada tick se audita con `applied=False`. Accessor
+   `Orchestrator.maintenance_scheduler()`; cadencia configurable (diaria por
+   defecto). Tests con fakes (cero red/LLM real).
 5. **Foros controlados como fuente community.** Egress allowlist + corroboración
    obligatoria (un candidato de foro necesita respaldo autoritativo para proponerse).
 6. **Deps vía ColdUpdate** (patches de bump PyPI). Diff revisable + suite/mypy.
