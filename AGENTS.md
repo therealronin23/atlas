@@ -24,7 +24,7 @@ components serve Atlas, not the other way around.
 > 7 colaboradores en `core/orchestrator_parts/`). Fase mecánica **cerrada
 > deliberadamente**; el núcleo recursivo de ejecución (`AgenticExecutor`) queda
 > como sesión dedicada de alto riesgo. Ver `docs/plan_orchestrator_decomposition.md`.
-> Atlas Core **v0.12.0** on `main`. **861 tests verdes + mypy 0**. Lista viva de pendientes en
+> Atlas Core **v0.12.0** on `main`. **869 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
@@ -301,7 +301,11 @@ ADR-040  Decisor central intercambiable (`decide(action,intent,ctx)->Allow|Deny`
          → `AutonomousDecider` con invariantes deterministas, sin LLM ni humano
          (s4) → `HybridDecider` (high→humano, resto→autónomo) + flip de config
          `ATLAS_DECIDER` (s5) → invariante de reversibilidad + `RevertRegistry` +
-         `Orchestrator.revert(action_hash)` (s6). `docs/adr_040_*.md`.
+         `Orchestrator.revert(action_hash)` (s6). Captura reversible CERRADA:
+         `_consult_decider`→`(verdict, action_hash)`; productores forward
+         `adopt_mcp_server` (undo MCP_SERVER) y `execute_reversible_code` (undo
+         SNAPSHOT) son los únicos `reversible=True` y registran el handle real.
+         `docs/adr_040_*.md`.
 
 ## Architectural Vocabulary
 
@@ -319,7 +323,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 861 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 869 core, 25 deselected
 PYTHONPATH=src python -m pytest tests/ -q -m "computer_use"      # 25 Playwright/browser tests
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
@@ -354,13 +358,13 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  python3 -m pytest -q  (expect 861 core, 25 deselected) + python3 -m mypy src
+3. Verify green:  python3 -m pytest -q  (expect 869 core, 25 deselected) + python3 -m mypy src
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gates A–I + twin (ADR-026..030) + loop agéntico
 con HITL + muralla de seguridad (ADR-032..038) + cliente MCP (ADR-035 con registro
-dinámico). **v0.12.0**. Suite **861 green + mypy 0**; `atlas serve`, `atlas health`,
+dinámico). **v0.12.0**. Suite **869 green + mypy 0**; `atlas serve`, `atlas health`,
 `atlas update`, `atlas self-audit`, observability dashboard.
 Ciclo MCP/murallas **cerrado**: ADR-035 (cliente + add/remove en caliente), ADR-037
 (frontera de contenido no confiable), ADR-038 (gate de adopción Atlas Sentinel,

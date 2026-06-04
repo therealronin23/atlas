@@ -43,6 +43,7 @@ from atlas.core.inference_hub import InferenceHub
 from atlas.core.decider import (
     MCP_SERVER,
     SNAPSHOT,
+    Allow,
     DecisionAction,
     Decider,
     Deny,
@@ -55,7 +56,7 @@ from atlas.core.decider import (
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
 from atlas.core.orchestrator_parts.approvals import ApprovalManager
 from atlas.core.orchestrator_parts.classifier import HybridClassifier
-from atlas.mcp import McpRegistry, load_servers
+from atlas.mcp import McpRegistry, McpServerConfig, load_servers
 from atlas.security.sentinel_gate import SentinelGate
 from atlas.core.orchestrator_parts.gate_f_executor import GateFExecutor
 from atlas.core.orchestrator_parts.gate_f_parser import (
@@ -81,7 +82,7 @@ from atlas.security.capabilities import CapabilityIssuer
 from atlas.security.executor import AtlasExecutor
 from atlas.security.generated_code_policy import GeneratedCodePolicy
 from atlas.security.pii_surrogate import PIISurrogate
-from atlas.security.sandbox import LayeredIsolationSandbox
+from atlas.security.sandbox import LayeredIsolationSandbox, SandboxResult
 from atlas.security.ssrf_bridge import SSRFBridge
 
 
@@ -171,12 +172,17 @@ class Orchestrator:
 
     def _consult_decider(
         self, action: DecisionAction, task: Task
-    ) -> Verdict:
+    ) -> tuple[Verdict, str]:
         """Punto único de decisión (ADR-040).
 
         Slice 3: calcula el ``action_hash`` (ata el veredicto a la acción
         exacta, ADR-036 P2), lo pasa al decisor en el contexto y emite
         telemetría no bloqueante (D7) en cada veredicto.
+
+        Devuelve ``(verdict, action_hash)``. El hash se hila hasta el punto de
+        ejecución (slice 6): una mutación reversible que se ejecuta registra su
+        handle de undo atado a este mismo hash, y ``revert(action_hash)`` lo
+        consume. Los call-sites sin undo real ignoran el hash (``verdict, _``).
         """
         act_hash = action_hash(action, task.intent)
         verdict = self._decider.decide(
@@ -189,7 +195,7 @@ class Orchestrator:
             },
         )
         self._emit_decider_telemetry(action, task, verdict, act_hash)
-        return verdict
+        return verdict, act_hash
 
     def _emit_decider_telemetry(
         self, action: DecisionAction, task: Task, verdict: Verdict, act_hash: str
@@ -262,6 +268,79 @@ class Orchestrator:
             except Exception:
                 pass
         return ok
+
+    # ------------------------------------------------------------------
+    # ADR-040 slice 6 — mutaciones reversibles gobernadas por el seam
+    #
+    # Únicos call-sites que declaran ``reversible=True``: tienen una primitiva
+    # de undo real y registrable. Hilan el ``action_hash`` de la decisión hasta
+    # la ejecución y, tras dejar el handle, atan el undo a ese hash. El resto de
+    # los call-sites sigue ``reversible=False`` → el AutonomousDecider los deniega
+    # (invariante 4, fail-safe). ``revert(action_hash)`` consume el handle.
+    # ------------------------------------------------------------------
+
+    def adopt_mcp_server(self, cfg: McpServerConfig, task: Task) -> str:
+        """Adopta un server MCP en caliente bajo veredicto del decisor (ADR-040).
+
+        Mutación reversible: ``remove_server`` deshace la adopción. Si el decisor
+        autoriza y ``add_server`` reporta ``ok:``, registra el undo
+        ``MCP_SERVER`` atado al ``action_hash`` exacto que autorizó. Devuelve el
+        estado textual (``ok:`` / ``skipped:`` / ``vetoed:`` / ``error:`` /
+        ``denegado:`` / ``requiere aprobación humana``) para que el llamante lo
+        reporte (Telegram, auto-mantenimiento)."""
+        verdict, act_hash = self._consult_decider(
+            DecisionAction(
+                kind="mcp_adopt",
+                requires_approval=True,
+                mutating=True,
+                reversible=True,
+                sensitivity=task.sensitivity,
+                descriptor=cfg.name,
+                reason="adopción de server MCP",
+            ),
+            task,
+        )
+        if isinstance(verdict, RequiresHuman):
+            return "requiere aprobación humana para adoptar el server"
+        if isinstance(verdict, Deny):
+            return f"denegado: {verdict.reason}"
+        status = self._mcp.add_server(cfg)
+        if status.startswith("ok:"):
+            self.register_undo(act_hash, MCP_SERVER, cfg.name)
+        return status
+
+    def execute_reversible_code(
+        self, code: str, task: Task, *, descriptor: str = ""
+    ) -> SandboxResult | None:
+        """Ejecuta código en OMEGA con snapshot previo, bajo veredicto del seam.
+
+        Mutación reversible: el snapshot del workspace permite undo físico
+        (``restore_snapshot``). Si el decisor autoriza y la ejecución dejó un
+        ``snapshot_id``, registra el undo ``SNAPSHOT`` atado al ``action_hash``.
+        Devuelve ``None`` si el decisor no autorizó (Deny / RequiresHuman); en
+        ese caso no se ejecuta nada."""
+        verdict, act_hash = self._consult_decider(
+            DecisionAction(
+                kind="omega_exec",
+                requires_approval=True,
+                mutating=True,
+                reversible=True,
+                sensitivity=task.sensitivity,
+                descriptor=descriptor,
+                reason="ejecución OMEGA con snapshot reversible",
+            ),
+            task,
+        )
+        if not isinstance(verdict, Allow):
+            return None
+        result = self._sandbox.execute(
+            code=code,
+            operational_mode=OperationalMode.OMEGA,
+            take_snapshot=True,
+        )
+        if result.snapshot_id is not None:
+            self.register_undo(act_hash, SNAPSHOT, result.snapshot_id)
+        return result
 
     def handle_intent(self, intent: str, source: TaskSource = TaskSource.CLI) -> Task:
         """
@@ -844,7 +923,7 @@ class Orchestrator:
             return
 
         if result.level == RoutingLevel.REQUIRES_APPROVAL:
-            verdict = self._consult_decider(
+            verdict, _ = self._consult_decider(
                 DecisionAction(
                     kind="route",
                     requires_approval=True,
@@ -1019,7 +1098,7 @@ class Orchestrator:
             return
 
         if cls.level == RoutingLevel.REQUIRES_APPROVAL:
-            verdict = self._consult_decider(
+            verdict, _ = self._consult_decider(
                 DecisionAction(
                     kind="route",
                     requires_approval=True,
@@ -1216,7 +1295,7 @@ class Orchestrator:
         )
 
         if task.route == RoutingLevel.REQUIRES_APPROVAL:
-            verdict = self._consult_decider(
+            verdict, _ = self._consult_decider(
                 DecisionAction(
                     kind="gate_f",
                     requires_approval=command.requires_approval,
@@ -1709,7 +1788,7 @@ class Orchestrator:
                         self._is_agentic_auto_approved(tc["name"], task)
                         and not tainted
                     )
-                    verdict = self._consult_decider(
+                    verdict, _ = self._consult_decider(
                         DecisionAction(
                             kind="agentic_tool",
                             requires_approval=not auto_ok,

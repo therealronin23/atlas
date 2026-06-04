@@ -284,11 +284,15 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   resto→autónomo) + flip `ATLAS_DECIDER`; s6 invariante de reversibilidad +
   `RevertRegistry` + `Orchestrator.revert(action_hash)`. Default sigue `human` →
   cero cambio de conducta hasta el flip.
-  **Cabo abierto (no bloqueante):** ningún call-site declara `reversible=True`
-  todavía — el `snapshot_id` solo existe post-ejecución, así que cablear la
-  captura del handle de undo por acción (hilar el `action_hash` decisión→ejecución
-  y registrar el snapshot OMEGA / server MCP) queda como trabajo posterior. Hasta
-  entonces, en modo `autonomous` toda mutación se deniega (fail-safe intencional).
+  **Captura reversible — CERRADO:** `_consult_decider` devuelve
+  `(verdict, action_hash)` y los 4 call-sites lo desempaquetan. Dos productores
+  forward gobernados por el seam son los únicos que declaran `reversible=True`:
+  `Orchestrator.adopt_mcp_server` (undo `MCP_SERVER` vía `remove_server`) y
+  `Orchestrator.execute_reversible_code` (undo `SNAPSHOT` OMEGA vía
+  `restore_snapshot`). Tras una ejecución con undo real registran
+  `register_undo(action_hash, …)`; `revert(action_hash)` cierra el ciclo. El resto
+  de call-sites sigue `reversible=False` → en `autonomous` se deniegan (fail-safe
+  invariante 4 intacto). E2E verde con `ATLAS_DECIDER=autonomous`.
 - 🟡 **`AgenticExecutor`** — extraer el núcleo recursivo de ejecución que quedó
   tras las 6 slices del orchestrator. Alto riesgo (mutuamente recursivo con el
   loop agéntico ADR-037); requiere sesión dedicada. Ver
