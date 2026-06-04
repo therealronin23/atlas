@@ -24,7 +24,7 @@ components serve Atlas, not the other way around.
 > 7 colaboradores en `core/orchestrator_parts/`). Fase mecánica **cerrada
 > deliberadamente**; el núcleo recursivo de ejecución (`AgenticExecutor`) queda
 > como sesión dedicada de alto riesgo. Ver `docs/plan_orchestrator_decomposition.md`.
-> Atlas Core **v0.12.0** on `main`. **884 tests verdes + mypy 0**. Lista viva de pendientes en
+> Atlas Core **v0.12.0** on `main`. **897 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
@@ -292,14 +292,20 @@ ADR-003  RESOLVED Gate E/E3 (2026-05-24): faster-whisper + piper-tts. Optional e
 ADR-012  Memory sync between Hermes and Atlas Core — Gate E (parcialmente resuelto por ADR-028 kanban compartido)
 ADR-019  Statistical Validation Framework — Gate E
 ADR-039  Agente de auto-mantenimiento (front-half: Scout→Analyst dual-LLM→Proposer
-         →HITL→Executor reusando ColdUpdate/Sentinel). **slice 1 LANDED**:
-         `MaintenanceScout` (`core/self_maintenance/scout.py`) read-only —
+         →HITL→Executor reusando ColdUpdate/Sentinel). **slices 1-2 LANDED**.
+         s1: `MaintenanceScout` (`core/self_maintenance/scout.py`) read-only —
          colector por inyección de deps (health_report/GitReadTools/ErrorRegistry)
          → señales de deuda deterministas → `ScoutReport` auditado en Merkle, no
          muta ni propone. Accessor `maintenance_scout()`. Desvío consciente: el
          slice 1 del ADR descubre candidatos externos (registry/arxiv, untrusted);
-         esta entrega es un Scout interno de salud — externo + dual-LLM en slices
-         siguientes. `docs/adr_039_self_maintenance_agent.md`.
+         esta entrega es un Scout interno de salud — externo en slices siguientes.
+         s2: `MaintenanceAnalyst` (`analyst.py`) dual-LLM sobre `InferenceHub` —
+         processing-LLM digiere prosa untrusted (`wrap_untrusted`) → `TypedSummary`;
+         gate de corroboración determinista fail-closed (≥1 fuente `authoritative`
+         coincide en nombre+versión, foros nunca corroboran) → `McpProposal` tipada;
+         control-LLM redacta riesgos solo desde campos tipados. `format_proposal`
+         para HITL (sin envío). Sin auto-apply; `add_server` es slice 3.
+         `docs/adr_039_self_maintenance_agent.md`.
 ADR-040  Decisor central intercambiable (`decide(action,intent,ctx)->Allow|Deny`
          sin Escalate) + human-ON-the-loop. 6 slices **COMPLETO**. seam `Decider`
          + `HumanDecider` (s1) → 4 call-sites enrutados por `_consult_decider` con
@@ -329,7 +335,7 @@ OFFLINE_FALLBACK_TIMEOUT_MIN = 15     # No ping timeout: OfflineFallbackMode
 ## Running Tests
 
 cd ~/proyectos/atlas-core && source .venv/bin/activate
-PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 884 core, 25 deselected
+PYTHONPATH=src python -m pytest tests/ -q -m "not computer_use"  # 897 core, 25 deselected
 PYTHONPATH=src python -m pytest tests/ -q -m "computer_use"      # 25 Playwright/browser tests
 PYTHONPATH=src python scripts/operational_smoke.py   # on-host: Hermes + CLI approval + Telegram
 PYTHONPATH=src python -m pytest tests/ -k "thermal" # filtered
@@ -364,13 +370,13 @@ All env vars live in ~/proyectos/atlas-core/.env (NOT committed). Load with:
 
 1. Activate venv: cd ~/proyectos/atlas-core && source .venv/bin/activate
 2. Load env:      set -a && source .env && set +a
-3. Verify green:  python3 -m pytest -q  (expect 884 core, 25 deselected) + python3 -m mypy src
+3. Verify green:  python3 -m pytest -q  (expect 897 core, 25 deselected) + python3 -m mypy src
 4. Read this file (AGENTS.md) — it is the single source of truth.
 5. The ~/.Codex/memory/ files are Codex-specific. Cline/Cursor must rely on this file only.
 
 Current state at session start: Gates A–I + twin (ADR-026..030) + loop agéntico
 con HITL + muralla de seguridad (ADR-032..038) + cliente MCP (ADR-035 con registro
-dinámico). **v0.12.0**. Suite **884 green + mypy 0**; `atlas serve`, `atlas health`,
+dinámico). **v0.12.0**. Suite **897 green + mypy 0**; `atlas serve`, `atlas health`,
 `atlas update`, `atlas self-audit`, observability dashboard.
 Ciclo MCP/murallas **cerrado**: ADR-035 (cliente + add/remove en caliente), ADR-037
 (frontera de contenido no confiable), ADR-038 (gate de adopción Atlas Sentinel,
@@ -380,8 +386,9 @@ slices): seam `Decider`/`HumanDecider`/`AutonomousDecider`/`HybridDecider` en
 `core/decider/`, `action_hash` + telemetría D7, flip de config `ATLAS_DECIDER`,
 invariante de reversibilidad + `RevertRegistry` + `revert(action_hash)`. Default
 sigue `human` → cero cambio de conducta hasta el flip. Next: ADR-039 (agente de
-auto-mantenimiento) — slice 1 (Scout read-only) landed; Analyst dual-LLM y
-descubrimiento externo pendientes. El núcleo recursivo del orchestrator
+auto-mantenimiento) — slices 1-2 (Scout read-only + Analyst dual-LLM/corroboración)
+landed; wire aprobación→`add_server` (s3), scheduler cron (s4) y descubrimiento
+externo (s5) pendientes. El núcleo recursivo del orchestrator
 (`AgenticExecutor`) sigue sin extraer
 (alto riesgo). La deuda del `timeout_seconds` del transporte MCP **ya se aplica en
 la I/O** (`select`+`os.read` acotados por deadline; ADR-035).

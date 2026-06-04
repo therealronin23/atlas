@@ -13,8 +13,10 @@
 > orchestrator: 6 slices mecánicas cerradas. 780 tests verdes + mypy 0.
 > Última sincronización: 2026-06-04.
 >
-> **Diseñado, sin implementar:** ADR-039 (agente de auto-mantenimiento) y ADR-040
-> (decisor central intercambiable + human-ON-the-loop). Son los próximos hitos.
+> **En curso:** ADR-039 (agente de auto-mantenimiento) — slices 1-2 landed
+> (Scout read-only + Analyst dual-LLM/corroboración); slices 3+ (wire approval,
+> cron, descubrimiento externo) en diseño. ADR-040 (decisor central + human-ON-the-loop)
+> COMPLETO.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -269,7 +271,7 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   ADR-035 (cliente MCP + registro dinámico add/remove en caliente), ADR-036
   (threat model/murallas), ADR-037 (frontera de contenido no confiable, P0),
   ADR-038 (gate de adopción "Atlas Sentinel", fail-closed) ya en `main`.
-- 🟡 **ADR-039 — Agente de auto-mantenimiento** — slice 1 LANDED; resto en diseño
+- 🟡 **ADR-039 — Agente de auto-mantenimiento** — slices 1-2 LANDED; resto en diseño
   (`docs/adr_039_self_maintenance_agent.md`). Front-half del pipeline
   (Scout→Analyst dual-LLM→Proposer→HITL→Executor) reusando ColdUpdate (code/deps)
   y Sentinel+add_server (MCP). El back-half ya existe.
@@ -284,7 +286,19 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   *externos* (registry MCP + arxiv, egress, `UNTRUSTED_READERS`, contenido no
   confiable); esta entrega es un Scout *interno* de salud/deuda — sin red ni
   ingesta untrusted, aún más pequeño. El Scout externo (con gate de corroboración
-  + dual-LLM) entra en slices siguientes. Analyst/Proposer NO adelantados.
+  + dual-LLM) entra en slices siguientes.
+  **Slice 2 — Analyst dual-LLM + gate de corroboración (LANDED):**
+  `MaintenanceAnalyst` en `core/self_maintenance/analyst.py`. Toma un
+  `McpCandidate` tipado (lo que un Scout externo emitirá) y aplica separación
+  datos/control (CaMeL, ADR-037 §D3): el processing-LLM digiere la prosa NO
+  confiable (`wrap_untrusted`) → `TypedSummary` acotado; un gate determinista
+  *fail-closed* admite solo si ≥1 fuente `authoritative` coincide en nombre+versión
+  (los foros nunca corroboran, solo surgen señal); el control-LLM redacta riesgos
+  viendo únicamente campos tipados, nunca la prosa. Salida: `McpProposal` tipada
+  con cadena de evidencia, auditada en Merkle, o `None` si no corrobora.
+  `format_proposal` renderiza el mensaje HITL (qué/por qué/riesgos/procedencia)
+  **sin envío**. Sin auto-apply: el wire aprobación→`add_server` es slice 3.
+  Inferencia mockeada en tests (hub falso enrutado por `task_id`, sin LLM real).
 - ✅ **ADR-040 — Decisor central + human-ON-the-loop** — COMPLETO (6 slices,
   `docs/adr_040_decider_human_on_the_loop.md`). Seam único
   `decide(action,intent,ctx)->Allow|Deny` (sin `Escalate` bloqueante) que
