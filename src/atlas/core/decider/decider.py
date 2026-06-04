@@ -32,6 +32,7 @@ class DecisionAction:
     requires_approval: bool = False
     sensitivity: str = "normal"
     mutating: bool = False
+    reversible: bool = False
     reason: str = ""
     descriptor: str = ""
 
@@ -76,6 +77,7 @@ def action_hash(action: DecisionAction, sanctioned_intent: str) -> str:
             "kind": action.kind,
             "descriptor": action.descriptor,
             "mutating": action.mutating,
+            "reversible": action.reversible,
             "sensitivity": action.sensitivity,
             "requires_approval": action.requires_approval,
             "sanctioned_intent": sanctioned_intent,

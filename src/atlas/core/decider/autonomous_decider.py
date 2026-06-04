@@ -9,7 +9,13 @@ Invariantes (orden; el primer match gana; fail-safe D1):
   1. IOC en ``descriptor``/``reason`` → Deny (siempre).
   2. ``sensitivity == "high"`` → Deny (regla constitucional #4).
   3. acción ``mutating`` sin anclaje léxico en ``sanctioned_intent`` → Deny.
-  4. resto (reversible / bajo riesgo) → Allow.
+  4. acción ``mutating`` sin camino de undo (``reversible=False``) → Deny.
+  5. resto (reversible / bajo riesgo) → Allow.
+
+Invariante 4 (reversibilidad, slice 6): la autonomía solo procede sobre lo que
+puede deshacer. ``reversible=True`` lo declara el call-site únicamente cuando hay
+una primitiva de undo real registrable (snapshot OMEGA / ``remove_server`` MCP);
+por defecto es ``False`` → una mutación irreversible se deniega (fail-safe D1).
 
 Limitación honesta: el anclaje del invariante 3 es léxico (intersección de
 tokens). Un descriptor en inglés (``write_file``) frente a una intención en otro
@@ -93,5 +99,9 @@ class AutonomousDecider:
             if not desc_tokens or desc_tokens.isdisjoint(_tokens(sanctioned_intent)):
                 return Deny(reason="mutación no anclada en la intención sancionada")
 
-        # 4. Default — reversible / bajo riesgo procede.
+        # 4. Reversibilidad — una mutación sin camino de undo se deniega.
+        if action.mutating and not action.reversible:
+            return Deny(reason="mutación irreversible: sin camino de undo")
+
+        # 5. Default — reversible / bajo riesgo procede.
         return Allow(reason="invariantes ok")

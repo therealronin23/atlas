@@ -17,6 +17,12 @@ from atlas.core.decider.decider import (
 from atlas.core.decider.autonomous_decider import AutonomousDecider
 from atlas.core.decider.human_decider import HumanDecider
 from atlas.core.decider.hybrid_decider import HybridDecider
+from atlas.core.decider.revert_registry import (
+    MCP_SERVER,
+    SNAPSHOT,
+    RevertRegistry,
+    UndoHandle,
+)
 
 
 def make_decider(name: str | None) -> Decider:
@@ -41,7 +47,11 @@ __all__ = [
     "Deny",
     "HumanDecider",
     "HybridDecider",
+    "MCP_SERVER",
     "RequiresHuman",
+    "RevertRegistry",
+    "SNAPSHOT",
+    "UndoHandle",
     "Verdict",
     "action_hash",
     "make_decider",

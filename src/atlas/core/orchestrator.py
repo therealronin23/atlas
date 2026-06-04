@@ -41,10 +41,13 @@ from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.decider import (
+    MCP_SERVER,
+    SNAPSHOT,
     DecisionAction,
     Decider,
     Deny,
     RequiresHuman,
+    RevertRegistry,
     Verdict,
     action_hash,
     make_decider,
@@ -118,6 +121,7 @@ class Orchestrator:
     _mcp: McpRegistry                       # ADR-035
     _mcp_started: bool                      # ADR-035
     _decider: Decider                       # ADR-040 — seam de decisión central
+    _revert_registry: RevertRegistry        # ADR-040 slice 6 — handles de undo
 
     # Gate D pipeline integrado (opt-in via enable_gate_d_pipeline()).
     # Inicializados a None y poblados al activar.
@@ -220,6 +224,44 @@ class Orchestrator:
             )
         except Exception:
             pass  # la telemetría no bloquea la decisión (D7)
+
+    def register_undo(self, action_hash_value: str, kind: str, ref: str) -> None:
+        """Ata una primitiva de undo real a una acción autorizada (slice 6).
+
+        Solo se llama cuando una acción reversible se ejecuta y deja un handle
+        consumible: snapshot OMEGA (``SNAPSHOT``) o server MCP (``MCP_SERVER``).
+        """
+        self._revert_registry.register(action_hash_value, kind, ref)
+
+    def revert(self, action_hash_value: str) -> bool:
+        """Deshace una acción previa por su ``action_hash`` (ADR-040 slice 6).
+
+        Resuelve el handle persistido y dispara la primitiva: restaura el
+        snapshot o retira el server MCP. Devuelve False si no hay handle o si la
+        primitiva no pudo deshacer. Un revert consumado olvida el handle.
+        """
+        handle = self._revert_registry.get(action_hash_value)
+        if handle is None:
+            return False
+        if handle.kind == SNAPSHOT:
+            ok = self._sandbox.restore_snapshot(handle.ref)
+        elif handle.kind == MCP_SERVER:
+            ok = self._mcp.remove_server(handle.ref)
+        else:
+            ok = False
+        if ok:
+            self._revert_registry.forget(action_hash_value)
+            try:
+                self._merkle.log(
+                    action="decider.revert",
+                    agent="orchestrator",
+                    result="success",
+                    risk_level="medium",
+                    payload={"action_hash": action_hash_value, "kind": handle.kind, "ref": handle.ref},
+                )
+            except Exception:
+                pass
+        return ok
 
     def handle_intent(self, intent: str, source: TaskSource = TaskSource.CLI) -> Task:
         """
@@ -2211,6 +2253,11 @@ class Orchestrator:
         # hybrid); default human → paridad con el HITL de hoy. El pivote a
         # autonomía es el flip de env, no tocar los call-sites de nuevo.
         self._decider = make_decider(os.environ.get("ATLAS_DECIDER"))
+        # Slice 6: handles de undo (snapshot OMEGA / server MCP) atados al
+        # action_hash que el decisor autorizó; revert(action_hash) los consume.
+        self._revert_registry = RevertRegistry(
+            self._workspace / "memory" / "revert_registry.json"
+        )
 
         self._git = GitReadTools(
             workspace=self._workspace,
