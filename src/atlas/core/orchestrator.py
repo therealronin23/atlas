@@ -139,6 +139,7 @@ class Orchestrator:
     _observability: Any
     _cold_update_manager: Any
     _self_audit_runner: Any
+    _maintenance_scout: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -446,6 +447,24 @@ class Orchestrator:
                 health_provider=self.health_report,
             )
         return self._self_audit_runner
+
+    def maintenance_scout(self) -> Any:
+        """ADR-039 slice 1 — Scout read-only de salud/deuda (no muta, no propone).
+
+        Cableado a las primitivas read-only existentes (``health_report``,
+        ``GitReadTools``, ``ErrorRegistry``). ``survey()`` devuelve un informe
+        estructurado auditado en Merkle. El front-half del agente de
+        auto-mantenimiento; Analyst/Proposer entran en slices posteriores."""
+        if self._maintenance_scout is None:
+            from atlas.core.self_maintenance import MaintenanceScout
+
+            self._maintenance_scout = MaintenanceScout(
+                merkle=self._merkle,
+                health_provider=self.health_report,
+                git_status_provider=self._run_git_status,
+                failure_provider=self._error_registry.all,
+            )
+        return self._maintenance_scout
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -2244,6 +2263,7 @@ class Orchestrator:
         )
         self._cold_update_manager = None
         self._self_audit_runner = None
+        self._maintenance_scout = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()
