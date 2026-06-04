@@ -135,6 +135,12 @@ Cadencia y fuentes son config, no código.
    presentación en Telegram. Solo pasa lo corroborado por fuente autoritativa. Sin
    auto-apply. Tests con LLM mockeado.
 3. **Wire aprobación → `add_server`** (reuso puro). E2E tras el botón HITL.
+   **LANDED:** `MaintenanceAdopter` (`core/self_maintenance/adopter.py`) traduce
+   `McpProposal` → `McpServerConfig` + `Task` (intención anclada al nombre) y
+   delega en `Orchestrator.adopt_mcp_server`. El "botón" es el seam del decisor
+   (ADR-040), no maquinaria HITL nueva: `HumanDecider` → exige aprobación;
+   autónomo/híbrido anclado → adopta + undo reversible. Accessor
+   `Orchestrator.maintenance_adopter()`; resultado auditado en Merkle.
 4. **Scheduler cron** Atlas-side → escaneo periódico → propuestas → notificación
    Telegram. El cron solo propone.
 5. **Foros controlados como fuente community.** Egress allowlist + corroboración

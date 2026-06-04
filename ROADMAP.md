@@ -11,13 +11,13 @@
 > (ADR-037) + gate de adopción Atlas Sentinel fail-closed (ADR-038) + cliente MCP
 > con registro dinámico add/remove en caliente (ADR-035 dec.3). Decomposición del
 > orchestrator: 6 slices mecánicas + núcleo recursivo (`AgenticExecutor`)
-> extraídos. 897 tests verdes + mypy 0.
+> extraídos. 905 tests verdes + mypy 0.
 > Última sincronización: 2026-06-04.
 >
-> **En curso:** ADR-039 (agente de auto-mantenimiento) — slices 1-2 landed
-> (Scout read-only + Analyst dual-LLM/corroboración); slices 3+ (wire approval,
-> cron, descubrimiento externo) en diseño. ADR-040 (decisor central + human-ON-the-loop)
-> COMPLETO.
+> **En curso:** ADR-039 (agente de auto-mantenimiento) — slices 1-3 landed
+> (Scout read-only + Analyst dual-LLM/corroboración + wire propuesta→adopción
+> vía el seam del decisor); slices 4+ (cron, descubrimiento externo, deps,
+> codegen) en diseño. ADR-040 (decisor central + human-ON-the-loop) COMPLETO.
 >
 > **Cabos abiertos consolidados:** ver sección [Pendientes](#pendientes--cabos-abiertos)
 > al final. Este es el único documento que mantiene la lista viva de "qué falta".
@@ -272,7 +272,7 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   ADR-035 (cliente MCP + registro dinámico add/remove en caliente), ADR-036
   (threat model/murallas), ADR-037 (frontera de contenido no confiable, P0),
   ADR-038 (gate de adopción "Atlas Sentinel", fail-closed) ya en `main`.
-- 🟡 **ADR-039 — Agente de auto-mantenimiento** — slices 1-2 LANDED; resto en diseño
+- 🟡 **ADR-039 — Agente de auto-mantenimiento** — slices 1-3 LANDED; resto en diseño
   (`docs/adr_039_self_maintenance_agent.md`). Front-half del pipeline
   (Scout→Analyst dual-LLM→Proposer→HITL→Executor) reusando ColdUpdate (code/deps)
   y Sentinel+add_server (MCP). El back-half ya existe.
@@ -300,6 +300,18 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   `format_proposal` renderiza el mensaje HITL (qué/por qué/riesgos/procedencia)
   **sin envío**. Sin auto-apply: el wire aprobación→`add_server` es slice 3.
   Inferencia mockeada en tests (hub falso enrutado por `task_id`, sin LLM real).
+  **Slice 3 — wire propuesta → adopción (LANDED):** `MaintenanceAdopter` en
+  `core/self_maintenance/adopter.py`. Cierra el lazo end-to-end: traduce una
+  `McpProposal` corroborada → `McpServerConfig` + `Task` con intención anclada al
+  nombre del server, y delega en `Orchestrator.adopt_mcp_server` (que ya consulta
+  el decisor ADR-040 + `add_server` en caliente + `register_undo` reversible).
+  **El adopter no decide** — el "botón HITL" es una implementación más del
+  decisor (rumbo human-ON-the-loop): bajo `HumanDecider` el seam exige aprobación
+  y nada se adopta; bajo autónomo/híbrido con intención anclada, adopta y deja el
+  undo (`remove_server`). Reuso puro: ninguna máquina de aprobación nueva.
+  Accessor `Orchestrator.maintenance_adopter()`. Resultado auditado en Merkle
+  (`adopter_adopt`: adopted/not_adopted). E2E con orquestador real (Autonomous
+  adopta + undo; Human → requiere aprobación, sin `add_server`).
 - ✅ **ADR-040 — Decisor central + human-ON-the-loop** — COMPLETO (6 slices,
   `docs/adr_040_decider_human_on_the_loop.md`). Seam único
   `decide(action,intent,ctx)->Allow|Deny` (sin `Escalate` bloqueante) que
