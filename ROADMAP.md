@@ -10,7 +10,8 @@
 > hoja de murallas (ADR-036) + frontera de contenido no confiable, P0
 > (ADR-037) + gate de adopción Atlas Sentinel fail-closed (ADR-038) + cliente MCP
 > con registro dinámico add/remove en caliente (ADR-035 dec.3). Decomposición del
-> orchestrator: 6 slices mecánicas cerradas. 780 tests verdes + mypy 0.
+> orchestrator: 6 slices mecánicas + núcleo recursivo (`AgenticExecutor`)
+> extraídos. 897 tests verdes + mypy 0.
 > Última sincronización: 2026-06-04.
 >
 > **En curso:** ADR-039 (agente de auto-mantenimiento) — slices 1-2 landed
@@ -239,13 +240,13 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   reaparezca `errors=remount-ro` o el contador suba → reasentar el conector SATA.
 
 ### Decomposición del god-object (auditoría H1/H2)
-- 🟡 **`orchestrator.py` 3.120 → 2.272 LOC** (−27 %). 7 colaboradores extraídos a
-  `core/orchestrator_parts/` (TaskPersistence, GitReadTools, gate_f_parser,
-  agentic_helpers, GateFExecutor, ApprovalManager, HybridClassifier). Fase
-  mecánica **cerrada deliberadamente**: lo que queda es el núcleo de ejecución
-  mutuamente recursivo (`_execute_task` + loop agéntico ADR-037). Extraerlo como
-  `AgenticExecutor` = sesión dedicada de alto riesgo. Ver
-  `docs/plan_orchestrator_decomposition.md`.
+- ✅ **`orchestrator.py` 3.120 → 2.007 LOC** (−36 %). 7 colaboradores mecánicos
+  (TaskPersistence, GitReadTools, gate_f_parser, agentic_helpers, GateFExecutor,
+  ApprovalManager, HybridClassifier) **+ el núcleo recursivo** extraídos. El loop
+  agéntico suspendible (ADR-031/032/033/037) vive en
+  `core/orchestrator_parts/agentic_executor.py` (sesión dedicada): movido
+  bit-a-bit, lee colaboradores del host en tiempo de llamada para paridad exacta.
+  897 tests + mypy 0. Ver `docs/plan_orchestrator_decomposition.md`.
 
 ### Roadmap previo
 - ✅ **Hermes webhook** — HECHO. `HermesWebhookHandler` (HMAC + online/offline →
