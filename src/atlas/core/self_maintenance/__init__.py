@@ -23,6 +23,7 @@ from atlas.core.self_maintenance.candidate import (
 )
 from atlas.core.self_maintenance.presentation import format_proposal
 from atlas.core.self_maintenance.registry_scout import REGISTRY_URL, RegistryScout
+from atlas.core.self_maintenance.scheduler import MaintenanceScheduler
 from atlas.core.self_maintenance.scout import (
     SEVERITY_ALERT,
     SEVERITY_INFO,
@@ -43,6 +44,7 @@ __all__ = [
     "Evidence",
     "MaintenanceAdopter",
     "MaintenanceAnalyst",
+    "MaintenanceScheduler",
     "MaintenanceScout",
     "MaintenanceSignal",
     "McpCandidate",
