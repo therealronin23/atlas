@@ -24,6 +24,7 @@ from atlas.core.self_maintenance.candidate import (
     TypedSummary,
 )
 from atlas.core.self_maintenance.codegen_proposer import CodegenProposer
+from atlas.core.self_maintenance.community_scout import CommunityScout
 from atlas.core.self_maintenance.dep_proposer import DepProposer
 from atlas.core.self_maintenance.dep_scout import PYPI_JSON_URL, DepScout
 from atlas.core.self_maintenance.presentation import format_proposal
@@ -45,6 +46,7 @@ __all__ = [
     "REGISTRY_URL",
     "CodegenProposer",
     "CodegenTarget",
+    "CommunityScout",
     "DepCandidate",
     "DepProposer",
     "DepScout",
