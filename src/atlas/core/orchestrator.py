@@ -147,6 +147,7 @@ class Orchestrator:
     _maintenance_dep_scout: Any
     _maintenance_dep_proposer: Any
     _maintenance_codegen_proposer: Any
+    _maintenance_community_scout: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -594,6 +595,44 @@ class Orchestrator:
                 pyproject_path=self._project_root() / "pyproject.toml",
             )
         return self._maintenance_dep_proposer
+
+    def maintenance_community_scout(self) -> Any:
+        """ADR-039 slice 5 — Scout community (foros) con corroboración obligatoria.
+
+        El foro solo *surge* nombres candidatos; cada uno se contrasta contra el
+        registro MCP oficial (autoritativo). Sin respaldo autoritativo se descarta
+        (fail-closed): un candidato solo-foro nunca se propone. Los campos salen
+        del candidato autoritativo; la prosa del foro viaja como ``Source``
+        community no confiable."""
+        if self._maintenance_community_scout is None:
+            from atlas.core.self_maintenance import CommunityScout, McpCandidate
+
+            index: dict[str, McpCandidate] = {}
+            built = [False]
+
+            def _lookup(name: str) -> "McpCandidate | None":
+                if not built[0]:
+                    for c in self.maintenance_registry_scout().discover():
+                        index[c.name] = c
+                    built[0] = True
+                if name in index:
+                    return index[name]
+                # Coincidencia laxa: el foro suele citar el nombre corto del paquete.
+                for cname, cand in index.items():
+                    if cname.endswith("/" + name) or name in cname.split("/"):
+                        return cand
+                return None
+
+            self._maintenance_community_scout = CommunityScout(
+                merkle=self._merkle,
+                bridge=self._ssrf_bridge,
+                fetch=self._egress_fetch_text,
+                forum_urls=[
+                    "https://hn.algolia.com/api/v1/search?query=mcp%20server&tags=story",
+                ],
+                authoritative_lookup=_lookup,
+            )
+        return self._maintenance_community_scout
 
     def maintenance_codegen_proposer(self) -> Any:
         """ADR-039 slice 7 — Codegen como patch dirigido (revisable, nunca apply solo).
@@ -1896,6 +1935,7 @@ class Orchestrator:
         self._maintenance_dep_scout = None
         self._maintenance_dep_proposer = None
         self._maintenance_codegen_proposer = None
+        self._maintenance_community_scout = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

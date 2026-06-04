@@ -23,6 +23,7 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "api.github.com",
     "raw.githubusercontent.com",
     "registry.modelcontextprotocol.io",    # ADR-039: registro MCP oficial (Scout autoritativo)
+    "hn.algolia.com",                       # ADR-039 slice 5: foro community (HN search API) — contenido NO confiable
     "pypi.org",
     "files.pythonhosted.org",
     "api.groq.com",

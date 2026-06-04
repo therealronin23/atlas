@@ -166,6 +166,18 @@ Cadencia y fuentes son config, no código.
    defecto). Tests con fakes (cero red/LLM real).
 5. **Foros controlados como fuente community.** Egress allowlist + corroboración
    obligatoria (un candidato de foro necesita respaldo autoritativo para proponerse).
+   **LANDED:** `CommunityScout` (`core/self_maintenance/community_scout.py`). El
+   foro solo *surge* nombres (extractor regex por defecto, inyectable); cada
+   nombre se contrasta contra el registro MCP oficial vía `authoritative_lookup`.
+   **Fail-closed:** sin respaldo autoritativo el candidato se descarta — un
+   candidato solo-foro nunca se propone. Los campos del `McpCandidate` (nombre,
+   versión, cmd, tools) salen del candidato autoritativo, **no** de la prosa del
+   foro; ésta viaja como `Source(community)` no confiable (la digiere el Analyst,
+   no fija decisión). Egress gateado por `SSRFBridge` (`hn.algolia.com` añadido a
+   la allowlist). El candidato resultante lleva la fuente autoritativa + la
+   community, así el gate del Analyst corrobora por el respaldo real y queda traza
+   de que el foro lo surgió. Accessor `Orchestrator.maintenance_community_scout()`
+   (lookup indexado sobre el `RegistryScout`).
 6. **Deps vía ColdUpdate** (patches de bump PyPI). Diff revisable + suite/mypy.
    **LANDED:** dos piezas acopladas. `DepScout`
    (`core/self_maintenance/dep_scout.py`) lee los pisos `>=` de
