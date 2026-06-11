@@ -47,15 +47,20 @@ class PrometheusExporter:
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:
-                if self.path not in ("/metrics", "/"):
-                    self.send_response(404)
+                try:
+                    if self.path not in ("/metrics", "/"):
+                        self.send_response(404)
+                        self.end_headers()
+                        return
+                    body = exporter.render_metrics().encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain; version=0.0.4")
                     self.end_headers()
-                    return
-                body = exporter.render_metrics().encode()
-                self.send_response(200)
-                self.send_header("Content-Type", "text/plain; version=0.0.4")
-                self.end_headers()
-                self.wfile.write(body)
+                    self.wfile.write(body)
+                except (BrokenPipeError, ConnectionResetError):
+                    # El scraper cortó la conexión a mitad de respuesta: ruido,
+                    # no fallo — sin esto socketserver vuelca un traceback entero.
+                    pass
 
             def log_message(self, *_: object) -> None:
                 pass

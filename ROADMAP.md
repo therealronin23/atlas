@@ -142,6 +142,13 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
 - **Twin operativo**: Hermes (Nous Research, VPS Hetzner) delega a Atlas vía
   `/api/exec/intent`; Atlas devuelve resultados auditados. Bot Telegram
   `@GodAtlas_bot` como front conversacional.
+  **⏸️ PAUSADO (2026-06-11):** el VPS Hetzner fue dado de baja. Pausa limpia:
+  sin `HERMES_BASE_URL` el adapter degrada a mock, y con `ATLAS_HERMES_LOCAL=1`
+  (activo en el `.env` de producción) las tareas `DELEGATE_HERMES` se ejecutan
+  en local en vez de pudrirse en la `OfflineQueue` (`hermes.local_takeover` en
+  Merkle). `HERMES_API_KEY` se conserva en el `.env`: es el fallback HMAC de
+  `pending_store` para firmar approvals. **Reabrir cuando:** Hermes se levante
+  en otro host (basta restaurar `HERMES_BASE_URL` y quitar el flag).
 - **Block memory**: bloques etiquetados con límite de caracteres, siempre
   inyectados al contexto antes del archival. Mutación vía CLI `atlas blocks` y
   API; auto-edición por el modelo **diferida** (necesita loop agéntico de
