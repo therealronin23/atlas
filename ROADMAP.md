@@ -346,6 +346,14 @@ Detalle del twin en `docs/adr_026..029`; block memory en `docs/adr_030_block_mem
   `register_undo(action_hash, …)`; `revert(action_hash)` cierra el ciclo. El resto
   de call-sites sigue `reversible=False` → en `autonomous` se deniegan (fail-safe
   invariante 4 intacto). E2E verde con `ATLAS_DECIDER=autonomous`.
+  **Tercer productor reversible (2026-06-11):** `Orchestrator.advance_cold_update`
+  gobierna ColdUpdate por el seam — cierra el lazo de los proposers ADR-039
+  (deps/codegen): valida en worktree y consulta el decisor para aprobar+aplicar.
+  Undo real `COLD_PATCH` vía `rollback_applied` (reverse-apply del patch);
+  `revert(action_hash)` lo consume. El descriptor ancla al ARTEFACTO (evidencia
+  del proposer), no repite el intent. `risk=high/critical` → sensitivity=high →
+  Deny autónomo / escalada Hybrid: el codegen jamás se auto-aplica. Bajo
+  `HumanDecider` paridad total (la propuesta espera `atlas update approve`).
 - ✅ **`AgenticExecutor`** — núcleo recursivo de ejecución extraído tras las 6
   slices mecánicas del orchestrator (`core/orchestrator_parts/agentic_executor.py`).
   El loop de tool-calls suspendible (ADR-031/032/033/037) —

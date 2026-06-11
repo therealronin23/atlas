@@ -22,7 +22,7 @@ from atlas.logging.merkle_logger import MerkleLogger
 class ColdUpdateProposal:
     id: str
     intent: str
-    status: str  # proposed | validated | approved | applied | rejected | failed
+    status: str  # proposed | validated | approved | applied | rejected | failed | rolled_back
     worktree_path: str
     patch_path: str
     base_ref: str
@@ -233,6 +233,28 @@ class ColdUpdateManager:
             payload={"proposal_id": proposal_id},
         )
         return {"proposal_id": proposal_id, "status": "applied", "validation": post.to_dict()}
+
+    def rollback_applied(self, proposal_id: str) -> bool:
+        """Deshace un patch ya aplicado (primitiva de undo para el seam ADR-040).
+
+        Reverse-apply del patch sobre el root y estado ``rolled_back``. Solo
+        aplica a propuestas en estado ``applied``; idempotente sobre el resto
+        (devuelve False sin tocar nada)."""
+        proposal = self._proposals.get(proposal_id)
+        if proposal is None or proposal.status != "applied":
+            return False
+        self._rollback_patch(self._root, Path(proposal.patch_path))
+        proposal.status = "rolled_back"
+        proposal.updated_at = datetime.now(timezone.utc).isoformat()
+        self._save()
+        self._merkle.log(
+            action="cold_update.rolled_back",
+            agent="cold_update_manager",
+            result="success",
+            risk_level="critical",
+            payload={"proposal_id": proposal_id},
+        )
+        return True
 
     def reject(self, proposal_id: str, reason: str = "") -> ColdUpdateProposal:
         proposal = self._require(proposal_id)

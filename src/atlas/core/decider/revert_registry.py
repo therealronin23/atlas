@@ -18,8 +18,9 @@ from pathlib import Path
 
 SNAPSHOT = "snapshot"
 MCP_SERVER = "mcp_server"
+COLD_PATCH = "cold_patch"  # ref = proposal_id; undo = rollback del patch aplicado
 
-_KINDS = frozenset({SNAPSHOT, MCP_SERVER})
+_KINDS = frozenset({SNAPSHOT, MCP_SERVER, COLD_PATCH})
 
 
 @dataclass(frozen=True)

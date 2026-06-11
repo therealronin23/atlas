@@ -18,6 +18,7 @@ from atlas.core.decider.autonomous_decider import AutonomousDecider
 from atlas.core.decider.human_decider import HumanDecider
 from atlas.core.decider.hybrid_decider import HybridDecider
 from atlas.core.decider.revert_registry import (
+    COLD_PATCH,
     MCP_SERVER,
     SNAPSHOT,
     RevertRegistry,
@@ -47,6 +48,7 @@ __all__ = [
     "Deny",
     "HumanDecider",
     "HybridDecider",
+    "COLD_PATCH",
     "MCP_SERVER",
     "RequiresHuman",
     "RevertRegistry",

@@ -41,6 +41,7 @@ from atlas.core.gate_h import GateHManager
 from atlas.core.ghost_replay import GhostReplay
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.decider import (
+    COLD_PATCH,
     MCP_SERVER,
     SNAPSHOT,
     Allow,
@@ -262,6 +263,8 @@ class Orchestrator:
             ok = self._sandbox.restore_snapshot(handle.ref)
         elif handle.kind == MCP_SERVER:
             ok = self._mcp.remove_server(handle.ref)
+        elif handle.kind == COLD_PATCH:
+            ok = self.cold_update().rollback_applied(handle.ref)
         else:
             ok = False
         if ok:
@@ -440,6 +443,60 @@ class Orchestrator:
             ).expanduser().resolve()
             self._cold_update_manager = ColdUpdateManager(root, self._merkle)
         return self._cold_update_manager
+
+    def advance_cold_update(self, proposal_id: str) -> str:
+        """Avanza una propuesta de ColdUpdate bajo veredicto del decisor (ADR-040).
+
+        Punto único que cierra el lazo de los proposers (deps/codegen): valida
+        en worktree si hace falta y consulta el seam para aprobar+aplicar. Bajo
+        ``HumanDecider`` (default) devuelve "requiere aprobación humana" y la
+        propuesta queda ``validated`` esperando el CLI (`atlas update approve`)
+        — paridad exacta con hoy. Bajo autónomo/híbrido, lo de bajo riesgo
+        anclado en su intención se aplica con undo real (``rollback_applied``,
+        kind ``COLD_PATCH``); ``risk=high/critical`` viaja como sensitivity=high
+        → el AutonomousDecider lo deniega (regla constitucional #4) y el Hybrid
+        lo escala a humano. Mutación reversible: el patch aplicado se deshace
+        con ``revert(action_hash)``."""
+        mgr = self.cold_update()
+        proposal = mgr.get(proposal_id)
+        if proposal is None:
+            return f"error: propuesta {proposal_id} no existe"
+        if proposal.status == "proposed":
+            report = mgr.validate(proposal_id)
+            if not report.passed:
+                return "validation_failed: el patch no pasa pytest/mypy en worktree"
+            proposal = mgr.get(proposal_id)
+        if proposal.status != "validated":
+            return f"skipped: estado {proposal.status} (se requiere validated)"
+
+        # El descriptor ancla la acción al ARTEFACTO (evidencia del proposer:
+        # dependencia, path objetivo…), no repite el intent — así el invariante
+        # de coherencia del AutonomousDecider compara cosas distintas.
+        evidence_surface = " ".join(
+            str(v) for v in (proposal.evidence or {}).values()
+        ).strip()
+        task = Task(intent=proposal.intent, source=TaskSource.INTERNAL)
+        verdict, act_hash = self._consult_decider(
+            DecisionAction(
+                kind="cold_update_apply",
+                requires_approval=True,
+                mutating=True,
+                reversible=True,
+                sensitivity="high" if proposal.risk in ("high", "critical") else "normal",
+                descriptor=evidence_surface or proposal.intent,
+                reason=f"aplicar patch ColdUpdate (origin={proposal.origin}, risk={proposal.risk})",
+            ),
+            task,
+        )
+        if isinstance(verdict, RequiresHuman):
+            return "requiere aprobación humana (atlas update approve)"
+        if isinstance(verdict, Deny):
+            mgr.reject(proposal_id, reason=verdict.reason)
+            return f"denegado: {verdict.reason}"
+        mgr.approve(proposal_id)
+        result = mgr.apply(proposal_id)
+        self.register_undo(act_hash, COLD_PATCH, proposal_id)
+        return f"applied: {result['proposal_id']}"
 
     def self_audit(self) -> Any:
         """Atlas 24h self-audit loop (cold, auditable, no hot self-patch)."""
