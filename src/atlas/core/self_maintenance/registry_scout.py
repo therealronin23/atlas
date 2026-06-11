@@ -122,7 +122,14 @@ class RegistryScout:
             if not cmd:
                 return None
             tools = self._extract_tools(entry)
-            excerpt = str(entry.get("description") or "")[:_EXCERPT_MAX]
+            # El excerpt lleva los campos estructurados del registro (nombre +
+            # versión) además de la descripción: son datos autoritativos, y sin
+            # ellos el processing-LLM no puede re-extraer la afirmación clave
+            # que el gate de corroboración compara (segundo tick real,
+            # 2026-06-11: las descripciones no repiten nombre/versión → todo
+            # se descartaba). Sigue siendo dato NO confiable para el Analyst.
+            description = str(entry.get("description") or "")
+            excerpt = f"{name} (version {version}): {description}"[:_EXCERPT_MAX]
             source = Source(
                 provenance=PROVENANCE_AUTHORITATIVE,
                 url=self._registry_url,
