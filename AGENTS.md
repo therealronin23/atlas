@@ -26,7 +26,7 @@ components serve Atlas, not the other way around.
 > _suspend↔dispatch) vive en `agentic_executor.py`, leyendo colaboradores del
 > host en tiempo de llamada para paridad bit-a-bit. Ver
 > `docs/plan_orchestrator_decomposition.md`.
-> Atlas Core **v0.12.0** on `main`. **954 tests verdes + mypy 0**. Lista viva de pendientes en
+> Atlas Core **v0.12.0** on `main`. **960 tests verdes + mypy 0**. Lista viva de pendientes en
 > `ROADMAP.md` §Pendientes. Postmortem 2026-05-29 (corrupción Merkle reparada +
 > cuelgue por I/O del SSD) en `docs/postmortem_2026-05-29.md`. Both sides
 > systemd-supervised:
