@@ -106,6 +106,58 @@ class TestCorroborationGate:
         assert prop is None
 
 
+class TestMatcherCalibration:
+    """Calibrado con el primer tick real (2026-06-11): el registro publica ids
+    reverse-DNS y la prosa dice el nombre humano — la igualdad literal nunca
+    corroboraba. Subset de tokens + versión sin prefijo ``v``, fail-closed."""
+
+    def test_prose_name_subset_of_canonical_corroborates(self, merkle) -> None:
+        hub = FakeHub(
+            summary={"name": "AgentTrust MCP server", "version": "v1.1.1",
+                     "maintainer": "x", "purpose": "trust"},
+            risks=[],
+        )
+        analyst = MaintenanceAnalyst(merkle=merkle, hub=hub)
+        prop = analyst.analyze(
+            _candidate(name="ai.agenttrust/mcp-server", version="1.1.1")
+        )
+        assert isinstance(prop, McpProposal)
+        assert prop.capability == "ai.agenttrust/mcp-server"
+
+    def test_hostile_prose_claiming_other_artifact_dropped(self, merkle) -> None:
+        # La prosa afirma OTRO artefacto: tokens no-subset → no corrobora.
+        hub = FakeHub(
+            summary={"name": "totally-different-server", "version": "1.1.1",
+                     "maintainer": "x", "purpose": "y"},
+            risks=[],
+        )
+        analyst = MaintenanceAnalyst(merkle=merkle, hub=hub)
+        assert analyst.analyze(
+            _candidate(name="ai.agenttrust/mcp-server", version="1.1.1")
+        ) is None
+
+    def test_empty_summary_name_dropped(self, merkle) -> None:
+        hub = FakeHub(
+            summary={"name": "", "version": "1.1.1", "maintainer": "x", "purpose": "y"},
+            risks=[],
+        )
+        analyst = MaintenanceAnalyst(merkle=merkle, hub=hub)
+        assert analyst.analyze(
+            _candidate(name="ai.agenttrust/mcp-server", version="1.1.1")
+        ) is None
+
+    def test_version_v_prefix_tolerated_but_mismatch_dropped(self, merkle) -> None:
+        hub = FakeHub(
+            summary={"name": "agenttrust", "version": "v2.0.0",
+                     "maintainer": "x", "purpose": "y"},
+            risks=[],
+        )
+        analyst = MaintenanceAnalyst(merkle=merkle, hub=hub)
+        assert analyst.analyze(
+            _candidate(name="ai.agenttrust/mcp-server", version="1.1.1")
+        ) is None
+
+
 class TestDualLLMSeparation:
     def test_both_roles_invoked(self, merkle) -> None:
         hub = FakeHub(
