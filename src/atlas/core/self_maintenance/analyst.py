@@ -19,6 +19,7 @@ decide código determinista.
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from typing import Any
 
@@ -115,18 +116,35 @@ class MaintenanceAnalyst:
         """Una fuente corrobora si es autoritativa y su resumen tipado coincide
         con la afirmación clave del candidato (nombre + versión). Los foros
         (community) nunca corroboran: aportan señal, no autoridad."""
-        want_name = candidate.name.strip().lower()
-        want_version = candidate.version.strip().lower()
         evidence: list[Evidence] = []
         for src, summary in summaries:
             ok = (
                 src.is_authoritative
                 and summary is not None
-                and summary.name.strip().lower() == want_name
-                and summary.version.strip().lower() == want_version
+                and self._name_matches(summary.name, candidate.name)
+                and self._version_matches(summary.version, candidate.version)
             )
             evidence.append(Evidence(url=src.url, provenance=src.provenance, corroborates=ok))
         return evidence
+
+    @staticmethod
+    def _version_matches(claimed: str, canonical: str) -> bool:
+        """Igualdad de versión tolerante al prefijo ``v`` (``v1.1.1`` == ``1.1.1``)."""
+        return claimed.strip().lower().lstrip("v") == canonical.strip().lower().lstrip("v")
+
+    @staticmethod
+    def _name_matches(claimed: str, canonical: str) -> bool:
+        """El nombre del resumen (prosa) debe ser subconjunto del canónico.
+
+        Calibrado con el primer tick real (2026-06-11): el registro publica ids
+        reverse-DNS (``ai.agenttrust/mcp-server``) y la prosa dice "AgentTrust
+        MCP server" — la igualdad literal nunca corrobora. Subconjunto de tokens
+        mantiene el fail-closed: TODOS los tokens que la prosa afirma deben
+        existir en el id canónico, así una prosa hostil que afirme OTRO artefacto
+        no corrobora. Vacío no corrobora."""
+        tok = lambda s: set(re.findall(r"[a-z0-9]+", s.lower()))  # noqa: E731
+        claimed_tokens = tok(claimed)
+        return bool(claimed_tokens) and claimed_tokens <= tok(canonical)
 
     # ------------------------------------------------------------------
     # control-LLM: campos tipados → riesgos (nunca ve prosa)
