@@ -54,7 +54,38 @@ _PYPI_SERVER = {
 }
 
 
+# Forma real del registro oficial (schema 2025-12-11): cada item envuelve el
+# server en {"server": {...}, "_meta": {...}} y los packages llevan
+# registryType/identifier. Capturado en vivo el 2026-06-11 (el parser anterior
+# devolvía 0 candidatos contra producción).
+_OFFICIAL_WRAPPED = {
+    "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "com.example/adeu",
+        "description": "Demo server",
+        "version": "1.5.2",
+        "packages": [
+            {
+                "registryType": "pypi",
+                "identifier": "adeu",
+                "version": "1.5.2",
+                "transport": {"type": "stdio"},
+            }
+        ],
+    },
+    "_meta": {"io.modelcontextprotocol.registry/official": {"status": "active"}},
+}
+
+
 class TestDiscover:
+    def test_parses_official_wrapped_schema(self, merkle) -> None:
+        body = _registry_body([_OFFICIAL_WRAPPED])
+        scout = RegistryScout(merkle=merkle, bridge=SSRFBridge(), fetch=lambda u: body)
+        cands = scout.discover()
+        assert [c.name for c in cands] == ["com.example/adeu"]
+        assert cands[0].version == "1.5.2"
+        assert cands[0].cmd == ["uvx", "adeu"]
+
     def test_parses_npm_and_pypi(self, merkle) -> None:
         body = _registry_body([_NPM_SERVER, _PYPI_SERVER])
         scout = RegistryScout(merkle=merkle, bridge=SSRFBridge(), fetch=lambda u: body)

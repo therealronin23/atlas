@@ -101,7 +101,15 @@ class RegistryScout:
             raw = data.get("servers") or data.get("data") or []
         else:
             raw = []
-        return [e for e in raw if isinstance(e, dict)]
+        entries: list[dict[str, Any]] = []
+        for e in raw:
+            if not isinstance(e, dict):
+                continue
+            # Registro oficial (schema 2025-12-11): cada item envuelve el server
+            # en {"server": {...}, "_meta": {...}}. Se desenvuelve si está.
+            inner = e.get("server")
+            entries.append(inner if isinstance(inner, dict) else e)
+        return entries
 
     def _parse_entry(self, entry: dict[str, Any]) -> McpCandidate | None:
         """Convierte una entrada del registro en candidato. ``None`` si inservible."""
@@ -151,8 +159,13 @@ class RegistryScout:
         for pkg in packages:
             if not isinstance(pkg, dict):
                 continue
-            registry = str(pkg.get("registry_name") or pkg.get("registry") or "").lower()
-            pkg_name = str(pkg.get("name") or "").strip()
+            registry = str(
+                pkg.get("registry_name")
+                or pkg.get("registry")
+                or pkg.get("registryType")  # schema 2025-12-11 del registro oficial
+                or ""
+            ).lower()
+            pkg_name = str(pkg.get("name") or pkg.get("identifier") or "").strip()
             if not pkg_name:
                 continue
             if registry in ("npm", "npmjs"):

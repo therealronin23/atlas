@@ -39,10 +39,25 @@ _MODE_OVERRIDES = (
     "ATLAS_SLM_CLASSIFIER_MODE",
 )
 
+# Autonomía (ADR-039/040): el .env de producción trae ATLAS_DECIDER=autonomous
+# y el cron activo — y `import litellm` hace load_dotenv() del CWD, así que esas
+# claves se cuelan en os.environ de pytest. Los tests asumen HumanDecider
+# (paridad HITL) salvo que cada test fije lo contrario.
+_AUTONOMY_ENV_KEYS = (
+    "ATLAS_DECIDER",
+    "ATLAS_MAINTENANCE_SCHEDULER",
+    "ATLAS_MAINTENANCE_POLL_S",
+)
+
 
 @pytest.fixture(autouse=True)
 def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in (*_EXTERNAL_API_KEYS, *_HERMES_ENV_KEYS, *_MODE_OVERRIDES):
+    for key in (
+        *_EXTERNAL_API_KEYS,
+        *_HERMES_ENV_KEYS,
+        *_MODE_OVERRIDES,
+        *_AUTONOMY_ENV_KEYS,
+    ):
         monkeypatch.delenv(key, raising=False)
     # Pending approvals HMAC (tests; no secretos reales)
     monkeypatch.setenv("ATLAS_PENDING_HMAC_KEY", "test-pending-hmac-key")
