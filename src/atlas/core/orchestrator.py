@@ -1770,7 +1770,34 @@ class Orchestrator:
     def _stringify_tool_result(self, result: Any) -> str:
         return _ah.stringify_tool_result(result)
 
+    def _hermes_local_takeover(self) -> bool:
+        """Hermes pausado → el portátil absorbe la carga (ATLAS_HERMES_LOCAL=1).
+
+        Con el VPS dado de baja, las tareas DELEGATE_HERMES se pudrían en la
+        OfflineQueue (nadie la consume). Con el flag activo y el adapter en
+        mock, la delegación se convierte en ejecución local. Solo aplica al
+        mock: si hay un Hermes REST real configurado, se delega normal."""
+        if os.environ.get("ATLAS_HERMES_LOCAL", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return False
+        return isinstance(self._hermes, HermesMockAdapter)
+
     def _delegate_to_hermes(self, task: Task) -> None:
+        if self._hermes_local_takeover():
+            self._merkle.log(
+                action="hermes.local_takeover",
+                agent="orchestrator",
+                result="rerouted",
+                risk_level="safe",
+                payload={"intent": task.intent[:200]},
+                task_id=task.id,
+            )
+            task.transition(TaskStatus.EXECUTING)
+            self._execute_task(task)
+            return
         payload = DelegationBuilder.build(
             task_id=task.id,
             intent=task.intent,
