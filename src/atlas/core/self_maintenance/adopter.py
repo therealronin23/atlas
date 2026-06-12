@@ -36,6 +36,12 @@ class MaintenanceAdopter:
 
     AGENT = "self_maintenance.adopter"
 
+    # El primer arranque de un server recién descubierto descarga su paquete
+    # (npx baja de npm, uvx de PyPI) antes de responder al handshake. El budget
+    # por defecto (15s) lo agota; este es más holgado SOLO para la adopción
+    # autónoma (primer contacto), no para los servers ya configurados.
+    _FIRST_LAUNCH_TIMEOUT_S = 90.0
+
     def __init__(
         self,
         *,
@@ -50,7 +56,11 @@ class MaintenanceAdopter:
         del seam (``ok:`` / ``requiere aprobación humana`` / ``denegado:`` /
         ``error:``). No lanza: el veredicto del decisor es un resultado, no un
         fallo."""
-        cfg = McpServerConfig(name=proposal.capability, cmd=list(proposal.cmd))
+        cfg = McpServerConfig(
+            name=proposal.capability,
+            cmd=list(proposal.cmd),
+            timeout_seconds=self._FIRST_LAUNCH_TIMEOUT_S,
+        )
         task = Task(
             intent=f"adopta el server MCP {proposal.capability} v{proposal.version}",
             source=TaskSource.INTERNAL,
