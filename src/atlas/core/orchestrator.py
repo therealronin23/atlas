@@ -729,14 +729,30 @@ class Orchestrator:
         a ColdUpdate con ``origin="self_audit"``. Coherente con ADR-025: la
         generación es libre, la aplicación nunca es autónoma."""
         if self._maintenance_codegen_proposer is None:
-            from atlas.core.inference_hub import (
-                InferenceHub,
-                InferenceLevel,
-                InferenceRequest,
-            )
+            from atlas.core.inference_hub import InferenceHub, InferenceLevel
             from atlas.core.self_maintenance import CodegenProposer, CodegenTarget
+            from atlas.core.verify import ArtifactKind, UnifiedDiffVerifier, UniversalVerifier
+            from atlas.router.cascade import CascadeRouter, Difficulty, InferenceProducer, TaskSpec
 
             hub = self._inference_hub or InferenceHub(mode="auto")
+            # Capa 2 (ADR-042): L0 local primero, escalada a L1 si el diff no
+            # verifica. FRONTIER queda preparado: cuando exista un provider L2
+            # es añadir un rung aquí. El path conversacional (CLAIM) NO se
+            # cablea: sin verificador más barato que el modelo, la cascada
+            # solo diría UNKNOWN — sería teatro de verificación.
+            cascade = CascadeRouter(
+                UniversalVerifier([UnifiedDiffVerifier()]),
+                [
+                    InferenceProducer(
+                        hub, level=InferenceLevel.L0,
+                        capability=Difficulty.HARD, temperature=0.0,
+                    ),
+                    InferenceProducer(
+                        hub, level=InferenceLevel.L1,
+                        capability=Difficulty.HARD, temperature=0.0,
+                    ),
+                ],
+            )
 
             def _generate(target: CodegenTarget) -> str:
                 prompt = (
@@ -744,14 +760,26 @@ class Orchestrator:
                     f"tocando únicamente el fichero {target.path}. No expliques.\n\n"
                     f"Objetivo: {target.goal}\n"
                 )
-                resp = hub.infer(InferenceRequest(
-                    prompt=prompt,
-                    level=InferenceLevel.L0,
-                    temperature=0.0,
-                    context=target.context,
-                    task_id="codegen.patch",
+                result = cascade.route(TaskSpec(
+                    intent=prompt,
+                    kind=ArtifactKind.PATCH,
+                    metadata={
+                        "context": target.context,
+                        "task_id": "codegen.patch",
+                        "allowed_paths": [target.path],
+                    },
                 ))
-                return resp.text if resp.success else ""
+                self._merkle.log(
+                    action="cascade.route",
+                    agent="codegen_cascade",
+                    result="success" if result.verified else "failure",
+                    risk_level="safe",
+                    payload=result.to_dict(),
+                    task_id="codegen.patch",
+                )
+                if not (result.verified and result.artifact is not None):
+                    return ""
+                return str(result.artifact.payload.get("diff", ""))
 
             self._maintenance_codegen_proposer = CodegenProposer(
                 merkle=self._merkle,
