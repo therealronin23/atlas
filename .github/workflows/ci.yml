@@ -1,6 +1,6 @@
-# Atlas Core — CI mínimo
-# test-and-types: suite core sin Playwright (517+ tests).
-# browser-optional: continue-on-error — no bloquea merge si falta Chromium.
+# Atlas Core — CI
+# test-and-types: suite core sin Playwright.
+# browser: computer-use/Playwright debe pasar; readiness rota no se mergea.
 # operational_smoke.py es solo on-host (requiere HERMES_* reales); no corre en CI.
 
 name: CI
@@ -39,9 +39,8 @@ jobs:
           MYPYPATH: src
         run: python -m mypy src/atlas/
 
-  browser-optional:
+  browser:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
