@@ -50,6 +50,17 @@ class ValidationRunner:
     def run(self, timeout_s: int = 600) -> ValidationReport:
         import time
 
+        # Guard anti-recursión (2026-06-12): un test que filtre validación real
+        # lanza la suite completa DENTRO de la suite → recursión infinita (la
+        # suite hija contiene el test que filtra). Fallar ruidoso convierte una
+        # fuga silenciosa de aislamiento en un error inmediato y localizable.
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            raise RuntimeError(
+                "ValidationRunner.run() invocado desde dentro de pytest: un test "
+                "ha filtrado validación real (suite recursiva). Mockea el runner "
+                "o inyecta un scout/proposer falso."
+            )
+
         start = time.monotonic()
         env = os.environ.copy()
         env["PYTHONPATH"] = str(self._root / "src")
