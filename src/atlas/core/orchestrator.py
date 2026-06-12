@@ -501,6 +501,7 @@ class Orchestrator:
     def self_audit(self) -> Any:
         """Atlas 24h self-audit loop (cold, auditable, no hot self-patch)."""
         if self._self_audit_runner is None:
+            from atlas.core.patch_generator import PatchGenerator
             from atlas.core.self_audit import SelfAuditRunner
 
             root = Path(
@@ -510,6 +511,7 @@ class Orchestrator:
                 root,
                 self._merkle,
                 health_provider=self.health_report,
+                patch_generator=PatchGenerator(root),
             )
         return self._self_audit_runner
 
@@ -626,11 +628,25 @@ class Orchestrator:
                 for proposal in proposals:
                     adopter.adopt(proposal)
 
+            def _dep_cycle() -> None:
+                # Rama de auto-actualización de deps: descubre bumps PyPI →
+                # materializa patch en ColdUpdate → lo avanza por el seam del
+                # decisor. Bajo HumanDecider queda 'validated' esperando el CLI;
+                # bajo autónomo, los bumps de bajo riesgo se aplican validados y
+                # reversibles (undo COLD_PATCH). El alto riesgo se escala/deniega.
+                scout = self.maintenance_dep_scout()
+                proposer = self.maintenance_dep_proposer()
+                for cand in scout.discover() or []:
+                    proposal = proposer.propose_bump(cand)
+                    if proposal is not None:
+                        self.advance_cold_update(proposal.id)
+
             self._maintenance_scheduler = MaintenanceScheduler(
                 merkle=self._merkle,
                 discover=self.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
+                extra_cycles=(_dep_cycle,),
             )
         return self._maintenance_scheduler
 
