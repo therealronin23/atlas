@@ -150,6 +150,55 @@ class TestNotifyRoutesToAdopter:
         assert adopted == []
 
 
+class TestDepCycleWiring:
+    def test_dep_cycle_chains_scout_proposer_advance(self, orch: Orchestrator) -> None:
+        """El extra-cycle de deps encadena discover → propose_bump →
+        advance_cold_update por cada candidato."""
+        from types import SimpleNamespace
+
+        advanced: list[str] = []
+
+        # Fakes inyectados en los accessors (cero red/git real).
+        cand = SimpleNamespace(name="uvicorn")
+        orch._maintenance_dep_scout = SimpleNamespace(  # type: ignore[assignment]
+            discover=lambda: [cand]
+        )
+        orch._maintenance_dep_proposer = SimpleNamespace(  # type: ignore[assignment]
+            propose_bump=lambda c: SimpleNamespace(id="cu-uvicorn")
+        )
+        orch.advance_cold_update = lambda pid: advanced.append(pid) or "applied"  # type: ignore[assignment, method-assign]
+
+        # Adopter falso para que la pasada MCP no haga nada real.
+        orch._maintenance_adopter = SimpleNamespace(  # type: ignore[assignment]
+            adopt=lambda p: "ok:"
+        )
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []  # sin candidatos MCP
+        scheduler.tick()
+
+        assert advanced == ["cu-uvicorn"]
+
+    def test_dep_cycle_skips_when_no_proposal(self, orch: Orchestrator) -> None:
+        from types import SimpleNamespace
+
+        advanced: list[str] = []
+        orch._maintenance_dep_scout = SimpleNamespace(  # type: ignore[assignment]
+            discover=lambda: [SimpleNamespace(name="x")]
+        )
+        orch._maintenance_dep_proposer = SimpleNamespace(  # type: ignore[assignment]
+            propose_bump=lambda c: None  # no_target / sin bump
+        )
+        orch.advance_cold_update = lambda pid: advanced.append(pid)  # type: ignore[assignment, method-assign]
+        orch._maintenance_adopter = SimpleNamespace(adopt=lambda p: "ok:")  # type: ignore[assignment]
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        scheduler.tick()
+
+        assert advanced == []
+
+
 # ---------------------------------------------------------------------------
 # Tests del arranque del scheduler en el service runner
 # ---------------------------------------------------------------------------

@@ -107,6 +107,41 @@ class TestTick:
         assert [p.capability for p in sched.tick()] == ["good"]
 
 
+class TestExtraCycles:
+    def test_extra_cycles_run_after_mcp_pass(self, merkle) -> None:
+        order: list[str] = []
+        sched = MaintenanceScheduler(
+            merkle=merkle,
+            discover=lambda: order.append("discover") or [],
+            analyze=lambda c: None,
+            notify=lambda p: None,
+            extra_cycles=(
+                lambda: order.append("cycle-a"),
+                lambda: order.append("cycle-b"),
+            ),
+        )
+        sched.tick()
+        assert order == ["discover", "cycle-a", "cycle-b"]
+
+    def test_failing_cycle_does_not_break_others_or_tick(self, merkle) -> None:
+        ran: list[str] = []
+
+        def _boom() -> None:
+            raise RuntimeError("dep cycle caído")
+
+        sched = MaintenanceScheduler(
+            merkle=merkle,
+            discover=lambda: [_candidate("good")],
+            analyze=lambda c: _proposal(c.name),
+            notify=lambda p: None,
+            extra_cycles=(_boom, lambda: ran.append("b")),
+        )
+        # El tick devuelve sus propuestas MCP aunque un extra-cycle reviente,
+        # y los ciclos siguientes corren igual.
+        assert [p.capability for p in sched.tick()] == ["good"]
+        assert ran == ["b"]
+
+
 class TestNeverApplies:
     def test_tick_only_discovers_analyzes_notifies(self, merkle) -> None:
         # Los únicos colaboradores que el scheduler puede tocar son los tres

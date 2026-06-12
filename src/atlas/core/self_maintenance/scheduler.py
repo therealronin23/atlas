@@ -44,12 +44,17 @@ class MaintenanceScheduler:
         analyze: Callable[[McpCandidate], McpProposal | None],
         notify: Callable[[list[McpProposal]], None],
         poll_interval_seconds: int = _DEFAULT_INTERVAL_SECONDS,
+        extra_cycles: tuple[Callable[[], None], ...] = (),
     ) -> None:
         self._merkle = merkle
         self._discover = discover
         self._analyze = analyze
         self._notify = notify
         self._poll_interval = poll_interval_seconds
+        # Ciclos adicionales que el cron corre tras la pasada MCP (p.ej. bumps de
+        # deps → ColdUpdate). Genéricos: el scheduler los invoca, no sabe qué
+        # hacen. Cada uno es aislado (un fallo no rompe los demás ni el tick).
+        self._extra_cycles = tuple(extra_cycles)
         self._running = False
         self._thread: threading.Thread | None = None
 
@@ -91,6 +96,15 @@ class MaintenanceScheduler:
                 pass
 
         self._audit(len(candidates), proposals)
+
+        # Ciclos adicionales (deps/codegen): aislados, posteriores a la pasada
+        # MCP. Cada uno gobierna su propia adopción tras el seam del decisor.
+        for cycle in self._extra_cycles:
+            try:
+                cycle()
+            except Exception:  # noqa: BLE001 — un ciclo caído no rompe los demás
+                pass
+
         return proposals
 
     def _audit(self, candidate_count: int, proposals: list[McpProposal]) -> None:
