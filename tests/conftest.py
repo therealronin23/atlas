@@ -63,6 +63,25 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ATLAS_PENDING_HMAC_KEY", "test-pending-hmac-key")
 
 
+@pytest.fixture(autouse=True)
+def _no_real_dep_scout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """El _dep_cycle del scheduler consulta PyPI y dispara ValidationRunner
+    (pytest+mypy reales) cuando hay bump disponible. En tests eso es red real
+    + suite recursiva (cuelgue 2026-06-12). Scout nulo por defecto; cada test
+    inyecta su fake vía ``orch._maintenance_dep_scout`` si ejercita el ciclo.
+    test_dep_scout.py construye DepScout directamente y no pasa por aquí."""
+    from types import SimpleNamespace
+
+    from atlas.core.orchestrator import Orchestrator
+
+    def _stub(self: Orchestrator) -> object:
+        if self._maintenance_dep_scout is None:
+            self._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])
+        return self._maintenance_dep_scout
+
+    monkeypatch.setattr(Orchestrator, "maintenance_dep_scout", _stub)
+
+
 # Note: tried adding a singleton-reset autouse fixture (GovernanceL0._instance
 # = None at setup or teardown) to fix the 2-4 non-deterministic test_pending /
 # test_pipeline_d failures from test pollution. Both setup-only AND
