@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import tempfile
+from types import SimpleNamespace
 
 from click.testing import CliRunner
 
@@ -33,9 +35,15 @@ class _FakeSelfAudit:
 class _FakeOrchestrator:
     def __init__(self) -> None:
         self.runner = _FakeSelfAudit()
+        # Workspace temporal: el single-writer guard (ROADMAP §7) toma flock
+        # sobre <workspace>/memory/audit/.writer.lock antes de correr.
+        self._workspace = tempfile.mkdtemp(prefix="atlas-cli-test-")
 
     def self_audit(self):
         return self.runner
+
+    def status(self):
+        return SimpleNamespace(workspace=self._workspace)
 
 
 def test_self_audit_run_cli(monkeypatch) -> None:
@@ -51,6 +59,26 @@ def test_self_audit_run_cli(monkeypatch) -> None:
     payload = json.loads(result.output)
     assert payload["status"] == "completed"
     assert payload["kwargs"]["dry_run"] is True
+
+
+def test_self_audit_run_refused_when_writer_active(monkeypatch) -> None:
+    """Single-writer guard: con otro escritor sobre el mismo workspace, el
+    comando falla con exit 1 e identifica al holder en vez de arrancar."""
+    from pathlib import Path
+
+    from atlas.security.writer_lock import MerkleWriterLock
+
+    fake = _FakeOrchestrator()
+    monkeypatch.setattr(cli_mod, "get_orchestrator", lambda: fake)
+
+    with MerkleWriterLock(Path(fake._workspace)):
+        result = CliRunner().invoke(
+            cli_mod.cli,
+            ["self-audit", "run", "--hours", "1", "--max-cycles", "1", "--dry-run"],
+        )
+
+    assert result.exit_code == 1
+    assert "otro escritor activo" in result.output
 
 
 def test_self_audit_inspection_commands(monkeypatch) -> None:
