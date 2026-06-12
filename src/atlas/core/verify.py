@@ -40,7 +40,8 @@ class CostTier(IntEnum):
     SHAPE = 2
     SANDBOX = 3
     SUITE = 4
-    MODEL = 5
+    MODEL = 5      # modelos pequeños/gratis (L0/L1)
+    FRONTIER = 6   # API frontier de pago (L2) — capa 2
 
 
 class Verdict(str, Enum):
