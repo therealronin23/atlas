@@ -43,6 +43,18 @@ def test_default_rlimits_honors_overrides() -> None:
     assert rlimits[resource.RLIMIT_NOFILE] == (7, 7)
 
 
+def test_nproc_none_omits_the_cap() -> None:
+    # nproc=None omite RLIMIT_NPROC (servers MCP legítimos multihilo); el resto
+    # del hardening permanece. RLIMIT_NPROC es por-usuario y un cap absoluto
+    # mataría node/uv en un host con miles de hilos vivos.
+    rlimits = dict(ph.default_rlimits(nproc=None))
+    if hasattr(resource, "RLIMIT_NPROC"):
+        assert resource.RLIMIT_NPROC not in rlimits
+    # El resto del hardening sigue presente.
+    assert resource.RLIMIT_AS in rlimits
+    assert resource.RLIMIT_NOFILE in rlimits
+
+
 @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="prctl es Linux")
 def test_set_no_new_privs_in_subprocess() -> None:
     """Aplicado en un subproceso aparte para no marcar irreversiblemente el
@@ -117,3 +129,40 @@ def test_sandbox_runs_in_new_session(sandbox: LayeredIsolationSandbox) -> None:
     result = sandbox._execute_normal(code, None)
     assert result.success is True, result.stderr
     assert "LEADER" in result.stdout
+
+
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="prctl/setsid son Linux/POSIX")
+def test_sandbox_command_path_sets_no_new_privs_and_new_session(
+    sandbox: LayeredIsolationSandbox,
+) -> None:
+    """execute_command() is the path used by AtlasExecutor for allowlisted
+    commands; it must get the same child hardening as generated Python code."""
+    code = (
+        "import ctypes, os\n"
+        "libc = ctypes.CDLL('libc.so.6', use_errno=True)\n"
+        "PR_GET_NO_NEW_PRIVS = 39\n"
+        "nnp = libc.prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0)\n"
+        "leader = os.getpid() == os.getsid(0)\n"
+        "print(f'nnp={nnp} leader={leader}')\n"
+    )
+    result = sandbox.execute_command(["python3", "-c", code])
+    assert result.success is True, result.stderr
+    assert "nnp=1" in result.stdout
+    assert "leader=True" in result.stdout
+
+
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="rlimits POSIX")
+def test_sandbox_command_path_enforces_fsize_limit(
+    sandbox: LayeredIsolationSandbox,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The structured command path must not be able to fill the disk."""
+    monkeypatch.setattr(sandbox, "FSIZE_LIMIT_NORMAL_BYTES", 1024 * 1024, raising=False)
+    code = (
+        "with open('big-command.bin','wb') as f:\n"
+        "    f.write(b'x' * (8 * 1024 * 1024))\n"
+        "print('SHOULD_NOT_REACH')\n"
+    )
+    result = sandbox.execute_command(["python3", "-c", code])
+    assert result.success is False
+    assert "SHOULD_NOT_REACH" not in result.stdout
