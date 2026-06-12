@@ -488,6 +488,114 @@ def health() -> None:
 
 
 @cli.command()
+@click.option("--run-checks", is_flag=True, help="Ejecuta pytest core + mypy para evidencia viva.")
+@click.option("--include-browser", is_flag=True, help="Con --run-checks, incluye tests computer_use.")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+@click.option("--strict", is_flag=True, help="Exit 1 si hay fallos de readiness estricta.")
+def reality(run_checks: bool, include_browser: bool, as_json: bool, strict: bool) -> None:
+    """Fuente factual: estado verificable, unknown/degraded si no hay evidencia."""
+    from atlas.core.reality import collect_reality  # noqa: PLC0415
+
+    report = collect_reality(
+        run_checks=run_checks,
+        include_browser=include_browser,
+    )
+    if as_json:
+        console.print_json(json.dumps(report, ensure_ascii=False, default=str))
+        if strict and report.get("strict_failures"):
+            raise click.exceptions.Exit(1)
+        return
+
+    color = "green" if report["status"] == "ok" else "yellow"
+    console.print(f"\n[bold {color}]Atlas reality — {report['status'].upper()}[/bold {color}]\n")
+    console.print(f"  Version:       {report['repo']['version']}")
+    console.print(f"  Commit:        {report['repo']['commit']} ({report['repo']['branch']})")
+    console.print(f"  Dirty:         {report['repo']['dirty']} ({report['repo']['dirty_count']})")
+    console.print(f"  Source files:  {report['runtime']['source_file_count']}")
+    console.print(f"  Test files:    {report['runtime']['test_file_count']}")
+    console.print(f"  Merkle:        {report['workspace']['merkle']['status']}")
+    console.print(f"  Browser:       {report['browser']['status']} — {report['browser']['reason']}")
+    console.print(f"  Hermes:        {report['hermes']['mode']} — {report['hermes']['reason']}")
+    console.print(f"  LLM:           {report['llm']['status']} — {report['llm']['reason']}")
+    console.print(f"  Decider:       {report['autonomy']['decider']}")
+    console.print(f"  Docs:          {report['docs']['status']} — {report['docs']['reason']}")
+    if report["checks"]:
+        table = Table(title="Live checks", show_header=True)
+        table.add_column("Check", style="cyan")
+        table.add_column("Exit", justify="right")
+        table.add_column("Summary")
+        for name, check in report["checks"].items():
+            table.add_row(name, str(check["exit_code"]), check["summary"])
+        console.print(table)
+    if report.get("strict_failures"):
+        console.print(f"[yellow]Strict failures:[/yellow] {', '.join(report['strict_failures'])}")
+    if strict and report.get("strict_failures"):
+        raise click.exceptions.Exit(1)
+
+
+@cli.command("capabilities")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+def capabilities(as_json: bool) -> None:
+    """Plano de capacidades: readiness, confianza, mutación, reversibilidad."""
+    from atlas.core.reality import collect_reality  # noqa: PLC0415
+
+    caps = collect_reality()["capabilities"]
+    if as_json:
+        console.print_json(json.dumps(caps, ensure_ascii=False, default=str))
+        return
+
+    table = Table(title="Atlas capabilities", show_header=True)
+    table.add_column("Capability", style="cyan")
+    table.add_column("Status")
+    table.add_column("Trusted")
+    table.add_column("Mutating")
+    table.add_column("Reversible")
+    table.add_column("Evidence")
+    for cap in caps:
+        table.add_row(
+            str(cap["name"]),
+            str(cap["status"]),
+            str(cap["trusted"]),
+            str(cap["mutating"]),
+            str(cap["reversible"]),
+            str(cap["evidence"]),
+        )
+    console.print(table)
+
+
+@cli.command("security-audit")
+@click.argument("path", type=click.Path(exists=True, path_type=Path))
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
+def security_audit(path: Path, as_json: bool) -> None:
+    """Auditoría estática defensiva Python (CWE-tagged, read-only)."""
+    from atlas.security.static_audit import audit_path  # noqa: PLC0415
+
+    findings = audit_path(path)
+    payload = [f.to_dict() for f in findings]
+    if as_json:
+        console.print_json(json.dumps(payload, ensure_ascii=False, default=str))
+        return
+    if not findings:
+        console.print("[green]Sin hallazgos estáticos.[/green]")
+        return
+    table = Table(title=f"Security audit: {path}", show_header=True)
+    table.add_column("Severity")
+    table.add_column("CWE")
+    table.add_column("Rule")
+    table.add_column("Location")
+    table.add_column("Message")
+    for finding in findings:
+        table.add_row(
+            finding.severity,
+            finding.cwe,
+            finding.rule,
+            f"{finding.path}:{finding.line}",
+            finding.message,
+        )
+    console.print(table)
+
+
+@cli.command()
 @click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
 def doctor(as_json: bool) -> None:
     """Diagnóstico operativo unificado: governance, Merkle, workspace, twin Hermes."""

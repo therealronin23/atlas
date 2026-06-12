@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -91,6 +92,45 @@ def test_stdio_transport_times_out_on_silent_server() -> None:
             t.request("initialize", {})
     finally:
         t.close()
+
+
+def test_stdio_transport_starts_server_in_hardened_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class _FakePipe:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    class _FakeProc:
+        pid = 4242
+        stdin = _FakePipe()
+        stdout = _FakePipe()
+        stderr = _FakePipe()
+
+        def terminate(self) -> None:
+            pass
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+        def kill(self) -> None:
+            pass
+
+    def _fake_popen(*args: Any, **kwargs: Any) -> _FakeProc:
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return _FakeProc()
+
+    monkeypatch.setattr("atlas.mcp.transport.subprocess.Popen", _fake_popen)
+    t = StdioTransport(cmd=["fake-mcp"])
+    t.start()
+
+    assert captured["kwargs"]["start_new_session"] is True
+    assert callable(captured["kwargs"]["preexec_fn"])
 
 
 # ===========================================================================

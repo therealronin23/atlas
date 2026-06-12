@@ -136,29 +136,39 @@ class BrowserTool:
                 "python -m playwright install chromium"
             ) from None
 
-        self._playwright = sync_playwright().start()
-        self._browser = self._playwright.chromium.launch(
-            headless=self._headless,
-        )
-        context_kwargs: dict[str, Any] = {
-            "viewport": {"width": 1280, "height": 720},
-            "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AtlasCore/0.4",
-        }
-        if self._storage_state_file.exists():
-            context_kwargs["storage_state"] = str(self._storage_state_file)
-        self._context = self._browser.new_context(**context_kwargs)
-        self._page = self._context.new_page()
-        self._launched = True
-        self._log(
-            "browser.launch",
-            "ok",
-            payload={
-                "headless": self._headless,
-                "workspace": str(self._workspace),
-                "storage_state": str(self._storage_state_file),
-                "storage_loaded": self._storage_state_file.exists(),
-            },
-        )
+        try:
+            self._playwright = sync_playwright().start()
+            self._browser = self._playwright.chromium.launch(
+                headless=self._headless,
+            )
+            context_kwargs: dict[str, Any] = {
+                "viewport": {"width": 1280, "height": 720},
+                "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AtlasCore/0.4",
+            }
+            if self._storage_state_file.exists():
+                context_kwargs["storage_state"] = str(self._storage_state_file)
+            self._context = self._browser.new_context(**context_kwargs)
+            self._page = self._context.new_page()
+            self._launched = True
+            self._log(
+                "browser.launch",
+                "ok",
+                payload={
+                    "headless": self._headless,
+                    "workspace": str(self._workspace),
+                    "storage_state": str(self._storage_state_file),
+                    "storage_loaded": self._storage_state_file.exists(),
+                },
+            )
+        except Exception as exc:
+            self._cleanup_partial_launch()
+            self._log(
+                "browser.launch",
+                "failed",
+                risk_level="moderate",
+                payload={"error": str(exc)[:500]},
+            )
+            raise
 
     def close(self) -> None:
         """Cierra el navegador y libera recursos."""
@@ -187,6 +197,26 @@ class BrowserTool:
                 "storage_state": str(self._storage_state_file),
                 "storage_saved": self._storage_state_file.exists(),
             })
+
+    def _cleanup_partial_launch(self) -> None:
+        """Release Playwright handles after a failed launch attempt."""
+        for obj, method in (
+            (self._page, "close"),
+            (self._context, "close"),
+            (self._browser, "close"),
+            (self._playwright, "stop"),
+        ):
+            if obj is None:
+                continue
+            try:
+                getattr(obj, method)()
+            except Exception:
+                pass
+        self._launched = False
+        self._page = None
+        self._context = None
+        self._browser = None
+        self._playwright = None
 
     # ------------------------------------------------------------------
     # Acciones

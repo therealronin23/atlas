@@ -143,6 +143,39 @@ def merkle(tmp_path: Path) -> MerkleLogger:
 
 class TestBrowserLifecycle:
 
+    def test_failed_launch_cleans_partial_playwright_state(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A failed Chromium launch must not poison later Playwright starts."""
+        stopped: list[bool] = []
+
+        class _Chromium:
+            def launch(self, **_: Any) -> Any:
+                raise RuntimeError("missing chromium")
+
+        class _Playwright:
+            chromium = _Chromium()
+
+            def stop(self) -> None:
+                stopped.append(True)
+
+        class _Starter:
+            def start(self) -> _Playwright:
+                return _Playwright()
+
+        import playwright.sync_api as sync_api
+
+        monkeypatch.setattr(sync_api, "sync_playwright", lambda: _Starter())
+        bt = BrowserTool(workspace=tmp_path, headless=True)
+        with pytest.raises(RuntimeError, match="missing chromium"):
+            bt.launch()
+
+        assert stopped == [True]
+        assert bt.is_launched is False
+        assert bt.current_url == ""
+
     def test_launch_and_close(self, tmp_path: Path) -> None:
         """Lanzar y cerrar el browser no debe lanzar excepciones."""
         bt = BrowserTool(workspace=tmp_path, headless=True)

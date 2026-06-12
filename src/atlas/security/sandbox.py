@@ -111,6 +111,15 @@ class LayeredIsolationSandbox:
         wall = self._effective_timeout(timeout_s)
         cwd = working_dir or self._workspace
         start = time.perf_counter()
+
+        def _set_limits() -> None:
+            """ADR-034: same child hardening for structured commands."""
+            apply_in_child(
+                ram_bytes=self.RAM_LIMIT_ALFA_BYTES,
+                cpu_seconds=self.CPU_TIME_LIMIT_ALFA_S,
+                fsize_bytes=self.FSIZE_LIMIT_NORMAL_BYTES,
+            )
+
         try:
             result = subprocess.run(
                 command,
@@ -118,6 +127,8 @@ class LayeredIsolationSandbox:
                 capture_output=True,
                 text=True,
                 timeout=wall,
+                preexec_fn=_set_limits,
+                start_new_session=True,
                 env=self._safe_env(),
             )
             duration_ms = int((time.perf_counter() - start) * 1000)
