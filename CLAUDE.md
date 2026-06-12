@@ -1,13 +1,12 @@
 # ATLAS CORE — Context for Claude Code
 
-> **Este archivo es un alias de AGENTS.md.**
->
-> AGENTS.md es la fuente de verdad única para todo el contexto del proyecto.
-> Léelo en su lugar para obtener la información más actualizada:
-> estado de Gates, ADRs, naming rules, coding rules, test counts, etc.
->
-> https://github.com/therealronin23/atlas/blob/main/AGENTS.md
->
-> Si estás en una sesión local: `cat AGENTS.md`
->
-> Última sincronización: 2026-05-31 (v0.12.0, 753 tests, ADR-035 MCP + ADR-037 muralla)
+This file is only an alias.
+
+Read `AGENTS.md` first. For live facts, run:
+
+```bash
+atlas reality --json
+```
+
+Do not copy operational counts, live-service claims, or test results from this
+file. They are intentionally not duplicated here.

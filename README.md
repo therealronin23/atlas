@@ -33,10 +33,9 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
 - **ADR-025 — ColdUpdateManager**: MVP sellado + SelfAuditLoop. Worktree
   aislado, `atlas update propose|validate|approve|apply`, `atlas self-audit
   run|status|proposals|report|stop`. Ciclos fríos auditables sin hot-patch.
-- **Auditoría completa 2026-05-25**: 564 core tests + 25 computer_use = 589
-  total, mypy clean (62 source files), Hermes-VPS live, Telegram smoked,
-  Prometheus operativo.
-- **Versión actual**: `v0.9.0`
+- **Estado vivo**: no se mantiene a mano en este README. Ejecuta
+  `atlas reality` para versión, git SHA, checks, browser, Hermes, LLM, MCP,
+  Merkle y docs freshness.
 
 ## Quick start
 
@@ -56,6 +55,7 @@ cp .env.example .env
 # Verificar que todo funciona
 PYTHONPATH=src python -m pytest tests/ -q
 MYPYPATH=src python -m mypy src/atlas/
+PYTHONPATH=src atlas reality
 ```
 
 ## Comandos básicos
@@ -74,6 +74,9 @@ atlas audit --verify                      # verificar integridad de la cadena
 atlas tools                               # listar tool registry
 atlas tools --level L1
 atlas health                              # health check del servicio
+atlas reality                            # estado factual, sin claims heredados
+atlas capabilities                       # plano de capacidades y evidencia
+atlas security-audit src/atlas           # auditoría estática defensiva Python
 atlas gate-h                              # validación Gate H
 atlas self-audit run --hours 1 --profile quick  # ciclo de auto-auditoría
 atlas update propose|validate|approve|apply      # cold update workflow

@@ -45,7 +45,13 @@ secrets/
 mcp_servers.json
 
 # Atlas runtime artifacts
+logs/
 *.log
+*.out
 merkle_log*.jsonl
 memory/audit/
 .atlas.*
+docs/reality_latest.json
+docs/reality_after_24h.json
+docs/security_audit_latest.json
+docs/self_audit_latest.json
