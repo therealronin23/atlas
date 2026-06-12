@@ -278,6 +278,7 @@ class InferenceProducer:
         level: Any,  # InferenceLevel; Any evita import circular core<->router
         capability: Difficulty,
         max_tokens: int = 1024,
+        temperature: float = 0.1,
     ) -> None:
         from atlas.core.inference_hub import InferenceLevel
 
@@ -285,6 +286,7 @@ class InferenceProducer:
         self._level = level
         self._capability = capability
         self._max_tokens = max_tokens
+        self._temperature = temperature
         self._cost = (
             CostTier.FRONTIER if level is InferenceLevel.L2 else CostTier.MODEL
         )
@@ -309,6 +311,9 @@ class InferenceProducer:
                 prompt=spec.intent,
                 level=self._level,
                 max_tokens=self._max_tokens,
+                temperature=self._temperature,
+                context=str(spec.metadata.get("context", "")),
+                task_id=str(spec.metadata.get("task_id", "")) or None,
             )
         )
         payload: dict[str, Any] = {"text": response.text}
@@ -318,7 +323,10 @@ class InferenceProducer:
             kind=spec.kind,
             payload=payload,
             producer_cost=self._cost,
+            # spec.metadata se propaga: los verificadores leen del artifact
+            # (p.ej. allowed_paths en UnifiedDiffVerifier).
             metadata={
+                **spec.metadata,
                 "provider": response.provider,
                 "model": response.model,
                 "latency_ms": response.latency_ms,
