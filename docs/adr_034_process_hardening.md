@@ -41,6 +41,8 @@ filtrado de syscalls como punto de extensión documentado.
 | 5 | Tolerancia a fallo | Cada límite y el prctl van en su propio try/except; el preexec **nunca** lanza | Si lanzara, el hijo muere antes del exec. Mejor degradar a "menos hardening" que romper |
 | 6 | seccomp/eBPF | Fuera de alcance; punto de extensión anotado (`apply_in_child` es el hook) | Regla 6 (sin deps nuevas) + no validable en local |
 | 7 | Deps | Ninguna nueva (ctypes, resource, subprocess: stdlib) | Regla 6 |
+| 8 | Perfil para procesos de larga vida (2026-06-12) | `default_rlimits` acepta `ram_bytes/cpu_seconds/nproc = None` para omitir `RLIMIT_AS`/`RLIMIT_CPU`/`RLIMIT_NPROC`; el transport MCP los pasa `None` | Esos tres caps están calibrados para snippets efímeros y son **mortales** para runtimes persistentes multihilo: `AS` limita VIRTUAL (node/V8/Rust reservan gigas), `CPU` es ACUMULADA (un server la agota → SIGKILL), `NPROC` es POR-USUARIO (EAGAIN con miles de hilos vivos). Confirmado contra 3 servers reales en la primera adopción autónoma |
+| 9 | Control compensatorio | `MemoryMax=4G`/`TasksMax=4096` en el unit systemd de atlas-core | El bound de recursos correcto para procesos persistentes es el cgroup del servicio, no un `RLIMIT_*` por-proceso: acota TODO el árbol (incluidos servers MCP adoptados) sin romper runtimes. La seguridad de adopción MCP vive en Sentinel + decisor (qué se adopta), no en el cap de recursos |
 
 ## Compatibilidad
 
