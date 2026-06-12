@@ -136,6 +136,19 @@ class TestMatcherCalibration:
             _candidate(name="ai.agenttrust/mcp-server", version="1.1.1")
         ) is None
 
+    def test_generic_only_prose_name_dropped(self, merkle) -> None:
+        # "MCP server" es subconjunto de casi cualquier id del registro: sin
+        # un token específico del artefacto, no hay afirmación que corroborar.
+        hub = FakeHub(
+            summary={"name": "MCP server", "version": "1.1.1",
+                     "maintainer": "x", "purpose": "y"},
+            risks=[],
+        )
+        analyst = MaintenanceAnalyst(merkle=merkle, hub=hub)
+        assert analyst.analyze(
+            _candidate(name="ai.agenttrust/mcp-server", version="1.1.1")
+        ) is None
+
     def test_empty_summary_name_dropped(self, merkle) -> None:
         hub = FakeHub(
             summary={"name": "", "version": "1.1.1", "maintainer": "x", "purpose": "y"},

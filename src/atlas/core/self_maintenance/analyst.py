@@ -45,6 +45,14 @@ _CONTROL_INSTRUCTION = (
     "array JSON de strings cortos. Responde solo el array."
 )
 
+# Tokens que aparecen en casi cualquier id del registro: no identifican un
+# artefacto y por sí solos no corroboran nada.
+_GENERIC_NAME_TOKENS = frozenset({"mcp", "server", "servers", "tool", "tools", "agent", "client"})
+
+
+def _tokens(text: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", text.lower()))
+
 
 class MaintenanceAnalyst:
     """Digiere candidatos bajo separación datos/control y propone (sin aplicar).
@@ -130,7 +138,7 @@ class MaintenanceAnalyst:
     @staticmethod
     def _version_matches(claimed: str, canonical: str) -> bool:
         """Igualdad de versión tolerante al prefijo ``v`` (``v1.1.1`` == ``1.1.1``)."""
-        return claimed.strip().lower().lstrip("v") == canonical.strip().lower().lstrip("v")
+        return claimed.strip().lower().removeprefix("v") == canonical.strip().lower().removeprefix("v")
 
     @staticmethod
     def _name_matches(claimed: str, canonical: str) -> bool:
@@ -141,10 +149,13 @@ class MaintenanceAnalyst:
         MCP server" — la igualdad literal nunca corrobora. Subconjunto de tokens
         mantiene el fail-closed: TODOS los tokens que la prosa afirma deben
         existir en el id canónico, así una prosa hostil que afirme OTRO artefacto
-        no corrobora. Vacío no corrobora."""
-        tok = lambda s: set(re.findall(r"[a-z0-9]+", s.lower()))  # noqa: E731
-        claimed_tokens = tok(claimed)
-        return bool(claimed_tokens) and claimed_tokens <= tok(canonical)
+        no corrobora. Vacío no corrobora.
+
+        Los tokens genéricos del dominio no cuentan como afirmación: una prosa
+        que solo diga "MCP server" sería subconjunto de casi cualquier id del
+        registro, así que se exige al menos un token específico del artefacto."""
+        claimed_tokens = _tokens(claimed) - _GENERIC_NAME_TOKENS
+        return bool(claimed_tokens) and claimed_tokens <= _tokens(canonical)
 
     # ------------------------------------------------------------------
     # control-LLM: campos tipados → riesgos (nunca ve prosa)
