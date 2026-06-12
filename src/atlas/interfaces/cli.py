@@ -19,6 +19,7 @@ from atlas.core.orchestrator import Orchestrator
 
 if TYPE_CHECKING:
     from atlas.memory.block_memory import BlockMemory
+    from atlas.security.writer_lock import MerkleWriterLock
 
 console = Console()
 _orch: Orchestrator | None = None
@@ -29,6 +30,22 @@ def get_orchestrator() -> Orchestrator:
     if _orch is None:
         _orch = Orchestrator()
     return _orch
+
+
+def _acquire_writer_lock_or_die(orch: Orchestrator) -> "MerkleWriterLock":
+    """Single-writer guard (ROADMAP §7): los entrypoints de larga vida que
+    escriben la cadena Merkle (serve, self-audit run) se niegan a arrancar si
+    ya hay otro escritor sobre el mismo workspace."""
+    from atlas.security.writer_lock import MerkleWriterLock, WriterLockHeld  # noqa: PLC0415
+    from pathlib import Path  # noqa: PLC0415
+
+    lock = MerkleWriterLock(Path(orch.status().workspace))
+    try:
+        lock.acquire()
+    except WriterLockHeld as exc:
+        console.print(f"[bold red]✗ {exc}[/bold red]")
+        raise SystemExit(1) from None
+    return lock
 
 
 @click.group()
@@ -437,13 +454,14 @@ def self_audit_run(
 ) -> None:
     """Ejecuta ciclos de auditoria autonoma acotados."""
     orch = get_orchestrator()
-    report = orch.self_audit().run(
-        hours=hours,
-        profile=profile,
-        cycle_interval_minutes=cycle_minutes,
-        max_cycles=max_cycles,
-        dry_run=dry_run,
-    )
+    with _acquire_writer_lock_or_die(orch):
+        report = orch.self_audit().run(
+            hours=hours,
+            profile=profile,
+            cycle_interval_minutes=cycle_minutes,
+            max_cycles=max_cycles,
+            dry_run=dry_run,
+        )
     console.print_json(json.dumps(report.to_dict(), ensure_ascii=False, default=str))
 
 
@@ -814,11 +832,12 @@ def serve(poll_interval: float) -> None:
     from atlas.runtime.service_runner import AtlasServiceRunner  # noqa: PLC0415
 
     orch = get_orchestrator()
-    orch.log_session_start()
-    runner = AtlasServiceRunner(orch)
-    console.print("[bold cyan]Atlas serve[/bold cyan] — Ctrl+C para detener")
-    console.print("[dim]ATLAS_SERVE_DASHBOARD=1 para dashboard; ATLAS_THERMAL_MONITOR=1 para termico[/dim]")
-    runner.run_forever(poll_interval_s=poll_interval)
+    with _acquire_writer_lock_or_die(orch):
+        orch.log_session_start()
+        runner = AtlasServiceRunner(orch)
+        console.print("[bold cyan]Atlas serve[/bold cyan] — Ctrl+C para detener")
+        console.print("[dim]ATLAS_SERVE_DASHBOARD=1 para dashboard; ATLAS_THERMAL_MONITOR=1 para termico[/dim]")
+        runner.run_forever(poll_interval_s=poll_interval)
 
 
 @cli.command()
