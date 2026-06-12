@@ -66,7 +66,17 @@ The target is a runtime that can:
    - Every major audit records false beliefs, verified facts, root causes,
      fixes, and residual risk.
 
-7. **Defensive Security Expertise**
+7. **Runtime Process Guard**
+   - Single-writer enforcement for the live Merkle chain: any Atlas CLI entry
+     that would write audit records must detect an existing writer
+     (`atlas serve`, self-audit loop) on the same `ATLAS_HOME` and refuse,
+     instead of relying on operator discipline.
+   - Lock file or pidfile under `memory/audit/`; `--force` only with explicit
+     acknowledgement. Origin: 2026-06-12, an unisolated 24h self-audit loop ran
+     for 15 cycles against the live chain alongside `atlas serve` (chain
+     verified intact afterwards, but only by luck).
+
+8. **Defensive Security Expertise**
    - First surface: `atlas security-audit <path>` for dependency-free Python
      static checks.
    - Next: scoped lab creation, fuzz harness planning, crash triage, and
