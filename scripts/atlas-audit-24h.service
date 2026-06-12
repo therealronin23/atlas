@@ -1,0 +1,24 @@
+[Unit]
+Description=Atlas — auditoría autónoma de 24h (oneshot, supervisada)
+After=network-online.target
+Wants=network-online.target
+# No correr a la vez que el servicio vivo escribiría la misma cadena Merkle:
+# el runner usa ATLAS_HOME aislado (.atlas-audit-home), pero declaramos el
+# orden por higiene. El single-writer real lo garantiza MerkleWriterLock.
+After=atlas-core.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ronin/proyectos/atlas-core
+ExecStart=/home/ronin/proyectos/atlas-core/scripts/run_24h_autonomous_audit.sh
+TimeoutStartSec=90000
+# Journal en vez de redirección artesanal: tres de los cinco arranques del
+# 2026-06-12 murieron en el launcher (setsid/nohup), no en Atlas. systemd
+# resuelve el desacople de la sesión del shell.
+StandardOutput=journal
+StandardError=journal
+MemoryAccounting=yes
+MemoryMax=4G
+
+[Install]
+WantedBy=default.target
