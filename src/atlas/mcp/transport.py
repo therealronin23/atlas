@@ -14,10 +14,13 @@ from __future__ import annotations
 import json
 import os
 import select
+import signal
 import subprocess
 import threading
 import time
 from typing import Any, Protocol
+
+from atlas.security.process_hardening import apply_in_child
 
 
 class McpProtocolError(RuntimeError):
@@ -63,6 +66,13 @@ class StdioTransport:
     def start(self) -> None:
         if self._proc is not None:
             return
+        def _set_limits() -> None:
+            # nproc=None: RLIMIT_NPROC es por-usuario; un server MCP legítimo
+            # (node/uv) necesita crear hilos y el cap absoluto lo mataría
+            # (EAGAIN) en un host con miles de hilos vivos. El resto del
+            # hardening (AS/CPU/FSIZE/NOFILE/no-new-privs) se mantiene.
+            apply_in_child(nproc=None)
+
         self._proc = subprocess.Popen(  # noqa: S603 — cmd viene de config controlada
             self._cmd,
             stdin=subprocess.PIPE,
@@ -72,6 +82,8 @@ class StdioTransport:
             cwd=self._cwd,
             text=True,
             bufsize=1,  # line-buffered
+            preexec_fn=_set_limits,
+            start_new_session=True,
         )
 
     def close(self) -> None:
@@ -85,10 +97,20 @@ class StdioTransport:
         except Exception:  # noqa: BLE001
             pass
         try:
-            proc.terminate()
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                proc.terminate()
             proc.wait(timeout=2.0)
         except subprocess.TimeoutExpired:
-            proc.kill()
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                proc.kill()
         except Exception:  # noqa: BLE001
             pass
 

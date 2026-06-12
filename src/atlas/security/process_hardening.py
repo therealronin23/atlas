@@ -42,13 +42,20 @@ def default_rlimits(
     cpu_seconds: int = DEFAULT_CPU_SECONDS,
     fsize_bytes: int = DEFAULT_FSIZE_BYTES,
     nofile: int = DEFAULT_NOFILE,
-    nproc: int = DEFAULT_NPROC,
+    nproc: int | None = DEFAULT_NPROC,
 ) -> list[tuple[int, tuple[int, int]]]:
     """Devuelve la lista de (RLIMIT_*, (soft, hard)) a aplicar en el hijo.
 
     Función pura: no toca el proceso, solo construye la tabla. Así es testeable
     sin forkear. RLIMIT_NPROC y RLIMIT_FSIZE pueden no existir en plataformas
     no-POSIX; el aplicador los salta si faltan.
+
+    ``nproc=None`` omite el cap de procesos/hilos. ``RLIMIT_NPROC`` es POR
+    USUARIO, no por proceso: en un host donde el usuario ya tiene miles de
+    hilos vivos, un cap absoluto bajo (256) asfixia a cualquier hijo
+    multihilo legítimo (node/uv abortan al crear hilos) sin aportar defensa
+    real. El anti-fork-bomb por NPROC tiene sentido solo para código NO
+    confiable en sandbox; los servers MCP (adopción gateada) pasan ``None``.
     """
     limits: list[tuple[int, tuple[int, int]]] = [
         (resource.RLIMIT_AS, (ram_bytes, ram_bytes)),
@@ -58,8 +65,9 @@ def default_rlimits(
         (resource.RLIMIT_NOFILE, (nofile, nofile)),
     ]
     # RLIMIT_NPROC no está en todas las plataformas (p.ej. algunos macOS/BSD).
+    # nproc=None lo omite (servers MCP legítimos multihilo).
     rlimit_nproc = getattr(resource, "RLIMIT_NPROC", None)
-    if rlimit_nproc is not None:
+    if rlimit_nproc is not None and nproc is not None:
         limits.append((rlimit_nproc, (nproc, nproc)))
     return limits
 
@@ -89,7 +97,7 @@ def apply_in_child(
     cpu_seconds: int = DEFAULT_CPU_SECONDS,
     fsize_bytes: int = DEFAULT_FSIZE_BYTES,
     nofile: int = DEFAULT_NOFILE,
-    nproc: int = DEFAULT_NPROC,
+    nproc: int | None = DEFAULT_NPROC,
 ) -> None:
     """Endurece el proceso hijo. Para usar como cuerpo de un `preexec_fn`.
 
