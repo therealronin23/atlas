@@ -62,6 +62,8 @@ class TestAdopterWiring:
         assert task.source == TaskSource.INTERNAL
         # Intención anclada léxicamente al nombre del server (invariante 3).
         assert "fs-mcp" in task.intent and "1.2.0" in task.intent
+        # Budget holgado para el primer arranque (npx/uvx descarga el paquete).
+        assert cfg.timeout_seconds == MaintenanceAdopter._FIRST_LAUNCH_TIMEOUT_S
 
     def test_pending_status_passthrough(self, merkle) -> None:
         status = MaintenanceAdopter(
