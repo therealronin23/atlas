@@ -34,6 +34,25 @@ Métrica de éxito de la capa: **coste por resultado verificado**
 - `CascadeResult`: artefacto, `Evidence`, intentos, escaladas; `to_dict()` JSON-serializable (Merkle-ready).
 - `InferenceProducer`: adaptador InferenceHub→cascada (L0/L1→MODEL, L2→FRONTIER); hub inyectado, fake en tests.
 
+## Cableado al orchestrator (anexo 2026-06-12)
+
+Primer consumidor real: `maintenance_codegen_proposer`. Antes llamaba al
+hub con L0 hardcodeado, sin escalada ni evidencia. Ahora `_generate`
+rutea por `CascadeRouter` (rungs L0→L1; FRONTIER preparado pero sin
+provider L2 configurado no se instancia) con `UnifiedDiffVerifier`
+(STATIC, en `core/verify.py`): diff unificado parseable que solo toca
+`allowed_paths`. Cada `cascade.route` deja `CascadeResult.to_dict()` en
+Merkle (el servicio es el single writer). El diff solo se entrega al
+CodegenProposer si `verified`; el guard de alcance del proposer queda
+como segunda línea.
+
+**Frontera explícita**: el path conversacional (`execute_local_safe`,
+loop agéntico) NO se cablea. Sus artefactos son CLAIM y no existe
+verificador más barato que el modelo: la cascada solo devolvería
+UNKNOWN. Cablearlo sería teatro de verificación. Si algún día hay un
+verificador barato de claims (p. ej. grounding contra `reality`), entra
+por el seam sin tocar la cascada.
+
 ## Consumidores previstos
 
 - **Capa 3 (enjambre)**: cada worker es un producer más; el blackboard
