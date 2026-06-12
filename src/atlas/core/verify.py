@@ -18,6 +18,7 @@ decisión de la capa 2.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, IntEnum
@@ -281,6 +282,56 @@ class SandboxRunVerifier:
             total_cost=self.cost,
             verifier_ids=(self.verifier_id,),
             reason="" if ok else detail[:500],
+        )
+
+
+class UnifiedDiffVerifier:
+    """
+    PATCH con payload['diff']: ¿es un diff unificado parseable y toca solo
+    los paths permitidos (metadata['allowed_paths'])? Es la regla que el
+    CodegenProposer imponía a mano, como verificador STATIC reutilizable.
+    """
+
+    _HEADER = re.compile(r"^(?:---|\+\+\+)\s+(?:[ab]/)?(\S+)", re.MULTILINE)
+    _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@", re.MULTILINE)
+
+    @property
+    def verifier_id(self) -> str:
+        return "unified_diff"
+
+    @property
+    def cost(self) -> CostTier:
+        return CostTier.STATIC
+
+    def applies_to(self, artifact: Artifact) -> bool:
+        return artifact.kind is ArtifactKind.PATCH and "diff" in artifact.payload
+
+    def verify(self, artifact: Artifact) -> Evidence:
+        diff = str(artifact.payload["diff"])
+        reasons: list[str] = []
+
+        touched = {p for p in self._HEADER.findall(diff) if p != "/dev/null"}
+        if not touched:
+            reasons.append("sin cabeceras ---/+++ de diff unificado")
+        if not self._HUNK.search(diff):
+            reasons.append("sin hunks @@")
+
+        allowed_raw = artifact.metadata.get("allowed_paths")
+        if allowed_raw and touched:
+            allowed = {str(p) for p in allowed_raw}
+            extra = sorted(touched - allowed)
+            if extra:
+                reasons.append(f"toca paths fuera de los permitidos: {extra}")
+
+        passed = not reasons
+        detail = "; ".join(reasons)
+        check = Check(name="unified_diff", passed=passed, detail=detail, cost=self.cost)
+        return Evidence(
+            verdict=Verdict.PASS if passed else Verdict.FAIL,
+            checks=(check,),
+            total_cost=self.cost,
+            verifier_ids=(self.verifier_id,),
+            reason=detail,
         )
 
 

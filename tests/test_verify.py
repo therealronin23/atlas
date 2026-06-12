@@ -227,6 +227,71 @@ class TestSandboxRunVerifier:
         assert "boom" in evidence.reason
 
 
+class TestUnifiedDiffVerifier:
+    DIFF = (
+        "--- a/src/atlas/demo.py\n"
+        "+++ b/src/atlas/demo.py\n"
+        "@@ -1,1 +1,1 @@\n"
+        "-old = 1\n"
+        "+old = 2\n"
+    )
+
+    def _patch(self, diff: str, allowed: list[str] | None = None) -> Artifact:
+        from atlas.core.verify import UnifiedDiffVerifier  # noqa: F401
+
+        metadata = {"allowed_paths": allowed} if allowed else {}
+        return Artifact(
+            kind=ArtifactKind.PATCH,
+            payload={"diff": diff},
+            producer_cost=CostTier.MODEL,
+            metadata=metadata,
+        )
+
+    def test_valid_diff_passes(self) -> None:
+        from atlas.core.verify import UnifiedDiffVerifier
+
+        v = UnifiedDiffVerifier()
+        assert v.applies_to(self._patch(self.DIFF))
+        assert v.verify(self._patch(self.DIFF, ["src/atlas/demo.py"])).verdict is Verdict.PASS
+
+    def test_garbage_fails(self) -> None:
+        from atlas.core.verify import UnifiedDiffVerifier
+
+        evidence = UnifiedDiffVerifier().verify(self._patch("No puedo ayudarte."))
+        assert evidence.verdict is Verdict.FAIL
+        assert "cabeceras" in evidence.reason
+
+    def test_missing_hunks_fails(self) -> None:
+        from atlas.core.verify import UnifiedDiffVerifier
+
+        headers_only = "--- a/x.py\n+++ b/x.py\n"
+        assert UnifiedDiffVerifier().verify(self._patch(headers_only)).verdict is Verdict.FAIL
+
+    def test_disallowed_path_fails(self) -> None:
+        from atlas.core.verify import UnifiedDiffVerifier
+
+        evidence = UnifiedDiffVerifier().verify(self._patch(self.DIFF, ["src/atlas/otro.py"]))
+        assert evidence.verdict is Verdict.FAIL
+        assert "src/atlas/demo.py" in evidence.reason
+
+    def test_dev_null_ignored_in_touched_paths(self) -> None:
+        from atlas.core.verify import UnifiedDiffVerifier
+
+        new_file = (
+            "--- /dev/null\n"
+            "+++ b/src/atlas/demo.py\n"
+            "@@ -0,0 +1,1 @@\n"
+            "+old = 2\n"
+        )
+        evidence = UnifiedDiffVerifier().verify(self._patch(new_file, ["src/atlas/demo.py"]))
+        assert evidence.verdict is Verdict.PASS
+
+    def test_no_allowed_paths_is_structural_only(self) -> None:
+        from atlas.core.verify import UnifiedDiffVerifier
+
+        assert UnifiedDiffVerifier().verify(self._patch(self.DIFF)).verdict is Verdict.PASS
+
+
 @dataclass
 class FakeReport:
     passed: bool
