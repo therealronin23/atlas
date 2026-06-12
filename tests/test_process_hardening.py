@@ -55,6 +55,22 @@ def test_nproc_none_omits_the_cap() -> None:
     assert resource.RLIMIT_NOFILE in rlimits
 
 
+def test_mcp_server_profile_omits_runtime_killers_keeps_rest() -> None:
+    # Perfil de los servers MCP: sin AS/CPU/NPROC (matan runtimes de larga
+    # vida), con CORE=0/FSIZE/NOFILE preservados.
+    rlimits = dict(
+        ph.default_rlimits(ram_bytes=None, cpu_seconds=None, nproc=None)
+    )
+    assert resource.RLIMIT_AS not in rlimits
+    assert resource.RLIMIT_CPU not in rlimits
+    if hasattr(resource, "RLIMIT_NPROC"):
+        assert resource.RLIMIT_NPROC not in rlimits
+    # Defensa que sí se mantiene.
+    assert rlimits[resource.RLIMIT_CORE] == (0, 0)
+    assert resource.RLIMIT_FSIZE in rlimits
+    assert resource.RLIMIT_NOFILE in rlimits
+
+
 @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="prctl es Linux")
 def test_set_no_new_privs_in_subprocess() -> None:
     """Aplicado en un subproceso aparte para no marcar irreversiblemente el

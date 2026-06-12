@@ -67,11 +67,15 @@ class StdioTransport:
         if self._proc is not None:
             return
         def _set_limits() -> None:
-            # nproc=None: RLIMIT_NPROC es por-usuario; un server MCP legítimo
-            # (node/uv) necesita crear hilos y el cap absoluto lo mataría
-            # (EAGAIN) en un host con miles de hilos vivos. El resto del
-            # hardening (AS/CPU/FSIZE/NOFILE/no-new-privs) se mantiene.
-            apply_in_child(nproc=None)
+            # Los servers MCP son procesos de LARGA VIDA y multihilo (node/uv),
+            # no snippets efímeros. Tres rlimits del sandbox los matan y se
+            # omiten aquí: RLIMIT_AS (virtual; runtimes reservan gigas),
+            # RLIMIT_CPU (acumulada; se agota en un server persistente) y
+            # RLIMIT_NPROC (por-usuario; EAGAIN al crear hilos). Se conserva el
+            # resto: CORE=0, FSIZE, NOFILE y no-new-privs. La adopción está
+            # gateada por Sentinel + decisor; el cap de recursos no es la
+            # defensa aquí.
+            apply_in_child(ram_bytes=None, cpu_seconds=None, nproc=None)
 
         self._proc = subprocess.Popen(  # noqa: S603 — cmd viene de config controlada
             self._cmd,

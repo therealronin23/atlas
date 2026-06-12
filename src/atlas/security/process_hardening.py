@@ -38,8 +38,8 @@ DEFAULT_NPROC = 256                     # procesos/hilos (anti fork-bomb)
 
 def default_rlimits(
     *,
-    ram_bytes: int = DEFAULT_RAM_BYTES,
-    cpu_seconds: int = DEFAULT_CPU_SECONDS,
+    ram_bytes: int | None = DEFAULT_RAM_BYTES,
+    cpu_seconds: int | None = DEFAULT_CPU_SECONDS,
     fsize_bytes: int = DEFAULT_FSIZE_BYTES,
     nofile: int = DEFAULT_NOFILE,
     nproc: int | None = DEFAULT_NPROC,
@@ -57,13 +57,21 @@ def default_rlimits(
     real. El anti-fork-bomb por NPROC tiene sentido solo para código NO
     confiable en sandbox; los servers MCP (adopción gateada) pasan ``None``.
     """
+    # CORE/FSIZE/NOFILE son seguros para procesos de larga vida; AS y CPU no.
     limits: list[tuple[int, tuple[int, int]]] = [
-        (resource.RLIMIT_AS, (ram_bytes, ram_bytes)),
-        (resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds)),
         (resource.RLIMIT_CORE, (0, 0)),
         (resource.RLIMIT_FSIZE, (fsize_bytes, fsize_bytes)),
         (resource.RLIMIT_NOFILE, (nofile, nofile)),
     ]
+    # RLIMIT_AS limita memoria VIRTUAL: node/V8/Rust reservan gigas de virtual
+    # aunque el residente sea mínimo → un cap bajo los mata. ram_bytes=None lo
+    # omite (servers MCP); el sandbox OMEGA de código no confiable sí lo fija.
+    if ram_bytes is not None:
+        limits.append((resource.RLIMIT_AS, (ram_bytes, ram_bytes)))
+    # RLIMIT_CPU es CPU ACUMULADA: un server persistente la agotaría y moriría
+    # con SIGKILL. cpu_seconds=None lo omite (servers MCP de larga vida).
+    if cpu_seconds is not None:
+        limits.append((resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds)))
     # RLIMIT_NPROC no está en todas las plataformas (p.ej. algunos macOS/BSD).
     # nproc=None lo omite (servers MCP legítimos multihilo).
     rlimit_nproc = getattr(resource, "RLIMIT_NPROC", None)
@@ -93,8 +101,8 @@ def set_no_new_privs() -> bool:
 
 def apply_in_child(
     *,
-    ram_bytes: int = DEFAULT_RAM_BYTES,
-    cpu_seconds: int = DEFAULT_CPU_SECONDS,
+    ram_bytes: int | None = DEFAULT_RAM_BYTES,
+    cpu_seconds: int | None = DEFAULT_CPU_SECONDS,
     fsize_bytes: int = DEFAULT_FSIZE_BYTES,
     nofile: int = DEFAULT_NOFILE,
     nproc: int | None = DEFAULT_NPROC,
