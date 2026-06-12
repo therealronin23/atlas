@@ -51,6 +51,8 @@ logs/
 merkle_log*.jsonl
 memory/audit/
 .atlas.*
+.atlas-audit-home/
+docs/audit_complete_latest.json
 docs/reality_latest.json
 docs/reality_after_24h.json
 docs/security_audit_latest.json
