@@ -6,6 +6,9 @@ claims. Run `atlas reality` for current facts.
 ## Current Direction
 
 Atlas is moving toward maximum verified capability, not unchecked autonomy.
+The build-up order (universal verifier → model-routing cascade → governed
+swarm → LessonStore) and its principles live in
+`docs/direction_2026-06-12_construir_hacia_arriba.md`.
 
 The target is a runtime that can:
 
