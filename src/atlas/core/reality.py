@@ -345,13 +345,25 @@ def _run_checks(root: Path, *, include_browser: bool) -> dict[str, Any]:
     return checks
 
 
+def _default_check_timeout() -> int:
+    """Timeout por check, configurable. El default de 180s daba un falso
+    `degraded` cuando la suite (sola ~80s) competía con mypy/browser en una
+    máquina cargada, y eso abortó la auditoría de 24h del 2026-06-12."""
+    raw = os.environ.get("ATLAS_REALITY_TIMEOUT", "").strip()
+    if raw.isdigit() and int(raw) > 0:
+        return int(raw)
+    return 600
+
+
 def _run(
     command: list[str],
     root: Path,
     *,
     extra_env: dict[str, str] | None = None,
-    timeout_s: int = 180,
+    timeout_s: int | None = None,
 ) -> CommandEvidence:
+    if timeout_s is None:
+        timeout_s = _default_check_timeout()
     env = os.environ.copy()
     env.setdefault("PYTHONPATH", "src")
     if extra_env:

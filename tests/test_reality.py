@@ -94,6 +94,21 @@ def test_reality_cli_strict_exits_nonzero_on_stale_docs(
     assert "docs freshness" in payload["strict_failures"]
 
 
+def test_check_timeout_default_and_env_override(monkeypatch) -> None:
+    from atlas.core.reality import _default_check_timeout
+
+    monkeypatch.delenv("ATLAS_REALITY_TIMEOUT", raising=False)
+    assert _default_check_timeout() == 600
+
+    monkeypatch.setenv("ATLAS_REALITY_TIMEOUT", "900")
+    assert _default_check_timeout() == 900
+
+    # Valores inválidos caen al default seguro, no rompen el preflight.
+    for bad in ("0", "-5", "abc", ""):
+        monkeypatch.setenv("ATLAS_REALITY_TIMEOUT", bad)
+        assert _default_check_timeout() == 600
+
+
 def test_capabilities_cli_json(monkeypatch, tmp_path: Path) -> None:
     root = _mini_repo(tmp_path)
     monkeypatch.setenv("ATLAS_CORE_ROOT", str(root))
