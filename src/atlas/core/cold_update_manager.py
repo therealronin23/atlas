@@ -107,7 +107,10 @@ class ColdUpdateManager:
             shutil.rmtree(wt_dir)
 
         self._create_worktree(wt_dir, base_ref)
-        stored_patch = wt_dir / "proposal.patch"
+        # El patch vive en el store root, NO dentro del worktree: así el
+        # worktree se puede destruir en estado terminal sin perder el patch
+        # que rollback_applied necesita.
+        stored_patch = self._store_dir / f"patch-{proposal_id}.patch"
         shutil.copy2(patch_path, stored_patch)
         self._apply_patch(wt_dir, stored_patch)
 
@@ -221,6 +224,7 @@ class ColdUpdateManager:
                 risk_level="critical",
                 payload={"proposal_id": proposal_id, "reason": "post_apply_checks_failed"},
             )
+            self._remove_worktree(proposal)
             raise RuntimeError("Post-apply validation failed; patch reverted")
 
         proposal.status = "applied"
@@ -233,6 +237,7 @@ class ColdUpdateManager:
             risk_level="critical",
             payload={"proposal_id": proposal_id},
         )
+        self._remove_worktree(proposal)
         return {"proposal_id": proposal_id, "status": "applied", "validation": post.to_dict()}
 
     def rollback_applied(self, proposal_id: str) -> bool:
@@ -255,6 +260,7 @@ class ColdUpdateManager:
             risk_level="critical",
             payload={"proposal_id": proposal_id},
         )
+        self._remove_worktree(proposal)
         return True
 
     def reject(self, proposal_id: str, reason: str = "") -> ColdUpdateProposal:
@@ -269,6 +275,7 @@ class ColdUpdateManager:
             risk_level="moderate",
             payload={"proposal_id": proposal_id, "reason": reason[:500]},
         )
+        self._remove_worktree(proposal)
         return proposal
 
     def review_summary(self, proposal_id: str) -> dict[str, Any]:
@@ -342,6 +349,8 @@ class ColdUpdateManager:
         )
 
     def _diff_stat(self, worktree: Path) -> str:
+        if not worktree.exists():
+            return ""  # worktree ya destruido (estado terminal)
         result = subprocess.run(
             ["git", "diff", "--stat"],
             cwd=worktree,
@@ -351,3 +360,30 @@ class ColdUpdateManager:
             check=False,
         )
         return (result.stdout or result.stderr or "").strip()[:2000]
+
+    def _remove_worktree(self, proposal: ColdUpdateProposal) -> None:
+        """Teardown del worktree tras estado terminal. Idempotente. El patch
+        vive en el store root, así que rollback_applied sigue funcionando."""
+        wt = Path(proposal.worktree_path)
+        if not wt.exists():
+            return
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", str(wt)],
+            cwd=self._root,
+            env=clean_git_env(),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        # Fallback para worktrees por copytree (repo no-git) o metadata divergente.
+        # Nunca toca el root.
+        if wt.exists() and wt.resolve() != self._root.resolve():
+            shutil.rmtree(wt, ignore_errors=True)
+        subprocess.run(
+            ["git", "worktree", "prune"],
+            cwd=self._root,
+            env=clean_git_env(),
+            capture_output=True,
+            text=True,
+            check=False,
+        )

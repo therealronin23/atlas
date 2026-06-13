@@ -18,11 +18,11 @@ Actualizado: 2026-06-13.
 - **[HECHO 2026-06-13] env-hijack en ColdUpdate.** `clean_git_env()`
   factorizado a `core/git_env.py` y aplicado a `_create_worktree`,
   `_apply_patch` y `_diff_stat`. Contrato testeado (`test_git_env.py`).
-- **[PENDIENTE] ColdUpdate no hace teardown del worktree en estado terminal.**
-  El patch se guarda DENTRO del worktree (`wt_dir/proposal.patch`) y
-  `rollback_applied` lo necesita → no se puede borrar al aplicar sin antes
-  reubicar el patch al store root. Refactor: mover el patch fuera del worktree
-  en `propose`, luego teardown en applied/rejected/rolled_back.
+- **[HECHO 2026-06-13] ColdUpdate teardown del worktree en estado terminal.**
+  El patch ahora vive en el store root (no en el worktree) → `_remove_worktree`
+  en applied/failed/rejected/rolled_back sin romper `rollback_applied`. Tests:
+  patch fuera del worktree, apply destruye worktree+conserva patch+rollback OK,
+  reject destruye worktree. Frena la acumulación de worktrees a futuro.
 - **[BUG] dep-bump autónomo crea deriva floor>instalado.** El loop subió
   `fastapi>=0.110` → `>=0.136.3` pero el entorno tiene 0.136.1 instalado: el
   floor declarado es MAYOR que la realidad. La suite pasa porque pytest no
