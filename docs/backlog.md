@@ -23,7 +23,13 @@ Actualizado: 2026-06-13.
   `rollback_applied` lo necesita → no se puede borrar al aplicar sin antes
   reubicar el patch al store root. Refactor: mover el patch fuera del worktree
   en `propose`, luego teardown en applied/rejected/rolled_back.
-- **[LIMPIEZA] 365 worktrees huérfanos** en
+- **[BUG] dep-bump autónomo crea deriva floor>instalado.** El loop subió
+  `fastapi>=0.110` → `>=0.136.3` pero el entorno tiene 0.136.1 instalado: el
+  floor declarado es MAYOR que la realidad. La suite pasa porque pytest no
+  valida floors → deriva declarado-vs-real silenciosa. Fix: el dep-proposer
+  debe instalar + re-validar la versión nueva en el entorno antes de proponer
+  el floor (o anclar el floor a lo instalado). Revertido a mano el 2026-06-13.
+- **[LIMPIEZA HECHA 2026-06-13] 365 worktrees huérfanos** en
   `<repo>.parent/atlas-cold-updates/...` (anidamiento patológico
   `atlas-cold-updates/atlas-cold-updates/...`). `git worktree prune` solo
   quita metadata muerta; estos tienen dir → requieren `git worktree remove`
