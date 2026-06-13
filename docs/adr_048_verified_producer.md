@@ -1,7 +1,7 @@
 # ADR-048 — VerifiedProducer: el productor como lazo cerrado
 
-Fecha: 2026-06-13 · Estado: **en construcción** (fases A-B hechas) · Contexto:
-ADR-041/042/044/045/046, ADR-047 (panel adversarial).
+Fecha: 2026-06-13 · Estado: **núcleo completo** (fases A-F hechas; falta cablear
+al worker vivo) · Contexto: ADR-041/042/044/045/046, ADR-047 (panel adversarial).
 
 ## Decisión
 
@@ -36,13 +36,27 @@ verificación se construyó primero.
   revisores inyectados, fakes en tests.
 - **Fase B — lazo `VerifiedProducer`** (commit 824634f): hecho. Compone todo,
   inyectado, sin ejecución real. 11 tests.
-- **Fase C — `DeterministicProducer` (arnés)** + primer transform real (AST):
-  pendiente.
-- **Fase D — `LLMProducer`** (envuelve InferenceProducer de capa 2): pendiente.
-- **Fase E — `RepoMaintenanceScout`** (fuente de tareas, dedup contra
-  propuestas abiertas): pendiente.
-- **Fase F — integración** (`WorktreeWorker.produce_diff = VerifiedProducer` →
-  blackboard → reconciler → ColdUpdate, auto-apply OFF): pendiente.
+- **Fase C — `DeterministicProducer` (arnés)** (`core/deterministic_producer.py`):
+  hecho. Transforms puros `str→str` (whitespace, newline final, colapso EOF) con
+  **invariante AST**: un transform que rompería `ast.parse` se descarta. Coste
+  SHAPE (corre `ast.parse` → más caro que el chequeo de forma del diff, STATIC →
+  la regla asimétrica aplica honesta). Determinista: misma entrada → mismo diff.
+- **Fase D — `LLMProducer`** (`core/llm_producer.py`): hecho. Envuelve un
+  `Producer` LLM (p.ej. `InferenceProducer`) y le añade dos cosas que el arnés da
+  gratis: `avoid_pattern` de lecciones como **prohibiciones duras** del prompt
+  (así el modelo evoluciona) y `allowed_paths` heredados de la tarea (el modelo
+  no elige qué tocar; el `UnifiedDiffVerifier` lo hace cumplir).
+- **Fase E — `RepoMaintenanceScout`** (`core/maintenance_scout.py`): hecho. Emite
+  `MaintenanceTask` por fichero con arreglo mecánico detectable. **Dedup** por
+  `signature` (`{transform}:{path}`) contra `open_signatures` Y dentro del propio
+  barrido — la disciplina anti-acumulación (los 365 worktrees). Puro: los
+  ficheros se inyectan como `(path, source)`.
+- **Fase F — integración** (`core/maintenance_worker.py`): hecho a nivel de
+  composición. `build_maintenance_producer` cablea arnés (+LLM opcional) +
+  `UnifiedDiffVerifier`; `maintenance_produce_diff` adapta el lazo a la firma
+  `produce_diff` del `WorktreeWorker` (diff solo si verificó, si no cadena vacía
+  = fallo honesto). **Pendiente**: cablear `WorktreeWorker.produce_diff` real en
+  el coordinador vivo → blackboard → reconciler → ColdUpdate. **Auto-apply OFF.**
 
 ## Disciplinas heredadas (de la sesión)
 
