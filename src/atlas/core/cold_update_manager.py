@@ -286,8 +286,8 @@ class ColdUpdateManager:
         }
 
     def _validate_origin(self, origin: str) -> None:
-        if origin not in {"manual", "self_audit"}:
-            raise ValueError("origin debe ser manual o self_audit")
+        if origin not in {"manual", "self_audit", "swarm"}:
+            raise ValueError("origin debe ser manual, self_audit o swarm")
 
     def _validate_risk(self, risk: str) -> None:
         if risk not in {"low", "medium", "high", "critical"}:
