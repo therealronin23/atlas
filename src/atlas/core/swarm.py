@@ -137,12 +137,14 @@ class RoundResult:
     accepted: tuple[BlackboardEntry, ...]
     rejected: tuple[BlackboardEntry, ...]
     skipped: tuple[str, ...]  # worker_ids saltados (envelope caducado o sin presupuesto)
+    reconcile_errors: tuple[tuple[str, str], ...] = ()  # (entry_id, mensaje de error)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "accepted": [e.to_dict() for e in self.accepted],
             "rejected": [e.to_dict() for e in self.rejected],
             "skipped": list(self.skipped),
+            "reconcile_errors": [list(e) for e in self.reconcile_errors],
         }
 
 
@@ -190,6 +192,7 @@ class SwarmCoordinator:
         accepted: list[BlackboardEntry] = []
         rejected: list[BlackboardEntry] = []
         skipped: list[str] = []
+        reconcile_errors: list[tuple[str, str]] = []
 
         for worker_id, task in tasks.items():
             assignment = self._assignments.get(worker_id)
@@ -215,12 +218,16 @@ class SwarmCoordinator:
                 self.ledger.record_verified()
                 accepted.append(entry)
                 if self._on_accepted is not None:
-                    self._on_accepted(entry, artifact)
+                    try:
+                        self._on_accepted(entry, artifact)
+                    except Exception as exc:  # noqa: BLE001 — un fallo de reconciliación no mata la ronda
+                        reconcile_errors.append((entry.id, str(exc)[:300]))
             else:
                 rejected.append(entry)
 
         return RoundResult(
-            accepted=tuple(accepted), rejected=tuple(rejected), skipped=tuple(skipped)
+            accepted=tuple(accepted), rejected=tuple(rejected), skipped=tuple(skipped),
+            reconcile_errors=tuple(reconcile_errors)
         )
 
     def audit_sample(

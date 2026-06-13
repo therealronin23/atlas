@@ -166,6 +166,26 @@ class TestCoordinatorRounds:
         assert len(result.accepted) == 2
         assert len(result.rejected) == 1
 
+    def test_on_accepted_hook_failure_does_not_kill_round(self) -> None:
+        bb = Blackboard()
+
+        def failing_hook(entry, artifact):
+            raise RuntimeError("boom")
+
+        coord = SwarmCoordinator(_verifier({"ok"}), bb, on_accepted=failing_hook)
+        worker = FakeWorker("w1", "maint", code="ok")
+        coord.assign(worker, Envelope("w1", "maint", 100, _future()))
+
+        result = coord.run_round({"w1": "t"})
+
+        # El entry fue aceptado a pesar del fallo del hook
+        assert len(result.accepted) == 1
+        assert result.accepted[0].status is EntryStatus.ACCEPTED
+        # El error se capturó sin propagarse
+        assert len(result.reconcile_errors) == 1
+        assert result.reconcile_errors[0][0] == result.accepted[0].id
+        assert "boom" in result.reconcile_errors[0][1]
+
 
 class TestAuditSampling:
     def _coord_with_n_accepted(self, n: int) -> SwarmCoordinator:
