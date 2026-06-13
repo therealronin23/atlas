@@ -36,6 +36,30 @@ The target is a runtime that can:
 - ADR-040: central decider, autonomous/hybrid modes, reversible action registry,
   `revert(action_hash)`.
 
+## Build-Up Layers (cores done, wiring deferred)
+
+The "construir hacia arriba" direction, layer by layer. Each core is a verified,
+additive library; operational wiring is tracked in `docs/backlog.md`.
+
+- **Layer 1 — Universal verifier** (ADR-041): `verify(artifact) -> Evidence`,
+  asymmetric rule (nothing rises without a cheaper verifier; else `UNKNOWN`).
+- **Layer 2 — Cascade routing** (ADR-042): cheapest capable producer, escalate
+  on FAIL/UNKNOWN, `CostLedger` (cost per verified result). Production entry
+  point is Layer 3 (no autonomous `cascade.route` until then).
+- **Layer 3 — Swarm on blackboard** (ADR-045/046): workers coordinated by
+  verifiable artifacts; `Envelope` policies; sole-writer coordinator; worker
+  backend (disposable git worktrees, pure producers, env-hijack-safe);
+  reconciliation to ColdUpdate (`origin="swarm"`, auto-apply starts OFF).
+- **Layer 4 — LessonStore** (ADR-044): typed verified lessons (detection +
+  avoid-pattern + Evidence); entry law: no Evidence PASS, no lesson.
+- **Proposed — Adversarial verification + grounding** (ADR-047):
+  devil's-advocate panel for irreversible actions, domain knowledge base,
+  human-verifier assistance. Horizontal; serves every vertical.
+
+Next concrete step: a real `produce_diff`/`validate` for the first maintenance
+worker (Layer 3 becomes runnable). Designed carefully — it is execution on the
+live repo.
+
 ## Active Priorities
 
 1. **Reality Kernel**
