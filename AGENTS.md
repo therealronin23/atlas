@@ -50,6 +50,12 @@ The desired direction is maximum verified capability:
   vector store hooks, distiller.
 - Self-improvement: ColdUpdateManager, SelfAuditRunner, ADR-039
   self-maintenance scouts/proposers/adopter, ADR-040 decider/revert registry.
+- Build-up layers (cores done, wiring deferred — see ROADMAP + `docs/backlog.md`):
+  Layer 1 universal verifier (`core/verify.py`, ADR-041), Layer 2 cascade
+  routing (`router/cascade.py`, ADR-042), Layer 3 swarm + worker backend
+  (`core/swarm.py`, `core/swarm_backend.py`, `core/swarm_reconcile.py`,
+  ADR-045/046), Layer 4 LessonStore (`core/lesson_store.py`, ADR-044).
+  Proposed: adversarial verification + grounding (ADR-047).
 - Interfaces: CLI, dashboard/API, Telegram, voice, browser/editor tools.
 
 Hermes is not assumed live. If `HERMES_BASE_URL` and `HERMES_API_KEY` are absent,
