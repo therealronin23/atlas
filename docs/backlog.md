@@ -53,9 +53,12 @@ Actualizado: 2026-06-13.
 ## Capa 3 — Enjambre
 
 - Cableado real de `WorktreeWorker.produce_diff` (cascada/transform) y
-  `validate` (ValidationRunner en el worktree).
-- Reconciliación: entrada ACEPTADA del blackboard → propuesta ColdUpdate →
-  seam del decider. Auto-apply arranca **apagado** (propuesta-solo).
+  `validate` (ValidationRunner en el worktree) — sigue inyectado.
+- **[HECHO 2026-06-13] Reconciliación enjambre → ColdUpdate.**
+  `ColdUpdateReconciler` (hook `on_accepted` del coordinador): artefacto
+  ACEPTADO → propuesta ColdUpdate (origin="swarm", nuevo origen permitido) →
+  seam del decider. **Auto-apply apagado**: solo propone, nunca aplica. Tests
+  con manager fake + integración con ColdUpdateManager real.
 - `audit_sample` que **re-ejecuta** la suite sobre la muestra (hoy solo
   selecciona la muestra; falta la re-verificación real).
 - **Primer enjambre operativo**: 3 workers de mantenimiento, una semana sin

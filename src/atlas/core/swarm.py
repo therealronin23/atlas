@@ -21,6 +21,7 @@ worktrees reales (en tests, workers fake).
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -156,10 +157,15 @@ class SwarmCoordinator:
         blackboard: Blackboard,
         *,
         ledger: CostLedger | None = None,
+        on_accepted: Callable[[BlackboardEntry, Artifact], None] | None = None,
     ) -> None:
         self._verifier = verifier
         self._blackboard = blackboard
         self.ledger = ledger or CostLedger()
+        # Hook de reconciliación (política inyectada, PDP): se invoca por cada
+        # artefacto ACEPTADO. El ColdUpdateReconciler lo usa para crear una
+        # propuesta — NUNCA auto-aplica aquí (eso lo decide el decider).
+        self._on_accepted = on_accepted
         self._assignments: dict[str, tuple[Worker, Envelope]] = {}
         self._spent: dict[str, int] = {}
 
@@ -208,6 +214,8 @@ class SwarmCoordinator:
             if entry.status is EntryStatus.ACCEPTED:
                 self.ledger.record_verified()
                 accepted.append(entry)
+                if self._on_accepted is not None:
+                    self._on_accepted(entry, artifact)
             else:
                 rejected.append(entry)
 
