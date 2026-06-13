@@ -16,7 +16,6 @@ base: no interfiere con la rama viva ni con la cadena Merkle.
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from collections.abc import Callable, Iterator
@@ -24,27 +23,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from atlas.core.git_env import clean_git_env
 from atlas.core.verify import Artifact, ArtifactKind, CostTier, Evidence
-
-# Variables que git EXPORTA cuando corre dentro de un hook (pre-commit, etc.).
-# Si no se limpian, secuestran cualquier `git` hijo hacia el repo del hook en
-# vez del worktree objetivo — el bug que generó los worktrees huérfanos y la
-# flakiness del pre-commit (2026-06-13). El backend corre precisamente bajo
-# hooks, así que esto NO es defensivo de más.
-_GIT_HOOK_ENV_VARS = (
-    "GIT_DIR",
-    "GIT_INDEX_FILE",
-    "GIT_WORK_TREE",
-    "GIT_PREFIX",
-    "GIT_COMMON_DIR",
-)
-
-
-def _clean_git_env() -> dict[str, str]:
-    env = os.environ.copy()
-    for var in _GIT_HOOK_ENV_VARS:
-        env.pop(var, None)
-    return env
 
 
 class WorktreeManager:
@@ -63,7 +43,7 @@ class WorktreeManager:
         result = subprocess.run(
             ["git", "worktree", "add", "--detach", str(path), base_ref],
             cwd=self._root,
-            env=_clean_git_env(),
+            env=clean_git_env(),
             capture_output=True,
             text=True,
             check=False,
@@ -76,7 +56,7 @@ class WorktreeManager:
         subprocess.run(
             ["git", "worktree", "remove", "--force", str(path)],
             cwd=self._root,
-            env=_clean_git_env(),
+            env=clean_git_env(),
             capture_output=True,
             text=True,
             check=False,
@@ -88,7 +68,7 @@ class WorktreeManager:
         subprocess.run(
             ["git", "worktree", "prune"],
             cwd=self._root,
-            env=_clean_git_env(),
+            env=clean_git_env(),
             capture_output=True,
             text=True,
             check=False,

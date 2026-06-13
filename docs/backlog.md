@@ -15,13 +15,14 @@ Actualizado: 2026-06-13.
   huérfanos** (código de worktree corriendo bajo hooks → repo real) Y la
   flakiness del pre-commit. **Arreglado en `WorktreeManager`** (capa 3) con
   `_clean_git_env()` + test de regresión `test_immune_to_ambient_git_env`.
-- **[BUG] ColdUpdate tiene la MISMA vulnerabilidad + no limpia worktrees.**
-  `cold_update_manager.py::_create_worktree` lanza `git worktree add` sin
-  limpiar el env git → mismo secuestro bajo hooks (mecanismo probable de los
-  365 huérfanos). Además no hace teardown en estado terminal. Fix: aplicar
-  `_clean_git_env()` (o factorizarlo a un util compartido) + teardown al
-  terminal + limpieza one-time de los 365 (coordinar con el servicio vivo,
-  que usa ese store).
+- **[HECHO 2026-06-13] env-hijack en ColdUpdate.** `clean_git_env()`
+  factorizado a `core/git_env.py` y aplicado a `_create_worktree`,
+  `_apply_patch` y `_diff_stat`. Contrato testeado (`test_git_env.py`).
+- **[PENDIENTE] ColdUpdate no hace teardown del worktree en estado terminal.**
+  El patch se guarda DENTRO del worktree (`wt_dir/proposal.patch`) y
+  `rollback_applied` lo necesita → no se puede borrar al aplicar sin antes
+  reubicar el patch al store root. Refactor: mover el patch fuera del worktree
+  en `propose`, luego teardown en applied/rejected/rolled_back.
 - **[LIMPIEZA] 365 worktrees huérfanos** en
   `<repo>.parent/atlas-cold-updates/...` (anidamiento patológico
   `atlas-cold-updates/atlas-cold-updates/...`). `git worktree prune` solo
