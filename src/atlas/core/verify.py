@@ -31,7 +31,6 @@ class ArtifactKind(str, Enum):
     COMMAND_OUTPUT = "command_output"
     CLAIM = "claim"
     METRIC_SAMPLE = "metric_sample"
-    LESSON = "lesson"  # capa 4 — lección verificada (LessonStore)
 
 
 class CostTier(IntEnum):
