@@ -80,6 +80,10 @@ class FailureEntry:
     occurred_at: str    = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    # Capa 4: si este fallo blando se promocionó a Lesson dura, su id. El
+    # back-link mantiene los dos niveles (fallo observado → lección verificada)
+    # navegables sin acoplar ErrorRegistry al LessonStore.
+    promoted_to_lesson_id: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
