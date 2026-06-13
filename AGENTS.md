@@ -55,6 +55,9 @@ The desired direction is maximum verified capability:
   routing (`router/cascade.py`, ADR-042), Layer 3 swarm + worker backend
   (`core/swarm.py`, `core/swarm_backend.py`, `core/swarm_reconcile.py`,
   ADR-045/046), Layer 4 LessonStore (`core/lesson_store.py`, ADR-044).
+  VerifiedProducer (ADR-048, núcleo A-F): `core/adversarial_panel.py`,
+  `core/verified_producer.py`, `core/deterministic_producer.py`,
+  `core/llm_producer.py`, `core/maintenance_scout.py`, `core/maintenance_worker.py`.
   Proposed: adversarial verification + grounding (ADR-047).
 - Interfaces: CLI, dashboard/API, Telegram, voice, browser/editor tools.
 

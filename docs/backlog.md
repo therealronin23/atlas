@@ -52,13 +52,22 @@ Actualizado: 2026-06-13.
 
 ## Capa 3 — Enjambre
 
-- **VerifiedProducer (ADR-048) — fases restantes.** Hechas: A panel
-  (`adversarial_panel.py`), B lazo (`verified_producer.py`). Pendientes:
-  C `DeterministicProducer`+primer transform AST; D `LLMProducer` (envuelve
-  InferenceProducer); E `RepoMaintenanceScout` (con dedup contra propuestas
-  abiertas); F integración `WorktreeWorker.produce_diff = VerifiedProducer` →
-  blackboard → reconciler → ColdUpdate (auto-apply OFF). Disciplinas: lecciones
-  auto-generadas nacen candidatas; el "arnés" = verificadores baratos existentes.
+- **[NÚCLEO HECHO 2026-06-13] VerifiedProducer (ADR-048).** Hechas A-F:
+  A panel (`adversarial_panel.py`), B lazo (`verified_producer.py`),
+  C `DeterministicProducer` (`deterministic_producer.py`, transforms+invariante
+  AST), D `LLMProducer` (`llm_producer.py`, restricciones de lección+allowed_paths),
+  E `RepoMaintenanceScout` (`maintenance_scout.py`, dedup por firma),
+  F composición (`maintenance_worker.py`, `build_maintenance_producer`+adapter).
+  **Pendiente**: cablear `WorktreeWorker.produce_diff = maintenance_produce_diff(...)`
+  en el coordinador vivo → blackboard → reconciler → ColdUpdate. Toca el path
+  vivo: con cuidado. Auto-apply OFF.
+- **Más transforms del arnés** (`deterministic_producer.py`): hoy whitespace,
+  newline final, colapso EOF. Candidatos AST verificables: orden de imports,
+  imports muertos (con cuidado: requiere análisis de uso real), normalización de
+  comillas de docstring. Cada uno = `Transform` + su invariante.
+- **El scout lee disco real**: hoy los ficheros se inyectan `(path, source)`. El
+  cableado vivo necesita un walker (respetando `.gitignore`) que alimente
+  `scan(...)` con las firmas abiertas leídas del store de ColdUpdate.
 - `validate` real del worker (ValidationRunner en el worktree) — sigue inyectado.
 - **[HECHO 2026-06-13] Reconciliación enjambre → ColdUpdate.**
   `ColdUpdateReconciler` (hook `on_accepted` del coordinador): artefacto
