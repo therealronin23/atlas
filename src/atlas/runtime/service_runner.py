@@ -17,6 +17,16 @@ from atlas.core.orchestrator import Orchestrator
 _log = logging.getLogger(__name__)
 
 
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 class AtlasServiceRunner:
     """Supervisa subsistemas de larga duracion; no ejecuta tareas por si solo."""
 
@@ -24,6 +34,7 @@ class AtlasServiceRunner:
         self._orch = orchestrator
         self._running = False
         self._dashboard_thread: threading.Thread | None = None
+        self._self_audit_thread: threading.Thread | None = None
         # ADR-033 #1: barrido periódico de loops agénticos suspendidos y
         # abandonados. Throttled por ATLAS_AGENTIC_SWEEP_S (default 300s). El
         # barrido es no-op salvo que ATLAS_AGENTIC_SUSPENSION_TTL esté fijado,
@@ -94,6 +105,55 @@ class AtlasServiceRunner:
         scheduler.start()
         _log.info("MaintenanceScheduler activo (cron auto-mantenimiento)")
 
+    def _start_self_audit_scheduler_if_enabled(self) -> None:
+        """ADR-040 — bucle de self-audit 24h DENTRO del proceso serve.
+
+        El self-audit nació como one-shot del CLI (`atlas self-audit run`), que es
+        un escritor SEPARADO: corriéndolo junto al servicio vivo dos `MerkleLogger`
+        escriben la misma cadena → carrera → corrupción (el `chain.repaired` del
+        29-may). Cableado aquí usa el `MerkleLogger` del orquestador (único
+        escritor) → la colisión es imposible por construcción, igual que el
+        `MaintenanceScheduler`. Diagnostica sobre el estado vivo; nada se hot-patch
+        (los candidatos bajan por ColdUpdate, que valida en worktree aislado).
+
+        Activar con ``ATLAS_SELF_AUDIT_SCHEDULER=1``. Cada run dura
+        ``ATLAS_SELF_AUDIT_HOURS`` (default 24) con ciclos cada
+        ``ATLAS_SELF_AUDIT_INTERVAL_MIN`` (default 60); al terminar se **rearma**
+        (auditoría perpetua, no one-shot). ``Restart=always`` la resucita tras
+        reinicios."""
+        if os.environ.get("ATLAS_SELF_AUDIT_SCHEDULER", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return
+        self._self_audit_thread = threading.Thread(
+            target=self._self_audit_loop,
+            daemon=True,
+            name="atlas-self-audit",
+        )
+        self._self_audit_thread.start()
+        _log.info("Self-audit scheduler activo (bucle 24h in-process)")
+
+    def _self_audit_loop(self) -> None:
+        hours = _env_float("ATLAS_SELF_AUDIT_HOURS", 24.0)
+        interval_min = _env_float("ATLAS_SELF_AUDIT_INTERVAL_MIN", 60.0)
+        runner = self._orch.self_audit()
+        while self._running:
+            try:
+                runner.run(
+                    hours=hours,
+                    profile=os.environ.get("ATLAS_SELF_AUDIT_PROFILE", "full"),
+                    cycle_interval_minutes=interval_min,
+                )
+            except Exception:  # noqa: BLE001 — un run caído no mata el bucle ni el servicio
+                _log.exception("self-audit run falló; reintenta tras el intervalo")
+                # Evita hot-loop si run() revienta al instante.
+                time.sleep(min(interval_min * 60.0, 300.0))
+            # Al volver (completed/stopped) rearma mientras el servicio viva. Si
+            # se paró por stop() (stop_requested), el siguiente run() limpia el
+            # flag; pero si fue stop del servicio, _running ya es False y salimos.
+
     def _start_prometheus_if_enabled(self) -> None:
         if os.environ.get("ATLAS_PROMETHEUS", "").strip().lower() not in (
             "1",
@@ -154,6 +214,7 @@ class AtlasServiceRunner:
         self._start_prometheus_if_enabled()
         self._start_maintenance_scheduler_if_enabled()
         self._running = True
+        self._start_self_audit_scheduler_if_enabled()
         self._orch._merkle.log(
             action="service.started",
             agent="service_runner",
@@ -175,6 +236,14 @@ class AtlasServiceRunner:
         sched = self._orch._maintenance_scheduler
         if sched is not None and getattr(sched, "_running", False):
             sched.stop()
+        if self._self_audit_thread is not None and self._self_audit_thread.is_alive():
+            # `_running` ya es False arriba; pedir stop hace que el run() en curso
+            # corte en el siguiente chequeo de ciclo y el bucle salga.
+            try:
+                self._orch.self_audit().stop()
+            except Exception:  # noqa: BLE001 — la parada no debe romper el shutdown
+                _log.exception("fallo al pedir stop del self-audit")
+            self._self_audit_thread.join(timeout=5)
         self._orch._merkle.log(
             action="service.stopped",
             agent="service_runner",

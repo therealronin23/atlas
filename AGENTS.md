@@ -48,8 +48,10 @@ The desired direction is maximum verified capability:
   process hardening, pending approval HMAC, Sentinel MCP adoption gate.
 - Memory: system context, block memory, error registry, approved patterns,
   vector store hooks, distiller.
-- Self-improvement: ColdUpdateManager, SelfAuditRunner, ADR-039
-  self-maintenance scouts/proposers/adopter, ADR-040 decider/revert registry.
+- Self-improvement: ColdUpdateManager, SelfAuditRunner (24h loop; runs IN-process
+  via `ATLAS_SELF_AUDIT_SCHEDULER=1` — single Merkle writer, not the CLI one-shot
+  which would be a second writer), ADR-039 self-maintenance
+  scouts/proposers/adopter, ADR-040 decider/revert registry.
 - Build-up layers (cores done, wiring deferred — see ROADMAP + `docs/backlog.md`):
   Layer 1 universal verifier (`core/verify.py`, ADR-041), Layer 2 cascade
   routing (`router/cascade.py`, ADR-042), Layer 3 swarm + worker backend
