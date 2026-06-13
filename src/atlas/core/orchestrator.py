@@ -145,6 +145,7 @@ class Orchestrator:
     _maintenance_adopter: Any
     _maintenance_registry_scout: Any
     _maintenance_scheduler: Any
+    _swarm_cycle: Any
     _maintenance_dep_scout: Any
     _maintenance_dep_proposer: Any
     _maintenance_codegen_proposer: Any
@@ -497,6 +498,31 @@ class Orchestrator:
         result = mgr.apply(proposal_id)
         self.register_undo(act_hash, COLD_PATCH, proposal_id)
         return f"applied: {result['proposal_id']}"
+
+    def swarm_cycle(self) -> Any:
+        """Capa 3 (ADR-045/046/048) — ciclo de mantenimiento del enjambre.
+
+        Un worker produce diffs mecánicos verificados (capa 1) en worktree
+        aislado; cada artefacto ACEPTADO baja por ``ColdUpdateReconciler`` →
+        propuesta ColdUpdate → seam del decisor. **Auto-apply OFF** (propuesta
+        -solo): nada se aplica aquí. Escritor único = este ``_merkle`` (mismo
+        patrón que el self-audit: el worker es productor puro, no escribe Merkle
+        ni toca el ATLAS_HOME vivo; el coordinador registra en la cadena única).
+        El walker lee blobs de HEAD (no el disco vivo) y el ciclo deduplica
+        contra propuestas swarm abiertas con tope (anti-acumulación)."""
+        if self._swarm_cycle is None:
+            from atlas.core.swarm_cycle import SwarmCycle, head_file_provider
+
+            root = Path(
+                os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
+            ).expanduser().resolve()
+            self._swarm_cycle = SwarmCycle(
+                manager=self.cold_update(),
+                merkle=self._merkle,
+                file_provider=head_file_provider(root),
+                root=root,
+            )
+        return self._swarm_cycle
 
     def self_audit(self) -> Any:
         """Atlas 24h self-audit loop (cold, auditable, no hot self-patch)."""
@@ -2069,6 +2095,7 @@ class Orchestrator:
             MerkleLogger(self._workspace / "memory" / "audit")
         )
         self._cold_update_manager = None
+        self._swarm_cycle = None
         self._self_audit_runner = None
         self._maintenance_scout = None
         self._maintenance_adopter = None

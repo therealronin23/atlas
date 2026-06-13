@@ -35,6 +35,7 @@ class AtlasServiceRunner:
         self._running = False
         self._dashboard_thread: threading.Thread | None = None
         self._self_audit_thread: threading.Thread | None = None
+        self._swarm_thread: threading.Thread | None = None
         # ADR-033 #1: barrido periódico de loops agénticos suspendidos y
         # abandonados. Throttled por ATLAS_AGENTIC_SWEEP_S (default 300s). El
         # barrido es no-op salvo que ATLAS_AGENTIC_SUSPENSION_TTL esté fijado,
@@ -154,6 +155,47 @@ class AtlasServiceRunner:
             # se paró por stop() (stop_requested), el siguiente run() limpia el
             # flag; pero si fue stop del servicio, _running ya es False y salimos.
 
+    def _start_swarm_scheduler_if_enabled(self) -> None:
+        """Capa 3 (ADR-045/046/048) — ciclo del enjambre de mantenimiento DENTRO
+        del proceso serve, escritor único (igual que el self-audit).
+
+        Produce diffs mecánicos verificados que bajan por ColdUpdate → decider.
+        **Propuesta-solo: auto-apply OFF.** El worker es productor puro (worktree
+        aislado, sin Merkle ni ATLAS_HOME propios); el coordinador registra en la
+        cadena del orquestador → sin colisión de escritores. El ciclo deduplica y
+        topea propuestas abiertas (anti-acumulación; lección de los 365 huérfanos).
+
+        Activar con ``ATLAS_SWARM_SCHEDULER=1`` (off por defecto). Cadencia por
+        ``ATLAS_SWARM_POLL_S`` (default 6h; mecánico no urgente)."""
+        if os.environ.get("ATLAS_SWARM_SCHEDULER", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return
+        self._swarm_thread = threading.Thread(
+            target=self._swarm_loop,
+            daemon=True,
+            name="atlas-swarm",
+        )
+        self._swarm_thread.start()
+        _log.info("Swarm scheduler activo (ciclo mantenimiento in-process, propuesta-solo)")
+
+    def _swarm_loop(self) -> None:
+        poll_s = _env_float("ATLAS_SWARM_POLL_S", 6 * 60 * 60.0)
+        cycle = self._orch.swarm_cycle()
+        while self._running:
+            try:
+                summary = cycle.run_cycle()
+                _log.info("swarm.cycle: %s", summary)
+            except Exception:  # noqa: BLE001 — un ciclo caído no mata el bucle ni el servicio
+                _log.exception("swarm cycle falló; reintenta tras el intervalo")
+            # Espera troceada para reaccionar al stop sin colgar el shutdown.
+            waited = 0.0
+            while self._running and waited < poll_s:
+                time.sleep(min(5.0, poll_s - waited))
+                waited += 5.0
+
     def _start_prometheus_if_enabled(self) -> None:
         if os.environ.get("ATLAS_PROMETHEUS", "").strip().lower() not in (
             "1",
@@ -215,6 +257,7 @@ class AtlasServiceRunner:
         self._start_maintenance_scheduler_if_enabled()
         self._running = True
         self._start_self_audit_scheduler_if_enabled()
+        self._start_swarm_scheduler_if_enabled()
         self._orch._merkle.log(
             action="service.started",
             agent="service_runner",
@@ -244,6 +287,10 @@ class AtlasServiceRunner:
             except Exception:  # noqa: BLE001 — la parada no debe romper el shutdown
                 _log.exception("fallo al pedir stop del self-audit")
             self._self_audit_thread.join(timeout=5)
+        if self._swarm_thread is not None and self._swarm_thread.is_alive():
+            # `_running` ya es False; el bucle del enjambre corta en el siguiente
+            # tramo de espera (troceada cada 5s) y sale.
+            self._swarm_thread.join(timeout=8)
         self._orch._merkle.log(
             action="service.stopped",
             agent="service_runner",
