@@ -52,8 +52,14 @@ Actualizado: 2026-06-13.
 
 ## Capa 3 — Enjambre
 
-- Cableado real de `WorktreeWorker.produce_diff` (cascada/transform) y
-  `validate` (ValidationRunner en el worktree) — sigue inyectado.
+- **VerifiedProducer (ADR-048) — fases restantes.** Hechas: A panel
+  (`adversarial_panel.py`), B lazo (`verified_producer.py`). Pendientes:
+  C `DeterministicProducer`+primer transform AST; D `LLMProducer` (envuelve
+  InferenceProducer); E `RepoMaintenanceScout` (con dedup contra propuestas
+  abiertas); F integración `WorktreeWorker.produce_diff = VerifiedProducer` →
+  blackboard → reconciler → ColdUpdate (auto-apply OFF). Disciplinas: lecciones
+  auto-generadas nacen candidatas; el "arnés" = verificadores baratos existentes.
+- `validate` real del worker (ValidationRunner en el worktree) — sigue inyectado.
 - **[HECHO 2026-06-13] Reconciliación enjambre → ColdUpdate.**
   `ColdUpdateReconciler` (hook `on_accepted` del coordinador): artefacto
   ACEPTADO → propuesta ColdUpdate (origin="swarm", nuevo origen permitido) →
