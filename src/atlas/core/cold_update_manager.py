@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from atlas.core.git_env import clean_git_env
 from atlas.core.validation_runner import ValidationReport, ValidationRunner
 from atlas.logging.merkle_logger import MerkleLogger
 
@@ -296,6 +297,7 @@ class ColdUpdateManager:
         result = subprocess.run(
             ["git", "worktree", "add", "--detach", str(path), base_ref],
             cwd=self._root,
+            env=clean_git_env(),
             capture_output=True,
             text=True,
             check=False,
@@ -320,6 +322,7 @@ class ColdUpdateManager:
             result = subprocess.run(
                 cmd,
                 cwd=target,
+                env=clean_git_env(),
                 capture_output=True,
                 text=True,
                 check=False,
@@ -342,6 +345,7 @@ class ColdUpdateManager:
         result = subprocess.run(
             ["git", "diff", "--stat"],
             cwd=worktree,
+            env=clean_git_env(),
             capture_output=True,
             text=True,
             check=False,
