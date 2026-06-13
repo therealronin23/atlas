@@ -53,6 +53,17 @@ UNKNOWN. Cablearlo sería teatro de verificación. Si algún día hay un
 verificador barato de claims (p. ej. grounding contra `reality`), entra
 por el seam sin tocar la cascada.
 
+## Alcanzabilidad real (anexo 2026-06-13)
+
+Auditado: `CodegenProposer.propose_patch` (donde vive el cableado) **no tiene
+caller en `src/`** — solo tests. El CLI no expone codegen; el scheduler
+autónomo no pasa por codegen; el self-audit usa `PatchGenerator` (plantillas,
+sin cascada). Por tanto **la cascada solo corre en tests hoy**. Su consumidor
+de producción es la capa 3 (workers en worktrees aislados); el
+`MerkleWriterLock` + "no CLI contra workspace vivo" impiden dispararla a mano
+con el servicio corriendo. **No hay `cascade.route` autónomo esperado hasta la
+capa 3.** Ver `docs/audit_postmortem_2026-06-13.md`.
+
 ## Consumidores previstos
 
 - **Capa 3 (enjambre)**: cada worker es un producer más; el blackboard
