@@ -96,6 +96,61 @@ def test_self_audit_metadata_and_evidence_persist(
     assert updated.evidence["validation_note"] == "ok"
 
 
+def _validated_proposal(mgr: ColdUpdateManager, tmp_path: Path, name: str):
+    from unittest.mock import patch as mock_patch
+
+    from atlas.core.validation_runner import ValidationReport
+
+    patch = tmp_path / f"{name}.patch"
+    patch.write_text(
+        f"--- /dev/null\n+++ b/src/atlas/{name}.txt\n@@ -0,0 +1 @@\n+{name}\n",
+        encoding="utf-8",
+    )
+    proposal = mgr.propose(name, patch)
+    ok = ValidationReport(passed=True, pytest_exit=0, mypy_exit=0)
+    with mock_patch("atlas.core.cold_update_manager.ValidationRunner") as vr:
+        vr.return_value.run.return_value = ok
+        mgr.validate(proposal.id)
+    return proposal
+
+
+def test_patch_stored_outside_worktree(mgr: ColdUpdateManager, tmp_path: Path) -> None:
+    patch = tmp_path / "p.patch"
+    patch.write_text("--- /dev/null\n+++ b/src/atlas/m.txt\n@@ -0,0 +1 @@\n+m\n", encoding="utf-8")
+    proposal = mgr.propose("x", patch)
+    # El patch vive en el store root, no dentro del worktree (para sobrevivir al teardown).
+    assert Path(proposal.patch_path).exists()
+    assert Path(proposal.worktree_path) not in Path(proposal.patch_path).parents
+
+
+def test_apply_tears_down_worktree_but_keeps_patch(mgr: ColdUpdateManager, tmp_path: Path) -> None:
+    from unittest.mock import patch as mock_patch
+
+    from atlas.core.validation_runner import ValidationReport
+
+    proposal = _validated_proposal(mgr, tmp_path, "applyme")
+    mgr.approve(proposal.id)
+    ok = ValidationReport(passed=True, pytest_exit=0, mypy_exit=0)
+    with mock_patch("atlas.core.cold_update_manager.ValidationRunner") as vr:
+        vr.return_value.run.return_value = ok
+        mgr.apply(proposal.id)
+    assert mgr.get(proposal.id).status == "applied"
+    assert not Path(proposal.worktree_path).exists()  # worktree destruido
+    assert Path(proposal.patch_path).exists()          # patch sobrevive
+    # rollback sigue funcionando sin el worktree
+    assert mgr.rollback_applied(proposal.id) is True
+    assert mgr.get(proposal.id).status == "rolled_back"
+
+
+def test_reject_tears_down_worktree(mgr: ColdUpdateManager, tmp_path: Path) -> None:
+    patch = tmp_path / "r.patch"
+    patch.write_text("--- /dev/null\n+++ b/src/atlas/r.txt\n@@ -0,0 +1 @@\n+r\n", encoding="utf-8")
+    proposal = mgr.propose("x", patch)
+    mgr.reject(proposal.id, "no")
+    assert mgr.get(proposal.id).status == "rejected"
+    assert not Path(proposal.worktree_path).exists()
+
+
 def test_propose_rejects_invalid_origin_and_risk(
     mgr: ColdUpdateManager,
     tmp_path: Path,
