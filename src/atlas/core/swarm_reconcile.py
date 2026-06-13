@@ -47,6 +47,10 @@ class ColdUpdateReconciler:
         self._risk = risk
         self._origin = origin
         self.proposed_ids: list[str] = []
+        # Lista de (entry, proposal_id) SOLO para propuestas emitidas con éxito.
+        # Permite al ciclo emparejar firma→propuesta sin depender del orden
+        # posicional del blackboard (robusto a fallos intercalados de propose).
+        self.proposals: list[tuple[BlackboardEntry, str]] = []
 
     def __call__(self, entry: BlackboardEntry, artifact: Artifact) -> None:
         diff = str(artifact.payload.get("diff", ""))
@@ -74,4 +78,8 @@ class ColdUpdateReconciler:
             )
         finally:
             patch_path.unlink(missing_ok=True)
+        # Ambas listas se actualizan solo en el camino de éxito (después de que
+        # propose() retorne sin lanzar). Si propose lanza, la entry queda en el
+        # blackboard pero NO en proposals → el zip posicional no se desalinea.
         self.proposed_ids.append(proposal.id)
+        self.proposals.append((entry, proposal.id))
