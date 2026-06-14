@@ -524,6 +524,18 @@ class Orchestrator:
             )
         return self._swarm_cycle
 
+    def swarm_audit_sample(self, fraction: float = 0.2) -> dict:
+        """Off-path del propose; re-ejecuta la suite sobre una muestra de propuestas
+        swarm con ATLAS_HOME aislado; divergencias = punto ciego del verificador
+        barato."""
+        from atlas.core.swarm_audit import reverify_swarm_proposals
+
+        return reverify_swarm_proposals(
+            self.cold_update(),
+            fraction=fraction,
+            merkle=self._merkle,
+        )
+
     def self_audit(self) -> Any:
         """Atlas 24h self-audit loop (cold, auditable, no hot self-patch)."""
         if self._self_audit_runner is None:

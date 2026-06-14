@@ -42,10 +42,12 @@ class ValidationRunner:
         *,
         python: str | None = None,
         skip_browser: bool = True,
+        extra_env: dict[str, str] | None = None,
     ) -> None:
         self._root = project_root.resolve()
         self._python = python or sys.executable
         self._skip_browser = skip_browser
+        self._extra_env = extra_env
 
     def run(self, timeout_s: int = 600) -> ValidationReport:
         import time
@@ -65,6 +67,7 @@ class ValidationRunner:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(self._root / "src")
         env.setdefault("ATLAS_MEMORY_VECTOR", "0")
+        env.update(self._extra_env or {})
 
         pytest_cmd = [
             self._python,
