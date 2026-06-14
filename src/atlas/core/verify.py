@@ -32,6 +32,7 @@ class ArtifactKind(str, Enum):
     CLAIM = "claim"
     METRIC_SAMPLE = "metric_sample"
     SECURITY_FINDING_RESULT = "security_finding_result"
+    KNOWLEDGE = "knowledge"
 
 
 class CostTier(IntEnum):
