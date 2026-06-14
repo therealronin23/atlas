@@ -23,14 +23,15 @@ Actualizado: 2026-06-14.
   en applied/failed/rejected/rolled_back sin romper `rollback_applied`. Tests:
   patch fuera del worktree, apply destruye worktree+conserva patch+rollback OK,
   reject destruye worktree. Frena la acumulación de worktrees a futuro.
-- **[BUG] dep-bump autónomo crea deriva floor>instalado.** El loop subió
-  `fastapi>=0.110` → `>=0.136.3` pero el entorno tiene 0.136.1 instalado: el
-  floor declarado es MAYOR que la realidad. La suite pasa porque pytest no
-  valida floors → deriva declarado-vs-real silenciosa. Fix: el dep-proposer
-  debe instalar + re-validar la versión nueva en el entorno antes de proponer
-  el floor (o anclar el floor a lo instalado). Revertido a mano el 2026-06-13;
-  **REAPARECIÓ sin commitear el 2026-06-14** (`fastapi>=0.136.3` en el working
-  tree otra vez) → tarea aparte para revert + causa raíz. El proposer lo reintroduce.
+- **[BUG — RESUELTO 2026-06-14] dep-bump autónomo creaba deriva floor>instalado.**
+  El loop subía `fastapi>=0.110` → `>=0.136.3` con el entorno en 0.136.1: floor
+  declarado MAYOR que la realidad, y la suite pasaba porque pytest no valida
+  floors → deriva declarado-vs-real silenciosa. Revertido a mano el 2026-06-13;
+  reapareció el 2026-06-14. **Causa raíz cerrada:** `DepProposer._effective_floor`
+  ancla el piso a la versión instalada (`importlib.metadata`, sin red/subproceso)
+  y nunca propone `>=latest` por encima de lo instalado; fail-closed si la dep no
+  está instalada. Regresión en `tests/test_dep_scout.py`
+  (`test_floor_never_exceeds_installed`, `test_not_installed_fail_closed`).
 - **[LIMPIEZA HECHA 2026-06-13] 365 worktrees huérfanos** en
   `<repo>.parent/atlas-cold-updates/...` (anidamiento patológico
   `atlas-cold-updates/atlas-cold-updates/...`). `git worktree prune` solo

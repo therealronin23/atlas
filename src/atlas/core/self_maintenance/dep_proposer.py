@@ -17,11 +17,24 @@ import difflib
 import re
 import tempfile
 from collections.abc import Callable
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+from packaging.version import InvalidVersion, Version
+
 from atlas.core.self_maintenance.candidate import DepCandidate
 from atlas.logging.merkle_logger import MerkleLogger
+
+
+def _installed_version(name: str) -> str | None:
+    """Versión instalada de la dist ``name`` en el entorno, o ``None`` si falta.
+
+    Solo stdlib (``importlib.metadata``): sin red ni subproceso ``pip``."""
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return None
 
 
 class DepProposer:
@@ -35,28 +48,40 @@ class DepProposer:
         merkle: MerkleLogger,
         propose: Callable[..., Any],
         pyproject_path: Path,
+        installed_version: Callable[[str], str | None] | None = None,
     ) -> None:
         self._merkle = merkle
         self._propose = propose
         self._pyproject = pyproject_path
+        self._installed_version = installed_version or _installed_version
 
     def propose_bump(self, candidate: DepCandidate) -> Any:
-        """Materializa el bump y lo entrega a ColdUpdate. ``None`` si no hay diana."""
+        """Materializa el bump y lo entrega a ColdUpdate. ``None`` si no hay diana.
+
+        El piso propuesto se **ancla a la versión instalada**: nunca se propone un
+        piso por encima de lo que el entorno tiene realmente. Sin este ancla, un
+        ``latest`` mayor que lo instalado entra como ``>=latest`` y la suite pasa
+        igual (pytest no valida pisos) → deriva silenciosa declarado-vs-real
+        (backlog: "dep-bump autónomo crea deriva floor>instalado")."""
         try:
             original = self._pyproject.read_text(encoding="utf-8")
         except OSError:
             self._audit(candidate, result="pyproject_unreadable", proposal=None)
             return None
 
-        bumped = self._bump(original, candidate)
+        floor = self._effective_floor(candidate)
+        if floor is None:
+            # No instalado (o versión ilegible): no se puede anclar → fail-closed.
+            self._audit(candidate, result="not_installed", proposal=None)
+            return None
+
+        bumped = self._bump(original, candidate, floor)
         if bumped is None or bumped == original:
             self._audit(candidate, result="no_target", proposal=None)
             return None
 
         patch = self._unified_diff(original, bumped)
-        intent = (
-            f"bump dependencia {candidate.name} {candidate.current} → {candidate.latest}"
-        )
+        intent = f"bump dependencia {candidate.name} {candidate.current} → {floor}"
         with tempfile.NamedTemporaryFile(
             "w", suffix=".patch", delete=False, encoding="utf-8"
         ) as fh:
@@ -71,7 +96,8 @@ class DepProposer:
             evidence={
                 "dependency": candidate.name,
                 "from": candidate.current,
-                "to": candidate.latest,
+                "to": floor,
+                "latest": candidate.latest,
                 "source": candidate.source.url,
             },
         )
@@ -80,8 +106,24 @@ class DepProposer:
 
     # ------------------------------------------------------------------
 
-    def _bump(self, text: str, candidate: DepCandidate) -> str | None:
-        """Sube el piso ``>=current`` a ``>=latest`` en la línea de la dep.
+    def _effective_floor(self, candidate: DepCandidate) -> str | None:
+        """Piso a proponer, acotado a lo instalado. ``None`` si no se puede anclar.
+
+        Nunca devuelve un piso por encima de la versión instalada: si ``latest``
+        la supera, se ancla a lo instalado (un bump real del entorno lo elevará en
+        una pasada posterior, ya con esa versión presente)."""
+        installed = self._installed_version(candidate.name)
+        if installed is None:
+            return None
+        try:
+            iv = Version(installed)
+            lv = Version(candidate.latest)
+        except InvalidVersion:
+            return None
+        return candidate.latest if lv <= iv else installed
+
+    def _bump(self, text: str, candidate: DepCandidate, target: str) -> str | None:
+        """Sube el piso ``>=current`` a ``>=target`` en la línea de la dep.
 
         Reemplaza solo la primera ocurrencia de ``<name>...>=<current>`` (con
         extras opcionales). El nombre se ancla con frontera para no confundir
@@ -92,7 +134,7 @@ class DepProposer:
         pattern = re.compile(
             rf'(["\']{name}(?:\[[^\]]*\])?>=){current}(["\',])'
         )
-        new_text, n = pattern.subn(rf'\g<1>{candidate.latest}\g<2>', text, count=1)
+        new_text, n = pattern.subn(rf'\g<1>{target}\g<2>', text, count=1)
         return new_text if n == 1 else None
 
     def _unified_diff(self, original: str, bumped: str) -> str:
