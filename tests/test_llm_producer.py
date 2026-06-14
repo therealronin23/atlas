@@ -76,3 +76,60 @@ def test_producer_protocol_delegates() -> None:
     assert p.producer_id == "llm:inference:l1"
     assert p.cost is CostTier.MODEL
     assert p.capability is Difficulty.STANDARD
+
+
+class TestLessonStoreSuppression:
+    """B3 — suprimir diff cuando detection_heuristic matchea."""
+
+    def _make_store(self, tmp_path, heuristics: list[str]):
+        import uuid
+        from atlas.core.lesson_store import Lesson, LessonProvenance, LessonStore
+        from atlas.core.verify import Verdict
+
+        store = LessonStore(tmp_path / "lessons")
+        for h in heuristics:
+            lesson = Lesson(
+                id=uuid.uuid4().hex[:12],
+                title="test lesson",
+                provenance=LessonProvenance.INTERNAL_FAILURE,
+                detection_heuristic=h,
+                avoid_pattern="avoid x",
+                evidence={"verdict": Verdict.PASS.value, "checks": [], "verifier_ids": []},
+            )
+            store.add(lesson)
+        return store
+
+    def test_matching_heuristic_returns_empty_diff(self, tmp_path) -> None:
+        store = self._make_store(tmp_path, ["double Merkle writer"])
+        inner = FakeInner()
+        p = LLMProducer(inner, lesson_store=store)
+        # FakeInner produce un diff que contiene "double Merkle writer"
+        inner_orig = inner.produce
+        inner.produce = lambda spec: Artifact(
+            kind=ArtifactKind.PATCH,
+            payload={"diff": "--- a/x\n+++ b/x\ndouble Merkle writer pattern here"},
+            producer_cost=CostTier.MODEL,
+            metadata={},
+        )
+        out = p.produce(_spec())
+        assert out.payload["diff"] == ""
+
+    def test_no_match_returns_original_artifact(self, tmp_path) -> None:
+        store = self._make_store(tmp_path, ["some other pattern"])
+        inner = FakeInner()
+        p = LLMProducer(inner, lesson_store=store)
+        out = p.produce(_spec())
+        assert out.payload["diff"] != ""
+
+    def test_empty_heuristic_never_suppresses(self, tmp_path) -> None:
+        store = self._make_store(tmp_path, [""])
+        inner = FakeInner()
+        p = LLMProducer(inner, lesson_store=store)
+        out = p.produce(_spec())
+        assert out.payload["diff"] != ""
+
+    def test_no_lesson_store_unchanged_behavior(self) -> None:
+        inner = FakeInner()
+        p = LLMProducer(inner)
+        out = p.produce(_spec())
+        assert out.payload["diff"] != ""

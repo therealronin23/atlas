@@ -22,9 +22,13 @@ import ast
 import difflib
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from atlas.core.verify import Artifact, ArtifactKind, CostTier
 from atlas.router.cascade import Difficulty, TaskSpec
+
+if TYPE_CHECKING:
+    from atlas.core.lesson_store import LessonStore
 
 
 @dataclass(frozen=True)
@@ -105,8 +109,13 @@ class DeterministicProducer:
     cost = CostTier.SHAPE
     capability = Difficulty.MECHANICAL
 
-    def __init__(self, transforms: Sequence[Transform] = DEFAULT_TRANSFORMS) -> None:
+    def __init__(
+        self,
+        transforms: Sequence[Transform] = DEFAULT_TRANSFORMS,
+        lesson_store: LessonStore | None = None,
+    ) -> None:
         self._transforms = tuple(transforms)
+        self._lesson_store = lesson_store
 
     def produce(self, spec: TaskSpec) -> Artifact:
         path = str(spec.metadata.get("target_path", ""))
@@ -130,11 +139,15 @@ class DeterministicProducer:
         names: list[str] = []
         base_ok = _parses(path, source)
         current = source
+        lessons = self._lesson_store.all() if self._lesson_store is not None else []
+        avoid_patterns = [l.avoid_pattern for l in lessons if l.avoid_pattern]
         for tf in self._transforms:
             candidate = tf.apply(current)
             if candidate == current:
                 continue
             if base_ok and not _parses(path, candidate):
+                continue
+            if any(p in candidate for p in avoid_patterns):
                 continue
             names.append(tf.name)
             current = candidate

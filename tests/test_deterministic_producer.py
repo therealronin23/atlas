@@ -97,3 +97,92 @@ def test_default_transforms_have_stable_names() -> None:
         "ensure_final_newline",
         "collapse_eof_blank_lines",
     ]
+
+
+# ---------------------------------------------------------------------------
+# Helpers para construir un LessonStore con lecciones válidas sin red ni procs
+# ---------------------------------------------------------------------------
+
+import uuid  # noqa: E402 — import tarde pero dentro del módulo de test
+from pathlib import Path
+
+from atlas.core.lesson_store import (
+    Lesson,
+    LessonProvenance,
+    LessonStore,
+    LessonVerifier,
+    ProveItResult,
+)
+
+
+def _make_store(tmp_path: Path) -> LessonStore:
+    return LessonStore(tmp_path / "lessons")
+
+
+def _pass_evidence() -> dict:
+    """Evidence PASS mínima usando LessonVerifier.verify_internal."""
+    prove_it = ProveItResult(
+        test_path="tests/test_foo.py",
+        fix_commit="abc123",
+        failed_before=True,
+        passes_after=True,
+    )
+    ev = LessonVerifier().verify_internal(prove_it)
+    return ev.to_dict()
+
+
+def _lesson_with_avoid(pattern: str) -> Lesson:
+    return Lesson(
+        id=f"lesson-{uuid.uuid4().hex[:8]}",
+        title="Test lesson",
+        provenance=LessonProvenance.INTERNAL_FAILURE,
+        detection_heuristic="detect trailing space",
+        avoid_pattern=pattern,
+        evidence=_pass_evidence(),
+    )
+
+
+class TestLessonStoreIntegration:
+    def test_retrocompat_no_lesson_store(self) -> None:
+        """Sin lesson_store, comportamiento idéntico al baseline."""
+        # Un fichero con trailing whitespace: strip_trailing_whitespace se aplica.
+        out = DeterministicProducer().produce(_spec("x.py", "a = 1   \n"))
+        assert "strip_trailing_whitespace" in out.metadata["transforms_applied"]
+
+    def test_avoid_pattern_matches_skips_transform(self, tmp_path: Path) -> None:
+        """avoid_pattern presente en el candidato → transform descartado."""
+        store = _make_store(tmp_path)
+        # El candidato tras strip_trailing_whitespace es "a = 1\n".
+        # Ponemos "a = 1" como avoid_pattern (subcadena del candidato).
+        store.add(_lesson_with_avoid("a = 1"))
+        producer = DeterministicProducer(lesson_store=store)
+        out = producer.produce(_spec("x.py", "a = 1   \n"))
+        # strip_trailing_whitespace y todos los que producen "a = 1" deben estar ausentes
+        assert "strip_trailing_whitespace" not in out.metadata["transforms_applied"]
+
+    def test_avoid_pattern_no_match_transform_applied(self, tmp_path: Path) -> None:
+        """avoid_pattern que no aparece en el candidato → transform sí se aplica."""
+        store = _make_store(tmp_path)
+        store.add(_lesson_with_avoid("NEVER_IN_SOURCE_XYZ"))
+        producer = DeterministicProducer(lesson_store=store)
+        out = producer.produce(_spec("x.py", "a = 1   \n"))
+        assert "strip_trailing_whitespace" in out.metadata["transforms_applied"]
+
+    def test_avoid_pattern_empty_string_no_discards(self, tmp_path: Path) -> None:
+        """avoid_pattern vacío: la lección no descarta nada (la guarda filtra str vacíos)."""
+        store = _make_store(tmp_path)
+        # Creamos una Lesson con avoid_pattern="" — la guarda la persiste
+        # (la ley solo exige Evidence PASS, no que el patrón sea no-vacío).
+        lesson = Lesson(
+            id=f"lesson-{uuid.uuid4().hex[:8]}",
+            title="Lección sin patrón",
+            provenance=LessonProvenance.INTERNAL_FAILURE,
+            detection_heuristic="noop",
+            avoid_pattern="",
+            evidence=_pass_evidence(),
+        )
+        store.add(lesson)
+        producer = DeterministicProducer(lesson_store=store)
+        out = producer.produce(_spec("x.py", "a = 1   \n"))
+        # El patrón vacío es filtrado por `if l.avoid_pattern`, no bloquea nada.
+        assert "strip_trailing_whitespace" in out.metadata["transforms_applied"]
