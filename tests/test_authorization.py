@@ -372,3 +372,71 @@ def test_valid_grant_contained_true_reversible(orch, monkeypatch) -> None:
 
     assert received_actions[0].reversible is True
     assert received_actions[0].sensitivity == "moderate"
+
+
+# ---------------------------------------------------------------------------
+# Tests de integración: authorize_offensive_action escribe en Merkle
+# ---------------------------------------------------------------------------
+
+def test_denied_grant_writes_merkle_with_reason_and_grant(orch, monkeypatch) -> None:
+    """Grant con firma inválida → Merkle registra authz.denied con reason y grant serializado."""
+    monkeypatch.setenv("ATLAS_AUTHZ_HMAC_KEY", KEY.decode())
+
+    bad_grant = AuthorizationGrant(
+        target=TargetSpec(value="192.168.1.1", kind="host"),
+        capability=Capability.SCAN,
+        expires_at=_future(),
+        issuer="attacker",
+        algo="hmac-sha256",
+        signature="deadbeef",
+    )
+
+    orch.authorize_offensive_action(
+        bad_grant,
+        candidate_target="192.168.1.1",
+        capability=Capability.SCAN,
+        intent="test",
+        contained=True,
+    )
+
+    records = orch._merkle.tail(5)
+    last = records[-1]
+    assert last.action == "authz.denied"
+    assert last.result == "blocked"
+    assert "reason" in last.payload
+    assert "grant" in last.payload
+    grant_dict = last.payload["grant"]
+    assert "issuer" in grant_dict
+    assert "capability" in grant_dict
+
+
+def test_valid_grant_writes_merkle_with_grant_fields(orch, monkeypatch) -> None:
+    """Grant válido → Merkle registra authz.granted con grant serializado (issuer, capability)."""
+    monkeypatch.setenv("ATLAS_AUTHZ_HMAC_KEY", KEY.decode())
+
+    from atlas.core.decider.decider import DecisionAction, Deny
+
+    class CapturingDecider:
+        def decide(self, action: DecisionAction, *, sanctioned_intent, context):
+            return Deny(reason="capturado")
+
+    orch.set_decider(CapturingDecider())  # type: ignore[arg-type]
+
+    valid_grant = _grant(target_value="192.168.1.1", target_kind="host", capability=Capability.SCAN)
+
+    orch.authorize_offensive_action(
+        valid_grant,
+        candidate_target="192.168.1.1",
+        capability=Capability.SCAN,
+        intent="test",
+        contained=True,
+    )
+
+    records = orch._merkle.tail(10)
+    authz_record = next((r for r in reversed(records) if r.action == "authz.granted"), None)
+    assert authz_record is not None, "No se encontró registro authz.granted en Merkle"
+    assert authz_record.result == "success"
+    assert "grant" in authz_record.payload
+    grant_dict = authz_record.payload["grant"]
+    assert grant_dict["issuer"] == ISSUER
+    assert "SCAN" in grant_dict["capability"]
