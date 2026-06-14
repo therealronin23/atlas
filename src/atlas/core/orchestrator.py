@@ -355,6 +355,71 @@ class Orchestrator:
             self.register_undo(act_hash, SNAPSHOT, result.snapshot_id)
         return result
 
+    def authorize_offensive_action(
+        self,
+        grant: "Any",
+        *,
+        candidate_target: str,
+        capability: "Any",
+        intent: str,
+        contained: bool,
+    ) -> "tuple[Any, str | None]":
+        """ADR-043 Fase 0 — gate de autorización + seam del decisor para acciones
+        ofensivas. Autorización NECESARIA pero NO suficiente: un grant válido pasa
+        el gate, pero el decisor sigue gobernando (lo irreversible/activo escala o se
+        deniega; lo contenido-en-sandbox=reversible puede fluir). Fail-closed."""
+        import os
+        from atlas.security.authorization import AuthorizationVerifier
+
+        key = os.environ.get("ATLAS_AUTHZ_HMAC_KEY", "").encode()
+        hmac_key: bytes | None = key if key else None
+        authz = AuthorizationVerifier(hmac_key=hmac_key).check(
+            grant,
+            candidate_target=candidate_target,
+            capability=capability,
+        )
+        if not authz.allowed:
+            self._merkle.log(
+                action="authz.denied",
+                agent="authorization",
+                result="blocked",
+                risk_level="high",
+                payload={
+                    "target": candidate_target,
+                    "capability": str(capability),
+                    "reason": authz.reason,
+                },
+            )
+            return Deny(reason=f"sin autorización: {authz.reason}"), None
+
+        self._merkle.log(
+            action="authz.granted",
+            agent="authorization",
+            result="success",
+            risk_level="moderate",
+            payload={
+                "target": candidate_target,
+                "capability": str(capability),
+                "issuer": grant.issuer,
+            },
+        )
+        task = Task(intent=intent, source=TaskSource.INTERNAL)
+        return self._consult_decider(
+            DecisionAction(
+                kind="offensive_action",
+                requires_approval=True,
+                mutating=True,
+                reversible=contained,
+                sensitivity="moderate" if contained else "high",
+                descriptor=f"{capability}@{candidate_target}",
+                reason=(
+                    f"acción ofensiva (grant issuer={grant.issuer},"
+                    f" exp={grant.expires_at}, contained={contained})"
+                ),
+            ),
+            task,
+        )
+
     def handle_intent(self, intent: str, source: TaskSource = TaskSource.CLI) -> Task:
         """
         Convierte una intencion en una Task ejecutada con todo el pipeline:

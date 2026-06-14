@@ -1,8 +1,7 @@
 # ADR-043 — Autorización verificable y artefacto de hallazgo de seguridad
 
-Fecha: 2026-06-13 · **Estado: Propuesto** (sin código aún; registra el diseño
-para revisión, siguiendo la convención del repo de que un ADR aceptado llega
-con su implementación) · Contexto: `docs/roadmap_mythos_2026-06-13.md`,
+Fecha: 2026-06-13 · **Estado: Aceptado (Fase 0)** · Implementado: 2026-06-14.
+Contexto: `docs/roadmap_mythos_2026-06-13.md`,
 ADR-041, ADR-042, ADR-040 (decider PDP).
 
 ## Problema
@@ -75,8 +74,27 @@ válido, verificable y auditado — no el juicio del modelo en el momento.
   el grant como parte del envelope.
 - LessonStore (capa 4) tipa cada finding reproducido como patrón de defensa.
 
-## Pendiente antes de pasar a "Aceptado"
+## Tabla de decisiones — Fase 0 (implementada)
 
-Implementación + tests (verificación de grant válido/expirado/fuera de scope,
-reproducción de finding en sandbox, denegación auditada en Merkle, HMAC
-stdlib), todo sin red ni subprocesos reales en los tests.
+| # | Decisión | Elegida | Alternativa | Porqué |
+|---|---|---|---|---|
+| F0-1 | Firma enchufable | Protocolo `Signer`/`SigVerifier` con registro por `algo` | monolítica | Permite añadir ed25519 sin tocar el gate |
+| F0-2 | HMAC stdlib | `hmac.new` + `hashlib.sha256` (stdlib, sin deps) | `cryptography` desde el día 1 | Regla stdlib-first; HMAC basta para caso mono-usuario |
+| F0-3 | ed25519 | Import perezoso dentro del método; `RuntimeError` claro si falta | dep obligatoria | La dep es opcional; no añadir a pyproject hasta caso multi-parte |
+| F0-4 | TargetSpec host | Match exacto; sin puerto en spec → cualquier puerto; con puerto → exacto | glob/regex | Semántica clara y auditable; stdlib `rsplit` |
+| F0-5 | TargetSpec CIDR | `ipaddress.ip_network` stdlib; candidate inválido → False | dep externa | Stdlib suficiente; fail-closed en parse |
+| F0-6 | Gate fail-closed | Cada paso devuelve `AuthorizationDecision(allowed=False, reason=...)` | excepción | La excepción puede ser capturada y silenciada; el bool explicit es auditado |
+| F0-7 | Autorización necesaria no suficiente | Gate pasa → `_consult_decider` sigue gobernando | gate suficiente | Mantiene el PDP como árbitro final; el grant es evidencia, no pase libre |
+| F0-8 | Seam dormido | Método en Orchestrator sin callers en Fase 0 | cablear a acción real | Fase 2 lo activa; Fase 0 solo construye la armadura y verifica que compila |
+| F0-9 | Alcance Fase 0 | Solo armadura: Capability, TargetSpec, grant, verifier, seam | incluir SECURITY_FINDING | Finding + reproducción en sandbox es Fase 1 (ADR-043 §3) |
+
+## Fase 0 — Archivos implementados
+
+- `src/atlas/security/authorization.py` — módulo completo (Capability, TargetSpec, Signer/SigVerifier protocols, HMACSigner/HMACVerifier, Ed25519Signer/Verifier, verifier_for, AuthorizationGrant, AuthorizationDecision, AuthorizationVerifier).
+- `src/atlas/core/orchestrator.py` — método `authorize_offensive_action` (seam dormido, ADR-043 Fase 2 lo cableará).
+- `tests/test_authorization.py` — 20 tests (HMAC roundtrip, tamper, expirado, capacidad, TargetSpec host/CIDR/port, algo desconocido, sin clave, ed25519 condicional, wiring seam).
+
+## Pendiente (Fases siguientes)
+
+- Fase 1: `SECURITY_FINDING` como nuevo `ArtifactKind`; reproducción PoC en `LayeredIsolationSandbox`.
+- Fase 2: cablear `authorize_offensive_action` a los workers/productores de seguridad en el enjambre (capa 3) y la cascada (capa 2).
