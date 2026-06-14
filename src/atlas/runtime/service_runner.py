@@ -37,6 +37,7 @@ class AtlasServiceRunner:
         self._self_audit_thread: threading.Thread | None = None
         self._swarm_thread: threading.Thread | None = None
         self._audit_sample_thread: threading.Thread | None = None
+        self._knowledge_thread: threading.Thread | None = None
         # ADR-033 #1: barrido periódico de loops agénticos suspendidos y
         # abandonados. Throttled por ATLAS_AGENTIC_SWEEP_S (default 300s). El
         # barrido es no-op salvo que ATLAS_AGENTIC_SUSPENSION_TTL esté fijado,
@@ -220,6 +221,38 @@ class AtlasServiceRunner:
                 time.sleep(min(5.0, poll_s - waited))
                 waited += 5.0
 
+    def _start_knowledge_scheduler_if_enabled(self) -> None:
+        """Daemon de adquisición de conocimiento y CVE-scan (ADR-049 slice 3).
+
+        Activar con ``ATLAS_KNOWLEDGE_SCHEDULER=1`` (off por defecto). Cadencia por
+        ``ATLAS_KNOWLEDGE_POLL_S`` (default 24h)."""
+        if os.environ.get("ATLAS_KNOWLEDGE_SCHEDULER", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return
+        self._knowledge_thread = threading.Thread(
+            target=self._knowledge_loop,
+            daemon=True,
+            name="atlas-knowledge",
+        )
+        self._knowledge_thread.start()
+        _log.info("Knowledge scheduler activo (CVE-scan + dep-bump propuesta-solo)")
+
+    def _knowledge_loop(self) -> None:
+        poll_s = _env_float("ATLAS_KNOWLEDGE_POLL_S", 86400.0)
+        while self._running:
+            try:
+                result = self._orch.knowledge_scan_step()
+                _log.info("knowledge_scan: %s", result)
+            except Exception:  # noqa: BLE001 — un ciclo caído no mata el servicio
+                _log.exception("knowledge_scan_step falló; reintenta tras el intervalo")
+            waited = 0.0
+            while self._running and waited < poll_s:
+                time.sleep(min(5.0, poll_s - waited))
+                waited += 5.0
+
     def _swarm_loop(self) -> None:
         poll_s = _env_float("ATLAS_SWARM_POLL_S", 6 * 60 * 60.0)
         cycle = self._orch.swarm_cycle()
@@ -298,6 +331,7 @@ class AtlasServiceRunner:
         self._start_self_audit_scheduler_if_enabled()
         self._start_swarm_scheduler_if_enabled()
         self._start_audit_sample_scheduler_if_enabled()
+        self._start_knowledge_scheduler_if_enabled()
         self._orch._merkle.log(
             action="service.started",
             agent="service_runner",
@@ -334,6 +368,8 @@ class AtlasServiceRunner:
         if self._audit_sample_thread is not None and self._audit_sample_thread.is_alive():
             # `_running` ya es False; el bucle corta en el siguiente tramo de espera.
             self._audit_sample_thread.join(timeout=8)
+        if self._knowledge_thread is not None and self._knowledge_thread.is_alive():
+            self._knowledge_thread.join(timeout=8)
         self._orch._merkle.log(
             action="service.stopped",
             agent="service_runner",

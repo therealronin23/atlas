@@ -150,6 +150,7 @@ class Orchestrator:
     _maintenance_dep_proposer: Any
     _maintenance_codegen_proposer: Any
     _maintenance_community_scout: Any
+    _knowledge_cve_proposer: Any
 
     # Politica del hybrid classifier:
     # - Si el rule-based devuelve confidence >= SLM_BYPASS_THRESHOLD (1.0),
@@ -788,6 +789,18 @@ class Orchestrator:
             )
         return self._maintenance_dep_proposer
 
+    def _knowledge_cve_proposer_instance(self) -> Any:
+        """CveDepProposer instanciado lazily para bumps CVE-driven."""
+        if self._knowledge_cve_proposer is None:
+            from atlas.knowledge.self_improvement import CveDepProposer
+
+            self._knowledge_cve_proposer = CveDepProposer(
+                pyproject_path=self._project_root() / "pyproject.toml",
+                propose=self.cold_update().propose,
+                merkle=self._merkle,
+            )
+        return self._knowledge_cve_proposer
+
     def maintenance_community_scout(self) -> Any:
         """ADR-039 slice 5 — Scout community (foros) con corroboración obligatoria.
 
@@ -921,6 +934,68 @@ class Orchestrator:
                     floors.append((req.name, spec.version))
                     break
         return floors
+
+    def knowledge_scan_step(self) -> dict:
+        """Escanea CVEs para las deps de Atlas y propone bumps vía ColdUpdate.
+
+        Para cada dep en pyproject: consulta OSV.dev, cruza con la versión
+        instalada (SelfImprovementBridge) y propone dep-bump si hay fixed_version.
+        Sin red cuando SSRF bloquea el egress. Retorna conteos de la pasada.
+        """
+        from datetime import datetime, timezone
+
+        from atlas.knowledge.artifact import KnowledgeArtifact
+        from atlas.knowledge.self_improvement import SelfImprovementBridge
+        from atlas.knowledge.sources import OsvDepSource
+
+        deps = self._pyproject_dep_floors()
+        bridge = SelfImprovementBridge()
+        proposer = self._knowledge_cve_proposer_instance()
+        osv = OsvDepSource(bridge=self._ssrf_bridge)
+
+        scanned = 0
+        total_findings = 0
+        proposed = 0
+
+        for dep_name, _floor in deps:
+            try:
+                records = osv.fetch(dep_name)
+                if not records:
+                    scanned += 1
+                    continue
+                record = records[0]
+                # status -1 = SSRF bloqueado; cualquier non-200 fuera de eso se salta
+                if record.status == -1 or record.status != 200:
+                    scanned += 1
+                    continue
+                try:
+                    content = json.loads(record.payload)
+                except (ValueError, TypeError):
+                    scanned += 1
+                    continue
+
+                artifact = KnowledgeArtifact(
+                    id=f"osv/{dep_name}",
+                    domain="security/cve",
+                    source_id="osv.dev/pypi",
+                    content=content,
+                    provenance={
+                        "url": record.url,
+                        "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+                findings = bridge.scan(artifact)
+                total_findings += len(findings)
+                for f in findings:
+                    if f.fixed_version is not None:
+                        result = proposer.propose_bump(f)
+                        if result is not None:
+                            proposed += 1
+                scanned += 1
+            except Exception:  # noqa: BLE001 — un fallo aislado no aborta el barrido
+                scanned += 1
+
+        return {"scanned": scanned, "findings": total_findings, "proposed": proposed}
 
     def audit_tail(self, n: int = 20) -> list[dict]:
         return [r.to_dict() for r in self._merkle.tail(n)]
@@ -2184,6 +2259,7 @@ class Orchestrator:
         self._maintenance_dep_proposer = None
         self._maintenance_codegen_proposer = None
         self._maintenance_community_scout = None
+        self._knowledge_cve_proposer = None
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()
