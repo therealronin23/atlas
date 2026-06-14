@@ -156,6 +156,24 @@ Actualizado: 2026-06-14.
   pausar el loop autónomo durante sesiones de desarrollo (la contención del
   2026-06-13 lo evidenció).
 
+## Organismo de conocimiento (ADR-049)
+
+- **Daemon hacia afuera** — proceso que ejecuta misiones en segundo plano;
+  requiere gating igual que swarm/audit_sample.
+- **Reporte por Telegram** — notificar findings al twin Hermes (canal ya
+  existe; requiere integración con la misión).
+- **MCP como fuente de conocimiento** — envolver herramientas MCP (ADR-035)
+  como `KnowledgeSource`; diferido para validar la columna básica primero.
+- **Misiones concretas de dominio** — persona inmobiliario y persona
+  ciberseguridad ofensiva; la columna está lista, falta la configuración
+  específica de cada misión.
+- **Cableado vivo del SelfImprovementBridge** — conectar la señal del puente
+  al scheduler de `ColdUpdate`/audit en ejecución.
+- **Más conectores** — feeds RSS/Atom, NVD, EPSS, mercados inmobiliarios;
+  solo requieren implementar el `KnowledgeSource` Protocol.
+- **Skills por dominio que mejoran con el tiempo** — usar la `KnowledgeBase`
+  acumulada como contexto de grounding para los productores (ADR-048).
+
 ## Horizonte largo
 
 - `ArtifactKind.PROOF` + artefactos con prueba → puente a sustrato formal

@@ -35,6 +35,7 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "generativelanguage.googleapis.com",   # Gemini free tier
     "api.together.xyz",                     # Together AI
     "api.mistral.ai",
+    "api.osv.dev",                           # ADR-049 T4: OSV.dev vulnerabilities API
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)
