@@ -13,16 +13,28 @@ fallos internos (LessonStore), propuestas de cambio sobre su propio código
 (ColdUpdate), verificación de sus propios artefactos (UniversalVerifier). Es
 un sistema **introspectivo**.
 
-El paso siguiente es convertirlo en un **organismo de conocimiento**: Atlas
-adquiere información del mundo exterior, la verifica con el mismo motor de
-verificación que ya tiene (capa 1), la acumula por dominio en una base
-persistente, y la usa en dos direcciones:
+El paso siguiente es convertirlo en un **organismo de conocimiento vivo**: Atlas
+adquiere información del mundo exterior —de miles de APIs públicas, MCP,
+skills, feeds, herramientas, registros— la verifica con el mismo motor que ya
+tiene (capa 1), la acumula por dominio, y la usa en dos direcciones:
 
-1. **Misiones hacia afuera** — responder preguntas de dominio (ciberseguridad,
-   inmobiliario, cualquier área) con conocimiento fundamentado, no alucinado.
-2. **Retroalimentación hacia adentro** — el conocimiento externo vuelve al
-   self-maintenance loop: un CVE de una dependencia propia es a la vez
-   información de dominio y señal de auto-mejora.
+1. **Misiones hacia afuera** — responder preguntas de cualquier dominio con
+   conocimiento fundamentado, no alucinado. La persona es una misión, no un
+   sistema separado.
+2. **Retroalimentación hacia adentro** — el conocimiento externo mejora al
+   propio Atlas: plugins nuevos, skills disponibles, vulnerabilidades en sus
+   deps, patrones de arquitectura, mejoras de sus propios productores. Si algo
+   amplía o mejora el sistema → propuesta automática; si hay duda → escalar al
+   PDP (decider intercambiable, no fijado al humano).
+
+**Alcance del "mejorarse a sí mismo":** no solo CVEs de deps. Todo lo que
+amplíe la capacidad de Atlas entra en el ciclo: herramientas MCP recién
+publicadas que Atlas puede registrar, skills del ecosistema que Atlas puede
+cargar, cambios de API en fuentes que Atlas ya usa, patrones de código que
+la comunidad ha identificado como mejores, versiones de sus propias dependencias.
+La columna de conocimiento es el conducto; la diferencia entre "dato de dominio"
+y "señal de auto-mejora" la establece el `SelfImprovementBridge`, extensible
+por tipo de artefacto.
 
 Las "personas" (agente inmobiliario, experto en ciberseguridad ofensiva) no son
 sistemas separados. Son **misiones encima de esta columna genérica**: la
@@ -104,25 +116,55 @@ Todos los componentes son Python puro, sin dependencias nuevas.
 ## Diferido (explícito)
 
 Los siguientes puntos se reconocen como necesarios pero se posponen
-deliberadamente para no bloquear el slice 1.
+deliberadamente para no bloquear el slice 1. Orden sugerido de valor:
 
-- **Daemon hacia afuera** — proceso que ejecuta misiones en segundo plano;
-  requiere gating igual que swarm/audit_sample para no abrir superficie sin
-  supervisión.
+### Slice 2 — Version-range matching (SelfImprovementBridge)
+
+El bridge actual emite TODAS las vulns históricas de un paquete sin comparar
+la versión instalada contra los rangos `affected`/`fixed` de OSV. Resultado:
+ruido (fastapi 0.136.3 marcada con un GHSA fixed en 0.65.2). El filtro de
+relevancia real: si `installed_version` cae dentro de un rango
+`[introduced, fixed)` del OSV payload → finding genuino; si no → descartar.
+Implementar `_version_in_range(installed: str, ranges: list[dict]) -> bool`
+en `self_improvement.py` usando `packaging.version` (ya transitiva).
+
+### Slice 3 — Daemon hacia afuera + cableado al self-maintenance loop
+
+- **`ATLAS_KNOWLEDGE_SCHEDULER`** gated daemon en `AtlasServiceRunner` (mismo
+  patrón que swarm/audit_sample): ejecuta misiones en segundo plano, cadencia
+  configurable.
+- **Cableado vivo del SelfImprovementBridge** — `SelfRelevantFinding` →
+  propuesta ColdUpdate (dep-bump o parche de config) vía el scheduler real.
+  Primer caso concreto: CVE con `fixed_version` conocida → `DepBumpProposal`.
+  Si hay duda → decider (PDP intercambiable). Si es claro (severidad alta +
+  fixed_version conocida + version-range confirma afectación) → propuesta
+  automática.
+
+### Slice 4 — MCP como fuente + Skills autodescubribles
+
+- **MCP como fuente de conocimiento** — envolver herramientas MCP (ADR-035)
+  como `KnowledgeSource`; Atlas puede registrar herramientas externas recién
+  publicadas que amplíen sus capacidades. Cuando la columna detecta un MCP
+  nuevo relevante → propuesta de integración al self-maintenance loop.
+- **Skills autodescubribles** — el ecosistema de skills puede ser un dominio
+  de conocimiento. Atlas rastrea skills disponibles, las compara con las
+  instaladas, y propone incorporar las que amplíen su capacidad.
+
+### Slice 5 — Conectores de dominio + personas
+
+- **Feeds RSS/Atom, NVD, EPSS** — más señales de seguridad sin deps nuevas.
+- **Datos inmobiliarios** — idealista/fotocasa (scraping + parsing);
+  primer caso de misión de dominio no-seguridad.
+- **Misiones concretas de dominio** — persona inmobiliario (precios,
+  registros, alertas) y persona ciberseguridad ofensiva (CVEs activos,
+  exploits, advisories); la columna las aloja sin cambio de arquitectura.
 - **Reporte por Telegram** — notificar findings al twin Hermes (canal ya
-  existe; requiere integración con la misión).
-- **MCP como fuente de conocimiento** — el cliente MCP (ADR-035) puede
-  envolver herramientas externas como fuentes; diferido para no añadir
-  complejidad antes de validar la columna básica.
-- **Misiones concretas de dominio** — persona inmobiliario (precios, registros)
-  y persona ciberseguridad ofensiva (CVEs activos, exploits); el slice 1 deja
-  la columna lista para alojarlas.
-- **Cableado vivo del SelfImprovementBridge** — conectar la señal de
-  `SelfImprovementBridge` al loop de `ColdUpdate`/audit en ejecución; ahora
-  el puente existe pero la señal no llega al scheduler real.
-- **Más conectores** — feeds RSS/Atom, APIs públicas de seguridad (NVD, EPSS),
-  datos regulatorios, mercados inmobiliarios; la columna es agnóstica, solo
-  hace falta implementar el Protocol.
-- **Skills por dominio que mejoran con el tiempo** — usar la KnowledgeBase
-  acumulada como contexto de grounding para los productores (ADR-048); cierra
-  el ciclo conocimiento → calidad de generación.
+  existe; integración con misión).
+
+### Slice 6 — Skills por dominio que mejoran con el tiempo
+
+- KnowledgeBase acumulada como contexto de grounding para los productores
+  (ADR-048): cada productor recibe el fragmento de KB relevante como contexto
+  antes de generar → cierra el ciclo conocimiento → calidad de generación.
+- Grounding bidireccional: los artefactos generados por los productores
+  referencian la KB que los fundamentó (trazabilidad de vuelta a fuente).

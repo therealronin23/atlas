@@ -158,21 +158,55 @@ Actualizado: 2026-06-14.
 
 ## Organismo de conocimiento (ADR-049)
 
-- **Daemon hacia afuera** — proceso que ejecuta misiones en segundo plano;
-  requiere gating igual que swarm/audit_sample.
-- **Reporte por Telegram** — notificar findings al twin Hermes (canal ya
-  existe; requiere integración con la misión).
-- **MCP como fuente de conocimiento** — envolver herramientas MCP (ADR-035)
-  como `KnowledgeSource`; diferido para validar la columna básica primero.
-- **Misiones concretas de dominio** — persona inmobiliario y persona
-  ciberseguridad ofensiva; la columna está lista, falta la configuración
-  específica de cada misión.
-- **Cableado vivo del SelfImprovementBridge** — conectar la señal del puente
-  al scheduler de `ColdUpdate`/audit en ejecución.
-- **Más conectores** — feeds RSS/Atom, NVD, EPSS, mercados inmobiliarios;
-  solo requieren implementar el `KnowledgeSource` Protocol.
-- **Skills por dominio que mejoran con el tiempo** — usar la `KnowledgeBase`
-  acumulada como contexto de grounding para los productores (ADR-048).
+**Visión correcta (aclaración 2026-06-14):** Atlas no busca solo CVEs.
+Busca TODO lo que lo amplíe o mejore: plugins, skills, herramientas, APIs,
+patrones de código, deps nuevas, feeds de conocimiento de cualquier dominio.
+El primer conector fue CVE/OSV.dev porque era concreto y sin riesgo; la
+arquitectura es genérica para cualquier señal exterior. Si algo mejora el
+sistema → propuesta automática; si hay duda → escalar al decider (PDP
+intercambiable). El humano no es el único decisor, solo una implementación.
+
+### Slice 2 — Inmediato (version-range matching)
+
+- **[PRÓXIMO] Version-range matching en `SelfImprovementBridge`** — comparar
+  `installed_version` contra rangos OSV `affected[].ranges[].events[]` usando
+  `packaging.version` (ya transitiva). Solo emitir `SelfRelevantFinding`
+  cuando la versión instalada cae dentro de `[introduced, fixed)`. Elimina
+  el ruido de CVEs históricos ya parcheados. Archivo:
+  `src/atlas/knowledge/self_improvement.py`, función
+  `_version_in_range(installed, ranges) -> bool`.
+
+### Slice 3 — Cableado al loop de auto-mejora
+
+- **Daemon hacia afuera** (`ATLAS_KNOWLEDGE_SCHEDULER`) — proceso en segundo
+  plano que ejecuta misiones; mismo patrón que swarm/audit_sample.
+- **Cableado vivo del SelfImprovementBridge** — `SelfRelevantFinding` →
+  propuesta ColdUpdate (dep-bump con `fixed_version` conocida → automático si
+  severidad alta; dudoso → decider). Cierra el ciclo: Atlas detecta que una
+  dep suya tiene CVE → propone el bump solo, sin humano.
+- **Reporte por Telegram** — twin Hermes notifica findings al operador.
+
+### Slice 4 — MCP y skills autodescubribles
+
+- **MCP como fuente de conocimiento** — cliente ADR-035 como `KnowledgeSource`;
+  Atlas rastrea herramientas MCP del ecosistema y propone integrar las
+  relevantes → se amplía solo.
+- **Skills autodescubribles** — dominio "atlas/skills": lista de skills
+  disponibles, comparar con instaladas, proponer incorporar las útiles.
+
+### Slice 5 — Personas y conectores de dominio
+
+- **Misiones concretas de dominio** — persona inmobiliario (idealista/fotocasa,
+  alerta de precio) y persona ciberseguridad ofensiva (CVEs activos + exploits
+  + advisories, vía ADR-043 grants). La columna ya las soporta.
+- **Más conectores** — feeds RSS/Atom, NVD, EPSS, datos regulatorios,
+  mercados; solo implementar el `KnowledgeSource` Protocol por conector.
+
+### Slice 6 — KB como grounding de los productores (cierre del ciclo)
+
+- KnowledgeBase acumulada como contexto vivo para ADR-048 (VerifiedProducer);
+  cada artefacto generado referencia el fragmento de KB que lo fundamentó
+  (trazabilidad fuente → generación → verificación).
 
 ## Horizonte largo
 
