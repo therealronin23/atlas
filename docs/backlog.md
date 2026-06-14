@@ -92,8 +92,11 @@ Actualizado: 2026-06-14.
   ACEPTADO → propuesta ColdUpdate (origin="swarm", nuevo origen permitido) →
   seam del decider. **Auto-apply apagado**: solo propone, nunca aplica. Tests
   con manager fake + integración con ColdUpdateManager real.
-- `audit_sample` que **re-ejecuta** la suite sobre la muestra (hoy solo
-  selecciona la muestra; falta la re-verificación real).
+- **[HECHO 2026-06-14] `audit_sample` cableado a daemon.** `reverify_swarm_proposals`
+  corre en un daemon in-process de `AtlasServiceRunner` (gate
+  `ATLAS_AUDIT_SAMPLE_SCHEDULER`, off; cadencia `ATLAS_AUDIT_SAMPLE_POLL_S`=24h;
+  fracción `ATLAS_AUDIT_SAMPLE_FRACTION`=0.2; patrón swarm, escritor único). Es el
+  gate de evidencia para promoción a auto-apply. Commit `1f46742`.
 - **Primer enjambre operativo**: 3 workers de mantenimiento, una semana sin
   intervención — el listón falsable (dirección §3). Decisión operativa.
 - Cableado a la **entrada general de tareas** (`handle_intent`/decider), para
@@ -125,28 +128,30 @@ Actualizado: 2026-06-14.
 
 ## Criterio de rechazo y pérdida de candidatos
 
-- **[BUG] Rechazos sin evidencia forense.** Cuando un worktree falla (`pytest_exit=1`
-  o `mypy_exit=1`), el ColdUpdate queda en `rejected` pero sin el output exacto
-  guardado. Si el fallo es ambiental (test flaky, dep transitiva no instalada, env
-  diferente) el candidato se pierde para siempre y no hay forma de distinguirlo de
-  un fallo real. Fix: persistir el stdout/stderr del worktree en el store al rechazar.
-- **[DISEÑO] HITL para rechazos, no para aprobaciones.** El modelo actual pide
-  aprobación humana para aplicar; el modelo deseable es el inverso: los candidatos
-  que pasan la criba fluyen solos, pero los rechazados (especialmente si el diff
-  de test está vacío — ningún test nuevo falló) se presentan al operador con la
-  evidencia para decidir si reintentar o descartar. Encaja con ADR-040/047: el
-  humano revisa anomalías, no guarda la puerta de cada merge.
-- **[DISEÑO] Reintento inteligente.** Si `pytest_exit=1` pero el diff de tests
-  entre base y worktree es vacío (no se añadió ni modificó ningún test), marcar el
-  rechazo como `SUSPECT_FLAKY` y reintentarlo una vez antes de descartar. Reduce
-  falsos negativos sin abrir la puerta a que código roto se aplique.
+- **[HECHO 2026-06-14] Rechazos con evidencia forense.** `ColdUpdateProposal.forensics`
+  persiste pytest/mypy summary+exits+timestamp al fallar `validate()` (retrocompat
+  vía setdefault en `_load`). Ya se puede distinguir fallo real de ambiental. Commit
+  `1f46742`.
+- **[HECHO 2026-06-14] HITL invertido (anomalías al decisor).** SUSPECT_FLAKY
+  persistente se enruta al decisor (PDP intercambiable) con la forense en el context,
+  en vez de descartarse: `_route_anomaly` → `decider.decide(DecisionAction(
+  kind='cold_update_anomaly'), ...)`. HumanDecider→RequiresHuman (surfacea anomalía),
+  AutonomousDecider→invariantes. Happy path fluye sin aprobación por merge. `decider`
+  opcional (retrocompat). Commit `1f46742`.
+- **[HECHO 2026-06-14] Reintento SUSPECT_FLAKY.** Si `pytest_exit!=0` pero el diff de
+  tests base↔worktree es vacío, `validate()` revalida UNA vez (`_tests_diff_empty`
+  con clean_git_env, fail-closed); pasa→validated, falla→failed conservando forense
+  de ambos intentos. No reintenta si el diff de tests es no vacío ni si solo falla
+  mypy. Commit `1f46742`.
 
 ## Operativo
 
 - Instalar/arrancar la unidad systemd `atlas-audit-24h.service` (decisión del
   operador; no instalada por seguridad).
-- `ColdUpdate.apply` con commit-con-evidencia, para que los aplicados
-  autónomos no queden huérfanos en el árbol (como el bump de `rich`).
+- **[HECHO 2026-06-14] `ColdUpdate.apply` con commit-con-evidencia.**
+  `_commit_with_evidence` escribe un commit con verdict/exits/origin/proposal_id/
+  intent (clean_git_env); root no-git lo omite; fallo de commit no revierte el patch
+  validado. Los aplicados autónomos ya no quedan huérfanos. Commit `1f46742`.
 - Disciplina de escritor único para dev humano: trabajar en worktree aislado o
   pausar el loop autónomo durante sesiones de desarrollo (la contención del
   2026-06-13 lo evidenció).
