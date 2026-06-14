@@ -12,11 +12,14 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from atlas.core.git_env import clean_git_env
 from atlas.core.validation_runner import ValidationReport, ValidationRunner
 from atlas.logging.merkle_logger import MerkleLogger
+
+if TYPE_CHECKING:
+    from atlas.core.decider.decider import Decider
 
 
 @dataclass
@@ -31,6 +34,7 @@ class ColdUpdateProposal:
     risk: str = "medium"    # low | medium | high | critical
     evidence: dict[str, Any] = field(default_factory=dict)
     validation: dict[str, Any] | None = None
+    forensics: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -52,6 +56,8 @@ class ColdUpdateManager:
         project_root: Path,
         merkle: MerkleLogger,
         store_dir: Path | None = None,
+        runner_factory: Callable[[Path], ValidationRunner] | None = None,
+        decider: "Decider | None" = None,
     ) -> None:
         self._root = project_root.resolve()
         self._merkle = merkle
@@ -59,6 +65,8 @@ class ColdUpdateManager:
         self._store_dir.mkdir(parents=True, exist_ok=True)
         self._proposals_file = self._store_dir / "proposals.json"
         self._proposals: dict[str, ColdUpdateProposal] = {}
+        self._runner_factory = runner_factory or (lambda p: ValidationRunner(p))
+        self._decider = decider
         self._load()
 
     def _load(self) -> None:
@@ -67,6 +75,7 @@ class ColdUpdateManager:
         try:
             data = json.loads(self._proposals_file.read_text(encoding="utf-8"))
             for item in data.get("proposals", []):
+                item.setdefault("forensics", {})
                 p = ColdUpdateProposal(**item)
                 self._proposals[p.id] = p
         except Exception:
@@ -164,8 +173,48 @@ class ColdUpdateManager:
 
     def validate(self, proposal_id: str) -> ValidationReport:
         proposal = self._require(proposal_id)
-        runner = ValidationRunner(Path(proposal.worktree_path))
+        worktree = Path(proposal.worktree_path)
+        runner = self._runner_factory(worktree)
         report = runner.run()
+
+        if not report.passed:
+            # Registrar forense del primer intento.
+            first_forensics: dict[str, Any] = {
+                "pytest_summary": report.pytest_summary[:2000],
+                "mypy_summary": report.mypy_summary[:2000],
+                "pytest_exit": report.pytest_exit,
+                "mypy_exit": report.mypy_exit,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            # Flaky-suspect: pytest falla (exit!=0) y no hay cambios en tests/.
+            # Si solo mypy falla (pytest_exit==0) no se reintenta.
+            flaky_candidate = (
+                report.pytest_exit != 0
+                and self._tests_diff_empty(worktree, proposal.base_ref)
+            )
+            if flaky_candidate:
+                first_forensics["flaky_suspect"] = True
+                proposal.forensics = first_forensics
+                retry_runner = self._runner_factory(worktree)
+                retry_report = retry_runner.run()
+                if retry_report.passed:
+                    # Reintento exitoso → validated.
+                    report = retry_report
+                    proposal.forensics["retry"] = retry_report.to_dict()
+                else:
+                    # Reintento también falla → failed con forense de ambos.
+                    proposal.forensics["retry"] = {
+                        "pytest_summary": retry_report.pytest_summary[:2000],
+                        "mypy_summary": retry_report.mypy_summary[:2000],
+                        "pytest_exit": retry_report.pytest_exit,
+                        "mypy_exit": retry_report.mypy_exit,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                    report = retry_report
+                    self._route_anomaly(proposal)
+            else:
+                proposal.forensics = first_forensics
+
         proposal.validation = report.to_dict()
         proposal.status = "validated" if report.passed else "failed"
         proposal.updated_at = datetime.now(timezone.utc).isoformat()
@@ -212,7 +261,7 @@ class ColdUpdateManager:
 
         patch = Path(proposal.patch_path)
         self._apply_patch(self._root, patch)
-        post = ValidationRunner(self._root).run()
+        post = self._runner_factory(self._root).run()
         if not post.passed:
             self._rollback_patch(self._root, patch)
             proposal.status = "failed"
@@ -237,6 +286,7 @@ class ColdUpdateManager:
             risk_level="critical",
             payload={"proposal_id": proposal_id},
         )
+        self._commit_with_evidence(proposal, post)
         self._remove_worktree(proposal)
         return {"proposal_id": proposal_id, "status": "applied", "validation": post.to_dict()}
 
@@ -284,6 +334,48 @@ class ColdUpdateManager:
             "proposal": proposal.to_dict(),
             "diff_stat": self._diff_stat(Path(proposal.worktree_path)),
         }
+
+    def _route_anomaly(self, proposal: ColdUpdateProposal) -> None:
+        """Enruta una anomalía SUSPECT_FLAKY persistente al decisor intercambiable.
+
+        Llamado cuando un reintento de validación también falla en una propuesta
+        marcada como flaky_suspect. Si no hay decisor configurado, no hace nada
+        (retrocompat). Si hay decisor, construye la acción con la forense completa
+        en el context y llama decide(). El veredicto queda registrado en
+        ``proposal.forensics['anomaly_verdict']`` y en merkle.
+
+        No fuerza ningún resultado: bajo HumanDecider → RequiresHuman (se
+        surfacea la anomalía); bajo AutonomousDecider → decide por invariantes.
+        """
+        if self._decider is None:
+            return
+
+        from atlas.core.decider.decider import DecisionAction
+
+        action = DecisionAction(
+            kind="cold_update_anomaly",
+            mutating=False,
+            reversible=True,
+            descriptor=proposal.id,
+        )
+        context: dict[str, object] = {
+            "proposal_id": proposal.id,
+            "intent": proposal.intent,
+            "forensics": proposal.forensics,
+        }
+        verdict = self._decider.decide(action, proposal.intent, context)
+        verdict_repr = repr(verdict)
+        proposal.forensics["anomaly_verdict"] = verdict_repr
+        self._merkle.log(
+            action="cold_update.anomaly_routed",
+            agent="cold_update_manager",
+            result="routed",
+            risk_level="moderate",
+            payload={
+                "proposal_id": proposal.id,
+                "verdict": verdict_repr,
+            },
+        )
 
     def _validate_origin(self, origin: str) -> None:
         if origin not in {"manual", "self_audit", "swarm"}:
@@ -348,6 +440,47 @@ class ColdUpdateManager:
             check=False,
         )
 
+    def _tests_diff_empty(self, worktree: Path, base_ref: str) -> bool:
+        """True si ningún path bajo tests/ fue modificado/añadido respecto a base_ref.
+
+        Comprueba tanto cambios rastreados (git diff) como ficheros nuevos no
+        rastreados (git ls-files --others). Fail-closed: si cualquier subprocess
+        falla devuelve False para NO asumir flaky.
+        """
+        if not worktree.exists():
+            return False
+        try:
+            env = clean_git_env()
+            # Cambios en ficheros ya rastreados.
+            tracked = subprocess.run(
+                ["git", "diff", "--name-only", base_ref, "--", "tests/"],
+                cwd=worktree,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=30,
+            )
+            if tracked.returncode != 0:
+                return False
+            if tracked.stdout.strip():
+                return False
+            # Ficheros nuevos no rastreados bajo tests/.
+            untracked = subprocess.run(
+                ["git", "ls-files", "--others", "--exclude-standard", "--", "tests/"],
+                cwd=worktree,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=30,
+            )
+            if untracked.returncode != 0:
+                return False
+            return untracked.stdout.strip() == ""
+        except Exception:
+            return False
+
     def _diff_stat(self, worktree: Path) -> str:
         if not worktree.exists():
             return ""  # worktree ya destruido (estado terminal)
@@ -360,6 +493,80 @@ class ColdUpdateManager:
             check=False,
         )
         return (result.stdout or result.stderr or "").strip()[:2000]
+
+    def _is_git_repo(self) -> bool:
+        """True si self._root es un repositorio git (comprueba .git o git rev-parse)."""
+        if (self._root / ".git").exists():
+            return True
+        result = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            cwd=self._root,
+            env=clean_git_env(),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.returncode == 0
+
+    def _commit_with_evidence(
+        self,
+        proposal: ColdUpdateProposal,
+        report: ValidationReport,
+    ) -> None:
+        """Commit best-effort tras apply exitoso.
+
+        Genera un commit con mensaje de evidencia (verdict, checks, origin,
+        proposal_id). Si el root no es git o el commit falla, se registra el
+        fallo en forensics y apply() sigue devolviendo status 'applied'.
+        """
+        if not self._is_git_repo():
+            return
+
+        intent_snippet = proposal.intent[:200]
+        msg = (
+            f"cold_update: apply {proposal.id}\n\n"
+            f"verdict: passed\n"
+            f"pytest_exit: {report.pytest_exit}\n"
+            f"mypy_exit: {report.mypy_exit}\n"
+            f"origin: {proposal.origin}\n"
+            f"proposal_id: {proposal.id}\n"
+            f"intent: {intent_snippet}\n"
+        )
+        env = clean_git_env()
+        try:
+            add = subprocess.run(
+                ["git", "add", "-A"],
+                cwd=self._root,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            if add.returncode != 0:
+                raise RuntimeError(f"git add -A failed: {add.stderr[:500]}")
+            commit = subprocess.run(
+                ["git", "commit", "-m", msg],
+                cwd=self._root,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            if commit.returncode != 0:
+                raise RuntimeError(f"git commit failed: {commit.stderr[:500]}")
+        except Exception as exc:
+            proposal.forensics["commit_error"] = str(exc)[:500]
+            proposal.forensics["commit_timestamp"] = datetime.now(timezone.utc).isoformat()
+            self._save()
+            self._merkle.log(
+                action="cold_update.commit_failed",
+                agent="cold_update_manager",
+                result="failure",
+                risk_level="moderate",
+                payload={"proposal_id": proposal.id, "error": str(exc)[:300]},
+            )
 
     def _remove_worktree(self, proposal: ColdUpdateProposal) -> None:
         """Teardown del worktree tras estado terminal. Idempotente. El patch
