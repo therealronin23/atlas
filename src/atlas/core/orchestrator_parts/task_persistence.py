@@ -38,6 +38,7 @@ class TaskPersistence:
 
     def __init__(self, pending_dir: Path, merkle: MerkleLogger) -> None:
         self._dir = pending_dir
+        self._quarantine_dir = pending_dir / "_quarantine"
         self._merkle = merkle
 
     # ------------------------------------------------------------------ summary
@@ -65,6 +66,35 @@ class TaskPersistence:
                 {"id": m.get("id"), "name": m.get("name")} for m in muts
             ]
         return summary
+
+    # ------------------------------------------------------------------ quarantine
+
+    def _quarantine(self, path: Path, *, reason: str) -> None:
+        task_id = path.stem
+        try:
+            self._quarantine_dir.mkdir(parents=True, exist_ok=True)
+            dest = self._quarantine_dir / path.name
+            if dest.exists():
+                ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+                dest = self._quarantine_dir / f"{path.stem}_{ts}{path.suffix}"
+            path.rename(dest)
+            self._merkle.log(
+                action="approval.quarantined",
+                agent="orchestrator",
+                result="success",
+                risk_level="high",
+                payload={"task_id": task_id, "reason": reason, "quarantine_path": str(dest)},
+                task_id=task_id,
+            )
+        except Exception as exc:  # noqa: BLE001
+            self._merkle.log(
+                action="approval.quarantine_failed",
+                agent="orchestrator",
+                result="failure",
+                risk_level="moderate",
+                payload={"task_id": task_id, "reason": reason, "error": str(exc)[:500]},
+                task_id=task_id,
+            )
 
     # ------------------------------------------------------------------ persist
 
@@ -115,6 +145,7 @@ class TaskPersistence:
                     },
                     task_id=task_id,
                 )
+                self._quarantine(path, reason="legacy")
                 return None
             task_data = unwrap_task_payload(raw)
             if task_data is None:
@@ -126,6 +157,7 @@ class TaskPersistence:
                     payload={"task_id": task_id, "path": str(path)},
                     task_id=task_id,
                 )
+                self._quarantine(path, reason="mac_mismatch")
                 return None
             return self.deserialize(task_data)
         except Exception as exc:  # noqa: BLE001
@@ -143,7 +175,7 @@ class TaskPersistence:
             return []
         tasks: list[Task] = []
         for path in sorted(self._dir.glob("*.json")):
-            if ".executing" in path.name:
+            if ".executing" in path.name or path.name.startswith("_"):
                 continue
             task = self.load(path.stem)
             if task is not None:
