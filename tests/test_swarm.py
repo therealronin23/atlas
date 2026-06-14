@@ -186,6 +186,32 @@ class TestCoordinatorRounds:
         assert result.reconcile_errors[0][0] == result.accepted[0].id
         assert "boom" in result.reconcile_errors[0][1]
 
+    def test_produce_error_does_not_kill_round(self) -> None:
+        bb = Blackboard()
+        coord = SwarmCoordinator(_verifier({"ok"}), bb)
+
+        @dataclass
+        class BoomWorker:
+            worker_id: str = "boom"
+            domain: str = "maint"
+
+            def produce(self, task: Any) -> Artifact:
+                raise RuntimeError("produce exploded")
+
+        coord.assign(BoomWorker(), Envelope("boom", "maint", 100, _future()))
+        coord.assign(FakeWorker("w2", "maint", code="ok"), Envelope("w2", "maint", 100, _future()))
+
+        result = coord.run_round({"boom": "t", "w2": "t"})
+
+        assert len(result.produce_errors) == 1
+        assert result.produce_errors[0][0] == "boom"
+        assert "produce exploded" in result.produce_errors[0][1]
+        assert len(result.accepted) == 1
+        assert result.accepted[0].worker_id == "w2"
+        assert result.rejected == ()
+        assert result.skipped == ()
+        assert result.reconcile_errors == ()
+
 
 class TestAuditSampling:
     def _coord_with_n_accepted(self, n: int) -> SwarmCoordinator:

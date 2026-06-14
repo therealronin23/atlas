@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from atlas.core.git_env import _GIT_HOOK_ENV_VARS
+
 
 _EXTERNAL_API_KEYS = (
     "GROQ_API_KEY",
@@ -48,6 +50,12 @@ _AUTONOMY_ENV_KEYS = (
     "ATLAS_MAINTENANCE_SCHEDULER",
     "ATLAS_MAINTENANCE_POLL_S",
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_hook_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _GIT_HOOK_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
 
 
 @pytest.fixture(autouse=True)
