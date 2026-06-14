@@ -156,6 +156,25 @@ Actualizado: 2026-06-14.
   pausar el loop autónomo durante sesiones de desarrollo (la contención del
   2026-06-13 lo evidenció).
 
+## Compliance Gateway (ADR-051) — propuesto 2026-06-15
+
+Capa de cumplimiento acotado para modelos frontier restringidos (a raíz del
+apagón de Fable 5/Mythos 5 del 12-jun-2026, verificado vía Time/CNBC/Al
+Jazeera/Fortune + statement de Anthropic). **Tesis + demo, no producto MITM.**
+Eje: transparencia mutua verificable sobre Merkle único; privacidad del usuario
+como invariante; lista de abusos gobernada (pública, sellada, anclada a ley);
+opt-in por sesión; respuesta graduada con destinatario predeclarado.
+Entregable inmediato: demo de ~2 min como carta de presentación
+(`docs/compliance_gateway_carta.md`). Slices en ADR-051.
+
+## Asimilación completa de Odysseus (ADR-052) — propuesto 2026-06-15
+
+Asimilar **todo** lo que a Atlas le falta de Odysseus (chat/agent UI, cookbook,
+deep research, compare, documents, email, notes/tasks, calendar, image editor,
+PWA, Docker) **sin perder nada** del sello Atlas. Por reimplementación, no fork.
+Regla de oro: cada feature pasa los 4 pasos (capability → executor → Merkle →
+Decider) o no entra. Programa multi-fase, no sprint. Detalle y fases en ADR-052.
+
 ## Organismo de conocimiento (ADR-049)
 
 **Visión correcta (aclaración 2026-06-14):** Atlas no busca solo CVEs.
