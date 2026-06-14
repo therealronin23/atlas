@@ -36,6 +36,7 @@ class AtlasServiceRunner:
         self._dashboard_thread: threading.Thread | None = None
         self._self_audit_thread: threading.Thread | None = None
         self._swarm_thread: threading.Thread | None = None
+        self._audit_sample_thread: threading.Thread | None = None
         # ADR-033 #1: barrido periódico de loops agénticos suspendidos y
         # abandonados. Throttled por ATLAS_AGENTIC_SWEEP_S (default 300s). El
         # barrido es no-op salvo que ATLAS_AGENTIC_SUSPENSION_TTL esté fijado,
@@ -181,6 +182,44 @@ class AtlasServiceRunner:
         self._swarm_thread.start()
         _log.info("Swarm scheduler activo (ciclo mantenimiento in-process, propuesta-solo)")
 
+    def _start_audit_sample_scheduler_if_enabled(self) -> None:
+        """Muestrea el enjambre de auditoría DENTRO del proceso serve (escritor único).
+
+        Activar con ``ATLAS_AUDIT_SAMPLE_SCHEDULER=1`` (off por defecto). Cadencia por
+        ``ATLAS_AUDIT_SAMPLE_POLL_S`` (default 24h). Fracción muestreada por
+        ``ATLAS_AUDIT_SAMPLE_FRACTION`` (default 0.2)."""
+        if os.environ.get("ATLAS_AUDIT_SAMPLE_SCHEDULER", "").strip().lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            return
+        self._audit_sample_thread = threading.Thread(
+            target=self._audit_sample_loop,
+            daemon=True,
+            name="atlas-audit-sample",
+        )
+        self._audit_sample_thread.start()
+        _log.info("Audit-sample scheduler activo (ciclo in-process, escritor único)")
+
+    def _audit_sample_loop(self) -> None:
+        poll_s = _env_float("ATLAS_AUDIT_SAMPLE_POLL_S", 86400.0)
+        try:
+            fraction = float(os.environ.get("ATLAS_AUDIT_SAMPLE_FRACTION", "0.2"))
+        except ValueError:
+            fraction = 0.2
+        while self._running:
+            try:
+                result = self._orch.swarm_audit_sample(fraction=fraction)
+                _log.info("audit_sample: %s", result)
+            except Exception:  # noqa: BLE001 — un ciclo caído no mata el bucle ni el servicio
+                _log.exception("audit_sample falló; reintenta tras el intervalo")
+            # Espera troceada para reaccionar al stop sin colgar el shutdown.
+            waited = 0.0
+            while self._running and waited < poll_s:
+                time.sleep(min(5.0, poll_s - waited))
+                waited += 5.0
+
     def _swarm_loop(self) -> None:
         poll_s = _env_float("ATLAS_SWARM_POLL_S", 6 * 60 * 60.0)
         cycle = self._orch.swarm_cycle()
@@ -258,6 +297,7 @@ class AtlasServiceRunner:
         self._running = True
         self._start_self_audit_scheduler_if_enabled()
         self._start_swarm_scheduler_if_enabled()
+        self._start_audit_sample_scheduler_if_enabled()
         self._orch._merkle.log(
             action="service.started",
             agent="service_runner",
@@ -291,6 +331,9 @@ class AtlasServiceRunner:
             # `_running` ya es False; el bucle del enjambre corta en el siguiente
             # tramo de espera (troceada cada 5s) y sale.
             self._swarm_thread.join(timeout=8)
+        if self._audit_sample_thread is not None and self._audit_sample_thread.is_alive():
+            # `_running` ya es False; el bucle corta en el siguiente tramo de espera.
+            self._audit_sample_thread.join(timeout=8)
         self._orch._merkle.log(
             action="service.stopped",
             agent="service_runner",
