@@ -14,7 +14,9 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
+
+from atlas.core.verify import Check, CostTier, Evidence, Verdict
 
 
 # ---------------------------------------------------------------------------
@@ -322,3 +324,57 @@ class AuthorizationVerifier:
             return AuthorizationDecision(allowed=False, reason="target fuera de scope")
 
         return AuthorizationDecision(allowed=True, reason="autorizado")
+
+
+# ---------------------------------------------------------------------------
+# Fase 1 — SecurityFinding + PoCReproductionVerifier
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SecurityFinding:
+    id: str
+    target: str
+    capability: Capability
+    description: str
+    poc_script: str
+    evidence_hash: str  # SHA256(poc_script) para trazabilidad
+
+
+class PoCReproductionVerifier:
+    def __init__(
+        self,
+        auth_verifier: AuthorizationVerifier,
+        sandbox_factory: Callable[[], Any],
+    ) -> None:
+        self._auth_verifier = auth_verifier
+        self._sandbox_factory = sandbox_factory
+
+    def verify(self, finding: SecurityFinding, grant: AuthorizationGrant) -> Evidence:
+        decision = self._auth_verifier.check(
+            grant,
+            candidate_target=finding.target,
+            capability=finding.capability,
+        )
+        if not decision.allowed:
+            return Evidence(
+                verdict=Verdict.FAIL,
+                checks=(Check(name="authorization", passed=False, detail=decision.reason),),
+                total_cost=CostTier.STATIC,
+            )
+        sandbox = self._sandbox_factory()
+        result = sandbox.execute(finding.poc_script)
+        reproduced = result.success and result.exit_code == 0
+        verdict = Verdict.PASS if reproduced else Verdict.FAIL
+        return Evidence(
+            verdict=verdict,
+            checks=(
+                Check(name="authorization", passed=True, detail=decision.reason),
+                Check(
+                    name="poc_reproduction",
+                    passed=reproduced,
+                    detail=result.stdout[:500] if reproduced else result.stderr[:500],
+                ),
+            ),
+            total_cost=CostTier.SANDBOX,
+        )

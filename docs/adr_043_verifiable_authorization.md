@@ -1,6 +1,6 @@
 # ADR-043 — Autorización verificable y artefacto de hallazgo de seguridad
 
-Fecha: 2026-06-13 · **Estado: Aceptado (Fase 0)** · Implementado: 2026-06-14.
+Fecha: 2026-06-13 · **Estado: Aceptado (Fase 0-1)** · Implementado: 2026-06-14.
 Contexto: `docs/roadmap_mythos_2026-06-13.md`,
 ADR-041, ADR-042, ADR-040 (decider PDP).
 
@@ -94,7 +94,25 @@ válido, verificable y auditado — no el juicio del modelo en el momento.
 - `src/atlas/core/orchestrator.py` — método `authorize_offensive_action` (seam dormido, ADR-043 Fase 2 lo cableará).
 - `tests/test_authorization.py` — 20 tests (HMAC roundtrip, tamper, expirado, capacidad, TargetSpec host/CIDR/port, algo desconocido, sin clave, ed25519 condicional, wiring seam).
 
+## Fase 1 — Implementado
+
+Reproducción de hallazgos de seguridad con inyección de sandbox.
+
+### Archivos reales
+
+- `src/atlas/security/authorization.py` — `SecurityFinding` dataclass + `PoCReproductionVerifier` (intérprete del PoC en `LayeredIsolationSandbox` inyectado).
+- `tests/test_security_finding.py` — tests unitarios con sandbox mockeado (jamás instancia real).
+
+### Tabla de decisiones — Fase 1
+
+| # | Decisión | Elegida | Alternativa | Porqué |
+|---|---|---|---|---|
+| F1-1 | Criterio reproducción | `success=True and exit_code==0` | exit_code==0 solo | El PoC sigue el convenio POSIX; éxito requiere ambos |
+| F1-2 | Sandbox en tests | Inyectado (`sandbox_factory` fixture) — jamás real | instancia real en suite | Evitar GUI/subproc reales; suite no congela |
+| F1-3 | Gate authorization | Antes del PoC reproducible (fail-closed) | después | Primero negamos, luego verificamos (defensa en profundidad) |
+| F1-4 | Asimetría verificación | reproducir << descubrir | costes iguales | Verificar es una sola ejecución controlada; descubrir es exploración N-ária |
+| F1-5 | Coste Evidence | `CostTier.SANDBOX` | `FREE` | Instanciación de sandbox acotada; fase 2 agregará workers reales en capa 3 |
+
 ## Pendiente (Fases siguientes)
 
-- Fase 1: `SECURITY_FINDING` como nuevo `ArtifactKind`; reproducción PoC en `LayeredIsolationSandbox`.
-- Fase 2: cablear `authorize_offensive_action` a los workers/productores de seguridad en el enjambre (capa 3) y la cascada (capa 2).
+- Fase 2: cablear `authorize_offensive_action` a los workers/productores de seguridad en el enjambre (capa 3) y la cascada (capa 2); `AuthorizationGrant` wired to Merkle log.
