@@ -21,9 +21,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
-from atlas.core.verify import Artifact, CostTier
+from atlas.core.verify import Artifact, ArtifactKind, CostTier
 from atlas.router.cascade import Difficulty, Producer, TaskSpec
+
+if TYPE_CHECKING:
+    from atlas.core.lesson_store import LessonStore
 
 
 class LLMProducer:
@@ -34,9 +38,11 @@ class LLMProducer:
         inner: Producer,
         *,
         avoid_patterns: Sequence[str] = (),
+        lesson_store: "LessonStore | None" = None,
     ) -> None:
         self._inner = inner
         self._avoid = tuple(avoid_patterns)
+        self._lesson_store = lesson_store
 
     @property
     def producer_id(self) -> str:
@@ -59,6 +65,12 @@ class LLMProducer:
             artifact = replace(
                 artifact, metadata={**artifact.metadata, "allowed_paths": list(allowed)}
             )
+        if self._lesson_store is not None:
+            diff = artifact.payload.get("diff", "")
+            for lesson in self._lesson_store.all():
+                heuristic = lesson.detection_heuristic
+                if heuristic and heuristic in diff:
+                    return replace(artifact, payload={"diff": ""})
         return artifact
 
     def _with_constraints(self, spec: TaskSpec) -> TaskSpec:
