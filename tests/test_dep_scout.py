@@ -133,7 +133,8 @@ class TestDepProposer:
             return _Prop()
 
         proposal = DepProposer(
-            merkle=merkle, propose=_propose, pyproject_path=pp
+            merkle=merkle, propose=_propose, pyproject_path=pp,
+            installed_version=lambda _n: "8.2.0",
         ).propose_bump(_candidate("click", "8.1", "8.2.0"))
 
         assert proposal.id == "cold-0001"
@@ -156,10 +157,49 @@ class TestDepProposer:
             captured["patch"] = Path(patch_path).read_text(encoding="utf-8")
             return type("P", (), {"id": "x"})()
 
-        DepProposer(merkle=merkle, propose=_propose, pyproject_path=pp).propose_bump(
-            _candidate("uvicorn", "0.29", "0.30.1")
-        )
+        DepProposer(
+            merkle=merkle, propose=_propose, pyproject_path=pp,
+            installed_version=lambda _n: "0.30.1",
+        ).propose_bump(_candidate("uvicorn", "0.29", "0.30.1"))
         assert '+    "uvicorn[standard]>=0.30.1",' in captured["patch"]
+
+    def test_floor_never_exceeds_installed(self, merkle, tmp_path) -> None:
+        """Regresión: si ``latest`` supera lo instalado, el piso se ancla a lo
+        instalado — nunca se propone ``>=latest`` por encima de la realidad
+        (backlog: dep-bump autónomo crea deriva floor>instalado)."""
+        pp = tmp_path / "pyproject.toml"
+        pp.write_text(_PYPROJECT, encoding="utf-8")
+        captured: dict[str, Any] = {}
+
+        def _propose(intent, patch_path, **kw):
+            captured["patch"] = Path(patch_path).read_text(encoding="utf-8")
+            captured["kw"] = kw
+            return type("P", (), {"id": "x"})()
+
+        # latest 8.4.1 publicado en PyPI, pero el entorno solo tiene 8.2.0.
+        DepProposer(
+            merkle=merkle, propose=_propose, pyproject_path=pp,
+            installed_version=lambda _n: "8.2.0",
+        ).propose_bump(_candidate("click", "8.1", "8.4.1"))
+
+        assert '+    "click>=8.2.0",' in captured["patch"]
+        assert "8.4.1" not in captured["patch"]  # nunca por encima de lo instalado
+        assert captured["kw"]["evidence"]["to"] == "8.2.0"
+        assert captured["kw"]["evidence"]["latest"] == "8.4.1"
+
+    def test_not_installed_fail_closed(self, merkle, tmp_path) -> None:
+        """Si la dep no está instalada no se puede anclar el piso → no se propone."""
+        pp = tmp_path / "pyproject.toml"
+        pp.write_text(_PYPROJECT, encoding="utf-8")
+        called: list[Any] = []
+
+        result = DepProposer(
+            merkle=merkle, propose=lambda *a, **k: called.append(a),
+            pyproject_path=pp, installed_version=lambda _n: None,
+        ).propose_bump(_candidate("click", "8.1", "8.2.0"))
+
+        assert result is None
+        assert called == []
 
     def test_no_target_fail_closed(self, merkle, tmp_path) -> None:
         pp = tmp_path / "pyproject.toml"
@@ -168,7 +208,7 @@ class TestDepProposer:
 
         result = DepProposer(
             merkle=merkle, propose=lambda *a, **k: called.append(a),
-            pyproject_path=pp,
+            pyproject_path=pp, installed_version=lambda _n: "2.0",
         ).propose_bump(_candidate("nonexistent", "1.0", "2.0"))
 
         assert result is None
@@ -178,5 +218,6 @@ class TestDepProposer:
         result = DepProposer(
             merkle=merkle, propose=lambda *a, **k: 1 / 0,
             pyproject_path=tmp_path / "missing.toml",
+            installed_version=lambda _n: "8.2",
         ).propose_bump(_candidate("click", "8.1", "8.2"))
         assert result is None
