@@ -259,6 +259,17 @@ class AuthorizationGrant:
         except Exception:
             return True
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serializa grant para payload Merkle (sin signature)."""
+        return {
+            "target": self.target.value,
+            "target_kind": self.target.kind,
+            "capability": self.capability.value,
+            "expires_at": self.expires_at,
+            "issuer": self.issuer,
+            "algo": self.algo,
+        }
+
 
 # ---------------------------------------------------------------------------
 # AuthorizationDecision

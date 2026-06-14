@@ -388,6 +388,7 @@ class Orchestrator:
                     "target": candidate_target,
                     "capability": str(capability),
                     "reason": authz.reason,
+                    "grant": grant.to_dict(),
                 },
             )
             return Deny(reason=f"sin autorización: {authz.reason}"), None
@@ -401,6 +402,7 @@ class Orchestrator:
                 "target": candidate_target,
                 "capability": str(capability),
                 "issuer": grant.issuer,
+                "grant": grant.to_dict(),
             },
         )
         task = Task(intent=intent, source=TaskSource.INTERNAL)
