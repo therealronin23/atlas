@@ -86,6 +86,7 @@ from atlas.security.generated_code_policy import GeneratedCodePolicy
 from atlas.security.pii_surrogate import PIISurrogate
 from atlas.security.sandbox import LayeredIsolationSandbox, SandboxResult
 from atlas.security.ssrf_bridge import SSRFBridge
+from atlas import __version__
 
 
 @dataclass
@@ -109,7 +110,7 @@ class Orchestrator:
     Recibe intenciones → clasifica → enruta → ejecuta → registra.
     """
 
-    VERSION = "0.9.0"
+    VERSION = __version__
 
     # Atributos opcionales declarados a nivel clase para que mypy use el tipo
     # Optional desde el principio (evita redef cuando se reasignan a None tras stop_*).
@@ -994,6 +995,32 @@ class Orchestrator:
                 scanned += 1
             except Exception:  # noqa: BLE001 — un fallo aislado no aborta el barrido
                 scanned += 1
+
+        # Paso MCP: exponer tools disponibles como artefacto de conocimiento
+        try:
+            from atlas.knowledge.sources import McpKnowledgeSource
+            mcp_src = McpKnowledgeSource(self._mcp)
+            mcp_records = mcp_src.fetch(None)
+            if mcp_records and mcp_records[0].status == 200:
+                try:
+                    mcp_content = json.loads(mcp_records[0].payload)
+                except (ValueError, TypeError):
+                    mcp_content = None
+                if mcp_content is not None:
+                    mcp_artifact = KnowledgeArtifact(
+                        id="mcp/local",
+                        domain="tools/mcp",
+                        source_id="mcp/local",
+                        content=mcp_content,
+                        provenance={
+                            "url": mcp_records[0].url,
+                            "fetched_at": datetime.now(timezone.utc).isoformat(),
+                        },
+                    )
+                    bridge.scan(mcp_artifact)  # retorna [] para domain != security/cve
+                    scanned += 1
+        except Exception:  # noqa: BLE001
+            pass
 
         return {"scanned": scanned, "findings": total_findings, "proposed": proposed}
 

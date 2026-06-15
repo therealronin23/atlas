@@ -134,3 +134,33 @@ class OsvDepSource(HttpApiSource):
         dep_name = str(query)
         body = {"package": {"name": dep_name, "ecosystem": "PyPI"}}
         return [self._request("POST", self._OSV_URL, json_body=body)]
+
+
+# ---------------------------------------------------------------------------
+# McpKnowledgeSource — expone las tools MCP como artefacto de conocimiento
+# ---------------------------------------------------------------------------
+
+class McpKnowledgeSource:
+    """Envuelve McpRegistry como KnowledgeSource (ADR-049 slice 4).
+
+    NO gestiona lifecycle del registry (start/close son del orquestador).
+    fetch() devuelve un RawRecord con JSON de las tools disponibles.
+    domain='tools/mcp'; el SelfImprovementBridge ignora este dominio (safe).
+    """
+
+    def __init__(self, registry: "Any") -> None:
+        self.source_id = "mcp/local"
+        self.domain = "tools/mcp"
+        self._registry = registry
+
+    def fetch(self, query: "Any" = None) -> "list[RawRecord]":
+        try:
+            specs = self._registry.tool_specs()
+            try:
+                server_count = len(self._registry._configs)
+            except Exception:
+                server_count = 0
+            payload = json.dumps({"tools": specs, "server_count": server_count})
+            return [RawRecord(payload=payload, url="mcp://local", status=200)]
+        except Exception as exc:  # noqa: BLE001
+            return [RawRecord(payload=f"error:{exc}", url="mcp://local", status=-1)]
