@@ -181,3 +181,91 @@ def test_osv_dep_source_ssrf_allowed_by_default() -> None:
     bridge = SSRFBridge()
     decision = bridge.check("https://api.osv.dev/v1/query")
     assert decision.allowed is True
+
+
+# ---------------------------------------------------------------------------
+# McpKnowledgeSource (ADR-049)
+# ---------------------------------------------------------------------------
+
+def test_mcp_knowledge_source_with_specs() -> None:
+    """fetch() con specs devuelve status=200 y payload con tools + server_count."""
+    import json
+
+    from atlas.knowledge.sources import McpKnowledgeSource
+
+    specs = [{"type": "function", "function": {"name": "mcp__srv__tool1"}}]
+    registry = MagicMock()
+    registry.tool_specs.return_value = specs
+    registry._configs = ["cfg1", "cfg2"]  # 2 servers
+
+    src = McpKnowledgeSource(registry)
+    records = src.fetch()
+
+    assert len(records) == 1
+    r = records[0]
+    assert r.status == 200
+    assert r.url == "mcp://local"
+    payload = json.loads(r.payload)
+    assert payload["tools"] == specs
+    assert payload["server_count"] == 2
+
+
+def test_mcp_knowledge_source_empty_registry() -> None:
+    """fetch() con registry sin tools devuelve status=200 y tools=[]."""
+    import json
+
+    from atlas.knowledge.sources import McpKnowledgeSource
+
+    registry = MagicMock()
+    registry.tool_specs.return_value = []
+    registry._configs = []
+
+    src = McpKnowledgeSource(registry)
+    records = src.fetch()
+
+    assert records[0].status == 200
+    payload = json.loads(records[0].payload)
+    assert payload["tools"] == []
+
+
+def test_mcp_knowledge_source_exception() -> None:
+    """Si tool_specs() lanza, fetch() devuelve status=-1 con payload 'error:...'."""
+    from atlas.knowledge.sources import McpKnowledgeSource
+
+    registry = MagicMock()
+    registry.tool_specs.side_effect = RuntimeError("transport closed")
+
+    src = McpKnowledgeSource(registry)
+    records = src.fetch()
+
+    assert records[0].status == -1
+    assert records[0].payload.startswith("error:")
+
+
+def test_mcp_knowledge_source_is_knowledge_source() -> None:
+    """McpKnowledgeSource satisface el Protocol KnowledgeSource."""
+    from atlas.knowledge.sources import McpKnowledgeSource
+
+    registry = MagicMock()
+    registry.tool_specs.return_value = []
+    registry._configs = []
+    src = McpKnowledgeSource(registry)
+
+    assert isinstance(src, KnowledgeSource)
+    assert src.source_id == "mcp/local"
+    assert src.domain == "tools/mcp"
+
+
+def test_mcp_knowledge_source_no_lifecycle_calls() -> None:
+    """fetch() no invoca start_all ni close_all del registry."""
+    from atlas.knowledge.sources import McpKnowledgeSource
+
+    registry = MagicMock()
+    registry.tool_specs.return_value = []
+    registry._configs = []
+
+    src = McpKnowledgeSource(registry)
+    src.fetch()
+
+    registry.start_all.assert_not_called()
+    registry.close_all.assert_not_called()
