@@ -21,10 +21,13 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from atlas.security.authorization import SigVerifier, Signer
 from atlas.transparency.log import SignedTreeHead
+
+if TYPE_CHECKING:
+    from atlas.transparency.crypto_shred import SaltStore
 
 
 # ---------------------------------------------------------------------------
@@ -77,16 +80,44 @@ class ClientCosigner:
         start_seq: primer número de secuencia (por defecto 0).
     """
 
-    def __init__(self, signer: Signer, *, start_seq: int = 0) -> None:
+    def __init__(
+        self,
+        signer: Signer,
+        *,
+        start_seq: int = 0,
+        salt_store: "SaltStore | None" = None,
+    ) -> None:
         self._signer = signer
         self._next_seq = start_seq
         # Último seq emitido; -1 significa que aún no se emitió ninguno.
         self._last_seq: int = start_seq - 1
+        self._salt_store = salt_store
 
     @property
     def last_seq(self) -> int:
         """Último número de secuencia emitido (-1 si no se emitió ninguno)."""
         return self._last_seq
+
+    def sign_request_with_salt(
+        self, payload: bytes
+    ) -> tuple[CosignedRequest, str]:
+        """Como sign_request(), pero también devuelve el salted_hash.
+
+        Si hay un ``salt_store`` configurado en este cosigner, registra un salt
+        para el seq del request y devuelve ``SHA-256(salt || payload)`` como hex.
+        Si no hay ``salt_store``, devuelve ``""`` como salted_hash.
+
+        Returns:
+            ``(cosigned, salted_hash)`` — el CosignedRequest intacto más el hash
+            salado (o ``""``).  ``payload_hash`` en el CosignedRequest NO cambia.
+        """
+        cosigned = self.sign_request(payload)
+        if self._salt_store is not None:
+            entry = self._salt_store.register(cosigned.seq)
+            sh = entry.compute_salted_hash(payload)
+        else:
+            sh = ""
+        return cosigned, sh
 
     def sign_request(self, payload: bytes) -> CosignedRequest:
         """Firma *payload* y devuelve un ``CosignedRequest`` con seq monótono."""
@@ -159,6 +190,7 @@ class InspectionRecord:
     timestamp_ns: int
     salted_hash: str = ""  # SHA-256(salt || payload); "" si no hay crypto-shredding
     model_version_hash: str = ""  # SHA-256 hex del modelo; "" si no hay tracking
+    subject_id: str = ""  # Identificador del sujeto; "" si no aplica
 
     def to_bytes(self) -> bytes:
         """Serialización canónica para append al TransparencyLog."""
@@ -170,6 +202,7 @@ class InspectionRecord:
             "payload_hash": self.payload_hash,
             "salted_hash": self.salted_hash,
             "seq": self.seq,
+            "subject_id": self.subject_id,
             "timestamp_ns": self.timestamp_ns,
         }
         return json.dumps(doc, sort_keys=True, separators=(",", ":")).encode()

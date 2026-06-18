@@ -28,6 +28,8 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from typing import TYPE_CHECKING
+
 from atlas.security.authorization import Signer
 from atlas.transparency.client_cosign import (
     APIResponse,
@@ -37,6 +39,9 @@ from atlas.transparency.client_cosign import (
     Receipt,
 )
 from atlas.transparency.log import TransparencyLog
+
+if TYPE_CHECKING:
+    from atlas.transparency.crypto_shred import SaltStore
 
 
 @dataclass
@@ -75,11 +80,13 @@ class TransparencyGateway:
         log: TransparencyLog,
         *,
         session_id: str = "",
+        salt_store: "SaltStore | None" = None,
     ) -> None:
         self._cosigner = subject_cosigner
         self._op_signer = operator_signer
         self._log = log
         self._session_id = session_id
+        self._salt_store = salt_store
         # last_tree_size para consistency proof (0 = log vacío antes de esta sesión)
         self._last_tree_size: int = log.tree_size
 
@@ -96,6 +103,7 @@ class TransparencyGateway:
         model_id: str = "",
         decision: str = "allow",
         cause: str = "gateway.auto",
+        subject_id: str = "",
     ) -> tuple[APIResponse, GatewayMetrics]:
         """Ejecuta call_fn(payload) envuelto en el protocolo completo.
 
@@ -113,7 +121,13 @@ class TransparencyGateway:
         t0 = time.perf_counter()
 
         # ── Pre: firmar request + commit inspection ──────────────────────
-        cosigned = self._cosigner.sign_request(payload)
+        cosigned, sh = self._cosigner.sign_request_with_salt(payload)
+
+        # Fallback: si el cosigner no tiene salt_store propio pero el gateway sí
+        if not sh and self._salt_store is not None:
+            entry = self._salt_store.register(cosigned.seq)
+            sh = entry.compute_salted_hash(payload)
+
         now_ns = time.time_ns()
 
         # Receipt del operador (bidireccional — paso 2)
@@ -130,6 +144,8 @@ class TransparencyGateway:
             cause=cause,
             timestamp_ns=now_ns,
             model_version_hash=mvh,
+            salted_hash=sh,
+            subject_id=subject_id,
         )
         leaf_index_in = self._log.append(record.to_bytes())
 
