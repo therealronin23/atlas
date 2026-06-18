@@ -142,12 +142,47 @@ PYTHONPATH=src python scripts/hermes_smoke.py
 PYTHONPATH=src python scripts/operational_smoke.py
 ```
 
+## Runtime Dependency: bubblewrap (bwrap)
+
+Code execution via `LayeredIsolationSandbox.execute_in_jail()` requires
+[bubblewrap](https://github.com/containers/bubblewrap) (ADR-055).
+
+Install:
+```bash
+# Debian/Ubuntu
+sudo apt-get install bubblewrap
+
+# Fedora/RHEL
+sudo dnf install bubblewrap
+
+# Arch
+sudo pacman -S bubblewrap
+```
+
+Without `bwrap` in PATH, Python code execution is **fail-closed**
+(`BwrapUnavailableError`). All other Atlas functionality is unaffected.
+
+Requirements:
+- Kernel ≥ 3.8 with unprivileged user namespaces enabled
+  (`/proc/sys/kernel/unprivileged_userns_clone` = 1 on Ubuntu/Debian)
+- Not required for test suite — `BwrapJail` tests mock subprocess calls
+
+Jail properties enforced (Slice 1):
+- uid/gid 65534 (nobody) via user namespace
+- Network namespace — no external network access
+- `/` bind-mounted read-only; `/tmp` ephemeral tmpfs
+- `--die-with-parent` — child dies if parent exits
+
+Slice 2 (seccomp-bpf allowlist) deferred — requires `libseccomp` (external dep,
+against project rules). The uid/net namespace isolation is the primary containment.
+
 ## ADR Status Snapshot
 
 Resolved/implemented: core gates A-I, observability, ColdUpdate, twin API/kanban
 bridge, audit search, block memory, agentic tool loop, HITL suspend/resume,
 subprocess hardening, MCP client, untrusted-content boundary, Sentinel adoption
-gate, ADR-039 self-maintenance slices, ADR-040 decider/revert registry.
+gate, ADR-039 self-maintenance slices, ADR-040 decider/revert registry,
+ADR-053 TransparencyGateway, ADR-055 BwrapJail Slice 1.
 
 Still not absolute:
 
