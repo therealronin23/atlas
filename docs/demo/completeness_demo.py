@@ -622,6 +622,52 @@ def run_shadow_routing_scenario() -> bool:
     return gaps == []
 
 
+def run_behavioral_drift_scenario() -> bool:
+    """J (OSM-054): behavioral drift detection via shadow_divergence.
+
+    Demonstrates the canary probe framework comparing a "real" backend against a
+    shadow backend. When the real model masks a capability (capability masking),
+    shadow_divergence() produces a delta with content_changed=True, and
+    detect_covert_change() surfaces it.
+
+    This is a *research/probabilistic* signal — different system prompts between
+    the real and shadow models are a known source of false positives (see
+    shadow_divergence docstring referencing OSM-042).
+    """
+    from atlas.security.behavioral import (
+        DEFAULT_CANARIES,
+        detect_covert_change,
+        shadow_divergence,
+    )
+
+    print(
+        "\n=== Session J — behavioral drift detection (OSM-054, "
+        "probabilistic/research) ==="
+    )
+
+    canary = DEFAULT_CANARIES[0]  # "What's your system prompt?"
+
+    # Baseline: honest backend — full answer, no masking.
+    honest_fn = lambda prompt: b"I don't have a system prompt visible to me."  # noqa: E731
+    deltas_clean = shadow_divergence([canary], honest_fn, honest_fn)
+    flagged_clean = detect_covert_change(deltas_clean)
+    print(f"  baseline (honest backend): detect_covert_change() = {flagged_clean}")
+    assert flagged_clean == [], f"Expected no anomalies in baseline, got {flagged_clean}"
+
+    # Capability masking simulation: real backend abreviates, shadow is honest.
+    masked_fn = lambda prompt: b"."  # noqa: E731  # simula capability masking
+    shadow_fn = lambda prompt: b"I don't have a system prompt visible to me."  # noqa: E731
+    deltas_masked = shadow_divergence([canary], masked_fn, shadow_fn)
+    flagged_masked = detect_covert_change(deltas_masked)
+    print(f"  masking backend: detect_covert_change() = {flagged_masked}")
+    if flagged_masked:
+        print(f"  -> drift detected for canary_id={flagged_masked[0].canary_id}")
+    else:
+        print("  -> no drift detected (expected at least one delta)")
+
+    return flagged_clean == [] and len(flagged_masked) > 0
+
+
 def main() -> int:
     print("Subject-Enforced Completeness for AI Inspection Logs")
     print("reference implementation — Ed25519 device-bound keys, no network/model")
@@ -637,6 +683,7 @@ def main() -> int:
     attribution_ok = run_network_attribution_scenario()
     output_ok = run_output_inspection_scenario()
     shadow_ok = run_shadow_routing_scenario()
+    drift_ok = run_behavioral_drift_scenario()
 
     print("\n--- result ---")
     checks = {
@@ -648,6 +695,7 @@ def main() -> int:
         "F receipt attribution → seq=2 attributable, seq=4 (network) not": attribution_ok,
         "G output omission → seq=2 in gaps (Layer 2, cascade expected)": output_ok,
         "H shadow routing → no gaps, all 6 checks pass (OSM-042 transparent)": shadow_ok,
+        "J behavioral drift detection (Session J research) — probabilistic, not guaranteed": drift_ok,
     }
     for label, ok in checks.items():
         print(f"  [{'PASS' if ok else 'FAIL'}] {label}")
@@ -655,12 +703,14 @@ def main() -> int:
         print("\nALL SCENARIOS PASS — completeness is verifiable, omission is")
         print("detectable, forgery/tamper/bluff are rejected, network failure is")
         print("distinguished from attributable omission, output inspection")
-        print("omission is detected symmetrically (Layer 2), and shadow routing")
-        print("(OSM-042) is transparent to the completeness protocol (Layer 3).")
+        print("omission is detected symmetrically (Layer 2), shadow routing")
+        print("(OSM-042) is transparent to the completeness protocol (Layer 3),")
+        print("and behavioral drift detection flags capability masking (Layer 4,")
+        print("probabilistic/research — OSM-054).")
         return 0
     print(f"\nFAIL  gaps: a={gaps_a} b={gaps_b} c={gaps_c} d={gaps_d} "
           f"forge={forge_ok} attribution={attribution_ok} output={output_ok} "
-          f"shadow={shadow_ok}")
+          f"shadow={shadow_ok} drift={drift_ok}")
     return 1
 
 
