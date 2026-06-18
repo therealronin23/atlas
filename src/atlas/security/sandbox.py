@@ -31,6 +31,7 @@ from pathlib import Path
 
 from atlas.core.contracts import OperationalMode
 from atlas.security.ast_guard import ASTGuard
+from atlas.security.bwrap_jail import BwrapJail, BwrapUnavailableError
 from atlas.security.process_hardening import apply_in_child
 
 
@@ -64,6 +65,8 @@ class LayeredIsolationSandbox:
     def __init__(self, workspace: Path) -> None:
         self._workspace = workspace
         self._ast_guard = ASTGuard()
+        # BwrapJail is lazily created on first use; None if bwrap not available.
+        self._bwrap: BwrapJail | None | bool = False  # False = not yet checked
 
     def execute(
         self,
@@ -163,6 +166,67 @@ class LayeredIsolationSandbox:
                 duration_ms=0,
                 operational_mode=operational_mode,
             )
+
+    # ------------------------------------------------------------------
+    # ADR-055: BwrapJail (OS-level containment)
+    # ------------------------------------------------------------------
+
+    def _get_bwrap(self) -> BwrapJail | None:
+        """Returns a BwrapJail or None if bwrap is unavailable (cached)."""
+        if self._bwrap is False:
+            try:
+                self._bwrap = BwrapJail()
+            except BwrapUnavailableError:
+                self._bwrap = None
+        return self._bwrap  # type: ignore[return-value]
+
+    def execute_in_jail(
+        self,
+        code: str,
+        *,
+        timeout_s: int | None = None,
+    ) -> SandboxResult:
+        """Executes code in a bwrap OS-level jail (ADR-055).
+
+        Fail-closed: raises BwrapUnavailableError if bwrap is not installed.
+        Use this instead of execute() for untrusted/model-generated code.
+        """
+        jail = self._get_bwrap()
+        if jail is None:
+            raise BwrapUnavailableError(
+                "bwrap no disponible — ejecución de código no confiable bloqueada (ADR-055)."
+            )
+        # ASTGuard as pre-lint (defense-in-depth, not the security boundary)
+        guard_result = self._ast_guard.validate(code)
+        if not guard_result.passed:
+            return SandboxResult(
+                success=False,
+                stdout="",
+                stderr=f"[AST Guard lint] {guard_result.sanitized_reason}",
+                exit_code=-1,
+                duration_ms=0,
+                operational_mode=OperationalMode.NORMAL,
+            )
+        try:
+            result = jail.run(code, timeout_s=timeout_s)
+        except TimeoutError:
+            wall = timeout_s or BwrapJail.WALL_TIMEOUT_S
+            return SandboxResult(
+                success=False,
+                stdout="",
+                stderr=f"Jail timeout ({wall}s).",
+                exit_code=-1,
+                duration_ms=wall * 1000,
+                operational_mode=OperationalMode.NORMAL,
+            )
+        return SandboxResult(
+            success=result.success,
+            stdout=result.stdout,
+            stderr=result.stderr,
+            exit_code=result.returncode,
+            duration_ms=result.duration_ms,
+            operational_mode=OperationalMode.NORMAL,
+        )
 
     # ------------------------------------------------------------------
     # NORMAL tier: subprocess con resource limits

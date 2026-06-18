@@ -28,6 +28,7 @@ from atlas.security.capabilities import (
     ReadCapability,
     WriteCapability,
 )
+from atlas.security.bwrap_jail import BwrapUnavailableError
 from atlas.security.sandbox import LayeredIsolationSandbox, SandboxResult
 from atlas.security.ssrf_bridge import SSRFBridge
 
@@ -284,14 +285,23 @@ class AtlasExecutor:
                 )
 
         # Delegamos al sandbox para la ejecucion fisica.
-        # El sandbox tiene su propio AST Guard interno cuando se invoca
-        # execute(code=...). El chequeo de arriba es defensivo (idempotente).
+        # Si el capability transporta código Python, usamos el jail OS-level
+        # (ADR-055). Fail-closed: sin bwrap, la ejecución se rechaza.
         if cap.code is not None:
-            result = self._sandbox.execute(
-                code=cap.code,
-                working_dir=cap.working_dir,
-                timeout_s=cap.timeout_s,
-            )
+            try:
+                result = self._sandbox.execute_in_jail(
+                    cap.code,
+                    timeout_s=cap.timeout_s,
+                )
+            except BwrapUnavailableError as exc:
+                self._merkle.log(
+                    action="exec.jail_unavailable",
+                    agent=self.AGENT,
+                    result="blocked",
+                    risk_level="high",
+                    payload={"command": cap.command, "reason": str(exc)},
+                )
+                raise ExecutorError(str(exc)) from exc
         else:
             full_command = [cap.command, *cap.args]
             result = self._sandbox.execute_command(

@@ -28,6 +28,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
+    from atlas.transparency.gateway import TransparencyGateway
+    from atlas.transparency.client_cosign import APIResponse
 
 # Silenciar warnings cosmeticos de LiteLLM (bedrock/sagemaker pre-load, etc).
 # Se debe hacer ANTES del import porque algunos warnings se emiten al cargar el modulo.
@@ -114,6 +116,8 @@ class InferenceResponse:
     # {id, name, arguments(str JSON)}. Vacío = respuesta final (sin loop).
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     finish_reason: str = ""
+    # Protocolo de completitud (ADR-053) — presente cuando el hub tiene gateway
+    api_response: "APIResponse | None" = field(default=None, repr=False)
 
 
 DEFAULT_PROVIDERS: list[Provider] = [
@@ -201,6 +205,7 @@ class InferenceHub:
         providers: list[Provider] | None = None,
         mode: str = "auto",
         merkle: "MerkleLogger" | None = None,
+        transparency: "TransparencyGateway | None" = None,
     ) -> None:
         if mode not in ("auto", "live", "stub"):
             raise ValueError(f"mode invalido: {mode}")
@@ -209,6 +214,7 @@ class InferenceHub:
         self._calls: list[dict[str, Any]] = []
         self._rate_limited_until: dict[str, float] = {}
         self._merkle = merkle
+        self._transparency = transparency
 
     @property
     def mode(self) -> str:
@@ -244,6 +250,51 @@ class InferenceHub:
         )
 
     def infer(self, request: InferenceRequest) -> InferenceResponse:
+        if self._transparency is not None:
+            return self._infer_transparent(request)
+        return self._infer_raw(request)
+
+    def _infer_transparent(self, request: InferenceRequest) -> InferenceResponse:
+        """Envuelve _infer_raw() con el protocolo de completitud (ADR-053).
+
+        La firma bidireccional ocurre aquí automáticamente en background:
+        subject_cosigner firma el request saliente, el gateway firma el Receipt
+        de acuse, ambos InspectionRecords se commitean al log Merkle, y el
+        APIResponse con STH + proofs se adjunta a la respuesta.
+        """
+        from atlas.transparency.gateway import TransparencyGateway  # evitar ciclo top-level
+
+        captured: list[InferenceResponse] = []
+
+        def call_fn(payload: bytes) -> bytes:
+            # Desactivar temporalmente para evitar recursión
+            saved_gw: TransparencyGateway | None = self._transparency
+            self._transparency = None
+            try:
+                resp = self._infer_raw(request)
+            finally:
+                self._transparency = saved_gw
+            captured.append(resp)
+            return resp.text.encode("utf-8") if resp.success else b""
+
+        payload = request.prompt.encode("utf-8")
+        assert self._transparency is not None
+        api_resp, _metrics = self._transparency.call(
+            payload,
+            call_fn,
+            task_id=request.task_id or "",
+        )
+
+        resp = captured[0] if captured else InferenceResponse(
+            text="", provider="none", model="none", level=request.level,
+            latency_ms=0, success=False,
+            error="gateway call produced no response",
+            mode=self._mode,
+        )
+        resp.api_response = api_resp
+        return resp
+
+    def _infer_raw(self, request: InferenceRequest) -> InferenceResponse:
         candidates = [
             p for p in self._providers
             if p.level == request.level and p.status != ProviderStatus.DOWN
