@@ -186,7 +186,7 @@ diversity — which only an external source can guarantee.
 
 ## Why we are sending this
 
-Not to sell a product. For two concrete things:
+Not to sell a product. For three concrete things:
 
 **1. To signal the gap that exists and that you cannot close alone.**
 The structural conflict of interest (you are simultaneously provider and classifier)
@@ -195,7 +195,19 @@ It is not a problem of intent — it is architectural. An in-path filter with an
 externally verifiable log is the only solution to that problem, and that system does
 not exist in production anywhere today.
 
-**2. To show the reasoning, not the product.**
+**2. The log defends you, not just the user.**
+When a user claims harm from AI-generated content, your current defence is your own
+testimony: "our systems inspected and found nothing." With a verifiable log, you produce
+a Merkle inclusion proof: inspection record for that request, signed timestamp, decision
+and cause — verifiable by a court without relying on your word. The same log that proves
+to the user they were not inspected without cause proves to the regulator and tribunal
+that you operated with due diligence. This is not a transparency cost; it is litigation
+insurance. EU AI Act Article 12 requires exactly this kind of tamper-resistant,
+independently verifiable record. The Fable 5 shutdown happened because there was no way
+to demonstrate who uses the model and that it is not being abused. The log is that
+demonstration — not retroactively, but in real time, for every request.
+
+**3. To show the reasoning, not the product.**
 A solo developer, the day after the Fable 5 / Mythos 5 shutdown, identified the two
 technical causes, designed an architectural response with the right axis (mutual
 verifiability, not perfect detection), and built the core that proves the completeness

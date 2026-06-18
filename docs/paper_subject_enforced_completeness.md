@@ -346,8 +346,11 @@ one.
 **What this does not close.** The subject verifies their own view of the log. They cannot
 prove that the regulator or a third-party auditor sees the same STH. Closing that gap
 requires external witnesses — independent parties who cosign STHs and cross-check with
-other witnesses via gossip (RFC 9162 §5). This is left for future work; we state it as
-honest limit §6.1.
+other witnesses via gossip (RFC 9162 §5). The HTTP witness transport is implemented
+(`src/atlas/transparency/gossip.py` — `HttpWitnessTransport`, Ed25519-verified
+counter-signatures, `has_quorum()`); deployment of independent witness nodes remains
+infrastructure work outside this paper's scope. We state the residual split-view exposure
+as honest limit §6.1.
 
 ---
 
@@ -368,7 +371,14 @@ byte sequences; the module has no I/O or state.
 
 **`log.py`** — `TransparencyLog` wraps the Merkle primitives with append-only semantics,
 maintains the current STH, and signs it. `SignedTreeHead` carries `(tree_size,
-root_hash, signature, timestamp_ns)`.
+root_hash, signature, timestamp_ns)`. Persistence is opt-in: `TransparencyLog(path=Path(...))` 
+writes each leaf as a base64-encoded line with `fsync()` on append and reloads from disk on 
+startup — the log survives process restarts and carries monotonic sequence continuity across 
+sessions. A Read-API for deployers and regulators exposes the log over HTTP:
+`GET /api/exec/api/v1/log/tree` (current STH), `GET /api/exec/api/v1/log/entries` (leaf 
+range, capped at 1000), and `GET /api/exec/api/v1/log/proof/inclusion/{leaf_index}` 
+(RFC 9162 inclusion proof as hex-encoded audit path). The path prefix stacking is noted in 
+deployment docs; the paths match Article 26 obligations for deployer monitoring.
 
 **`client_cosign.py`** — `ClientCosigner` emits monotonically-sequenced `CosignedRequest`
 objects; `verify_cosigned_request()` validates signature and payload hash;
@@ -444,6 +454,49 @@ domain-transfer and modelling contribution, not a cryptographic primitive. Claim
 mechanism without citing CONIKS is unacceptable; claiming the transfer is honest and
 defensible.
 
+**Concurrent work (January–June 2026).** Several systems have appeared that share surface
+structure with our mechanism. We distinguish each precisely.
+
+*Notarized Agents / Sello* [arXiv:2606.04193, June 2026] introduces receiver-side signing
+for multi-agent workflows: each tool or service that receives an agent's call signs a
+`Receipt` over what it actually observed, creating a Merkle-anchored audit trail. The
+threat model is a **compromised agent** fabricating its own traces — not a semi-honest
+operator omitting inspections. The paper's honest-limits section explicitly acknowledges
+the set-completeness gap it does not close: "Owner receives verifiable individual receipts
+but cannot cryptographically prove the log returned *all* matching entries. Operators
+could silently omit receipts while remaining cryptographically correct on returned ones."
+This is exactly the gap our mechanism closes. The two contributions are orthogonal in
+threat model: Sello secures agents against infrastructure they control; we secure subjects
+against operators who control both the AI pipeline and the inspection log.
+
+*Aegon* [arXiv:2604.06693, Baskaran, Pherwani, Krishnan, April 2026] addresses **AI
+content licensing** (DRM): JWT tokens with licensing claims, a CT-style Merkle ledger
+of licensing transactions, and Android StrongBox hardware receipts for on-device
+compliance. The domain is content piracy prevention, not safety inspection; the threat
+model is unauthorized content use, not operator omission of inspection records. The paper
+is a protocol design white paper; prototype implementation is stated as future work.
+Despite the domain difference, the structural parallel is notable: both systems use
+append-only Merkle logs and hardware-bound receipts to make transactions undeniable.
+The completeness gap — guaranteeing that an adversarial SDK operator cannot silently
+omit records — is acknowledged as out of scope in Aegon; closing it is the central
+contribution of our work.
+
+*Auditable Agents* [arXiv:2604.05485, April 2026] proposes a Merkle log for agent
+execution traces, providing post-hoc auditability of tool calls and state transitions.
+The mechanism assumes **honest tool providers** — completeness of the log against a
+dishonest operator who controls the logging infrastructure is not addressed. Our
+contribution is precisely the case they assume away: a subject-side mechanism that
+detects operator omissions without trusting the operator.
+
+*Aegis* [arXiv:2603.16938, March 2026] combines ZK-STARK Proof-of-Conduct with an ILK
+hash chain for governance of autonomous agents, enabling verifiable attestation that an
+agent followed a declared policy. Aegis addresses **behavioral compliance** (did the
+agent follow rules?), not completeness of an operator-side inspection log. Neither the
+subject-side monitoring primitive nor the set-completeness problem appear in the Aegis
+design. The two mechanisms are complementary: Aegis could benefit from a completeness
+layer beneath it that ensures the inspection log driving its policy engine is itself
+unmanipulable by the operator.
+
 ---
 
 ### 6. Honest Limits
@@ -451,15 +504,19 @@ defensible.
 These nine limits are not weaknesses to apologise for; they are the boundary conditions
 that make every other claim credible. We state them prominently.
 
-**6.1 Split-view: partial, not closed.**
+**6.1 Split-view: partial mitigation implemented, full closure pending.**
 `detect_omission()` detects gaps in *the subject's view* of the log. It does not prove
 that a regulator, auditor, or second subject sees the same view. The operator could
 maintain two divergent logs: one presented to the subject (complete), one presented to
 everyone else (with omissions). The twin independent log replicas (§3.4) make this harder
 — the subject has an independent STH chain — but they do not close the split-view
 completely. Full closure requires external witnesses who exchange STHs across operators
-(RFC 9162 §5 gossip protocol). We implement the `Witness` class as the hook point for
-this extension; the gossip network itself is out of scope.
+(RFC 9162 §5 gossip protocol). The HTTP witness transport layer is implemented
+(`HttpWitnessTransport` in `transparency/gossip.py`): counter-signatures are verified with
+Ed25519 before counting toward quorum, and `has_quorum(min_witnesses=2)` enforces the
+threshold fail-closed (no verifier → no quorum credit). The infrastructure gap is
+deployment of independent witness nodes operated by parties other than the AI provider;
+this remains ecosystem work outside the scope of this paper.
 
 **6.2 Out-of-band content and retained data.**
 The mechanism covers the *synchronous request path*. If the operator stores the content
@@ -860,6 +917,16 @@ Citations status:
       Arxiv:2510.09023 exists; claims adaptive adversary feedback loop; paper cites for
       "static classification degrades as attackers observe feedback" (§5, subject-monitoring
       adaptive threat model). **No overclaim.**
+- [x] Notarized Agents / Sello (arXiv:2606.04193, June 2026) — existence confirmed; threat-model
+      distinction verified (receiver-side agent signing vs. operator omission); their honest limit
+      on set-completeness cited precisely (§5 concurrent work).
+- [x] Aegon (arXiv:2604.06693, Baskaran/Pherwani/Krishnan, April 2026) — confirmed: DRM/content
+      licensing domain (JWT + Merkle + Android StrongBox); prototype = future work; completeness
+      gap acknowledged out of scope; structural parallel + distinction noted (§5).
+- [x] Auditable Agents (arXiv:2604.05485, April 2026) — existence confirmed; honest-tool-provider
+      assumption stated; our contribution is the case they assume away (§5).
+- [x] Aegis (arXiv:2603.16938, March 2026) — existence confirmed; ZK-STARK PoC + ILK hash chain;
+      behavioral compliance domain; orthogonal to inspection-log completeness (§5).
 - [pending: DOI resolution] Full DOIs + author lists for all citations before arXiv upload.
       (Handled by arXiv submission process; deferred to pre-upload checklist.)
 
@@ -878,11 +945,17 @@ Implementation status:
       (OSM-007). `SaltStore` in `crypto_shred.py`; 12 tests in `test_crypto_shred.py`.
 - [x] Output inspection completeness (Layer 2): `OutputInspectionRecord` committed before
       result is returned; checks 5+6 in `SubjectLedger.ingest()`; Session G in demo;
-      10 tests in `test_output_inspection.py`. 1690 tests total (including immunity submodule), all passing.
-- [scope: layer 3] External witness / gossip for split-view closure (§6.1, future work).
-      Stated honestly as future work; witness interface defined.
-- [scope: defense stack] OSM-042: shadow model active defense + passive/active honeypot (next).
-      Scoped to deployment context (§7); not part of completeness contribution.
+      10 tests in `test_output_inspection.py`. 1831 tests total (including immunity submodule), all passing.
+- [x] External witness HTTP transport implemented (`HttpWitnessTransport`, Ed25519-verified
+      quorum, `has_quorum()`). Independent witness node deployment is infrastructure, not code;
+      stated honestly as the remaining split-view gap (§6.1).
+- [x] Log persistence: `TransparencyLog(path=...)` — base64 fsync per append, reload on startup.
+      Seq continuity survives restarts. Documented in §4.
+- [x] Read-API (EU AI Act Art. 26, GAP-2): `GET /api/exec/api/v1/log/{tree,entries,proof/inclusion/{i}}`.
+      Documented in §4.
+- [x] OSM-042 shadow model wired into `TransparencyGateway` (opt-in `shadow_router` /
+      `shadow_model` params). Scoped to deployment context (§8.2); not part of completeness
+      contribution.
 
 Other:
 - [x] Reproducible demo built and passing (7 scenarios, exit-coded).

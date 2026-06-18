@@ -1,0 +1,736 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------
+% Packages
+% ---------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[numbers,sort&compress]{natbib}
+
+% ---------------------------------------------------------------
+% Code listing style
+% ---------------------------------------------------------------
+\definecolor{codebg}{rgb}{0.97,0.97,0.97}
+\definecolor{codeframe}{rgb}{0.85,0.85,0.85}
+\definecolor{codecomment}{rgb}{0.4,0.4,0.6}
+\definecolor{codestring}{rgb}{0.2,0.5,0.2}
+\definecolor{codekw}{rgb}{0.1,0.1,0.7}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestring},
+  breaklines=true,
+  breakatwhitespace=true,
+  captionpos=b,
+  numbers=none,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  aboveskip=8pt,
+  belowskip=8pt,
+  showstringspaces=false,
+}
+
+% ---------------------------------------------------------------
+% Section formatting
+% ---------------------------------------------------------------
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\bfseries}{\thesubsubsection.}{0.5em}{}
+
+% ---------------------------------------------------------------
+% Header / footer
+% ---------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Subject-Enforced Completeness for AI Inspection Logs}
+\lhead{\small Working paper, 2026}
+\cfoot{\thepage}
+
+% ---------------------------------------------------------------
+% Hyperref config
+% ---------------------------------------------------------------
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black,
+  pdftitle={Subject-Enforced Completeness for AI Inspection Logs},
+  pdfauthor={Atlas Project},
+}
+
+% ---------------------------------------------------------------
+% Macros
+% ---------------------------------------------------------------
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\term}[1]{\emph{#1}}
+\newcommand{\todo}[1]{\textbf{\color{red}[TODO: #1]}}
+
+% ---------------------------------------------------------------
+\begin{document}
+% ---------------------------------------------------------------
+
+\title{\textbf{Subject-Enforced Completeness\\for AI Inspection Logs}}
+
+\author{Atlas Project\\
+\small \texttt{tomas.asin.gonzalez@gmail.com}\\[4pt]
+\small Working paper --- \today\\
+\small arXiv cs.CR (preprint)
+}
+
+\date{}
+\maketitle
+
+\begin{abstract}
+\textit{Key transparency} systems such as CONIKS~\cite{coniks2015} and the IETF
+\texttt{keytrans} working-group drafts~\cite{ietf-keytrans} allow users to monitor
+their own entries in an append-only log and detect equivocation by the operator ---
+without relying on global monitors. We transfer this pattern to a new domain:
+\textbf{completeness of AI content-inspection logs}.
+
+For a given subject's request stream, we show that completeness of the inspection log
+--- whether every inspectable request was in fact inspected --- is \textbf{unilaterally
+falsifiable} by the subject, without waiting for an external auditor. The mechanism
+binds each inspection to a signed, monotonically-sequenced request emitted from the
+subject's device. A gap in the subject's own sequence is a proof of omission: the
+operator cannot skip an inspection and suppress the evidence unilaterally.
+
+We implement the mechanism on RFC~9162~\cite{rfc9162} (Certificate Transparency v2),
+extend it symmetrically to output inspection (every model response committed before
+delivery, verified client-side), and provide a reference implementation. Layers~3--4
+extend the scheme to external witnesses, split-view detection, and behavioral drift
+observation. We state ten honest limits, including split-view exposure, geolocation
+irresolvability, and covert post-inspection capability restrictions.
+
+\textbf{We do not claim a new cryptographic primitive.} The contribution is
+\textit{domain transfer}: carrying the subject-monitoring model of CONIKS and Key
+Transparency from key-binding logs to AI content-inspection logs, and modelling
+\textit{inspection-by-cause} as the invariant to enforce. Unlike prior work on
+agent auditability --- which assumes honest infrastructure operators --- our mechanism
+is designed specifically for the case where the operator controls both the AI pipeline
+and the inspection log. The reference implementation comprises 1831 tests and is
+mypy \texttt{-{}-strict} clean.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------
+\section{Introduction: Integrity $\neq$ Completeness}
+% ---------------------------------------------------------------
+
+Existing transparency infrastructure for AI systems focuses on \term{integrity}: proving
+that log entries have not been altered after the fact. Merkle trees and signed tree heads
+(STHs) provide this guarantee efficiently, and the Certificate Transparency ecosystem has
+deployed it at scale.
+
+Integrity, however, is the wrong property for inspection logs. An operator who wants to
+hide that a request was processed without inspection does not alter existing log entries;
+they simply \term{omit} the new one. A Merkle tree that grows correctly is consistent
+with an operator who never inserts certain inspections. Verifying that the log has not
+been tampered with says nothing about whether it is complete.
+
+The gap matters structurally. In AI deployments, the entity that operates the model is
+also the entity that operates the inspection infrastructure. This is not a malicious
+arrangement --- it is the natural vertical integration of a model provider --- but it
+creates a conflict of interest that integrity proofs do not address: the same party who
+decides whether to run an inspection is the party who controls what the inspection log
+records.
+
+Our starting observation is that completeness, unlike integrity, has a per-subject
+structure. A user who sends one hundred requests has a ground truth: one hundred signed
+requests left their device. If the operator's log acknowledges only ninety-eight
+inspections, two are unaccounted for. The user does not need a regulator, a second
+operator, or a global monitor to compute this. They need their own counter.
+
+The regulatory context sharpens the motivation. EU AI Act Articles~12, 13, and~53
+impose record-keeping and transparency obligations on AI providers. When a regulator
+asks ``was this request inspected?'', the current answer is ``trust the operator's
+log.'' We ask whether the answer can be ``the subject's device can verify it
+independently.''
+
+\textbf{Fable~5 / next-generation frontier models} (Claude, GPT, Gemini) operate in a
+regulatory grey zone: powerful enough to fall under systemic-risk obligations, deployed
+widely enough that individual inspection gaps aggregate into policy-relevant failures.
+This is deployment context motivating urgency, not a technical claim about any specific
+model. We mention it in this section only.
+
+% ---------------------------------------------------------------
+\section{Threat Model}
+% ---------------------------------------------------------------
+
+\subsection{The Operator Is Automated Infrastructure}
+
+A critical clarification: \textbf{the operator in this model is the AI provider's
+automated infrastructure} (API gateway, inspection pipeline, log service), not an
+individual human employee making per-request decisions. In a typical AI API deployment,
+every request from every user flows through the same automated pipeline without manual
+intervention.
+
+This distinction matters for the threat model. Omissions arise from:
+
+\begin{itemize}[noitemsep]
+  \item \textbf{Configuration exceptions}: certain traffic patterns or API paths are
+    routed around the inspection module.
+  \item \textbf{Silent pipeline degradation}: the inspection service crashes or is
+    rolled back; the gateway continues serving requests with a fallback that omits
+    inspection.
+  \item \textbf{Deliberate policy gaps}: the operator configures the system not to
+    inspect certain categories of request by definition.
+\end{itemize}
+
+We model the operator as \textbf{semi-honest}: the infrastructure is operated by a
+company that wants to demonstrate compliance (regulatory pressure, contractual
+obligations), and the log infrastructure runs honestly for the requests it handles. The
+adversarial capability is that the company controls which requests enter the inspection
+pipeline at all.
+
+The adversary's two goals:
+\begin{enumerate}[noitemsep]
+  \item \textbf{Selective omission}: process a request without creating an inspection
+    record for it.
+  \item \textbf{Split-view}: show the subject a log view that includes certain
+    inspection records while showing a different view to the regulator.
+\end{enumerate}
+
+\subsection{What the Adversary Controls}
+
+The operator controls: the inspection pipeline configuration; the log infrastructure;
+and the client distribution channel.
+
+\subsection{What the Adversary Does Not Control}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{The subject's device-bound key.} A key generated inside the device's
+    TPM or Secure Enclave (cf.\ Apple App Attest, Android Key Attestation) is
+    hardware-bound and non-exportable.
+  \item \textbf{The subject's local counter state.} The monotonic counter is maintained
+    by the client on the subject's device.
+  \item \textbf{The subject's local log replica.} The twin replica (\S\ref{sec:twin})
+    is stored on the subject's device.
+\end{itemize}
+
+\subsection{What We Do Not Model}
+
+We explicitly do not address: (a) an operator who is actively malicious and fully
+non-compliant; (b) physical compromise of the subject's device; (c) a subject whose
+``independent'' client was actually distributed by the operator (\S\ref{sec:limits},
+limit~6.3); (d) content inspected out-of-band after retention without a new signed
+request (limit~6.2).
+
+% ---------------------------------------------------------------
+\section{Mechanism: Subject-Enforced Completeness}
+% ---------------------------------------------------------------
+
+\subsection{Device-Bound Request Signing}
+
+At first use, the subject authenticates via a federated identity provider (OAuth~2.0 /
+OIDC). At registration time, the client silently generates an asymmetric key in the
+device's hardware security module (TPM on PC/server, Secure Enclave on mobile). The
+private key never leaves the hardware boundary.
+
+Thereafter, every request the subject sends carries a \code{CosignedRequest}:
+
+\begin{lstlisting}[language=Python]
+CosignedRequest = {
+    seq:          int,   # monotonic counter, starts at 0, never repeats
+    payload_hash: str,   # SHA-256(prompt_bytes), hex
+    signature:    str,   # device_key.sign( canonical_JSON({payload_hash, seq}) )
+}
+\end{lstlisting}
+
+The canonical form signed is the compact, key-sorted JSON of
+\code{\{payload\_hash, seq\}} --- no timestamps (timestamps are provided by the
+operator's log entry, not by the subject, to avoid clock-skew disputes).
+
+\textbf{Why not WebAuthn/Passkey per-request.} WebAuthn passkeys sign a server-provided
+challenge in response to a user gesture; they cannot sign arbitrary payloads silently.
+The correct primitive for silent per-request signing is a device-bound key in the
+platform's HSM (Apple App Attest for mobile; client certificates bound to platform TPMs
+for desktop).
+
+\subsection{Inspection Binding and the In-Path Timing Guarantee}
+
+For every \code{CosignedRequest} that triggers an inspection, the operator records:
+
+\begin{lstlisting}[language=Python]
+InspectionRecord = {
+    seq:          int,   # from CosignedRequest
+    payload_hash: str,   # SHA-256(payload) -- matches CosignedRequest.payload_hash
+    cosig:        str,   # full CosignedRequest, JSON-serialised
+    decision:     str,   # "allow" | "block" | "inspect"
+    cause:        str,   # policy rule or heuristic that triggered this event
+    timestamp_ns: int,   # operator-assigned epoch in nanoseconds
+    salted_hash:  str,   # SHA-256(salt_i || payload) -- GDPR Art. 17 erasure hook
+}
+\end{lstlisting}
+
+\textbf{Dual-hash leaf for GDPR Art.~17 (OSM-007).} The \code{InspectionRecord} carries
+two hashes. \code{payload\_hash} is the hash the subject already signed; it enables
+binding check~4 and is permanent. \code{salted\_hash} is derived from a 32-byte random
+salt $s_i$ stored \emph{outside} the Merkle tree in a deletable store
+(\code{SaltStore}). To exercise the right of erasure, the operator destroys $s_i$;
+the committed salted hash becomes a dead-end without affecting tree integrity,
+consistency proofs, or \code{detect\_omission()}.
+
+\textbf{The critical invariant:} \textit{an inspection without an antecedent signed
+request is invalid; a signed request without a corresponding inspection record is a
+detectable omission.}
+
+\textbf{In-path timing guarantee.} Because the filter is always-on and mandatory in the
+API path, the \code{InspectionRecord} is committed to the Merkle log \emph{before} the
+request is forwarded to the AI model. The model response cannot arrive at the client
+before the commitment exists.
+
+The API response carries proof back to the client:
+
+\begin{lstlisting}[language=Python]
+APIResponse = {
+    result:            bytes,          # model response (opaque)
+    seq_ack:           int,            # sequence the operator acknowledged
+    leaf_bytes:        bytes,          # the committed InspectionRecord
+    leaf_index:        int,
+    inclusion_proof:   list[bytes],    # RFC 9162 inclusion proof
+    sth:               SignedTreeHead, # {tree_size, root_hash, sig}
+    consistency_proof: list[bytes],    # append-only proof from last head
+    consistency_from:  int,
+}
+\end{lstlisting}
+
+On each response the client runs six independent checks:
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{STH signature} --- the head is authentically the operator's.
+  \item \textbf{Append-only} --- the log was not rewritten since the client's last head.
+  \item \textbf{Input inclusion} --- the committed \code{InspectionRecord} is in the tree.
+  \item \textbf{Input binding} --- \code{payload\_hash} matches what the client signed.
+  \item \textbf{Output inclusion} --- the committed \code{OutputInspectionRecord} is in the
+    same tree.
+  \item \textbf{Output binding} --- \code{SHA-256(result)} matches \code{output\_hash}
+    in the committed output record.
+\end{enumerate}
+
+\subsection{\texttt{detect\_omission()}}
+
+The subject maintains a local set of every \code{seq} value they have emitted:
+
+\begin{lstlisting}[language=Python]
+def detect_omission(observed_seqs: Sequence[int], last_emitted: int) -> list[int]:
+    """Return seq values the operator did not acknowledge in [0, last_emitted]."""
+    observed_set = set(observed_seqs)
+    return [s for s in range(last_emitted + 1) if s not in observed_set]
+\end{lstlisting}
+
+This call requires no network request, no cooperation from the operator, and no
+cryptographic computation beyond what the subject already holds locally. A non-empty
+return value is a \term{unilateral proof of omission}.
+
+\subsection{Twin Independent Log Replicas}
+\label{sec:twin}
+
+The operator maintains the authoritative Merkle log (RFC~9162). The subject maintains
+a lightweight local replica: an ordered list of \code{(seq, operator\_root\_at\_seq)}
+tuples, updated with each acknowledged inspection. Consistency proofs verify
+append-only growth at each step.
+
+\textbf{What this does not close.} The subject verifies their own view of the log. They
+cannot prove that the regulator sees the same STH. Full closure requires external
+witnesses (RFC~9162 \S5 gossip). The HTTP witness transport is implemented
+(\code{HttpWitnessTransport} in \code{transparency/gossip.py}, Ed25519-verified
+counter-signatures, \code{has\_quorum()}); deployment of independent witness nodes
+remains infrastructure work outside this paper's scope. The residual split-view
+exposure is stated as honest limit~\ref{limit:splitview}.
+
+% ---------------------------------------------------------------
+\section{Implementation}
+% ---------------------------------------------------------------
+
+The reference implementation lives in \code{src/atlas/transparency/} and is
+intentionally decoupled from any specific AI product.
+
+\textbf{\code{merkle\_tree.py}} --- RFC~9162 \S2.1 faithful. Domain-separation prefixes
+prevent second-preimage attacks:
+\begin{lstlisting}
+leaf_hash(data)        = SHA-256(0x00 || data)
+node_hash(left, right) = SHA-256(0x01 || left || right)
+\end{lstlisting}
+Exports \code{merkle\_root()}, \code{inclusion\_proof()} / \code{verify\_inclusion()},
+\code{consistency\_proof()} / \code{verify\_consistency()}. All operations are pure
+functions; the module has no I/O or state.
+
+\textbf{\code{log.py}} --- \code{TransparencyLog} wraps the Merkle primitives with
+append-only semantics, maintains the current STH, and signs it. Persistence is opt-in:
+\code{TransparencyLog(path=Path(...))} writes each leaf as a base64-encoded line with
+\code{fsync()} on append and reloads from disk on startup, preserving monotonic sequence
+continuity across process restarts. A Read-API for deployers and regulators exposes the
+log over HTTP: \code{GET /api/exec/api/v1/log/tree} (current STH),
+\code{GET /api/exec/api/v1/log/entries} (leaf range, capped at 1000), and
+\code{GET /api/exec/api/v1/log/proof/inclusion/\{i\}} (RFC~9162 inclusion proof),
+providing the technical basis for EU AI Act Art.~26 deployer monitoring.
+
+\textbf{\code{client\_cosign.py}} --- \code{ClientCosigner} emits monotonically-sequenced
+\code{CosignedRequest} objects; \code{verify\_cosigned\_request()} validates signature
+and payload hash; \code{detect\_omission()} implements \S3.3 above. The
+\code{Signer} / \code{SigVerifier} interfaces accept any backend (software Ed25519 for
+testing, hardware-bound keys in production).
+
+\textbf{\code{witness.py}} --- \code{Witness.observe(sth)} accepts STHs from the
+operator, verifies their signatures, and raises \code{SplitViewError} when two STHs with
+the same \code{tree\_size} carry different \code{root\_hash} values.
+\code{HttpWitnessTransport} submits STHs to independent witness endpoints over stdlib
+\code{urllib}; counter-signatures are verified with Ed25519 before counting toward
+quorum.
+
+\textbf{Reference implementation and adversarial harness} (\code{docs/demo/},
+reproducible, no network / no model). Ed25519 device-bound keys. Nine scenarios over a
+5-request stream:
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lp{5.5cm}p{4cm}l@{}}
+\toprule
+\textbf{Session} & \textbf{Operator behaviour} & \textbf{Outcome} & \textbf{Ref.} \\
+\midrule
+A & Honest --- inspects + commits input and output & \code{detect\_omission() == []} & \S3 \\
+B & Silently skips input inspection of seq=2 & \code{== [2]}, detected by subject alone & \S3.3 \\
+C & Fakes an input ack (bogus STH + proof) & Rejected; \code{[2]} surfaces & \S3.2 \\
+D & Rewrites a past log entry & Consistency proof fails & \S3.4 \\
+E & Forges a request for a seq never sent & Rejected; signature $\neq$ registered key & \S2.3 \\
+F & Signs receipt then omits; request lost in transit & Attributable omission isolated & \S6.8 \\
+G & Commits input but omits output inspection seq=2 & Check 5 fails; cascade & \S3.2 \\
+H & Shadow routing seq=2 (OSM-042) & Transparent to protocol & \S8.2 \\
+J & Behavioral drift: rejection heuristics degrade & Canary delta flagged (probabilistic) & \S6.11 \\
+\bottomrule
+\end{tabular}
+\caption{Adversarial harness scenarios. Sessions A--H plus J cover all paper claims.}
+\end{table}
+
+The harness is anchored in the test suite (\code{tests/test\_completeness\_demo.py},
+\code{tests/test\_network\_reconciliation.py}, \code{tests/test\_output\_inspection.py});
+1831 tests total, all passing.
+
+% ---------------------------------------------------------------
+\section{Related Work}
+% ---------------------------------------------------------------
+
+\textbf{Note on novelty.} The subject-monitoring mechanism is NOT novel. We cite its
+predecessors as our foundation, not as work we improve upon.
+
+\textbf{CONIKS}~\cite{coniks2015} is the direct ancestor. CONIKS allows users to monitor
+their own key-binding entries in a transparency log, detecting inconsistency
+\term{without global monitors} at low overhead ($<$20~kB/day). Client monitoring happens
+automatically in the background, with no explicit user action required per check.
+Over \term{key bindings}, CONIKS already delivers nearly everything we propose for
+inspection logs: subject-side monitoring, automatic silent operation, and reduced
+dependence on external witnesses.
+
+\textbf{Key Transparency family.}~\cite{googkt2017,signalkt2023,appleckv2023,wakt2023}
+Google Key Transparency (2017), Signal Key Transparency (2023), Apple Contact Key
+Verification (2023), and WhatsApp Key Transparency (2023) are production deployments of
+CONIKS-style subject-monitoring. The \textbf{IETF \texttt{keytrans} Working
+Group}~\cite{ietf-keytrans} standardises this family. This is live production work
+across major platforms; the primitive is mature and being standardised.
+
+\textbf{Certificate Transparency.}~\cite{rfc6962,rfc9162} RFC~6962 and RFC~9162 provide
+the append-only log infrastructure and gossip mechanisms for cross-operator STH
+validation. Our implementation is RFC~9162 faithful. The split-view limit
+(limit~\ref{limit:splitview}) is addressed by RFC~9162 \S5 gossip.
+
+\textbf{The Attacker Moves Second}~\cite{attacker2024} demonstrates formally that
+adaptive adversaries defeat $>$90\% of existing defences. This supports our decision not
+to promise detection rates. We claim verifiability of the inspection record, not
+detection probability.
+
+\textbf{Our contribution, stated precisely.} The CONIKS/KT mechanism monitors
+\term{key bindings}; the adversarial event is \term{equivocation}. We transfer this
+model to \term{AI content-inspection logs}; the adversarial event is \term{omission}.
+The invariant to protect changes: from ``my key binding is consistent across all views''
+to ``every request I signed was preceded by a registered cause for inspection.'' We add
+inspection-by-cause (\S3.2) as the specific record structure that makes this invariant
+falsifiable. This is a domain-transfer and modelling contribution, not a cryptographic
+primitive.
+
+\subsection*{Concurrent Work (January--June 2026)}
+
+\textbf{Notarized Agents}~\cite{sello2026} (Figuera, 2026) introduces receiver-side signing
+for multi-agent workflows: each tool or service that receives an agent's call signs a Receipt
+over what it actually observed, creating a Merkle-anchored audit trail. The threat model
+is a \term{compromised agent} fabricating its own traces --- not a semi-honest operator
+omitting inspections. The paper's honest-limits section explicitly acknowledges the
+set-completeness gap it does not close: ``Owner receives verifiable individual receipts
+but cannot cryptographically prove the log returned \textit{all} matching entries.
+Operators could silently omit receipts while remaining cryptographically correct on
+returned ones.'' This is exactly the gap our mechanism closes. The two contributions are
+orthogonal in threat model: Sello secures agents against infrastructure they control; we
+secure subjects against operators who control both the AI pipeline and the inspection log.
+
+\textbf{Aegon}~\cite{aegon2026} (Baskaran et al., 2026) addresses a different domain:
+\term{AI content licensing} (DRM). It extends JWT tokens with licensing claims, maintains
+a CT-style Merkle ledger of licensing transactions, and adds Android StrongBox hardware
+receipts for on-device compliance. The domain is licensing provenance, not safety
+inspection; the threat model is content piracy, not operator omission. The paper is a
+protocol design white paper; prototype implementation is stated as future work.
+Despite the domain difference, the shared structure is notable: both systems use
+append-only Merkle logs and hardware-bound receipts to make transactions undeniable.
+The completeness gap --- guaranteeing that an adversarial SDK operator cannot silently
+omit records --- is acknowledged as out of scope in Aegon; closing it is the central
+contribution of our work.
+
+\textbf{Auditable Agents}~\cite{auditableagents2026} (Nian et al., 2026) proposes a Merkle
+log for agent execution traces, providing post-hoc auditability of tool calls and state
+transitions. The mechanism assumes \term{honest tool providers}; completeness against a
+dishonest operator is not addressed. Our contribution is precisely the case they assume away.
+
+\textbf{Aegis}~\cite{aegis2026} (Mazzocchetti, 2026) combines ZK-STARK Proof-of-Conduct
+with an ILK hash chain for governance of autonomous agents. Aegis addresses
+\term{behavioral compliance} (did the agent follow rules?), not completeness of an
+operator-side inspection log. The two mechanisms are complementary.
+
+% ---------------------------------------------------------------
+\section{Honest Limits}
+\label{sec:limits}
+% ---------------------------------------------------------------
+
+These limits are not weaknesses to apologise for; they are the boundary conditions that
+make every other claim credible.
+
+\paragraph{6.1 Split-view: partial mitigation implemented, full closure pending.}
+\label{limit:splitview}
+\code{detect\_omission()} detects gaps in the subject's view of the log. It does not
+prove that a regulator sees the same view. The HTTP witness transport is implemented
+(\code{HttpWitnessTransport}, Ed25519-verified quorum, \code{has\_quorum()}); deployment
+of independent witness nodes remains ecosystem work outside this paper's scope.
+
+\paragraph{6.2 Out-of-band content and retained data.}
+The mechanism covers the synchronous request path. Operator-side batch reprocessing of
+stored prompts, asynchronous safety scans, or any inspection that does not reference a
+live \code{CosignedRequest} are not covered.
+
+\paragraph{6.3 Client-operator circularity.}
+The guarantee rests on the independence of the client. If the operator both runs the AI
+service and distributes the client software, they could ship a client that uses a weak
+key or a counter that resets silently. The strong guarantee requires the client to be
+distributed by a party independent of the AI operator.
+
+\paragraph{6.4 Definition gaming.}
+``What constitutes an inspection'' is defined by the operator. An operator can comply
+with the mechanism while defining ``inspection'' narrowly enough to exclude most
+meaningful safety checks. The mechanism provides a verifiable record of compliance with
+the \term{defined} inspection policy; it does not enforce any particular policy.
+
+\paragraph{6.5 Geolocation and export control are not resolvable in code.}
+IP address, GPS, and round-trip latency are risk signals, not proof of geographic
+location. What the filter makes verifiable is: ``we generated a risk score of X for
+subject Y on date Z and escalated to KYC.'' Whether the KYC step resolves residency is
+the legal system's responsibility.
+
+\paragraph{6.6 Chain-of-thought is not auditable as ground truth.}
+We log \code{(decision, action, cause)}, not the model's reasoning trace. Large language
+model chain-of-thought outputs are known to be potentially post-hoc rationalisations. We
+log the \term{act} and the \term{triggering rule}; the act is verifiable and the rule is
+enumerable. The reasoning is not.
+
+\paragraph{6.7 Retroactive compliance: architectural mitigation, not cryptographic closure.}
+The in-path guarantee is a property of the deployed architecture, not a cryptographic
+invariant. An operator who deliberately engineers a bypass --- letting the model run
+before the filter commits, then inserting a retroactive record --- can defeat it without
+forging any signature.
+
+\paragraph{6.8 Network failures create plausible deniability for unconfirmed requests.}
+A gap in the subject's sequence has two indistinguishable causes: operator omission, or
+the request never arrived. The mitigation (OSM-040) is a signed receipt: the operator
+returns a \code{Receipt\{seq, payload\_hash, received\_at\_ns\}} signed on arrival,
+\emph{before} inspection. A subject who holds a valid receipt for \code{seq=n} but
+finds no inclusion proof for \code{n} has an \term{attributable omission}. Exercised in
+Session~F and \code{tests/test\_network\_reconciliation.py}.
+
+\paragraph{6.9 Legal shield is a hypothesis without legal counsel.}
+Section~\ref{sec:deployment} proposes that verifiable inspection logs create a mutual
+protection incentive. Whether this argument succeeds in any jurisdiction depends on local
+law. We present it as a plausible deployment incentive, not a legal fact.
+
+\paragraph{6.10 Covert post-inspection capability restrictions are not detectable.}
+The completeness mechanism ensures every request was inspected; it cannot constrain what
+the model does \emph{after} inspection returns ``allow.'' On 2026-06-10, Anthropic
+launched Claude Fable~5 with an undisclosed instruction that silently reduced response
+quality for certain AI-research queries without informing the user; the instruction was
+reversed within 24~hours after public disclosure. The episode confirms that a complete
+and verifiable inspection log --- one that recorded ``allow'' for each of those requests
+--- would not have surfaced the degradation. Our protocol makes completeness of
+inspection verifiable; it makes no claim about the faithfulness of the model's subsequent
+output.
+
+\paragraph{6.11 Behavioral Drift Detection (OSM-054) --- Limitations and Open Problems.}
+\label{limit:drift}
+Three angles are proposed: (A)~behavioral delta observation via canary prompts;
+(B)~ex-post consistency proofs; (C)~shadow divergence. All three face common barriers:
+capability masking can be implicit in model weights; false positives are likely when the
+model improves legitimately; false negatives occur when restrictions operate at
+sub-threshold probability levels. We state behavioral drift detection as a
+\textbf{future research problem} and an \textbf{open investigative tool}, not a closed
+detection method. See \code{src/atlas/security/behavioral.py} for the reference
+implementation.
+
+% ---------------------------------------------------------------
+\section{Deployment and Incentives}
+\label{sec:deployment}
+% ---------------------------------------------------------------
+
+\subsection{Mutual Protection}
+
+The verifiable inspection log creates a protection asymmetry that benefits both parties.
+The operator can produce an inclusion proof when a subject claims harm from AI-generated
+content: ``inspection record for \code{(seq=n, payload\_hash=h)} is in the log at
+position~$k$, with STH signed at time~$t$.'' The subject can audit the \code{cause}
+field when they claim wrongful blocking. The same log that protects the operator from
+``you never inspected this'' also exposes the operator to ``you inspected this without
+cause.'' Both parties benefit if and only if the operator is operating honestly within
+their declared policy.
+
+\subsection{EU AI Act Alignment}
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Article} & \textbf{Mechanism contribution} \\
+\midrule
+Art.~9 (risk management) & Cause-based inspection (\S3.2) creates auditable per-request risk assessment record. \\
+Art.~12 (record-keeping) & Merkle log + \code{InspectionRecord} (decision + cause + timestamp); append-only, tamper-resistant, unlimited retention. \\
+Art.~13 (transparency) & Subject-held replica + \code{detect\_omission()} enable individual-request-level transparency without trusting operator. \\
+Art.~14 (human oversight) & Verifiable log makes inspection record independently auditable by regulator or subject. \\
+Art.~26 (deployer obligations) & Read-API (\code{GET /api/exec/api/v1/log/\ldots}) exposes per-request evidence base for deployer monitoring. \\
+Art.~53 (systemic risk) & Per-request inspection evidence at scale supports documentation obligation. \\
+\bottomrule
+\end{tabular}
+\caption{EU AI Act alignment. The filter provides technical evidence; it does not substitute for substantive legal obligations.}
+\end{table}
+
+\subsection{Enforcement Boundary}
+
+Breaking the chain --- refusing to participate in the protocol --- disables the guarantee
+for that session. The preferred design is \term{graceful degradation}: chain breaks are
+logged and flagged for review, not used as hard gates, to avoid converting every network
+anomaly into a service outage.
+
+% ---------------------------------------------------------------
+\section{Conclusion}
+% ---------------------------------------------------------------
+
+We have shown that completeness of AI content-inspection logs is \textit{unilaterally
+falsifiable} by the subject: a gap in the subject's monotonically-signed request sequence
+is a proof of omission that requires no external auditor and no cooperation from the
+operator. The mechanism transfers the subject-monitoring model of CONIKS and Key
+Transparency to a new domain, adds inspection-by-cause as the specific invariant to
+protect, and extends it symmetrically to output inspection. Concurrent work on agent
+auditability (Notarized Agents, Auditable Agents, Aegon, Aegis) addresses related but
+orthogonal problems; none closes the set-completeness gap against a semi-honest operator
+that this mechanism closes.
+
+\textbf{Open work.} Three threads remain outside this paper's scope.
+(1)~\textit{Independent witness deployment}: the HTTP witness transport is implemented;
+operating independent witness nodes requires ecosystem coordination beyond a single
+deployment.
+(2)~\textit{Behavioral faithfulness}: proving that a model's observable behavior on
+canary inputs predicts its behavior on the full production distribution requires
+interpretability infrastructure not yet available at API level.
+(3)~\textit{KYC / export-control binding}: the mechanism provides a device-bound
+signing key; resolving legal residency for export-controlled access requires a KYC
+step that is operational and legal, not cryptographic.
+
+% ---------------------------------------------------------------
+\appendix
+\section{Four-Layer Defense Stack}
+\label{sec:defensestack}
+% ---------------------------------------------------------------
+
+The completeness mechanism (§§3--6) does not exist in isolation. This appendix
+synthesises the four-layer stack, states what each layer does not guarantee, and
+identifies the open research problems no layer currently closes.
+
+The completeness mechanism is one layer of a coordinated defense-in-depth stack.
+
+\subsection{Layer 1--2: Completeness Verification (Input + Output)}
+
+Enforces symmetric completeness on both the input request and the output response.
+Omissions are detectable by the subject through \code{detect\_omission()} without
+relying on the operator. The structural invariants are OSM-007 (input completeness) and
+OSM-042 (output completeness). Both are closed.
+
+\textbf{Does not guarantee:} fabricated cause fields; split-view attacks.
+
+\subsection{Layer 3: Active Defense and Consensus (OSM-031/052/053)}
+
+External-witness network following RFC~9162 gossip. A campaign metric
+(\code{C\_attempts}, \code{K\_attribution}: $\geq 3$ consecutive attempts with cosine
+similarity $>0.7$) triggers flagging with co-signed identity trail.
+
+\textbf{Does not guarantee:} per-attempt detection; single-operator witness deployment.
+
+\subsection{Layer 4: Behavioral Drift Observation (OSM-054)}
+
+A canary framework: fixed probes re-issued periodically; drift in response distribution
+signals undisclosed model changes. Session~J (demo) exercises this. Probabilistic; does
+not attribute drift to adversarial manipulation vs.\ legitimate update.
+
+\subsection{Synthesis}
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lp{5cm}p{5cm}@{}}
+\toprule
+\textbf{Layer} & \textbf{Threat closed} & \textbf{Threat not closed} \\
+\midrule
+L1--L2 (OSM-007/042) & Inspection omission detectable by subject & Fabricated cause; split-view \\
+L3 (OSM-031/052/053) & Split-view via witnesses; campaign attribution & Per-attempt detection; single-operator witness \\
+L4 (OSM-054) & Behavioral drift early warning (canary, heuristic) & Behavioral faithfulness; covert capability detection \\
+\bottomrule
+\end{tabular}
+\caption{Orthogonal defense layers. No layer subsumes another.}
+\end{table}
+
+\textbf{Open research.} Two problems remain outside the scope of this paper and the
+published literature as of June~2026: (1)~\term{behavioral faithfulness} --- proving
+that a model's behavior on a finite canary set predicts its behavior on the full
+production input distribution; (2)~\term{covert capability detection} --- detecting that
+a model has acquired a capability without access to its weights or training process.
+
+% ---------------------------------------------------------------
+\section*{Acknowledgements}
+% ---------------------------------------------------------------
+
+Reference implementation: \url{https://github.com/therealronin23/atlas} (private;
+available upon request for reviewer verification). All claims are anchored in 1831
+automated tests, mypy \texttt{-{}-strict} clean.
+
+% ---------------------------------------------------------------
+% Bibliography
+% ---------------------------------------------------------------
+\bibliographystyle{plainnat}
+\bibliography{paper_subject_enforced_completeness}
+
+\end{document}
