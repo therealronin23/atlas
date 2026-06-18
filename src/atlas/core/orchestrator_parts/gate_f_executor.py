@@ -151,18 +151,18 @@ class GateFExecutor:
         task.transition(TaskStatus.DONE)
         self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
 
-    def execute_browser_command(self, action: str, args: dict[str, Any]) -> dict:
+    def execute_browser_command(self, action: str, args: dict[str, Any]) -> dict[str, Any]:
         browser = self.get_browser_tool()
         if action == "navigate":
-            return browser.navigate(str(args["url"])).__dict__
+            return dict(browser.navigate(str(args["url"])).__dict__)
         if action == "screenshot":
-            return browser.screenshot(args.get("name")).__dict__
+            return dict(browser.screenshot(args.get("name")).__dict__)
         if action == "extract":
-            return browser.extract().__dict__
+            return dict(browser.extract().__dict__)
         if action == "click":
-            return browser.click(str(args["selector"])).__dict__
+            return dict(browser.click(str(args["selector"])).__dict__)
         if action == "fill":
-            return browser.fill(str(args["selector"]), str(args["value"])).__dict__
+            return dict(browser.fill(str(args["selector"]), str(args["value"])).__dict__)
         raise RuntimeError(f"Unsupported browser action: {action}")
 
     def execute_editor_command(
@@ -171,38 +171,38 @@ class GateFExecutor:
         args: dict[str, Any],
         *,
         task: Task | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         editor = self.get_editor_tool()
         clearance = f"task:{task.id}" if task is not None else None
         if action == "read":
-            return editor.read_file(self.resolve_path(str(args["path"]))).__dict__
+            return dict(editor.read_file(self.resolve_path(str(args["path"]))).__dict__)
         if action == "write":
-            return editor.write_file(
+            return dict(editor.write_file(
                 self.resolve_path(str(args["path"])),
                 str(args["content"]),
                 clearance=clearance,
-            ).__dict__
+            ).__dict__)
         if action == "run":
             return self._execute_editor_run_command(
                 task, args, editor, clearance=clearance,
             )
         if action == "apply_diff":
-            return editor.apply_diff(
+            return dict(editor.apply_diff(
                 self.resolve_path(str(args["path"])),
                 str(args["diff"]),
                 clearance=clearance,
-            ).__dict__
+            ).__dict__)
         if action == "open":
-            return editor.open_project(self.resolve_path(str(args["path"]))).__dict__
+            return dict(editor.open_project(self.resolve_path(str(args["path"]))).__dict__)
         raise RuntimeError(f"Unsupported editor action: {action}")
 
-    def execute_vision_command(self, action: str, args: dict[str, Any]) -> dict:
+    def execute_vision_command(self, action: str, args: dict[str, Any]) -> dict[str, Any]:
         if action != "propose":
             raise RuntimeError(f"Unsupported vision action: {action}")
         proposal = self.get_vision_loop().propose_next(
             str(args.get("screenshot_name") or "vision_loop")
         )
-        payload = proposal.__dict__
+        payload: dict[str, Any] = dict(proposal.__dict__)
         if proposal.requires_approval:
             self._merkle.log(
                 action="vision.proposal_requires_approval",

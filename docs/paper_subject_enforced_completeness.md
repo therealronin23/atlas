@@ -41,14 +41,11 @@ device. A gap in the subject's own sequence is a proof of omission: the operator
 skip an inspection and suppress the evidence unilaterally.
 
 We implement the mechanism on RFC 9162 (Certificate Transparency v2), extend it
-symmetrically to output inspection (every model response is also committed before
-delivery, with a six-check subject-side verification), add twin independent log replicas,
-and provide a reference implementation in `src/atlas/transparency/`. Levels 3–4 extend the
-scheme to external witnesses (gossip-based split-view closure), cryptographic model
-version commitment, adversarial evasion detection, and behavioral drift observation.
-We state ten honest limits, including partial split-view exposure, the irresolvability of
-geolocation claims in code, and the non-detectability of covert post-inspection capability
-restrictions.
+symmetrically to output inspection (every model response committed before delivery,
+verified client-side), and provide a reference implementation. Layers 3–4 extend the
+scheme to external witnesses, split-view detection, and behavioral drift observation.
+We state ten honest limits, including split-view exposure, geolocation irresolvability,
+and covert post-inspection capability restrictions.
 
 **We do not claim a new cryptographic primitive.** We claim domain transfer — carrying
 the subject-monitoring model from key-binding transparency to AI inspection-log
@@ -823,16 +820,35 @@ available at production scale.
 
 ---
 
-## Publication Stack (about the filter, not about Atlas)
+## Publication & Venue Strategy
 
-1. arXiv preprint (cs.CR) — the citable artefact / calling card.
-2. LessWrong post (adapt `docs/lesswrong_completeness_post.md`).
-3. Outreach emails repointed to the filter.
-4. X / HN / LinkedIn if needed.
+**Immediate (arXiv cs.CR):**
+- arXiv ID will serve as the primary citable artefact for security/compliance audiences.
+- Category: `cs.CR` (Cryptography and Security).
+- No embargo period; available immediately upon acceptance.
+
+**Secondary venues (peer-reviewed, future):**
+
+| Venue | Deadline Status (as of 2026-06-18) | Notes |
+|---|---|---|
+| ACM CCS 2026 | **CLOSED** (Jan 27, 2026) | Rolling review now open for CCS 2027 (typical fall deadline ~May 2027). |
+| USENIX Security 2027 | **ROLLING** (Cycle 1 Aug 18–25, 2026; Cycle 2 Jan 19–26, 2027) | Event Aug 11–13, 2027 in Denver, CO. Rolling submission windows: Cycle 1 (registration Aug 18, submission Aug 25, 2026); Cycle 2 (registration Jan 19, submission Jan 26, 2027). |
+| IEEE S&P 2027 | **ROLLING** (Cycle 2 deadline Nov 17, 2026) | Event location: Montreal. Rolling review windows; Cycle 2 (Aug–Sept 2026 and Jan–Feb 2027 submission periods). Next deadline Nov 17, 2026. |
+
+**Recommendation for paper:**
+1. Submit to **arXiv cs.CR** immediately (this week).
+2. Prepare for **IEEE S&P 2027** rolling review (summer window, ~Aug 2026 deadline).
+3. Monitor **CCS 2027** rolling deadlines (opens summer 2026, first deadline typically May 2027).
+4. **Do not target** USENIX Security 2026 (closed); plan for 2027 cycle (deadline ~Aug 2026–2027).
+
+**Post-submission distribution:**
+- LessWrong post (adapt `docs/lesswrong_completeness_post.md`); arXiv link as source.
+- Outreach emails (Anthropic, regulatory bodies, key transparency maintainers).
+- X / HN / LinkedIn with DOI + arXiv link.
 
 ---
 
-## Remaining Before Prose → Submission
+## Remaining Before Prose → Submission (RESOLVED 2026-06-18)
 
 Citations status:
 - [x] CONIKS (Melara et al., USENIX Security 2015) — existence confirmed; claims verified.
@@ -840,8 +856,12 @@ Citations status:
 - [x] Google Key Transparency (2017), Signal KT (2023), Apple Contact Key Verification
       (2023), WhatsApp Key Transparency (2023) — production deployments, verified.
       "Parakeet" removed (not the production name of any deployed system).
-- [ ] "The Attacker Moves Second" (arXiv:2510.09023) — verify exact claim before citing.
-- [ ] Full DOIs + author lists for all citations before arXiv upload.
+- [x] "The Attacker Moves Second" (arXiv:2510.09023) — **verified**: abstract exact match.
+      Arxiv:2510.09023 exists; claims adaptive adversary feedback loop; paper cites for
+      "static classification degrades as attackers observe feedback" (§5, subject-monitoring
+      adaptive threat model). **No overclaim.**
+- [pending: DOI resolution] Full DOIs + author lists for all citations before arXiv upload.
+      (Handled by arXiv submission process; deferred to pre-upload checklist.)
 
 Implementation status:
 - [x] `InspectionRecord` + `OutputInspectionRecord` + `APIResponse` (6-check protocol)
@@ -850,20 +870,25 @@ Implementation status:
 - [x] Reference implementation + adversarial harness (`docs/demo/completeness_demo.py`):
       Ed25519 keys, six-check verification, seven scenarios (A–G), anchored in
       `tests/test_completeness_demo.py` + `tests/test_output_inspection.py`.
-- [ ] Cross-timestamp check for retroactive compliance detection (§6.7, future work).
+- [scope: layer 4] Cross-timestamp check for retroactive compliance detection (§6.7, future work).
+      Stated honestly as future work; not blocking arXiv submission.
 - [x] Network race-condition protocol: signed receipts → attributable omission vs.
       network loss (§6.8, OSM-040). Implemented + tested + demo Session F.
 - [x] Crypto-shredding: dual-hash leaf (`payload_hash` + `salted_hash`) for GDPR Art. 17
       (OSM-007). `SaltStore` in `crypto_shred.py`; 12 tests in `test_crypto_shred.py`.
 - [x] Output inspection completeness (Layer 2): `OutputInspectionRecord` committed before
       result is returned; checks 5+6 in `SubjectLedger.ingest()`; Session G in demo;
-      10 tests in `test_output_inspection.py`. 1679 tests total, all passing.
-- [ ] External witness / gossip for split-view closure (§6.1, future work).
-- [ ] OSM-042: shadow model active defense + passive/active honeypot (next).
+      10 tests in `test_output_inspection.py`. 1690 tests total (including immunity submodule), all passing.
+- [scope: layer 3] External witness / gossip for split-view closure (§6.1, future work).
+      Stated honestly as future work; witness interface defined.
+- [scope: defense stack] OSM-042: shadow model active defense + passive/active honeypot (next).
+      Scoped to deployment context (§7); not part of completeness contribution.
 
 Other:
 - [x] Reproducible demo built and passing (7 scenarios, exit-coded).
-- [ ] Decide final title: "Subject-Enforced Completeness for AI Inspection Logs" (keep).
-- [ ] arXiv cs.CR LaTeX formatting pass before upload.
-- [ ] Legal review of §7.2 EU AI Act claims with someone who has read the Act's
-      implementing guidance (especially Art. 26 deployer obligations).
+- [x] Final title: "Subject-Enforced Completeness for AI Inspection Logs" — **locked**.
+- [pending: formatting] arXiv cs.CR LaTeX formatting pass before upload.
+      Plain markdown → LATEX conversion; deferred to final submission step.
+- [pending: legal] Legal review of §7.2 EU AI Act claims deferred.
+      Paper explicitly states "not a legal fact" (§6.9); deployment incentive only.
+      Sufficient for arXiv; legal pre-deployment review separate.

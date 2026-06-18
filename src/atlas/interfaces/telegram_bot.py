@@ -32,12 +32,12 @@ from typing import Any, Protocol
 class AtlasOps(Protocol):
     """Operaciones que el bot necesita exponer. Implementadas por Orchestrator."""
 
-    def status(self) -> dict: ...
-    def submit_task(self, intent: str) -> dict: ...
-    def recent_audit(self, n: int = 10) -> list[dict]: ...
-    def list_tools(self) -> list[dict]: ...
-    def triage(self) -> dict: ...
-    def pending_approvals(self) -> list[dict]: ...
+    def status(self) -> dict[str, Any]: ...
+    def submit_task(self, intent: str) -> dict[str, Any]: ...
+    def recent_audit(self, n: int = 10) -> list[dict[str, Any]]: ...
+    def list_tools(self) -> list[dict[str, Any]]: ...
+    def triage(self) -> dict[str, Any]: ...
+    def pending_approvals(self) -> list[dict[str, Any]]: ...
     def approve(
         self,
         task_id: str,
@@ -45,7 +45,7 @@ class AtlasOps(Protocol):
         *,
         abort: bool = False,
         approve_only: list[str] | None = None,
-    ) -> dict: ...
+    ) -> dict[str, Any]: ...
 
 
 # ===========================================================================
@@ -116,7 +116,7 @@ class TelegramClient:
         self._token = token
         self._timeout = timeout_s
 
-    def get_updates(self, offset: int | None = None, timeout_s: int = 25) -> list[dict]:
+    def get_updates(self, offset: int | None = None, timeout_s: int = 25) -> list[dict[str, Any]]:
         params: dict[str, Any] = {"timeout": timeout_s}
         if offset is not None:
             params["offset"] = offset
@@ -124,20 +124,20 @@ class TelegramClient:
         result = data.get("result", [])
         return result if isinstance(result, list) else []
 
-    def send_message(self, chat_id: int, text: str, reply_markup: dict | None = None) -> dict:
+    def send_message(self, chat_id: int, text: str, reply_markup: dict[str, Any] | None = None) -> dict[str, Any]:
         body: dict[str, Any] = {"chat_id": chat_id, "text": text}
         if reply_markup is not None:
             body["reply_markup"] = reply_markup
         return self._call("sendMessage", body=body)
 
-    def answer_callback_query(self, callback_query_id: str, text: str = "") -> dict:
+    def answer_callback_query(self, callback_query_id: str, text: str = "") -> dict[str, Any]:
         return self._call("answerCallbackQuery", body={
             "callback_query_id": callback_query_id, "text": text,
         })
 
     def _call(
-        self, method: str, params: dict | None = None, body: dict | None = None,
-    ) -> dict:
+        self, method: str, params: dict[str, Any] | None = None, body: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         url = f"{self.BASE}/bot{self._token}/{method}"
         if params:
             url = f"{url}?{urllib.parse.urlencode(params)}"
@@ -149,7 +149,7 @@ class TelegramClient:
                                      method="POST" if body is not None else "GET")
         try:
             with urllib.request.urlopen(req, timeout=self._timeout) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
+                payload: dict[str, Any] = json.loads(resp.read().decode("utf-8"))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise TelegramAPIError(f"transport error: {exc}") from exc
         except json.JSONDecodeError as exc:
@@ -228,7 +228,7 @@ class TelegramBot:
     def stop(self) -> None:
         self._running = False
 
-    def handle_update(self, update: dict) -> None:
+    def handle_update(self, update: dict[str, Any]) -> None:
         callback = update.get("callback_query")
         if isinstance(callback, dict):
             self._handle_callback(callback)
@@ -273,7 +273,7 @@ class TelegramBot:
                 reply = f"Error procesando intent: {exc}"
         self._safe_send(chat_id, reply)
 
-    def _handle_callback(self, callback: dict) -> None:
+    def _handle_callback(self, callback: dict[str, Any]) -> None:
         cb_id = callback.get("id", "")
         from_user = callback.get("from") or {}
         chat = (callback.get("message") or {}).get("chat") or {}
@@ -354,7 +354,7 @@ class TelegramBot:
     # Notificaciones (subscriptores del EventBus)
     # ------------------------------------------------------------------
 
-    def notify_all(self, text: str, reply_markup: dict | None = None) -> int:
+    def notify_all(self, text: str, reply_markup: dict[str, Any] | None = None) -> int:
         """Envia 'text' a todos los chat_ids autorizados. Retorna cuantos OK."""
         ok = 0
         for chat_id in self._auth.allowed_ids():
@@ -394,7 +394,7 @@ class TelegramBot:
         else:
             self.notify_all(text, reply_markup=self._approval_keyboard(task_id, p))
 
-    def _approval_keyboard(self, task_id: str, payload: dict) -> dict:
+    def _approval_keyboard(self, task_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Teclado inline de aprobación. Para loops agénticos con >1 mutación
         (ADR-033) añade una fila por mutación ('Solo <name>' → approve_only) y
         un 'Cancelar' (deny+abort). callback_data se mantiene <64 bytes."""
@@ -518,14 +518,14 @@ class TelegramBot:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _format_status(data: dict) -> str:
+    def _format_status(data: dict[str, Any]) -> str:
         lines = ["Atlas Core — status"]
         for k, v in data.items():
             lines.append(f"  {k}: {v}")
         return "\n".join(lines)
 
     @staticmethod
-    def _format_task_submission(data: dict) -> str:
+    def _format_task_submission(data: dict[str, Any]) -> str:
         status = data.get("status", "submitted")
         if status == "delegated":
             return f"Delegado a Hermes (id={data.get('delegation_id', '?')})."
@@ -574,7 +574,7 @@ class TelegramBot:
         return str(result)[:3500]
 
     @staticmethod
-    def _format_audit(entries: list[dict]) -> str:
+    def _format_audit(entries: list[dict[str, Any]]) -> str:
         out = [f"Ultimas {len(entries)} entradas:"]
         for e in entries:
             ts = e.get("timestamp", "")
@@ -585,7 +585,7 @@ class TelegramBot:
         return "\n".join(out)
 
     @staticmethod
-    def _format_tools(tools: list[dict]) -> str:
+    def _format_tools(tools: list[dict[str, Any]]) -> str:
         out = [f"Herramientas ({len(tools)}):"]
         for t in tools:
             name = t.get("name", "?")
@@ -594,7 +594,7 @@ class TelegramBot:
         return "\n".join(out)
 
     @staticmethod
-    def _format_triage(data: dict) -> str:
+    def _format_triage(data: dict[str, Any]) -> str:
         mode = data.get("mode", "?")
         temp = data.get("temperature_c", "?")
         ram = data.get("ram_free_mb", "?")

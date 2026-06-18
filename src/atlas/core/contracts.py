@@ -99,7 +99,7 @@ class Task:
     result: Any | None         = None
     error: str | None          = None
     audit_hash: str | None     = None
-    metadata: dict             = field(default_factory=dict)
+    metadata: dict[str, Any]   = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not 1 <= self.priority <= 5:
@@ -119,7 +119,7 @@ class Task:
         self.status = new_status
         self.updated_at = datetime.now(timezone.utc).isoformat()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["status"] = self.status.value
         d["source"] = self.source.value
@@ -136,7 +136,7 @@ class ReasoningReceipt:
     approval_path: str | None = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -150,7 +150,7 @@ class TruthSnapshot:
     source_task_id: str | None = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -184,7 +184,7 @@ class EventType(str, Enum):
 @dataclass
 class Event:
     type: EventType
-    payload: dict      = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
     id: str            = field(default_factory=lambda: str(uuid.uuid4()))
     producer: str      = "atlas_core"
     task_id: str | None = None
@@ -192,7 +192,7 @@ class Event:
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["type"] = self.type.value
         return d
@@ -222,18 +222,18 @@ class Tool:
     description: str
     level: ToolLevel
     permission_level: PermissionLevel
-    schema_input: dict         = field(default_factory=dict)
-    schema_output: dict        = field(default_factory=dict)
-    credentials_required: list = field(default_factory=list)
-    estimated_cost: str        = "free"
-    resource_profile: dict     = field(default_factory=dict)
+    schema_input: dict[str, Any]  = field(default_factory=dict)
+    schema_output: dict[str, Any] = field(default_factory=dict)
+    credentials_required: list[str] = field(default_factory=list)
+    estimated_cost: str           = "free"
+    resource_profile: dict[str, Any] = field(default_factory=dict)
     known_failures: list[str]  = field(default_factory=list)
     skill_md_path: str | None  = None
     enabled: bool              = True
     last_used: str | None      = None
     success_rate: float | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         d["level"] = self.level.value
         d["permission_level"] = self.permission_level.value
@@ -258,7 +258,7 @@ class DelegationPayload:
     expires_at: str       = field(default="")
     encrypted: bool       = False
     signature: str        = ""
-    metadata: dict        = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.expires_at:
@@ -266,7 +266,7 @@ class DelegationPayload:
                 datetime.now(timezone.utc) + timedelta(seconds=self.timeout_seconds)
             ).isoformat()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -284,7 +284,7 @@ class DelegationResult:
     delegation_id: str
     task_id: str
     status: str
-    result: dict | None    = None
+    result: dict[str, Any] | None = None
     error: str | None      = None
     completed_at: str | None = None
     skill_generated: bool  = False

@@ -7,23 +7,32 @@ investigación. NO cierran behavioral faithfulness.
 
 Componentes
 -----------
-  CanaryPrompt      — prompt revelador de capacidad (inmutable).
-  DEFAULT_CANARIES  — batería mínima de 3 sondas predefinidas.
-  canary_by_id()    — lookup O(n) sobre DEFAULT_CANARIES.
-  BehavioralDelta   — diferencia observada entre baseline y ejecución actual.
-  CanaryBaseline    — snapshot capturado de una ejecución de referencia.
-  BaselineStore     — almacén en memoria de baselines por canary_id.
-  capture_baseline()— ejecuta respond_fn sobre cada sonda y devuelve baselines.
+  CanaryPrompt           — prompt revelador de capacidad (inmutable).
+  DEFAULT_CANARIES       — batería mínima de 3 sondas predefinidas.
+  canary_by_id()         — lookup O(n) sobre DEFAULT_CANARIES.
+  BehavioralDelta        — diferencia observada entre baseline y ejecución actual.
+  CanaryBaseline         — snapshot capturado de una ejecución de referencia.
+  BaselineStore          — almacén en memoria de baselines por canary_id.
+  capture_baseline()     — ejecuta respond_fn sobre cada sonda y devuelve baselines.
   detect_covert_change() — filtra deltas anómalos por contenido o latencia (A).
   shadow_divergence()    — compara real vs. shadow (C).
+  ResponseCommitment     — restricción R pre-comprometida (Ángulo B).
+  ConsistencyVerdict     — resultado de la verificación ex-post.
+  commit_expectation()   — ancla un ResponseCommitment en el TransparencyLog.
+  verify_consistency_proof() — verificación ex-post de la restricción.
 """
 
 from __future__ import annotations
 
 import hashlib
+import json
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from atlas.transparency.log import TransparencyLog
 
 
 # ---------------------------------------------------------------------------
@@ -362,3 +371,131 @@ def shadow_divergence(
             )
         )
     return deltas
+
+
+# ---------------------------------------------------------------------------
+# OSM-054-B — ResponseCommitment + ConsistencyVerdict
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ResponseCommitment:
+    """Restricción R pre-comprometida para un prompt dado.
+
+    Attributes:
+        prompt_id:              Identificador del prompt (ej. canary id).
+        prompt_hash:            SHA-256 hex del texto del prompt.
+        expected_response_hash: SHA-256 hex de la respuesta esperada.
+        policy_note:            Nota legible sobre la política que se verifica.
+        committed_at:           Timestamp Unix (segundos enteros) del compromiso.
+    """
+
+    prompt_id: str
+    prompt_hash: str
+    expected_response_hash: str
+    policy_note: str
+    committed_at: int
+
+
+@dataclass(frozen=True)
+class ConsistencyVerdict:
+    """Resultado de la verificación ex-post de un ResponseCommitment.
+
+    Attributes:
+        commitment_id:  prompt_id del ResponseCommitment verificado.
+        observed_hash:  SHA-256 hex de la respuesta observada.
+        consistent:     True si observed_hash == expected_response_hash.
+        checked_at:     Timestamp Unix (segundos enteros) de la verificación.
+    """
+
+    commitment_id: str
+    observed_hash: str
+    consistent: bool
+    checked_at: int
+
+
+def _commitment_leaf_bytes(commitment: ResponseCommitment) -> bytes:
+    """Serializa un ResponseCommitment a JSON canónico para su uso como hoja Merkle."""
+    doc = {
+        "committed_at": commitment.committed_at,
+        "expected_response_hash": commitment.expected_response_hash,
+        "policy_note": commitment.policy_note,
+        "prompt_hash": commitment.prompt_hash,
+        "prompt_id": commitment.prompt_id,
+    }
+    return json.dumps(doc, sort_keys=True, separators=(",", ":")).encode()
+
+
+def commit_expectation(
+    commitment: ResponseCommitment,
+    log: "TransparencyLog",
+) -> int:
+    """Ancla un ResponseCommitment en el TransparencyLog.
+
+    Serializa el commitment a JSON canónico y lo añade al log como nueva hoja.
+
+    Args:
+        commitment: Restricción R pre-comprometida a anclar.
+        log:        TransparencyLog donde se añadirá la hoja.
+
+    Returns:
+        Índice (0-based) de la nueva hoja en el log.
+    """
+    leaf_bytes = _commitment_leaf_bytes(commitment)
+    return log.append(leaf_bytes)
+
+
+def verify_consistency_proof(
+    commitment: ResponseCommitment,
+    observed_response: bytes,
+    log: "TransparencyLog",
+) -> ConsistencyVerdict:
+    """Verifica una restricción R *explícita pre-comprometida* ex-post.
+
+    Compara SHA-256(observed_response) con commitment.expected_response_hash y
+    exige que el commitment esté presente en el log (prueba de inclusión válida).
+
+    Límite honesto: Verifica una restricción R *explícita pre-comprometida*.
+    Inferencia de R a partir de comportamiento observado es open problem (paper §6.11).
+    Esta función NO detecta restricciones covert ni garantiza behavioral faithfulness.
+
+    Args:
+        commitment:         Restricción R anclada previamente con commit_expectation().
+        observed_response:  Bytes de la respuesta observada en ejecución real.
+        log:                TransparencyLog que debe contener el commitment.
+
+    Returns:
+        ConsistencyVerdict con consistent=True si los hashes coinciden.
+
+    Raises:
+        ValueError: Si el commitment no se encuentra en el log (búsqueda lineal).
+    """
+    from atlas.transparency.merkle_tree import verify_inclusion
+
+    leaf_bytes = _commitment_leaf_bytes(commitment)
+
+    # Buscar el commitment en el log de forma lineal.
+    # El log no expone acceso directo a entradas; recorremos los índices.
+    found_index: int | None = None
+    for idx in range(log.tree_size):
+        proof = log.prove_inclusion(idx)
+        sth = log.signed_tree_head()
+        if verify_inclusion(leaf_bytes, idx, sth.tree_size, proof, sth.root_hash):
+            found_index = idx
+            break
+
+    if found_index is None:
+        raise ValueError(
+            f"ResponseCommitment '{commitment.prompt_id}' no encontrado en el log. "
+            "Llama a commit_expectation() antes de verificar."
+        )
+
+    observed_hash = hashlib.sha256(observed_response).hexdigest()
+    consistent = observed_hash == commitment.expected_response_hash
+
+    return ConsistencyVerdict(
+        commitment_id=commitment.prompt_id,
+        observed_hash=observed_hash,
+        consistent=consistent,
+        checked_at=int(time.time()),
+    )
