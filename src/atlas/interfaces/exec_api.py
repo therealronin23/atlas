@@ -33,9 +33,12 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import APIRouter, HTTPException, Request
+
+if TYPE_CHECKING:
+    from atlas.transparency.log import TransparencyLog
 
 _log = logging.getLogger(__name__)
 
@@ -91,6 +94,16 @@ def _verify_timestamp(ts_header: str) -> tuple[bool, str]:
 def _key_id(secret: bytes) -> str:
     """First 8 hex chars of SHA-256(secret). Logged for correlation; never reveals the secret."""
     return hashlib.sha256(secret).hexdigest()[:8]
+
+
+def _resolve_log(orch: Any) -> "TransparencyLog":
+    """Resuelve el TransparencyLog vivo desde el orchestrator. Lanza HTTPException 503 si no disponible."""
+    hub = getattr(orch, "_inference_hub", None)
+    gw = getattr(hub, "_transparency", None) if hub else None
+    log = getattr(gw, "_log", None) if gw else None
+    if log is None:
+        raise HTTPException(status_code=503, detail="transparency log not available")
+    return cast("TransparencyLog", log)
 
 
 # ---------------------------------------------------------------------------
@@ -509,6 +522,60 @@ def build_router(orch_provider: Any) -> APIRouter:
         # Result may be a path or a dict — coerce
         return {"ok": True, "action": action, "result": str(result)}
 
+    # ------------------------------------------------------------------
+    # Log transparency sub-router  (read-only, no HMAC required)
+    # ------------------------------------------------------------------
+
+    log_router = APIRouter(prefix="/api/v1/log", tags=["transparency-read"])
+
+    @log_router.get("/entries")
+    def get_log_entries(start: int = 0, end: int | None = None) -> dict[str, Any]:
+        """Return raw log entries in the half-open interval [start, end)."""
+        log = _resolve_log(orch_provider())
+        tree_size = log.tree_size
+        if end is None:
+            end = tree_size
+        if start < 0 or end > tree_size or start > end:
+            raise HTTPException(status_code=400, detail="invalid range")
+        if end - start > 1000:
+            raise HTTPException(status_code=400, detail="range exceeds maximum (1000)")
+        entries = []
+        for raw in log._entries[start:end]:
+            try:
+                entries.append(json.loads(raw))
+            except Exception:
+                import base64 as _b64
+                entries.append({"b64": _b64.b64encode(raw).decode("ascii")})
+        return {"start": start, "end": end, "tree_size": tree_size, "entries": entries}
+
+    @log_router.get("/tree")
+    def get_log_tree() -> dict[str, Any]:
+        """Return the current Signed Tree Head of the transparency log."""
+        log = _resolve_log(orch_provider())
+        sth = log.signed_tree_head()
+        return {
+            "tree_size": sth.tree_size,
+            "root_hash": sth.root_hash.hex() if isinstance(sth.root_hash, bytes) else sth.root_hash,
+            "timestamp": sth.timestamp,
+            "signature": sth.signature,
+            "algo": getattr(sth, "algo", "ed25519"),
+        }
+
+    @log_router.get("/proof/inclusion/{leaf_index}")
+    def get_inclusion_proof(leaf_index: int) -> dict[str, Any]:
+        """Return the RFC 9162 inclusion proof for the entry at *leaf_index*."""
+        log = _resolve_log(orch_provider())
+        try:
+            proof = log.prove_inclusion(leaf_index)
+        except (IndexError, ValueError):
+            raise HTTPException(status_code=404, detail="leaf_index out of range")
+        return {
+            "leaf_index": leaf_index,
+            "tree_size": log.tree_size,
+            "audit_path": [h.hex() if isinstance(h, bytes) else h for h in proof],
+        }
+
+    router.include_router(log_router)
     return router
 
 
