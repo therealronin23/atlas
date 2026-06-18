@@ -1,21 +1,31 @@
 # Technical File — EU AI Act Annex IV
-<!-- ADR-055 / GAP-3 — generated 2026-06-18 -->
+<!-- Osmosis — in-path verifiable AI compliance filter. Annex IV / Art. 11. -->
 
-This document constitutes the Technical File required under EU AI Act Article 11
-and Annex IV for Atlas Core as a high-risk AI system component.
+This document constitutes the Technical File required under EU AI Act Article 11 and
+Annex IV for **Osmosis**, an in-path verifiable AI compliance filter. Osmosis is a
+record-keeping and transparency component intended to be deployed in the request path of
+a general-purpose AI service; it produces tamper-evident, subject-verifiable inspection
+logs. It is documented here as a high-risk-relevant component that contributes evidence
+toward a provider's obligations under the Act.
 
 ---
 
 ## 1. General Description (Annex IV §1)
 
-**System name:** Atlas Core  
-**Version:** see `src/atlas/version.py`  
-**Intended purpose:** Autonomous AI agent runtime with verifiable decision provenance.
-Deployed as a personal AI assistant (single user, local deployment). Not deployed
-as a general-purpose AI service to third parties.  
-**Risk classification:** Provider self-assessment — high-risk features present
-(autonomous code execution, agentic decision-making). Subject to Art. 6 + Annex III
-where applicable.
+**System name:** Osmosis  
+**Type:** In-path verifiable AI compliance filter (record-keeping + transparency layer).  
+**Intended purpose:** Sit in the request path between a subject (user) and a frontier AI
+model. For every request, Osmosis (a) accepts a subject-signed, monotonically-sequenced
+request, (b) commits an inspection record to an append-only Merkle log *before* the model
+is invoked, (c) commits a symmetric output-inspection record before the response is
+returned, and (d) returns cryptographic proofs that let the subject verify, unilaterally,
+that no inspection was omitted. It does not generate model content; it records and proves
+the inspection decisions taken around it.  
+**Deployment context:** Deployed by the AI service operator, in-path, always-on. The
+operating cost is borne by the filter provider, not the subject.  
+**Risk relevance:** Osmosis is the technical mechanism through which a provider can
+demonstrate compliance with record-keeping (Art. 12) and transparency (Art. 13)
+obligations for high-risk and systemic-risk AI systems.
 
 ---
 
@@ -23,38 +33,38 @@ where applicable.
 
 ### 2a. Architecture
 
-Atlas Core is a Python-based AI agent with the following primary modules:
+Osmosis is composed of the following modules (reference implementation; names descriptive):
 
 | Module | Purpose |
 |---|---|
-| `core/orchestrator.py` | Central dispatcher — classifies intent, routes to capabilities |
-| `core/inference_hub.py` | LLM inference abstraction — local/remote providers |
-| `transparency/gateway.py` | Subject-enforced completeness — signs every inference in/out |
-| `transparency/log.py` | Append-only Merkle log (RFC 9162) — tamper-evident audit trail |
-| `security/executor.py` | Code execution — ASTGuard + BwrapJail OS jail |
-| `security/shadow_model.py` | Adaptive defense — honeypot/shadow routing |
-| `core/decider/` | Decision point — autonomous / human / hybrid modes |
+| transparency gateway | Entry point — verifies the subject's co-signed request, orchestrates inspection and logging |
+| Merkle log | Append-only log (RFC 9162) — tamper-evident, disk-persistent, survives restarts |
+| client co-signer | Subject-side monotonic sequence + Ed25519 device-bound signing; `detect_omission()` |
+| crypto-shredding store | Per-request salt store outside the tree — GDPR Art. 17 erasure |
+| witness transport | RFC 9162 STH gossip over HTTP; Ed25519-verified quorum (split-view mitigation) |
+| cause-based inspector | Metadata-first triage; deep inspection only on registered cause |
+| read API | Exposes signed tree head, leaf ranges, and inclusion proofs to deployers/regulators |
 
-### 2b. Transparency Protocol (ADR-053)
+### 2b. Transparency Protocol
 
-Each inference request passes through `TransparencyGateway.call()`:
+Each request passes through the gateway:
 
-1. Subject cosigns request with Ed25519 (`ClientCosigner`) — monotonic seq
-2. Operator issues Receipt signing `(seq, payload_hash, timestamp)` — bidirectional
-3. `InspectionRecord` committed to Merkle log **before** model call
-4. Model inference executes
-5. `OutputInspectionRecord` committed **after** model call
-6. `APIResponse` returned with: STH, inclusion proofs (input + output),
-   consistency proof, seq_ack, Receipt
+1. Subject co-signs the request with an Ed25519 device-bound key — monotonic sequence.
+2. Operator issues a Receipt signing `(seq, payload_hash, timestamp)` — bidirectional.
+3. An inspection record is committed to the Merkle log **before** the model is invoked.
+4. The model inference executes.
+5. An output-inspection record is committed **after** the model call, before delivery.
+6. The response carries: signed tree head, inclusion proofs (input + output), consistency
+   proof, sequence acknowledgement, and the operator Receipt.
 
-Subject can verify operator completeness unilaterally by checking seq continuity
+The subject verifies operator completeness unilaterally by checking sequence continuity
 and Merkle inclusion proofs — without trusting the operator.
 
 ### 2c. Key persistence
 
-Layer 1 (implemented): Ed25519 keys in `~/.atlas/*.bin` (chmod 600), loaded at startup.  
-Layer 2 (deferred — OSM-025): TPM/Secure Enclave device-bound keys, bootstrapped
-via OAuth federated login. Not yet implemented.
+Layer 1 (implemented): Ed25519 keys held by the subject's client (chmod 600), loaded at
+startup. Layer 2 (deferred): TPM/Secure Enclave device-bound keys, bootstrapped via OAuth
+federated login. Not yet implemented.
 
 ---
 
@@ -63,18 +73,18 @@ via OAuth federated login. Not yet implemented.
 ### Development methodology
 
 - Test-driven development: ≥1831 automated tests (pytest)
-- Static typing: mypy `--strict` on transparency and security modules
-- Pre-commit hook runs full test suite before every commit
-- ADR (Architecture Decision Records) for every significant design choice
+- Static typing: mypy `--strict` on the transparency and security modules
+- Pre-commit hook runs the full test suite before every commit
+- Architecture decisions recorded for every significant design choice
 
 ### Design decisions relevant to safety
 
 | Decision | Rationale |
 |---|---|
-| Fail-closed code execution (ADR-055) | Without bwrap, Python execution blocked entirely — no insecure fallback |
-| Subject-enforced completeness (ADR-053) | Operator cannot omit records without subject detecting it unilaterally |
-| Dual-hash (payload_hash + salted_hash) | GDPR Art. 17 erasure without breaking cryptographic binding |
-| PDP decider pattern (ADR-040) | Human oversight is one implementation of the decision point, not hardcoded |
+| In-path pre-commit | The inspection record is committed before the model runs — retroactive omission requires deliberate bypass engineering, not a free omission |
+| Subject-enforced completeness | The operator cannot omit a record without the subject detecting it unilaterally via the monotonic sequence |
+| Dual-hash (payload_hash + salted_hash) | GDPR Art. 17 erasure without breaking the cryptographic binding |
+| Cause-based inspection | Content is inspected only when a registered cause fires; the cause is logged, no profiling |
 
 ---
 
@@ -82,19 +92,19 @@ via OAuth federated login. Not yet implemented.
 
 ### Logging and audit
 
-- Every decision appended to Merkle log with SHA-256 hash, Ed25519 STH
-- Log persisted to disk (`TransparencyLog(path=...)`) — survives restarts
-- Read-API for deployers: `GET /api/exec/api/v1/log/{tree,entries,proof/inclusion/{i}}`
-- GDPR crypto-shredding: `SaltStore.shred(seq)` makes per-user hashes unrecoverable
+- Every inspection decision appended to the Merkle log with SHA-256 hash and Ed25519 STH
+- Log persisted to disk — survives restarts; monotonic sequence continuity preserved
+- Read-API for deployers exposes the signed tree head, leaf ranges, and RFC 9162
+  inclusion proofs over HTTP (Art. 26 deployer monitoring)
+- GDPR crypto-shredding: destroying a per-request salt makes that record's content hash
+  unrecoverable without affecting tree integrity or omission detection
 
 ### Human oversight (Art. 14)
 
-- `ATLAS_DECIDER=autonomous` — fully autonomous mode (current default)
-- `ATLAS_DECIDER=human` — every action requires human approval
-- `ATLAS_DECIDER=hybrid` — autonomous below risk threshold, human above
-- **GAP noted:** Art. 14 compliance requires documented escalation procedure for
-  autonomous mode. The PDP interface (`core/decider/`) supports this but no
-  default escalation policy is configured.
+- The inspection record is independently auditable by a regulator or by the subject
+  themselves, without relying on the provider's assertions.
+- **Gap noted:** a documented escalation procedure for blocked requests (appeal of false
+  positives) is specified but not yet wired.
 
 ---
 
@@ -102,24 +112,23 @@ via OAuth federated login. Not yet implemented.
 
 ### Capabilities
 
-- Local LLM inference (Nemotron, LiteLLM adapter)
-- Code generation and sandboxed execution (BwrapJail)
-- Autonomous self-maintenance (ADR-039) — proposes diffs, applies after validation
-- Transparency log with Merkle inclusion proofs verifiable by subject
-- Shadow routing (OSM-042) — adaptive defense against adversarial inputs
+- Subject-verifiable completeness of the inspection log (input + output)
+- Tamper-evident, disk-persistent Merkle log with inclusion/consistency proofs
+- GDPR Art. 17 crypto-shredding via per-request salts
+- Read-API for deployer/regulator monitoring
+- Witness HTTP transport for split-view mitigation
 
 ### Known limitations and gaps
 
 | Gap | Severity | Status |
 |---|---|---|
-| GAP-1 GDPR Art. 17 — SaltStore wired | ✅ Closed | 2026-06-18 |
-| GAP-2 Art. 26 — Read-API for deployers | ✅ Closed | 2026-06-18 |
-| GAP-3 Art. 11 — This Annex IV file | ✅ This document | 2026-06-18 |
-| GAP-4 KYC interface — Art. 9 risk mgmt | 🟡 Partial | Membrane hook defined, not implemented |
-| Art. 14 escalation policy in autonomous mode | 🔴 Open | PDP exists, policy undefined |
-| Witness network real transport (anti-split-view) | ✅ Closed | 2026-06-18 |
-| Seccomp-bpf allowlist (ADR-055 Slice 2) | 🟡 Deferred | Requires libseccomp (external dep) |
-| OSM-025 Capa 2 TPM key attestation | 🟡 Deferred | Design complete, no code |
+| GDPR Art. 17 crypto-shredding | ✅ Implemented | dual-hash + salt store |
+| Art. 26 Read-API for deployers | ✅ Implemented | tree / entries / inclusion proof |
+| Art. 11 Technical File | ✅ This document | — |
+| KYC / residency verification interface (Art. 9) | 🟡 Partial | hook defined, not implemented |
+| Art. 14 escalation / appeal policy | 🔴 Open | specified, not wired |
+| Independent witness nodes (anti split-view) | 🟡 Partial | HTTP transport done; node deployment is ecosystem work |
+| Device-bound key attestation (TPM/Secure Enclave) | 🟡 Deferred | design complete, no code |
 
 ---
 
@@ -127,25 +136,26 @@ via OAuth federated login. Not yet implemented.
 
 | Standard | Application |
 |---|---|
-| RFC 9162 (Certificate Transparency v2) | Merkle log structure and inclusion proofs |
-| Ed25519 (RFC 8032) | Signing: STH, Receipts, CosignedRequests |
-| GDPR Art. 17 | Crypto-shredding via SaltStore |
-| EU AI Act Art. 12/13 | Logging and transparency — Merkle log + Read-API |
-| EU AI Act Art. 14 | Human oversight — PDP decider (partial) |
-| EU AI Act Art. 15 | Robustness — BwrapJail, ShadowRouter, behavioral detection |
+| RFC 9162 (Certificate Transparency v2) | Merkle log structure, inclusion + consistency proofs |
+| RFC 8032 (Ed25519) | Signing: STH, Receipts, co-signed requests |
+| RFC 9052 (COSE) | Interoperability with SCITT-style signed statements (future) |
+| GDPR Art. 17 | Crypto-shredding via per-request salt store |
+| EU AI Act Art. 12/13 | Record-keeping and transparency — Merkle log + Read-API |
+| EU AI Act Art. 14 | Human oversight — independently auditable log (appeal policy pending) |
+| EU AI Act Art. 26 | Deployer monitoring — Read-API |
 
 ---
 
 ## 7. Post-Market Monitoring (Annex IV §7)
 
-Post-market monitoring is not applicable to the current deployment scope (single-user
-personal assistant, no third-party deployment). If deployed as a service:
+If deployed as a service:
 
-- Merkle log provides continuous audit trail
-- `audit_sample` daemon runs periodic verification against log
-- Self-maintenance pipeline (ADR-039) monitors for CVEs via OSV.dev
+- The Merkle log provides a continuous, independently verifiable audit trail.
+- A periodic verification routine re-checks inclusion/consistency proofs against the log.
+- Witness gossip surfaces any divergence between the STH shown to the subject and the STH
+  published to witnesses.
 
 ---
 
-*This document is maintained alongside the codebase. Update when architecture changes.
-Source of truth for code state: `atlas reality --json`.*
+*This document is maintained alongside the reference implementation. Update when the
+architecture changes.*

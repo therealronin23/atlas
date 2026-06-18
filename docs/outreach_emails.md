@@ -30,7 +30,7 @@ y bloqueado. Ambas garantías sobre el mismo log inmutable (Merkle RFC 9162 +
 co-firma de cliente con secuencia monótona).
 
 La implementación resuelve el problema de completitud que Merkle solo no puede
-cerrar, con 1452 tests pasando y mypy strict limpio (ADR-053). La alineación con
+cerrar, con 1831 tests pasando y mypy strict limpio. La alineación con
 EU AI Act es directa: Art. 12 (logging automático tamper-resistant), Art. 13
 (transparencia demostrable al usuario) y Art. 53 (diversidad de ataque externa
 para GPAI con riesgo sistémico).
@@ -45,7 +45,7 @@ Adjunto nota técnica completa. Demo de 2 minutos disponible inmediatamente
 Atentamente,
 Tomás Asín González
 tomas.asin.gonzalez@gmail.com
-github.com/therealronin23/atlas
+available on request for reviewer verification
 ```
 
 **Adjuntar:** nota técnica (ES) en PDF. **Enlazar:** post de LessWrong (cuando esté publicado).
@@ -55,7 +55,7 @@ github.com/therealronin23/atlas
 ## 2 — Digital Minds (fellowship)
 
 *Aplicar por el formulario oficial. Este texto es para la sección "research statement".*
-**Framing crítico:** NO mencionar Atlas como "sistema autónomo". Solo el eje de investigación.
+**Framing crítico:** NO mencionar el sistema como "autónomo". Solo el eje de investigación.
 
 ```
 Research statement:
@@ -106,7 +106,7 @@ structural conflict of interest — not of intent, but of architecture. An exter
 log with cryptographic completeness (not just integrity) closes it.
 
 I built the core: RFC 9162 Merkle + client co-signature with monotonic sequence +
-detect_omission(). The user detects inspection omissions unilaterally. 1452 tests
+detect_omission(). The user detects inspection omissions unilaterally. 1831 tests
 passing. It also generates a falsifiable campaign metric (C_attempts / K_attribution)
 that per-attempt rates cannot provide.
 

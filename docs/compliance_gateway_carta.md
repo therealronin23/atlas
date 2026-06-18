@@ -1,7 +1,7 @@
 # Osmosis Filter: capa obligatoria en el camino de cumplimiento
 
-*Carta de presentación / nota técnica. Autor: proyecto Atlas (un solo
-desarrollador). Junio 2026. Acompaña a ADR-051, ADR-053, ADR-054.*
+*Carta de presentación / nota técnica. Autor: Osmosis Project (un solo
+desarrollador). Junio 2026.*
 
 > **En una línea:** Proponemos una capa de cumplimiento siempre activa,
 > interpuesta obligatoriamente entre el usuario y el modelo frontier, cuyo coste
@@ -102,8 +102,8 @@ red no está desplegada — es el siguiente nivel del ecosistema. La garantía
 implementada hoy es la detección de omisión por el propio usuario, que ya es
 algo que ningún sistema publicado ofrece.
 
-Implementado: `src/atlas/transparency/`, 97 tests del núcleo de transparencia
-(1452 en la suite total), mypy strict limpio (ADR-053).
+Implementado: módulo de transparencia, 97 tests del núcleo de transparencia
+(1452 en la suite total), mypy strict limpio.
 
 ### 2. Métrica de campaña falsable (lo que CC++ no tiene por diseño)
 
@@ -121,14 +121,13 @@ re-optimiza entre intentos y las tasas colapsan. Este sistema mide por campaña:
 Ningún sistema publicado tiene esta métrica porque ninguno tiene el log de
 completitud verificable por el usuario que la hace posible.
 
-**Actualización junio 2026 — módulo de inmunidad operativo:** `src/atlas/immunity/`
-implementa afinidad maduración sobre la capa 5: hipermutación semántica de patrones de
-defensa (no ruido léxico) + selección clonal con scoring LLM + promoción vía Decider
-(invariante I5). 31 tests. La mutación es conceptual — reformulaciones que mantienen la
-semántica defensiva mientras introduce diversidad real. El entrenamiento adversarial
-tiende a sobreajustarse a distribuciones de ataque estrechas; CHASE (arXiv:2606.05523)
-lo aborda con co-evolución, pero requiere que el atacante mantenga diversidad de
-técnicas — lo que solo una fuente externa puede garantizar.
+**Actualización junio 2026 — módulo de inmunidad operativo:** implementa afinidad maduración 
+sobre la capa 5: hipermutación semántica de patrones de defensa (no ruido léxico) + selección 
+clonal con scoring LLM + promoción vía Decider. 31 tests. La mutación es conceptual — 
+reformulaciones que mantienen la semántica defensiva mientras introduce diversidad real. El 
+entrenamiento adversarial tiende a sobreajustarse a distribuciones de ataque estrechas; CHASE 
+(arXiv:2606.05523) lo aborda con co-evolución, pero requiere que el atacante mantenga diversidad 
+de técnicas — lo que solo una fuente externa puede garantizar.
 
 ---
 
@@ -142,7 +141,7 @@ técnicas — lo que solo una fuente externa puede garantizar.
 | 2. Polimorfismo por sesión | randomiza hiperparámetros de decodificación por sesión (FlexLLM); invalida jailbreaks precomputados; salt registrado en log | sin acceso a activaciones del modelo (API externa): protección más débil que salting sobre dirección de rechazo |
 | 3. Señuelo (solo tras causa confirmada) | genera evidencia forense; invierte la carga de certeza al atacante | cae ante sonda verificable en dominio ejecutable; vale por la causa que genera, no por engañar al adversario serio |
 | 4. **Log de campaña verificable** | hace la serie de intentos inocultable; métrica C_attempts/K_attribution; encarece la campaña | no detecta el intento individual |
-| 5. **Memoria inmune con diversidad externa** | aprende de cada exposición; el organismo de conocimiento inyecta ataques reales del exterior | no esterilizante ante ataque verdaderamente novel; la inyección de diversidad aún pendiente de cablear |
+| 5. **Memoria inmune con diversidad externa** | aprende de cada exposición; el organismo de conocimiento inyecta ataques reales del exterior | no esterilizante ante ataque verdaderamente novel; la inyección de diversidad aún pendiente |
 
 **Sobre la capa 5 y por qué importa específicamente para vosotros:** los sistemas
 de co-evolución atacante-defensor publicados en 2026 (CHASE, arXiv:2606.05523)
@@ -163,7 +162,7 @@ El mapeado completo artículo-por-artículo está en `docs/eu_ai_act_mapping.md`
 resumimos los tres artículos más directamente relevantes para vosotros como proveedor
 GPAI con riesgo sistémico, con estados honestos:
 
-- **Art. 12 (Record-keeping)** — Estado: implementado (✅). El núcleo de ADR-053 es
+- **Art. 12 (Record-keeping)** — Estado: implementado (✅). El núcleo es
   el mecanismo técnico más directo: log automático, tamper-resistant, verificable por
   ambas partes, diseño append-only con retención indefinida. La ley exige mínimo 6
   meses; la arquitectura no tiene techo. Límite: la política de retención mínima es
@@ -176,11 +175,11 @@ GPAI con riesgo sistémico, con estados honestos:
   verificación requiere que el usuario consulte el log activamente.
 
 - **Art. 53 (Systemic risk — red-teaming)** — Estado: parcial (🟡). El organismo de
-  conocimiento (ADR-049) inyecta técnicas de ataque externas antes de que lleguen al
+  conocimiento inyecta técnicas de ataque externas antes de que lleguen al
   tráfico real. CC++ solo puede aprender de vuestro propio tráfico; el auto-juego
   produce sobreajuste a distribuciones de ataque estrechas, documentado en CHASE
-  (arXiv:2606.05523). Límite honesto: el cableado ADR-049 → panel adversarial está
-  diseñado pero no completado todavía (R2 en ADR-054).
+  (arXiv:2606.05523). Límite honesto: el cableado del organismo de conocimiento → panel 
+  adversarial está diseñado pero no completado todavía.
 
 Ningún sistema en producción combina los tres con verificabilidad mutua. Esa es la
 aportación concreta, no una promesa de cumplimiento total.
@@ -195,7 +194,7 @@ aportación concreta, no una promesa de cumplimiento total.
   Attacker Moves Second*, arXiv:2510.09023). La métrica es de campaña: C_attempts y
   K_attribution, falsables y medibles desde el log.
 - No es un producto validado a escala enterprise. Es la arquitectura y el núcleo
-  construido (ADR-053, 1679 tests, mypy strict limpio) con los ADRs de las capas que
+  construido (1831 tests, mypy strict limpio) con los ADRs de las capas que
   faltan documentadas honestamente.
 - No resolví el binding de identidad (KYC real para foreign nationals). Eso es operativo
   y legal, no código. La capa de filtro presupone que la identidad ya está verificada por
@@ -205,7 +204,7 @@ aportación concreta, no una promesa de cumplimiento total.
   omisión por el propio usuario — ya es algo que ningún sistema publicado ofrece.
 - La faithfulness conductual (que el comportamiento bajo sonda prediga el comportamiento
   en producción) es un problema abierto en este diseño y en la literatura. La capa 4
-  (OSM-054, canary framework) es el avance activo hacia ese problema; no lo cierra.
+  (canary framework) es el avance activo hacia ese problema; no lo cierra.
 
 ---
 
@@ -225,7 +224,7 @@ Un solo desarrollador, al día siguiente del apagón de Fable 5/Mythos 5,
 identificó las dos causas técnicas, diseñó una respuesta arquitectónica con el
 eje correcto (verificabilidad mutua, no detección perfecta), y construyó el
 núcleo que prueba que el mecanismo de completitud es implementable. Lo que
-tenemos es la semilla — el log verificable funcionando (1452 tests, ADR-053) dentro
+tenemos es la semilla — el log verificable funcionando (1831 tests) dentro
 de un organismo que puede aprender de cada campaña que ese log hace inocultable.
 Si la forma de pensar os resulta útil, hablemos.
 
@@ -234,9 +233,9 @@ Si la forma de pensar os resulta útil, hablemos.
 *Demo (~2 min disponible): una sesión legítima cuyo log prueba cero inspecciones
 de contenido, y una sesión con abuso catalogado detectado, bloqueado y registrado
 — ambas sobre la misma cadena inmutable, mostrando la prueba en ambas direcciones.
-Núcleo en `src/atlas/transparency/`, 1679 tests, mypy strict limpio. Arquitectura
-completa de cuatro capas en §8 de `docs/paper_subject_enforced_completeness.md`
-y en `docs/eu_ai_act_mapping.md`.*
+Núcleo en módulo de transparencia del Osmosis reference implementation, 1831 tests, 
+mypy strict limpio. Arquitectura completa de cuatro capas en §8 de 
+`docs/paper_subject_enforced_completeness.md` y en `docs/eu_ai_act_mapping.md`.*
 
 *Fuentes del incidente: declaraciones de Anthropic y cobertura de Time, CNBC, Al
 Jazeera, Fortune (13-jun-2026).*
