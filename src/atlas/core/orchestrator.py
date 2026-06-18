@@ -1264,8 +1264,17 @@ class Orchestrator:
         hub = inference_hub
         if hub is None:
             from atlas.core.inference_hub import InferenceHub as _InferenceHub
+            from atlas.transparency.gateway import TransparencyGateway
+            from atlas.transparency.key_store import load_or_create_subject, load_or_create_operator
+            from atlas.transparency.client_cosign import ClientCosigner
+            from atlas.transparency.log import TransparencyLog
 
-            hub = _InferenceHub(mode="auto")
+            subj_signer, _, _ = load_or_create_subject()
+            op_signer, _, _   = load_or_create_operator()
+            _tlog = TransparencyLog(signer=op_signer)
+            _cosigner = ClientCosigner(subj_signer)
+            _gw = TransparencyGateway(_cosigner, op_signer, _tlog)
+            hub = _InferenceHub(mode="auto", transparency=_gw)
         self._inference_hub = hub
         self._slm_classifier = SLMClassifier(
             hub=hub,
