@@ -593,7 +593,7 @@ class Orchestrator:
             )
         return self._swarm_cycle
 
-    def swarm_audit_sample(self, fraction: float = 0.2) -> dict:
+    def swarm_audit_sample(self, fraction: float = 0.2) -> dict[str, Any]:
         """Off-path del propose; re-ejecuta la suite sobre una muestra de propuestas
         swarm con ATLAS_HOME aislado; divergencias = punto ciego del verificador
         barato."""
@@ -689,7 +689,7 @@ class Orchestrator:
 
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — gateado por SSRFBridge
-            raw = resp.read(Orchestrator._EGRESS_MAX_BYTES)
+            raw: bytes = resp.read(Orchestrator._EGRESS_MAX_BYTES)
         return raw.decode("utf-8", errors="replace")
 
     def maintenance_scheduler(self) -> Any:
@@ -936,7 +936,7 @@ class Orchestrator:
                     break
         return floors
 
-    def knowledge_scan_step(self) -> dict:
+    def knowledge_scan_step(self) -> dict[str, Any]:
         """Escanea CVEs para las deps de Atlas y propone bumps vía ColdUpdate.
 
         Para cada dep en pyproject: consulta OSV.dev, cruza con la versión
@@ -1024,13 +1024,13 @@ class Orchestrator:
 
         return {"scanned": scanned, "findings": total_findings, "proposed": proposed}
 
-    def audit_tail(self, n: int = 20) -> list[dict]:
+    def audit_tail(self, n: int = 20) -> list[dict[str, Any]]:
         return [r.to_dict() for r in self._merkle.tail(n)]
 
-    def tools(self) -> list[dict]:
+    def tools(self) -> list[dict[str, Any]]:
         return [t.to_dict() for t in self._tool_registry.all()]
 
-    def pending_approvals(self) -> list[dict]:
+    def pending_approvals(self) -> list[dict[str, Any]]:
         return self._approvals.pending()
 
     def approve_pending(
@@ -1040,7 +1040,7 @@ class Orchestrator:
         *,
         abort: bool = False,
         approve_only: list[str] | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         return self._approvals.approve(
             task_id, approved, abort=abort, approve_only=approve_only,
         )
@@ -1090,15 +1090,15 @@ class Orchestrator:
         fn = layer_map.get(layer)
         if fn is None:
             return {"error": f"Capa desconocida: {layer}"}
-        return fn()
+        return fn()  # type: ignore[no-untyped-call]
 
     def gate_h_status(self) -> dict[str, Any]:
-        return self._gate_h.status_summary()
+        return self._gate_h.status_summary()  # type: ignore[no-any-return]
 
     def rebuild_memory(self) -> dict[str, int]:
-        return self._gate_h.rebuild_memory(self._vector_store)
+        return self._gate_h.rebuild_memory(self._vector_store)  # type: ignore[no-any-return]
 
-    def gate_h_receipts(self, n: int = 20) -> list[dict]:
+    def gate_h_receipts(self, n: int = 20) -> list[dict[str, Any]]:
         return [
             r.to_dict()
             for r in self._merkle.tail(n * 3)
@@ -1189,7 +1189,7 @@ class Orchestrator:
 
     @property
     def pii_surrogate(self) -> PIISurrogate:
-        return self._pii_surrogate
+        return self._pii_surrogate  # type: ignore[no-any-return]
 
     @property
     def inference_hub(self) -> Any:
@@ -1386,7 +1386,7 @@ class Orchestrator:
             self._offline_monitor.stop()
             self._offline_monitor = None
 
-    def sync_offline_queue(self) -> dict:
+    def sync_offline_queue(self) -> dict[str, Any]:
         """
         ADR-012 pull-on-reconnect — se llama cuando el OfflineMonitor detecta
         que Hermes volvio a estar reachable (evento HERMES_RECONNECTED).
@@ -1919,7 +1919,7 @@ class Orchestrator:
     def _execute_gate_f_task(self, task: Task) -> None:
         self._gate_f_exec.execute_task(task)
 
-    def _execute_browser_command(self, action: str, args: dict[str, Any]) -> dict:
+    def _execute_browser_command(self, action: str, args: dict[str, Any]) -> dict[str, Any]:
         return self._gate_f_exec.execute_browser_command(action, args)
 
     def _execute_editor_command(
@@ -1928,10 +1928,10 @@ class Orchestrator:
         args: dict[str, Any],
         *,
         task: Task | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         return self._gate_f_exec.execute_editor_command(action, args, task=task)
 
-    def _execute_vision_command(self, action: str, args: dict[str, Any]) -> dict:
+    def _execute_vision_command(self, action: str, args: dict[str, Any]) -> dict[str, Any]:
         return self._gate_f_exec.execute_vision_command(action, args)
 
     def _get_browser_tool(self) -> Any:
@@ -1947,7 +1947,7 @@ class Orchestrator:
     # Pending approval persistence (Gate G)
     # ------------------------------------------------------------------
 
-    def _pending_summary(self, task: Task) -> dict:
+    def _pending_summary(self, task: Task) -> dict[str, Any]:
         return TaskPersistence.summary(task)
 
     def _persist_pending_approval(self, task: Task) -> None:
@@ -1962,10 +1962,10 @@ class Orchestrator:
     def _delete_pending_approval(self, task_id: str) -> None:
         self._tasks.delete(task_id)
 
-    def _serialize_task(self, task: Task) -> dict:
+    def _serialize_task(self, task: Task) -> dict[str, Any]:
         return TaskPersistence.serialize(task)
 
-    def _deserialize_task(self, data: dict) -> Task:
+    def _deserialize_task(self, data: dict[str, Any]) -> Task:
         return TaskPersistence.deserialize(data)
 
     # ------------------------------------------------------------------
@@ -2181,7 +2181,7 @@ class Orchestrator:
         args: tuple[str, ...],
         *,
         task: Task | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Helper comun: emite capability, ejecuta en sandbox y normaliza salida."""
         from atlas.security.capabilities import CapabilityDenied  # noqa: PLC0415
         from atlas.security.executor import ExecutorError          # noqa: PLC0415
@@ -2204,16 +2204,16 @@ class Orchestrator:
         except Exception as e:
             return {"error": str(e)}
 
-    def _run_git_status(self, task: Task | None = None) -> dict:
+    def _run_git_status(self, task: Task | None = None) -> dict[str, Any]:
         return self._git.status(task)
 
-    def _run_git_log(self, task: Task | None = None) -> dict:
+    def _run_git_log(self, task: Task | None = None) -> dict[str, Any]:
         return self._git.log(task)
 
-    def _run_git_diff(self, task: Task | None = None) -> dict:
+    def _run_git_diff(self, task: Task | None = None) -> dict[str, Any]:
         return self._git.diff(task)
 
-    def _list_workspace(self) -> dict:
+    def _list_workspace(self) -> dict[str, Any]:
         return self._git.list_workspace()
 
     # ------------------------------------------------------------------
@@ -2508,7 +2508,7 @@ class Orchestrator:
             return None
         state = self._thermal_watchdog.current_state()
         if state.should_pause_local_llm:
-            return state.policy
+            return str(state.policy)
         return None
 
     def _thermal_blocks_execution(self) -> str | None:
@@ -2516,7 +2516,7 @@ class Orchestrator:
             return None
         state = self._thermal_watchdog.current_state()
         if state.emergency:
-            return state.policy
+            return str(state.policy)
         return None
 
     def _copy_defaults(self, config_dir: Path) -> None:
