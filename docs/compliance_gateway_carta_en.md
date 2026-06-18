@@ -1,15 +1,18 @@
-# Conditional and Auditable Access to Frontier Restricted Models
+# Osmosis Filter: Mandatory In-Path Compliance Layer
 
 *Technical proposal / cover note. Author: Atlas project (solo developer).
-June 2026. Accompanies ADR-051, ADR-053, ADR-054.*
+June 2026. Accompanies ADR-051, ADR-053, ADR-054, OSM-024..030.*
 
-**Suggested email subject:** Technical proposal: conditional and auditable access to frontier models (post-Fable 5 / Mythos 5 shutdown)
+**Suggested email subject:** Technical proposal: mandatory in-path compliance filter for frontier models (post-Fable 5 / Mythos 5 shutdown)
 **Suggested recipient:** fellows@anthropic.com (External Researcher Access Program)
 
-> **In one line:** Anthropic cannot give users proof that it inspects their content
-> only when there is cause — it is both judge and party. An external log with
-> verifiable *completeness* (not just integrity) can. The core already works; this
-> is the seed, not the product.
+> **In one line:** We propose an always-on compliance filter, interposed
+> mandatorily between the user and the frontier model, whose operating cost we
+> assume as filter provider. The operator (Anthropic) adds no audit latency and
+> manages no log — that is our problem. What you get: a log verifiable in both
+> directions that converts "when in doubt, full shutdown" into regulated access
+> with compliance evidence demonstrable to regulator and user. The core is built
+> and working; this is the seed, not the product.
 
 ---
 
@@ -38,16 +41,26 @@ has no way to verify it. Not because you are lying — but because the inspectio
 in your hands and yours alone. The conflict of interest is not one of intent; it is
 structural.
 
-An external system with a mutually verifiable log closes exactly that gap — the one you
+An in-path filter with a mutually verifiable log closes exactly that gap — the one you
 cannot close while being both judge and party.
 
 ---
 
-## The proposal, in one sentence
+## The proposal
 
-A bounded compliance layer that converts "when in doubt, full shutdown" into
-**"conditional access with demonstrable attack cost and verifiable audit by both parties"**
-— including the party that needs it most: the user.
+An **always-on mandatory filter in the path**: every request to the model passes through
+a layer that co-signs, logs, and verifies in both directions — before reaching the model
+and before reaching the user. The layer is not optional. The infrastructure, maintenance
+and audit cost of that layer is ours to assume. What you get: a log verifiable by
+regulator and user that converts "when in doubt, full shutdown" into **regulated access
+with continuous, auditable compliance evidence** — including the party that currently
+cannot verify anything on its own: the user.
+
+Two problems remain open in this design and we declare them explicitly:
+*behavioral faithfulness* (whether the model in production behaves as described) and
+*split-view* (whether the log shown to the regulator is the same shown to the user). The
+first is out of scope for a compliance layer. The second is partially mitigated by the
+Merkle witness network (already implemented; ecosystem deployment pending).
 
 ---
 
@@ -66,7 +79,7 @@ and the second one is achievable; the first is not, for anyone, today.
 
 ## The two contributions that exist in no deployed system
 
-### 1. Mutual log verifiability
+### 1. Subject-enforced completeness (mutual log verifiability)
 
 A single immutable log (Merkle, RFC 9162) proves two things to two parties who do not
 trust each other:
@@ -80,14 +93,19 @@ completeness (it does not prove nothing is missing). This system solves the comp
 problem via **client co-signature with monotonic sequence**: a gap in the sequence is
 detectable by the user themselves. The operator cannot inspect without registering
 because the log entry is tied to a co-signed request whose sequence the client monitors.
+The operator also signs a Receipt for each received request — making omission
+*attributable*, not just detectable.
+
+The automatic signing is transparent to the user: a device-bound key (OSM-025) signs
+each request silently after a single onboarding. No per-request user action required.
 
 Honest limit: split-view protection (showing different logs to regulator and user)
-requires external witnesses (RFC 9162 STH gossip). That network is not deployed — it
-is the next level of the ecosystem. The implemented guarantee today is omission detection
-by the user themselves, which is already something no published system offers.
+requires external witnesses (RFC 9162 STH gossip). Witness HTTP transport is
+implemented; ecosystem deployment (independent witness nodes) remains pending.
 
-Implemented: `src/atlas/transparency/`, 97 transparency-core tests
-(1452 in the full suite), mypy strict clean (ADR-053).
+Implemented: `src/atlas/transparency/`, 1831 tests (full suite), mypy strict clean (ADR-053).
+Log persists to disk, survives restarts. Read-API for deployers at
+`GET /api/exec/api/v1/log/{tree,entries,proof/inclusion/{i}}`.
 
 ### 2. Falsifiable campaign metric (what CC++ does not have by design)
 
@@ -104,15 +122,6 @@ re-optimizes between attempts and rates collapse. This system measures per campa
 
 No deployed system has this metric because none has the user-verifiable completeness
 log that makes it possible.
-
-**June 2026 update — immunity module operational:** `src/atlas/immunity/` implements
-affinity maturation on layer 5: semantic hypermutation of defense patterns (not lexical
-noise) + clonal selection with LLM scoring + promotion via Decider (invariant I5).
-31 tests. The mutation is conceptual — reformulations that preserve defensive semantics
-while introducing genuine diversity. Adversarial training tends to overfit to narrow
-attack distributions; CHASE (arXiv:2606.05523) addresses this with co-evolution,
-but requires the attacker to maintain technique diversity — which only an external
-source can guarantee.
 
 ---
 
@@ -136,7 +145,7 @@ GPAI provider with systemic risk:
   overfitting to narrow attack distributions that self-play produces by construction —
   documented in CHASE (arXiv:2606.05523).
 
-No published paper or production system combines all three.
+Full Technical File (EU AI Act Annex IV): `docs/technical_file_annex_iv.md`.
 
 ---
 
@@ -146,53 +155,52 @@ No published paper or production system combines all three.
 |---|---|---|
 | 1. Filter (CC++-style) | cuts noise and known attacks | high bypass against adaptive adversary |
 | 2. Session polymorphism | randomizes decoding hyperparameters per session (FlexLLM); invalidates precomputed jailbreaks; salt recorded in log | no activation access (external API): weaker than salting the rejection direction directly |
-| 3. Decoy (only after confirmed cause) | generates forensic evidence; inverts certainty burden on attacker | fails against verifiable probe in executable domain; valuable for the cause it generates, not for fooling a serious adversary |
+| 3. Adaptive defense (shadow model) | routes suspicious sessions to shadow model; attacker believes they are talking to real model | fails against verifiable probe in executable domain; forensic evidence generated for the log |
 | 4. **Verifiable campaign log** | makes the series of attempts undeniable; C_attempts/K_attribution metric; raises campaign cost | does not detect individual attempts |
-| 5. **Immune memory + external diversity** | learns from each exposure; knowledge organism injects real external attacks | not sterilizing against truly novel attack; diversity injection still pending wiring |
+| 5. **Immune memory + external diversity** | learns from each exposure; knowledge organism injects real external attacks | not sterilizing against truly novel attack |
 
 **On layer 5 and why it matters specifically for you:** adversarial training tends
 to overfit to narrow attack distributions — the defender stagnates on what it has
-already seen. CHASE (arXiv:2606.05523) addresses this with attacker-defender
-co-evolution, but requires the attacker to maintain technique diversity. CC++ has this problem by construction:
-it learns from your traffic, but if new attacks do not appear in that traffic, it does
-not know them until they arrive. A knowledge organism that injects external attack
-techniques (papers, feeds, CVEs) before they reach real traffic is the structural
-mitigation. No published paper has this because none has a knowledge organism connected
-to its immune system.
+already seen. CC++ has this problem by construction: it learns from your traffic, but
+if new attacks do not appear in that traffic, it does not know them until they arrive.
+A knowledge organism that injects external attack techniques (papers, feeds, CVEs)
+before they reach real traffic is the structural mitigation. CHASE (arXiv:2606.05523)
+addresses the co-evolution problem but requires the attacker to maintain technique
+diversity — which only an external source can guarantee.
 
 ---
 
 ## What this is NOT
 
-- I am not proposing to interpose an external binary in your model's path. That would
-  be operationally unacceptable and I know it.
-- I am not claiming guaranteed detection. No one can guarantee it today.
-- This is not an enterprise-validated product. It is the architecture, the built core
-  (ADR-053, 1452 tests), and the ADRs for the remaining layers.
-- I did not resolve identity binding (real KYC for foreign nationals). That is
-  operational and legal, not code.
-- The witness network is not deployed: split-view protection is future ecosystem,
-  not today's demo.
+- This is not a product with enterprise SLAs. It is the architecture, the built core
+  (ADR-053, 1831 tests), and the design documents for the remaining layers.
+- We are not claiming guaranteed detection. No one can guarantee it today.
+- We did not resolve identity binding (real KYC for foreign nationals). That is
+  operational and legal, not code — the KYC hook exists in the membrane (OSM-038).
+- The witness network transport is implemented; independent witness nodes are future
+  ecosystem, not today's demo.
+- Device-bound key attestation (OSM-025 Layer 2: TPM/Secure Enclave) is design-complete;
+  Layer 1 (disk-persisted key, transparent to user) is deployed.
 
 ---
 
-## Why I am sending this
+## Why we are sending this
 
 Not to sell a product. For two concrete things:
 
 **1. To signal the gap that exists and that you cannot close alone.**
 The structural conflict of interest (you are simultaneously provider and classifier)
 makes it impossible for you to offer users verifiability about your own inspections.
-It is not a problem of intent — it is architectural. An externally verifiable system
-is the only solution to that problem, and that system does not exist in production
-anywhere today.
+It is not a problem of intent — it is architectural. An in-path filter with an
+externally verifiable log is the only solution to that problem, and that system does
+not exist in production anywhere today.
 
 **2. To show the reasoning, not the product.**
 A solo developer, the day after the Fable 5 / Mythos 5 shutdown, identified the two
 technical causes, designed an architectural response with the right axis (mutual
 verifiability, not perfect detection), and built the core that proves the completeness
 mechanism is implementable. What we have is the seed — the verifiable log working
-(1452 tests, ADR-053) inside an organism that can learn from every campaign the
+(1831 tests, ADR-053) inside an organism that can learn from every campaign the
 log makes undeniable. If this way of thinking is useful to you, let us talk.
 
 ---
@@ -200,7 +208,9 @@ log makes undeniable. If this way of thinking is useful to you, let us talk.
 *Demo (~2 min available): a legitimate session whose log proves zero content
 inspections, and a session with cataloged abuse detected, blocked and recorded —
 both on the same immutable chain, showing the proof in both directions.
-Core at `src/atlas/transparency/`, 1452 tests, mypy strict clean.*
+Core at `src/atlas/transparency/`, 1831 tests, mypy strict clean.*
+
+*Technical File (EU AI Act Annex IV): `docs/technical_file_annex_iv.md`.*
 
 *Sources: Anthropic's official statements and coverage from Time, CNBC, Al Jazeera,
 Fortune (June 13, 2026).*
