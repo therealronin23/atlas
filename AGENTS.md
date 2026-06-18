@@ -66,6 +66,16 @@ The desired direction is maximum verified capability:
 Hermes is not assumed live. If `HERMES_BASE_URL` and `HERMES_API_KEY` are absent,
 Atlas runs with the mock adapter or local takeover if configured.
 
+## Current Direction (2026-06)
+
+Active line beyond the Atlas runtime: a verifiable AI compliance gateway
+(ADR-051/053/054). The public-facing calling card is a design paper —
+`docs/paper_subject_enforced_completeness.md` ("Subject-Enforced Completeness for AI
+Inspection Logs") — plus a demo. The *in-path verifiable AI compliance filter* (alias
+Osmosis) and its candidate mechanisms live in the osmosis membrane:
+`docs/membrana/` (OSM-000 manifest + registry OSM-001..039). Public artifacts speak about
+the filter, not Atlas. The May Gates (`docs/gate_*`) are historical; the project pivoted.
+
 ## Non-Negotiable Rules
 
 1. Every external effect must be Merkle-audited.
@@ -94,6 +104,18 @@ aliases belong only in human-facing historical docs.
 | `OperationalMode.NORMAL` | `TriageMode.ALFA` |
 | `OperationalMode.DEGRADED` | `TriageMode.OMEGA` |
 | `OfflineFallbackMode` | `ModoFantasma` |
+
+Vocabulario nuevo (compliance/transparency, 2026-06). Glosario y autoridad de nombres:
+`docs/membrana/OSM-000_membrana.md`.
+
+| Use (técnico) | Alias narrativo (solo docs humanos) |
+| --- | --- |
+| `in-path verifiable AI compliance filter` | Osmosis / Filtro Osmosis |
+| `admission gate` | membrane / membrana |
+| `adaptive defense layer` | antivirus inmune (evitar) |
+| `external knowledge ingestion & verification pipeline` | organismo de conocimiento |
+| `defense-pattern mutation & selection` | afinidad maduración |
+| `decision/action provenance record` | (NO "chain-of-thought auditable") |
 
 ## Key Commands
 

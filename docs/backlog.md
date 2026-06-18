@@ -167,6 +167,19 @@ opt-in por sesión; respuesta graduada con destinatario predeclarado.
 Entregable inmediato: demo de ~2 min como carta de presentación
 (`docs/compliance_gateway_carta.md`). Slices en ADR-051.
 
+## Defensa en profundidad por engaño (ADR-054) — propuesto 2026-06-15
+
+Respuesta a C1 del premortem (lista pública vs. detección eficaz). Investigación
+2026-06-15: ninguna capa es novedosa (CC++ cascada, FlexLLM/MTD objetivo móvil,
+HoneyTrap señuelo); lo propio es la **composición sobre el log de completitud
+ADR-053** (capa 4) realimentada por VerifiedProducer/LessonStore/knowledge
+organism. NO se reclama tasa de detección; eje = coste del adversario +
+verificabilidad. Riesgo R1: la sonda verificable vacía el señuelo en dominio
+verificable (ciberofensiva). **Construir solo lo propio:** `ArtifactKind.DECOY`
++ verificador (plausible ∧ inútil) y métrica de campaña falsable sobre la capa 4
+ya existente; capas externas tras interfaz con stubs. Detalle en ADR-054 +
+`audit_adr054_premortem_2026-06-15.md`.
+
 ## Asimilación completa de Odysseus (ADR-052) — propuesto 2026-06-15
 
 Asimilar **todo** lo que a Atlas le falta de Odysseus (chat/agent UI, cookbook,
@@ -174,6 +187,16 @@ deep research, compare, documents, email, notes/tasks, calendar, image editor,
 PWA, Docker) **sin perder nada** del sello Atlas. Por reimplementación, no fork.
 Regla de oro: cada feature pasa los 4 pasos (capability → executor → Merkle →
 Decider) o no entra. Programa multi-fase, no sprint. Detalle y fases en ADR-052.
+
+**Dependencias cruzadas con ADR-054 (stack de defensa):**
+- Fase 3 (Deep Research sobre ADR-049) = cierre de **R2 de ADR-054** (colapso
+  de diversidad inmune). Mismo ADR-049, dos consumidores. Avanzar Fase 3 avanza
+  la defensa sin trabajo adicional.
+- Fase 4 (Compare / banco de evaluación) = infraestructura de **I4 de ADR-054**
+  (métrica de campaña falsable C_attempts/K_attribution). Sin Compare, I4 es
+  retórica; con Compare, es medible.
+- SearXNG como KnowledgeSource (Fase 0) puede alimentar el panel adversarial
+  (ADR-048) con técnicas de ataque externas sin infraestructura adicional.
 
 ## Organismo de conocimiento (ADR-049)
 

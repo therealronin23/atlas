@@ -15,9 +15,12 @@ Signed payload format (canonical, documented here):
 
 from __future__ import annotations
 
+import base64
 import json
+import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from atlas.security.authorization import SigVerifier, Signer
@@ -101,9 +104,16 @@ class TransparencyLog:
         Injected; no global state.
     """
 
-    def __init__(self, signer: Signer) -> None:
+    def __init__(self, signer: Signer, path: Path | None = None) -> None:
         self._signer = signer
         self._entries: list[bytes] = []
+        self._path = path
+        if path is not None and path.exists():
+            with path.open("rb") as fh:
+                for line in fh:
+                    line = line.rstrip(b"\n")
+                    if line:
+                        self._entries.append(base64.b64decode(line))
 
     # ------------------------------------------------------------------
     # Append
@@ -122,6 +132,11 @@ class TransparencyLog:
         """
         index = len(self._entries)
         self._entries.append(entry_bytes)
+        if self._path is not None:
+            with self._path.open("ab") as fh:
+                fh.write(base64.b64encode(entry_bytes) + b"\n")
+                fh.flush()
+                os.fsync(fh.fileno())
         return index
 
     # ------------------------------------------------------------------

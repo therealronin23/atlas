@@ -21,13 +21,14 @@ from typing import Any, Callable
 from atlas.mcp.config import McpServerConfig
 from atlas.mcp.transport import McpProtocolError, McpTransport, StdioTransport
 from atlas.security.sentinel_gate import SentinelGate
+from atlas import __version__
 
 _log = logging.getLogger(__name__)
 
 # Protocol version mínimo soportado. Los servers MCP actuales declaran
 # "2024-11-05" o "2025-06-18"; aceptamos lo que pidan (intencionalmente laxo
 # hasta que aparezcan diferencias de protocolo relevantes).
-_CLIENT_INFO = {"name": "atlas-core", "version": "0.12.0"}
+_CLIENT_INFO = {"name": "atlas-core", "version": __version__}
 _PROTOCOL_VERSION = "2025-06-18"
 
 
