@@ -6,9 +6,10 @@ from atlas.core.environment_sensor import (
     EnvironmentFingerprint,
     capture_fingerprint,
     fingerprint_tag,
+    fingerprint_from_tags,
     is_stale,
 )
-from atlas.core.environment_sensor import fingerprint_from_tags
+from atlas import __version__
 
 
 def test_fingerprint_tag_roundtrip() -> None:
@@ -19,9 +20,12 @@ def test_fingerprint_tag_roundtrip() -> None:
     assert restored.python_version == fp.python_version
 
 
+from atlas import __version__
+
+
 def test_default_fingerprint_uses_current_runtime_version() -> None:
     fp = capture_fingerprint()
-    assert fp.atlas_version == "0.9.0"
+    assert fp.atlas_version == __version__
 
 
 def test_is_stale_on_python_change() -> None:

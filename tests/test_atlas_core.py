@@ -424,8 +424,10 @@ class TestTaskLifecycle:
 
     def test_status_returns_all_fields(self, orch):
         """Criterio 1: status devuelve estado del core, permisos, tool registry y cola."""
+        from atlas import __version__
+
         st = orch.status()
-        assert st.version == "0.9.0"
+        assert st.version == __version__
         assert st.tool_count > 0
         assert isinstance(st.governance_ok, bool)
         assert isinstance(st.chain_ok, bool)
@@ -433,6 +435,13 @@ class TestTaskLifecycle:
         # repo_root distingue el repo de código del workspace de runtime, para
         # que el twin (Hermes) no atribuya los commits a ~/atlas (que no es repo).
         assert st.repo_root is None or st.repo_root != st.workspace
+
+    def test_package_root_exports_version(self):
+        """La raíz del paquete debe exportar __version__ desde atlas.version."""
+        from atlas import __version__ as package_version
+        from atlas.version import __version__ as module_version
+
+        assert package_version == module_version
 
     def test_task_creates_typed_task(self, orch):
         """Criterio 2: task convierte una intencion en una tarea tipada."""

@@ -259,3 +259,71 @@ def test_two_logs_are_independent() -> None:
     sth_a = log_a.signed_tree_head()
     sth_b = log_b.signed_tree_head()
     assert sth_a.tree_size != sth_b.tree_size
+
+
+# ---------------------------------------------------------------------------
+# Persistence
+# ---------------------------------------------------------------------------
+
+
+def test_persistence_reloads_tree_size(tmp_path: "pytest.TempPathFactory") -> None:
+    log_path = tmp_path / "log.bin"
+    log1 = TransparencyLog(_signer(), path=log_path)
+    for i in range(5):
+        log1.append(f"entry-{i}".encode())
+    log2 = TransparencyLog(_signer(), path=log_path)
+    assert log2.tree_size == 5
+
+
+def test_persistence_merkle_root_stable(tmp_path: "pytest.TempPathFactory") -> None:
+    log_path = tmp_path / "log.bin"
+    log1 = TransparencyLog(_signer(), path=log_path)
+    for i in range(5):
+        log1.append(f"entry-{i}".encode())
+    root_before = log1.signed_tree_head(timestamp=0).root_hash
+    log2 = TransparencyLog(_signer(), path=log_path)
+    root_after = log2.signed_tree_head(timestamp=0).root_hash
+    assert root_before == root_after
+
+
+def test_persistence_first_append_continues_index(tmp_path: "pytest.TempPathFactory") -> None:
+    log_path = tmp_path / "log.bin"
+    log1 = TransparencyLog(_signer(), path=log_path)
+    for i in range(5):
+        log1.append(f"entry-{i}".encode())
+    log2 = TransparencyLog(_signer(), path=log_path)
+    idx = log2.append(b"new-entry")
+    assert idx == 5
+
+
+def test_persistence_binary_roundtrip(tmp_path: "pytest.TempPathFactory") -> None:
+    log_path = tmp_path / "log.bin"
+    raw = b"\x00\xff\n\r\x1b"
+    log1 = TransparencyLog(_signer(), path=log_path)
+    log1.append(raw)
+    log2 = TransparencyLog(_signer(), path=log_path)
+    assert log2._entries[0] == raw
+
+
+def test_persistence_two_paths_independent(tmp_path: "pytest.TempPathFactory") -> None:
+    path_a = tmp_path / "log_a.bin"
+    path_b = tmp_path / "log_b.bin"
+    log_a = TransparencyLog(_signer(), path=path_a)
+    log_b = TransparencyLog(_signer(), path=path_b)
+    for i in range(3):
+        log_a.append(f"a-{i}".encode())
+    log_b.append(b"b-only")
+    # Reload each from its own path.
+    reload_a = TransparencyLog(_signer(), path=path_a)
+    reload_b = TransparencyLog(_signer(), path=path_b)
+    assert reload_a.tree_size == 3
+    assert reload_b.tree_size == 1
+    assert reload_a._entries[0] == b"a-0"
+    assert reload_b._entries[0] == b"b-only"
+
+
+def test_persistence_no_file_without_path(tmp_path: "pytest.TempPathFactory") -> None:
+    log = TransparencyLog(_signer())
+    for i in range(3):
+        log.append(f"entry-{i}".encode())
+    assert list(tmp_path.iterdir()) == []
