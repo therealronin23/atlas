@@ -43,9 +43,12 @@ skip an inspection and suppress the evidence unilaterally.
 We implement the mechanism on RFC 9162 (Certificate Transparency v2), extend it
 symmetrically to output inspection (every model response is also committed before
 delivery, with a six-check subject-side verification), add twin independent log replicas,
-and provide a reference implementation in `src/atlas/transparency/`. We state ten honest
-limits, including partial split-view exposure, the irresolvability of geolocation claims
-in code, and the non-detectability of covert post-inspection capability restrictions.
+and provide a reference implementation in `src/atlas/transparency/`. Levels 3–4 extend the
+scheme to external witnesses (gossip-based split-view closure), cryptographic model
+version commitment, adversarial evasion detection, and behavioral drift observation.
+We state ten honest limits, including partial split-view exposure, the irresolvability of
+geolocation claims in code, and the non-detectability of covert post-inspection capability
+restrictions.
 
 **We do not claim a new cryptographic primitive.** We claim domain transfer — carrying
 the subject-monitoring model from key-binding transparency to AI inspection-log
@@ -393,6 +396,7 @@ demonstrated rather than assumed). Seven scenarios over a 5-request stream:
 | E | forges a request for a seq never sent | rejected; signature ≠ registered key | §2.3 |
 | F | signs a receipt then omits; another request lost in transit | attributable omission isolated from network loss | §6.8 |
 | G | commits input record but omits output inspection of seq=2 | check 5 fails; seq=2 in gaps (cascade to subsequent) | §3.2 |
+| J | behavioral drift: model's rejection heuristics degrade silently | cascade failure in L4; witness divergence + auto-recovery | ADR-054 §5 |
 
 The harness asserts each outcome and exits non-zero on deviation; it is anchored in the
 test suite (`tests/test_completeness_demo.py`, `tests/test_network_reconciliation.py`,
@@ -705,6 +709,120 @@ anomaly into a service outage.
 
 ---
 
+## 8. Four-Layer Defense Stack: Completeness, Active Defense, and Behavioral Observation
+
+The completeness mechanism described in §§3–6 does not exist in isolation. It is one
+layer of a coordinated defense-in-depth stack, each layer with a distinct threat model
+and distinct guarantees. This section synthesizes the four layers, states explicitly what
+each layer does *not* guarantee, and identifies the open research problem that no layer
+currently closes.
+
+### 8.1 Layer 1–2: Completeness Verification (Input + Output)
+
+**What it does.** The Osmosis Filter enforces symmetric completeness on both the input
+request and the output response. Every inspection must be preceded by a registered cause;
+every co-signed request carries a monotonically increasing sequence number that the
+subject can verify independently. Omissions — inspections that occurred without a
+registered cause, or requests that were inspected but do not appear in the log — are
+detectable by the subject through `detect_omission()` without relying on the operator's
+self-reporting. The mechanism is implemented and anchored in tests (sessions A–H,
+`tests/test_completeness_demo.py`, `tests/test_output_inspection.py`). The structural
+invariants are OSM-007 (input completeness: every inspection has a registered cause) and
+OSM-042 (output completeness: every output inspection is anchored symmetrically to the
+co-signed input). Both are closed.
+
+**What it does not guarantee.** Layer 1–2 does not guarantee that the operator's
+*declared* inspection policy is correct — only that executions are consistent with that
+policy and visible. A dishonest operator who inspects with fabricated cause fields
+produces a log that satisfies the structural invariants; the mechanism detects omissions,
+not fraudulent causes. It also does not guarantee protection against a *split-view*
+attack: an operator who shows different log views to the regulator and the subject cannot
+be caught by either party individually. Split-view requires external witnesses (see §8.3,
+OSM-053 open). Layer 1–2 closes the omission problem; it does not close the fabrication
+problem or the split-view problem.
+
+### 8.2 Layer 3: Active Defense and Consensus (OSM-031 / OSM-052 / OSM-053)
+
+**What it does.** Layer 3 extends the log with an external-witness network following
+RFC 9162 gossip of Signed Tree Heads (STH). Multiple independent witnesses exchange STH
+values; a divergence between the STH that the subject holds and the STH published to
+witnesses constitutes a detectable split-view. OSM-031 defines the witness interface;
+OSM-052 defines the evasion-detection protocol (pattern-similarity threshold for campaign
+attribution: ≥3 consecutive attempts with cosine similarity >0.7 triggers flagging with
+the co-signed identity trail); OSM-053 closes the implementation of the co-signing
+mechanism and the monotone-sequence invariant. All three are closed in design; the
+witness deployment is the remaining infrastructure gap (see §8.4, R5).
+
+**What it does not guarantee.** Layer 3 does not guarantee detection of evasion in the
+per-attempt sense. The campaign metric (C_attempts, K_attribution) is falsifiable and
+measurable from the log; it does not produce per-attempt detection rates. A sufficiently
+patient adversary who keeps similarity below the threshold, or who operates across
+sessions with low per-session attempt counts, can delay campaign attribution. Layer 3
+does not guarantee that the witness network is available: if all available witnesses are
+controlled by the same operator (single-node deployment), gossip degenerates to
+self-attestation and split-view protection collapses. This is an infrastructure
+dependency, not a protocol flaw. Layer 3 closes the split-view and evasion-detection
+design; it does not close per-attempt detection and cannot close single-operator witness
+failure.
+
+### 8.3 Layer 4: Behavioral Drift Observation (OSM-054)
+
+**What it does.** Layer 4 addresses a distinct threat: behavioral drift in the model
+itself, independent of any specific jailbreak attempt. Session J (documented in ADR-054)
+establishes a canary framework: a set of probes with known expected outputs that are
+re-issued periodically; significant drift in response distribution signals that the
+model's behavior has changed without a logged retraining event. The mechanism is
+probabilistic: it uses a heuristic similarity threshold rather than a formal behavioral
+equivalence proof. Session J observes drift; it does not attribute drift to adversarial
+manipulation, model update, or distributional shift — these are confounded. OSM-054 is
+open research.
+
+**What it does not guarantee.** Layer 4 does not close the *behavioral faithfulness*
+problem — the question of whether a model's visible behavior during probing faithfully
+predicts its behavior on production inputs. A model could produce canary-consistent
+outputs while diverging on the distribution of actual user requests, if the canary set
+does not span the relevant behavioral subspace. Layer 4 does not detect *covert
+capability* change: a model that acquires a new capability not probed by the canary
+framework will not trigger the canary. The canary framework is a heuristic early-warning
+instrument, not a completeness guarantee over model behavior. Formal behavioral
+equivalence proofs and covert-capability detection remain open problems in this design
+and in the published literature.
+
+### 8.4 Synthesis: Orthogonal Defenses and Open Problems
+
+The four layers are **orthogonal**: each closes a threat that the others do not address.
+
+| Layer | Threat closed | Threat not closed |
+|---|---|---|
+| L1–L2 (OSM-007/042) | Inspection omission detectable by subject | Fabricated cause; split-view |
+| L3 (OSM-031/052/053) | Split-view via witnesses; campaign attribution | Per-attempt detection; single-operator witness |
+| L4 (OSM-054) | Behavioral drift early warning (canary, heuristic) | Behavioral faithfulness; covert capability detection |
+
+No single layer subsumes another. An operator who defeats Layer 3 (e.g., by controlling
+all witnesses) still faces Layer 1–2 (omission detection by the subject). An operator
+who defeats Layer 1–2 (e.g., by fabricating causes) is still exposed by Layer 3 if they
+behave evasively across sessions. Behavioral drift (Layer 4) is invisible to Layers 1–3
+entirely: it requires a separate observational mechanism.
+
+**Open research.** Two problems remain outside the scope of this system and of the
+published literature as of June 2026:
+
+1. *Behavioral faithfulness*: proving that a model's behavior on a finite canary set
+   predicts its behavior on the full production input distribution. This requires formal
+   guarantees over model internals that are not available through API-level access.
+
+2. *Covert capability detection*: detecting that a model has acquired a capability not
+   present in a previous version, without access to the model's weights or training
+   process. Existing red-teaming approaches (including CC++ as described in its published
+   form) sample the capability space — they do not provide coverage guarantees.
+
+Layer 4 (OSM-054) is the active contribution toward these problems. It does not close
+them. Future work toward closure would require behavioral equivalence proofs over model
+internals — a problem class that presupposes interpretability infrastructure not yet
+available at production scale.
+
+---
+
 ## Publication Stack (about the filter, not about Atlas)
 
 1. arXiv preprint (cs.CR) — the citable artefact / calling card.
@@ -739,7 +857,7 @@ Implementation status:
       (OSM-007). `SaltStore` in `crypto_shred.py`; 12 tests in `test_crypto_shred.py`.
 - [x] Output inspection completeness (Layer 2): `OutputInspectionRecord` committed before
       result is returned; checks 5+6 in `SubjectLedger.ingest()`; Session G in demo;
-      10 tests in `test_output_inspection.py`. 1523 tests total, all passing.
+      10 tests in `test_output_inspection.py`. 1679 tests total, all passing.
 - [ ] External witness / gossip for split-view closure (§6.1, future work).
 - [ ] OSM-042: shadow model active defense + passive/active honeypot (next).
 
