@@ -452,6 +452,27 @@ defensible.
 **Concurrent work (January–June 2026).** Several systems have appeared that share surface
 structure with our mechanism. We distinguish each precisely.
 
+*SCITT and verifiable AI refusal events.* The IETF SCITT working group (*Supply Chain
+Integrity, Transparency and Trust*, draft-ietf-scitt-architecture) standardises
+append-only transparency services built on COSE Signed Statements and Merkle inclusion
+*Receipts*. The closest work to ours is the SCITT profile for verifiable AI refusal
+events [draft-kamimura-scitt-refusal-events-00, January 2026], which encodes a model's
+refusal decisions as Signed Statements registered with a Transparency Service and
+verified by third parties — the same domain (auditable AI inspection decisions) and the
+same primitives (Merkle trees, signed statements, receipts) as our mechanism. This makes
+its stated limitation the sharpest possible framing of our contribution: the spec
+provides, in its own words, "auditability of refusal decisions that are logged," but
+explicitly *not* "cryptographic proof that no unlogged generation occurred," noting that
+"an AI system bypassing logging entirely cannot be detected by this mechanism alone." Its
+completeness check ("every logged ATTEMPT has exactly one corresponding Outcome") operates
+only over what was logged, and "Verifiers are trusted to perform completeness checks
+correctly." Our contribution closes exactly this gap: by binding each event to a
+subject-held monotonic signed sequence, a request that was never logged leaves a gap the
+*subject* detects unilaterally — without trusting the operator's logging discipline and
+without a trusted external verifier. SCITT provides integrity and operator-attested
+auditability; subject-enforced completeness adds the missing guarantee that nothing was
+silently omitted.
+
 *Notarized Agents / Sello* [arXiv:2606.04193, June 2026] introduces receiver-side signing
 for multi-agent workflows: each tool or service that receives an agent's call signs a
 `Receipt` over what it actually observed, creating a Merkle-anchored audit trail. The
@@ -900,6 +921,11 @@ Citations status:
       Arxiv:2510.09023 exists; claims adaptive adversary feedback loop; paper cites for
       "static classification degrades as attackers observe feedback" (§5, subject-monitoring
       adaptive threat model). **No overclaim.**
+- [x] SCITT (IETF: draft-ietf-scitt-architecture + draft-kamimura-scitt-refusal-events-00,
+      Kamimura, Jan 2026) — **verified textually**: refusal events as COSE Signed Statements +
+      Merkle Receipts; explicit limit "auditability of decisions that are logged" but "not
+      cryptographic proof that no unlogged generation occurred". Closest prior art; distinction is
+      the sharpest framing of our contribution (§5).
 - [x] Notarized Agents / Sello (arXiv:2606.04193, June 2026) — existence confirmed; threat-model
       distinction verified (receiver-side agent signing vs. operator omission); their honest limit
       on set-completeness cited precisely (§5 concurrent work).
