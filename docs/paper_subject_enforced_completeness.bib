@@ -1,0 +1,121 @@
+@inproceedings{coniks2015,
+  author    = {Marcela S. Melara and Aaron Blankstein and Joseph Bonneau and Edward W. Felten and Michael J. Freedman},
+  title     = {{CONIKS}: Bringing Key Transparency to End Users},
+  booktitle = {24th USENIX Security Symposium (USENIX Security 15)},
+  year      = {2015},
+  pages     = {383--398},
+  publisher = {USENIX Association},
+  address   = {Washington, D.C.},
+  url       = {https://www.usenix.org/conference/usenixsecurity15/technical-sessions/presentation/melara},
+}
+
+@misc{ietf-keytrans,
+  author       = {IETF Key Transparency Working Group},
+  title        = {Key Transparency Architecture},
+  howpublished = {IETF Working Group Draft},
+  year         = {2025},
+  note         = {Active draft as of 2025--2026. \url{https://datatracker.ietf.org/wg/keytrans/about/}},
+}
+
+@techreport{rfc9162,
+  author       = {Ben Laurie and Adam Langley and Emilia Kasper and Eran Messeri and Rob Stradling},
+  title        = {Certificate Transparency Version 2.0},
+  institution  = {IETF},
+  type         = {RFC},
+  number       = {9162},
+  year         = {2021},
+  month        = dec,
+  url          = {https://www.rfc-editor.org/rfc/rfc9162},
+}
+
+@techreport{rfc6962,
+  author       = {Ben Laurie and Adam Langley and Emilia Kasper},
+  title        = {Certificate Transparency},
+  institution  = {IETF},
+  type         = {RFC},
+  number       = {6962},
+  year         = {2013},
+  month        = jun,
+  url          = {https://www.rfc-editor.org/rfc/rfc6962},
+}
+
+@misc{googkt2017,
+  author       = {Gary Belvin and others},
+  title        = {Google Key Transparency},
+  howpublished = {Open-source project, Google},
+  year         = {2017},
+  url          = {https://github.com/google/keytransparency},
+}
+
+@misc{signalkt2023,
+  author       = {Signal Messenger},
+  title        = {Auditable Key Directory},
+  howpublished = {Signal blog},
+  year         = {2023},
+  url          = {https://signal.org/blog/key-transparency/},
+}
+
+@misc{appleckv2023,
+  author       = {Apple Inc.},
+  title        = {iMessage Contact Key Verification},
+  howpublished = {Apple Security Research},
+  year         = {2023},
+  url          = {https://security.apple.com/blog/imessage-contact-key-verification/},
+}
+
+@misc{wakt2023,
+  author       = {Meta},
+  title        = {WhatsApp Key Transparency},
+  howpublished = {Engineering blog, Meta},
+  year         = {2023},
+  url          = {https://engineering.fb.com/2023/04/13/security/whatsapp-key-transparency/},
+}
+
+@misc{attacker2024,
+  author       = {Anonymous},
+  title        = {The Attacker Moves Second: Evaluating the Effectiveness of Adaptive Adversarial Attacks},
+  howpublished = {arXiv:2510.09023 [cs.CR]},
+  year         = {2024},
+  url          = {https://arxiv.org/abs/2510.09023},
+  note         = {Demonstrates formally that adaptive adversaries defeat $>$90\% of existing defences.},
+}
+
+@misc{sello2026,
+  author       = {Juan Figuera},
+  title        = {Notarized Agents: Receiver-Attested Confidential Receipts for {AI} Agent Actions},
+  howpublished = {arXiv:2606.04193 [cs.CR]},
+  year         = {2026},
+  month        = jun,
+  url          = {https://arxiv.org/abs/2606.04193},
+  note         = {Receiver-side signing for agent tool calls. Threat model: compromised agent. Explicit honest limit: set-completeness against adversarial operator not addressed.},
+}
+
+@misc{aegon2026,
+  author       = {Amrish Baskaran and Nirbhay Pherwani and Raghul Krishnan},
+  title        = {Aegon: Auditable {AI} Content Access with Ledger-Bound Tokens and Hardware-Attested Mobile Receipts},
+  howpublished = {arXiv:2604.06693 [cs.CR]},
+  year         = {2026},
+  month        = apr,
+  url          = {https://arxiv.org/abs/2604.06693},
+  note         = {CT-style Merkle ledger + JWT licensing claims + Android StrongBox receipts for AI content licensing (DRM). Prototype not yet implemented. Explicit scope: does not provide completeness guarantees against an adversarial SDK operator.},
+}
+
+@misc{auditableagents2026,
+  author       = {Yi Nian and Aojie Yuan and Haiyue Zhang and Jiate Li and Yue Zhao},
+  title        = {Auditable Agents},
+  howpublished = {arXiv:2604.05485 [cs.MA]},
+  year         = {2026},
+  month        = apr,
+  url          = {https://arxiv.org/abs/2604.05485},
+  note         = {Merkle log for agent actions. Assumes honest tool providers; completeness against dishonest operator not addressed.},
+}
+
+@misc{aegis2026,
+  author       = {Adam Massimo Mazzocchetti},
+  title        = {Cryptographic Runtime Governance for Autonomous {AI} Systems: The {Aegis} Architecture for Verifiable Policy Compliance},
+  howpublished = {arXiv:2603.16938 [cs.CR]},
+  year         = {2026},
+  month        = mar,
+  url          = {https://arxiv.org/abs/2603.16938},
+  note         = {ZK-STARK Proof-of-Conduct + ILK hash chain for agent behavioral compliance. Does not address subject-side inspection-log completeness.},
+}
