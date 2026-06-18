@@ -70,3 +70,11 @@ docs/conversation_summary.md
 /Gemini-Auditoría*.md
 # Stale doc: documents Antivirus/Membrane modules that don't exist in src/ (wrong imports).
 docs/security/README.md
+
+# LaTeX build artifacts
+docs/*.aux
+docs/*.bbl
+docs/*.blg
+docs/*.toc
+docs/*.out
+docs/*.log

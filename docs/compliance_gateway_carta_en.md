@@ -1,7 +1,7 @@
 # Osmosis Filter: Mandatory In-Path Compliance Layer
 
-*Technical proposal / cover note. Author: Atlas project (solo developer).
-June 2026. Accompanies ADR-051, ADR-053, ADR-054, OSM-024..030.*
+*Technical proposal / cover note. Osmosis Project (solo developer).
+June 2026. Accompanies the paper "Subject-Enforced Completeness for AI Inspection Logs".*
 
 **Suggested email subject:** Technical proposal: mandatory in-path compliance filter for frontier models (post-Fable 5 / Mythos 5 shutdown)
 **Suggested recipient:** fellows@anthropic.com (External Researcher Access Program)
@@ -96,16 +96,16 @@ because the log entry is tied to a co-signed request whose sequence the client m
 The operator also signs a Receipt for each received request — making omission
 *attributable*, not just detectable.
 
-The automatic signing is transparent to the user: a device-bound key (OSM-025) signs
+The automatic signing is transparent to the user: a device-bound key signs
 each request silently after a single onboarding. No per-request user action required.
 
 Honest limit: split-view protection (showing different logs to regulator and user)
 requires external witnesses (RFC 9162 STH gossip). Witness HTTP transport is
 implemented; ecosystem deployment (independent witness nodes) remains pending.
 
-Implemented: `src/atlas/transparency/`, 1831 tests (full suite), mypy strict clean (ADR-053).
-Log persists to disk, survives restarts. Read-API for deployers at
-`GET /api/exec/api/v1/log/{tree,entries,proof/inclusion/{i}}`.
+Implemented: the Osmosis transparency core, 1831 tests (full suite), mypy strict clean.
+Log persists to disk, survives restarts. Read-API for deployers exposes the signed tree
+head, leaf ranges, and RFC 9162 inclusion proofs over HTTP.
 
 ### 2. Falsifiable campaign metric (what CC++ does not have by design)
 
@@ -130,22 +130,21 @@ log that makes it possible.
 Three articles of Regulation (EU) 2024/1689 are directly relevant to you as a
 GPAI provider with systemic risk:
 
-- **Art. 12 (Record-keeping)**: The ADR-053 core is the most direct technical mechanism
-  for complying with this article — automatic, tamper-resistant log, verifiable by both
-  parties, append-only design with indefinite retention. The law requires a minimum of
+- **Art. 12 (Record-keeping)**: The Osmosis completeness core is the most direct technical
+  mechanism for complying with this article — automatic, tamper-resistant log, verifiable by
+  both parties, append-only design with indefinite retention. The law requires a minimum of
   6 months; the architecture has no ceiling.
 - **Art. 13 (Transparency)**: Mutual verifiability (the user detects inspection omissions
   unilaterally, without trusting the operator) transforms "take our word for it" into
   "the user can prove it". That is exactly what the article requires: that the user
   knows *when* and *why* their content was inspected.
-- **Art. 53 (Systemic risk — red-teaming)**: The knowledge organism (ADR-049) + affinity
-  maturation inject external attack diversity before it reaches real traffic. CC++ can
-  only learn from your own traffic; an external organism injects techniques that
-  self-play would never generate. This is the structural mitigation that closes the
-  overfitting to narrow attack distributions that self-play produces by construction —
-  documented in CHASE (arXiv:2606.05523).
+- **Art. 53 (Systemic risk — red-teaming)**: An external knowledge-ingestion pipeline injects
+  external attack diversity before it reaches real traffic. CC++ can only learn from your own
+  traffic; an external source injects techniques that self-play would never generate. This is
+  the structural mitigation that closes the overfitting to narrow attack distributions that
+  self-play produces by construction — documented in CHASE (arXiv:2606.05523).
 
-Full Technical File (EU AI Act Annex IV): `docs/technical_file_annex_iv.md`.
+Full Technical File (EU AI Act Annex IV) available on request.
 
 ---
 
@@ -173,13 +172,13 @@ diversity — which only an external source can guarantee.
 ## What this is NOT
 
 - This is not a product with enterprise SLAs. It is the architecture, the built core
-  (ADR-053, 1831 tests), and the design documents for the remaining layers.
+  (the completeness mechanism, 1831 tests), and the design documents for the remaining layers.
 - We are not claiming guaranteed detection. No one can guarantee it today.
 - We did not resolve identity binding (real KYC for foreign nationals). That is
-  operational and legal, not code — the KYC hook exists in the membrane (OSM-038).
+  operational and legal, not code — a KYC verification hook is defined, not implemented.
 - The witness network transport is implemented; independent witness nodes are future
   ecosystem, not today's demo.
-- Device-bound key attestation (OSM-025 Layer 2: TPM/Secure Enclave) is design-complete;
+- Device-bound key attestation (Layer 2: TPM/Secure Enclave) is design-complete;
   Layer 1 (disk-persisted key, transparent to user) is deployed.
 
 ---
@@ -207,22 +206,32 @@ independently verifiable record. The Fable 5 shutdown happened because there was
 to demonstrate who uses the model and that it is not being abused. The log is that
 demonstration — not retroactively, but in real time, for every request.
 
-**3. To show the reasoning, not the product.**
+**3. This materialises what you have already called for.**
+In *"Policy on the AI Exponential"*, Dario Amodei argues for mandatory third-party
+testing of frontier models, prompt reporting of safety incidents, and government power to
+"block or deter deployment" on the basis of independent assessment. Every one of those
+mechanisms presupposes an audit substrate that a regulator can trust without trusting the
+operator's word. That substrate is precisely what an in-path verifiable log provides: it
+turns "we ran the tests" and "we inspected with cause" into statements a third party can
+check cryptographically. Osmosis is not a competing safety philosophy — it is the
+verifiable record-keeping layer beneath the one Anthropic already advocates.
+
+**4. To show the reasoning, not the product.**
 A solo developer, the day after the Fable 5 / Mythos 5 shutdown, identified the two
 technical causes, designed an architectural response with the right axis (mutual
 verifiability, not perfect detection), and built the core that proves the completeness
 mechanism is implementable. What we have is the seed — the verifiable log working
-(1831 tests, ADR-053) inside an organism that can learn from every campaign the
-log makes undeniable. If this way of thinking is useful to you, let us talk.
+(1831 tests) inside a system that can learn from every campaign the log makes undeniable.
+If this way of thinking is useful to you, let us talk.
 
 ---
 
 *Demo (~2 min available): a legitimate session whose log proves zero content
 inspections, and a session with cataloged abuse detected, blocked and recorded —
 both on the same immutable chain, showing the proof in both directions.
-Core at `src/atlas/transparency/`, 1831 tests, mypy strict clean.*
+Osmosis transparency core, 1831 tests, mypy strict clean.*
 
-*Technical File (EU AI Act Annex IV): `docs/technical_file_annex_iv.md`.*
+*Technical File (EU AI Act Annex IV) available on request.*
 
 *Sources: Anthropic's official statements and coverage from Time, CNBC, Al Jazeera,
-Fortune (June 13, 2026).*
+Fortune (June 13, 2026); Dario Amodei, "Policy on the AI Exponential".*

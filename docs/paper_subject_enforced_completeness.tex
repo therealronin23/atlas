@@ -74,7 +74,7 @@
   citecolor=blue!60!black,
   urlcolor=blue!60!black,
   pdftitle={Subject-Enforced Completeness for AI Inspection Logs},
-  pdfauthor={Atlas Project},
+  pdfauthor={Osmosis Project},
 }
 
 % ---------------------------------------------------------------
@@ -90,7 +90,7 @@
 
 \title{\textbf{Subject-Enforced Completeness\\for AI Inspection Logs}}
 
-\author{Atlas Project\\
+\author{Osmosis Project\\
 \small \texttt{tomas.asin.gonzalez@gmail.com}\\[4pt]
 \small Working paper --- \today\\
 \small arXiv cs.CR (preprint)
@@ -283,7 +283,7 @@ InspectionRecord = {
 }
 \end{lstlisting}
 
-\textbf{Dual-hash leaf for GDPR Art.~17 (OSM-007).} The \code{InspectionRecord} carries
+\textbf{Dual-hash leaf for GDPR Art.~17.} The \code{InspectionRecord} carries
 two hashes. \code{payload\_hash} is the hash the subject already signed; it enables
 binding check~4 and is permanent. \code{salted\_hash} is derived from a 32-byte random
 salt $s_i$ stored \emph{outside} the Merkle tree in a deletable store
@@ -363,7 +363,7 @@ exposure is stated as honest limit~\ref{limit:splitview}.
 \section{Implementation}
 % ---------------------------------------------------------------
 
-The reference implementation lives in \code{src/atlas/transparency/} and is
+The Osmosis reference implementation lives in a self-contained \code{transparency/} package and is
 intentionally decoupled from any specific AI product.
 
 \textbf{\code{merkle\_tree.py}} --- RFC~9162 \S2.1 faithful. Domain-separation prefixes
@@ -418,7 +418,7 @@ D & Rewrites a past log entry & Consistency proof fails & \S3.4 \\
 E & Forges a request for a seq never sent & Rejected; signature $\neq$ registered key & \S2.3 \\
 F & Signs receipt then omits; request lost in transit & Attributable omission isolated & \S6.8 \\
 G & Commits input but omits output inspection seq=2 & Check 5 fails; cascade & \S3.2 \\
-H & Shadow routing seq=2 (OSM-042) & Transparent to protocol & \S8.2 \\
+H & Shadow routing seq=2 & Transparent to protocol & App.~A \\
 J & Behavioral drift: rejection heuristics degrade & Canary delta flagged (probabilistic) & \S6.11 \\
 \bottomrule
 \end{tabular}
@@ -471,6 +471,27 @@ falsifiable. This is a domain-transfer and modelling contribution, not a cryptog
 primitive.
 
 \subsection*{Concurrent Work (January--June 2026)}
+
+\textbf{SCITT and verifiable AI refusal events.} The IETF SCITT working group
+(\textit{Supply Chain Integrity, Transparency and Trust})~\cite{scitt-arch} standardises
+append-only transparency services built on COSE Signed Statements and Merkle inclusion
+\textit{Receipts}. The closest work to ours is the SCITT profile for verifiable AI
+refusal events~\cite{scitt-refusal} (Kamimura, January 2026), which encodes a model's
+refusal decisions as Signed Statements registered with a Transparency Service and
+verified by third parties. This is the same domain (auditable AI inspection decisions)
+and the same primitives (Merkle trees, signed statements, receipts) as our mechanism ---
+which makes its stated limitation the sharpest possible framing of our contribution. The
+specification provides, in its own words, ``auditability of refusal decisions that are
+logged,'' but explicitly \textit{not} ``cryptographic proof that no unlogged generation
+occurred''; it notes that ``an AI system bypassing logging entirely cannot be detected
+by this mechanism alone.'' Its completeness check (``every logged ATTEMPT has exactly one
+corresponding Outcome'') operates only over what was logged, and ``Verifiers are trusted
+to perform completeness checks correctly.'' Our contribution closes exactly this gap: by
+binding each event to a subject-held monotonic signed sequence, a request that was never
+logged leaves a gap the \textit{subject} detects unilaterally --- without trusting the
+operator's logging discipline and without a trusted external verifier. SCITT provides
+integrity and operator-attested auditability; subject-enforced completeness adds the
+missing guarantee that nothing was silently omitted.
 
 \textbf{Notarized Agents}~\cite{sello2026} (Figuera, 2026) introduces receiver-side signing
 for multi-agent workflows: each tool or service that receives an agent's call signs a Receipt
@@ -551,14 +572,15 @@ log the \term{act} and the \term{triggering rule}; the act is verifiable and the
 enumerable. The reasoning is not.
 
 \paragraph{6.7 Retroactive compliance: architectural mitigation, not cryptographic closure.}
-The in-path guarantee is a property of the deployed architecture, not a cryptographic
-invariant. An operator who deliberately engineers a bypass --- letting the model run
-before the filter commits, then inserting a retroactive record --- can defeat it without
-forging any signature.
+The in-path timing guarantee of \S3.2 is a property of the deployed architecture, not a
+cryptographic invariant. An operator who deliberately engineers a bypass --- letting the
+model run before the filter commits, then inserting a retroactive record --- defeats it
+without forging any signature. The architectural cost it imposes on the adversary ---
+deliberate bypass engineering rather than a free omission --- is the primary mitigation.
 
 \paragraph{6.8 Network failures create plausible deniability for unconfirmed requests.}
 A gap in the subject's sequence has two indistinguishable causes: operator omission, or
-the request never arrived. The mitigation (OSM-040) is a signed receipt: the operator
+the request never arrived. The mitigation is a signed receipt: the operator
 returns a \code{Receipt\{seq, payload\_hash, received\_at\_ns\}} signed on arrival,
 \emph{before} inspection. A subject who holds a valid receipt for \code{seq=n} but
 finds no inclusion proof for \code{n} has an \term{attributable omission}. Exercised in
@@ -580,7 +602,7 @@ and verifiable inspection log --- one that recorded ``allow'' for each of those 
 inspection verifiable; it makes no claim about the faithfulness of the model's subsequent
 output.
 
-\paragraph{6.11 Behavioral Drift Detection (OSM-054) --- Limitations and Open Problems.}
+\paragraph{6.11 Behavioral Drift Detection --- Limitations and Open Problems.}
 \label{limit:drift}
 Three angles are proposed: (A)~behavioral delta observation via canary prompts;
 (B)~ex-post consistency proofs; (C)~shadow divergence. All three face common barriers:
@@ -588,7 +610,7 @@ capability masking can be implicit in model weights; false positives are likely 
 model improves legitimately; false negatives occur when restrictions operate at
 sub-threshold probability levels. We state behavioral drift detection as a
 \textbf{future research problem} and an \textbf{open investigative tool}, not a closed
-detection method. See \code{src/atlas/security/behavioral.py} for the reference
+detection method. See the \code{behavioral} module of the reference
 implementation.
 
 % ---------------------------------------------------------------
@@ -598,14 +620,14 @@ implementation.
 
 \subsection{Mutual Protection}
 
-The verifiable inspection log creates a protection asymmetry that benefits both parties.
-The operator can produce an inclusion proof when a subject claims harm from AI-generated
-content: ``inspection record for \code{(seq=n, payload\_hash=h)} is in the log at
-position~$k$, with STH signed at time~$t$.'' The subject can audit the \code{cause}
-field when they claim wrongful blocking. The same log that protects the operator from
-``you never inspected this'' also exposes the operator to ``you inspected this without
-cause.'' Both parties benefit if and only if the operator is operating honestly within
-their declared policy.
+The Merkle inclusion proofs of \S3.2 serve a dual purpose beyond protocol correctness.
+For the \textit{operator}: a signed, position-bound \code{InspectionRecord} is a
+cryptographically-backed statement of due diligence --- stronger than self-reporting in
+litigation or regulatory review. For the \textit{subject}: the \code{cause} field is
+auditable; a block without a matching log entry (detected by \code{detect\_omission()})
+is evidence of irregular handling. Both parties benefit if and only if the operator
+operates honestly within their declared policy --- the same log that defends the operator
+from ``you never inspected this'' exposes them to ``you inspected this without cause.''
 
 \subsection{EU AI Act Alignment}
 
@@ -676,12 +698,13 @@ The completeness mechanism is one layer of a coordinated defense-in-depth stack.
 
 Enforces symmetric completeness on both the input request and the output response.
 Omissions are detectable by the subject through \code{detect\_omission()} without
-relying on the operator. The structural invariants are OSM-007 (input completeness) and
-OSM-042 (output completeness). Both are closed.
+relying on the operator. The structural invariants are input completeness (every
+inspection has a registered cause) and output completeness (every output inspection is
+anchored symmetrically to the co-signed input). Both are closed.
 
 \textbf{Does not guarantee:} fabricated cause fields; split-view attacks.
 
-\subsection{Layer 3: Active Defense and Consensus (OSM-031/052/053)}
+\subsection{Layer 3: Active Defense and Consensus}
 
 External-witness network following RFC~9162 gossip. A campaign metric
 (\code{C\_attempts}, \code{K\_attribution}: $\geq 3$ consecutive attempts with cosine
@@ -689,7 +712,7 @@ similarity $>0.7$) triggers flagging with co-signed identity trail.
 
 \textbf{Does not guarantee:} per-attempt detection; single-operator witness deployment.
 
-\subsection{Layer 4: Behavioral Drift Observation (OSM-054)}
+\subsection{Layer 4: Behavioral Drift Observation}
 
 A canary framework: fixed probes re-issued periodically; drift in response distribution
 signals undisclosed model changes. Session~J (demo) exercises this. Probabilistic; does
@@ -705,9 +728,9 @@ not attribute drift to adversarial manipulation vs.\ legitimate update.
 \toprule
 \textbf{Layer} & \textbf{Threat closed} & \textbf{Threat not closed} \\
 \midrule
-L1--L2 (OSM-007/042) & Inspection omission detectable by subject & Fabricated cause; split-view \\
-L3 (OSM-031/052/053) & Split-view via witnesses; campaign attribution & Per-attempt detection; single-operator witness \\
-L4 (OSM-054) & Behavioral drift early warning (canary, heuristic) & Behavioral faithfulness; covert capability detection \\
+L1--L2 & Inspection omission detectable by subject & Fabricated cause; split-view \\
+L3 & Split-view via witnesses; campaign attribution & Per-attempt detection; single-operator witness \\
+L4 & Behavioral drift early warning (canary, heuristic) & Behavioral faithfulness; covert capability detection \\
 \bottomrule
 \end{tabular}
 \caption{Orthogonal defense layers. No layer subsumes another.}
@@ -723,9 +746,9 @@ a model has acquired a capability without access to its weights or training proc
 \section*{Acknowledgements}
 % ---------------------------------------------------------------
 
-Reference implementation: \url{https://github.com/therealronin23/atlas} (private;
-available upon request for reviewer verification). All claims are anchored in 1831
-automated tests, mypy \texttt{-{}-strict} clean.
+The Osmosis reference implementation is private; the adversarial harness and the
+transparency/inspection modules are available upon request for reviewer verification.
+All claims are anchored in 1831 automated tests, mypy \texttt{-{}-strict} clean.
 
 % ---------------------------------------------------------------
 % Bibliography

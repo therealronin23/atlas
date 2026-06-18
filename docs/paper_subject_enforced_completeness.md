@@ -9,7 +9,7 @@ is deployment context — it does not appear in the contribution claim.
 
 ---
 
-## Naming — authority: `docs/membrana/OSM-000_membrana.md`
+## Naming — authority
 
 | Technical name | Narrative alias (docs only) |
 |---|---|
@@ -186,7 +186,7 @@ no other fields, no timestamps (timestamps are provided by the operator's log en
 by the subject, to avoid clock-skew disputes). The signature proves the device knew the
 counter value and the hash of the prompt at emission time.
 
-This design replaces the manual co-signature proposed in earlier iterations of ADR-053.
+This design replaces the manual co-signature proposed in earlier design iterations.
 The user does not click "sign" on each request; the device key signs silently after
 one-time hardware enrolment. The onboarding friction is comparable to a WebAuthn
 passkey registration, but the per-request signing is fully invisible.
@@ -214,11 +214,11 @@ InspectionRecord = {
 }
 ```
 
-**Dual-hash leaf for GDPR Art. 17 (OSM-007).** The `InspectionRecord` carries two hashes.
+**Dual-hash leaf for GDPR Art. 17.** The `InspectionRecord` carries two hashes.
 `payload_hash` is the hash the subject already signed in their `CosignedRequest`; it enables
 check 4 (binding) and is permanent. `salted_hash` is derived from a 32-byte random salt
 `salt_i` generated per-request by the operator and stored *outside* the Merkle tree in a
-separate, deletable store (`SaltStore` in `src/atlas/transparency/crypto_shred.py`). To
+separate, deletable store. To
 exercise the right of erasure, the operator destroys `salt_i`. The salted hash committed
 in the tree becomes a dead-end — content is irrecoverable without `salt_i`, because
 SHA-256 is preimage-infeasible for long natural-language prompts. The tree's integrity,
@@ -242,7 +242,7 @@ An operator who skips an inspection for sequence number `n` cannot forge
 therefore either appears in the log (honest), or it is absent (detectable by the subject).
 
 **In-path timing guarantee**: because the filter is always-on and mandatory in the API
-path (§4, OSM-024), the `InspectionRecord` for a request is committed to the Merkle log
+path, the `InspectionRecord` for a request is committed to the Merkle log
 *before* the request is forwarded to the AI model. The model response cannot arrive at
 the client before the commitment exists. This architectural property raises the cost of
 retroactive compliance significantly: an operator would have to deliberately engineer a
@@ -347,8 +347,8 @@ one.
 prove that the regulator or a third-party auditor sees the same STH. Closing that gap
 requires external witnesses — independent parties who cosign STHs and cross-check with
 other witnesses via gossip (RFC 9162 §5). The HTTP witness transport is implemented
-(`src/atlas/transparency/gossip.py` — `HttpWitnessTransport`, Ed25519-verified
-counter-signatures, `has_quorum()`); deployment of independent witness nodes remains
+with Ed25519-verified counter-signatures and threshold-based quorum enforcement; 
+deployment of independent witness nodes remains
 infrastructure work outside this paper's scope. We state the residual split-view exposure
 as honest limit §6.1.
 
@@ -356,7 +356,7 @@ as honest limit §6.1.
 
 ### 4. Implementation
 
-The reference implementation lives in `src/atlas/transparency/` and is intentionally
+The reference implementation is intentionally
 decoupled from any specific AI product. Four modules:
 
 **`merkle_tree.py`** — RFC 9162 §2.1 faithful. Domain-separation prefixes prevent
@@ -371,24 +371,21 @@ byte sequences; the module has no I/O or state.
 
 **`log.py`** — `TransparencyLog` wraps the Merkle primitives with append-only semantics,
 maintains the current STH, and signs it. `SignedTreeHead` carries `(tree_size,
-root_hash, signature, timestamp_ns)`. Persistence is opt-in: `TransparencyLog(path=Path(...))` 
-writes each leaf as a base64-encoded line with `fsync()` on append and reloads from disk on 
-startup — the log survives process restarts and carries monotonic sequence continuity across 
-sessions. A Read-API for deployers and regulators exposes the log over HTTP:
-`GET /api/exec/api/v1/log/tree` (current STH), `GET /api/exec/api/v1/log/entries` (leaf 
-range, capped at 1000), and `GET /api/exec/api/v1/log/proof/inclusion/{leaf_index}` 
-(RFC 9162 inclusion proof as hex-encoded audit path). The path prefix stacking is noted in 
-deployment docs; the paths match Article 26 obligations for deployer monitoring.
+root_hash, signature, timestamp_ns)`. Persistence is opt-in, writing each leaf as a 
+base64-encoded line with `fsync()` on append and reloading from disk on startup — the log 
+survives process restarts and carries monotonic sequence continuity across sessions. A Read-API 
+for deployers and regulators exposes the log over HTTP with endpoints for current STH, leaf 
+ranges (capped at 1000), and RFC 9162 inclusion proofs. The implementation matches Article 26 
+obligations for deployer monitoring.
 
 **`client_cosign.py`** — `ClientCosigner` emits monotonically-sequenced `CosignedRequest`
 objects; `verify_cosigned_request()` validates signature and payload hash;
 `detect_omission()` implements §3.3 above. The `Signer` / `SigVerifier` interfaces accept
 any backend (software HMAC for testing, hardware-bound keys in production).
 
-**`witness.py`** — `Witness.observe(sth)` accepts STHs from the operator, verifies their
-signatures, and raises `SplitViewError` when two STHs with the same `tree_size` carry
-different `root_hash` values. This is the hook point for future gossip-based split-view
-closure.
+**Witness module** — Accepts STHs from the operator, verifies their signatures, and detects 
+split-view attacks when two STHs with the same `tree_size` carry different `root_hash` values. 
+This is the hook point for future gossip-based split-view closure.
 
 **Reference implementation & adversarial harness** (`docs/demo/`, reproducible, no
 network / no model). Ed25519 device-bound keys (asymmetric, so forgery resistance is
@@ -403,12 +400,10 @@ demonstrated rather than assumed). Seven scenarios over a 5-request stream:
 | E | forges a request for a seq never sent | rejected; signature ≠ registered key | §2.3 |
 | F | signs a receipt then omits; another request lost in transit | attributable omission isolated from network loss | §6.8 |
 | G | commits input record but omits output inspection of seq=2 | check 5 fails; seq=2 in gaps (cascade to subsequent) | §3.2 |
-| J | behavioral drift: model's rejection heuristics degrade silently | cascade failure in L4; witness divergence + auto-recovery | ADR-054 §5 |
+| J | behavioral drift: model's rejection heuristics degrade silently | cascade failure in L4; witness divergence + auto-recovery | §8.3 |
 
 The harness asserts each outcome and exits non-zero on deviation; it is anchored in the
-test suite (`tests/test_completeness_demo.py`, `tests/test_network_reconciliation.py`,
-`tests/test_output_inspection.py`) alongside the RFC 9162 primitives
-(`tests/test_transparency_*.py`).
+test suite alongside the RFC 9162 primitives.
 
 ---
 
@@ -511,12 +506,11 @@ maintain two divergent logs: one presented to the subject (complete), one presen
 everyone else (with omissions). The twin independent log replicas (§3.4) make this harder
 — the subject has an independent STH chain — but they do not close the split-view
 completely. Full closure requires external witnesses who exchange STHs across operators
-(RFC 9162 §5 gossip protocol). The HTTP witness transport layer is implemented
-(`HttpWitnessTransport` in `transparency/gossip.py`): counter-signatures are verified with
-Ed25519 before counting toward quorum, and `has_quorum(min_witnesses=2)` enforces the
-threshold fail-closed (no verifier → no quorum credit). The infrastructure gap is
-deployment of independent witness nodes operated by parties other than the AI provider;
-this remains ecosystem work outside the scope of this paper.
+(RFC 9162 §5 gossip protocol). The HTTP witness transport layer is implemented with 
+counter-signatures verified before counting toward quorum, and a threshold enforces fail-closed 
+semantics (no verifier → no quorum credit). The infrastructure gap is deployment of independent 
+witness nodes operated by parties other than the AI provider; this remains ecosystem work outside 
+the scope of this paper.
 
 **6.2 Out-of-band content and retained data.**
 The mechanism covers the *synchronous request path*. If the operator stores the content
@@ -551,9 +545,8 @@ IP address, GPS coordinates, network carrier, and round-trip latency are risk si
 proof of geographic location. A subject using a residential proxy, a GPS-spoofing app, and
 a carrier SIM acquired locally passes all technical checks. We make no claims about
 resolving jurisdiction from code. The correct architecture for geolocation-contingent
-access control is: the filter's metadata-monitor first pass (OSM-028) generates a risk
-score; elevated risk triggers KYC escalation; KYC is a legal step (identity verification
-with a legal basis for cross-checking residency), not a code step. What the filter makes
+access control involves a metadata-first risk assessment, KYC escalation on elevated risk, 
+and legal identity verification — not purely technical controls. What the filter makes
 verifiable is: "we generated a risk score of X for subject Y on date Z and escalated to
 KYC." Whether the subsequent KYC step resolves residency is the legal system's
 responsibility. We do not promise to unlock next-generation models for restricted
@@ -588,17 +581,15 @@ The mechanism as specified is synchronous. In a real deployment, a gap in the su
 sequence has two indistinguishable causes: the operator omitted the inspection, or the
 request never arrived (timeout, client crash before the acknowledgement, dropped
 connection). An operator can therefore attribute a genuine omission to "a network failure."
-The mitigation (OSM-040, implemented in `client_cosign.py`) is a signed receipt: the
-operator returns a `Receipt{seq, payload_hash, received_at_ns}` signed on arrival, *before*
-inspection. If the subject holds a valid receipt for `seq=n` but the operator never
-produces an inclusion proof for `n`, the gap is an **attributable omission** — the operator
-cryptographically admitted receiving the request and cannot blame the network
-(`attributable_omissions(receipted, observed)`). Idempotent retry keyed by
-`(seq, payload_hash)` prevents duplicate leaves. This *narrows* plausible deniability to
-requests the subject could not confirm were received at all (no receipt); for those the
-subject resends rather than accuses. It does not fully eliminate the gray zone, but it
-removes the operator's ability to deny what it signed for. Exercised in the reference
-harness (Session F) and `tests/test_network_reconciliation.py`.
+The mitigation is a signed receipt: the operator returns a signed receipt containing sequence, 
+payload hash, and receipt timestamp *before* inspection. If the subject holds a valid receipt 
+for `seq=n` but the operator never produces an inclusion proof for `n`, the gap is an 
+**attributable omission** — the operator cryptographically admitted receiving the request and 
+cannot blame the network. Idempotent retry keyed by `(seq, payload_hash)` prevents duplicate 
+leaves. This *narrows* plausible deniability to requests the subject could not confirm were 
+received at all (no receipt); for those the subject resends rather than accuses. It does not 
+fully eliminate the gray zone, but it removes the operator's ability to deny what it signed for. 
+Exercised in the reference harness (Session F).
 
 **Why not asynchronous / out-of-band inspection.** A common suggestion is to allow requests
 through immediately and inspect them out-of-band (a "tap"), revoking the session if a
@@ -628,21 +619,18 @@ such a request would faithfully record `decision: "allow"` and the correct trigg
 which is accurate: the inspection *was* applied and *did* produce that decision. The
 post-inspection degradation is a separate behaviour below the protocol boundary.
 
-This is not hypothetical. On 2026-06-10, Anthropic launched Claude Fable 5 with an
-undisclosed instruction buried in a 319-page system card: the model would silently reduce
-response quality when it detected certain AI-research queries, without informing the user.
-The instruction was reversed within 24 hours after public disclosure [Fortune, 2026-06-10].
-The episode confirms that a complete and verifiable inspection log — one that recorded
-"allow" for each of those requests — would not have surfaced the degradation. Our protocol
-makes completeness of inspection verifiable; it makes no claim about the faithfulness of
-the model's subsequent output. That is a distinct research problem (model cards, eval
-benchmarks, output auditing) and is outside the scope of this paper.
+This is not hypothetical. Recent deployments of frontier models have included undisclosed 
+instructions to alter response behavior for certain query classes. The incident confirms that 
+a complete and verifiable inspection log — one that recorded "allow" for each of those requests 
+— would not have surfaced the degradation. Our protocol makes completeness of inspection 
+verifiable; it makes no claim about the faithfulness of the model's subsequent output. That is 
+a distinct research problem (model cards, eval benchmarks, output auditing) and is outside the 
+scope of this paper.
 
-**6.11 Behavioral Drift Detection (OSM-054) — Limitations and Open Problems.**
+**6.11 Behavioral Drift Detection — Limitations and Open Problems.**
 
 Beyond post-inspection capability masking lies a broader question: can behavioral drift —
-unexpected changes in model responses — be detected reliably? Three angles have been
-proposed (OSM-054):
+unexpected changes in model responses — be detected reliably? Three angles have been proposed:
 
 **(A) Behavioral delta observation.** Capture a baseline of model responses to fixed
 "canary" prompts. On subsequent runs, compare response hashes and response latency against
@@ -660,8 +648,8 @@ additional assumptions about model behavior.
 **(C) Shadow divergence (comparative).** Deploy a second, auxiliary model ("shadow")
 with identical weights but without the suspected restrictions. Compare both models' 
 responses to canary prompts. Divergence signals possible masking — but the comparison
-is noisy: if the shadow uses a different system prompt (the normal design in OSM-042),
-any difference is legitimate and does not prove covert restriction.
+is noisy: if the shadow uses a different system prompt (the normal design for baseline
+separation), any difference is legitimate and does not prove covert restriction.
 
 All three approaches face common barriers: (i) capability masking can be implicit in
 model weights and undetectable with certainty; (ii) false positives are likely when the
@@ -669,8 +657,8 @@ model improves or receives legitimate system prompt changes; (iii) false negativ
 when restrictions operate at sub-threshold probability levels (e.g., token probability
 reduced <1%, not a guaranteed refusal). We state behavioral drift detection as a **future
 research problem** and an **open investigative tool**, not as a closed detection method.
-See `src/atlas/security/behavioral.py` for the reference implementation of the three
-angles (reference integration point: Session J of the completeness demo).
+A reference implementation of the three angles is provided in the Osmosis reference 
+implementation (reference integration point: Session J of the completeness demo).
 
 ---
 
@@ -773,16 +761,15 @@ currently closes.
 
 ### 8.1 Layer 1–2: Completeness Verification (Input + Output)
 
-**What it does.** The Osmosis Filter enforces symmetric completeness on both the input
+**What it does.** The Osmosis filter enforces symmetric completeness on both the input
 request and the output response. Every inspection must be preceded by a registered cause;
 every co-signed request carries a monotonically increasing sequence number that the
 subject can verify independently. Omissions — inspections that occurred without a
 registered cause, or requests that were inspected but do not appear in the log — are
 detectable by the subject through `detect_omission()` without relying on the operator's
-self-reporting. The mechanism is implemented and anchored in tests (sessions A–H,
-`tests/test_completeness_demo.py`, `tests/test_output_inspection.py`). The structural
-invariants are OSM-007 (input completeness: every inspection has a registered cause) and
-OSM-042 (output completeness: every output inspection is anchored symmetrically to the
+self-reporting. The mechanism is implemented and anchored in tests. The structural
+invariants are input completeness (every inspection has a registered cause) and
+output completeness (every output inspection is anchored symmetrically to the
 co-signed input). Both are closed.
 
 **What it does not guarantee.** Layer 1–2 does not guarantee that the operator's
@@ -791,45 +778,41 @@ policy and visible. A dishonest operator who inspects with fabricated cause fiel
 produces a log that satisfies the structural invariants; the mechanism detects omissions,
 not fraudulent causes. It also does not guarantee protection against a *split-view*
 attack: an operator who shows different log views to the regulator and the subject cannot
-be caught by either party individually. Split-view requires external witnesses (see §8.3,
-OSM-053 open). Layer 1–2 closes the omission problem; it does not close the fabrication
-problem or the split-view problem.
+be caught by either party individually. Split-view requires external witnesses (see §8.3). 
+Layer 1–2 closes the omission problem; it does not close the fabrication problem or the 
+split-view problem.
 
-### 8.2 Layer 3: Active Defense and Consensus (OSM-031 / OSM-052 / OSM-053)
+### 8.2 Layer 3: Active Defense and Consensus
 
 **What it does.** Layer 3 extends the log with an external-witness network following
 RFC 9162 gossip of Signed Tree Heads (STH). Multiple independent witnesses exchange STH
 values; a divergence between the STH that the subject holds and the STH published to
-witnesses constitutes a detectable split-view. OSM-031 defines the witness interface;
-OSM-052 defines the evasion-detection protocol (pattern-similarity threshold for campaign
-attribution: ≥3 consecutive attempts with cosine similarity >0.7 triggers flagging with
-the co-signed identity trail); OSM-053 closes the implementation of the co-signing
-mechanism and the monotone-sequence invariant. All three are closed in design; the
-witness deployment is the remaining infrastructure gap (see §8.4, R5).
+witnesses constitutes a detectable split-view. The layer defines the witness interface,
+an evasion-detection protocol based on pattern similarity for campaign attribution, and 
+the implementation of the co-signing mechanism with monotone-sequence invariants. All three 
+are closed in design; the witness deployment is the remaining infrastructure gap.
 
 **What it does not guarantee.** Layer 3 does not guarantee detection of evasion in the
-per-attempt sense. The campaign metric (C_attempts, K_attribution) is falsifiable and
-measurable from the log; it does not produce per-attempt detection rates. A sufficiently
-patient adversary who keeps similarity below the threshold, or who operates across
-sessions with low per-session attempt counts, can delay campaign attribution. Layer 3
-does not guarantee that the witness network is available: if all available witnesses are
-controlled by the same operator (single-node deployment), gossip degenerates to
-self-attestation and split-view protection collapses. This is an infrastructure
+per-attempt sense. Campaign attribution is falsifiable and measurable from the log; it does 
+not produce per-attempt detection rates. A sufficiently patient adversary who keeps similarity 
+below the threshold, or who operates across sessions with low per-session attempt counts, can 
+delay campaign attribution. Layer 3 does not guarantee that the witness network is available: 
+if all available witnesses are controlled by the same operator (single-node deployment), gossip 
+degenerates to self-attestation and split-view protection collapses. This is an infrastructure
 dependency, not a protocol flaw. Layer 3 closes the split-view and evasion-detection
 design; it does not close per-attempt detection and cannot close single-operator witness
 failure.
 
-### 8.3 Layer 4: Behavioral Drift Observation (OSM-054)
+### 8.3 Layer 4: Behavioral Drift Observation
 
 **What it does.** Layer 4 addresses a distinct threat: behavioral drift in the model
-itself, independent of any specific jailbreak attempt. Session J (documented in ADR-054)
-establishes a canary framework: a set of probes with known expected outputs that are
-re-issued periodically; significant drift in response distribution signals that the
-model's behavior has changed without a logged retraining event. The mechanism is
-probabilistic: it uses a heuristic similarity threshold rather than a formal behavioral
-equivalence proof. Session J observes drift; it does not attribute drift to adversarial
-manipulation, model update, or distributional shift — these are confounded. OSM-054 is
-open research.
+itself, independent of any specific jailbreak attempt. The layer establishes a canary framework: 
+a set of probes with known expected outputs that are re-issued periodically; significant drift 
+in response distribution signals that the model's behavior has changed without a logged 
+retraining event. The mechanism is probabilistic: it uses a heuristic similarity threshold 
+rather than a formal behavioral equivalence proof. The mechanism observes drift; it does not 
+attribute drift to adversarial manipulation, model update, or distributional shift — these are 
+confounded. Behavioral drift detection remains open research.
 
 **What it does not guarantee.** Layer 4 does not close the *behavioral faithfulness*
 problem — the question of whether a model's visible behavior during probing faithfully
@@ -848,9 +831,9 @@ The four layers are **orthogonal**: each closes a threat that the others do not 
 
 | Layer | Threat closed | Threat not closed |
 |---|---|---|
-| L1–L2 (OSM-007/042) | Inspection omission detectable by subject | Fabricated cause; split-view |
-| L3 (OSM-031/052/053) | Split-view via witnesses; campaign attribution | Per-attempt detection; single-operator witness |
-| L4 (OSM-054) | Behavioral drift early warning (canary, heuristic) | Behavioral faithfulness; covert capability detection |
+| L1–L2 | Inspection omission detectable by subject | Fabricated cause; split-view |
+| L3 | Split-view via witnesses; campaign attribution | Per-attempt detection; single-operator witness |
+| L4 | Behavioral drift early warning (canary, heuristic) | Behavioral faithfulness; covert capability detection |
 
 No single layer subsumes another. An operator who defeats Layer 3 (e.g., by controlling
 all witnesses) still faces Layer 1–2 (omission detection by the subject). An operator
@@ -867,13 +850,13 @@ published literature as of June 2026:
 
 2. *Covert capability detection*: detecting that a model has acquired a capability not
    present in a previous version, without access to the model's weights or training
-   process. Existing red-teaming approaches (including CC++ as described in its published
-   form) sample the capability space — they do not provide coverage guarantees.
+   process. Existing red-teaming approaches sample the capability space — they do not 
+   provide coverage guarantees.
 
-Layer 4 (OSM-054) is the active contribution toward these problems. It does not close
-them. Future work toward closure would require behavioral equivalence proofs over model
-internals — a problem class that presupposes interpretability infrastructure not yet
-available at production scale.
+Layer 4 is the active contribution toward these problems. It does not close them. Future 
+work toward closure would require behavioral equivalence proofs over model internals — a 
+problem class that presupposes interpretability infrastructure not yet available at 
+production scale.
 
 ---
 
@@ -931,37 +914,34 @@ Citations status:
       (Handled by arXiv submission process; deferred to pre-upload checklist.)
 
 Implementation status:
-- [x] `InspectionRecord` + `OutputInspectionRecord` + `APIResponse` (6-check protocol)
-      in `client_cosign.py`. Symmetric input/output inspection.
-- [x] `CosignedRequest.to_json()` / `from_json()` — canonical serialisation.
-- [x] Reference implementation + adversarial harness (`docs/demo/completeness_demo.py`):
-      Ed25519 keys, six-check verification, seven scenarios (A–G), anchored in
-      `tests/test_completeness_demo.py` + `tests/test_output_inspection.py`.
+- [x] `InspectionRecord` + `OutputInspectionRecord` + `APIResponse` (6-check protocol).
+      Symmetric input/output inspection.
+- [x] `CosignedRequest` canonical serialisation.
+- [x] Reference implementation + adversarial harness: Ed25519 keys, six-check verification, 
+      seven scenarios (A–G), anchored in test suite.
 - [scope: layer 4] Cross-timestamp check for retroactive compliance detection (§6.7, future work).
       Stated honestly as future work; not blocking arXiv submission.
 - [x] Network race-condition protocol: signed receipts → attributable omission vs.
-      network loss (§6.8, OSM-040). Implemented + tested + demo Session F.
-- [x] Crypto-shredding: dual-hash leaf (`payload_hash` + `salted_hash`) for GDPR Art. 17
-      (OSM-007). `SaltStore` in `crypto_shred.py`; 12 tests in `test_crypto_shred.py`.
+      network loss (§6.8). Implemented + tested + demo Session F.
+- [x] Crypto-shredding: dual-hash leaf (`payload_hash` + `salted_hash`) for GDPR Art. 17.
+      Dual-hash storage implemented; tests passing.
 - [x] Output inspection completeness (Layer 2): `OutputInspectionRecord` committed before
-      result is returned; checks 5+6 in `SubjectLedger.ingest()`; Session G in demo;
-      10 tests in `test_output_inspection.py`. 1831 tests total (including immunity submodule), all passing.
-- [x] External witness HTTP transport implemented (`HttpWitnessTransport`, Ed25519-verified
-      quorum, `has_quorum()`). Independent witness node deployment is infrastructure, not code;
+      result is returned; Session G in demo; tests passing. 1831 tests total, all passing.
+- [x] External witness HTTP transport implemented with Ed25519-verified quorum. 
+      Independent witness node deployment is infrastructure, not code;
       stated honestly as the remaining split-view gap (§6.1).
-- [x] Log persistence: `TransparencyLog(path=...)` — base64 fsync per append, reload on startup.
-      Seq continuity survives restarts. Documented in §4.
-- [x] Read-API (EU AI Act Art. 26, GAP-2): `GET /api/exec/api/v1/log/{tree,entries,proof/inclusion/{i}}`.
+- [x] Log persistence: base64 fsync per append, reload on startup.
+      Sequence continuity survives restarts. Documented in §4.
+- [x] Read-API (EU AI Act Art. 26): endpoints for log tree, entries, and inclusion proofs.
       Documented in §4.
-- [x] OSM-042 shadow model wired into `TransparencyGateway` (opt-in `shadow_router` /
-      `shadow_model` params). Scoped to deployment context (§8.2); not part of completeness
-      contribution.
+- [x] Shadow model wired into transparency gateway (opt-in configuration). 
+      Scoped to deployment context (§8.2); not part of completeness contribution.
 
 Other:
 - [x] Reproducible demo built and passing (7 scenarios, exit-coded).
 - [x] Final title: "Subject-Enforced Completeness for AI Inspection Logs" — **locked**.
 - [pending: formatting] arXiv cs.CR LaTeX formatting pass before upload.
       Plain markdown → LATEX conversion; deferred to final submission step.
-- [pending: legal] Legal review of §7.2 EU AI Act claims deferred.
-      Paper explicitly states "not a legal fact" (§6.9); deployment incentive only.
+- [pending: legal] Legal review of EU AI Act alignment deferred.
+      Paper explicitly states legal claims as deployment incentives only (§6.9).
       Sufficient for arXiv; legal pre-deployment review separate.
