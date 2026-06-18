@@ -5,6 +5,7 @@ ADR-024 — ObservabilityStack facade wired to MerkleLogger.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from atlas.logging.merkle_logger import AuditRecord, MerkleLogger
 from atlas.logging.microledger import MicroLedger
@@ -54,7 +55,7 @@ class ObservabilityStack:
         merkle.append = append_with_obs  # type: ignore[method-assign]
         return merkle
 
-    def snapshot(self) -> dict:
+    def snapshot(self) -> dict[str, Any]:
         return {
             "telemetry": self.telemetry.snapshot(),
             "microledger_tail": self.microledger.tail(20),

@@ -170,7 +170,7 @@ class HermesMockAdapter(HermesAdapter):
             metadata=payload.metadata,
         )
 
-    def _compute_sig(self, data: dict) -> str:
+    def _compute_sig(self, data: dict[str, Any]) -> str:
         # Excluir signature del calculo
         payload_data = {k: v for k, v in data.items() if k != "signature"}
         msg = json.dumps(payload_data, sort_keys=True, ensure_ascii=False).encode()
@@ -194,7 +194,7 @@ class DelegationBuilder:
         intent: str,
         priority: int,
         timeout_seconds: int = 300,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> DelegationPayload:
         return DelegationPayload(
             task_id=task_id,
@@ -219,7 +219,7 @@ class QueueEntry:
     last_attempt: str | None = None
     status: str = "pending"   # "pending" | "sent" | "failed"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "delegation": self.delegation.to_dict(),
             "enqueued_at": self.enqueued_at,
@@ -229,7 +229,7 @@ class QueueEntry:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "QueueEntry":
+    def from_dict(cls, data: dict[str, Any]) -> "QueueEntry":
         return cls(
             delegation=DelegationPayload(**data["delegation"]),
             enqueued_at=data["enqueued_at"],
@@ -474,12 +474,12 @@ class HermesRestAdapter(HermesAdapter):
         sig = self._compute_payload_sig(payload.to_dict())
         return _replace(payload, signature=sig)
 
-    def _compute_payload_sig(self, data: dict) -> str:
+    def _compute_payload_sig(self, data: dict[str, Any]) -> str:
         payload_data = {k: v for k, v in data.items() if k != "signature"}
         msg = json.dumps(payload_data, sort_keys=True, ensure_ascii=False).encode()
         return hmac.new(self._secret, msg, hashlib.sha256).hexdigest()
 
-    def _request(self, method: str, path: str, body: dict | None = None) -> dict:
+    def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
         url = f"{self._base_url}{path}"
         raw_body = b""
         if body is not None:
@@ -530,7 +530,7 @@ class HermesRestAdapter(HermesAdapter):
         return hmac.new(self._secret, msg, hashlib.sha256).hexdigest()
 
     @staticmethod
-    def _parse_response(status: int, raw: bytes) -> dict:
+    def _parse_response(status: int, raw: bytes) -> dict[str, Any]:
         if status == 204 or not raw:
             return {}
         try:

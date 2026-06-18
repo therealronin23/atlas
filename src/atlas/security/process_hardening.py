@@ -94,7 +94,7 @@ def set_no_new_privs() -> bool:
     try:
         # prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
         ret = libc.prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
-        return ret == 0
+        return bool(ret == 0)
     except Exception:
         return False
 

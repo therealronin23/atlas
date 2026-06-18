@@ -86,7 +86,15 @@ def http_server(static_dir: Path) -> Generator[str, None, None]:
     port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    time.sleep(0.1)  # Esperar a que arranque
+    # Poll until the server accepts connections instead of using a fixed sleep.
+    import socket as _socket
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        try:
+            with _socket.create_connection(("127.0.0.1", port), timeout=0.05):
+                break
+        except OSError:
+            time.sleep(0.01)
     yield f"http://127.0.0.1:{port}"
     server.shutdown()
 

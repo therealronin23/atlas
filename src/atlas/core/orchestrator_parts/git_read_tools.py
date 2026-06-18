@@ -44,7 +44,7 @@ class GitReadTools:
             return ("-C", str(root), sub, *extra)
         return (sub, *extra)
 
-    def _with_repo_root(self, result: dict) -> dict:
+    def _with_repo_root(self, result: dict[str, Any]) -> dict[str, Any]:
         """Inyecta el repo_root real en el resultado git.
 
         Grounding de procedencia: el modelo gemelo (Hermes) NO debe inventar la
@@ -56,22 +56,22 @@ class GitReadTools:
             result["repo_root"] = str(root)
         return result
 
-    def status(self, task: Task | None = None) -> dict:
+    def status(self, task: Task | None = None) -> dict[str, Any]:
         return self._with_repo_root(
             self._run_via_executor("git", self._git_args("status", "--short"), task=task)
         )
 
-    def log(self, task: Task | None = None) -> dict:
+    def log(self, task: Task | None = None) -> dict[str, Any]:
         return self._with_repo_root(
             self._run_via_executor("git", self._git_args("log", "--oneline", "-10"), task=task)
         )
 
-    def diff(self, task: Task | None = None) -> dict:
+    def diff(self, task: Task | None = None) -> dict[str, Any]:
         return self._with_repo_root(
             self._run_via_executor("git", self._git_args("diff", "--stat"), task=task)
         )
 
-    def list_workspace(self) -> dict:
+    def list_workspace(self) -> dict[str, Any]:
         """Lista el workspace via ``iterdir()`` + log explícito en Merkle.
 
         No usa sandbox porque ``iterdir()`` es Python puro (no IO de proceso).

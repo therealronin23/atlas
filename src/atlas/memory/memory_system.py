@@ -74,7 +74,7 @@ class FailureEntry:
     id: str
     error_type: str
     description: str
-    context: dict
+    context: dict[str, Any]
     solution: str
     tags: list[str]     = field(default_factory=list)
     occurred_at: str    = field(
@@ -85,7 +85,7 @@ class FailureEntry:
     # navegables sin acoplar ErrorRegistry al LessonStore.
     promoted_to_lesson_id: str | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -168,7 +168,7 @@ class PatternEntry:
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -307,7 +307,7 @@ class PerformanceSample:
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 

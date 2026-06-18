@@ -42,7 +42,7 @@ class GeneratedToolFailure:
     context: dict[str, Any]
     occurred_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 

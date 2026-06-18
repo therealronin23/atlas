@@ -1,7 +1,12 @@
 """
 Atlas Core — AST Guard
-Validacion estatica de codigo Python antes de cualquier ejecucion.
-Opera en microsegundos. No ejecuta nada. Primera linea de defensa del codigo.
+
+AVISO: Este modulo es una defensa en profundidad (LINT-level), NO un jail de
+seguridad. Bloquea patrones obvios de abuso en codigo no confiable pero NO
+proporciona contencion real contra un atacante determinado. La contencion real
+requiere aislamiento a nivel de OS (sandbox de proceso, seccomp, nspawn, etc.)
+que esta diferido en la hoja de ruta. No confiar en ASTGuard como unica barrera
+de seguridad en produccion.
 """
 
 from __future__ import annotations
@@ -31,20 +36,26 @@ RESTRICTED_IMPORTS: dict[str, frozenset[str]] = {
 BLOCKED_CALLS: frozenset[str] = frozenset({
     "eval", "exec", "compile", "__import__", "input",
     "breakpoint", "memoryview",
+    # Reflexion peligrosa: permite escalar a cualquier builtin/objeto
+    "getattr", "setattr", "vars",
 })
 
 BLOCKED_ATTRS: frozenset[str] = frozenset({
     "__class__", "__globals__", "__builtins__",
     "__code__", "__reduce__", "__subclasses__",
     "__mro__", "__base__", "__bases__",
+    "__import__", "__loader__", "__spec__",
 })
 
 # Patrones de ofuscacion (en el codigo fuente como string, pre-parse)
-OBFUSCATION_PATTERNS: list[re.Pattern] = [
+OBFUSCATION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"base64\.b64decode", re.IGNORECASE),
     re.compile(r"__builtins__\["),
     re.compile(r"chr\(\d+\)\s*\+"),        # chr() concatenation
     re.compile(r"\[::-1\]\s*\("),          # string reversal + call
+    # Concatenacion de strings para reconstruir '__import__' u otros dunders
+    re.compile(r"['\"]__\w*['\"\s]*\+"),   # '__imp' + 'ort__' style concat
+    re.compile(r"\+\s*['\"]__\w*['\"]"),   # trailing piece of dunder concat
 ]
 
 
@@ -120,6 +131,15 @@ class _ASTGuardVisitor(ast.NodeVisitor):
             )
         self.generic_visit(node)
 
+    # Nombres de identificadores con dunder
+    def visit_Name(self, node: ast.Name) -> None:
+        name = node.id
+        if name.startswith("__") and name.endswith("__") and name != "__name__":
+            self.violations.append(
+                f"Linea {node.lineno}: identificador dunder bloqueado '{name}'"
+            )
+        self.generic_visit(node)
+
     # Atributos
     def visit_Attribute(self, node: ast.Attribute) -> None:
         if node.attr in BLOCKED_ATTRS:
@@ -162,6 +182,9 @@ class ASTGuard:
     """
     Analiza codigo Python estaticamente antes de pasarlo al sandbox.
     No ejecuta nada. Opera en microsegundos.
+
+    AVISO: defensa en profundidad (LINT-level), NO un jail de seguridad.
+    Contencion real requiere aislamiento a nivel de OS (deferido).
     """
 
     def validate(self, code: str) -> GuardResult:

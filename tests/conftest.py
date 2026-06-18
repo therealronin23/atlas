@@ -9,6 +9,8 @@ sigue activa como segunda barrera.
 
 from __future__ import annotations
 
+from typing import Generator
+
 import pytest
 
 from atlas.core.git_env import _GIT_HOOK_ENV_VARS
@@ -90,9 +92,26 @@ def _no_real_dep_scout(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(Orchestrator, "maintenance_dep_scout", _stub)
 
 
-# Note: tried adding a singleton-reset autouse fixture (GovernanceL0._instance
-# = None at setup or teardown) to fix the 2-4 non-deterministic test_pending /
-# test_pipeline_d failures from test pollution. Both setup-only AND
-# teardown-only made things worse (more tests assume an initialized
-# Governance carried over). Real fix: per-test fixtures explicitly recreating
-# GovernanceL0 from the test's own tmp_path/governance.json. Deferred.
+@pytest.fixture(autouse=True)
+def _reset_governance_singleton() -> "Generator[None, None, None]":
+    """
+    Garantia por test: GovernanceL0._instance nunca se cuela de un test al
+    siguiente. El Orchestrator llama a GovernanceL0.initialize() en su
+    constructor; si _instance ya no es None, el singleton se reutiliza con la
+    config del test anterior — fuente de fallos no deterministas en
+    test_pending_integrity y test_orchestrator_pipeline_d.
+
+    La fixture limpia ANTES del test (setup) y DESPUES (teardown) para cubrir
+    ambas direcciones de contaminacion. Tests que ejercen GovernanceL0
+    directamente siguen pudiendo llamar a initialize() sin problema — la primera
+    llamada en cada test encontrara _instance == None.
+
+    Por que autouse y no solo en conftest de cada modulo: el singleton es
+    global; hay que limpiarlo en TODOS los tests, no solo los que usan
+    Orchestrator explicitamente.
+    """
+    import atlas.governance.governance_l0 as _g
+
+    _g.GovernanceL0._instance = None
+    yield
+    _g.GovernanceL0._instance = None

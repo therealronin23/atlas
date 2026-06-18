@@ -190,7 +190,7 @@ class TestLayeredIsolationSandbox:
         assert "AST Guard" in result.stderr
 
     def test_timeout_enforced(self, workspace):
-        from atlas.security.sandbox import LayeredIsolationSandbox, LayeredIsolationSandbox
+        from atlas.security.sandbox import LayeredIsolationSandbox
         from atlas.core.contracts import OperationalMode
         (workspace / "tmp").mkdir(exist_ok=True)
         sandbox = LayeredIsolationSandbox(workspace=workspace)
@@ -277,10 +277,17 @@ class TestSSRFBridge:
         assert bridge.check("https://custom-api.example.com/v1").allowed is True
 
     def test_subdomain_of_allowed(self):
+        """SEC-1: match exacto — 'openrouter.ai' en allowlist NO cubre 'api.openrouter.ai'.
+        Para permitir api.openrouter.ai hay que anadir el subdominio exacto."""
         from atlas.security.ssrf_bridge import SSRFBridge
-        bridge = SSRFBridge(extra_allowed={"openrouter.ai"})
+        # Subdominio exacto en allowlist → permitido
+        bridge = SSRFBridge(extra_allowed={"api.openrouter.ai"})
         d = bridge.check("https://api.openrouter.ai/v1/completions")
         assert d.allowed is True
+        # Solo el padre en allowlist → denegado (no wildcard subtree)
+        bridge2 = SSRFBridge(extra_allowed={"openrouter.ai"})
+        d2 = bridge2.check("https://api.openrouter.ai/v1/completions")
+        assert d2.allowed is False
 
 
 # ===========================================================================

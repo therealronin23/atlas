@@ -31,28 +31,30 @@ _log = logging.getLogger(__name__)
 # Optional deps — cargados sólo en modo real
 # ---------------------------------------------------------------------------
 
+np: Any = None
+sd: Any = None
 try:
-    import numpy as np
-    import sounddevice as sd          # pip install sounddevice
+    import numpy as _np
+    import sounddevice as _sd          # pip install sounddevice
+    np = _np
+    sd = _sd
     _AUDIO_OK = True
 except ImportError:
     _AUDIO_OK = False
-    np = None  # type: ignore[assignment]
-    sd = None  # type: ignore[assignment]
 
 try:
     from faster_whisper import WhisperModel   # pip install faster-whisper
     _WHISPER_OK = True
 except ImportError:
     _WHISPER_OK = False
-    WhisperModel = None  # type: ignore[assignment,misc]
+    WhisperModel = None
 
 try:
     from piper import PiperVoice              # pip install piper-tts
     _PIPER_OK = True
 except ImportError:
     _PIPER_OK = False
-    PiperVoice = None  # type: ignore[assignment,misc]
+    PiperVoice = None
 
 REAL_DEPS_AVAILABLE = _AUDIO_OK and _WHISPER_OK and _PIPER_OK
 

@@ -17,7 +17,7 @@ import fcntl
 import os
 import threading
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from atlas.core.contracts import Task, TaskStatus
 from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
@@ -66,7 +66,7 @@ class ApprovalManager:
 
     # --------------------------------------------------------------- consultas
 
-    def pending(self) -> list[dict]:
+    def pending(self) -> list[dict[str, Any]]:
         with self._lock:
             tasks = dict(self._pending)
         for task in self._tasks.load_all():
@@ -82,7 +82,7 @@ class ApprovalManager:
         *,
         abort: bool = False,
         approve_only: list[str] | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         lock_fd, lock_path = self._tasks.acquire_lock(task_id)
         if lock_fd is None:
             return {
@@ -107,7 +107,7 @@ class ApprovalManager:
         *,
         abort: bool = False,
         approve_only: list[str] | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         with self._lock:
             task = self._pending.pop(task_id, None)
 

@@ -235,7 +235,7 @@ def _provider_data() -> list[dict[str, Any]]:
 # Task filter from audit log
 # ---------------------------------------------------------------------------
 
-def _extract_tasks(records: list[dict]) -> list[dict]:
+def _extract_tasks(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Filtra y enriquece registros del Merkle log que representan tareas."""
     tasks = []
     for r in records:
@@ -397,7 +397,7 @@ async def providers_page(request: Request) -> HTMLResponse:
 # ---------------------------------------------------------------------------
 
 @app.get("/api/status")
-async def api_status() -> dict:
+async def api_status() -> dict[str, Any]:
     orch = _get_orch()
     st = orch.status()
     thermal = _thermal_data()
@@ -426,7 +426,7 @@ async def api_health() -> dict[str, Any]:
 @app.get("/api/observability")
 async def api_observability() -> dict[str, Any]:
     """ADR-024 telemetry + microledger + WAL snapshot."""
-    return _get_orch()._observability.snapshot()
+    return dict(_get_orch()._observability.snapshot())
 
 
 @app.get("/observability", response_class=HTMLResponse)
@@ -440,12 +440,12 @@ async def observability_page(request: Request) -> HTMLResponse:
 
 
 @app.get("/api/providers")
-async def api_providers() -> list[dict]:
+async def api_providers() -> list[dict[str, Any]]:
     return _provider_data()
 
 
 @app.get("/api/agentic/progress")
-async def api_agentic_progress() -> list[dict]:
+async def api_agentic_progress() -> list[dict[str, Any]]:
     """ADR-033 #4: últimas trazas de progreso del loop agéntico (más reciente
     primero). Vacío si no se ha emitido ninguna en este proceso."""
     _get_orch()  # asegura que el feed está cableado al bus

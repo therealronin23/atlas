@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from typing import Any
 from pathlib import Path
 
 
@@ -21,7 +22,7 @@ class ValidationReport:
     duration_s: float = 0.0
     errors: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "passed": self.passed,
             "pytest_exit": self.pytest_exit,

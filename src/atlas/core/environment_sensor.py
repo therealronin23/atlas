@@ -8,7 +8,10 @@ import hashlib
 import json
 import sys
 from dataclasses import asdict, dataclass
+from typing import Any
 from pathlib import Path
+
+from atlas import __version__
 
 
 @dataclass(frozen=True)
@@ -21,7 +24,7 @@ class EnvironmentFingerprint:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> EnvironmentFingerprint:
+    def from_dict(cls, data: dict[str, Any]) -> EnvironmentFingerprint:
         return cls(
             python_version=str(data.get("python_version", "")),
             atlas_version=str(data.get("atlas_version", "")),
@@ -40,7 +43,7 @@ def _hash_dependency_files(*paths: Path) -> str:
 
 def capture_fingerprint(
     *,
-    atlas_version: str = "0.9.0",
+    atlas_version: str = __version__,
     project_root: Path | None = None,
 ) -> EnvironmentFingerprint:
     root = project_root or Path.cwd()

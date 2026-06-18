@@ -29,6 +29,7 @@ from atlas.security.capabilities import (
     WriteCapability,
 )
 from atlas.security.sandbox import LayeredIsolationSandbox, SandboxResult
+from atlas.security.ssrf_bridge import SSRFBridge
 
 
 # ---------------------------------------------------------------------------
@@ -67,11 +68,15 @@ class AtlasExecutor:
         merkle: MerkleLogger,
         sandbox: LayeredIsolationSandbox,
         ast_guard: ASTGuard | None = None,
+        ssrf_bridge: SSRFBridge | None = None,
     ) -> None:
         self._issuer = issuer
         self._merkle = merkle
         self._sandbox = sandbox
         self._ast_guard = ast_guard or ASTGuard()
+        # Defensive re-check at the sink — reuses the issuer's bridge when not
+        # explicitly provided (avoids a second allowlist definition).
+        self._ssrf_bridge: SSRFBridge = ssrf_bridge or issuer.bridge
 
     @property
     def issuer(self) -> CapabilityIssuer:
@@ -166,6 +171,22 @@ class AtlasExecutor:
             raise ExecutorError(f"execute_network espera NetworkCapability, recibio {type(cap).__name__}")
         self._require_permission_cleared(cap)
 
+        # Defensive re-validation at the sink: the capability may have been
+        # constructed directly (without issuer) or the blocklist may have been
+        # updated after issue time.  Abort early — before any socket activity.
+        sink_decision = self._ssrf_bridge.check(cap.url)
+        if not sink_decision.allowed:
+            self._merkle.log(
+                action="network.ssrf_blocked",
+                agent=self.AGENT,
+                result="blocked",
+                risk_level="high",
+                payload={"url": cap.url, "reason": sink_decision.reason},
+            )
+            raise ExecutorError(
+                f"SSRF check bloqueado en el sink: {sink_decision.reason}"
+            )
+
         req_headers = dict(headers or {})
         req_headers.setdefault("User-Agent", "AtlasCore/0.3")
 
@@ -224,6 +245,23 @@ class AtlasExecutor:
         if not isinstance(cap, ExecCapability):
             raise ExecutorError(f"execute_exec espera ExecCapability, recibio {type(cap).__name__}")
         self._require_permission_cleared(cap)
+
+        # Defensive re-validation: check cap.command against the permission
+        # profile at the sink.  Catches capabilities constructed directly
+        # (bypassing the issuer) or profile changes since issue time.
+        full_cmd = f"{cap.command} {' '.join(cap.args)}" if cap.args else cap.command
+        sink_cmd_decision = self._issuer.profile.evaluate_shell_command(full_cmd)
+        if not sink_cmd_decision.allowed:
+            self._merkle.log(
+                action="exec.permission_denied",
+                agent=self.AGENT,
+                result="blocked",
+                risk_level="high",
+                payload={"command": full_cmd, "reason": sink_cmd_decision.reason},
+            )
+            raise ExecutorError(
+                f"Comando rechazado en re-validacion del sink: {sink_cmd_decision.reason}"
+            )
 
         # Si la capability transporta codigo Python, validar con AST Guard
         # antes de pasarlo a la sandbox (ultima linea de defensa).
