@@ -344,3 +344,84 @@ def test_key_store_file_permissions_are_600():
         key_file = path / "perm_test.bin"
         mode = oct(key_file.stat().st_mode)[-3:]
         assert mode == "600"
+
+
+# ---------------------------------------------------------------------------
+# SaltStore cableado en TransparencyGateway (OSM-007)
+# ---------------------------------------------------------------------------
+
+import json as _json
+
+from atlas.transparency.crypto_shred import SaltStore
+
+
+def _make_gateway_with_salt_store() -> tuple[TransparencyGateway, SaltStore]:
+    """Devuelve (gateway, salt_store) — el gateway tiene SaltStore cableado."""
+    subj_signer, _ = _make_ed25519()
+    op_signer, _ = _make_ed25519()
+    log_signer, _ = _make_ed25519()
+    log = TransparencyLog(signer=log_signer)
+    salt_store = SaltStore()
+    cosigner = ClientCosigner(subj_signer)
+    gw = TransparencyGateway(cosigner, op_signer, log, salt_store=salt_store)
+    return gw, salt_store
+
+
+def test_gateway_with_salt_store_populates_salted_hash():
+    """leaf_bytes contiene un salted_hash no-vacío y distinto del SHA-256 sin sal."""
+    payload = b"gdpr-sensitive prompt"
+    gw, _ = _make_gateway_with_salt_store()
+    api_resp, _ = gw.call(payload, _noop_call)
+    doc = _json.loads(api_resp.leaf_bytes)
+    salted = doc["salted_hash"]
+    plain_hash = hashlib.sha256(payload).hexdigest()
+    assert salted != ""
+    assert salted != plain_hash
+
+
+def test_gateway_salted_hash_erasure():
+    """Tras shred(seq), get_salt devuelve None (el hash no es recomputable)."""
+    payload = b"erase me"
+    gw, salt_store = _make_gateway_with_salt_store()
+    gw.call(payload, _noop_call)  # seq=0
+    # El salt existe antes de borrar
+    assert salt_store.get_salt(0) is not None
+    salt_store.shred(0)
+    assert salt_store.get_salt(0) is None
+
+
+def test_gateway_without_salt_store_salted_hash_empty():
+    """Sin SaltStore, salted_hash en el JSON del leaf es vacío."""
+    payload = b"no salt here"
+    gw, _, _, _ = _make_gateway()
+    api_resp, _ = gw.call(payload, _noop_call)
+    doc = _json.loads(api_resp.leaf_bytes)
+    assert doc["salted_hash"] == ""
+
+
+def test_gateway_payload_hash_unchanged_with_salt_store():
+    """payload_hash sigue siendo SHA-256(payload) incluso con SaltStore activo."""
+    payload = b"verify payload hash"
+    gw, _ = _make_gateway_with_salt_store()
+    api_resp, _ = gw.call(payload, _noop_call)
+    doc = _json.loads(api_resp.leaf_bytes)
+    assert doc["payload_hash"] == hashlib.sha256(payload).hexdigest()
+
+
+def test_gateway_verify_cosigned_request_still_valid_with_salt_store():
+    """verify_cosigned_request devuelve True cuando hay SaltStore."""
+    subj_signer, subj_verifier = _make_ed25519()
+    op_signer, _ = _make_ed25519()
+    log_signer, _ = _make_ed25519()
+    log = TransparencyLog(signer=log_signer)
+    salt_store = SaltStore()
+    cosigner = ClientCosigner(subj_signer)
+    gw = TransparencyGateway(cosigner, op_signer, log, salt_store=salt_store)
+
+    payload = b"cosign + salt"
+    api_resp, _ = gw.call(payload, _noop_call)
+
+    from atlas.transparency.client_cosign import CosignedRequest
+    doc = _json.loads(api_resp.leaf_bytes)
+    cosigned = CosignedRequest.from_json(doc["cosig"])
+    assert verify_cosigned_request(cosigned, payload, subj_verifier) is True
