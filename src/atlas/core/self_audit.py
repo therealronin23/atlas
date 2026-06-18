@@ -220,7 +220,8 @@ class SelfAuditRunner:
         if not self._state_file.exists():
             return None
         try:
-            return json.loads(self._state_file.read_text(encoding="utf-8"))
+            data = json.loads(self._state_file.read_text(encoding="utf-8"))
+            return dict(data) if isinstance(data, dict) else None
         except json.JSONDecodeError:
             return None
 

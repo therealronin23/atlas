@@ -44,7 +44,7 @@ class TaskPersistence:
     # ------------------------------------------------------------------ summary
 
     @staticmethod
-    def summary(task: Task) -> dict:
+    def summary(task: Task) -> dict[str, Any]:
         """Resumen consumido por CLI/Telegram/dashboard.
 
         ADR-033: si es un loop agéntico suspendido, expone las mutaciones
@@ -212,7 +212,7 @@ class TaskPersistence:
     # ------------------------------------------------------------------ codec
 
     @staticmethod
-    def serialize(task: Task) -> dict:
+    def serialize(task: Task) -> dict[str, Any]:
         data = task.to_dict()
         data["operational_mode"] = task.operational_mode.value
         data["metadata"] = task.metadata

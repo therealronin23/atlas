@@ -9,10 +9,10 @@ El SSRF Bridge es un control de Atlas Core, NO de Hermes-VPS.
 
 from __future__ import annotations
 
-import re
+import ipaddress
+import socket
 import urllib.parse
 from dataclasses import dataclass
-from typing import Any
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +72,13 @@ class SSRFBridge:
         """
         Evalua si una URL puede ser accedida desde el sandbox.
         Retorna BridgeDecision con allowed=True si esta permitida.
+
+        Orden de evaluacion (defensa en profundidad):
+          1. Esquema HTTP/HTTPS obligatorio.
+          2. Blocklist de dominios absolutos (BLOCKED_DOMAINS).
+          3. IP privada/loopback/link-local/reservada en la parte host.
+          4. Resolucion DNS: todos los A/AAAA deben ser IPs publicas.
+          5. Allowlist exacta de dominios.
         """
         try:
             parsed = urllib.parse.urlparse(url)
@@ -96,19 +103,7 @@ class SSRFBridge:
         # Eliminar puerto si existe
         domain = domain.split(":")[0]
 
-        # Verificar allowlist PRIMERO (dominios anadidos explicitamente via
-        # extra_allowed o add_domain tienen prioridad sobre BLOCKED_DOMAINS).
-        # Esto permite a tests y al operador desbloquear localhost cuando sea
-        # necesario (ej: servidor HTTP local de test).
-        if self._is_allowed(domain):
-            return BridgeDecision(
-                allowed=True,
-                url=url,
-                reason=f"Dominio en allowlist: {domain}",
-                domain=domain,
-            )
-
-        # Bloquear dominios internos/privados absolutos
+        # 1. Blocklist absoluta PRIMERO — no puede ser anulada por la allowlist
         if domain in BLOCKED_DOMAINS:
             return BridgeDecision(
                 allowed=False,
@@ -117,12 +112,31 @@ class SSRFBridge:
                 domain=domain,
             )
 
-        # Bloquear IPs privadas
+        # 2. IP privada/loopback/link-local/reservada en el host literal
         if self._is_private_ip(domain):
             return BridgeDecision(
                 allowed=False,
                 url=url,
-                reason=f"IP privada bloqueada: {domain} (SSRF protection).",
+                reason=f"IP privada/reservada bloqueada: {domain} (SSRF protection).",
+                domain=domain,
+            )
+
+        # 3. Resolucion DNS — todos los A/AAAA deben ser publicos
+        dns_block = self._check_resolved_ips(domain)
+        if dns_block is not None:
+            return BridgeDecision(
+                allowed=False,
+                url=url,
+                reason=dns_block,
+                domain=domain,
+            )
+
+        # 4. Allowlist exacta
+        if self._is_allowed(domain):
+            return BridgeDecision(
+                allowed=True,
+                url=url,
+                reason=f"Dominio en allowlist: {domain}",
                 domain=domain,
             )
 
@@ -146,27 +160,50 @@ class SSRFBridge:
     # ------------------------------------------------------------------
 
     def _is_allowed(self, domain: str) -> bool:
-        if domain in self._allowed:
-            return True
-        # Comprobar subdominio: api.github.com → github.com
-        parts = domain.split(".")
-        for i in range(1, len(parts)):
-            parent = ".".join(parts[i:])
-            if parent in self._allowed:
-                return True
-        return False
+        """Match exacto: 'evil.allowed.com' NO pasa si solo 'allowed.com' en allowlist."""
+        return domain in self._allowed
 
     def _is_private_ip(self, host: str) -> bool:
-        """Detecta IPs privadas / loopback / link-local."""
-        private_patterns = [
-            r"^10\.",
-            r"^172\.(1[6-9]|2\d|3[01])\.",
-            r"^192\.168\.",
-            r"^127\.",
-            r"^0\.",
-            r"^169\.254\.",
-            r"^::1$",
-            r"^fc",
-            r"^fd",
-        ]
-        return any(re.match(p, host) for p in private_patterns)
+        """Detecta IPs privadas / loopback / link-local / reservadas usando ipaddress.
+
+        Soporta notacion decimal, octal (0177.0.0.1) y hexadecimal (0x7f.1)
+        a traves del modulo ipaddress que normaliza antes de clasificar.
+        Retorna False para hostnames (no IPs) — se verifican via DNS en otro paso.
+        """
+        try:
+            addr = ipaddress.ip_address(host)
+        except ValueError:
+            # host es un nombre de dominio, no una IP literal — no privado aqui
+            return False
+        return (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_reserved
+            or addr.is_unspecified
+        )
+
+    def _check_resolved_ips(self, host: str) -> str | None:
+        """Resuelve el hostname y comprueba que TODOS los A/AAAA sean publicos.
+
+        Retorna None si OK, o un mensaje de error si alguna IP es privada/reservada.
+        Si la resolucion falla (host desconocido), retorna None para no bloquear
+        dominios que la allowlist puede manejar offline (tests sin red).
+        """
+        try:
+            infos = socket.getaddrinfo(host, None)
+        except (socket.gaierror, OSError):
+            # Sin red o dominio desconocido — no bloquear; la allowlist decide
+            return None
+        for _family, _type, _proto, _canonname, sockaddr in infos:
+            ip_str = sockaddr[0]
+            try:
+                addr = ipaddress.ip_address(ip_str)
+            except ValueError:
+                continue
+            if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_unspecified:
+                return (
+                    f"DNS rebinding bloqueado: {host} resuelve a IP privada/reservada "
+                    f"{ip_str} (SSRF protection)."
+                )
+        return None

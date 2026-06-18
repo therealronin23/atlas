@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict
-from typing import Callable
+from typing import Any, Callable
 
 from atlas.core.contracts import Event, EventType
 
@@ -32,7 +32,7 @@ class EventBus:
     def publish_type(
         self,
         event_type: EventType,
-        payload: dict | None = None,
+        payload: dict[str, Any] | None = None,
         task_id: str | None = None,
         producer: str = "atlas_core",
     ) -> Event:

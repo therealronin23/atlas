@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from atlas.core.contracts import TaskSource
 from atlas.core.orchestrator import Orchestrator
+from atlas import __version__
 
 if TYPE_CHECKING:
     from atlas.memory.block_memory import BlockMemory
@@ -49,9 +50,9 @@ def _acquire_writer_lock_or_die(orch: Orchestrator) -> "MerkleWriterLock":
 
 
 @click.group()
-@click.version_option("0.9.0", prog_name="atlas")
+@click.version_option(__version__, prog_name="atlas")
 def cli() -> None:
-    """Atlas Core v0.6 — Sistema operativo personal de inteligencia."""
+    """Atlas Core — Sistema operativo personal de inteligencia."""
 
 
 @cli.command()
@@ -60,7 +61,7 @@ def status() -> None:
     orch = get_orchestrator()
     st = orch.status()
 
-    console.print("\n[bold cyan]Atlas Core v0.6[/bold cyan]")
+    console.print(f"\n[bold cyan]Atlas Core v{__version__}[/bold cyan]")
     console.print(f"  Workspace:       {st.workspace}")
     console.print(f"  Version:         {st.version}")
     console.print(f"  Uptime:          {st.uptime_seconds}s")
@@ -78,7 +79,7 @@ def status() -> None:
 @click.argument("intent", nargs=-1, required=True)
 @click.option("--priority", "-p", default=3, type=click.IntRange(1, 5))
 @click.option("--source", default="cli", type=click.Choice(["cli", "api", "internal"]))
-def task(intent: tuple, priority: int, source: str) -> None:
+def task(intent: tuple[str, ...], priority: int, source: str) -> None:
     """Convierte una intencion en una tarea y la procesa."""
     intent_str = " ".join(intent)
     src = TaskSource(source)

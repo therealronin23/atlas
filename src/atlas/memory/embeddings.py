@@ -195,7 +195,7 @@ class LiteLLMEmbedder:
             if isinstance(item, dict):
                 out.append(list(item["embedding"]))
             else:
-                out.append(list(item.embedding))  # type: ignore[attr-defined]
+                out.append(list(item.embedding))
         if len(out) != len(texts):
             raise RuntimeError(
                 f"litellm.embedding devolvio {len(out)} vectores para {len(texts)} inputs"

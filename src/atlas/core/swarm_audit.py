@@ -35,7 +35,7 @@ def reverify_swarm_proposals(
     rng_seed: int = 0,
     atlas_home: Path | None = None,
     runner_factory: Callable[[Path, Path], Any] | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Re-ejecuta la suite completa sobre una muestra de propuestas swarm.
 
     Propuestas origin="swarm" con status proposed/validated ya pasaron el
@@ -44,7 +44,7 @@ def reverify_swarm_proposals(
 
     El ATLAS_HOME usado es aislado (tmp) para no contaminar el workspace vivo.
     """
-    empty: dict = {
+    empty: dict[str, Any] = {
         "sampled": 0,
         "reverified": 0,
         "divergences": 0,
@@ -77,14 +77,14 @@ def reverify_swarm_proposals(
     else:
         home = atlas_home
 
-    records: list[dict] = []
+    records: list[dict[str, Any]] = []
     factory = runner_factory or _default_runner
 
     try:
         for p in sample:
             wt_path = getattr(p, "worktree_path", None)
             evidence = getattr(p, "evidence", {}) or {}
-            base: dict = {
+            base: dict[str, Any] = {
                 "proposal_id": p.id,
                 "signature": evidence.get("signature"),
                 "cheap_verdict": "pass",

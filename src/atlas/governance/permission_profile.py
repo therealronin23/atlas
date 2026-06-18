@@ -265,11 +265,11 @@ class PermissionProfile:
 
     @property
     def telegram_config(self) -> dict[str, Any]:
-        return self._cfg.get("telegram", {})
+        return dict(self._cfg.get("telegram", {}))
 
     @property
     def shell_allowlist(self) -> list[str]:
-        return self._cfg.get("shell_allowlist", [])
+        return list(self._cfg.get("shell_allowlist", []))
 
     # ------------------------------------------------------------------
     # Privado

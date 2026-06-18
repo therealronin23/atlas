@@ -376,7 +376,7 @@ def _parse_classification_json(text: str) -> tuple[str, float, str] | None:
         if confidence is None:
             continue
         try:
-            conf = float(confidence)  # type: ignore[arg-type]
+            conf = float(confidence)
         except (TypeError, ValueError):
             continue
         conf = max(0.0, min(conf, 1.0))

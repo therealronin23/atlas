@@ -43,18 +43,19 @@ def _extract_fixed_version(vuln: dict[str, Any]) -> str | None:
         for rng in affected.get("ranges", []):
             for event in rng.get("events", []):
                 if "fixed" in event:
-                    return event["fixed"]
+                    return str(event["fixed"])
     return None
 
 
 def _extract_severity(vuln: dict[str, Any]) -> str | None:
     severities = vuln.get("severity", [])
     if severities:
-        return severities[0].get("score")
+        score = severities[0].get("score")
+        return str(score) if score is not None else None
     return None
 
 
-def _version_in_range(installed: str, ranges: list[dict]) -> bool:
+def _version_in_range(installed: str, ranges: list[dict[str, Any]]) -> bool:
     """Devuelve True si installed cae dentro de algún rango OSV afectado.
 
     Formato OSV: {"type": "SEMVER"|"ECOSYSTEM"|"GIT", "events": [{"introduced":"X"},{"fixed":"Y"}]}

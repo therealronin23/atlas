@@ -21,7 +21,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
@@ -57,7 +57,7 @@ class MemoryBlock:
     description: str = ""
     updated_at: str = field(default_factory=_now_iso)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @property
@@ -107,7 +107,7 @@ class BlockMemory:
         payload = {"blocks": {label: b.to_dict() for label, b in self._blocks.items()}}
         self._file.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    def _log(self, action: str, label: str, extra: dict | None = None) -> None:
+    def _log(self, action: str, label: str, extra: dict[str, Any] | None = None) -> None:
         if self._merkle is None:
             return
         payload = {"label": label}

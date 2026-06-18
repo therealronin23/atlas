@@ -385,7 +385,7 @@ class BrowserTool:
     @property
     def current_url(self) -> str:
         if self._page is not None:
-            return self._page.url
+            return str(self._page.url)
         return ""
 
     @property

@@ -8,8 +8,11 @@ un snapshot. Si algo sale mal, el usuario puede hacer Undo real a nivel de
 filesystem/VM, no solo git revert.
 
 Dos capas:
-  NORMAL tier (subprocess aislado): Subprocess aislado con CPU/RAM limitados.
-                      Sin acceso de red. Solo workspace. 512MB RAM max.
+  NORMAL tier (subprocess aislado): Subprocess aislado con CPU/RAM limitados
+                      via resource.setrlimit (aplicado en child). El acceso de
+                      red NO esta bloqueado a nivel OS (no hay netns/seccomp);
+                      la contencion de red es aspiracional y requiere un jail
+                      a nivel de OS (futuro). Solo puede escribir en workspace.
   OMEGA (alto riesgo): snapshot del workspace antes de ejecutar para permitir
                        undo fisico (restore_snapshot). La ejecucion corre en el
                        mismo tier NORMAL endurecido; el aislamiento por VM real
@@ -45,7 +48,9 @@ class SandboxResult:
 class LayeredIsolationSandbox:
     """
     Sandbox de ejecucion de codigo por capas.
-    NORMAL tier: subprocess aislado con limites de recursos.
+    NORMAL tier: subprocess aislado con limites de recursos (CPU/RAM via
+    resource.setrlimit). La contención de red a nivel OS (netns/seccomp)
+    es aspiracional — requiere un jail externo (futuro).
     OMEGA: snapshot local del workspace (tarfile) antes de ejecutar + restore.
     """
 
@@ -288,7 +293,7 @@ class LayeredIsolationSandbox:
             tar.extractall(str(dest), filter="data")
         return True
 
-    def _safe_env(self) -> dict:
+    def _safe_env(self) -> dict[str, str]:
         """Entorno minimo seguro para el proceso hijo."""
         return {
             "PATH": "/usr/local/bin:/usr/bin:/bin",

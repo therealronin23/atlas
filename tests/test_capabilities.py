@@ -461,3 +461,74 @@ class TestExecutorTypeGuards:
         cap = issuer.issue_write(workspace / "tmp" / "x")
         with pytest.raises(ExecutorError):
             executor.execute_write(cap, "string en vez de bytes")  # type: ignore[arg-type]
+
+
+# ===========================================================================
+# SEC-2: re-validacion defensiva en el sink
+# ===========================================================================
+
+
+class TestSinkSSRFRevalidation:
+    """NetworkCapability construida directamente (sin issuer) con URL SSRF
+    debe ser bloqueada por el chequeo defensivo dentro de execute_network."""
+
+    def test_link_local_metadata_blocked_at_sink(
+        self, merkle: MerkleLogger, sandbox: LayeredIsolationSandbox, workspace: Path
+    ) -> None:
+        """169.254.169.254 (AWS metadata) bloqueada aunque la cap se construya
+        directamente eludiendo el issuer."""
+        # La capability se construye a mano: NO pasa por CapabilityIssuer.
+        cap = NetworkCapability(
+            url="http://169.254.169.254/latest/meta-data/",
+            method="GET",
+            domain="169.254.169.254",
+        )
+        perms_file = workspace / "config" / "permissions.yaml"
+        perms_file.write_text(
+            "workspace:\n  auto_write:\n    - tmp/\n  confirm_write: []\n"
+            "  read_only: []\n  read_extended: []\n"
+            "absolute_blocks: []\nsystem_read_allowed: []\n"
+            "telegram:\n  authorized_chat_ids: []\n"
+            "shell_allowlist: []\n"
+        )
+        profile = PermissionProfile(perms_file, workspace)
+        # El issuer propio usa SSRFBridge con blocklist por defecto.
+        issuer_local = CapabilityIssuer(profile, SSRFBridge())
+        exec_local = AtlasExecutor(issuer_local, merkle, sandbox)
+
+        with pytest.raises(ExecutorError, match="SSRF check bloqueado"):
+            exec_local.execute_network(cap)
+
+
+class TestSinkExecRevalidation:
+    """ExecCapability construida directamente con comando fuera del perfil
+    debe ser rechazada en execute_exec por la re-validacion del sink."""
+
+    def test_out_of_profile_command_blocked_at_sink(
+        self, merkle: MerkleLogger, sandbox: LayeredIsolationSandbox, workspace: Path
+    ) -> None:
+        """rm no esta en la shell_allowlist del fixture; una cap construida
+        a mano con ese comando debe fallar en la re-validacion."""
+        # permissions.yaml solo permite echo/cat/ls (como en el fixture base)
+        perms_file = workspace / "config" / "permissions.yaml"
+        perms_file.write_text(
+            "workspace:\n  auto_write:\n    - tmp/\n  confirm_write: []\n"
+            "  read_only: []\n  read_extended: []\n"
+            "absolute_blocks: []\nsystem_read_allowed: []\n"
+            "telegram:\n  authorized_chat_ids: []\n"
+            "shell_allowlist:\n  - echo\n  - ls\n"
+        )
+        profile = PermissionProfile(perms_file, workspace)
+        issuer_local = CapabilityIssuer(profile, SSRFBridge())
+        exec_local = AtlasExecutor(issuer_local, merkle, sandbox)
+
+        # Construida directamente — bypasea issue_exec y su validacion
+        cap = ExecCapability(
+            command="rm",
+            args=("-rf", "/tmp/evil"),
+            working_dir=workspace / "tmp",
+            timeout_s=5,
+            level=PermissionLevel.AUTO,
+        )
+        with pytest.raises(ExecutorError, match="re-validacion del sink"):
+            exec_local.execute_exec(cap)

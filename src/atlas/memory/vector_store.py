@@ -277,7 +277,7 @@ class KuzuVectorStore:
         if node_type not in ("Pattern", "Failure", "Evidence"):
             raise VectorStoreError(f"node_type invalido: {node_type}")
         result = self._conn.execute(f"MATCH (n:{node_type}) RETURN count(n)")
-        rows: list[Any] = list(result)  # type: ignore[arg-type]
+        rows: list[Any] = list(result)
         return int(rows[0][0]) if rows else 0
 
     def get_pattern(self, pattern_id: str) -> dict[str, Any] | None:
@@ -285,7 +285,7 @@ class KuzuVectorStore:
             "MATCH (p:Pattern {id: $id}) RETURN p.id, p.text, p.tags, p.created_at",
             {"id": pattern_id},
         )
-        rows: list[Any] = list(result)  # type: ignore[arg-type]
+        rows: list[Any] = list(result)
         if not rows:
             return None
         pid, text, tags, ts = rows[0]
@@ -362,7 +362,7 @@ class KuzuVectorStore:
             "MATCH (m:AtlasMeta {key: $k}) RETURN m.value",
             {"k": key},
         )
-        rows: list[Any] = list(result)  # type: ignore[arg-type]
+        rows: list[Any] = list(result)
         return str(rows[0][0]) if rows else None
 
     def _exec_ignore_exists(self, cypher: str) -> None:
