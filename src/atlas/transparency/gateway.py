@@ -41,6 +41,7 @@ from atlas.transparency.client_cosign import (
 from atlas.transparency.log import TransparencyLog
 
 if TYPE_CHECKING:
+    from atlas.security.shadow_model import ShadowRouter, ShadowModel
     from atlas.transparency.crypto_shred import SaltStore
 
 
@@ -80,12 +81,16 @@ class TransparencyGateway:
         log: TransparencyLog,
         *,
         session_id: str = "",
+        shadow_router: "ShadowRouter | None" = None,
+        shadow_model: "ShadowModel | None" = None,
         salt_store: "SaltStore | None" = None,
     ) -> None:
         self._cosigner = subject_cosigner
         self._op_signer = operator_signer
         self._log = log
         self._session_id = session_id
+        self._shadow_router = shadow_router
+        self._shadow_model = shadow_model
         self._salt_store = salt_store
         # last_tree_size para consistency proof (0 = log vacío antes de esta sesión)
         self._last_tree_size: int = log.tree_size
@@ -104,6 +109,7 @@ class TransparencyGateway:
         decision: str = "allow",
         cause: str = "gateway.auto",
         subject_id: str = "",
+        confidence: float = 0.0,
     ) -> tuple[APIResponse, GatewayMetrics]:
         """Ejecuta call_fn(payload) envuelto en el protocolo completo.
 
@@ -119,6 +125,28 @@ class TransparencyGateway:
             (APIResponse, GatewayMetrics)
         """
         t0 = time.perf_counter()
+
+        # Shadow routing (opt-in)
+        effective_call_fn = call_fn
+        effective_decision = decision
+        effective_cause = cause
+
+        if self._shadow_router is not None:
+            from atlas.security.shadow_model import ShadowMode, ShadowModel
+            routing = self._shadow_router.route(
+                session_id=self._session_id or "gateway",
+                confidence=confidence,
+            )
+            if routing.mode != ShadowMode.NORMAL:
+                effective_decision = routing.mode.value
+                effective_cause = routing.cause
+                _sm = self._shadow_model if self._shadow_model is not None else ShadowModel()
+                _mode = routing.mode
+
+                def _shadow_call(p: bytes) -> bytes:
+                    return _sm.respond(_mode, p.decode("utf-8", errors="replace"), sleep=lambda _: None)
+
+                effective_call_fn = _shadow_call
 
         # ── Pre: firmar request + commit inspection ──────────────────────
         cosigned, sh = self._cosigner.sign_request_with_salt(payload)
@@ -140,8 +168,8 @@ class TransparencyGateway:
             seq=cosigned.seq,
             payload_hash=cosigned.payload_hash,
             cosig=cosigned.to_json(),
-            decision=decision,
-            cause=cause,
+            decision=effective_decision,
+            cause=effective_cause,
             timestamp_ns=now_ns,
             model_version_hash=mvh,
             salted_hash=sh,
@@ -152,7 +180,7 @@ class TransparencyGateway:
         t1 = time.perf_counter()
 
         # ── Llamada al modelo ─────────────────────────────────────────────
-        result = call_fn(payload)
+        result = effective_call_fn(payload)
 
         t2 = time.perf_counter()
 
@@ -161,8 +189,8 @@ class TransparencyGateway:
         out_record = OutputInspectionRecord(
             seq=cosigned.seq,
             output_hash=output_hash,
-            decision=decision,
-            cause=cause,
+            decision=effective_decision,
+            cause=effective_cause,
             timestamp_ns=time.time_ns(),
         )
         leaf_index_out = self._log.append(out_record.to_bytes())

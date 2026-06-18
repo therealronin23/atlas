@@ -425,3 +425,82 @@ def test_gateway_verify_cosigned_request_still_valid_with_salt_store():
     doc = _json.loads(api_resp.leaf_bytes)
     cosigned = CosignedRequest.from_json(doc["cosig"])
     assert verify_cosigned_request(cosigned, payload, subj_verifier) is True
+
+
+# ---------------------------------------------------------------------------
+# Shadow routing integrado en TransparencyGateway (OSM-042)
+# ---------------------------------------------------------------------------
+
+from atlas.security.shadow_model import ShadowRouter, ShadowModel, SessionStateStore
+
+
+def _make_gateway_with_shadow(
+    threshold_passive: float = 0.65,
+    threshold_active: float = 0.88,
+) -> tuple[TransparencyGateway, ShadowRouter]:
+    """Devuelve (gateway, router) con shadow routing activo y jitter neutralizado."""
+    subj_signer, _ = _make_ed25519()
+    op_signer, _ = _make_ed25519()
+    log_signer, _ = _make_ed25519()
+    log = TransparencyLog(signer=log_signer)
+    cosigner = ClientCosigner(subj_signer)
+    store = SessionStateStore()
+    router = ShadowRouter(store, threshold_passive=threshold_passive, threshold_active=threshold_active)
+    # LatencyProfile con cero ms para neutralizar el jitter en tests.
+    from atlas.security.shadow_model import LatencyProfile
+    sm = ShadowModel(latency=LatencyProfile(p50_ms=0.0, p95_ms=0.0, p99_ms=0.0))
+    gw = TransparencyGateway(
+        cosigner, op_signer, log,
+        session_id="test-session",
+        shadow_router=router,
+        shadow_model=sm,
+    )
+    return gw, router
+
+
+def test_gateway_shadow_normal_uses_original_call_fn():
+    """confidence=0.0 → NORMAL → decision=="allow" y result viene de call_fn original."""
+    gw, _ = _make_gateway_with_shadow()
+
+    called = []
+
+    def tracked_call(payload: bytes) -> bytes:
+        called.append(payload)
+        return b"original-response"
+
+    api_resp, _ = gw.call(b"prompt", tracked_call, confidence=0.0)
+    doc = _json.loads(api_resp.leaf_bytes)
+
+    assert doc["decision"] == "allow"
+    assert api_resp.result == b"original-response"
+    assert called, "call_fn original no fue invocado"
+
+
+def test_gateway_shadow_passive_mode_changes_decision():
+    """confidence >= threshold_passive pero < threshold_active → decision=="shadow_passive"."""
+    gw, _ = _make_gateway_with_shadow(threshold_passive=0.65, threshold_active=0.88)
+
+    api_resp, _ = gw.call(b"prompt", _noop_call, confidence=0.75)
+    doc = _json.loads(api_resp.leaf_bytes)
+
+    assert doc["decision"] == "shadow_passive"
+
+
+def test_gateway_shadow_active_mode_changes_decision():
+    """confidence >= threshold_active → decision=="shadow_active"."""
+    gw, _ = _make_gateway_with_shadow(threshold_passive=0.65, threshold_active=0.88)
+
+    api_resp, _ = gw.call(b"prompt", _noop_call, confidence=0.95)
+    doc = _json.loads(api_resp.leaf_bytes)
+
+    assert doc["decision"] == "shadow_active"
+
+
+def test_gateway_without_shadow_router_unchanged():
+    """Sin shadow_router, decision=="allow" independientemente de confidence."""
+    gw, _, _, _ = _make_gateway()
+
+    api_resp, _ = gw.call(b"prompt", _noop_call, confidence=0.99)
+    doc = _json.loads(api_resp.leaf_bytes)
+
+    assert doc["decision"] == "allow"
