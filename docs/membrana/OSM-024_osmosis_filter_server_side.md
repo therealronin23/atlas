@@ -1,6 +1,6 @@
 # OSM-024 — Osmosis Filter: capa de cumplimiento server-side obligatoria
 
-Fecha: 2026-06-17 · Estado: **Difusión** (en desarrollo en la membrana; ver [[OSM-000]]) ·
+Fecha: 2026-06-17 · Estado: **En membrana** (gateway implementado; enforcement no-bypass = política pendiente) ·
 Origen: `idea avance 3.md` · Contexto: ADR-051 (Compliance Gateway), ADR-053 (completitud),
 ADR-054 (defensa en profundidad), `src/atlas/transparency/`.
 

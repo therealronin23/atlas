@@ -117,11 +117,11 @@ mecanismos. Desarrolladas (cada una en su archivo), no ya en Suspensión.
 
 | OSM | Pieza | Destino (capa/módulo) | Viabilidad | Estado |
 |---|---|---|---|---|
-| [024](OSM-024_osmosis_filter_server_side.md) | Osmosis Filter: capa de cumplimiento server-side obligatoria | gateway / transparency | media (incentivo de adopción) | Difusión |
-| [025](OSM-025_certificado_device_bound.md) | Certificado device-bound + firma automática por request | transparency / identidad | media (corrige WebAuthn→device-key) | Difusión |
-| [026](OSM-026_doble_copia_merkle.md) | Doble copia del log Merkle (proveedor + usuario) | transparency / witness | alta | Difusión |
-| [027](OSM-027_bucle_apelacion_falsos_positivos.md) | Bucle de apelación de falsos positivos con aprendizaje | governance / immunity | alta | Difusión |
-| [028](OSM-028_inspeccion_por_causa_metadata_first.md) | Inspección por causa: metadata-monitor-first | Capa 1 / inspector | media | Difusión |
+| [024](OSM-024_osmosis_filter_server_side.md) | Osmosis Filter: capa de cumplimiento server-side obligatoria | gateway / transparency | media (incentivo de adopción) | **En membrana** (gateway implementado; enforcement no-bypass = política de producto pendiente) |
+| [025](OSM-025_certificado_device_bound.md) | Certificado device-bound + firma automática por request | transparency / identidad | media (Layer 1 deployada; Layer 2 TPM deferred) | **En membrana** (Layer 1 Absorbida en ADR-053; Layer 2 diseño completo, cero código) |
+| [026](OSM-026_doble_copia_merkle.md) | Doble copia del log Merkle (proveedor + usuario) | transparency / witness | alta | **Absorbida** (2026-06-18; nodos witness = infra pendiente) |
+| [027](OSM-027_bucle_apelacion_falsos_positivos.md) | Bucle de apelación de falsos positivos con aprendizaje | governance / immunity | alta | Difusión (LessonStore + PDP existen; cableado del bucle appeal pendiente) |
+| [028](OSM-028_inspeccion_por_causa_metadata_first.md) | Inspección por causa: metadata-monitor-first | Capa 1 / inspector | media | **En membrana** (`AttestedInspector` + `cause=` field en gateway implementados; monitor metadata-first completo pendiente) |
 | [029](OSM-029_nucleo_rendimiento_rust.md) | Núcleo de rendimiento en Rust (Merkle + embeddings) | transparency | baja (coste de 2º lenguaje; prematura sin perfil) | Difusión |
 | [030](OSM-030_posicionamiento_escudo_legal.md) | Posicionamiento de escudo legal + encaje EU AI Act | narrativa / carta | media (hipótesis jurídica sin abogado) | Difusión |
 
@@ -218,8 +218,21 @@ regulatoria. Empareja con [[OSM-027]] (bucle de apelación, ya tiene interacció
 
 | OSM | Pieza | Destino (capa/módulo) | Viabilidad | Estado |
 |---|---|---|---|---|
-| capa 2 (integrada) | Inspección simétrica de output: `OutputInspectionRecord` committed antes de devolver el resultado; checks 5+6 en `SubjectLedger.ingest()`; Session G en demo | `client_cosign.py` / transparency | alta | **Absorbida** (implementada 2026-06-17; 1523 tests) |
+| capa 2 (integrada) | Inspección simétrica de output: `OutputInspectionRecord` committed antes de devolver el resultado; checks 5+6 en `SubjectLedger.ingest()`; Session G en demo | `client_cosign.py` / transparency | alta | **Absorbida** (implementada 2026-06-17; ADR-053) |
 | [042](OSM-042_shadow_model_active_defense.md) | Shadow model: defensa activa con honeypot pasivo/activo + red team dual-use. Detectado ataque → modelo sombra (Haiku) sustituye al real sin que el atacante lo note. Mismo componente como atacante sintético (red team periódico). | `src/atlas/security/shadow_model.py` + `red_team.py` | media-alta | **Difusión** (diseño 2026-06-17; implementación pendiente) |
+
+### Sesión 2026-06-18 — promociones verificadas contra código real
+
+Verificación previa: `PYTHONPATH=src python3 -c "import X"` para cada módulo antes de
+promocionar. Ninguna promoción se basa solo en docs.
+
+| OSM | Pieza | Código real | Promoción | Nota |
+|---|---|---|---|---|
+| [007](OSM-007_privacy_dp_log_crypto_shredding.md) | Crypto-shredding GDPR Art. 17 | `transparency/crypto_shred.py` → `SaltStore`, `InspectionRecord.salted_hash` wired | `En membrana` → **Absorbida** → ADR-053 | GDPR GAP-1 cerrado. `payload_hash` permanente (binding); `salted_hash` erasable. 12 tests en `test_crypto_shred.py`. |
+| [026](OSM-026_doble_copia_merkle.md) | Twin log replicas: proveedor + sujeto | `transparency/log.py` → `path=` persistente + fsync; `transparency/gossip.py` → `HttpWitnessTransport` + `has_quorum(min_witnesses=2)` Ed25519-verified | `Difusión` → **Absorbida** | Límite honesto: nodos witness independientes = infra de ecosistema, no código. Split-view parcialmente mitigado. Paper §6.1. |
+| [040](OSM-040_protocolo_red_race_conditions.md) | Semántica de red: retry vs. omisión atribuible | `transparency/client_cosign.py` → `attributable_omissions(receipted, observed)` + `OperatorReceipt` | `Difusión` → **Absorbida** → ADR-053 | Session F del demo. `tests/test_network_reconciliation.py`. Paper §6.8. |
+| [042](OSM-042_shadow_model_active_defense.md) | Shadow model + honeypot cableado al gateway | `security/shadow_model.py` (`ShadowRouter`, `ShadowModel`, `ShadowMode`); `TransparencyGateway.__init__` acepta `shadow_router` + `shadow_model` | `Difusión` → **Absorbida** | Session H del demo. Tests de integración en `test_transparency_gateway.py`. |
+| [054](OSM-054_behavioral_drift_detection.md) | Behavioral drift detection: 3 ángulos (delta, consistency, shadow) | `security/behavioral.py` → `BehavioralMonitor`, `BehavioralDelta`, `shadow_divergence`, `detect_covert_change` | `Difusión` → **En membrana** | Código existe y funciona; problema de investigación abierto (no detection guarantee). Paper §6.11 + Session J demo. No promover a Absorbida hasta que paper cierre los límites formalmente. |
 
 ---
 

@@ -1,7 +1,8 @@
 # OSM-026 — Doble copia del log Merkle (proveedor + usuario)
 
-Fecha: 2026-06-17 · Estado: **Difusión** (ver [[OSM-000]]) · Origen: `idea avance 3.md` ·
+Fecha: 2026-06-17 · Estado: **Absorbida** (2026-06-18) · Origen: `idea avance 3.md` ·
 Contexto: ADR-053, `src/atlas/transparency/witness.py`, `log.py`, [[OSM-025]].
+Límite honesto: nodos witness independientes = infra de ecosistema pendiente. Paper §6.1.
 
 ---
 
