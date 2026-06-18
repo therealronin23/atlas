@@ -1,6 +1,6 @@
 # OSM-007 — Privacidad del log: crypto-shredding (Merkle inmutable vs. GDPR Art. 17)
 
-Fecha: 2026-06-17 · Estado: **En membrana** (núcleo implementado 2026-06-17;
+Fecha: 2026-06-17 · Estado: **Absorbida** → ADR-053 (2026-06-18) ·
 ver [[OSM-000]]) · Origen: registro OSM-000 (chats 1-2) + auditoría Gemini 2026-06-17 ·
 Contexto: ADR-053, `src/atlas/transparency/crypto_shred.py` (nuevo),
 `src/atlas/transparency/client_cosign.py` (`InspectionRecord.salted_hash`),

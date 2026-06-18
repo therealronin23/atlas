@@ -1,6 +1,6 @@
 # OSM-040 — Semántica de red del protocolo: race conditions, retry vs. omisión
 
-Fecha: 2026-06-17 · Estado: **Difusión** (nueva, del barrido Gemini; ver [[OSM-000]]) ·
+Fecha: 2026-06-17 · Estado: **Absorbida** → ADR-053 (2026-06-18) ·
 Origen: auditoría Gemini 2026-06-17 (punto válido tras contraste) · Contexto: ADR-053,
 `src/atlas/transparency/client_cosign.py` (`detect_omission`), `docs/demo/completeness_demo.py`,
 paper §3.3.

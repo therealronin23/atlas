@@ -1,6 +1,6 @@
 # OSM-054 — Behavioral Drift Detection: Tres ángulos de observación + investigación
 
-Fecha: 2026-06-18 · Estado: **Difusión** (investigación en curso) ·
+Fecha: 2026-06-18 · Estado: **En membrana** (código implementado; investigación abierta) ·
 Origen: Respuesta a 6.10 paper (post-inspection capability masking) ·
 Contexto: `src/atlas/security/behavioral.py`, paper §6.11, Session J demo ·
 Referencias: [[OSM-042]] (shadow model), [[OSM-028]] (causa de inspección).

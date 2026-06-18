@@ -1,6 +1,6 @@
 # OSM-042 — Shadow Model: defensa activa + honeypot pasivo/activo + red team dual-use
 
-Fecha: 2026-06-17 · Estado: **Difusión** (diseño completo; implementación pendiente) ·
+Fecha: 2026-06-17 · Estado: **Absorbida** (2026-06-18) ·
 Origen: sesión 2026-06-17 — extensión natural de la capa 2 (output inspection) y de
 OSM-028 (inspección por causa) · Contexto: `src/atlas/security/` (nuevo módulo),
 `src/atlas/transparency/client_cosign.py` (`InspectionRecord.decision`),

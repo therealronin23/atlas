@@ -1,6 +1,6 @@
 # OSM-025 — Certificado ligado al dispositivo + firma automática por request
 
-Fecha: 2026-06-17 · Estado: **Difusión** (ver [[OSM-000]]) · Origen: `idea avance 3.md` ·
+Fecha: 2026-06-17 · Estado: **En membrana** (Layer 1 Absorbida ADR-053; Layer 2 TPM diseño, cero código) · Origen: `idea avance 3.md` ·
 Contexto: ADR-053 (completitud + co-firma), `src/atlas/transparency/client_cosign.py`,
 [[OSM-024]] (Osmosis), [[OSM-026]] (doble copia).
 

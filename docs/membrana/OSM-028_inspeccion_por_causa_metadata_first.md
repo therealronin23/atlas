@@ -1,6 +1,6 @@
 # OSM-028 — Inspección por causa: metadata-monitor-first
 
-Fecha: 2026-06-17 · Estado: **Difusión** (ver [[OSM-000]]) · Origen: `idea avance 3.md` ·
+Fecha: 2026-06-17 · Estado: **En membrana** (`AttestedInspector` + `cause=` en gateway implementados; metadata-monitor-first completo pendiente) · Origen: `idea avance 3.md` ·
 Contexto: ADR-053 (causa registrada), ADR-054 (capa 1), `src/atlas/transparency/attestation.py`
 (`AttestedInspector`), [[OSM-001]] (métrica de campaña), [[OSM-024]].
 
