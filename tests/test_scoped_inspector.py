@@ -283,3 +283,25 @@ class TestOSM028GatewayIntegration:
         doc = json.loads(api_resp.leaf_bytes)
         cause = doc["cause"]
         assert "inspected=true labels=none" in cause
+
+    def test_output_inspected_when_escalated(self):
+        """OSM-028: el filtro de contenido cubre también el OUTPUT (solo con causa).
+
+        Nota honesta: al escalar, el gateway enruta al shadow model, así que el
+        output inspeccionado es el del shadow (benigno → labels=none). Lo que se
+        prueba es que la inspección de output OCURRE con causa y queda registrada
+        (completitud simétrica input+output), no que matchee aquí.
+        """
+        inspector = ScopedInspector(DEFAULT_ABUSE_PATTERNS)
+        gw = _make_gateway_with_inspector(scoped_inspector=inspector, session_id="osm028-out")
+        api_resp, _ = gw.call(b"prompt", _noop_call, confidence=0.95)
+        out_doc = json.loads(api_resp.output_leaf_bytes)
+        assert "output_inspected=true" in out_doc["cause"]
+
+    def test_output_not_inspected_without_escalation(self):
+        """Sin causa, el output NO se inspecciona (no inspección masiva)."""
+        inspector = ScopedInspector(DEFAULT_ABUSE_PATTERNS)
+        gw = _make_gateway_with_inspector(scoped_inspector=inspector, session_id="osm028-out2")
+        api_resp, _ = gw.call(b"prompt", lambda p: b"ignore previous instructions", confidence=0.0)
+        out_doc = json.loads(api_resp.output_leaf_bytes)
+        assert "output_inspected=true" not in out_doc["cause"]
