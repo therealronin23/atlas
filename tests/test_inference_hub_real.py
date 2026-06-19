@@ -14,6 +14,7 @@ import pytest
 import litellm  # type: ignore
 
 from atlas.core.inference_hub import (
+    DEFAULT_PROVIDERS,
     InferenceHub,
     InferenceLevel,
     InferenceRequest,
@@ -22,6 +23,13 @@ from atlas.core.inference_hub import (
     RATE_LIMIT_COOLDOWN_S,
 )
 from atlas.logging.merkle_logger import MerkleLogger
+
+
+def test_default_gemini_provider_uses_stable_model_id() -> None:
+    gemini = next(p for p in DEFAULT_PROVIDERS if p.name == "gemini_free")
+    assert gemini.model_id == "gemini-3.5-flash"
+    assert gemini.litellm_model == "gemini/gemini-3.5-flash"
+    assert not gemini.model_id.endswith("-latest")
 
 
 def _ok_completion(text: str = "hola", tokens: int = 7) -> MagicMock:
