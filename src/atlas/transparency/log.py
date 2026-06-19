@@ -124,6 +124,15 @@ class TransparencyLog:
         """Current number of entries (monotonically increasing)."""
         return len(self._entries)
 
+    def entries(self) -> list[bytes]:
+        """Read-only snapshot of all leaf entries (copy; preserves append order).
+
+        Lets verifiers/auditors (e.g. the log-native behavioral auditor) scan the
+        committed records without mutating the log. Returns a shallow copy so the
+        caller cannot alter internal state.
+        """
+        return list(self._entries)
+
     def append(self, entry_bytes: bytes) -> int:
         """Append *entry_bytes* to the log.
 
