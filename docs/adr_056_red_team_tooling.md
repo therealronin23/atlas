@@ -72,8 +72,15 @@ escribe `report.jsonl` + HTML estructurados.
   (`--index-url https://download.pytorch.org/whl/cpu`) salvo que se quiera GPU.
 - (−) Garak escribe a `~/.local/share/garak` por defecto; el harness debe redirigir su
   output a un dir aislado/temporal.
-- (−) PyRIT: NO se adopta ahora. Solo si necesitamos campañas multi-turn que las probes de
-  Garak no cubran. Empezar con uno (anti-over-engineering).
+- PyRIT **adoptado** (2026-06-19, fase 2): campañas multi-turn agénticas que Garak no cubre.
+  Harness `scripts/redteam/pyrit_crescendo.py`: `CrescendoAttack` con atacante adaptativo real
+  (modelo ABIERTO vía API — Groq llama-3.3-70b; los modelos locales no sirven: thinking-models
+  devuelven content vacío y llama3.x crashea Ollama) contra el gateway Osmosis aislado, midiendo
+  la trayectoria del DriftTripwire turno a turno. Resultado honesto (`docs/pyrit_crescendo_report.md`):
+  el crescendo gradual tiende a quedarse bajo el umbral (límite documentado del atacante lento);
+  un salto brusco del atacante SÍ dispara el tripwire; la atribución se mantiene 100% en todo turno.
+  Footprint: PyRIT sube `datasets` a 5.x (garak pide <4) — conflicto cosmético verificado inocuo.
+  Atacante = modelo abierto para minimizar fricción de ToS; red-teaming autorizado del propio sistema.
 
 ## Criterios de cierre (cuándo pasa a Aceptado) — TODOS CUMPLIDOS (2026-06-19)
 1. ✅ Extra `[redteam]` definido en `pyproject.toml`; runtime no importa nada de ahí
