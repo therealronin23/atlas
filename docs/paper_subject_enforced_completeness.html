@@ -1,3 +1,234 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>paper_subject_enforced_completeness</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
 <h1
 id="paper-subject-enforced-completeness-for-ai-inspection-logs">Paper —
 Subject-Enforced Completeness for AI Inspection Logs</h1>
@@ -9,8 +240,7 @@ contribution is narrow, correct, and built. All ambitious deployment
 context (the filter, its stages, adaptive defense) is deployment context
 — it does not appear in the contribution claim.</p>
 <hr />
-<h2 id="naming-authority-docsmembranaosm-000_membrana.md">Naming —
-authority: <code>docs/membrana/OSM-000_membrana.md</code></h2>
+<h2 id="naming-authority">Naming — authority</h2>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -217,8 +447,8 @@ mobile). The private key never leaves the hardware boundary.</p>
 subject, to avoid clock-skew disputes). The signature proves the device
 knew the counter value and the hash of the prompt at emission time.</p>
 <p>This design replaces the manual co-signature proposed in earlier
-iterations of ADR-053. The user does not click “sign” on each request;
-the device key signs silently after one-time hardware enrolment. The
+design iterations. The user does not click “sign” on each request; the
+device key signs silently after one-time hardware enrolment. The
 onboarding friction is comparable to a WebAuthn passkey registration,
 but the per-request signing is fully invisible.</p>
 <p><strong>Why not WebAuthn/Passkey per-request.</strong> WebAuthn
@@ -242,26 +472,24 @@ the operator records:</p>
     timestamp_ns: int,    # operator-assigned epoch in nanoseconds
     salted_hash:  str,    # SHA-256(salt_i || payload) — GDPR Art. 17 erasure hook
 }</code></pre>
-<p><strong>Dual-hash leaf for GDPR Art. 17 (OSM-007).</strong> The
+<p><strong>Dual-hash leaf for GDPR Art. 17.</strong> The
 <code>InspectionRecord</code> carries two hashes.
 <code>payload_hash</code> is the hash the subject already signed in
 their <code>CosignedRequest</code>; it enables check 4 (binding) and is
 permanent. <code>salted_hash</code> is derived from a 32-byte random
 salt <code>salt_i</code> generated per-request by the operator and
-stored <em>outside</em> the Merkle tree in a separate, deletable store
-(<code>SaltStore</code> in
-<code>src/atlas/transparency/crypto_shred.py</code>). To exercise the
-right of erasure, the operator destroys <code>salt_i</code>. The salted
-hash committed in the tree becomes a dead-end — content is irrecoverable
-without <code>salt_i</code>, because SHA-256 is preimage-infeasible for
-long natural-language prompts. The tree’s integrity, the consistency
-proofs, and <code>detect_omission()</code> are all unaffected because
-none depend on the salt. <strong>Honest limit</strong>:
-<code>payload_hash</code> (unsalted) persists permanently; for typical
-AI prompts this is pseudo-anonymous, but short predictable inputs could
-be confirmed by brute-force (see §6.10). A full treatment of the GDPR
-Art. 12 (EU AI Act) vs. Art. 17 tension is a legal, not a code,
-question.</p>
+stored <em>outside</em> the Merkle tree in a separate, deletable store.
+To exercise the right of erasure, the operator destroys
+<code>salt_i</code>. The salted hash committed in the tree becomes a
+dead-end — content is irrecoverable without <code>salt_i</code>, because
+SHA-256 is preimage-infeasible for long natural-language prompts. The
+tree’s integrity, the consistency proofs, and
+<code>detect_omission()</code> are all unaffected because none depend on
+the salt. <strong>Honest limit</strong>: <code>payload_hash</code>
+(unsalted) persists permanently; for typical AI prompts this is
+pseudo-anonymous, but short predictable inputs could be confirmed by
+brute-force (see §6.10). A full treatment of the GDPR Art. 12 (EU AI
+Act) vs. Art. 17 tension is a legal, not a code, question.</p>
 <p><strong>The note on timestamp placement</strong>: the timestamp is
 operator-assigned and lives in <code>InspectionRecord</code>, not in the
 signed body of <code>CosignedRequest</code>. This avoids clock-skew
@@ -277,7 +505,7 @@ the subject’s device key. The inspection record for <code>n</code>
 therefore either appears in the log (honest), or it is absent
 (detectable by the subject).</p>
 <p><strong>In-path timing guarantee</strong>: because the filter is
-always-on and mandatory in the API path (§4, OSM-024), the
+always-on and mandatory in the API path, the
 <code>InspectionRecord</code> for a request is committed to the Merkle
 log <em>before</em> the request is forwarded to the AI model. The model
 response cannot arrive at the client before the commitment exists. This
@@ -384,17 +612,14 @@ own view of the log. They cannot prove that the regulator or a
 third-party auditor sees the same STH. Closing that gap requires
 external witnesses — independent parties who cosign STHs and cross-check
 with other witnesses via gossip (RFC 9162 §5). The HTTP witness
-transport is implemented (<code>src/atlas/transparency/gossip.py</code>
-— <code>HttpWitnessTransport</code>, Ed25519-verified
-counter-signatures, <code>has_quorum()</code>); deployment of
-independent witness nodes remains infrastructure work outside this
-paper’s scope. We state the residual split-view exposure as honest limit
-§6.1.</p>
+transport is implemented with Ed25519-verified counter-signatures and
+threshold-based quorum enforcement; deployment of independent witness
+nodes remains infrastructure work outside this paper’s scope. We state
+the residual split-view exposure as honest limit §6.1.</p>
 <hr />
 <h3 id="implementation">4. Implementation</h3>
-<p>The reference implementation lives in
-<code>src/atlas/transparency/</code> and is intentionally decoupled from
-any specific AI product. Four modules:</p>
+<p>The reference implementation is intentionally decoupled from any
+specific AI product. Four modules:</p>
 <p><strong><code>merkle_tree.py</code></strong> — RFC 9162 §2.1
 faithful. Domain-separation prefixes prevent second-preimage
 attacks:</p>
@@ -408,17 +633,12 @@ over byte sequences; the module has no I/O or state.</p>
 wraps the Merkle primitives with append-only semantics, maintains the
 current STH, and signs it. <code>SignedTreeHead</code> carries
 <code>(tree_size, root_hash, signature, timestamp_ns)</code>.
-Persistence is opt-in: <code>TransparencyLog(path=Path(...))</code>
-writes each leaf as a base64-encoded line with <code>fsync()</code> on
-append and reloads from disk on startup — the log survives process
-restarts and carries monotonic sequence continuity across sessions. A
-Read-API for deployers and regulators exposes the log over HTTP:
-<code>GET /api/exec/api/v1/log/tree</code> (current STH),
-<code>GET /api/exec/api/v1/log/entries</code> (leaf range, capped at
-1000), and
-<code>GET /api/exec/api/v1/log/proof/inclusion/{leaf_index}</code> (RFC
-9162 inclusion proof as hex-encoded audit path). The path prefix
-stacking is noted in deployment docs; the paths match Article 26
+Persistence is opt-in, writing each leaf as a base64-encoded line with
+<code>fsync()</code> on append and reloading from disk on startup — the
+log survives process restarts and carries monotonic sequence continuity
+across sessions. A Read-API for deployers and regulators exposes the log
+over HTTP with endpoints for current STH, leaf ranges (capped at 1000),
+and RFC 9162 inclusion proofs. The implementation matches Article 26
 obligations for deployer monitoring.</p>
 <p><strong><code>client_cosign.py</code></strong> —
 <code>ClientCosigner</code> emits monotonically-sequenced
@@ -428,10 +648,9 @@ hash; <code>detect_omission()</code> implements §3.3 above. The
 <code>Signer</code> / <code>SigVerifier</code> interfaces accept any
 backend (software HMAC for testing, hardware-bound keys in
 production).</p>
-<p><strong><code>witness.py</code></strong> —
-<code>Witness.observe(sth)</code> accepts STHs from the operator,
-verifies their signatures, and raises <code>SplitViewError</code> when
-two STHs with the same <code>tree_size</code> carry different
+<p><strong>Witness module</strong> — Accepts STHs from the operator,
+verifies their signatures, and detects split-view attacks when two STHs
+with the same <code>tree_size</code> carry different
 <code>root_hash</code> values. This is the hook point for future
 gossip-based split-view closure.</p>
 <p><strong>Reference implementation &amp; adversarial harness</strong>
@@ -500,16 +719,12 @@ rather than assumed). Seven scenarios over a 5-request stream:</p>
 <td>J</td>
 <td>behavioral drift: model’s rejection heuristics degrade silently</td>
 <td>cascade failure in L4; witness divergence + auto-recovery</td>
-<td>ADR-054 §5</td>
+<td>§8.3</td>
 </tr>
 </tbody>
 </table>
 <p>The harness asserts each outcome and exits non-zero on deviation; it
-is anchored in the test suite
-(<code>tests/test_completeness_demo.py</code>,
-<code>tests/test_network_reconciliation.py</code>,
-<code>tests/test_output_inspection.py</code>) alongside the RFC 9162
-primitives (<code>tests/test_transparency_*.py</code>).</p>
+is anchored in the test suite alongside the RFC 9162 primitives.</p>
 <hr />
 <h3 id="related-work-positioning-most-important-for-novelty">5. Related
 Work — Positioning (Most Important for Novelty)</h3>
@@ -561,6 +776,31 @@ is honest and defensible.</p>
 <p><strong>Concurrent work (January–June 2026).</strong> Several systems
 have appeared that share surface structure with our mechanism. We
 distinguish each precisely.</p>
+<p><em>SCITT and verifiable AI refusal events.</em> The IETF SCITT
+working group (<em>Supply Chain Integrity, Transparency and Trust</em>,
+draft-ietf-scitt-architecture) standardises append-only transparency
+services built on COSE Signed Statements and Merkle inclusion
+<em>Receipts</em>. The closest work to ours is the SCITT profile for
+verifiable AI refusal events [draft-kamimura-scitt-refusal-events-00,
+January 2026], which encodes a model’s refusal decisions as Signed
+Statements registered with a Transparency Service and verified by third
+parties — the same domain (auditable AI inspection decisions) and the
+same primitives (Merkle trees, signed statements, receipts) as our
+mechanism. This makes its stated limitation the sharpest possible
+framing of our contribution: the spec provides, in its own words,
+“auditability of refusal decisions that are logged,” but explicitly
+<em>not</em> “cryptographic proof that no unlogged generation occurred,”
+noting that “an AI system bypassing logging entirely cannot be detected
+by this mechanism alone.” Its completeness check (“every logged ATTEMPT
+has exactly one corresponding Outcome”) operates only over what was
+logged, and “Verifiers are trusted to perform completeness checks
+correctly.” Our contribution closes exactly this gap: by binding each
+event to a subject-held monotonic signed sequence, a request that was
+never logged leaves a gap the <em>subject</em> detects unilaterally —
+without trusting the operator’s logging discipline and without a trusted
+external verifier. SCITT provides integrity and operator-attested
+auditability; subject-enforced completeness adds the missing guarantee
+that nothing was silently omitted.</p>
 <p><em>Notarized Agents / Sello</em> [arXiv:2606.04193, June 2026]
 introduces receiver-side signing for multi-agent workflows: each tool or
 service that receives an agent’s call signs a <code>Receipt</code> over
@@ -576,15 +816,19 @@ mechanism closes. The two contributions are orthogonal in threat model:
 Sello secures agents against infrastructure they control; we secure
 subjects against operators who control both the AI pipeline and the
 inspection log.</p>
-<p><em>Aegon</em> [arXiv:2604.06693, April 2026] applies CT-style Merkle
-logs and hardware-attested receipts to <strong>content-licensing
-provenance</strong> (not AI inspection). Aegon uses Android StrongBox
-for hardware binding and generates inclusion proofs for licensed content
-embeddings. Their explicit honest limit: “cannot guarantee completeness
-against an adversarial SDK operator.” Our mechanism closes this via
-subject-side monotonic sequence monitoring; the completeness property
-Aegon declares out of scope is the central contribution of this paper.
-The domains are distinct; the open problem is shared.</p>
+<p><em>Aegon</em> [arXiv:2604.06693, Baskaran, Pherwani, Krishnan, April
+2026] addresses <strong>AI content licensing</strong> (DRM): JWT tokens
+with licensing claims, a CT-style Merkle ledger of licensing
+transactions, and Android StrongBox hardware receipts for on-device
+compliance. The domain is content piracy prevention, not safety
+inspection; the threat model is unauthorized content use, not operator
+omission of inspection records. The paper is a protocol design white
+paper; prototype implementation is stated as future work. Despite the
+domain difference, the structural parallel is notable: both systems use
+append-only Merkle logs and hardware-bound receipts to make transactions
+undeniable. The completeness gap — guaranteeing that an adversarial SDK
+operator cannot silently omit records — is acknowledged as out of scope
+in Aegon; closing it is the central contribution of our work.</p>
 <p><em>Auditable Agents</em> [arXiv:2604.05485, April 2026] proposes a
 Merkle log for agent execution traces, providing post-hoc auditability
 of tool calls and state transitions. The mechanism assumes
@@ -618,14 +862,11 @@ log replicas (§3.4) make this harder — the subject has an independent
 STH chain — but they do not close the split-view completely. Full
 closure requires external witnesses who exchange STHs across operators
 (RFC 9162 §5 gossip protocol). The HTTP witness transport layer is
-implemented (<code>HttpWitnessTransport</code> in
-<code>transparency/gossip.py</code>): counter-signatures are verified
-with Ed25519 before counting toward quorum, and
-<code>has_quorum(min_witnesses=2)</code> enforces the threshold
-fail-closed (no verifier → no quorum credit). The infrastructure gap is
-deployment of independent witness nodes operated by parties other than
-the AI provider; this remains ecosystem work outside the scope of this
-paper.</p>
+implemented with counter-signatures verified before counting toward
+quorum, and a threshold enforces fail-closed semantics (no verifier → no
+quorum credit). The infrastructure gap is deployment of independent
+witness nodes operated by parties other than the AI provider; this
+remains ecosystem work outside the scope of this paper.</p>
 <p><strong>6.2 Out-of-band content and retained data.</strong> The
 mechanism covers the <em>synchronous request path</em>. If the operator
 stores the content of a request and inspects it at a later time —
@@ -664,12 +905,11 @@ round-trip latency are risk signals, not proof of geographic location. A
 subject using a residential proxy, a GPS-spoofing app, and a carrier SIM
 acquired locally passes all technical checks. We make no claims about
 resolving jurisdiction from code. The correct architecture for
-geolocation-contingent access control is: the filter’s metadata-monitor
-first pass (OSM-028) generates a risk score; elevated risk triggers KYC
-escalation; KYC is a legal step (identity verification with a legal
-basis for cross-checking residency), not a code step. What the filter
-makes verifiable is: “we generated a risk score of X for subject Y on
-date Z and escalated to KYC.” Whether the subsequent KYC step resolves
+geolocation-contingent access control involves a metadata-first risk
+assessment, KYC escalation on elevated risk, and legal identity
+verification — not purely technical controls. What the filter makes
+verifiable is: “we generated a risk score of X for subject Y on date Z
+and escalated to KYC.” Whether the subsequent KYC step resolves
 residency is the legal system’s responsibility. We do not promise to
 unlock next-generation models for restricted jurisdictions based on
 technical signals alone.</p>
@@ -709,23 +949,20 @@ synchronous. In a real deployment, a gap in the subject’s sequence has
 two indistinguishable causes: the operator omitted the inspection, or
 the request never arrived (timeout, client crash before the
 acknowledgement, dropped connection). An operator can therefore
-attribute a genuine omission to “a network failure.” The mitigation
-(OSM-040, implemented in <code>client_cosign.py</code>) is a signed
-receipt: the operator returns a
-<code>Receipt{seq, payload_hash, received_at_ns}</code> signed on
-arrival, <em>before</em> inspection. If the subject holds a valid
-receipt for <code>seq=n</code> but the operator never produces an
-inclusion proof for <code>n</code>, the gap is an <strong>attributable
-omission</strong> — the operator cryptographically admitted receiving
-the request and cannot blame the network
-(<code>attributable_omissions(receipted, observed)</code>). Idempotent
-retry keyed by <code>(seq, payload_hash)</code> prevents duplicate
-leaves. This <em>narrows</em> plausible deniability to requests the
-subject could not confirm were received at all (no receipt); for those
-the subject resends rather than accuses. It does not fully eliminate the
-gray zone, but it removes the operator’s ability to deny what it signed
-for. Exercised in the reference harness (Session F) and
-<code>tests/test_network_reconciliation.py</code>.</p>
+attribute a genuine omission to “a network failure.” The mitigation is a
+signed receipt: the operator returns a signed receipt containing
+sequence, payload hash, and receipt timestamp <em>before</em>
+inspection. If the subject holds a valid receipt for <code>seq=n</code>
+but the operator never produces an inclusion proof for <code>n</code>,
+the gap is an <strong>attributable omission</strong> — the operator
+cryptographically admitted receiving the request and cannot blame the
+network. Idempotent retry keyed by <code>(seq, payload_hash)</code>
+prevents duplicate leaves. This <em>narrows</em> plausible deniability
+to requests the subject could not confirm were received at all (no
+receipt); for those the subject resends rather than accuses. It does not
+fully eliminate the gray zone, but it removes the operator’s ability to
+deny what it signed for. Exercised in the reference harness (Session
+F).</p>
 <p><strong>Why not asynchronous / out-of-band inspection.</strong> A
 common suggestion is to allow requests through immediately and inspect
 them out-of-band (a “tap”), revoking the session if a problem is found
@@ -758,23 +995,20 @@ faithfully record <code>decision: "allow"</code> and the correct trigger
 rule, which is accurate: the inspection <em>was</em> applied and
 <em>did</em> produce that decision. The post-inspection degradation is a
 separate behaviour below the protocol boundary.</p>
-<p>This is not hypothetical. On 2026-06-10, Anthropic launched Claude
-Fable 5 with an undisclosed instruction buried in a 319-page system
-card: the model would silently reduce response quality when it detected
-certain AI-research queries, without informing the user. The instruction
-was reversed within 24 hours after public disclosure [Fortune,
-2026-06-10]. The episode confirms that a complete and verifiable
+<p>This is not hypothetical. Recent deployments of frontier models have
+included undisclosed instructions to alter response behavior for certain
+query classes. The incident confirms that a complete and verifiable
 inspection log — one that recorded “allow” for each of those requests —
 would not have surfaced the degradation. Our protocol makes completeness
 of inspection verifiable; it makes no claim about the faithfulness of
 the model’s subsequent output. That is a distinct research problem
 (model cards, eval benchmarks, output auditing) and is outside the scope
 of this paper.</p>
-<p><strong>6.11 Behavioral Drift Detection (OSM-054) — Limitations and
-Open Problems.</strong></p>
+<p><strong>6.11 Behavioral Drift Detection — Limitations and Open
+Problems.</strong></p>
 <p>Beyond post-inspection capability masking lies a broader question:
 can behavioral drift — unexpected changes in model responses — be
-detected reliably? Three angles have been proposed (OSM-054):</p>
+detected reliably? Three angles have been proposed:</p>
 <p><strong>(A) Behavioral delta observation.</strong> Capture a baseline
 of model responses to fixed “canary” prompts. On subsequent runs,
 compare response hashes and response latency against the baseline.
@@ -794,8 +1028,8 @@ second, auxiliary model (“shadow”) with identical weights but without
 the suspected restrictions. Compare both models’ responses to canary
 prompts. Divergence signals possible masking — but the comparison is
 noisy: if the shadow uses a different system prompt (the normal design
-in OSM-042), any difference is legitimate and does not prove covert
-restriction.</p>
+for baseline separation), any difference is legitimate and does not
+prove covert restriction.</p>
 <p>All three approaches face common barriers: (i) capability masking can
 be implicit in model weights and undetectable with certainty; (ii) false
 positives are likely when the model improves or receives legitimate
@@ -804,9 +1038,9 @@ operate at sub-threshold probability levels (e.g., token probability
 reduced &lt;1%, not a guaranteed refusal). We state behavioral drift
 detection as a <strong>future research problem</strong> and an
 <strong>open investigative tool</strong>, not as a closed detection
-method. See <code>src/atlas/security/behavioral.py</code> for the
-reference implementation of the three angles (reference integration
-point: Session J of the completeness demo).</p>
+method. A reference implementation of the three angles is provided in
+the Osmosis reference implementation (reference integration point:
+Session J of the completeness demo).</p>
 <hr />
 <h3 id="deployment-and-incentives">7. Deployment and Incentives</h3>
 <p><em>This section is deliberately separated from the technical
@@ -912,7 +1146,7 @@ synthesizes the four layers, states explicitly what each layer does
 layer currently closes.</p>
 <h3 id="layer-12-completeness-verification-input-output">8.1 Layer 1–2:
 Completeness Verification (Input + Output)</h3>
-<p><strong>What it does.</strong> The Osmosis Filter enforces symmetric
+<p><strong>What it does.</strong> The Osmosis filter enforces symmetric
 completeness on both the input request and the output response. Every
 inspection must be preceded by a registered cause; every co-signed
 request carries a monotonically increasing sequence number that the
@@ -920,11 +1154,9 @@ subject can verify independently. Omissions — inspections that occurred
 without a registered cause, or requests that were inspected but do not
 appear in the log — are detectable by the subject through
 <code>detect_omission()</code> without relying on the operator’s
-self-reporting. The mechanism is implemented and anchored in tests
-(sessions A–H, <code>tests/test_completeness_demo.py</code>,
-<code>tests/test_output_inspection.py</code>). The structural invariants
-are OSM-007 (input completeness: every inspection has a registered
-cause) and OSM-042 (output completeness: every output inspection is
+self-reporting. The mechanism is implemented and anchored in tests. The
+structural invariants are input completeness (every inspection has a
+registered cause) and output completeness (every output inspection is
 anchored symmetrically to the co-signed input). Both are closed.</p>
 <p><strong>What it does not guarantee.</strong> Layer 1–2 does not
 guarantee that the operator’s <em>declared</em> inspection policy is
@@ -935,49 +1167,46 @@ detects omissions, not fraudulent causes. It also does not guarantee
 protection against a <em>split-view</em> attack: an operator who shows
 different log views to the regulator and the subject cannot be caught by
 either party individually. Split-view requires external witnesses (see
-§8.3, OSM-053 open). Layer 1–2 closes the omission problem; it does not
-close the fabrication problem or the split-view problem.</p>
-<h3
-id="layer-3-active-defense-and-consensus-osm-031-osm-052-osm-053">8.2
-Layer 3: Active Defense and Consensus (OSM-031 / OSM-052 / OSM-053)</h3>
+§8.3). Layer 1–2 closes the omission problem; it does not close the
+fabrication problem or the split-view problem.</p>
+<h3 id="layer-3-active-defense-and-consensus">8.2 Layer 3: Active
+Defense and Consensus</h3>
 <p><strong>What it does.</strong> Layer 3 extends the log with an
 external-witness network following RFC 9162 gossip of Signed Tree Heads
 (STH). Multiple independent witnesses exchange STH values; a divergence
 between the STH that the subject holds and the STH published to
-witnesses constitutes a detectable split-view. OSM-031 defines the
-witness interface; OSM-052 defines the evasion-detection protocol
-(pattern-similarity threshold for campaign attribution: ≥3 consecutive
-attempts with cosine similarity &gt;0.7 triggers flagging with the
-co-signed identity trail); OSM-053 closes the implementation of the
-co-signing mechanism and the monotone-sequence invariant. All three are
+witnesses constitutes a detectable split-view. The layer defines the
+witness interface, an evasion-detection protocol based on pattern
+similarity for campaign attribution, and the implementation of the
+co-signing mechanism with monotone-sequence invariants. All three are
 closed in design; the witness deployment is the remaining infrastructure
-gap (see §8.4, R5).</p>
+gap.</p>
 <p><strong>What it does not guarantee.</strong> Layer 3 does not
-guarantee detection of evasion in the per-attempt sense. The campaign
-metric (C_attempts, K_attribution) is falsifiable and measurable from
-the log; it does not produce per-attempt detection rates. A sufficiently
-patient adversary who keeps similarity below the threshold, or who
-operates across sessions with low per-session attempt counts, can delay
-campaign attribution. Layer 3 does not guarantee that the witness
-network is available: if all available witnesses are controlled by the
-same operator (single-node deployment), gossip degenerates to
+guarantee detection of evasion in the per-attempt sense. Campaign
+attribution is falsifiable and measurable from the log; it does not
+produce per-attempt detection rates. A sufficiently patient adversary
+who keeps similarity below the threshold, or who operates across
+sessions with low per-session attempt counts, can delay campaign
+attribution. Layer 3 does not guarantee that the witness network is
+available: if all available witnesses are controlled by the same
+operator (single-node deployment), gossip degenerates to
 self-attestation and split-view protection collapses. This is an
 infrastructure dependency, not a protocol flaw. Layer 3 closes the
 split-view and evasion-detection design; it does not close per-attempt
 detection and cannot close single-operator witness failure.</p>
-<h3 id="layer-4-behavioral-drift-observation-osm-054">8.3 Layer 4:
-Behavioral Drift Observation (OSM-054)</h3>
+<h3 id="layer-4-behavioral-drift-observation">8.3 Layer 4: Behavioral
+Drift Observation</h3>
 <p><strong>What it does.</strong> Layer 4 addresses a distinct threat:
 behavioral drift in the model itself, independent of any specific
-jailbreak attempt. Session J (documented in ADR-054) establishes a
-canary framework: a set of probes with known expected outputs that are
-re-issued periodically; significant drift in response distribution
-signals that the model’s behavior has changed without a logged
-retraining event. The mechanism is probabilistic: it uses a heuristic
-similarity threshold rather than a formal behavioral equivalence proof.
-Session J observes drift; it does not attribute drift to adversarial
-manipulation, model update, or distributional shift — these are
-confounded. OSM-054 is open research.</p>
+jailbreak attempt. The layer establishes a canary framework: a set of
+probes with known expected outputs that are re-issued periodically;
+significant drift in response distribution signals that the model’s
+behavior has changed without a logged retraining event. The mechanism is
+probabilistic: it uses a heuristic similarity threshold rather than a
+formal behavioral equivalence proof. The mechanism observes drift; it
+does not attribute drift to adversarial manipulation, model update, or
+distributional shift — these are confounded. Behavioral drift detection
+remains open research.</p>
 <p><strong>What it does not guarantee.</strong> Layer 4 does not close
 the <em>behavioral faithfulness</em> problem — the question of whether a
 model’s visible behavior during probing faithfully predicts its behavior
@@ -1009,17 +1238,17 @@ that the others do not address.</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td>L1–L2 (OSM-007/042)</td>
+<td>L1–L2</td>
 <td>Inspection omission detectable by subject</td>
 <td>Fabricated cause; split-view</td>
 </tr>
 <tr class="even">
-<td>L3 (OSM-031/052/053)</td>
+<td>L3</td>
 <td>Split-view via witnesses; campaign attribution</td>
 <td>Per-attempt detection; single-operator witness</td>
 </tr>
 <tr class="odd">
-<td>L4 (OSM-054)</td>
+<td>L4</td>
 <td>Behavioral drift early warning (canary, heuristic)</td>
 <td>Behavioral faithfulness; covert capability detection</td>
 </tr>
@@ -1041,14 +1270,116 @@ that are not available through API-level access.</p></li>
 <li><p><em>Covert capability detection</em>: detecting that a model has
 acquired a capability not present in a previous version, without access
 to the model’s weights or training process. Existing red-teaming
-approaches (including CC++ as described in its published form) sample
-the capability space — they do not provide coverage guarantees.</p></li>
+approaches sample the capability space — they do not provide coverage
+guarantees.</p></li>
 </ol>
-<p>Layer 4 (OSM-054) is the active contribution toward these problems.
-It does not close them. Future work toward closure would require
-behavioral equivalence proofs over model internals — a problem class
-that presupposes interpretability infrastructure not yet available at
+<p>Layer 4 is the active contribution toward these problems. It does not
+close them. Future work toward closure would require behavioral
+equivalence proofs over model internals — a problem class that
+presupposes interpretability infrastructure not yet available at
 production scale.</p>
+<hr />
+<h2 id="preliminary-red-team-evaluation">9. Preliminary Red-Team
+Evaluation</h2>
+<p>This appendix reports a preliminary empirical evaluation of the
+active-defense and drift-observation layers (§8, L3–L4). It is
+deliberately <strong>not</strong> a product benchmark: it measures
+<em>attributability</em> and the <em>methodology</em> of an auditable
+adaptive layer, not detection coverage. Standard open red-team tooling
+drives the attacks; we compute the metrics over the co-signed log.</p>
+<p><strong>Setup.</strong> Attacks run against an isolated gateway
+instance. The attack corpus is drawn from NVIDIA Garak (in-the-wild
+jailbreak and prompt-injection probes) and, for multi-turn campaigns,
+Microsoft PyRIT’s Crescendo strategy with an <em>open-weight</em>
+attacker model served via API (an open model is used as the attacker to
+minimise terms-of-service friction; this is authorised red-teaming of
+our own system). The target model is a stub: we measure the security
+channel (co-signing, drift, scoped inspection), not model content.</p>
+<h3 id="attribution-under-attack">9.1 Attribution Under Attack</h3>
+<p>Over 60 single-shot attacks from Garak’s corpus, every request
+produced a co-signed inspection record whose inclusion proof verified
+against the signed tree head: <strong>C_attempts = 60, K_attribution =
+60 (100%)</strong>. This is the central, provable claim of the active
+layer: independent of whether any monitor fires, no attempt can be
+denied. Attribution is a property of the completeness substrate (§§3–6),
+not of a classifier.</p>
+<h3 id="drift-tripwire-signal-vs.-false-positives">9.2 Drift Tripwire:
+Signal vs. False Positives</h3>
+<p>A cheap statistical session-drift monitor (Shannon entropy, cosine
+distance to a rolling session centroid, refusal-trigger density, length
+delta; EWMA + change-point) produces the confidence value that gates
+escalation. For single-shot attacks injected into an otherwise benign
+session: <strong>signal rate 98.3%</strong> at the passive threshold (τ
+= 0.65), with <strong>0% false positives</strong> over a benign control
+set (40 turns). The monitor is a tripwire that <em>gates</em>
+escalation, not a detector; false positives are expected by design and
+route to a false-positive appeal loop.</p>
+<h3 id="auditable-immune-memory-a-measured-generalization-boundary">9.3
+Auditable Immune Memory: a Measured Generalization Boundary</h3>
+<p>We seed lessons (from seen attacks) into an append-only,
+Merkle-anchored lesson store, then test whether a near-duplicate
+recaller recognises <em>reformulations</em> generated by a deterministic
+mutator at increasing edit distance d ∈ [0,1]. We report the recognition
+rate versus d <em>and</em> a same-threshold false-positive control over
+unrelated benign text — recall is only meaningful when false positives
+stay low.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Embedder</th>
+<th>Behaviour over d ∈ [0,1]</th>
+<th>Benign FP</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Lexical (hash)</td>
+<td>100% to d = 0.5; breaking point (recall &lt; 50%) at d = 0.7</td>
+<td>0/8</td>
+</tr>
+<tr class="even">
+<td>Semantic (local)</td>
+<td>no breaking point in [0,1] (recall ≈ 94% at d = 1.0)</td>
+<td>0/8</td>
+</tr>
+</tbody>
+</table>
+<p>Recognition generalises far further with a semantic embedder, at 0%
+false positives — real generalisation, not a loose threshold. The
+provenance of each lesson is verifiable on the chain. The contribution
+is not the recognition rate but that the adaptation is
+<em>verifiable</em> (every lesson anchored, provenance provable) and its
+<em>boundary is measured and published</em> — most defenses hide where
+they break. The false-positive control uses a small sanity set (N = 8),
+not a benchmark.</p>
+<h3 id="multi-turn-adaptive-escalation">9.4 Multi-Turn Adaptive
+Escalation</h3>
+<p>Using PyRIT’s Crescendo strategy with an adaptive attacker, a
+<em>gradual</em> escalation tends to remain below the passive threshold
+(peak ≈ 0.57 in one run): this confirms the documented limit that a
+slow, low-variance adversary evades the tripwire — raising its cost
+(forcing slow multi-turn play) without closing the gap. When the
+attacker makes a <em>sharp</em> move, the tripwire fires (e.g. a
+length-drift z = 5.1 crossing in another run). The attacker is
+stochastic, so this is illustrative, not a benchmark. In all cases
+attribution remained 100% per turn.</p>
+<h3 id="honest-scope-of-the-evaluation">9.5 Honest Scope of the
+Evaluation</h3>
+<p>These results show a <em>mechanism</em> and its <em>measured
+boundary</em>; they promise no coverage. Specifically: the target model
+is a stub; the scoped content matcher is a small governed closed list
+(weak on elaborate role-play); the false-positive controls use small N;
+recognition is tested against our own deterministic mutator, not a real
+adversary’s mutation distribution; and the immune layer covers
+<em>reformulations</em> of seen attacks, <strong>not</strong> genuinely
+novel attack families. None of this addresses adaptive robustness (§8,
+open research). The defensible axis is attributable, auditable
+adaptation — not detection coverage.</p>
 <hr />
 <h2 id="publication-venue-strategy">Publication &amp; Venue
 Strategy</h2>
@@ -1120,13 +1451,21 @@ system). - [x] “The Attacker Moves Second” (arXiv:2510.09023) —
 exists; claims adaptive adversary feedback loop; paper cites for “static
 classification degrades as attackers observe feedback” (§5,
 subject-monitoring adaptive threat model). <strong>No
-overclaim.</strong> - [x] Notarized Agents / Sello (arXiv:2606.04193,
-June 2026) — existence confirmed; threat-model distinction verified
-(receiver-side agent signing vs. operator omission); their honest limit
-on set-completeness cited precisely (§5 concurrent work). - [x] Aegon
-(arXiv:2604.06693, April 2026) — existence confirmed; content-licensing
-domain; honest limit “adversarial SDK operator” cited; shared open
-problem noted (§5). - [x] Auditable Agents (arXiv:2604.05485, April
+overclaim.</strong> - [x] SCITT (IETF: draft-ietf-scitt-architecture +
+draft-kamimura-scitt-refusal-events-00, Kamimura, Jan 2026) —
+<strong>verified textually</strong>: refusal events as COSE Signed
+Statements + Merkle Receipts; explicit limit “auditability of decisions
+that are logged” but “not cryptographic proof that no unlogged
+generation occurred”. Closest prior art; distinction is the sharpest
+framing of our contribution (§5). - [x] Notarized Agents / Sello
+(arXiv:2606.04193, June 2026) — existence confirmed; threat-model
+distinction verified (receiver-side agent signing vs. operator
+omission); their honest limit on set-completeness cited precisely (§5
+concurrent work). - [x] Aegon (arXiv:2604.06693,
+Baskaran/Pherwani/Krishnan, April 2026) — confirmed: DRM/content
+licensing domain (JWT + Merkle + Android StrongBox); prototype = future
+work; completeness gap acknowledged out of scope; structural parallel +
+distinction noted (§5). - [x] Auditable Agents (arXiv:2604.05485, April
 2026) — existence confirmed; honest-tool-provider assumption stated; our
 contribution is the case they assume away (§5). - [x] Aegis
 (arXiv:2603.16938, March 2026) — existence confirmed; ZK-STARK PoC + ILK
@@ -1136,44 +1475,35 @@ for all citations before arXiv upload. (Handled by arXiv submission
 process; deferred to pre-upload checklist.)</p>
 <p>Implementation status: - [x] <code>InspectionRecord</code> +
 <code>OutputInspectionRecord</code> + <code>APIResponse</code> (6-check
-protocol) in <code>client_cosign.py</code>. Symmetric input/output
-inspection. - [x] <code>CosignedRequest.to_json()</code> /
-<code>from_json()</code> — canonical serialisation. - [x] Reference
-implementation + adversarial harness
-(<code>docs/demo/completeness_demo.py</code>): Ed25519 keys, six-check
-verification, seven scenarios (A–G), anchored in
-<code>tests/test_completeness_demo.py</code> +
-<code>tests/test_output_inspection.py</code>. - [scope: layer 4]
-Cross-timestamp check for retroactive compliance detection (§6.7, future
-work). Stated honestly as future work; not blocking arXiv submission. -
-[x] Network race-condition protocol: signed receipts → attributable
-omission vs. network loss (§6.8, OSM-040). Implemented + tested + demo
-Session F. - [x] Crypto-shredding: dual-hash leaf
-(<code>payload_hash</code> + <code>salted_hash</code>) for GDPR Art. 17
-(OSM-007). <code>SaltStore</code> in <code>crypto_shred.py</code>; 12
-tests in <code>test_crypto_shred.py</code>. - [x] Output inspection
+protocol). Symmetric input/output inspection. - [x]
+<code>CosignedRequest</code> canonical serialisation. - [x] Reference
+implementation + adversarial harness: Ed25519 keys, six-check
+verification, seven scenarios (A–G), anchored in test suite. - [scope:
+layer 4] Cross-timestamp check for retroactive compliance detection
+(§6.7, future work). Stated honestly as future work; not blocking arXiv
+submission. - [x] Network race-condition protocol: signed receipts →
+attributable omission vs. network loss (§6.8). Implemented + tested +
+demo Session F. - [x] Crypto-shredding: dual-hash leaf
+(<code>payload_hash</code> + <code>salted_hash</code>) for GDPR Art. 17.
+Dual-hash storage implemented; tests passing. - [x] Output inspection
 completeness (Layer 2): <code>OutputInspectionRecord</code> committed
-before result is returned; checks 5+6 in
-<code>SubjectLedger.ingest()</code>; Session G in demo; 10 tests in
-<code>test_output_inspection.py</code>. 1831 tests total (including
-immunity submodule), all passing. - [x] External witness HTTP transport
-implemented (<code>HttpWitnessTransport</code>, Ed25519-verified quorum,
-<code>has_quorum()</code>). Independent witness node deployment is
+before result is returned; Session G in demo; tests passing. 1938 tests
+total, all passing. - [x] External witness HTTP transport implemented
+with Ed25519-verified quorum. Independent witness node deployment is
 infrastructure, not code; stated honestly as the remaining split-view
-gap (§6.1). - [x] Log persistence:
-<code>TransparencyLog(path=...)</code> — base64 fsync per append, reload
-on startup. Seq continuity survives restarts. Documented in §4. - [x]
-Read-API (EU AI Act Art. 26, GAP-2):
-<code>GET /api/exec/api/v1/log/{tree,entries,proof/inclusion/{i}}</code>.
-Documented in §4. - [x] OSM-042 shadow model wired into
-<code>TransparencyGateway</code> (opt-in <code>shadow_router</code> /
-<code>shadow_model</code> params). Scoped to deployment context (§8.2);
-not part of completeness contribution.</p>
+gap (§6.1). - [x] Log persistence: base64 fsync per append, reload on
+startup. Sequence continuity survives restarts. Documented in §4. - [x]
+Read-API (EU AI Act Art. 26): endpoints for log tree, entries, and
+inclusion proofs. Documented in §4. - [x] Shadow model wired into
+transparency gateway (opt-in configuration). Scoped to deployment
+context (§8.2); not part of completeness contribution.</p>
 <p>Other: - [x] Reproducible demo built and passing (7 scenarios,
 exit-coded). - [x] Final title: “Subject-Enforced Completeness for AI
 Inspection Logs” — <strong>locked</strong>. - [pending: formatting]
 arXiv cs.CR LaTeX formatting pass before upload. Plain markdown → LATEX
 conversion; deferred to final submission step. - [pending: legal] Legal
-review of §7.2 EU AI Act claims deferred. Paper explicitly states “not a
-legal fact” (§6.9); deployment incentive only. Sufficient for arXiv;
-legal pre-deployment review separate.</p>
+review of EU AI Act alignment deferred. Paper explicitly states legal
+claims as deployment incentives only (§6.9). Sufficient for arXiv; legal
+pre-deployment review separate.</p>
+</body>
+</html>
