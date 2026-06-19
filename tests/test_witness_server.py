@@ -12,7 +12,11 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from atlas.security.authorization import Ed25519Signer, Ed25519Verifier
-from atlas.transparency.gossip import GossipMessage, HttpWitnessTransport
+from atlas.transparency.gossip import (
+    GossipMessage,
+    HttpWitnessTransport,
+    WitnessNetwork,
+)
 from atlas.transparency.log import SignedTreeHead
 from atlas.transparency.witness import Witness
 from atlas.transparency.witness_server import WitnessServer
@@ -50,11 +54,13 @@ def test_counter_sign_roundtrip(setup):
     """STH válido → el servidor counter-firma y la firma verifica."""
     log_signer, wit_verifier, server = setup
     sth = _signed_sth(log_signer, tree_size=5, root=b"\x11" * 32)
+    body = _msg(sth)
     transport = HttpWitnessTransport({"w1": f"{server.url}/"})
-    counter_sig = transport.post("w1", _msg(sth))
+    counter_sig = transport.post("w1", body)
     assert counter_sig is not None and counter_sig != ""
-    # La counter-signature del testigo verifica sobre el payload canónico del STH.
-    assert wit_verifier.verify(sth._payload(), counter_sig)
+    # La counter-signature verifica sobre el CUERPO del gossip (contrato de
+    # WitnessNetwork.broadcast), no sobre sth._payload().
+    assert wit_verifier.verify(body, counter_sig)
 
 
 def test_split_view_returns_409(setup):
@@ -98,3 +104,37 @@ def test_malformed_body_returns_400(setup):
     with pytest.raises(urllib.error.HTTPError) as exc:
         urllib.request.urlopen(req, timeout=5)
     assert exc.value.code == 400
+
+
+def test_quorum_over_http_two_servers():
+    """Integración de red: WitnessNetwork difunde por HTTP a 2 WitnessServer
+    reales → ambos counter-firman → has_quorum(min_witnesses=2) True.
+
+    Valida que el WitnessServer compone con WitnessNetwork.broadcast (la
+    counter-firma sobre el cuerpo del gossip verifica en la red).
+    """
+    log_signer, log_verifier = _keypair()
+    s1, v1 = _keypair()
+    s2, v2 = _keypair()
+    srv1 = WitnessServer(Witness(log_verifier), s1)
+    srv2 = WitnessServer(Witness(log_verifier), s2)
+    srv1.start()
+    srv2.start()
+    try:
+        http = HttpWitnessTransport({"w1": f"{srv1.url}/", "w2": f"{srv2.url}/"})
+        net = WitnessNetwork(
+            log_verifier,
+            counter_transport=http.post,
+            witness_verifiers={"w1": v1, "w2": v2},
+        )
+        net.register("w1", Witness(log_verifier))
+        net.register("w2", Witness(log_verifier))
+
+        sth = _signed_sth(log_signer, tree_size=9, root=b"\x22" * 32)
+        net.broadcast(GossipMessage(witness_id="op", sth=sth, received_at_ns=1))
+
+        assert net.counter_signature_coverage(9) == 2
+        assert net.has_quorum(9, min_witnesses=2) is True
+    finally:
+        srv1.stop()
+        srv2.stop()
