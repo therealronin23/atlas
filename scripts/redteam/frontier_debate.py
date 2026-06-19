@@ -36,8 +36,18 @@ from atlas.immunity.teacher_debate import (
 )
 from atlas.logging.merkle_logger import MerkleLogger
 
-TEACHER_MODEL = "llama-3.3-70b-versatile"
-TEACHER_ID = f"groq:{TEACHER_MODEL}"
+# Maestros intercambiables (model-agnostic): mismo debate, distinto proveedor/modelo.
+# Selección por env TEACHER_PROVIDER (default groq). Todos OpenAI-compat vía cliente openai.
+TEACHERS = {
+    # Modelo ABIERTO (mínima fricción ToS) — por defecto.
+    "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY", "llama-3.3-70b-versatile"),
+    # Nemotron (modelo primario del proyecto) vía NVIDIA NIM — maestro más fuerte.
+    "nvidia": ("https://integrate.api.nvidia.com/v1", "NVIDIA_API_KEY",
+               "nvidia/llama-3.3-nemotron-super-49b-v1"),
+}
+_PROVIDER = os.environ.get("TEACHER_PROVIDER", "groq")
+TEACHER_BASE_URL, TEACHER_KEY_ENV, TEACHER_MODEL = TEACHERS[_PROVIDER]
+TEACHER_ID = f"{_PROVIDER}:{TEACHER_MODEL}"
 
 # Priores VERIFICADOS ya conocidos por el sistema (lecciones "avoid" en cadena).
 SEED_PRIORS = [
@@ -70,12 +80,12 @@ SYSTEM_PROMPT = (
 )
 
 
-def _groq_key() -> str:
+def _env_key(name: str) -> str:
     env = Path(__file__).resolve().parents[2] / ".env"
     for line in env.read_text(encoding="utf-8").splitlines():
-        if line.startswith("GROQ_API_KEY="):
+        if line.startswith(f"{name}="):
             return line.split("=", 1)[1].strip().strip("\"'")
-    raise RuntimeError("GROQ_API_KEY no encontrada en .env")
+    raise RuntimeError(f"{name} no encontrada en .env")
 
 
 def _ask_teacher(client, case: str) -> LessonProposal | None:
@@ -136,7 +146,7 @@ def main() -> None:
     recaller.index()
     debate = TeacherDebate(store, recaller, sim_threshold=0.7)
 
-    client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=_groq_key())
+    client = OpenAI(base_url=TEACHER_BASE_URL, api_key=_env_key(TEACHER_KEY_ENV))
 
     print(f"ATLAS_HOME aislado: {home}")
     print(f"Maestro: {TEACHER_ID} (modelo abierto vía API)")
