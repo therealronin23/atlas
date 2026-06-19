@@ -44,6 +44,11 @@ redteam = [
     #   .venv-redteam/bin/pip install garak
     # El harness corre con ATLAS_HOME aislado, jamás contra el servicio vivo.
     "garak>=0.15",
+    # PyRIT (multi-turn agéntico). Conflicto cosmético: sube `datasets` a 5.x
+    # (garak pide <4); verificado que garak sigue cargando su corpus igual.
+    # El atacante LLM va por API (modelo abierto, p.ej. Groq) — los modelos
+    # locales de este entorno no sirven (thinking-models / crash de Ollama).
+    "pyrit>=0.14",
 ]
 
 [project.scripts]
