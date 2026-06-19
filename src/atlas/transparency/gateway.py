@@ -130,6 +130,7 @@ class TransparencyGateway:
         subject_id: str = "",
         confidence: float = 0.0,
         monitor_cause: str = "",
+        on_escalation: "Callable[[bytes, str], None] | None" = None,
     ) -> tuple[APIResponse, GatewayMetrics]:
         """Ejecuta call_fn(payload) envuelto en el protocolo completo.
 
@@ -209,6 +210,20 @@ class TransparencyGateway:
                         )
                     else:
                         effective_cause = f"{effective_cause}; inspected=true labels=none"
+
+                # Loop inmune (opt-in, desacoplado): si hay escalada, emite el
+                # evento (payload, causa) a un callback inyectado. El gateway NO
+                # importa la capa inmune ni decide nada: solo notifica. Qué hacer
+                # con el contenido (gating/PDP, derivar lección, NO retener crudo)
+                # es responsabilidad del recorder externo. Sin callback → no-op.
+                if on_escalation is not None:
+                    try:
+                        on_escalation(payload, effective_cause)
+                    except Exception as exc:  # noqa: BLE001 — el loop no rompe el path
+                        import logging
+                        logging.getLogger(__name__).warning(
+                            "on_escalation hook failed: %s", exc
+                        )
 
         # ── Pre: firmar request + commit inspection ──────────────────────
         cosigned, sh = self._cosigner.sign_request_with_salt(payload)
