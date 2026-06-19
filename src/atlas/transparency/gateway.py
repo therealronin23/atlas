@@ -273,11 +273,22 @@ class TransparencyGateway:
 
         # ── Post: commit output + STH + proofs ───────────────────────────
         output_hash = hashlib.sha256(result).hexdigest()
+        # OSM-028: inspección de contenido ACOTADA también sobre el OUTPUT, SOLO
+        # con causa (sesión escalada). Simétrico al input: el filtro de contenido
+        # (ScopedInspector) cubre ambos lados, no solo el prompt. Sin escalada no
+        # se mira el output (no inspección masiva).
+        output_cause = effective_cause
+        if self._scoped_inspector is not None and effective_decision != "allow":
+            out_insp = self._scoped_inspector.inspect(result)
+            if out_insp.matched:
+                output_cause = f"{effective_cause}; output_inspected=true labels={','.join(out_insp.labels)}"
+            else:
+                output_cause = f"{effective_cause}; output_inspected=true labels=none"
         out_record = OutputInspectionRecord(
             seq=cosigned.seq,
             output_hash=output_hash,
             decision=effective_decision,
-            cause=effective_cause,
+            cause=output_cause,
             timestamp_ns=time.time_ns(),
         )
         leaf_index_out = self._log.append(out_record.to_bytes())
