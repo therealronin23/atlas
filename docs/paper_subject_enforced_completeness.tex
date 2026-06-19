@@ -236,6 +236,32 @@ non-compliant; (b) physical compromise of the subject's device; (c) a subject wh
 limit~6.3); (d) content inspected out-of-band after retention without a new signed
 request (limit~6.2).
 
+\subsection{The Operator-Trust Boundary}
+\label{sec:operatortrust}
+
+A natural objection: if the operator runs the in-path gateway, what stops it from
+simply not running it, or running a modified one? We answer this directly because it
+defines exactly what the mechanism does and does not buy.
+
+The mechanism assumes a \term{semi-honest} (honest-but-curious) operator: one with a
+reputational, contractual, or regulatory incentive to \emph{appear} compliant. Against
+such an operator the guarantee is sharp: it converts a \emph{silent} omission into one of
+two \emph{visible} outcomes. Either the operator participates and any gap in the subject's
+monotonic signed sequence is a unilateral proof of omission (\S\ref{sec:detect}); or the
+operator refuses to co-sign / breaks the chain, which is itself overt and attributable to
+the subject (\S\ref{sec:enforcement}). What the operator \textbf{cannot} do is keep the
+appearance of a complete log while silently omitting --- it must choose provable-omission
+or overt-refusal. The mechanism removes \emph{deniability}, not the operator's physical
+ability to misbehave.
+
+It follows that an \textbf{actively malicious, fully non-compliant} operator is out of
+scope (\S2.4): such an operator can deny service, but cannot do so \emph{invisibly}. The
+residual trust is the \emph{client}: if the operator distributes a backdoored client
+(limit~6.3), the subject's signing and twin-replica assumptions break. Closing this needs
+non-cryptographic ecosystem support --- reproducible client builds, independent client
+distribution, and device attestation --- which we treat as deployment, not a claim of this
+paper.
+
 % ---------------------------------------------------------------
 \section{Mechanism: Subject-Enforced Completeness}
 % ---------------------------------------------------------------
@@ -329,6 +355,7 @@ On each response the client runs six independent checks:
 \end{enumerate}
 
 \subsection{\texttt{detect\_omission()}}
+\label{sec:detect}
 
 The subject maintains a local set of every \code{seq} value they have emitted:
 
@@ -651,6 +678,7 @@ Art.~53 (systemic risk) & Per-request inspection evidence at scale supports docu
 \end{table}
 
 \subsection{Enforcement Boundary}
+\label{sec:enforcement}
 
 Breaking the chain --- refusing to participate in the protocol --- disables the guarantee
 for that session. The preferred design is \term{graceful degradation}: chain breaks are

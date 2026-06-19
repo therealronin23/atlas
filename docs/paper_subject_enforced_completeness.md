@@ -159,6 +159,29 @@ device; (c) a subject whose "independent" client was actually distributed by the
 (the circularity limit — §6.3); (d) content inspected out-of-band after retention
 without a new signed request (§6.2). These are named in §6 as hard limits.
 
+#### 2.5 The Operator-Trust Boundary
+
+A natural objection: if the operator runs the in-path gateway, what stops it from simply
+not running it, or running a modified one? This defines exactly what the mechanism does and
+does not buy.
+
+The mechanism assumes a **semi-honest** (honest-but-curious) operator: one with a
+reputational, contractual, or regulatory incentive to *appear* compliant. Against such an
+operator the guarantee is sharp: it converts a *silent* omission into one of two *visible*
+outcomes. Either the operator participates and any gap in the subject's monotonic signed
+sequence is a unilateral proof of omission (§3.3); or the operator refuses to co-sign /
+breaks the chain, which is itself overt and attributable to the subject (§7.3). What the
+operator **cannot** do is keep the appearance of a complete log while silently omitting — it
+must choose provable-omission or overt-refusal. The mechanism removes *deniability*, not the
+operator's physical ability to misbehave.
+
+It follows that an **actively malicious, fully non-compliant** operator is out of scope
+(§2.4): it can deny service, but not *invisibly*. The residual trust is the *client*: a
+backdoored client distributed by the operator (§6.3) breaks the signing and twin-replica
+assumptions. Closing this needs non-cryptographic ecosystem support — reproducible client
+builds, independent client distribution, and device attestation — which we treat as
+deployment, not a claim of this paper.
+
 ---
 
 ### 3. Mechanism — Subject-Enforced Completeness
