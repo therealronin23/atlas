@@ -102,8 +102,9 @@ red no está desplegada — es el siguiente nivel del ecosistema. La garantía
 implementada hoy es la detección de omisión por el propio usuario, que ya es
 algo que ningún sistema publicado ofrece.
 
-Implementado: módulo de transparencia, 97 tests del núcleo de transparencia
-(1452 en la suite total), mypy strict limpio.
+Implementado: módulo de transparencia con pruebas específicas. El estado actual
+de la suite no se declara a mano en esta carta; se verifica con
+`PYTHONPATH=src atlas reality --run-checks --include-browser --json`.
 
 ### 2. Métrica de campaña falsable (lo que CC++ no tiene por diseño)
 
@@ -123,7 +124,7 @@ completitud verificable por el usuario que la hace posible.
 
 **Actualización junio 2026 — módulo de inmunidad operativo:** implementa afinidad maduración 
 sobre la capa 5: hipermutación semántica de patrones de defensa (no ruido léxico) + selección 
-clonal con scoring LLM + promoción vía Decider. 31 tests. La mutación es conceptual — 
+clonal con scoring LLM + promoción vía Decider. La mutación es conceptual —
 reformulaciones que mantienen la semántica defensiva mientras introduce diversidad real. El 
 entrenamiento adversarial tiende a sobreajustarse a distribuciones de ataque estrechas; CHASE 
 (arXiv:2606.05523) lo aborda con co-evolución, pero requiere que el atacante mantenga diversidad 
@@ -194,8 +195,8 @@ aportación concreta, no una promesa de cumplimiento total.
   Attacker Moves Second*, arXiv:2510.09023). La métrica es de campaña: C_attempts y
   K_attribution, falsables y medibles desde el log.
 - No es un producto validado a escala enterprise. Es la arquitectura y el núcleo
-  construido (1831 tests, mypy strict limpio) con los ADRs de las capas que
-  faltan documentadas honestamente.
+  construido, con estado verificable mediante `atlas reality`; las capas que
+  faltan están documentadas honestamente en ADRs.
 - No resolví el binding de identidad (KYC real para foreign nationals). Eso es operativo
   y legal, no código. La capa de filtro presupone que la identidad ya está verificada por
   vosotros.
@@ -224,7 +225,7 @@ Un solo desarrollador, al día siguiente del apagón de Fable 5/Mythos 5,
 identificó las dos causas técnicas, diseñó una respuesta arquitectónica con el
 eje correcto (verificabilidad mutua, no detección perfecta), y construyó el
 núcleo que prueba que el mecanismo de completitud es implementable. Lo que
-tenemos es la semilla — el log verificable funcionando (1831 tests) dentro
+tenemos es la semilla — el log verificable funcionando dentro
 de un organismo que puede aprender de cada campaña que ese log hace inocultable.
 Si la forma de pensar os resulta útil, hablemos.
 
@@ -233,8 +234,8 @@ Si la forma de pensar os resulta útil, hablemos.
 *Demo (~2 min disponible): una sesión legítima cuyo log prueba cero inspecciones
 de contenido, y una sesión con abuso catalogado detectado, bloqueado y registrado
 — ambas sobre la misma cadena inmutable, mostrando la prueba en ambas direcciones.
-Núcleo en módulo de transparencia del Osmosis reference implementation, 1831 tests, 
-mypy strict limpio. Arquitectura completa de cuatro capas en §8 de 
+Núcleo en módulo de transparencia del Osmosis reference implementation; estado
+actual verificable con `atlas reality`. Arquitectura completa de cuatro capas en §8 de
 `docs/paper_subject_enforced_completeness.md` y en `docs/eu_ai_act_mapping.md`.*
 
 *Fuentes del incidente: declaraciones de Anthropic y cobertura de Time, CNBC, Al

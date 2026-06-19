@@ -47,6 +47,14 @@ class TestBlocklistBeforeAllowlist:
         result = bridge.check("http://localhost:8080/")
         assert not result.allowed
 
+    def test_localhost_allowed_only_with_private_network_flag(self) -> None:
+        bridge = SSRFBridge(
+            extra_allowed={"localhost"},
+            allow_private_network=True,
+        )
+        result = bridge.check("http://localhost:8080/")
+        assert result.allowed
+
     def test_127_blocked(self, bridge: SSRFBridge) -> None:
         result = bridge.check("http://127.0.0.1/")
         assert not result.allowed

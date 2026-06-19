@@ -1,9 +1,9 @@
 # ADR-053 — Modelo de confianza y completitud del Compliance Gateway
 
 Fecha: 2026-06-15 · Estado: **Aceptado (núcleo)** — núcleo invariante implementado
-y verificado (97 tests del paquete; suite completa 1679 passed; mypy strict:
-deferred to core layers (immunity submodule has known typing gaps; OSM-053 code
-proper is clean); RFC 9162 verificado con fuzz por el auditor). Diferido:
+y verificado por tests específicos; el estado actual de suite/tipos se obtiene con
+`atlas reality --run-checks` y no se mantiene a mano en el ADR. RFC 9162 verificado
+con fuzz por el auditor. Diferido:
 attestation de hardware real (TDX/SEV-SNP) y red de witnesses distribuida. ·
 Resuelve B1+B2 de la auditoría
 `audit_adr051_052_premortem_2026-06-15.md`) · Contexto: ADR-051 (Compliance

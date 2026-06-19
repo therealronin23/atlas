@@ -43,18 +43,20 @@ except ImportError:
     _AUDIO_OK = False
 
 try:
-    from faster_whisper import WhisperModel   # pip install faster-whisper
+    from faster_whisper import WhisperModel as _WhisperModel   # pip install faster-whisper
+    WHISPER_MODEL: Any = _WhisperModel
     _WHISPER_OK = True
 except ImportError:
+    WHISPER_MODEL = None
     _WHISPER_OK = False
-    WhisperModel = None
 
 try:
-    from piper import PiperVoice              # pip install piper-tts
+    from piper import PiperVoice as _PiperVoice              # pip install piper-tts
+    PIPER_VOICE: Any = _PiperVoice
     _PIPER_OK = True
 except ImportError:
+    PIPER_VOICE = None
     _PIPER_OK = False
-    PiperVoice = None
 
 REAL_DEPS_AVAILABLE = _AUDIO_OK and _WHISPER_OK and _PIPER_OK
 
@@ -191,7 +193,7 @@ class VoiceModule:
                     os.environ.setdefault("HF_HUB_DISABLE_IMPLICIT_TOKEN", "1")
                     _log.info("Cargando Whisper modelo '%s'...", self._config.whisper_model)
                     t0 = time.monotonic()
-                    self._whisper = WhisperModel(
+                    self._whisper = WHISPER_MODEL(
                         self._config.whisper_model,
                         device=self._config.whisper_device,
                         compute_type=self._config.whisper_compute_type,
@@ -208,9 +210,9 @@ class VoiceModule:
                     model_path = self._config.piper_model_path
                     if model_path is None:
                         # Piper descarga automáticamente en ~/.local/share/piper
-                        self._piper = PiperVoice.load(self._config.piper_model)
+                        self._piper = PIPER_VOICE.load(self._config.piper_model)
                     else:
-                        self._piper = PiperVoice.load(str(model_path))
+                        self._piper = PIPER_VOICE.load(str(model_path))
                     _log.info("Piper listo")
         return self._piper
 
