@@ -9,13 +9,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import struct
+
 from atlas.security.bwrap_jail import (
+    _BLOCKED_X86_64,
     BwrapJail,
     BwrapResult,
     BwrapUnavailableError,
     _find_bwrap,
     _require_bwrap,
     build_bwrap_argv,
+    build_seccomp_bpf,
 )
 
 
@@ -112,6 +116,48 @@ def test_bwrap_argv_binds_output_dir():
     idx = argv.index("--bind")
     assert argv[idx + 1] == "/tmp/out"
     assert argv[idx + 2] == "/tmp/atlas_output"
+
+
+# ---------------------------------------------------------------------------
+# Slice 2 — cap-drop + seccomp BPF (tests puros, sin lanzar bwrap)
+# ---------------------------------------------------------------------------
+
+
+def test_bwrap_argv_cap_drop_all():
+    argv = build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out")
+    assert "--cap-drop" in argv
+    assert argv[argv.index("--cap-drop") + 1] == "ALL"
+
+
+def test_bwrap_argv_seccomp_fd_present_when_given():
+    argv = build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out", seccomp_fd=7)
+    assert "--seccomp" in argv
+    assert argv[argv.index("--seccomp") + 1] == "7"
+
+
+def test_bwrap_argv_no_seccomp_when_none():
+    argv = build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out")
+    assert "--seccomp" not in argv
+
+
+def test_seccomp_bpf_structure():
+    bpf = build_seccomp_bpf()
+    # Cada filtro son 8 bytes; nº instrucciones = 4 + M bloqueadas + 2 (allow/errno).
+    m = len(_BLOCKED_X86_64)
+    assert len(bpf) == (4 + m + 2) * 8
+    filters = [struct.unpack("<HBBI", bpf[i:i + 8]) for i in range(0, len(bpf), 8)]
+    # [0] load arch (offset 4); [1] JEQ arch; última es RET ERRNO EPERM.
+    assert filters[0] == (0x20, 0, 0, 4)
+    assert filters[1][0] == 0x15 and filters[1][3] == 0xC000003E
+    assert filters[-1] == (0x06, 0, 0, 0x00050001)   # RET ERRNO|EPERM
+    assert filters[-2] == (0x06, 0, 0, 0x7FFF0000)   # RET ALLOW (default)
+    # Cada syscall bloqueada aparece como JEQ con k == nr.
+    blocked_ks = {f[3] for f in filters if f[0] == 0x15 and f[3] != 0xC000003E}
+    assert set(_BLOCKED_X86_64) <= blocked_ks
+
+
+def test_seccomp_bpf_deterministic():
+    assert build_seccomp_bpf() == build_seccomp_bpf()
 
 
 # ---------------------------------------------------------------------------

@@ -18,7 +18,9 @@ Topologías soportadas (RFC 9334 §5):
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from atlas.security.authorization import HMACSigner, HMACVerifier, SigVerifier, Signer
@@ -130,6 +132,86 @@ class SoftwareAttestationProvider:
             if not self._verifier.verify(payload, quote.signature):
                 return False
             # 2. Verificar que measurement coincide con la política esperada
+            return quote.measurement == expected_measurement
+        except Exception:  # noqa: BLE001
+            return False
+
+
+# ---------------------------------------------------------------------------
+# TpmAttestationProvider — OSM-025 Capa 2 (semilla real, no vapor)
+# ---------------------------------------------------------------------------
+
+_DEFAULT_TPM_DEVICES = ("/dev/tpmrm0", "/dev/tpm0")
+_DEFAULT_EVENT_LOG = "/sys/kernel/security/tpm0/binary_bios_measurements"
+
+
+class TpmUnavailableError(RuntimeError):
+    """No hay TPM en este host. Fail-closed: no se finge attestation de hardware."""
+
+
+class TpmAttestationProvider:
+    """Attestation enraizada en TPM real (presencia + log de arranque medido).
+
+    Implementa la misma Protocol AttestationProvider que la versión software,
+    pero el ``measurement`` proviene de hardware: si NO hay dispositivo TPM,
+    ``attest()`` lanza :class:`TpmUnavailableError` (fail-closed, no inventa una
+    medición). Si lo hay, la medición es el SHA-256 del *measured-boot event log*
+    del TPM (``binary_bios_measurements``) cuando es legible, o un marcador de
+    presencia de dispositivo en su defecto. La firma la produce un Signer
+    inyectado.
+
+    Límite honesto: esto es attestation de PRESENCIA + arranque-medido, NO un
+    quote TPM2 completo con clave de attestation (AK) residente en el TPM — eso
+    requiere la pila tpm2-tss (dep, diferida). Aun así, a diferencia de la
+    versión software, FALLA CERRADO sin hardware: ata la garantía a un TPM real.
+    """
+
+    algo = "tpm-rooted"
+
+    def __init__(
+        self,
+        signer: Signer,
+        verifier: SigVerifier,
+        *,
+        device_paths: tuple[str, ...] = _DEFAULT_TPM_DEVICES,
+        event_log_path: str = _DEFAULT_EVENT_LOG,
+    ) -> None:
+        self._signer = signer
+        self._verifier = verifier
+        self._device_paths = device_paths
+        self._event_log_path = event_log_path
+
+    def _present_device(self) -> str | None:
+        for p in self._device_paths:
+            if Path(p).exists():
+                return p
+        return None
+
+    def _hardware_measurement(self, device: str) -> str:
+        """Medición enraizada en hardware: SHA-256 del event log si es legible,
+        si no, marcador de presencia del dispositivo. Nunca se alcanza sin TPM."""
+        try:
+            data = Path(self._event_log_path).read_bytes()
+            return "evlog:" + hashlib.sha256(data).hexdigest()
+        except OSError:
+            # El dispositivo existe pero el log no es legible: marcador de presencia.
+            return "tpm-present:" + hashlib.sha256(device.encode()).hexdigest()
+
+    def attest(self) -> Quote:
+        device = self._present_device()
+        if device is None:
+            raise TpmUnavailableError(
+                f"sin TPM en {self._device_paths!r}: attestation de hardware no disponible "
+                "(fail-closed; no se finge una medición)"
+            )
+        measurement = self._hardware_measurement(device)
+        sig = self._signer.sign(measurement.encode())
+        return Quote(measurement=measurement, signature=sig, algo=self.algo)
+
+    def appraise(self, quote: Quote, expected_measurement: str) -> bool:
+        try:
+            if not self._verifier.verify(quote.measurement.encode(), quote.signature):
+                return False
             return quote.measurement == expected_measurement
         except Exception:  # noqa: BLE001
             return False
