@@ -70,6 +70,27 @@ class GossipMessage:
         }
         return json.dumps(doc, sort_keys=True, separators=(",", ":")).encode()
 
+    @classmethod
+    def from_bytes(cls, raw: bytes) -> "GossipMessage":
+        """Inverso de :meth:`to_bytes` — reconstruye el mensaje (lado servidor).
+
+        Lanza ``ValueError`` si el JSON no tiene la forma esperada.
+        """
+        doc = json.loads(raw.decode("utf-8"))
+        sth_doc = doc["sth"]
+        sth = SignedTreeHead(
+            tree_size=int(sth_doc["tree_size"]),
+            root_hash=bytes.fromhex(sth_doc["root_hash"]),
+            timestamp=int(sth_doc["timestamp"]),
+            signature=str(sth_doc["signature"]),
+            algo=str(sth_doc["algo"]),
+        )
+        return cls(
+            witness_id=str(doc["witness_id"]),
+            sth=sth,
+            received_at_ns=int(doc["received_at_ns"]),
+        )
+
 
 # ---------------------------------------------------------------------------
 # Transport type alias
