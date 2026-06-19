@@ -43,6 +43,7 @@ from atlas.transparency.log import TransparencyLog
 if TYPE_CHECKING:
     from atlas.security.shadow_model import ShadowRouter, ShadowModel
     from atlas.transparency.crypto_shred import SaltStore
+    from atlas.transparency.appeal import AppealRecord, AppealVerdict, FalsePositiveApealer
 
 
 @dataclass
@@ -84,6 +85,7 @@ class TransparencyGateway:
         shadow_router: "ShadowRouter | None" = None,
         shadow_model: "ShadowModel | None" = None,
         salt_store: "SaltStore | None" = None,
+        appealer: "FalsePositiveApealer | None" = None,
     ) -> None:
         self._cosigner = subject_cosigner
         self._op_signer = operator_signer
@@ -92,6 +94,7 @@ class TransparencyGateway:
         self._shadow_router = shadow_router
         self._shadow_model = shadow_model
         self._salt_store = salt_store
+        self._appealer = appealer
         # last_tree_size para consistency proof (0 = log vacío antes de esta sesión)
         self._last_tree_size: int = log.tree_size
 
@@ -224,6 +227,22 @@ class TransparencyGateway:
             post_ms=(t3 - t2) * 1000,
         )
         return api_resp, metrics
+
+    def submit_appeal(self, record: "AppealRecord") -> "AppealVerdict":
+        """Procesa una apelación de falso positivo a través del appealer opt-in.
+
+        El bucle de apelación (re-evaluación → PDP → aprendizaje) es un flujo
+        fuera del path síncrono de `call()`: el sujeto contesta un bloqueo
+        anterior. Requiere que el gateway se haya construido con `appealer=`.
+
+        Lanza RuntimeError si no hay appealer configurado (fail-closed: no se
+        finge una restauración que no se puede auditar).
+        """
+        if self._appealer is None:
+            raise RuntimeError(
+                "appeal loop not configured: construct TransparencyGateway with appealer="
+            )
+        return self._appealer.submit(record)
 
     # ------------------------------------------------------------------
     # Helpers privados

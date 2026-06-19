@@ -1,6 +1,6 @@
 # OSM-027 — Bucle de apelación de falsos positivos con aprendizaje
 
-Fecha: 2026-06-17 · Estado: **Difusión** (cableado pendiente; ver [[OSM-000]]) · Origen: `idea avance 3.md` ·
+Fecha: 2026-06-17 · Estado: **En membrana** (módulo `transparency/appeal.py` + 8 tests, 2026-06-19; wiring al gateway pendiente) · Origen: `idea avance 3.md` ·
 Contexto: ADR-040 (Decider/PDP), ADR-044 (LessonStore), ADR-049 (organismo de conocimiento),
 `src/atlas/immunity/`, [[OSM-024]], [[OSM-025]], [[OSM-028]].
 
