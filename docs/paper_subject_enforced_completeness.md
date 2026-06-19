@@ -944,7 +944,36 @@ tripwire fires (e.g. a length-drift z = 5.1 crossing in another run). The attack
 stochastic, so this is illustrative, not a benchmark. In all cases attribution remained
 100% per turn.
 
-### 9.5 Honest Scope of the Evaluation
+### 9.5 Teacher-with-Debate and Model-Agnostic Accumulation
+
+The immune memory can be populated by a teacher model that *proposes* lessons, without
+training weights: knowledge is accumulated as verifiable, chain-anchored entries. The
+teacher is not trusted blindly. Each proposal is arbitrated against the system's *verified
+priors* via near-duplicate recall: a proposal matching a prior with the same stance is
+**corroborated**; one matching with the opposite stance is **contradicted** (the verified
+prior wins); a novel proposal is **accepted** only after a verifier admits it, else
+**rejected**. The verifier, not the teacher, is the arbiter. The epistemic value is
+concrete: when the teacher is prompted to argue that a known attack pattern is benign, the
+system contradicts it on the strength of a verified prior rather than absorbing the claim —
+a robust outcome across runs.
+
+Because nothing is fine-tuned, the layer is *model-agnostic*: the same debate machinery was
+exercised with two different teacher providers/models (an open hosted model and a stronger
+open Nemotron-class model), each producing arbitrated, chain-anchored outcomes (corroborated
+/ accepted / contradicted) with the lesson chain verifying. The contribution is not a
+learning paradigm (retrieval-augmented accumulation is established prior art) but that the
+accumulation is *verifiable and model-agnostic*, with provenance of every lesson on the
+chain.
+
+**Limits.** The teacher is a fallible, stochastic LLM; contradiction is detected
+heuristically (embedding similarity + stance), not proven; the similarity threshold is a
+precision/recall knob (too low over-corroborates distinct families, lexical-only misses
+reformulations). Knowledge is accumulated, not new capabilities. Teacher models were used
+under the operator's authorization and account; open models are preferred to minimise
+provider terms-of-service friction, and a proprietary frontier teacher is a configuration
+swap, not an architectural change.
+
+### 9.6 Honest Scope of the Evaluation
 
 These results show a *mechanism* and its *measured boundary*; they promise no coverage.
 Specifically: the target model is a stub; the scoped content matcher is a small governed
