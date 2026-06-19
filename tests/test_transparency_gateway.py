@@ -28,7 +28,7 @@ from atlas.transparency.client_cosign import (
     verify_cosigned_request,
     verify_receipt,
 )
-from atlas.transparency.gateway import GatewayMetrics, TransparencyGateway
+from atlas.transparency.gateway import GatewayMetrics, ReplayError, TransparencyGateway
 from atlas.transparency.key_store import load_or_create
 from atlas.transparency.log import TransparencyLog
 
@@ -494,6 +494,42 @@ def test_gateway_shadow_active_mode_changes_decision():
     doc = _json.loads(api_resp.leaf_bytes)
 
     assert doc["decision"] == "shadow_active"
+
+
+# ---------------------------------------------------------------------------
+# Anti-replay (OSM-010)
+# ---------------------------------------------------------------------------
+
+
+def test_gateway_replay_raises_replay_error():
+    """Replay del mismo (seq, payload_hash) lanza ReplayError; el log no crece."""
+    gw, cosigner, _, log = _make_gateway()
+    payload = b"original request"
+
+    # Primera llamada legítima
+    gw.call(payload, _noop_call)
+    size_after_first = log.tree_size  # 2 entries (input + output)
+
+    # Simular replay: rebobinar el seq del cosigner para reutilizar seq=0 con el mismo payload
+    cosigner._next_seq = 0
+
+    with pytest.raises(ReplayError):
+        gw.call(payload, _noop_call)
+
+    # El log no debe haber crecido en el intento de replay
+    assert log.tree_size == size_after_first
+
+
+def test_gateway_distinct_seqs_no_false_positive():
+    """Dos peticiones legítimas con distinto seq no disparan ReplayError."""
+    gw, _, _, log = _make_gateway()
+
+    r1, _ = gw.call(b"first request", _noop_call)
+    r2, _ = gw.call(b"second request", _noop_call)
+
+    assert r1.seq_ack == 0
+    assert r2.seq_ack == 1
+    assert log.tree_size == 4  # 2 entries per call
 
 
 def test_gateway_without_shadow_router_unchanged():

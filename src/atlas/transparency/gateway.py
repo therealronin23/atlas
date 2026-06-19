@@ -64,6 +64,17 @@ class GatewayMetrics:
         return self.pre_ms + self.model_ms + self.post_ms
 
 
+class ReplayError(Exception):
+    """Raised when a (seq, payload_hash) pair has already been committed.
+
+    OSM-010: anti-replay guard at the gateway level.  A monotonically
+    increasing seq never collides under normal operation; only a malicious
+    replay or a broken retry that re-uses an old CosignedRequest will
+    trigger this.  Fail-closed: the log is not written and the model is
+    not called.
+    """
+
+
 class TransparencyGateway:
     """Envuelve cualquier llamada al modelo con subject-enforced completeness.
 
@@ -97,6 +108,8 @@ class TransparencyGateway:
         self._appealer = appealer
         # last_tree_size para consistency proof (0 = log vacío antes de esta sesión)
         self._last_tree_size: int = log.tree_size
+        # OSM-010: anti-replay set — (seq, payload_hash) pairs already committed.
+        self._committed: set[tuple[int, str]] = set()
 
     # ------------------------------------------------------------------
     # Punto de entrada principal
@@ -126,6 +139,14 @@ class TransparencyGateway:
 
         Returns:
             (APIResponse, GatewayMetrics)
+
+        Raises:
+            ReplayError: OSM-010 anti-replay guard.  If (seq, payload_hash) was
+                already committed by this gateway instance, the call is rejected
+                before any log write or model invocation.  A monotonically
+                increasing seq never triggers this under normal operation; only
+                a malicious replay or a mis-implemented retry that re-uses an
+                old CosignedRequest will collide.
         """
         t0 = time.perf_counter()
 
@@ -154,6 +175,14 @@ class TransparencyGateway:
         # ── Pre: firmar request + commit inspection ──────────────────────
         cosigned, sh = self._cosigner.sign_request_with_salt(payload)
 
+        # OSM-010: anti-replay guard — fail-closed before any log write or model call.
+        _replay_key = (cosigned.seq, cosigned.payload_hash)
+        if _replay_key in self._committed:
+            raise ReplayError(
+                f"replay detected: seq={cosigned.seq} payload_hash={cosigned.payload_hash!r} "
+                "has already been committed to the log"
+            )
+
         # Fallback: si el cosigner no tiene salt_store propio pero el gateway sí
         if not sh and self._salt_store is not None:
             entry = self._salt_store.register(cosigned.seq)
@@ -179,6 +208,8 @@ class TransparencyGateway:
             subject_id=subject_id,
         )
         leaf_index_in = self._log.append(record.to_bytes())
+        # OSM-010: mark committed after successful log write.
+        self._committed.add(_replay_key)
 
         t1 = time.perf_counter()
 

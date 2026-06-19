@@ -221,6 +221,18 @@ regulatoria. Empareja con [[OSM-027]] (bucle de apelación, ya tiene interacció
 | capa 2 (integrada) | Inspección simétrica de output: `OutputInspectionRecord` committed antes de devolver el resultado; checks 5+6 en `SubjectLedger.ingest()`; Session G en demo | `client_cosign.py` / transparency | alta | **Absorbida** (implementada 2026-06-17; ADR-053) |
 | [042](OSM-042_shadow_model_active_defense.md) | Shadow model: defensa activa con honeypot pasivo/activo + red team dual-use. Detectado ataque → modelo sombra (Haiku) sustituye al real sin que el atacante lo note. Mismo componente como atacante sintético (red team periódico). | `src/atlas/security/shadow_model.py` + `red_team.py` | media-alta | **Difusión** (diseño 2026-06-17; implementación pendiente) |
 
+### Sesión 2026-06-19 — CLOSE-NOW batch (autobuild lean) + triaje
+
+Verificación previa contra código real antes de construir (decide-con-hechos):
+
+| OSM | Pieza | Estado nuevo | Nota |
+|---|---|---|---|
+| 010 | Anti-replay en co-firmas | **Absorbida** | `ReplayError` + `_committed` en `gateway.py`; guard fail-closed antes de append/modelo. Cierra el claim §6.8 (idempotent retry → no hojas duplicadas) a nivel gateway. |
+| 006 | Test de escala del log | **Absorbida** | `tests/test_transparency_scale.py` (10k entradas; inclusion+consistency verifican). Diseño escala a 100k+. |
+| 039 | provenance record (decision/action/cause) | **Absorbida** (ya existía) | `InspectionRecord.decision` + `.cause` ya presentes; no era trabajo, solo verificación. |
+| 008 | STRIDE threat model | **Cubierto** | Ya existe `docs/adr_036_threat_model.md`; extender al filtro Osmosis si hace falta, no reconstruir. |
+| 032 | Rate-limit / anti-spam del log | **Difusión (aparcado)** | No over-engineering: improductivo *sin consumidor*. Su valor está en el wiring al gateway → fase de hardening/demo, no como util huérfano. |
+
 ### Sesión 2026-06-18 — promociones verificadas contra código real
 
 Verificación previa: `PYTHONPATH=src python3 -c "import X"` para cada módulo antes de
