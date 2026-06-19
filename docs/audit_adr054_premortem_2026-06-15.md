@@ -63,7 +63,7 @@ desarrollador esto es deuda recurrente, no un build de una vez.
 Esta es la parte donde la respuesta es **sí, y de forma concreta** — no por la
 idea, sino por la maquinaria que Atlas ya tiene construida y verificada:
 
-1. **Log de completitud (ADR-053, ya construido, 97 tests).** Es la capa 4. No
+1. **Log de completitud (ADR-053, ya construido y verificable con `atlas reality`).** Es la capa 4. No
    hay que inventarla: existe en `src/atlas/transparency/`. Esto es lo que ningún
    paper de honeypot tiene — todos registran "internamente" sin completitud
    verificable por el usuario.

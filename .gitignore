@@ -66,10 +66,14 @@ docs/self_audit_*.md
 # Their distilled value already lives in docs/membrana/OSM-* and the ADRs.
 /idea.md
 /idea avance*.md
+/gpt.md
+/AUDITORIA GROK.md
 docs/texto arrastrado.txt
 docs/conversation_summary.md
 # Raw exported chat — valuable regulatory content; distill into a clean doc before tracking.
 /Gemini-Auditoría*.md
+# Local agent/skill bundles copied into the workspace; use installed skills instead.
+/.agents/
 # Stale doc: documents Antivirus/Membrane modules that don't exist in src/ (wrong imports).
 docs/security/README.md
 

@@ -48,6 +48,12 @@ BLOCKED_DOMAINS: frozenset[str] = frozenset({
     "::1",
 })
 
+LOCAL_PRIVATE_DOMAINS: frozenset[str] = frozenset({
+    "localhost",
+    "127.0.0.1",
+    "::1",
+})
+
 
 @dataclass(frozen=True)
 class BridgeDecision:
@@ -65,8 +71,14 @@ class SSRFBridge:
     cualquier request HTTP.
     """
 
-    def __init__(self, extra_allowed: set[str] | None = None) -> None:
+    def __init__(
+        self,
+        extra_allowed: set[str] | None = None,
+        *,
+        allow_private_network: bool = False,
+    ) -> None:
         self._allowed = DEFAULT_ALLOWED_DOMAINS | (extra_allowed or set())
+        self._allow_private_network = allow_private_network
 
     def check(self, url: str) -> BridgeDecision:
         """
@@ -99,9 +111,19 @@ class SSRFBridge:
                 domain=parsed.netloc,
             )
 
-        domain = parsed.netloc.lower()
-        # Eliminar puerto si existe
-        domain = domain.split(":")[0]
+        domain = (parsed.hostname or parsed.netloc).lower()
+
+        if (
+            self._allow_private_network
+            and domain in LOCAL_PRIVATE_DOMAINS
+            and self._is_allowed(domain)
+        ):
+            return BridgeDecision(
+                allowed=True,
+                url=url,
+                reason=f"Red privada permitida explícitamente: {domain}",
+                domain=domain,
+            )
 
         # 1. Blocklist absoluta PRIMERO — no puede ser anulada por la allowlist
         if domain in BLOCKED_DOMAINS:

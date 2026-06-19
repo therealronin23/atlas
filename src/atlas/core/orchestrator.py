@@ -1090,7 +1090,7 @@ class Orchestrator:
         fn = layer_map.get(layer)
         if fn is None:
             return {"error": f"Capa desconocida: {layer}"}
-        return fn()  # type: ignore[no-untyped-call]
+        return fn()
 
     def gate_h_status(self) -> dict[str, Any]:
         return self._gate_h.status_summary()  # type: ignore[no-any-return]

@@ -66,9 +66,9 @@ Nunca.**
 | Capa | Pieza | Origen | Build/Integrar | Límite honesto |
 |---|---|---|---|---|
 | **L1** | CC++ cascade | Anthropic (producción) | **Integrar** tras `ClassifierCascade` Protocol | bypass alto adaptativo |
-| **L2** | **Polimorfismo causal + salting + log verificable** | LLM Salting (Sophos 2025) + ADR-053 | **Integrar** LLM Salting tras `SessionSalt` Protocol; log ya construido (1679 tests) | requiere acceso a activaciones; en API pura = hiperparámetros (FlexLLM); Session J (behavioral drift) registrada en L4 |
+| **L2** | **Polimorfismo causal + salting + log verificable** | LLM Salting (Sophos 2025) + ADR-053 | **Integrar** LLM Salting tras `SessionSalt` Protocol; log ya construido; estado actual verificable con `atlas reality` | requiere acceso a activaciones; en API pura = hiperparámetros (FlexLLM); Session J (behavioral drift) registrada en L4 |
 | **L3** | Señuelo + forense + gossip + evasion detection | HoneyTrap-style + RFC 9162 witnesses + ADR-053 L3c | **Stub** software para honeypot; activar solo tras causa confirmada (I1); witnesses integrados en L3b | cae ante sonda verificable (R1); L3c requiere baseline histórica |
-| **L4** | **Log de campaña verificable + memoria inmune + diversidad externa** | **ADR-053 (log) + ADR-044 (lessons) + ADR-049 (conocimiento externo)** | **Ya construido** (1679 tests); build candidato para ADR-049 → ADR-054 feedback loop | no detecta per se; encarece + atribuye + aprende sin colapsar en diversidad (Session J observa drift) |
+| **L4** | **Log de campaña verificable + memoria inmune + diversidad externa** | **ADR-053 (log) + ADR-044 (lessons) + ADR-049 (conocimiento externo)** | **Ya construido**; estado actual verificable con `atlas reality`; build candidato para ADR-049 → ADR-054 feedback loop | no detecta per se; encarece + atribuye + aprende sin colapsar en diversidad (Session J observa drift) |
 
 **El valor propio está en las capas 4 y 5 — las únicas no disponibles en ningún
 sistema existente.**

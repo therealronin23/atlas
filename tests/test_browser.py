@@ -102,7 +102,7 @@ def http_server(static_dir: Path) -> Generator[str, None, None]:
 @pytest.fixture
 def bridge_with_localhost() -> SSRFBridge:
     """SSRF Bridge que permite 127.0.0.1 para tests."""
-    return SSRFBridge(extra_allowed={"127.0.0.1"})
+    return SSRFBridge(extra_allowed={"127.0.0.1"}, allow_private_network=True)
 
 
 @pytest.fixture
