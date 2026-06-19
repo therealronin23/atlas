@@ -130,8 +130,13 @@ class WitnessServer:
                     # Conflicto: el operador mostró un STH distinto para este tree_size.
                     self._reply(409, f"split-view detected: {exc}")
                     return
-                # Observado y consistente → counter-firma el STH.
-                counter_sig = signer.sign(message.sth._payload())
+                # Observado y consistente → counter-firma el CUERPO recibido
+                # (el payload del GossipMessage). Esto casa con el contrato de
+                # verificación de WitnessNetwork.broadcast, que comprueba
+                # verifier.verify(payload_del_gossip, sig). Firmar sth._payload()
+                # rompería esa composición (bug de integración detectado al leer
+                # broadcast antes de declarar cierre).
+                counter_sig = signer.sign(raw)
                 self._reply(200, counter_sig)
 
         return _Handler
