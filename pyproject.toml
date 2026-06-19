@@ -35,6 +35,16 @@ voice = [
 computer-use = [
     "playwright>=1.45",      # BrowserTool / Gate F F1 (requiere: python -m playwright install chromium)
 ]
+redteam = [
+    # ADR-056: tooling de red-team SOLO dev/CI — NUNCA importado por el runtime.
+    # Instalar en venv aislado y FIJAR torch al índice CPU para quedarse en ~1.8GB
+    # (si no, garak arrastra torch+CUDA ~5-8GB):
+    #   python -m venv .venv-redteam
+    #   .venv-redteam/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+    #   .venv-redteam/bin/pip install garak
+    # El harness corre con ATLAS_HOME aislado, jamás contra el servicio vivo.
+    "garak>=0.15",
+]
 
 [project.scripts]
 atlas = "atlas.interfaces.cli:cli"
