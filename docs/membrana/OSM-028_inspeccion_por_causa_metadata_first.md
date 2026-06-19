@@ -1,8 +1,8 @@
 # OSM-028 — Inspección por causa: metadata-monitor-first
 
-Fecha: 2026-06-17 · Estado: **En membrana** (`AttestedInspector` + `cause=` en gateway implementados; metadata-monitor-first completo pendiente) · Origen: `idea avance 3.md` ·
+Fecha: 2026-06-17 (actualizado 2026-06-19) · Estado: **En membrana** (`AttestedInspector` + `cause=` en gateway implementados; **compuerta de causa = `DriftTripwire` implementada 2026-06-19**, ver más abajo) · Origen: `idea avance 3.md` ·
 Contexto: ADR-053 (causa registrada), ADR-054 (capa 1), `src/atlas/transparency/attestation.py`
-(`AttestedInspector`), [[OSM-001]] (métrica de campaña), [[OSM-024]].
+(`AttestedInspector`), `src/atlas/security/drift.py` (compuerta de causa), [[OSM-001]] (métrica de campaña), [[OSM-024]], [[OSM-042]] (shadow router que consume el confidence).
 
 ---
 
@@ -58,6 +58,52 @@ si hay causa se inspecciona el contenido contra una lista cerrada.
 4. **Mantenible**: embeddings ligeros podrían ir en Rust ([[OSM-029]]); la lista cerrada es
    gobernada, no un modelo opaco.
 5. **Sancionado**: cambios en la lista cerrada de abusos pasan por PDP (I5).
+
+## Compuerta de causa implementada (2026-06-19) — `DriftTripwire`
+
+El "metadata-monitor-first" de esta OSM se realiza como **tripwire de deriva de sesión**
+(`src/atlas/security/drift.py`), no como un clasificador de ataques. Decisión: NO se abre OSM
+nueva; este componente ES la compuerta de causa que esta OSM presuponía y el productor del
+`confidence` que [[OSM-042]] (ShadowRouter) consumía a 0.0.
+
+- **Qué hace**: por turno extrae 4 features baratos (entropía de Shannon, distancia coseno al
+  centroide rodante de la *propia* sesión, densidad de triggers de jailbreak, delta de
+  longitud), agrega con EWMA + change-point z-score, y emite `confidence∈[0,1]` + `cause`.
+  Compara la sesión consigo misma (no con un modelo global de ataques → sortea "cada uno
+  ataca distinto").
+- **2 en 1 (estadístico + embedding)**: el embedding es un `Embedder` inyectable (Protocol de
+  `atlas.memory.embeddings`); v0 usa `StubEmbedder` (cero deps nuevas, regla 6); swap a
+  `LiteLLMEmbedder` da más señal sin cambiar interfaz.
+- **I3 (no perfilar)**: `DriftSessionState` es 100% numérico; nunca retiene el texto del turno.
+  Testeado con marcador único.
+- **I2 (causa registrada)**: al cruzar umbral, `cause` nombra la feature + z-score, lista para
+  que el gateway la registre en el log.
+- **Cold-start fail-open**: < N turnos → `confidence=0.0` → NORMAL. Es un tripwire que GATEA
+  escalada, no un bloqueador.
+- **Desacople**: `gateway.py` NO importa `drift.py`; el wiring es opt-in (el caller deriva el
+  confidence y lo pasa a `gateway.call(confidence=...)`).
+
+**Postmortem (corrección de calibración, 2026-06-19):** la primera versión saturaba
+`confidence=1.0` en el primer turno puntuado de CUALQUIER sesión benigna — la varianza EWMA
+casi-cero del arranque hacía explotar el z-score (suelo `1e-9`). Los unit tests no lo
+cogieron porque el test de estabilidad usaba turnos *idénticos* (varianza 0 irreal). Un smoke
+en runtime con variación benigna natural lo destapó. Fix: suelo de std físico `_MIN_STD=0.05`
+(las features están en [0,1]). Tras el fix, separación limpia verificada en smoke: benigno
+≤0.43, variación natural ≤0.28, homogéneo 0.02, giro adversarial 0.88–0.95. Regresión añadida
+(`test_benign_natural_variation_does_not_false_positive`).
+
+**Cause→log cableado (2026-06-19) — nivel 2 cerrado.** `gateway.call()` acepta ahora
+`monitor_cause: str` (además de `confidence`). Cuando la señal escala la sesión, la causa
+feature-level del monitor se COMPONE en `InspectionRecord.cause` (`"{routing.cause}; monitor=..."`)
+y se commitea al log Merkle ANTES de la llamada al modelo (I2: causa registrada y precede a la
+inspección). El gateway sigue SIN importar `drift.py` (recibe la string ya computada por el
+caller; test `test_gateway_does_not_import_drift` verifica las líneas de import). Tests:
+`test_monitor_cause_recorded_in_log` (la causa aparece en el leaf del log) y
+`test_monitor_cause_ignored_when_no_escalation` (sin escalada no se inyecta causa espuria).
+
+**Sigue pendiente (nivel 3, no bloqueante)**: la *inspección de contenido acotada contra lista
+cerrada* tras registrar la causa (`AttestedInspector` enchufado a este flujo). Hoy la causa
+escala a shadow/honeypot; la inspección gobernada contra lista cerrada es trabajo posterior.
 
 ## Límites honestos
 

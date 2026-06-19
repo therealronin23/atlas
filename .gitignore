@@ -11,6 +11,8 @@ dist/
 # Virtual environments
 .venv/
 venv/
+# ADR-056: venv aislado de red-team (garak); nunca en deps de runtime
+.venv-redteam/
 env/
 
 # Test / cache
@@ -78,3 +80,4 @@ docs/*.blg
 docs/*.toc
 docs/*.out
 docs/*.log
+.autobuild/

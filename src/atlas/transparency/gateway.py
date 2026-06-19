@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from atlas.security.shadow_model import ShadowRouter, ShadowModel
     from atlas.transparency.crypto_shred import SaltStore
     from atlas.transparency.appeal import AppealRecord, AppealVerdict, FalsePositiveApealer
+    from atlas.transparency.scoped_inspector import ScopedInspector
 
 
 @dataclass
@@ -97,6 +98,7 @@ class TransparencyGateway:
         shadow_model: "ShadowModel | None" = None,
         salt_store: "SaltStore | None" = None,
         appealer: "FalsePositiveApealer | None" = None,
+        scoped_inspector: "ScopedInspector | None" = None,
     ) -> None:
         self._cosigner = subject_cosigner
         self._op_signer = operator_signer
@@ -106,6 +108,7 @@ class TransparencyGateway:
         self._shadow_model = shadow_model
         self._salt_store = salt_store
         self._appealer = appealer
+        self._scoped_inspector = scoped_inspector
         # last_tree_size para consistency proof (0 = log vacío antes de esta sesión)
         self._last_tree_size: int = log.tree_size
         # OSM-010: anti-replay set — (seq, payload_hash) pairs already committed.
@@ -126,6 +129,7 @@ class TransparencyGateway:
         cause: str = "gateway.auto",
         subject_id: str = "",
         confidence: float = 0.0,
+        monitor_cause: str = "",
     ) -> tuple[APIResponse, GatewayMetrics]:
         """Ejecuta call_fn(payload) envuelto en el protocolo completo.
 
@@ -136,6 +140,15 @@ class TransparencyGateway:
             model_id:  Identificador del modelo; se hashea como model_version_hash.
             decision:  "allow" | "block" | "inspect" para el InspectionRecord.
             cause:     Causa del evento de inspección.
+            confidence: Señal [0,1] del monitor de causa (p.ej. DriftTripwire).
+                       Alimenta el ShadowRouter; 0.0 = sin señal.
+            monitor_cause: OSM-028 (I2) — causa feature-level que produjo la
+                       señal (p.ej. "refusal-drift z=4.4"). Cuando la señal
+                       escala la sesión, esta causa se COMPONE en la `cause`
+                       del InspectionRecord para que el motivo del monitor
+                       quede registrado en el log Merkle ANTES de llamar al
+                       modelo. El gateway no conoce el monitor (desacoplado);
+                       solo recibe la string ya computada por el caller.
 
         Returns:
             (APIResponse, GatewayMetrics)
@@ -163,7 +176,14 @@ class TransparencyGateway:
             )
             if routing.mode != ShadowMode.NORMAL:
                 effective_decision = routing.mode.value
-                effective_cause = routing.cause
+                # OSM-028 (I2): preservar la causa feature-level del monitor que
+                # originó la escalada, además de la razón del router. Ambas quedan
+                # en el InspectionRecord (committed antes de la llamada al modelo).
+                effective_cause = (
+                    f"{routing.cause}; monitor={monitor_cause}"
+                    if monitor_cause
+                    else routing.cause
+                )
                 _sm = self._shadow_model if self._shadow_model is not None else ShadowModel()
                 _mode = routing.mode
 
@@ -171,6 +191,24 @@ class TransparencyGateway:
                     return _sm.respond(_mode, p.decode("utf-8", errors="replace"), sleep=lambda _: None)
 
                 effective_call_fn = _shadow_call
+
+                # OSM-028 (nivel 3): inspección de contenido ACOTADA contra lista
+                # cerrada gobernada — SOLO cuando hay escalada (modo != NORMAL),
+                # es decir, SOLO cuando hay causa.  Inspeccionar sin causa sería
+                # inspección masiva del contenido de todas las peticiones, justo
+                # lo que OSM-028 (I2) prohíbe.  La causa del inspector se ANEXA a
+                # effective_cause antes del commit al log, para que quede
+                # registrada ANTES de llamar al modelo (I2).  No se altera el
+                # schema de InspectionRecord: se codifica en la string `cause`.
+                if self._scoped_inspector is not None:
+                    insp_result = self._scoped_inspector.inspect(payload)
+                    if insp_result.matched:
+                        effective_cause = (
+                            f"{effective_cause}; inspected=true"
+                            f" labels={','.join(insp_result.labels)}"
+                        )
+                    else:
+                        effective_cause = f"{effective_cause}; inspected=true labels=none"
 
         # ── Pre: firmar request + commit inspection ──────────────────────
         cosigned, sh = self._cosigner.sign_request_with_salt(payload)
