@@ -574,15 +574,15 @@ The completeness gap --- guaranteeing that an adversarial SDK operator cannot si
 omit records --- is acknowledged as out of scope in Aegon; closing it is the central
 contribution of our work.
 
-\textbf{Auditable Agents}~\cite{auditableagents2026} (Nian et al., 2026) proposes a Merkle
-log for agent execution traces, providing post-hoc auditability of tool calls and state
-transitions. The mechanism assumes \term{honest tool providers}; completeness against a
-dishonest operator is not addressed. Our contribution is precisely the case they assume away.
+\textbf{Auditable Agents}~\cite{auditableagents2026} (Nian et al., 2026) proposes a
+framework for the auditability of agent execution (tool calls and state transitions). It
+does not provide subject-verifiable completeness against an operator that omits entries ---
+the case our mechanism targets.
 
-\textbf{Aegis}~\cite{aegis2026} (Mazzocchetti, 2026) combines ZK-STARK Proof-of-Conduct
-with an ILK hash chain for governance of autonomous agents. Aegis addresses
-\term{behavioral compliance} (did the agent follow rules?), not completeness of an
-operator-side inspection log. The two mechanisms are complementary.
+\textbf{Aegis}~\cite{aegis2026} (Mazzocchetti, 2026) provides cryptographic runtime
+governance for autonomous agents, enforcing behavioral and policy compliance at execution
+time. Aegis addresses \term{behavioral compliance} (did the agent follow rules?), not
+completeness of an operator-side inspection log. The two mechanisms are complementary.
 
 % ---------------------------------------------------------------
 \section{Honest Limits}
