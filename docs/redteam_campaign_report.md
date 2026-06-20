@@ -1,6 +1,6 @@
 # Reporte de campaña red-team — Osmosis
 
-<!-- Generado por scripts/redteam/garak_campaign.py (ADR-056). Reproducible. -->
+<!-- Generado por scripts/redteam/garak_campaign.py. Reproducible. -->
 
 Driver de ataque: **NVIDIA Garak** (corpus DanInTheWild + promptinject), 60
 prompts de ataque reales. Cada petición pasa por un gateway Osmosis aislado
