@@ -935,23 +935,22 @@ undeniable. The completeness gap — guaranteeing that an adversarial SDK
 operator cannot silently omit records — is acknowledged as out of scope
 in Aegon; closing it is the central contribution of our work.</p>
 <p><em>Auditable Agents</em> [arXiv:2604.05485, April 2026] proposes a
-Merkle log for agent execution traces, providing post-hoc auditability
-of tool calls and state transitions. The mechanism assumes
-<strong>honest tool providers</strong> — completeness of the log against
-a dishonest operator who controls the logging infrastructure is not
-addressed. Our contribution is precisely the case they assume away: a
-subject-side mechanism that detects operator omissions without trusting
-the operator.</p>
-<p><em>Aegis</em> [arXiv:2603.16938, March 2026] combines ZK-STARK
-Proof-of-Conduct with an ILK hash chain for governance of autonomous
-agents, enabling verifiable attestation that an agent followed a
-declared policy. Aegis addresses <strong>behavioral compliance</strong>
-(did the agent follow rules?), not completeness of an operator-side
-inspection log. Neither the subject-side monitoring primitive nor the
-set-completeness problem appear in the Aegis design. The two mechanisms
-are complementary: Aegis could benefit from a completeness layer beneath
-it that ensures the inspection log driving its policy engine is itself
-unmanipulable by the operator.</p>
+framework for the auditability of agent execution (tool calls and state
+transitions). It does not provide subject-verifiable completeness of the
+log against a dishonest operator who controls the logging
+infrastructure. Our contribution is precisely that case: a subject-side
+mechanism that detects operator omissions without trusting the
+operator.</p>
+<p><em>Aegis</em> [arXiv:2603.16938, March 2026] provides cryptographic
+runtime governance for autonomous agents, enforcing behavioral and
+policy compliance at execution time, enabling attestation that an agent
+followed a declared policy. Aegis addresses <strong>behavioral
+compliance</strong> (did the agent follow rules?), not completeness of
+an operator-side inspection log. Neither the subject-side monitoring
+primitive nor the set-completeness problem appear in the Aegis design.
+The two mechanisms are complementary: Aegis could benefit from a
+completeness layer beneath it that ensures the inspection log driving
+its policy engine is itself unmanipulable by the operator.</p>
 <hr />
 <h3 id="honest-limits">6. Honest Limits</h3>
 <p>These nine limits are not weaknesses to apologise for; they are the
@@ -1605,13 +1604,15 @@ Baskaran/Pherwani/Krishnan, April 2026) — confirmed: DRM/content
 licensing domain (JWT + Merkle + Android StrongBox); prototype = future
 work; completeness gap acknowledged out of scope; structural parallel +
 distinction noted (§5). - [x] Auditable Agents (arXiv:2604.05485, April
-2026) — existence confirmed; honest-tool-provider assumption stated; our
-contribution is the case they assume away (§5). - [x] Aegis
-(arXiv:2603.16938, March 2026) — existence confirmed; ZK-STARK PoC + ILK
-hash chain; behavioral compliance domain; orthogonal to inspection-log
-completeness (§5). - [pending: DOI resolution] Full DOIs + author lists
-for all citations before arXiv upload. (Handled by arXiv submission
-process; deferred to pre-upload checklist.)</p>
+2026) — existence/title/authors confirmed via WebFetch; agent-execution
+auditability; technical specifics (Merkle log / honest-tool-provider)
+NOT individually confirmed → prose softened to the verifiable gap-claim
+(§5). - [x] Aegis (arXiv:2603.16938, March 2026) —
+existence/title/author confirmed; runtime behavioral/policy compliance
+(orthogonal to inspection-log completeness); ZK-STARK specific NOT
+confirmed → prose softened (§5). - [pending: DOI resolution] Full DOIs +
+author lists for all citations before arXiv upload. (Handled by arXiv
+submission process; deferred to pre-upload checklist.)</p>
 <p>Implementation status: - [x] <code>InspectionRecord</code> +
 <code>OutputInspectionRecord</code> + <code>APIResponse</code> (6-check
 protocol). Symmetric input/output inspection. - [x]
