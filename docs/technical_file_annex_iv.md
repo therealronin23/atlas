@@ -103,8 +103,12 @@ federated login. Not yet implemented.
 
 - The inspection record is independently auditable by a regulator or by the subject
   themselves, without relying on the provider's assertions.
-- **Gap noted:** a documented escalation procedure for blocked requests (appeal of false
-  positives) is specified but not yet wired.
+- A false-positive appeal loop is wired: a blocked subject can submit an appeal that is
+  re-evaluated and arbitrated (re-evaluation → decision point → recorded outcome), with the
+  reason hashed (never stored in clear) and the verdict committed to the log.
+- A cause-gated escalation path routes flagged sessions to a shadow/observation mode; the
+  triggering cause (statistical drift signal and/or scoped-inspection labels) is recorded
+  in the log before the model is called.
 
 ---
 
@@ -116,7 +120,13 @@ federated login. Not yet implemented.
 - Tamper-evident, disk-persistent Merkle log with inclusion/consistency proofs
 - GDPR Art. 17 crypto-shredding via per-request salts
 - Read-API for deployer/regulator monitoring
-- Witness HTTP transport for split-view mitigation
+- Witness node (HTTP server + counter-signature + split-view rejection) for split-view mitigation
+- Cause-gated content inspection on input and output (governed closed list)
+- Cheap statistical session-drift monitor that gates escalation (not a detector)
+- Log-native behavioral-change auditor (same input → different output over time)
+- Auditable immune memory: lessons anchored on-chain; near-duplicate recall of reformulations
+- OS-level sandbox for untrusted code: namespaces + cap-drop ALL + seccomp-bpf blocklist (x86_64)
+- Device-bound identity binding (KYC) interface with fail-closed verifier hook
 
 ### Known limitations and gaps
 
@@ -125,10 +135,12 @@ federated login. Not yet implemented.
 | GDPR Art. 17 crypto-shredding | ✅ Implemented | dual-hash + salt store |
 | Art. 26 Read-API for deployers | ✅ Implemented | tree / entries / inclusion proof |
 | Art. 11 Technical File | ✅ This document | — |
-| KYC / residency verification interface (Art. 9) | 🟡 Partial | hook defined, not implemented |
-| Art. 14 escalation / appeal policy | 🔴 Open | specified, not wired |
-| Independent witness nodes (anti split-view) | 🟡 Partial | HTTP transport done; node deployment is ecosystem work |
-| Device-bound key attestation (TPM/Secure Enclave) | 🟡 Deferred | design complete, no code |
+| Art. 14 appeal / escalation | ✅ Implemented | appeal loop wired + cause-gated escalation |
+| KYC / residency binding (Art. 9) | 🟡 Seed | binding interface + fail-closed hook; real identity provider external |
+| Device-bound key attestation (TPM) | 🟡 Seed | presence + measured-boot, fail-closed; full TPM2 quote (AK) needs tpm2-tss |
+| Independent witness nodes (anti split-view) | 🟡 Partial | node code complete (server+counter-sign); ≥2 independent hosts is deployment |
+| Adaptive robustness vs novel attack families | 🔴 Open | unsolved field-wide; out of scope (we measure attribution, not coverage) |
+| Behavioral faithfulness on full input distribution | 🔴 Open | needs interpretability infra; canary/log auditor is a signal, not a proof |
 
 ---
 
@@ -141,7 +153,7 @@ federated login. Not yet implemented.
 | RFC 9052 (COSE) | Interoperability with SCITT-style signed statements (future) |
 | GDPR Art. 17 | Crypto-shredding via per-request salt store |
 | EU AI Act Art. 12/13 | Record-keeping and transparency — Merkle log + Read-API |
-| EU AI Act Art. 14 | Human oversight — independently auditable log (appeal policy pending) |
+| EU AI Act Art. 14 | Human oversight — independently auditable log + wired false-positive appeal loop |
 | EU AI Act Art. 26 | Deployer monitoring — Read-API |
 
 ---
