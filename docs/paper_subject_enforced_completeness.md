@@ -925,6 +925,15 @@ work toward closure would require behavioral equivalence proofs over model inter
 problem class that presupposes interpretability infrastructure not yet available at 
 production scale.
 
+**Future directions.** Three extensions would broaden applicability without altering the
+core guarantee: (a) *standards interoperability* — encoding the co-signed records as COSE
+Signed Statements to interoperate with the SCITT transparency-service ecosystem rather than
+a bespoke format; (b) *agent-chain completeness* — combining subject-enforced completeness
+with receiver-side counter-signing (cf. Notarized Agents) to extend the guarantee to
+multi-hop agent workflows; (c) *consumer-device attestation* — binding the subject's signing
+key to mobile secure elements (hardware-attested receipts, cf. Aegon) to carry the
+device-bound assumption from servers to end-user phones.
+
 ---
 
 ## 9. Preliminary Red-Team Evaluation

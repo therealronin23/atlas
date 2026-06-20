@@ -740,6 +740,18 @@ interpretability infrastructure not yet available at API level.
 signing key; resolving legal residency for export-controlled access requires a KYC
 step that is operational and legal, not cryptographic.
 
+\textbf{Future directions.} Three extensions would broaden applicability without
+altering the core guarantee. (a)~\textit{Standards interoperability}: encoding the
+co-signed records as COSE Signed Statements~\cite{scitt-arch} would let the mechanism
+interoperate with the emerging SCITT transparency-service ecosystem rather than use a
+bespoke format. (b)~\textit{Agent-chain completeness}: combining subject-enforced
+completeness with receiver-side counter-signing~\cite{sello2026} would extend the
+guarantee from a single subject--operator pair to multi-hop agent workflows, where each
+hop attests what it received. (c)~\textit{Consumer-device attestation}: binding the
+subject's signing key to mobile secure elements (e.g.\ hardware-attested receipts as in
+licensing work~\cite{aegon2026}) would carry the device-bound assumption from servers to
+end-user phones.
+
 % ---------------------------------------------------------------
 \appendix
 \section{Four-Layer Defense Stack}
