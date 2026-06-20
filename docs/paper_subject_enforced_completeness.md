@@ -435,6 +435,14 @@ test suite alongside the RFC 9162 primitives.
 **⚠ Verified 2026-06-17. The subject-monitoring mechanism is NOT novel. We cite its
 predecessors as our foundation, not as work we improve upon.**
 
+> *Note on independent derivation.* The author developed this mechanism from first
+> principles, without prior familiarity with the key-transparency literature; the
+> correspondence with CONIKS and the IETF keytrans line was found only afterwards. We
+> record this not as a priority claim — CONIKS and Certificate Transparency unambiguously
+> precede this work — but because such independent convergence on subject-side
+> verifiability suggests it is a natural design attractor for accountability problems, not
+> an artifact of a single research lineage.
+
 **CONIKS** [Melara, Blankstein, Bonneau, Felten, Freedman — USENIX Security 2015] is the
 direct ancestor. CONIKS allows users to monitor their own key-binding entries in a
 transparency log, detecting inconsistency *without global monitors* at low overhead
