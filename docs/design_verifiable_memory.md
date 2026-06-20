@@ -93,6 +93,47 @@ si hay señal NO trivial en held-out con FP controlado.
 - **1c.** Experimento de transferencia (held-out por familia) + reporte/curva.
 - **1d.** `Curator` (olvido: dedup/supersede/decay), solo sobre el índice.
 
+## Adiciones tras inteligencia competitiva (2026-06-20) — atacar los huecos abiertos del campo
+
+El campo (MemGPT/Letta, Zep, Mem0, MemPalace) ADMITE no resolver: (1) **staleness/validez
+temporal** (el #1), (2) **contradicciones**, (3) **consolidación/qué conservar**, (4) provenance
+parcial, (5) seguridad/write-gating. Nuestro sustrato verificable los ataca con tres piezas:
+
+### A) Validez temporal auditable + supersesión (ataca staleness #1 y contradicciones)
+- `lessons` añade: `valid_from_ns`, `valid_until_ns` (NULL = vigente AHORA), y arista
+  `edges(kind='supersedes')` cuando una lección/patrón reemplaza a otro.
+- Recall por defecto solo surfacea lo **vigente** (`valid_until_ns IS NULL`).
+- Cuando llega info que contradice un prior: NO se borra — se crea la nueva, se marca la vieja
+  con `valid_until_ns = now` y `supersedes`, **con registro en la cadena** (cuándo y por qué dejó
+  de valer). → Se puede **PROBAR qué memoria es vigente y cuándo caducó.** Eso es lo que nadie tiene.
+- Conflictos: reglas de autoridad explícitas (fuente, recencia, evidencia) → la resolución queda
+  **auditable** en la cadena, no es una caja negra.
+
+### B) Niveles de memoria (hot/warm/cold/pending) con promoción/democión (ataca consolidación/olvido)
+- `lessons.tier` ∈ {hot, warm, cold, pending} + `last_access_ns`, `access_count`.
+- Democión por señales MEDIBLES (poco uso/recencia) → auditable, no juicio arbitrario.
+- **Recuperable:** si algo en cold/pending se vuelve a necesitar, sube de nivel.
+- `pending` = grace period antes de retirar del ÍNDICE; **la cadena Merkle nunca borra** → "olvidar"
+  = no surfacear, nunca perder. Resuelve "¿quién audita el olvido?": las transiciones de tier se
+  registran y son reversibles.
+- (Estructura inspirada en MemGPT/cache hierarchy; la novedad = suelo verificable + democión auditable.)
+
+### C) Conversor A↔B (formato rápido ↔ humano-auditable)
+- Canónico = registro **estructurado y completo** (renderizable a prosa humana) → auditable.
+- Índice = embeddings (**lossy, derivado**, para recall rápido). NO se intenta invertir el embedding.
+- `Renderer` determinista: estructurado→prosa (humano) y prosa→estructurado (ingesta). Da velocidad
+  (vectores) SIN perder verificabilidad (canónico inspeccionable). Resuelve la tensión opaco-vs-auditable.
+
+### Mapeo hueco-del-campo → mecanismo nuestro
+| Hueco abierto (admitido por el campo) | Nuestra pieza |
+|---|---|
+| Staleness / validez temporal (#1) | A) valid_from/until + supersesión en cadena |
+| Contradicciones / conflicto | A) reglas de autoridad auditables |
+| Consolidación / cajón de sastre | abstracción (patrones) + B) niveles |
+| Olvido sin perder / "¿quién audita?" | B) democión medible + suelo Merkle inmutable |
+| Provenance/lineage | merkle_leaf_* + edges(derived_from) |
+| Seguridad / write-gating | LessonVerifier ("ley de entrada") ya existente |
+
 ## Decisiones abiertas (a cerrar antes de construir)
 
 - ¿`sqlite-vec` vs LanceDB? → empezar `sqlite-vec` (marida con SQL relacional + Merkle); LanceDB
