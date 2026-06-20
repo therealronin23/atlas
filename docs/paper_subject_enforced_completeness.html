@@ -799,6 +799,74 @@ makes this invariant falsifiable. This is a domain-transfer and
 modelling contribution, not a cryptographic primitive. Claiming the
 mechanism without citing CONIKS is unacceptable; claiming the transfer
 is honest and defensible.</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>System</th>
+<th>Adversarial event</th>
+<th>Detector</th>
+<th>No trusted verifier?</th>
+<th>Closes omission?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CONIKS / KT</td>
+<td>key equivocation</td>
+<td>subject</td>
+<td>yes</td>
+<td>n/a</td>
+</tr>
+<tr class="even">
+<td>Certificate Transparency</td>
+<td>cert. misissuance</td>
+<td>monitors+witness</td>
+<td>no</td>
+<td>n/a</td>
+</tr>
+<tr class="odd">
+<td>SCITT (+refusal)</td>
+<td>—</td>
+<td>3rd-party verifier</td>
+<td>no</td>
+<td><strong>no</strong></td>
+</tr>
+<tr class="even">
+<td>Notarized Agents</td>
+<td>agent fabricates trace</td>
+<td>receivers</td>
+<td>yes</td>
+<td><strong>no</strong></td>
+</tr>
+<tr class="odd">
+<td>Auditable Agents</td>
+<td>—</td>
+<td>post-hoc auditor</td>
+<td>no</td>
+<td><strong>no</strong></td>
+</tr>
+<tr class="even">
+<td><strong>This work</strong></td>
+<td><strong>silent omission</strong></td>
+<td><strong>subject</strong></td>
+<td><strong>yes</strong></td>
+<td><strong>yes</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>Positioning:</em> prior transparency systems either target a
+different adversarial event (equivocation, misissuance, fabrication) or,
+when they target auditability of AI decisions (SCITT, agent logs),
+operate only over what was logged and cannot detect silent omission.
+Subject-enforced completeness is the only row that detects omission
+unilaterally, with no trusted external verifier.</p>
 <p><strong>Concurrent work (January–June 2026).</strong> Several systems
 have appeared that share surface structure with our mechanism. We
 distinguish each precisely.</p>

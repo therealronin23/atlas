@@ -497,6 +497,30 @@ inspection-by-cause (\S3.2) as the specific record structure that makes this inv
 falsifiable. This is a domain-transfer and modelling contribution, not a cryptographic
 primitive.
 
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lllcc@{}}
+\toprule
+\textbf{System} & \textbf{Adversarial event} & \textbf{Detector} & \textbf{No trusted} & \textbf{Closes} \\
+                &                            &                   & \textbf{verifier?} & \textbf{omission?} \\
+\midrule
+CONIKS / KT          & key equivocation        & subject            & yes & n/a \\
+Cert.\ Transparency  & cert.\ misissuance      & monitors+witness   & no  & n/a \\
+SCITT (+refusal)     & ---                     & 3rd-party verifier & no  & \textbf{no} \\
+Notarized Agents     & agent fabricates trace  & receivers          & yes & \textbf{no} \\
+Auditable Agents     & ---                     & post-hoc auditor   & no  & \textbf{no} \\
+\textbf{This work}   & \textbf{silent omission}& \textbf{subject}   & \textbf{yes} & \textbf{yes} \\
+\bottomrule
+\end{tabular}
+\caption{Positioning. Prior transparency systems either target a different
+adversarial event (equivocation, misissuance, fabrication) or, when they target
+auditability of AI decisions (SCITT, agent logs), operate only over what was
+logged and cannot detect silent omission. Subject-enforced completeness is the
+only row that detects omission unilaterally, with no trusted external verifier.}
+\end{table}
+
 \subsection*{Concurrent Work (January--June 2026)}
 
 \textbf{SCITT and verifiable AI refusal events.} The IETF SCITT working group
