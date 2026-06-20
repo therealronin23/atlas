@@ -1102,7 +1102,7 @@ Implementation status:
 - [x] Crypto-shredding: dual-hash leaf (`payload_hash` + `salted_hash`) for GDPR Art. 17.
       Dual-hash storage implemented; tests passing.
 - [x] Output inspection completeness (Layer 2): `OutputInspectionRecord` committed before
-      result is returned; Session G in demo; tests passing. 1938 tests total, all passing.
+      result is returned; Session G in demo; tests passing. 1997 tests total, all passing.
 - [x] External witness HTTP transport implemented with Ed25519-verified quorum. 
       Independent witness node deployment is infrastructure, not code;
       stated honestly as the remaining split-view gap (§6.1).
