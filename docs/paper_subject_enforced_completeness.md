@@ -472,6 +472,21 @@ domain-transfer and modelling contribution, not a cryptographic primitive. Claim
 mechanism without citing CONIKS is unacceptable; claiming the transfer is honest and
 defensible.
 
+| System | Adversarial event | Detector | No trusted verifier? | Closes omission? |
+|---|---|---|---|---|
+| CONIKS / KT | key equivocation | subject | yes | n/a |
+| Certificate Transparency | cert. misissuance | monitors+witness | no | n/a |
+| SCITT (+refusal) | — | 3rd-party verifier | no | **no** |
+| Notarized Agents | agent fabricates trace | receivers | yes | **no** |
+| Auditable Agents | — | post-hoc auditor | no | **no** |
+| **This work** | **silent omission** | **subject** | **yes** | **yes** |
+
+*Positioning:* prior transparency systems either target a different adversarial event
+(equivocation, misissuance, fabrication) or, when they target auditability of AI decisions
+(SCITT, agent logs), operate only over what was logged and cannot detect silent omission.
+Subject-enforced completeness is the only row that detects omission unilaterally, with no
+trusted external verifier.
+
 **Concurrent work (January–June 2026).** Several systems have appeared that share surface
 structure with our mechanism. We distinguish each precisely.
 
