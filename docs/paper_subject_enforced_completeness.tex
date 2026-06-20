@@ -126,7 +126,7 @@ Transparency from key-binding logs to AI content-inspection logs, and modelling
 \textit{inspection-by-cause} as the invariant to enforce. Unlike prior work on
 agent auditability --- which assumes honest infrastructure operators --- our mechanism
 is designed specifically for the case where the operator controls both the AI pipeline
-and the inspection log. The reference implementation comprises 1938 tests and is
+and the inspection log. The reference implementation comprises 1997 tests and is
 mypy \texttt{-{}-strict} clean.
 \end{abstract}
 
@@ -454,7 +454,7 @@ J & Behavioral drift: rejection heuristics degrade & Canary delta flagged (proba
 
 The harness is anchored in the test suite (\code{tests/test\_completeness\_demo.py},
 \code{tests/test\_network\_reconciliation.py}, \code{tests/test\_output\_inspection.py});
-1938 tests total, all passing.
+1997 tests total, all passing.
 
 % ---------------------------------------------------------------
 \section{Related Work}
@@ -489,8 +489,8 @@ the append-only log infrastructure and gossip mechanisms for cross-operator STH
 validation. Our implementation is RFC~9162 faithful. The split-view limit
 (limit~\ref{limit:splitview}) is addressed by RFC~9162 \S5 gossip.
 
-\textbf{The Attacker Moves Second}~\cite{attacker2024} demonstrates formally that
-adaptive adversaries defeat $>$90\% of existing defences. This supports our decision not
+\textbf{The Attacker Moves Second}~\cite{attacker2024} shows that stronger adaptive
+attacks bypass the large majority of evaluated defences. This supports our decision not
 to promise detection rates. We claim verifiability of the inspection record, not
 detection probability.
 
@@ -924,7 +924,7 @@ auditable adaptation --- not detection coverage.
 
 The Osmosis reference implementation is private; the adversarial harness and the
 transparency/inspection modules are available upon request for reviewer verification.
-All claims are anchored in 1938 automated tests, mypy \texttt{-{}-strict} clean.
+All claims are anchored in 1997 automated tests, mypy \texttt{-{}-strict} clean.
 
 % ---------------------------------------------------------------
 % Bibliography
