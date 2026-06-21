@@ -74,8 +74,11 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   instalador cuando se verifique, no reinventadas.
 - ✅ **LÍNEA MCP TRUNK F1–F4 CERRADA.** 3 raíces nativas portables + agregación + instalador honesto,
   suite verde, mergeada y pusheada a origin/main. 2ª API (World Bank) ya añadida → F3 pleno.
-- ⏸ **F5 Rust por-raíz** — diferido; abordar tras el merge "si todo va bien" (reescribir solo raíces
-  calientes en rmcp, una a una; políglota por proceso, sin big-bang).
+- ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
+  justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
+  arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
 
+- ✅ Demo CLI `atlas completeness-demo [--json]` cableada (9 escenarios; `tests/test_cli_completeness_demo.py`).
+  cli.py mypy limpio (eran 13 errores del módulo dinámico). Complementa el paper.
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
 - ⏸ Deuda diferida del sustrato: multihilo (sin consumidor), IC/corpus mayor en 1c.
