@@ -85,13 +85,110 @@ Honesto: con embedder real (HF) ya validamos near-duplicate; esto sube el listó
 nunca vistas**, que es lo difícil. Esperar caída con la distancia es normal; lo que importa es
 si hay señal NO trivial en held-out con FP controlado.
 
-## Fases de construcción (cuando toque; una a una)
+## ARQUITECTURA: MOTOR genérico vs INQUILINO (decidido 2026-06-21)
 
-- **1a.** `LessonStore` respaldado por SQLite (FTS5+sqlite-vec) manteniendo el Merkle. Recall vía
-  SQLite (sustituye el escaneo lineal actual de `LessonRecaller`). Tests: paridad con el actual.
-- **1b.** `PatternAbstractor` (ejemplos → patrones/familias). Recall sobre patrones.
-- **1c.** Experimento de transferencia (held-out por familia) + reporte/curva.
-- **1d.** `Curator` (olvido: dedup/supersede/decay), solo sobre el índice.
+No son lo mismo: hay UN motor agnóstico de dominio y N inquilinos tipados encima.
+- **MOTOR (sustrato verificable, MemPalace):** `record.py` (`MemoryRecord`/`GenericRecord`),
+  `memory_index.py` (`SqliteMemoryIndex`), `memory_abstractor.py` (`MemoryAbstractor`). Solo sabe
+  de `record_id` + `text` + `created_at` (+ `record_type` para 1d). NO conoce lecciones, stances ni
+  Garak. Probado en dominio no-seguridad (`tests/test_memory_motor.py`).
+- **INQUILINO ciberseguridad (memoria inmune):** `lesson_index.py` (`SqliteLessonIndex`) y
+  `pattern_abstractor.py` (`PatternAbstractor`) — vistas delgadas que adaptan `Lesson`→`MemoryRecord`
+  vía `lesson_to_record` y delegan en el motor. API histórica intacta (60 tests del inquilino verdes
+  sin tocarlos). Garak SOLO importa aquí (mide este inquilino), no es identidad del motor.
+Regla: el motor nunca importa nada de seguridad; los inquilinos componen el motor, no al revés.
+Taxonomía (analytic/empirical/episodic) vive en el motor (`record_type`); las lecciones son `empirical`.
+
+## CHECKLIST DE CONSTRUCCIÓN (fuente única de verdad — marcar al cerrar cada una)
+
+Orden lógico, una a una, valor>coste o no entra. Cada fase: TDD, suite verde, mypy strict,
+límites honestos declarados. No saltar de fase con la anterior en rojo.
+
+- [x] **1a — Índice SQLite persistente con enlace Merkle.** *(HECHO 2026-06-21; suite 2008 verde,
+  mypy strict limpio; sin commit aún.)* `src/atlas/memory/lesson_index.py` (`SqliteLessonIndex`) +
+  `tests/test_sqlite_lesson_index.py` (11 tests). `sqlite3` de stdlib, vectores como BLOB float64,
+  coseno REUTILIZANDO `_cosine_similarity` de `lesson_recaller` → **paridad de scores exacta**
+  (testeada vs in-memory). Persiste (sobrevive reabrir), reconstruible vía `rebuild_from(store)`,
+  columnas `merkle_leaf_hash/_index` (nullable; cimiento moat-1, se pueblan vía `upsert`).
+  CABLEADO (2026-06-21, suite 2013 verde): protocolo `Recaller` (`index()`+`recall()`) en
+  `lesson_recaller.py`; `SqliteLessonIndex` lo cumple (acepta `store=`, `index()`=`rebuild_from`);
+  `TeacherDebate` ahora tipa `Recaller` → el índice persistente es drop-in del in-memory, probado
+  end-to-end (corrobora prior + acepta novel sobre SQLite).
+  LÍMITE HONESTO: NO `sqlite-vec` (regla 6; velocidad no es el cuello a escala laptop). El loop
+  inmune (`TeacherDebate`/`GatedLessonRecorder`) SIGUE sin ensamblarse en producción (solo en
+  tests) — eso es independiente de 1a y es un pendiente de "enjambre ocioso", no de la memoria.
+  Siguiente: 1b (`PatternAbstractor`), donde empieza la transferencia real.
+- [x] **1b — `PatternAbstractor`** *(HECHO 2026-06-21; suite 2024 verde, mypy strict; sin commit.)*
+  `src/atlas/memory/pattern_abstractor.py` + `tests/test_pattern_abstractor.py` (11 tests).
+  Clustering DETERMINISTA por umbral de coseno (greedy aglomerativo 1 pasada, sin deps); recall
+  sobre el CENTROIDE del patrón (no el string); ids direccionados por contenido (hash de miembros);
+  label = ejemplo más cercano al centroide (representante auditable); `assignment()` da el lineage
+  lesson→pattern. Reutiliza `_cosine_similarity` (misma noción de similitud en todo el subsistema).
+  LÍMITE HONESTO: clustering de 1 pasada depende de orden+umbral; agrupa reformulaciones/vecinos,
+  NO descubre la estructura "real" de familias ni prueba transferencia. `family` queda como campo
+  vacío para 1c. Maestro LLM como etiquetador = mejora futura, no entró. **La prueba de si esto
+  GENERALIZA es 1c (held-out), no este módulo.**
+- [x] **REFACTOR motor/inquilino** *(HECHO 2026-06-21; suite 2029 verde, mypy strict; sin commit.)*
+  Extraído el motor genérico (`record.py`+`memory_index.py`+`memory_abstractor.py`); seguridad pasa a
+  inquilino delgado. `tests/test_memory_motor.py` (5 tests) demuestra agnosticidad en dominio
+  no-seguridad (recetas). 60 tests del inquilino intactos = refactor behavior-preserving.
+- [x] **1c-seguridad — CERRADA 2026-06-21** (ver detalle abajo). **1c-motor CERRADA.**
+- [~] **1c — DOS ejes (antes fundidos; separados 2026-06-21):**
+  - **1c-seguridad** *(HECHO 2026-06-21, primer corte; `scripts/redteam/transfer_experiment.py`
+    + `docs/immune_transfer_experiment.md`):* held-out por familia (train: instruction_override,
+    persona_jailbreak; held-out: exfiltration, encoding_evasion), anclado en Merkle. RESULTADO
+    HONESTO: léxico = MEMORIZA (0% transferencia, vocabulario disjunto). Semántico (MiniLM,
+    umbral calibrado 0.60 con sanidad 100%) = transferencia PARCIAL REAL: **heldout_recall 33%
+    con benign_fp 0%** → no es enciclopedia pura ni generalización resuelta. CONFOUNDS declarados:
+    umbral clustering==recall (techo optimista), semillas ilustrativas (no Garak real aún),
+    conjuntos pequeños.
+    PULIDO 2026-06-21 (a): confound clustering==recall RESUELTO (umbrales separados en
+    `MemoryAbstractor`, testeado).
+    PULIDO 2026-06-21 (b) — TEST BENIGNO FRONTERIZO, hallazgo que CORRIGE el corte anterior:
+    el "transfer con 0% FP" era artefacto de un benigno FÁCIL. Con benigno fronterizo (legítimo
+    que roza el tema), el FP sube en paralelo al heldout (recall 0.60: heldout 50% / borderline
+    33%; recall 0.62: heldout 17% < borderline 33%, margen NEGATIVO). VEREDICTO HONESTO: el
+    detector reconoce PROXIMIDAD TEMÁTICA, no "ataque-idad"; señal de intención REAL pero DÉBIL
+    (~17-33 pts de margen en umbrales laxos); NO hay punto de operación usable (transferencia alta
+    Y FP fronterizo bajo no coexisten). Refuerza la dirección: no apostar a DETECCIÓN, sino a
+    ATRIBUCIÓN+CONTENCIÓN ([[adaptive-defense-reframe]]).
+    GARAK REAL 2026-06-21 (c) — CIERRE: corpus real (probes promptinject.HijackHateHumans +
+    phrasing.PastTense train; web_injection.MarkdownURIImageExfil + snowball.Primes held-out)
+    CONFIRMA el hallazgo, más crudo: mejor margen heldout−borderline = +10 pts (recall 0.65:
+    27% heldout / 17% borderline); resto ~0 o negativo. Sanidad 100% siempre (near-duplicates
+    fiables). Veredicto firme: coseno-a-centroide reconoce PROXIMIDAD TEMÁTICA, no intención; el
+    valor real = reconocimiento auditable de variantes, NO detección de familias nuevas. 1c-seguridad
+    CERRADA. Futuro NO prometido para subir señal: contrastive intención-vs-tema + drift+contenido + IC.
+  - [x] **1c-motor — CERRADA 2026-06-21** (suite 2048 verde): `tests/test_motor_versioned_knowledge.py`
+    (2) demuestra el valor genérico en dominio NO-seguridad (hechos de empresa que cambian): recall
+    refleja la verdad VIGENTE tras supersesión, la historia es recuperable y PROBABLE en cadena
+    (qué cambió y cuándo). El eje genérico no es detección (frontera dura) sino conocimiento
+    versionado con procedencia — donde el sustrato gana limpio. Transferencia/abstracción genérica
+    ya cubierta por `test_memory_motor.py`. **CHECKLIST 1a–1d COMPLETA.**
+- [~] **1d — olvido principiado SOLO sobre el índice; la cadena Merkle nunca borra.**
+  - [x] **1d-a — Validez temporal + supersesión + retiro auditables** *(HECHO 2026-06-21; suite
+    2039 verde, mypy strict)* en `SqliteMemoryIndex` (motor genérico) + `tests/test_memory_temporal.py`
+    (7 tests). Columnas `valid_from_ns`/`valid_until_ns` (NULL=vigente) + `supersedes` (lineage);
+    migración suave para esquemas previos. `recall`/`recall_all` solo surfacean VIGENTES por defecto
+    (`include_superseded=` para auditar). `supersede(old→new)` caduca la vieja (NO la borra) y entra
+    la nueva con lineage; `retire(id)` = olvido sin reemplazo. Cada transición se ancla en Merkle
+    (`memory.superseded`/`memory.retired`) si se pasa logger → se PRUEBA qué era vigente y cuándo
+    caducó. Ataca staleness #1 + contradicciones (lo que el campo admite no resolver).
+    LÍMITE: resolución de conflictos por reglas de autoridad (fuente/recencia/evidencia) aún manual
+    (quien llama decide supersede); el motor registra, no arbitra. Tenant (SqliteLessonIndex) aún no
+    expone supersede/retire (delega recall); cablear si se necesita.
+  - [x] **1d-b — Tiers (hot/warm/cold/pending) + democión medible** *(HECHO 2026-06-21; suite 2046
+    verde, mypy strict)* en `SqliteMemoryIndex` + `tests/test_memory_tiers.py` (7). Columnas `tier`,
+    `last_access_ns`, `access_count`. `touch(id)` = acceso → promociona a hot (RECUPERABLE) + cuenta
+    uso. `apply_decay(now, warm/cold/pending_after_ns)` demota memorias VIGENTES por ocio (now −
+    último acceso) en buckets ascendentes, reproducible, logueado en Merkle (`memory.decay`).
+    `pending` = SUELO/grace: NO auto-retira (el retiro sigue siendo decisión aparte, 1d-a). Solo
+    afecta a vigentes. `tier_counts()`/`tier()`/`access_count()`.
+    LÍMITE: los umbrales de ocio son POLÍTICA (parámetros), no aprendidos; "medible" = por
+    recencia/uso, no arbitrario. Falta cablear `pending→retire tras grace` como política explícita y
+    auto-touch en recall (hoy `touch` es manual). El tenant de seguridad aún no usa tiers.
+
+Notas de estado se anotan inline al cerrar cada casilla (fecha + commit + límite honesto).
 
 ## Adiciones tras inteligencia competitiva (2026-06-20) — atacar los huecos abiertos del campo
 

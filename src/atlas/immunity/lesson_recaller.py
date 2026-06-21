@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from atlas.memory.embeddings import Embedder, StubEmbedder
 
@@ -53,6 +53,25 @@ class RecallResult:
     lesson_id: str
     score: float
     matched: bool
+
+
+# ---------------------------------------------------------------------------
+# Protocolo: cualquier recaller intercambiable (in-memory o SQLite persistente)
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class Recaller(Protocol):
+    """Interfaz mínima que consume el TeacherDebate.
+
+    Permite intercambiar el `LessonRecaller` in-memory por el
+    `SqliteLessonIndex` persistente sin que el consumidor lo note (la
+    matemática de score es idéntica; ver test de paridad).
+    """
+
+    def index(self) -> None: ...
+
+    def recall(self, attack_text: str) -> RecallResult | None: ...
 
 
 # ---------------------------------------------------------------------------
