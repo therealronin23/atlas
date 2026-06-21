@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import sys
+import contextlib
+import importlib.util
+import io
 from pathlib import Path
 
 import click
@@ -12,7 +15,7 @@ from rich.markup import escape as _markup_escape
 from rich.table import Table
 from rich import print as rprint
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from atlas.core.contracts import TaskSource
 from atlas.core.orchestrator import Orchestrator
@@ -549,6 +552,68 @@ def reality(run_checks: bool, include_browser: bool, as_json: bool, strict: bool
     if report.get("strict_failures"):
         console.print(f"[yellow]Strict failures:[/yellow] {', '.join(report['strict_failures'])}")
     if strict and report.get("strict_failures"):
+        raise click.exceptions.Exit(1)
+
+
+def _load_completeness_demo_module() -> Any:
+    demo_path = Path(__file__).resolve().parents[3] / "docs" / "demo" / "completeness_demo.py"
+    spec = importlib.util.spec_from_file_location("atlas_completeness_demo", demo_path)
+    if spec is None or spec.loader is None:
+        raise click.ClickException(f"No se pudo cargar demo: {demo_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+@cli.command("completeness-demo")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON estable para demos/scripts.")
+def completeness_demo(as_json: bool) -> None:
+    """Ejecuta la demo reproducible de subject-enforced completeness."""
+    demo = _load_completeness_demo_module()
+
+    def run_scenarios() -> dict[str, bool]:
+        return {
+            "honest": demo.run_session("honest", demo.OperatorBehaviour()) == [],
+            "input_omission_detected": demo.run_session(
+                "input_omission",
+                demo.OperatorBehaviour(omit_seqs={2}),
+            ) == [2],
+            "faked_ack_rejected": demo.run_session(
+                "faked_ack",
+                demo.OperatorBehaviour(fake_ack_seqs={2}),
+            ) == [2],
+            "rewrite_detected": 3 in demo.run_session(
+                "rewrite",
+                demo.OperatorBehaviour(rewrite_at_seq=3),
+            ),
+            "forgery_rejected": demo.run_forgery_scenario(),
+            "network_attribution": demo.run_network_attribution_scenario(),
+            "output_omission_detected": demo.run_output_inspection_scenario(),
+            "shadow_routing_transparent": demo.run_shadow_routing_scenario(),
+            "behavioral_drift_flagged": demo.run_behavioral_drift_scenario(),
+        }
+
+    if as_json:
+        with contextlib.redirect_stdout(io.StringIO()):
+            scenarios = run_scenarios()
+    else:
+        scenarios = run_scenarios()
+    report = {
+        "status": "ok" if all(scenarios.values()) else "failed",
+        "scenarios": scenarios,
+    }
+    if as_json:
+        console.print_json(json.dumps(report, ensure_ascii=False, default=str))
+    else:
+        table = Table(title="Subject-Enforced Completeness Demo", show_header=True)
+        table.add_column("Scenario", style="cyan")
+        table.add_column("Result")
+        for name, ok in scenarios.items():
+            table.add_row(name, "PASS" if ok else "FAIL")
+        console.print(table)
+        console.print(f"Status: [{'green' if report['status'] == 'ok' else 'red'}]{report['status']}[/]")
+    if report["status"] != "ok":
         raise click.exceptions.Exit(1)
 
 

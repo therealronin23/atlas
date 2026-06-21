@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Campaña de red-team: corpus de Garak → gateway Osmosis aislado → métrica de campaña.
 
-ADR-056. Este harness NO es runtime: corre en el venv aislado `.venv-redteam`
+Este harness NO es runtime: corre en el venv aislado `.venv-redteam`
 (que tiene garak) con `PYTHONPATH=src`, y SIEMPRE contra un `ATLAS_HOME` temporal,
 NUNCA contra el servicio vivo (el log Merkle es single-writer; tocarlo en vivo lo
 corrompe).
