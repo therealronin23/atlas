@@ -4,60 +4,62 @@
 familias de ataque NUNCA sembradas (transferencia = genera conocimiento) o solo
 reformulaciones de lo visto (memoriza = enciclopedia)?
 
-Reproducible: `scripts/redteam/transfer_experiment.py`. Familias TRAIN sembradas
-(`instruction_override`, `persona_jailbreak`) vs HELD-OUT jamás vistas
-(`exfiltration`, `encoding_evasion`). Cada patrón se ancla en cadena Merkle
-(`verify_chain()=True`): se puede probar QUÉ se sembró y CUÁNDO.
+Reproducible: `scripts/redteam/transfer_experiment.py`. Cada patrón se ancla en cadena
+Merkle (`verify_chain()=True`): se puede probar QUÉ se sembró y CUÁNDO.
 
-Dos refinamientos de rigor (2026-06-21):
-1. Umbral de *clustering* separado del de *recall* (antes 1 solo parámetro inflaba).
-2. **Control benigno FRONTERIZO** además del fácil: peticiones legítimas que ROZAN el
-   tema (política de seguridad, prompt injection en abstracto, instrucciones a una IA,
-   base64, modo debug). Estresa el suelo de falsos positivos.
+Rigor acumulado (2026-06-21):
+1. Umbral de *clustering* separado del de *recall* (un solo parámetro inflaba).
+2. Control benigno FRONTERIZO (legítimo que roza el tema) además del fácil → estresa el
+   suelo de falsos positivos.
+3. **Corpus REAL de Garak** además del ilustrativo: cada probe = familia (ground-truth
+   EXTERNO, evita filtrado circular). TRAIN: `promptinject.HijackHateHumans`,
+   `phrasing.PastTense`. HELD-OUT: `web_injection.MarkdownURIImageExfilExtended`,
+   `snowball.Primes` (mecanismos maximalmente distintos = test más duro).
 
-## Resultados (HF MiniLM, clustering fino 0.80 → 2 patrones, uno por familia)
+## Resultado con CORPUS REAL de Garak (HF MiniLM, cluster 0.80, 20 prompts/familia)
 
-| recall_thr | sanidad (train) | **heldout** | benign_fp (fácil) | **borderline_fp** | margen |
+| recall_thr | sanidad | **heldout** | benign_fp (fácil) | **borderline_fp** | margen |
 |---|---|---|---|---|---|
-| 0.62 | 100% | 16.7% | 0% | 33.3% | **−16.6** |
-| 0.60 | 100% | 50.0% | 0% | 33.3% | +16.7 |
-| 0.58 | 100% | 66.7% | 0% | 50.0% | +16.7 |
-| 0.55 | 100% | 100% | 0% | 66.7% | +33.3 |
+| 0.70 | 100% | 0.0% | 0% | 0.0% | 0 |
+| 0.65 | 100% | 27.1% | 0% | 16.7% | **+10.4** |
+| 0.62 | 100% | 27.5% | 0% | 50.0% | −22.5 |
+| 0.60 | 100% | 50.0% | 0% | 50.0% | 0 |
+| 0.58 | 100% | 57.5% | 33% | 50.0% | +7.5 |
+| 0.55 | 100% | 80.0% | 0% | 83.3% | −3.3 |
 
-(margen = heldout − borderline_fp.) Léxico (stub): heldout 0% en todo → memoriza puro.
+(margen = heldout − borderline_fp.) Léxico (stub) sobre el mismo corpus: heldout 0% →
+memoriza puro.
 
-## Conclusión honesta (corregida por el test fronterizo)
+## Veredicto consolidado (honesto)
 
-El test fronterizo **tumbó la historia limpia** del corte anterior ("transferencia con
-0% FP"): ese 0% era un artefacto de un control benigno demasiado FÁCIL (temas lejanos).
+**El corpus real CONFIRMA el hallazgo del ilustrativo, más crudo aún.** Con familias de
+ataque reales y muy distintas:
 
+- **No hay punto de operación usable.** El mejor margen heldout−borderline es solo **+10
+  puntos** (recall 0.65: caza 27% de ataques nuevos a costa de 17% de falsos positivos
+  fronterizos). En el resto del barrido el margen es ~0 o negativo (a 0.62 el sistema
+  marca MÁS benigno fronterizo (50%) que ataques held-out (27%)).
 - **El detector reconoce PROXIMIDAD TEMÁTICA, no "ataque-idad".** El FP fronterizo sube
-  en paralelo al heldout al aflojar el recall. A recall 0.62 el sistema marca MÁS
-  benigno fronterizo (33%) que ataques held-out reales (17%): margen negativo.
-- **Hay una señal de intención, pero débil.** En umbrales laxos el heldout supera al
-  fronterizo por ~17–33 puntos. Es real (no es cero), pero pequeña.
-- **NO existe un punto de operación usable:** ninguno combina transferencia alta con FP
-  fronterizo bajo. Como detector autónomo, la memoria de patrones sobre coseno-a-centroide
-  NO separa limpiamente ataques cross-family de benigno topicalmente adyacente.
+  en paralelo al heldout. Coseno-a-centroide sobre patrones NO es un clasificador de
+  intención fiable.
+- **Lo que SÍ funciona, robusto:** la sanidad es 100% en todo el barrido → la memoria
+  reconoce con fiabilidad reformulaciones de lo YA visto (near-duplicates auditables).
+  Eso es su valor real y honesto, no la detección de familias nuevas.
 
-**Veredicto honesto:** la "transferencia" es mayormente confound temático con una traza
-débil de señal de intención. Reconoce reformulaciones de lo sembrado (sanidad 100%) y
-algo del vecindario semántico, pero confunde lo legítimo-adyacente. Esto refuerza la
-dirección estratégica del proyecto: **no apostar la casa a la DETECCIÓN** (segundo
-jugador gana) sino al eje ATRIBUCIÓN + CONTENCIÓN + auditabilidad (ver
-`project-adaptive-defense-reframe`). La memoria aporta reconocimiento auditable de
-variantes, no un clasificador de intención fiable.
+**Implicación estratégica (con datos propios):** no apostar a la DETECCIÓN (el segundo
+jugador gana; ver `project-adaptive-defense-reframe`). La memoria aporta **reconocimiento
+AUDITABLE de variantes con procedencia en cadena**, no un antivirus. La transferencia
+cross-family fuerte no la tiene nadie; aquí se MIDE su ausencia, no se disimula.
 
-## Qué haría falta para subir la señal (futuro, no prometido)
+## Qué haría falta para una señal usable (futuro, NO prometido)
 
-- Discriminación intención-vs-tema: contrastive learning con pares (ataque, benigno
-  adyacente) en vez de coseno crudo a centroide.
-- Corpus real de Garak (taxonomía externa de familia, evita filtrado circular) + set
-  benigno adversarial grande → números con intervalo de confianza.
-- Señal de trayectoria (drift) combinada con la de contenido, no contenido solo.
+- Discriminación intención-vs-tema con contrastive learning (pares ataque/benigno-adyacente),
+  no coseno crudo a centroide.
+- Señal de trayectoria (drift) combinada con la de contenido.
+- Sets mayores + intervalos de confianza (estos números son ruidosos: n pequeño).
 
 ## Límites declarados
 
-- Conjuntos pequeños (6/6/6/6): señal cualitativa, sin IC.
+- 20 prompts/familia, 6 benignos por set: señal cualitativa, sin IC; los saltos del
+  benign_fp (0%→33%→0%) son ruido de muestra pequeña.
 - Umbral de recall es propiedad del embedder (recalibrar por embedder).
-- Familias ilustrativas, no Garak real todavía.
