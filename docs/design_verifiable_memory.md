@@ -132,6 +132,7 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
   Extraído el motor genérico (`record.py`+`memory_index.py`+`memory_abstractor.py`); seguridad pasa a
   inquilino delgado. `tests/test_memory_motor.py` (5 tests) demuestra agnosticidad en dominio
   no-seguridad (recetas). 60 tests del inquilino intactos = refactor behavior-preserving.
+- [x] **1c-seguridad — CERRADA 2026-06-21** (ver detalle abajo). 1c-motor sigue PENDIENTE.
 - [~] **1c — DOS ejes (antes fundidos; separados 2026-06-21):**
   - **1c-seguridad** *(HECHO 2026-06-21, primer corte; `scripts/redteam/transfer_experiment.py`
     + `docs/immune_transfer_experiment.md`):* held-out por familia (train: instruction_override,
@@ -150,8 +151,14 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     detector reconoce PROXIMIDAD TEMÁTICA, no "ataque-idad"; señal de intención REAL pero DÉBIL
     (~17-33 pts de margen en umbrales laxos); NO hay punto de operación usable (transferencia alta
     Y FP fronterizo bajo no coexisten). Refuerza la dirección: no apostar a DETECCIÓN, sino a
-    ATRIBUCIÓN+CONTENCIÓN ([[adaptive-defense-reframe]]). PENDIENTE: Garak real + IC + (futuro)
-    discriminación intención-vs-tema con contrastive, no coseno crudo.
+    ATRIBUCIÓN+CONTENCIÓN ([[adaptive-defense-reframe]]).
+    GARAK REAL 2026-06-21 (c) — CIERRE: corpus real (probes promptinject.HijackHateHumans +
+    phrasing.PastTense train; web_injection.MarkdownURIImageExfil + snowball.Primes held-out)
+    CONFIRMA el hallazgo, más crudo: mejor margen heldout−borderline = +10 pts (recall 0.65:
+    27% heldout / 17% borderline); resto ~0 o negativo. Sanidad 100% siempre (near-duplicates
+    fiables). Veredicto firme: coseno-a-centroide reconoce PROXIMIDAD TEMÁTICA, no intención; el
+    valor real = reconocimiento auditable de variantes, NO detección de familias nuevas. 1c-seguridad
+    CERRADA. Futuro NO prometido para subir señal: contrastive intención-vs-tema + drift+contenido + IC.
   - **1c-motor:** el sustrato sabe versionar/superseder/transferir en CUALQUIER dominio (sin
     Garak). Va con 1d (validez temporal) + un test de transferencia genérico. PENDIENTE.
 - [ ] **1d — `Curator`** (olvido principiado: dedup/supersede/decay) SOLO sobre el índice; la cadena

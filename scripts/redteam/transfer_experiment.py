@@ -78,6 +78,37 @@ FAMILIES: dict[str, list[str]] = {
 TRAIN_FAMILIES = ["instruction_override", "persona_jailbreak"]
 HELDOUT_FAMILIES = ["exfiltration", "encoding_evasion"]
 
+# Corpus REAL de Garak: cada probe = una familia (ground-truth EXTERNO de "familia",
+# evita filtrado circular). Mecanismos maximalmente distintos = test más duro.
+GARAK_TRAIN_PROBES = {
+    "instruction_hijack": "promptinject.HijackHateHumans",
+    "tense_reframe": "phrasing.PastTense",
+}
+GARAK_HELDOUT_PROBES = {
+    "markdown_exfiltration": "web_injection.MarkdownURIImageExfilExtended",
+    "reasoning_trap": "snowball.Primes",
+}
+
+
+def _load_garak_family(spec: str, k: int) -> list[str]:
+    """Carga hasta k prompts de un probe de Garak (módulo.Clase)."""
+    import importlib
+
+    from garak import _config
+
+    _config.load_base_config()
+    module, cls_name = spec.split(".")
+    mod = importlib.import_module(f"garak.probes.{module}")
+    probe = getattr(mod, cls_name)(config_root=_config)
+    out: list[str] = []
+    for p in getattr(probe, "prompts", []):
+        text = p if isinstance(p, str) else getattr(p, "text", str(p))
+        if text and text.strip():
+            out.append(text.strip())
+        if len(out) >= k:
+            break
+    return out
+
 BENIGN_CONTROL = [
     "what is the capital of France and its population today",
     "please summarize the quarterly financial report for the board",
@@ -161,6 +192,10 @@ def main() -> None:
                         help="cómo de apretado se agrupan ejemplos en un patrón (fino=alto)")
     parser.add_argument("--recall-threshold", type=float, default=0.8,
                         help="cómo de cerca una query para contar match (calíbrese por embedder)")
+    parser.add_argument("--corpus", choices=["illustrative", "garak"], default="illustrative",
+                        help="illustrative=semillas a mano; garak=corpus REAL (venv redteam)")
+    parser.add_argument("--per-family", type=int, default=20,
+                        help="prompts por familia al usar el corpus de Garak")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
@@ -177,8 +212,20 @@ def main() -> None:
     merkle = MerkleLogger(log_dir=log_dir)
     store = LessonStore(Path(os.environ["ATLAS_HOME"]) / "lessons", merkle=merkle)
 
-    train = [a for fam in TRAIN_FAMILIES for a in FAMILIES[fam]]
-    heldout = [a for fam in HELDOUT_FAMILIES for a in FAMILIES[fam]]
+    if args.corpus == "garak":
+        train_names = list(GARAK_TRAIN_PROBES)
+        heldout_names = list(GARAK_HELDOUT_PROBES)
+        train = [a for spec in GARAK_TRAIN_PROBES.values()
+                 for a in _load_garak_family(spec, args.per_family)]
+        heldout = [a for spec in GARAK_HELDOUT_PROBES.values()
+                   for a in _load_garak_family(spec, args.per_family)]
+        corpus_note = f"Garak real ({args.per_family}/familia)"
+    else:
+        train_names = TRAIN_FAMILIES
+        heldout_names = HELDOUT_FAMILIES
+        train = [a for fam in TRAIN_FAMILIES for a in FAMILIES[fam]]
+        heldout = [a for fam in HELDOUT_FAMILIES for a in FAMILIES[fam]]
+        corpus_note = "ilustrativo"
 
     abstractor = _seed_patterns(
         embedder, train, merkle, store, args.cluster_threshold, args.recall_threshold
@@ -208,10 +255,10 @@ def main() -> None:
 
     report = f"""# Experimento de transferencia cross-family — memoria de patrones (1c-seguridad)
 
-Embedder: {emb_note} · variantes/ataque: {args.variants} · cluster_thr: {args.cluster_threshold} · recall_thr: {args.recall_threshold} · patrones sembrados: {n_patterns}
+Corpus: {corpus_note} · Embedder: {emb_note} · variantes/ataque: {args.variants} · cluster_thr: {args.cluster_threshold} · recall_thr: {args.recall_threshold} · patrones sembrados: {n_patterns}
 
-Familias TRAIN (sembradas): {", ".join(TRAIN_FAMILIES)}
-Familias HELD-OUT (jamás vistas): {", ".join(HELDOUT_FAMILIES)}
+Familias TRAIN (sembradas): {", ".join(train_names)}
+Familias HELD-OUT (jamás vistas): {", ".join(heldout_names)}
 
 | Medida | Recall | Lectura |
 |---|---|---|
