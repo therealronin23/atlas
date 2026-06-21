@@ -1,0 +1,87 @@
+"""
+Tests de la FOUNDATION de sembrado por línea (C: completar todas las líneas).
+
+- GithubLineSource + dirs_to_candidates: seeder GENÉRICO para cualquier línea cuyo
+  repo tiene un subdir con un dir por item (skills/prompts/hooks/subagents/rules…).
+- ApisGuruSource + apis_to_candidates: la línea APIs (directorio OpenAPI apis.guru).
+
+Fetcher inyectable → sin red en tests. Todo entra `candidato`/`uncategorized` con
+procedencia. Reusado por subagentes para sembrar cada línea sin duplicar módulos.
+"""
+
+from __future__ import annotations
+
+import json
+
+# --- GitHub line (genérico) ---
+_GH = json.dumps([
+    {"name": "react-best-practices", "type": "dir"},
+    {"name": "deploy-to-vercel", "type": "dir"},
+    {"name": "README.md", "type": "file"},
+])
+
+
+def _stub(payload, seen=None):
+    def f(method, url, body, headers):
+        if seen is not None:
+            seen.append(url)
+        return 200, payload
+    return f
+
+
+def test_github_line_source_targets_repo_subdir() -> None:
+    from atlas.mcp.line_seed import GithubLineSource
+
+    seen: list[str] = []
+    GithubLineSource("owner/repo", "prompts", fetcher=_stub(_GH, seen)).fetch(None)
+    assert "api.github.com/repos/owner/repo/contents/prompts" in seen[0]
+
+
+def test_dirs_to_candidates_uses_kind_and_install_template() -> None:
+    from atlas.mcp.line_seed import dirs_to_candidates
+
+    cands = dirs_to_candidates(
+        json.loads(_GH), repo="owner/repo", kind="prompt",
+        install_template="npx skills add {repo} --skill {name}",
+    )
+    by = {c["name"]: c for c in cands}
+    assert set(by) == {"react-best-practices", "deploy-to-vercel"}  # solo dirs
+    c = by["deploy-to-vercel"]
+    assert c["kind"] == "prompt"
+    assert c["status"] == "candidato" and c["sector"] == "uncategorized"
+    assert c["install"] == "npx skills add owner/repo --skill deploy-to-vercel"
+    assert "github.com/owner/repo" in c["provenance"]["source"]
+
+
+# --- APIs (apis.guru) ---
+_APIS = json.dumps({
+    "1forge.com": {
+        "preferred": "0.0.1",
+        "versions": {"0.0.1": {"info": {
+            "title": "1Forge Finance APIs", "description": "Forex data",
+            "x-apisguru-categories": ["financial"],
+        }}},
+    },
+})
+
+
+def test_apis_guru_source_hits_list_through_gate() -> None:
+    from atlas.mcp.line_seed import ApisGuruSource
+
+    seen: list[str] = []
+    rec = ApisGuruSource(fetcher=_stub(_APIS, seen)).fetch(None)
+    assert rec[0].status == 200
+    assert "apis.guru/v2/list.json" in seen[0]
+
+
+def test_apis_to_candidates_extracts_title_and_provenance() -> None:
+    from atlas.mcp.line_seed import apis_to_candidates
+
+    cands = apis_to_candidates(json.loads(_APIS))
+    c = cands[0]
+    assert c["name"] == "1forge.com"
+    assert c["kind"] == "api"
+    assert c["mode"] == "served"
+    assert c["status"] == "candidato"
+    assert "1Forge" in c["purpose"]
+    assert "apis.guru" in c["provenance"]["source"]
