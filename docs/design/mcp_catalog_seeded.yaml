@@ -1,0 +1,1489 @@
+_generated:
+  by: scripts/mcp_seed_registry.py
+  at: '2026-06-21T21:08:42.720832+00:00'
+  source: https://registry.modelcontextprotocol.io/v0/servers
+  note: MÁQUINA-GENERADO. Todo candidato/uncategorized. Triar + prove-it antes de
+    usar.
+sectors:
+  uncategorized:
+    label: Sin clasificar (sembrado del registro oficial)
+    entries:
+    - name: ac.inference.sh/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Run 150+ AI apps — image, video, audio, LLMs, 3D and more. Browse,
+        execute, stream results.
+      version: 1.0.0
+      transport: http
+      source: ac.inference.sh/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ac.inference.sh/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Run 150+ AI apps — image, video, audio, LLMs, 3D and more. Browse,
+        execute, stream results.
+      version: 1.0.1
+      transport: http
+      source: ac.inference.sh/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ac.tandem/docs-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Remote MCP server for Tandem docs, install guides, SDKs, workflows,
+        and agent setup help.
+      version: 0.3.0
+      transport: http
+      source: ac.tandem/docs-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ac.tandem/docs-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Remote MCP server for Tandem docs, install guides, SDKs, workflows,
+        and agent setup help.
+      version: 0.3.1
+      transport: http
+      source: ac.tandem/docs-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ac.tandem/docs-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Remote MCP server for Tandem docs, install guides, SDKs, workflows,
+        and agent setup help.
+      version: 0.3.2
+      transport: http
+      source: ac.tandem/docs-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: agency.lona/trading
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'AI-powered trading strategy development: backtesting, market data,
+        and portfolio analysis'
+      version: 2.0.0
+      transport: http
+      source: agency.lona/trading
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.aarna/atars-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Crypto market signals, technical indicators, and sentiment analysis
+        for AI agents.
+      version: 0.1.0
+      transport: http
+      source: ai.aarna/atars-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.abmeter/abmeter
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Feature flagging and A/B testing platform with AI-first experimentation
+        workflows.
+      version: 0.1.0
+      transport: http
+      source: ai.abmeter/abmeter
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adadvisor/mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Query Meta Ads performance data — accounts, campaigns, ad sets, ads,
+        metrics & settings.
+      version: 1.0.0
+      transport: http
+      source: ai.adadvisor/mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adadvisor/mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Query Meta Ads performance data — accounts, campaigns, ad sets, ads,
+        metrics & settings.
+      version: 1.0.1
+      transport: http
+      source: ai.adadvisor/mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adeu/adeu
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Automated DOCX Redlining Engine
+      version: 1.5.2
+      transport: stdio
+      source: ai.adeu/adeu
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adeu/adeu
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Automated DOCX Redlining Engine
+      version: 1.7.1
+      transport: stdio
+      source: ai.adeu/adeu
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adramp/google-ads
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Google Ads MCP server — manage campaigns, keywords, and metrics.
+      version: 1.0.0
+      transport: http
+      source: ai.adramp/google-ads
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adramp/google-ads
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Google Ads MCP server — manage campaigns, keywords, and metrics.
+      version: 1.0.1
+      transport: http
+      source: ai.adramp/google-ads
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adramp/google-ads
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Google Ads MCP server — manage campaigns, keywords, and metrics.
+      version: 1.0.2
+      transport: http
+      source: ai.adramp/google-ads
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adramp/google-ads
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Google Ads MCP server — manage campaigns, keywords, and metrics.
+      version: 1.0.3
+      transport: http
+      source: ai.adramp/google-ads
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.adweave/meta-ads-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Meta Ads MCP server with 47 tools for campaigns, creatives, audiences,
+        and insights.
+      version: 1.0.0
+      transport: http
+      source: ai.adweave/meta-ads-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agentberg/agentberg
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent-to-agent trading intelligence exchange. Publish findings, vote
+        on quality, earn reputation.
+      version: 0.2.0
+      transport: http
+      source: ai.agentberg/agentberg
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agentdm/agentdm
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent-to-agent messaging platform using MCP for cross-model communication.
+      version: 1.0.0
+      transport: http
+      source: ai.agentdm/agentdm
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agentdm/agentdm
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent communication platform for agent to agent messaging via MCP.
+        Messages, channels, skills.
+      version: 2.0.0
+      transport: http
+      source: ai.agentdm/agentdm
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agentic-news/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: AI-powered news intelligence — 21 tools for personalized monitoring,
+        briefings, and semantic search
+      version: 1.0.0
+      transport: http
+      source: ai.agentic-news/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agenticshelf/graffeo
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Live MCP catalog for Graffeo Coffee Roasting — North Beach SF specialty
+        coffee since 1935.
+      version: 1.0.0
+      transport: http
+      source: ai.agenticshelf/graffeo
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agenticshelf/graffeo
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Live MCP catalog for Graffeo Coffee Roasting - Simply the World's Finest
+        Coffee since 1935.
+      version: 1.0.1
+      transport: http
+      source: ai.agenticshelf/graffeo
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agenticshelf/graffeo
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Live MCP catalog for Graffeo Coffee Roasting - Simply the World's Finest
+        Coffee since 1935.
+      version: 1.0.2
+      transport: http
+      source: ai.agenticshelf/graffeo
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agenticshelf/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Hosted MCP for e-commerce: live product catalog, stock, and pricing
+        for AI agents.'
+      version: 1.0.0
+      transport: http
+      source: ai.agenticshelf/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agenticterminal/directory
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Verified merchants accepting agentic payments on Lightning/L402/BOLT12/USDT
+        — search, verify, pay.
+      version: 1.0.0
+      transport: http
+      source: ai.agenticterminal/directory
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agentrapay/agentra
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Identity oracle and trust layer for autonomous AI agents. Bidirectional
+        KYA and trust scoring.
+      version: 1.0.0
+      transport: http
+      source: ai.agentrapay/agentra
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.agenttrust/mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Identity, trust, and A2A orchestration for autonomous AI agents. Official
+        A2A partner.
+      version: 1.1.1
+      transport: stdio
+      source: ai.agenttrust/mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.aient/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP-native AI SRE: ask what''s broken in production, get a reviewed
+        GitHub fix PR.'
+      version: 0.1.0
+      transport: http
+      source: ai.aient/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.airshelf/catalog
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Cross-vendor B2B catalog for AI agents: search, compare, find equivalents,
+        request a quote.'
+      version: 1.0.0
+      transport: http
+      source: ai.airshelf/catalog
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.aliengiraffe/spotdb
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Ephemeral data sandbox for AI workflows with guardrails and security
+      version: 0.1.0
+      transport: stdio
+      source: ai.aliengiraffe/spotdb
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.alphacreek/alphacreek-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Access SEC filings efficiently, save time and tokens, and get cited
+        answers.
+      version: 1.0.0
+      transport: http
+      source: ai.alphacreek/alphacreek-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.alphacreek/alphacreek-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Access SEC filings efficiently (10-K, 10-Q, etc), save time and tokens,
+        and get cited answers.
+      version: 1.0.1
+      transport: http
+      source: ai.alphacreek/alphacreek-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.alpic.mcp/alpic-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Manage your projects, debug deployment, and check analytics for any
+        MCP server you host with Alpic
+      version: 0.0.1
+      transport: http
+      source: ai.alpic.mcp/alpic-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.alpic.test/test-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Alpic Test MCP Server - great server!
+      version: 0.0.1
+      transport: http
+      source: ai.alpic.test/test-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ambix/ambix
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Your product team's shared strategic memory — an MCP server your AI
+        tools reason over.
+      version: 0.1.0
+      transport: http
+      source: ai.ambix/ambix
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.18.4
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.18.4-tunnel
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.18.5
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.19.0
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.19.1
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.19.2
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.20.0
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.20.1
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.21.0
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server-addon
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Anki addon that exposes your flashcard collection to AI assistants
+        via a local MCP server.
+      version: 0.15.0
+      transport: ''
+      source: ai.ankimcp/anki-mcp-server-addon
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server-addon
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Anki addon that exposes your flashcard collection to AI assistants
+        via a local MCP server.
+      version: 0.15.1
+      transport: ''
+      source: ai.ankimcp/anki-mcp-server-addon
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server-addon
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Anki addon that exposes your flashcard collection to AI assistants
+        via a local MCP server.
+      version: 0.17.0
+      transport: ''
+      source: ai.ankimcp/anki-mcp-server-addon
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server-addon
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Anki addon that exposes your flashcard collection to AI assistants
+        via a local MCP server.
+      version: 0.18.0
+      transport: ''
+      source: ai.ankimcp/anki-mcp-server-addon
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.ankimcp/anki-mcp-server-addon
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Anki addon that exposes your flashcard collection to AI assistants
+        via a local MCP server.
+      version: 0.19.0
+      transport: ''
+      source: ai.ankimcp/anki-mcp-server-addon
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.anomalyarmor/armor-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Data observability tools for engineering teams: alerts, freshness,
+        schema drift, lineage, quality.'
+      version: 0.6.1
+      transport: http
+      source: ai.anomalyarmor/armor-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.anzenna/anzenna
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: MCP server for Anzenna
+      version: '0.1'
+      transport: http
+      source: ai.anzenna/anzenna
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.appdeploy/deploy-app
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: AppDeploy turns app ideas described in AI chat into live full-stack
+        web applications
+      version: 1.0.0
+      transport: http
+      source: ai.appdeploy/deploy-app
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.arclan/registry
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: MCP server registry — validated by live handshake, scored on reliability,
+        monitored continuously.
+      version: 0.1.0
+      transport: http
+      source: ai.arclan/registry
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.artidrop/artidrop
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: The publishing layer for AI agents. Turn HTML and Markdown into shareable
+        URLs instantly via MCP.
+      version: 1.0.0
+      transport: http
+      source: ai.artidrop/artidrop
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.artidrop/artidrop
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Publish HTML, Markdown, and multi-file sites as shareable URLs instantly
+        via MCP.
+      version: 1.1.0
+      transport: http
+      source: ai.artidrop/artidrop
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auralogs/auralogs
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Read-only access to Auralogs production logs: search logs, inspect
+        errors, review AI analyses.'
+      version: 0.1.0
+      transport: http
+      source: ai.auralogs/auralogs
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auteng/docs
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Publish markdown documents as public share links with mermaid diagram
+        support. Built by AutEng.ai
+      version: 1.1.0
+      transport: http
+      source: ai.auteng/docs
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auteng/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Publish markdown as a publicly shareable AutEng document
+      version: 1.0.0
+      transport: http
+      source: ai.auteng/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auteng/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Publish markdown documents as public share links with mermaid diagrams.
+        Built by AutEng.ai
+      version: 1.0.1
+      transport: http
+      source: ai.auteng/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autoblocks/contextlayer-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Personal context management for AI assistants
+      version: 0.0.3
+      transport: stdio
+      source: ai.autoblocks/contextlayer-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autoblocks/ctxl
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Personal context management for AI assistants
+      version: 0.0.2
+      transport: stdio
+      source: ai.autoblocks/ctxl
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autoblocks/ctxl-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Personal context management for AI assistants
+      version: 0.0.2
+      transport: stdio
+      source: ai.autoblocks/ctxl-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autonomad/computeback
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Agent marketplace: earn $NOMD on B2B work, spend on compute/voice/memory
+        capabilities.'
+      version: 1.1.2
+      transport: stdio
+      source: ai.autonomad/computeback
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autonomad/computeback
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Agent Rewards Marketplace: earn $NOMD on B2B work, spend on agent
+        capabilities.'
+      version: 1.1.3
+      transport: stdio
+      source: ai.autonomad/computeback
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autonomad/travel
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: AI travel agent — book flights, hotels, activities, and events worldwide
+        via autonomad.ai.
+      version: 1.4.0
+      transport: http
+      source: ai.autonomad/travel
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.autorfp/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Search AutoRFP.ai projects, requirements, content library, and tags
+        for Q&A and analytics.
+      version: 1.0.0
+      transport: http
+      source: ai.autorfp/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auxen/auxen
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Provision private AI model endpoints on dedicated GPUs (Llama, Qwen,
+        Mistral). Pay per minute.
+      version: 1.0.0
+      transport: http
+      source: ai.auxen/auxen
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auxen/auxen
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Provision private AI model endpoints on dedicated GPUs (Llama, Qwen,
+        Mistral). Pay per minute.
+      version: 1.0.1
+      transport: http
+      source: ai.auxen/auxen
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.auxen/auxen
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Provision private AI model endpoints on dedicated GPUs (Llama, Qwen,
+        Mistral). Pay per minute.
+      version: 1.0.2
+      transport: http
+      source: ai.auxen/auxen
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bankee/inferventis-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Loan & mortgage calculator, compound interest, ROI, crypto prices,
+        FX conversion for AI agents.
+      version: 1.0.2
+      transport: http
+      source: ai.bankee/inferventis-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bareun/bareun
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Korean NLP MCP server: morphological analysis, tokenization, spell
+        & grammar checking (Bareun)'
+      version: 3.0.0
+      transport: http
+      source: ai.bareun/bareun
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.baselight/baselight
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Query Baselight's public catalog of 70,000+ datasets — finance, demographics,
+        sports, and more.
+      version: 1.0.0
+      transport: http
+      source: ai.baselight/baselight
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bezal/local-commerce
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Search 7,000+ local service businesses across America by category,
+        location, or keyword.
+      version: 1.0.0
+      transport: http
+      source: ai.bezal/local-commerce
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bittlebits/bittlebits
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: GEO scores and content-rewrite suggestions for any web page, as MCP
+        tools.
+      version: 1.0.0
+      transport: http
+      source: ai.bittlebits/bittlebits
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 0.13.0
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 0.13.1
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 1.1.2
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 1.2.0
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 1.2.1
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 1.2.3
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 1.3.0
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: 1.4.0
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bolthub/registry
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Discover and call every paid API on the bolthub marketplace with automatic
+        L402 Lightning payments.
+      version: 0.1.4
+      transport: stdio
+      source: ai.bolthub/registry
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bolthub/registry
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Discover and call every paid API on the bolthub marketplace with automatic
+        L402 Lightning payments.
+      version: 0.1.6
+      transport: stdio
+      source: ai.bolthub/registry
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.boolsai/directory
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Indexed ecommerce site directory — vendor lookups, brands by city/market/founder.
+        10 tools.
+      version: 1.0.0
+      transport: http
+      source: ai.boolsai/directory
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.boolsai/grep
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Parallel regex across all Boolsai scans — discover new vendor patterns,
+        niche signals. 4 tools.
+      version: 1.0.0
+      transport: http
+      source: ai.boolsai/grep
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.boolsai/scan
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Live tech-stack scan of any public site — vendors, account IDs, scripts,
+        JSON-LD. 2 tools.
+      version: 1.0.0
+      transport: http
+      source: ai.boolsai/scan
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.boolsai/signals
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Quant-research MCP — tradeable signals from public-company website
+        stack changes. 7 tools.
+      version: 1.0.0
+      transport: http
+      source: ai.boolsai/signals
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.borealhost/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
+        scale infrastructure
+      version: 0.1.1
+      transport: http
+      source: ai.borealhost/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.borealhost/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
+        scale infrastructure
+      version: 0.1.2
+      transport: http
+      source: ai.borealhost/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.borealhost/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
+        scale infrastructure
+      version: 0.1.3
+      transport: http
+      source: ai.borealhost/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.borealhost/mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
+        scale infrastructure
+      version: 0.1.4
+      transport: http
+      source: ai.borealhost/mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 1.0.0
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 1.1.0
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 1.2.0
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 3.12.0
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 3.13.0
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 3.14.0
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'
+    - name: ai.bowmark/bowmark
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
+      version: 3.14.1
+      transport: http
+      source: ai.bowmark/bowmark
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-06-21T21:08:42.719852+00:00'

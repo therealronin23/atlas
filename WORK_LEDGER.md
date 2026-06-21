@@ -113,7 +113,11 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ Paso 3 skills servidos: `SkillStore` (sirve `docs/skills/*.md` sin descarga) + tronco expone
     `get_skill`/`list_skills`. 1er skill real: `atlas-coding-discipline` (nuestras máximas, fuente única
     anti-deriva), registrado en catálogo (mode=served, tags coding+productivity-meta). 4 tests.
-  - ⬜ SIGUIENTE: 4 sembrar registro oficial (procedencia) · 5 prove-it→verificado · 6 instalador por mode.
+  - ✅ Paso 4 sembrar registro oficial: `RegistrySource` (/v0/servers, allowlisted) +
+    `registry_to_candidates` (con procedencia) + `scripts/mcp_seed_registry.py`. Sembrados 100
+    candidatos reales → `docs/design/mcp_catalog_seeded.yaml` (máquina-generado, candidato/uncategorized,
+    0 instalable). 3 tests. Triaje/clasificación = decisión posterior.
+  - ⬜ SIGUIENTE: 5 prove-it→verificado (veto SentinelGate) · 6 instalador por mode (served/connected/installed).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
