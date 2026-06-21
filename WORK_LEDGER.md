@@ -139,8 +139,13 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     skills → `mode:installed`/`place_skill`), servir lo nuestro (`get_skill`/`mode:served`). Seguridad:
     `vet_action` ahora veta TODO comando (connect + place_skill), no solo connect. Instalar externo =
     consentimiento explícito (demostrado: harness bloqueó `npx skills` sin autorización). Diseño en doc.
-  - ⬜ PENDIENTE (con tu OK): seeder de skills (parsear awesome-* repo) + instalar 1 skill real E2E
-    (requiere tu consentimiento por ser código de terceros).
+  - ✅ Seeder de skills (`atlas.mcp.skills_seed` + `scripts/mcp_seed_skills.py`): GitHub contents API
+    (estructurado, no scraping) → candidatos kind=skill con `npx skills add` + procedencia. Sembrados 9
+    de vercel-labs/agent-skills → `mcp_catalog_skills_seeded.yaml`. 2 tests.
+  - ✅ **SKILL INSTALADO E2E** (autorizado): `npx skills add vercel-labs/agent-skills --skill
+    vercel-react-best-practices` → `.agents/skills/` (universal + symlink Claude Code), aparece en la
+    lista de skills viva. Registrado en catálogo (programación/frontend, instalado). Cadena de
+    suministro de skills COMPLETA: descubrir→sembrar→consentir→instalar→vivo.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

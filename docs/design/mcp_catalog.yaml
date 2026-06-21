@@ -25,7 +25,7 @@ sectors:
       - {name: everything, kind: mcp, subsector: testing, install: "npx -y @modelcontextprotocol/server-everything", transport: stdio, trust: vetted, purpose: "server de referencia MCP (prove-it OK 2026-06-21)", status: verificado}
       - {name: Code Reviewer / TDD, kind: skill, subsector: code-review, purpose: "review + TDD + simplify", status: candidato}
       - {name: Karpathy Guidelines, kind: skill, subsector: code-review, purpose: "reglas de coding limpio", status: candidato}
-      - {name: Vercel React Best Practices, kind: skill, subsector: frontend, purpose: "patrones React/Next", tags: [programacion, diseno], status: candidato}
+      - {name: vercel-react-best-practices, kind: skill, subsector: frontend, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices", purpose: "patrones React/Next (instalado E2E vía npx skills 2026-06-22)", tags: [programacion, diseno], trust: vetted, status: instalado}
       - {name: Playwright / WebApp Testing, kind: mcp, subsector: testing, purpose: "tests E2E browser", tags: [programacion, ciberseguridad], status: candidato}
       - {name: WarpGrep, kind: tool, subsector: cicd, purpose: "búsqueda ultrarrápida en repos (Codex)", status: candidato}
       - {name: gh-fix-ci, kind: tool, subsector: cicd, purpose: "arregla CI fallido en background (Codex)", status: candidato}
