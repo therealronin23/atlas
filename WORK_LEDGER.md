@@ -92,9 +92,10 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ `TrunkAggregator` + shell FastMCP (`atlas.mcp.trunk_server`): fachada META PEQUEÑA
     (trunk_sectors/trunk_tools/trunk_invoke) con descubrimiento LAZY por sector (anti-kitchen-sink) +
     purpose para routing + dispatcher inyectable. 6 tests (`tests/test_mcp_trunk_aggregator.py`).
-  - ⬜ FALTA: dispatcher REAL = McpRegistry sobre las 3 raíces + `serve()` + desplegar el tronco
-    (cliente→tronco único). ← SIGUIENTE en B. Luego: filtro/middleware ligero; sembrar catálogo del
-    registro oficial (vía knowledge-src, ya en allowlist).
+  - ✅ Dispatcher REAL: `root_configs` + `serve()` montan McpRegistry (Merkle+SentinelGate) sobre las
+    3 raíces y el tronco las frontea. Prove-it E2E: cliente→tronco→add/recall a memoria (score 0.93).
+    DESPLEGADO: `atlas-trunk` ✔ Connected reemplaza el bundle de 3 (UNA conexión). 7 tests.
+  - ✅ **B CERRADO.** Pendiente menor: filtro/middleware ligero (asimilable de metamcp).
 - 🔄 **C — Catálogo verificado + instalador real**:
   - ✅ Triaje del grok dump → **catálogo estructurado YAML** (`docs/design/mcp_catalog.yaml`, 43
     entradas en 14 SECTORES) = el eje de clasificación del tronco. Loader `atlas.mcp.catalog`

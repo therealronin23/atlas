@@ -103,3 +103,25 @@ def test_build_trunk_server_exposes_small_meta_surface() -> None:
     # Anti-kitchen-sink: el cliente ve la fachada meta, no las 8 tools de raíz.
     assert {"trunk_sectors", "trunk_tools", "trunk_invoke"} <= names
     assert "recall" not in names
+
+
+# ---------------------------------------------------------------------------
+# Cableado real: configs de McpRegistry para las 3 raíces vivas
+# ---------------------------------------------------------------------------
+
+
+def test_root_configs_map_each_root_to_its_launch_command(tmp_path: Path) -> None:
+    from atlas.mcp.trunk_server import root_configs
+
+    cfgs = {c.name: c for c in root_configs(
+        save_dir=tmp_path / "save", repo_root=Path("/repo"), python="/py"
+    )}
+    assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge"}
+
+    mem = cfgs["atlas-memory"]
+    assert mem.cmd[0] == "/py"
+    assert "atlas.mcp.memory_server" in mem.cmd
+    assert str(tmp_path / "save" / "memory.db") in mem.cmd
+    # operating recibe el repo; knowledge recibe el base (kb)
+    assert "/repo" in cfgs["atlas-operating"].cmd
+    assert str(tmp_path / "save" / "kb") in cfgs["atlas-knowledge"].cmd
