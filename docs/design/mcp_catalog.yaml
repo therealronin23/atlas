@@ -20,6 +20,7 @@ sectors:
     label: Coding y desarrollo
     entries:
       - {name: Code Reviewer / TDD, kind: skill, purpose: "review + TDD + simplify", source: "", install: "", status: candidato}
+      - {name: atlas-coding-discipline, kind: skill, purpose: "máximas del repo (NUESTRO, servido)", source: "docs/skills/atlas-coding-discipline.md", mode: served, tags: [coding, productivity-meta], status: instalado}
       - {name: Karpathy Guidelines, kind: skill, purpose: "reglas de coding limpio", source: "", install: "", status: candidato}
       - {name: Vercel React Best Practices, kind: skill, purpose: "patrones React/Next", source: "", install: "", status: candidato}
       - {name: WarpGrep, kind: tool, purpose: "búsqueda ultrarrápida en repos (Codex)", source: "", install: "", status: candidato}
