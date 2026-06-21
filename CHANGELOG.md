@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `InferenceHub.infer()` now propagates the final response `mode` from the last provider attempt, including `auto-skip` when providers are skipped due to missing API keys.
-- Added explicit documentation for the `InferenceHub auto` mode behavior in `docs/adr_016_inferencehub.md`.
+- Added explicit documentation for the `InferenceHub auto` mode behavior in `docs/reference/adr/adr_016_inferencehub.md`.
 
 ### Fixed
 

@@ -1,0 +1,52 @@
+{
+  "root": "/home/ronin/proyectos/atlas-core",
+  "generated_at": "2026-06-11T23:10:45.016318+00:00",
+  "checks": [
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q -m not computer_use",
+      "exit": 0,
+      "stdout_tail": "........................................................................ [  7%]\n........................................................................ [ 14%]\n........................................................................ [ 22%]\n........................................................................ [ 29%]\n........................................................................ [ 36%]\n........................................................................ [ 44%]\n........................................................................ [ 51%]\n........................................................................ [ 59%]\n........................................................................ [ 66%]\n........................................................................ [ 73%]\n........................................................................ [ 81%]\n........................................................................ [ 88%]\n........................................................................ [ 95%]\n........................................                                 [100%]\n976 passed, 26 deselected in 64.06s (0:01:04)\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q -m computer_use",
+      "exit": 0,
+      "stdout_tail": "..........................                                               [100%]\n26 passed, 976 deselected in 80.27s (0:01:20)\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m mypy src/atlas/",
+      "exit": 0,
+      "stdout_tail": "Success: no issues found in 105 source files\n",
+      "stderr_tail": ""
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python /home/ronin/proyectos/atlas-core/scripts/gate_i_smoke.py",
+      "exit": 1,
+      "stdout_tail": "",
+      "stderr_tail": " 154, in start\n    self._start_prometheus_if_enabled()\n  File \"/home/ronin/proyectos/atlas-core/src/atlas/runtime/service_runner.py\", line 113, in _start_prometheus_if_enabled\n    self._prometheus.start()\n  File \"/home/ronin/proyectos/atlas-core/src/atlas/monitoring/prometheus_exporter.py\", line 68, in start\n    self._httpd = HTTPServer((self._host, self._port), Handler)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/socketserver.py\", line 457, in __init__\n    self.server_bind()\n  File \"/usr/lib/python3.12/http/server.py\", line 136, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/usr/lib/python3.12/socketserver.py\", line 473, in server_bind\n    self.socket.bind(self.server_address)\nOSError: [Errno 98] Address already in use\n"
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python /home/ronin/proyectos/atlas-core/scripts/gate_h_smoke.py",
+      "exit": 1,
+      "stdout_tail": "[1/4] Gate H status: {'paused_tools': [], 'failure_counts': {}, 'truth_snapshots': 0, 'diagnostic_mode': False, 'stale_patterns_count': 0, 'known_good_tools': ['editor.read', 'fs.list_dir', 'git.status']}\nERROR: expected awaiting_approval, got TaskStatus.BLOCKED\n",
+      "stderr_tail": "Hermes: mock (faltan HERMES_BASE_URL/HERMES_API_KEY). Carga .env para VPS real.\n"
+    },
+    {
+      "cmd": "/home/ronin/proyectos/atlas-core/.venv/bin/python -m atlas.interfaces.cli self-audit run --hours 1 --profile quick --max-cycles 1 --dry-run",
+      "exit": 0,
+      "stdout_tail": "pending_approvals_count\": 0,\n          \"queue_depth\": 0,\n          \"telegram_running\": false,\n          \"offline_monitor_running\": false,\n          \"observability\": {\n            \"telemetry\": {\n              \"counters\": [],\n              \"gauges\": [],\n              \"recent_events\": []\n            },\n            \"microledger_tail\": [],\n            \"wal_tail\": [\n              {\n                \"ts\": \"2026-06-11T23:13:36.340600+00:00\",\n                \"component\": \"orchestrator\",\n                \"message\": \"pipeline.gate_d_enabled\",\n                \"fields\": {\n                  \"result\": \"success\",\n                  \"risk\": \"safe\",\n                  \"task_id\": null\n                }\n              },\n              {\n                \"ts\": \"2026-06-11T23:13:36.341220+00:00\",\n                \"component\": \"orchestrator\",\n                \"message\": \"pipeline.memory_vector_enabled\",\n                \"fields\": {\n                  \"result\": \"success\",\n                  \"risk\": \"safe\",\n                  \"task_id\": null\n                }\n              },\n              {\n                \"ts\": \"2026-06-11T23:13:36.351582+00:00\",\n                \"component\": \"self_audit_runner\",\n                \"message\": \"self_audit.started\",\n                \"fields\": {\n                  \"result\": \"success\",\n                  \"risk\": \"high\",\n                  \"task_id\": null\n                }\n              }\n            ]\n          }\n        }\n      },\n      \"findings\": [],\n      \"candidates\": []\n    }\n  ]\n}\n",
+      "stderr_tail": "Hermes: mock (faltan HERMES_BASE_URL/HERMES_API_KEY). Carga .env para VPS real.\n"
+    },
+    {
+      "cmd": "scripts/operational_smoke.py",
+      "exit": 0,
+      "stdout_tail": "SKIPPED: set ATLAS_AUDIT_LIVE=1 and load .env to run live Hermes/Telegram smoke",
+      "stderr_tail": "",
+      "skipped": true
+    }
+  ],
+  "passed": false,
+  "failed_count": 2,
+  "skipped_count": 1
+}
