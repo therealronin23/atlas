@@ -55,8 +55,11 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   cross-cwd/cross-proceso/cross-cliente por stdio PROBADO (`tests/test_mcp_memory_trunk.py`, 8 tests;
   guardados con importorskip → suite verde sin la dep). Portabilidad cross-INSTALL (instalar en otro
   proyecto) diferida a F4/empaquetado. `text_of` añadido al índice.
-- ⬜ **F2** raíz operating (manías/ledger como recursos + sanitation_audit tool) + franken-prompt
-  por canal real ← SIGUIENTE en esta línea.
+- ✅ **F2 — Raíz operating** — `OperatingTrunk` (núcleo neutro) + shell FastMCP
+  (`atlas.mcp.operating_server`): AGENTS.md y WORK_LEDGER.md como RECURSOS MCP (vía enforcement
+  portable, advisory) + `sanitation_audit` como TOOL read-only. 5 tests
+  (`tests/test_mcp_operating_trunk.py`). DIFERIDO: franken-prompt por canal real (muro — MCP no
+  impone system prompt; exige wrapper/CLI, no la primitiva MCP). ← SIGUIENTE: F3 knowledge-src.
 - ⬜ F3 knowledge-src (Wikipedia+1) → `run_mission` → sustrato · ⬜ F4 commodity+catálogo+instalador
   · ⏸ F5 Rust por-raíz.
 
