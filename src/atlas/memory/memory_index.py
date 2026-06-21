@@ -12,6 +12,12 @@ conoce lecciones, stances ni Garak.
 Decisión (regla 6, stdlib > deps): NO `sqlite-vec`. Coseno en Python con la misma
 matemática que `LessonRecaller` (se reutiliza `_cosine_similarity`) → scores
 idénticos. El valor es persistencia + enlace Merkle, no velocidad.
+
+Límite conocido (auditoría 2026-06-21): la conexión sqlite usa el default
+`check_same_thread=True` → este índice NO es seguro para uso concurrente entre
+hilos (igual que el `LessonRecaller` in-memory al que sustituye). Single-thread por
+ahora; cuando el loop inmune se ensamble en vivo habrá que dar a cada hilo su
+conexión o serializar con un lock.
 """
 
 from __future__ import annotations
@@ -46,7 +52,10 @@ CREATE TABLE IF NOT EXISTS records (
     last_access_ns    INTEGER,   -- para democión medible por ocio
     access_count      INTEGER
 );
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 """
+
+_META_EMBEDDER_DIM = "embedder_dim"
 
 # Columnas a añadir si el índice viene de un esquema previo (migración suave).
 _TEMPORAL_COLUMNS = {
@@ -90,16 +99,53 @@ class SqliteMemoryIndex:
         self._threshold = threshold
         self._merkle = merkle
         self._conn = sqlite3.connect(str(self._path))
-        self._conn.execute(_SCHEMA)
+        self._conn.executescript(_SCHEMA)
         self._migrate_temporal()
+        self._guard_embedder_dim()
         self._conn.commit()
 
     def _migrate_temporal(self) -> None:
-        """Añade las columnas de 1d-a a un índice de esquema previo (idempotente)."""
+        """Añade las columnas de 1d-a/b a un índice de esquema previo (idempotente)
+        y rellena las nuevas en filas viejas para no dejarlas invisibles a tiers."""
         existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        added = False
         for col, decl in _TEMPORAL_COLUMNS.items():
             if col not in existing:
                 self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                added = True
+        if added:
+            # Backfill: filas pre-1d quedan vigentes (valid_until NULL) y en tier hot,
+            # con su ocio anclado a valid_from si lo tienen.
+            self._conn.execute(
+                "UPDATE records SET tier='hot' WHERE tier IS NULL"
+            )
+            self._conn.execute(
+                "UPDATE records SET access_count=0 WHERE access_count IS NULL"
+            )
+            self._conn.execute(
+                "UPDATE records SET last_access_ns=valid_from_ns "
+                "WHERE last_access_ns IS NULL AND valid_from_ns IS NOT NULL"
+            )
+
+    def _guard_embedder_dim(self) -> None:
+        """Persiste/verifica la dim del embedder: reabrir un índice con un embedder
+        de otra dimensión daría scores SILENCIOSAMENTE basura (el coseno truncaría
+        vectores de distinta longitud). Falla ruidoso en su lugar."""
+        dim = self._embedder.dim
+        row = self._conn.execute(
+            "SELECT value FROM meta WHERE key=?", (_META_EMBEDDER_DIM,)
+        ).fetchone()
+        if row is None:
+            self._conn.execute(
+                "INSERT INTO meta (key, value) VALUES (?, ?)",
+                (_META_EMBEDDER_DIM, str(dim)),
+            )
+        elif int(row[0]) != dim:
+            raise ValueError(
+                f"Embedder dim mismatch: el índice {self._path.name} se creó con "
+                f"dim={row[0]} pero el embedder actual usa dim={dim}. Usa el embedder "
+                f"original o reconstruye el índice."
+            )
 
     # ------------------------------------------------------------------
     # Escritura
@@ -170,6 +216,18 @@ class SqliteMemoryIndex:
     ) -> None:
         """La memoria `new_record` reemplaza a `old_id`: la vieja caduca (sigue en la
         tabla, auditable) y la nueva entra vigente con lineage `supersedes=old_id`."""
+        old = self._conn.execute(
+            "SELECT valid_until_ns FROM records WHERE id=?", (old_id,)
+        ).fetchone()
+        if old is None:
+            raise KeyError(f"supersede: la memoria a reemplazar {old_id!r} no existe")
+        if self._conn.execute(
+            "SELECT 1 FROM records WHERE id=?", (new_record.record_id,)
+        ).fetchone() is not None:
+            raise ValueError(
+                f"supersede: el nuevo id {new_record.record_id!r} ya existe; usa un id "
+                f"distinto para preservar el lineage"
+            )
         ts = now_ns if now_ns is not None else time.time_ns()
         self.upsert(new_record, valid_from_ns=ts, supersedes=old_id)
         self._conn.execute(
@@ -322,14 +380,12 @@ class SqliteMemoryIndex:
         if not query_text.strip():
             return [RecallResult(lesson_id=rid, score=0.0, matched=False) for rid, _ in rows][:k]
         query_vec = self._embedder.embed(query_text)
-        results = [
-            RecallResult(
-                lesson_id=rid,
-                score=_cosine_similarity(query_vec, vec),
-                matched=_cosine_similarity(query_vec, vec) >= self._threshold,
+        results = []
+        for rid, vec in rows:
+            score = _cosine_similarity(query_vec, vec)
+            results.append(
+                RecallResult(lesson_id=rid, score=score, matched=score >= self._threshold)
             )
-            for rid, vec in rows
-        ]
         results.sort(key=lambda r: r.score, reverse=True)
         return results[:k]
 
