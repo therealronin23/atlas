@@ -74,6 +74,22 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   instalador cuando se verifique, no reinventadas.
 - ✅ **LÍNEA MCP TRUNK F1–F4 CERRADA.** 3 raíces nativas portables + agregación + instalador honesto,
   suite verde, mergeada y pusheada a origin/main. 2ª API (World Bank) ya añadida → F3 pleno.
+  ⚠️ MATIZ (corrección del usuario 2026-06-21): F1–F4 construyó las RAÍCES + un `trunk_manifest` que
+  EMITE config (bundle: cliente→N raíces por separado). NO construyó el TRONCO-AGREGADOR real (un MCP
+  único que frontea varias MCP, CLASIFICADAS por sector/necesidad, con enrutado por objetivo). Esa
+  visión está en el design (arquitectura "tronco+raíces", agregadores magg/1mcp como candidatos) pero
+  SIN implementar. → es la línea B.
+
+## Línea: TRONCO-AGREGADOR + catálogo (la visión real del usuario) — NUEVA, no empezada
+
+- ⬜ **A — Desplegar** las 3 raíces Python al cliente (`claude mcp add`, save en /home/ronin/atlas).
+  Quick win reversible; aún es bundle (N conexiones), no tronco único. ← EN CURSO.
+- ⬜ **B — TRONCO-AGREGADOR**: un MCP que conecta/frontea varias MCP, ordenadas y CLASIFICADAS por
+  sector/necesidad, con enrutado por objetivo (franken-prompt modular → subconjunto pequeño de raíces,
+  anti-overload) + permisos centralizados. Evaluar magg/1mcp/mcgravity (prove-it) vs construir.
+- ⬜ **C — Catálogo verificado + instalador real**: triar las 907 líneas de `mcp grok.md`, verificar
+  candidatos (prove-it), marcar `verificado` con comando, implementar la EJECUCIÓN de instalación
+  (hoy `installer.py` solo parsea+reporta, instala 0). Alimenta al tronco (B).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
