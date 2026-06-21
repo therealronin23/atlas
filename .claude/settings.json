@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "printf '### OPERATING LOOP active (AGENTS.md): run the 5 pre-flight questions before acting; update WORK_LEDGER.md in the same commit.\\n\\n=== WORK_LEDGER.md (live state) ===\\n'; cat \"$CLAUDE_PROJECT_DIR/WORK_LEDGER.md\" 2>/dev/null || echo '(not found)'" } ] }
+    ]
+  }
+}
