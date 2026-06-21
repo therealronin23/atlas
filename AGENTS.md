@@ -96,7 +96,7 @@ The desired direction is maximum verified capability:
   via `ATLAS_SELF_AUDIT_SCHEDULER=1` — single Merkle writer, not the CLI one-shot
   which would be a second writer), ADR-039 self-maintenance
   scouts/proposers/adopter, ADR-040 decider/revert registry.
-- Build-up layers (cores done, wiring deferred — see ROADMAP + `docs/backlog.md`):
+- Build-up layers (cores done, wiring deferred — see ROADMAP + `docs/design/backlog.md`):
   Layer 1 universal verifier (`core/verify.py`, ADR-041), Layer 2 cascade
   routing (`router/cascade.py`, ADR-042), Layer 3 swarm + worker backend
   (`core/swarm.py`, `core/swarm_backend.py`, `core/swarm_reconcile.py`,
@@ -114,11 +114,11 @@ Atlas runs with the mock adapter or local takeover if configured.
 
 Active line beyond the Atlas runtime: a verifiable AI compliance gateway
 (ADR-051/053/054). The public-facing calling card is a design paper —
-`docs/paper_subject_enforced_completeness.md` ("Subject-Enforced Completeness for AI
+`docs/reference/paper/paper_subject_enforced_completeness.md` ("Subject-Enforced Completeness for AI
 Inspection Logs") — plus a demo. The *in-path verifiable AI compliance filter* (alias
 Osmosis) and its candidate mechanisms live in the osmosis membrane:
 `docs/membrana/` (OSM-000 manifest + registry OSM-001..039). Public artifacts speak about
-the filter, not Atlas. The May Gates (`docs/gate_*`) are historical; the project pivoted.
+the filter, not Atlas. The May Gates (`docs/governance/gates/`) are historical; the project pivoted.
 
 ## Non-Negotiable Rules
 
