@@ -1,0 +1,119 @@
+_generated:
+  by: scripts/mcp_seed_skills.py
+  at: '2026-06-21T23:00:51.063417+00:00'
+  repos:
+  - vercel-labs/agent-skills
+  note: MÁQUINA-GENERADO. Todo candidato/uncategorized. Triar + consentir antes de
+    instalar.
+sectors:
+  uncategorized:
+    label: Skills sin clasificar (sembrado de repos abiertos)
+    entries:
+    - name: composition-patterns
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill composition-patterns
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: deploy-to-vercel
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill deploy-to-vercel
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: react-best-practices
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill react-best-practices
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: react-native-skills
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill react-native-skills
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: react-view-transitions
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill react-view-transitions
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: vercel-cli-with-tokens
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill vercel-cli-with-tokens
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: vercel-optimize
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill vercel-optimize
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: web-design-guidelines
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill web-design-guidelines
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
+    - name: writing-guidelines
+      sector: uncategorized
+      kind: skill
+      mode: installed
+      purpose: ''
+      source: vercel-labs/agent-skills
+      install: npx skills add vercel-labs/agent-skills --skill writing-guidelines
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/vercel-labs/agent-skills
+        fetched_at: '2026-06-21T23:00:51.063304+00:00'
