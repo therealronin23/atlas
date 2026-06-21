@@ -35,6 +35,11 @@ voice = [
 computer-use = [
     "playwright>=1.45",      # BrowserTool / Gate F F1 (requiere: python -m playwright install chromium)
 ]
+mcp = [
+    # MCP trunk portable F1 — SDK oficial (incluye FastMCP). OPCIONAL: el núcleo
+    # (MemoryTrunk) es usable sin esta dep; solo el shell de transporte la pide.
+    "mcp>=1.2",
+]
 redteam = [
     # ADR-056: tooling de red-team SOLO dev/CI — NUNCA importado por el runtime.
     # Instalar en venv aislado y FIJAR torch al índice CPU para quedarse en ~1.8GB

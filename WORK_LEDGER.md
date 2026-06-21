@@ -46,11 +46,19 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
 - ✅ **Ciclo de saneamiento** establecido: `scripts/sanitation_audit.py` (read-only) cada Gate/~mensual
 - ✅ **GATE DE GOBERNANZA CERRADO** (tipo-2). Próximo ciclo: revisar `_graveyard/2026-06-21*` al vencer grace (~2026-07-21)
 
-## Otras líneas (no activas ahora)
+## Línea activa secundaria: MCP trunk portable
 
-- ⬜ **MCP trunk portable** — diseño en `docs/design/mcp_trunk_portable.md` (empaquetar el trabajo
-  como raíces MCP portables; F1 = tronco Python + raíz memoria; knowledge-src→run_mission→substrato).
-  NO empezado.
+Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
+
+- ✅ **F1 — Tronco Python + raíz memoria** — `MemoryTrunk` (núcleo neutro: add/recall/supersede sobre
+  `SqliteMemoryIndex`) + shell FastMCP (`atlas.mcp.memory_server`, dep opcional `[mcp]`). Roundtrip
+  cross-cwd/cross-proceso/cross-cliente por stdio PROBADO (`tests/test_mcp_memory_trunk.py`, 8 tests;
+  guardados con importorskip → suite verde sin la dep). Portabilidad cross-INSTALL (instalar en otro
+  proyecto) diferida a F4/empaquetado. `text_of` añadido al índice.
+- ⬜ **F2** raíz operating (manías/ledger como recursos + sanitation_audit tool) + franken-prompt
+  por canal real ← SIGUIENTE en esta línea.
+- ⬜ F3 knowledge-src (Wikipedia+1) → `run_mission` → sustrato · ⬜ F4 commodity+catálogo+instalador
+  · ⏸ F5 Rust por-raíz.
 
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
 - ⏸ Deuda diferida del sustrato: multihilo (sin consumidor), IC/corpus mayor en 1c.
