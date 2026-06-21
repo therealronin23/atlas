@@ -28,7 +28,7 @@ Metodología (held-out por familia):
 
 Uso:
     PYTHONPATH=src python3 scripts/redteam/transfer_experiment.py \
-        --variants 10 --embedder stub --out docs/immune_transfer_experiment.md
+        --variants 10 --embedder stub --out docs/reference/reports/immune_transfer_experiment.md
     # embedder=hf (semántico real) requiere el venv .venv-redteam.
 """
 from __future__ import annotations

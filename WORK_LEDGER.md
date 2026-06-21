@@ -11,14 +11,14 @@ Formato: `[estado] nodo — próxima acción / bloqueado-por`. Estados: ✅ hech
 
 ## Línea activa: sustrato de memoria verificable (Fase 1 + Fase 2)
 
-Design doc: `docs/design_verifiable_memory.md` · rama: trabajo mergeado a `main`.
+Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado a `main`.
 
 - ✅ **Fase 1 — Sustrato (1a–1d)** — completa, auditada, deudas tipo-1 cerradas.
   - ✅ 1a índice persistente + Merkle + cableado · ✅ 1b PatternAbstractor · ✅ refactor motor/inquilino
   - ✅ 1c-seguridad (Garak real) · ✅ 1c-motor · ✅ 1d-a temporal/supersesión · ✅ 1d-b tiers
   - ✅ auditoría pre-merge (3 fixes) · ✅ deudas tipo-1 (ciclo de vida)
 - 🧱 **Muro 1c — intención-vs-tema** — atacado (contrastive): separación ×2-3, FP fronterizo ~33%,
-  no es detector usable. Acotado. `docs/immune_intent_vs_topic_contrastive.md`.
+  no es detector usable. Acotado. `docs/reference/reports/immune_intent_vs_topic_contrastive.md`.
 - 🔄 **Fase 2 — Huecos abiertos** (checklist en design doc):
   - ⬜ **2.1 multi-hop** ← SIGUIENTE
   - ⬜ 2.2 PII/crypto-shredding (fundacional + GAP-1 EU AI Act)

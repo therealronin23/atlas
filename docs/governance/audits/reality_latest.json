@@ -1,0 +1,191 @@
+{
+  "generated_at": "2026-06-12T13:37:43.876767+00:00",
+  "repo": {
+    "root": "/home/ronin/proyectos/atlas-core",
+    "version": "0.12.0",
+    "branch": "main",
+    "commit": "5976225",
+    "dirty": false,
+    "dirty_count": 0,
+    "dirty_paths": []
+  },
+  "workspace": {
+    "path": "/home/ronin/proyectos/atlas-core/.atlas-audit-home",
+    "exists": true,
+    "merkle": {
+      "status": "unknown",
+      "record_count": null,
+      "reason": "audit dir absent"
+    }
+  },
+  "runtime": {
+    "python": "3.12.3",
+    "source_file_count": 105,
+    "test_file_count": 72
+  },
+  "tests": {
+    "core": {
+      "status": "unknown",
+      "reason": "run atlas reality --run-checks for live evidence"
+    },
+    "browser": {
+      "status": "unknown",
+      "reason": "run atlas reality --run-checks --include-browser"
+    },
+    "pytest_addopts": "-m 'not computer_use'",
+    "markers": [
+      "computer_use: requires Playwright (pip install 'atlas-core[computer-use]')"
+    ]
+  },
+  "browser": {
+    "status": "ready",
+    "playwright_installed": true,
+    "browser_executable_count": 5,
+    "reason": "playwright+browser executable present"
+  },
+  "hermes": {
+    "mode": "local_takeover",
+    "base_url_set": false,
+    "api_key_set": true,
+    "reason": "ATLAS_HERMES_LOCAL active; Hermes delegation runs locally"
+  },
+  "llm": {
+    "mode_env": "auto",
+    "configured_providers": [
+      "groq",
+      "openrouter",
+      "gemini"
+    ],
+    "status": "configured",
+    "reason": "provider keys present; run inference_smoke for live evidence"
+  },
+  "mcp": {
+    "config_path": "/home/ronin/proyectos/atlas-core/.atlas-audit-home/mcp_servers.json",
+    "config_exists": false,
+    "server_count": 0,
+    "enabled_count": 0,
+    "status": "empty",
+    "error": ""
+  },
+  "autonomy": {
+    "decider": "autonomous",
+    "maintenance_scheduler_enabled": true,
+    "agentic_auto_approve": []
+  },
+  "docs": {
+    "test_count_claims": {
+      "AGENTS.md": [],
+      "CLAUDE.md": [],
+      "ROADMAP.md": []
+    },
+    "unique_test_count_claims": [],
+    "status": "ok",
+    "reason": "no contradictory test-count claims detected"
+  },
+  "checks": {
+    "pytest_core": {
+      "command": [
+        "/home/ronin/proyectos/atlas-core/.venv/bin/python3",
+        "-m",
+        "pytest",
+        "tests/",
+        "-q"
+      ],
+      "exit_code": -1,
+      "summary": "timeout after 180s"
+    },
+    "mypy": {
+      "command": [
+        "/home/ronin/proyectos/atlas-core/.venv/bin/python3",
+        "-m",
+        "mypy",
+        "src/atlas/"
+      ],
+      "exit_code": 0,
+      "summary": "Success: no issues found in 105 source files"
+    },
+    "pytest_browser": {
+      "command": [
+        "/home/ronin/proyectos/atlas-core/.venv/bin/python3",
+        "-m",
+        "pytest",
+        "tests/",
+        "-q",
+        "-m",
+        "computer_use"
+      ],
+      "exit_code": 0,
+      "summary": "26 passed, 983 deselected in 78.59s (0:01:18)"
+    }
+  },
+  "capabilities": [
+    {
+      "name": "audit.merkle",
+      "status": "degraded",
+      "trusted": true,
+      "mutating": false,
+      "reversible": false,
+      "evidence": "audit dir absent"
+    },
+    {
+      "name": "execution.command",
+      "status": "ready",
+      "trusted": true,
+      "mutating": true,
+      "reversible": false,
+      "evidence": "LayeredIsolationSandbox command path uses process_hardening"
+    },
+    {
+      "name": "browser.computer_use",
+      "status": "ready",
+      "trusted": false,
+      "mutating": true,
+      "reversible": false,
+      "evidence": "playwright+browser executable present"
+    },
+    {
+      "name": "hermes.delegation",
+      "status": "degraded",
+      "trusted": false,
+      "mutating": true,
+      "reversible": false,
+      "evidence": "ATLAS_HERMES_LOCAL active; Hermes delegation runs locally"
+    },
+    {
+      "name": "llm.inference",
+      "status": "configured",
+      "trusted": false,
+      "mutating": false,
+      "reversible": false,
+      "evidence": "provider keys present; run inference_smoke for live evidence"
+    },
+    {
+      "name": "mcp.tools",
+      "status": "empty",
+      "trusted": false,
+      "mutating": true,
+      "reversible": true,
+      "evidence": "enabled_servers=0"
+    },
+    {
+      "name": "self_improvement.cold_update",
+      "status": "ready",
+      "trusted": true,
+      "mutating": true,
+      "reversible": true,
+      "evidence": "ColdUpdate validates in isolated worktree before apply"
+    },
+    {
+      "name": "autonomy.decider",
+      "status": "autonomous",
+      "trusted": true,
+      "mutating": true,
+      "reversible": true,
+      "evidence": "high risk remains denied or HITL depending on decider"
+    }
+  ],
+  "status": "degraded",
+  "strict_failures": [
+    "pytest_core"
+  ]
+}
