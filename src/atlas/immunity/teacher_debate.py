@@ -33,7 +33,7 @@ from atlas.core.lesson_store import Lesson, LessonProvenance
 
 if TYPE_CHECKING:
     from atlas.core.lesson_store import LessonStore
-    from atlas.immunity.lesson_recaller import LessonRecaller
+    from atlas.immunity.lesson_recaller import Recaller
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +132,7 @@ class TeacherDebate:
     def __init__(
         self,
         store: LessonStore,
-        recaller: LessonRecaller,
+        recaller: Recaller,
         *,
         sim_threshold: float = 0.8,
         verifier: Callable[[LessonProposal], bool] | None = None,
