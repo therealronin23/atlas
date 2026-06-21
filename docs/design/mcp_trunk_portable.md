@@ -30,6 +30,20 @@ Claude Code, Codex, Cursor, Atlas, quien sea. Honesto sobre qué cruza y qué no
   portable que un hook por-cliente; cada cliente puede además tener su adaptador de enforcement).
 Esto realiza la tesis model-agnostic: el agente "te conoce" y conoce el trabajo, da igual el modelo/cliente.
 
+## Auditoría de asimilación (2026-06-21) — qué tomamos de los agregadores existentes
+
+Prove-it de magg/1mcp/metamcp/mcgravity/StormMCP + registros abiertos. Decisión: NO adoptar ninguno
+(magg=AGPL; 1mcp=Node; metamcp=enterprise/Docker; mcgravity=load-balancer; StormMCP=SaaS cloud).
+Construir sobre lo NUESTRO (`McpRegistry` ADR-035, vivo: agrega + namespacing + Merkle + SentinelGate
+— lo que ninguno tiene) y ASIMILAR conceptos:
+- **Descubrimiento lazy/jerárquico** (1mcp, MarimerLLC, metamcp): índice de sectores → drill a tools.
+  El anti-kitchen-sink. ✅ construido en `TrunkAggregator`.
+- **purpose/skill-doc por server** para guiar routing (MarimerLLC): ✅ del catálogo YAML.
+- **Filtro/middleware de tools** (metamcp): 🔸 ligero, pendiente.
+- Descartado por YAGNI local: rate-limit, OAuth, multi-tenant, REST dual, OpenAPI, inspector, AI-summaries.
+Catálogo se siembra de registros ABIERTOS (registry.modelcontextprotocol.io —ya en allowlist SSRF—,
+awesome-mcp-servers, Glama), NO de StormMCP (comercial, no accesible como datos).
+
 ## Arquitectura: tronco + raíces
 
 ```
