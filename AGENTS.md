@@ -33,7 +33,9 @@ checklists + memory, not the transcript. Compact when a node closes and context 
 
 **Definition of done:** tests green + mypy strict + ledger updated + design-doc note + honest
 limit declared. **MCP/connectors:** none needed now; reach for one only if a task requires an
-external service not covered by CLI (`gh` covers git/GitHub).
+external service not covered by CLI (`gh` covers git/GitHub). **Repo hygiene:** standard in
+`docs/governance/REPO_STANDARD.md`; sanitation cycle = `python3 scripts/sanitation_audit.py`
+(read-only radar) each Gate close / ~monthly → act on KEEP/QUARANTINE/DELETE.
 
 **Standing manías (canonical "how"; auto-memory `feedback-*.md`, obey them):**
 `plan-then-execute` · `decide-with-facts` · `honesty-over-sycophancy` ·

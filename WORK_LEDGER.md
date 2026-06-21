@@ -41,8 +41,10 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
   - ✅ lazo auditable CABLEADO + probado (`tests/test_live_loop_integration.py`, vía autobuild)
   - ✅ mission CABLEADO funcional (`knowledge/run.py` + `tests/test_knowledge_mission_integration.py`)
   - suite 1875 verde. (FYI: `cli.py` WIP del usuario tiene 13 errores mypy — no nuestros)
-- ⬜ **F4** migrar Gates/seals + cierres roll-up
-- ⬜ ciclo de saneamiento recurrente establecido
+- ✅ **F4** Gates A–I cerrados con roll-up (`gates/CLOSURE.md`); cierre del Gate de gobernanza
+  (`CLOSURE_governance_2026-06-21.md`)
+- ✅ **Ciclo de saneamiento** establecido: `scripts/sanitation_audit.py` (read-only) cada Gate/~mensual
+- ✅ **GATE DE GOBERNANZA CERRADO** (tipo-2). Próximo ciclo: revisar `_graveyard/2026-06-21*` al vencer grace (~2026-07-21)
 
 ## Otras líneas (no activas ahora)
 
