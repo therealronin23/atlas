@@ -146,6 +146,14 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     vercel-react-best-practices` → `.agents/skills/` (universal + symlink Claude Code), aparece en la
     lista de skills viva. Registrado en catálogo (programación/frontend, instalado). Cadena de
     suministro de skills COMPLETA: descubrir→sembrar→consentir→instalar→vivo.
+  - ✅ **Taxonomía de LÍNEAS completa** (investigación 2026: el stack de extensión son ~10 kinds, no 4):
+    `kind` ampliado a skill/mcp/api/tool/prompt/command/hook/subagent/plugin/rule/workflow, cada uno
+    con su `mode` por defecto (served/connected/installed). `by_kind`+`of_kind` + navegación POR LÍNEA
+    en el tronco (`trunk_kinds`+`trunk_catalog`). "StormMCP por línea" realizado: 1 catálogo, N líneas,
+    navegable por dominio Y por kind. Verificado en vivo. 4 tests.
+  - ⬜ PENDIENTE (cadena de suministro por línea, como MCP/skills): seeder de **APIs** (fuente limpia:
+    apis.guru/OpenAPI directory) + seeder de **tools** (pypi/npm o awesome-cli). Otras líneas
+    (prompts/hooks/subagents/plugins/rules) = sembrar de repos awesome-* cuando se priorice.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

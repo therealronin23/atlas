@@ -126,6 +126,29 @@ def build_trunk_server(
             sub = (taxonomy.get(sector) or {}).get("subsectors", {})
             return [{"id": sid, "label": s["label"]} for sid, s in sub.items()]
 
+    if catalog is not None:
+        from atlas.mcp.catalog import by_kind as _by_kind
+
+        @server.tool()
+        def trunk_kinds() -> dict[str, int]:
+            """Las LÍNEAS del catálogo (kind→cuántos): mcp, skill, api, tool, prompt,
+            hook, subagent, plugin, rule, workflow. Cada línea es un 'StormMCP'."""
+            return _by_kind(catalog)
+
+        @server.tool()
+        def trunk_catalog(kind: str | None = None, sector: str | None = None) -> list[dict[str, Any]]:
+            """Explora una LÍNEA (kind) y/o un dominio (sector): nombre, sector,
+            estado, mode. Madurez-first. Incluye candidatos (descubrimiento)."""
+            _MAT = {"instalado": 0, "verificado": 1, "candidato": 2}
+            rows = [
+                {"name": e.name, "sector": e.sector, "subsector": e.subsector,
+                 "kind": e.kind, "status": e.status, "mode": e.mode}
+                for e in catalog
+                if (kind is None or e.kind == kind) and (sector is None or e.sector == sector)
+            ]
+            rows.sort(key=lambda r: (_MAT.get(r["status"], 3), r["name"].lower()))
+            return rows
+
     if catalog is not None and taxonomy is not None:
         from atlas.mcp.catalog import find as _find
 

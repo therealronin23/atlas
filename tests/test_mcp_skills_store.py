@@ -82,5 +82,6 @@ def test_trunk_3level_nav_and_find() -> None:
     agg = TrunkAggregator(catalog=catalog, roots=native_roots(), dispatcher=lambda f, a: "x")
     server = build_trunk_server(agg, catalog=catalog, taxonomy=tax)
     names = {t.name for t in asyncio.run(server.list_tools())}
-    # navegación 3 niveles + buscador
-    assert {"trunk_sectors", "trunk_subsectors", "trunk_tools", "trunk_find"} <= names
+    # navegación 3 niveles + buscador + navegación POR LÍNEA (kind)
+    assert {"trunk_sectors", "trunk_subsectors", "trunk_tools", "trunk_find",
+            "trunk_kinds", "trunk_catalog"} <= names

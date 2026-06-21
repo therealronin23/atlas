@@ -22,14 +22,26 @@ from typing import Any
 import yaml
 
 _STATES = {"candidato", "verificado", "instalado"}
-_KINDS = {"skill", "mcp", "api", "tool"}
+# Taxonomía completa de "líneas" del ecosistema de extensión (2026): cada kind es
+# una línea propia del catálogo (StormMCP por línea).
+_KINDS = {
+    "skill", "mcp", "api", "tool",          # las 4 originales
+    "prompt", "command",                     # plantillas / slash-commands
+    "hook", "subagent", "plugin", "rule",    # constructos de cliente
+    "workflow",                              # automatización (n8n, etc.)
+}
 _MODES = {"served", "connected", "installed"}
 
 # Modo operativo por defecto según kind (cuando el YAML no lo declara):
-#   served    = lo servimos inline (sin descarga): skills-como-prompt, APIs envueltas.
+#   served    = lo servimos inline (sin descarga): skills/prompts/commands, APIs envueltas.
 #   connected = MCP server (nuestro o externo) al que el tronco se conecta.
-#   installed = skill colocado en el dir (solo si no se sirve).
-_DEFAULT_MODE = {"mcp": "connected", "api": "served", "skill": "served", "tool": "installed"}
+#   installed = se coloca en la config del cliente (hooks/subagents/plugins/rules/tools).
+_DEFAULT_MODE = {
+    "mcp": "connected",
+    "api": "served", "skill": "served", "prompt": "served", "command": "served",
+    "tool": "installed", "hook": "installed", "subagent": "installed",
+    "plugin": "installed", "rule": "installed", "workflow": "installed",
+}
 
 
 @dataclass(frozen=True)
@@ -169,6 +181,19 @@ def sectors(entries: list[CatalogEntry]) -> dict[str, str]:
 def installable(entries: list[CatalogEntry]) -> list[CatalogEntry]:
     """Solo lo `verificado` se instala (wire-before-claim)."""
     return [e for e in entries if e.status == "verificado"]
+
+
+def by_kind(entries: list[CatalogEntry]) -> dict[str, int]:
+    """Cuenta por kind = tamaño de cada 'línea' del catálogo."""
+    counts: dict[str, int] = {}
+    for e in entries:
+        counts[e.kind] = counts.get(e.kind, 0) + 1
+    return counts
+
+
+def of_kind(entries: list[CatalogEntry], kind: str) -> list[CatalogEntry]:
+    """Una sola línea: todas las entradas de un kind (across sectores)."""
+    return [e for e in entries if e.kind == kind]
 
 
 def by_status(entries: list[CatalogEntry]) -> dict[str, int]:
