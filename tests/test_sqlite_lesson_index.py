@@ -2,7 +2,7 @@
 Tests para SqliteLessonIndex — índice persistente derivado del LessonStore (Fase 1a).
 
 Lo que se prueba (criterios de aceptación de la checklist en
-docs/design_verifiable_memory.md):
+docs/design/design_verifiable_memory.md):
 
 1. PARIDAD: para el mismo corpus + mismo embedder + mismo threshold, los scores
    de recall/recall_all son IDÉNTICOS a los del LessonRecaller in-memory. El

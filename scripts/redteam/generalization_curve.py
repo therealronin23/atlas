@@ -19,7 +19,7 @@ Metodología:
   5. verify_chain() — la procedencia de la adaptación es verificable.
 
 Uso:
-    PYTHONPATH=src python3 scripts/redteam/generalization_curve.py --variants 20 --out docs/immune_generalization_curve.md
+    PYTHONPATH=src python3 scripts/redteam/generalization_curve.py --variants 20 --out docs/reference/reports/immune_generalization_curve.md
 """
 from __future__ import annotations
 

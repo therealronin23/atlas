@@ -1,0 +1,167 @@
+{
+  "id": "self-audit-20260621-125713",
+  "profile": "full",
+  "hours_requested": 24.0,
+  "started_at": "2026-06-21T12:57:13.111508+00:00",
+  "finished_at": "2026-06-21T12:57:13.259898+00:00",
+  "status": "running",
+  "cycles": [
+    {
+      "index": 1,
+      "started_at": "2026-06-21T12:57:13.120611+00:00",
+      "finished_at": "2026-06-21T12:57:13.259898+00:00",
+      "git": {
+        "branch": "chore/governance-f0-f1",
+        "head": "217994b",
+        "status_short": [
+          "A  .claude/settings.json",
+          "M  .gitignore",
+          "M  AGENTS.md",
+          "M  WORK_LEDGER.md",
+          "A  docs/archive/_graveyard/2026-06-21/MANIFEST.md",
+          "R  src/atlas/security/kyc_binding.py -> docs/archive/_graveyard/2026-06-21/orphan_modules/kyc_binding.py",
+          "R  src/atlas/security/log_behavioral.py -> docs/archive/_graveyard/2026-06-21/orphan_modules/log_behavioral.py",
+          "R  src/atlas/transparency/witness_server.py -> docs/archive/_graveyard/2026-06-21/orphan_modules/witness_server.py",
+          "R  tests/test_kyc_binding.py -> docs/archive/_graveyard/2026-06-21/orphan_tests/test_kyc_binding.py",
+          "R  tests/test_log_behavioral.py -> docs/archive/_graveyard/2026-06-21/orphan_tests/test_log_behavioral.py",
+          "R  tests/test_witness_server.py -> docs/archive/_graveyard/2026-06-21/orphan_tests/test_witness_server.py",
+          "A  \"docs/archive/_graveyard/2026-06-21/scratch/AUDITORIA GROK.md\"",
+          "A  \"docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditor\\303\\255a T\\303\\251cnica y Regulatoria de Atlas.md\"",
+          "A  docs/archive/_graveyard/2026-06-21/scratch/gpt.md",
+          "A  \"docs/archive/_graveyard/2026-06-21/scratch/idea avance 2.md\"",
+          "A  \"docs/archive/_graveyard/2026-06-21/scratch/idea avance 3.md\"",
+          "A  \"docs/archive/_graveyard/2026-06-21/scratch/idea avance.md\"",
+          "A  docs/archive/_graveyard/2026-06-21/scratch/idea.md",
+          "A  docs/governance/CAPABILITIES.md",
+          "A  docs/governance/REPO_STANDARD.md",
+          " M scripts/redteam/garak_campaign.py",
+          " M src/atlas/interfaces/cli.py",
+          "?? tests/test_cli_completeness_demo.py"
+        ]
+      },
+      "environment": {
+        "python_version": "3.12.3",
+        "atlas_version": "0.12.0",
+        "dependency_hash": "2e0d8c6e24f52974"
+      },
+      "health": {
+        "available": true,
+        "report": {
+          "version": "0.12.0",
+          "uptime_s": 0.1,
+          "governance_ok": true,
+          "merkle_chain_ok": true,
+          "emergency_mode": false,
+          "hermes_mode": "mock",
+          "hermes_reachable": false,
+          "thermal_mode": "normal",
+          "gate_d_enabled": false,
+          "gate_h": {
+            "paused_tools": [],
+            "failure_counts": {},
+            "truth_snapshots": 0,
+            "diagnostic_mode": false,
+            "stale_patterns_count": 0,
+            "known_good_tools": [
+              "editor.read",
+              "fs.list_dir",
+              "git.status"
+            ]
+          },
+          "pending_approvals_count": 0,
+          "queue_depth": 0,
+          "telegram_running": false,
+          "offline_monitor_running": true,
+          "observability": {
+            "telemetry": {
+              "counters": [],
+              "gauges": [],
+              "recent_events": []
+            },
+            "microledger_tail": [
+              {
+                "merkle_id": "a4b8aea2-f046-45ca-aca2-2c80c2f97425",
+                "action": "service.started",
+                "agent": "service_runner",
+                "result": "success",
+                "risk_level": "safe",
+                "summary": "version=0.12.0",
+                "recorded_at": "2026-06-21T12:57:13.126862+00:00"
+              }
+            ],
+            "wal_tail": [
+              {
+                "ts": "2026-06-21T12:57:13.110283+00:00",
+                "component": "orchestrator",
+                "message": "telegram.skip",
+                "fields": {
+                  "result": "disabled_by_env",
+                  "risk": "safe",
+                  "task_id": null
+                }
+              },
+              {
+                "ts": "2026-06-21T12:57:13.114299+00:00",
+                "component": "self_audit_runner",
+                "message": "self_audit.started",
+                "fields": {
+                  "result": "success",
+                  "risk": "high",
+                  "task_id": null
+                }
+              },
+              {
+                "ts": "2026-06-21T12:57:13.129512+00:00",
+                "component": "service_runner",
+                "message": "service.started",
+                "fields": {
+                  "result": "success",
+                  "risk": "safe",
+                  "task_id": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      "findings": [
+        {
+          "id": "repo-dirty-tracked",
+          "category": "resilience",
+          "severity": "high",
+          "title": "Tracked worktree changes present",
+          "detail": "Tracked files are modified before self-audit begins.",
+          "recommendation": "Start the 24h loop from a clean tracked worktree."
+        },
+        {
+          "id": "claude-untracked",
+          "category": "security",
+          "severity": "medium",
+          "title": ".claude directory is untracked",
+          "detail": ".claude/ exists outside git. Keep it excluded unless explicitly approved.",
+          "recommendation": "Do not include .claude/ in self-audit patches."
+        }
+      ],
+      "candidates": [
+        {
+          "id": "candidate-repo-dirty-tracked",
+          "title": "Resolve Tracked worktree changes present",
+          "risk": "high",
+          "status": "needs_patch",
+          "rationale": "Start the 24h loop from a clean tracked worktree.",
+          "patch_path": null,
+          "proposal_id": null
+        },
+        {
+          "id": "candidate-claude-untracked",
+          "title": "Resolve .claude directory is untracked",
+          "risk": "medium",
+          "status": "needs_patch",
+          "rationale": "Do not include .claude/ in self-audit patches.",
+          "patch_path": null,
+          "proposal_id": null
+        }
+      ]
+    }
+  ]
+}

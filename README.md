@@ -84,7 +84,7 @@ atlas update propose|validate|approve|apply      # cold update workflow
 
 Equivalente sin instalar entry-point: `PYTHONPATH=src python -m atlas.interfaces.cli <cmd>`.
 
-Ver [docs/USAGE.md](docs/USAGE.md) para guía detallada de operación.
+Ver [docs/reference/USAGE.md](docs/reference/USAGE.md) para guía detallada de operación.
 
 ## Activar el pipeline Gate D
 
@@ -120,7 +120,7 @@ curl http://localhost:7331/metrics
 curl http://localhost:7331/api/observability
 ```
 
-Ver `docs/prometheus_setup.md` para guía de deploy de Prometheus + Grafana.
+Ver `docs/reference/prometheus_setup.md` para guía de deploy de Prometheus + Grafana.
 
 ## Smoke tests reales (infra viva)
 
@@ -168,21 +168,21 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
 - [AGENTS.md](AGENTS.md) — contexto completo del proyecto (estado de gates,
   ADRs, naming rules, coding rules, estructura de proyecto).
 - [CLAUDE.md](CLAUDE.md) — contexto para Claude Code (sincronizado con AGENTS.md).
-- [docs/USAGE.md](docs/USAGE.md) — guía de operación detallada,
+- [docs/reference/USAGE.md](docs/reference/USAGE.md) — guía de operación detallada,
   configuración, troubleshooting.
 - [docs/auditoria_final_postmortem.md](docs/auditoria_final_postmortem.md) —
   auditoría completa + postmortem técnico (verificación independiente).
 - [docs/AUDIT_COMPLETO_2026-05-25.md](docs/AUDIT_COMPLETO_2026-05-25.md) —
   auditoría técnica de 8 partes (arquitectura, seguridad, tests, rendimiento).
-- [docs/prometheus_setup.md](docs/prometheus_setup.md) — guía operacional
+- [docs/reference/prometheus_setup.md](docs/reference/prometheus_setup.md) — guía operacional
   Prometheus + alertas + Grafana.
-- [docs/gate_c_seal.md](docs/gate_c_seal.md) — evidencia cierre Gate C.
-- [docs/gate_d_seal.md](docs/gate_d_seal.md) — evidencia cierre Gate D.
-- [docs/gate_e_seal.md](docs/gate_e_seal.md) — evidencia cierre Gate E.
-- [docs/gate_f_seal.md](docs/gate_f_seal.md) — evidencia cierre Gate F.
-- [docs/gate_g_seal.md](docs/gate_g_seal.md) — evidencia cierre Gate G.
-- [docs/gate_h_seal.md](docs/gate_h_seal.md) — evidencia cierre Gate H.
-- [docs/gate_i_seal.md](docs/gate_i_seal.md) — evidencia cierre Gate I.
+- [docs/governance/gates/gate_c_seal.md](docs/governance/gates/gate_c_seal.md) — evidencia cierre Gate C.
+- [docs/governance/gates/gate_d_seal.md](docs/governance/gates/gate_d_seal.md) — evidencia cierre Gate D.
+- [docs/governance/gates/gate_e_seal.md](docs/governance/gates/gate_e_seal.md) — evidencia cierre Gate E.
+- [docs/governance/gates/gate_f_seal.md](docs/governance/gates/gate_f_seal.md) — evidencia cierre Gate F.
+- [docs/governance/gates/gate_g_seal.md](docs/governance/gates/gate_g_seal.md) — evidencia cierre Gate G.
+- [docs/governance/gates/gate_h_seal.md](docs/governance/gates/gate_h_seal.md) — evidencia cierre Gate H.
+- [docs/governance/gates/gate_i_seal.md](docs/governance/gates/gate_i_seal.md) — evidencia cierre Gate I.
 - [memory/system_context/](memory/system_context/) — visión, reglas y
   ADRs canónicos.
 

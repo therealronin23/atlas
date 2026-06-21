@@ -8,7 +8,7 @@ pendientes) en el registro de pending approval, pasa a AWAITING_APPROVAL y
 notifica. Al aprobar, el loop se REANUDA exactamente donde quedó, ejecuta la
 mutación (clearance ya concedido) y sigue hasta respuesta final o nueva pausa.
 
-Decisiones cubiertas (ver docs/adr_032_mutating_tools_in_loop.md):
+Decisiones cubiertas (ver docs/reference/adr/adr_032_mutating_tools_in_loop.md):
   - dec.1/2  clasificación read/mutate (suspende solo ante mutante)
   - dec.3/4  estado serializado en <task_id>.json bajo `agentic_state`
   - dec.5    todas las mutaciones del turno → una sola aprobación

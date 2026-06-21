@@ -8,7 +8,7 @@ claims. Run `atlas reality` for current facts.
 Atlas is moving toward maximum verified capability, not unchecked autonomy.
 The build-up order (universal verifier → model-routing cascade → governed
 swarm → LessonStore) and its principles live in
-`docs/direction_2026-06-12_construir_hacia_arriba.md`.
+`docs/design/direction_2026-06-12_construir_hacia_arriba.md`.
 
 The target is a runtime that can:
 
@@ -39,7 +39,7 @@ The target is a runtime that can:
 ## Build-Up Layers (cores done, wiring deferred)
 
 The "construir hacia arriba" direction, layer by layer. Each core is a verified,
-additive library; operational wiring is tracked in `docs/backlog.md`.
+additive library; operational wiring is tracked in `docs/design/backlog.md`.
 
 - **Layer 1 — Universal verifier** (ADR-041): `verify(artifact) -> Evidence`,
   asymmetric rule (nothing rises without a cheaper verifier; else `UNKNOWN`).

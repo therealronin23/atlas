@@ -1,0 +1,136 @@
+\begin{thebibliography}{15}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Baskaran et~al.(2026)Baskaran, Pherwani, and Krishnan]{aegon2026}
+Amrish Baskaran, Nirbhay Pherwani, and Raghul Krishnan.
+\newblock Aegon: Auditable {AI} content access with ledger-bound tokens and
+  hardware-attested mobile receipts.
+\newblock arXiv:2604.06693 [cs.CR], April 2026.
+\newblock URL \url{https://arxiv.org/abs/2604.06693}.
+\newblock CT-style Merkle ledger + JWT licensing claims + Android StrongBox
+  receipts for AI content licensing (DRM). Prototype not yet implemented.
+  Explicit scope: does not provide completeness guarantees against an
+  adversarial SDK operator.
+
+\bibitem[Belvin et~al.(2017)]{googkt2017}
+Gary Belvin et~al.
+\newblock Google key transparency.
+\newblock Open-source project, Google, 2017.
+\newblock URL \url{https://github.com/google/keytransparency}.
+
+\bibitem[Figuera(2026)]{sello2026}
+Juan Figuera.
+\newblock Notarized agents: Receiver-attested confidential receipts for {AI}
+  agent actions.
+\newblock arXiv:2606.04193 [cs.CR], June 2026.
+\newblock URL \url{https://arxiv.org/abs/2606.04193}.
+\newblock Receiver-side signing for agent tool calls. Threat model: compromised
+  agent. Explicit honest limit: set-completeness against adversarial operator
+  not addressed.
+
+\bibitem[Group(2025)]{ietf-keytrans}
+IETF Key Transparency~Working Group.
+\newblock Key transparency architecture.
+\newblock IETF Working Group Draft, 2025.
+\newblock Active draft as of 2025--2026.
+  \url{https://datatracker.ietf.org/wg/keytrans/about/}.
+
+\bibitem[{IETF SCITT Working Group}(2026)]{scitt-arch}
+{IETF SCITT Working Group}.
+\newblock An architecture for trustworthy and transparent digital supply
+  chains.
+\newblock IETF Internet-Draft draft-ietf-scitt-architecture, 2026.
+\newblock Supply Chain Integrity, Transparency and Trust (SCITT). COSE Signed
+  Statements + Merkle inclusion Receipts over append-only Transparency
+  Services.
+  \url{https://datatracker.ietf.org/doc/draft-ietf-scitt-architecture/}.
+
+\bibitem[Inc.(2023)]{appleckv2023}
+Apple Inc.
+\newblock imessage contact key verification.
+\newblock Apple Security Research, 2023.
+\newblock URL
+  \url{https://security.apple.com/blog/imessage-contact-key-verification/}.
+
+\bibitem[Kamimura(2026)]{scitt-refusal}
+Tokachi Kamimura.
+\newblock Verifiable {AI} refusal events using {SCITT}.
+\newblock IETF Internet-Draft draft-kamimura-scitt-refusal-events-00, January
+  2026.
+\newblock URL
+  \url{https://datatracker.ietf.org/doc/draft-kamimura-scitt-refusal-events/}.
+\newblock Encodes AI refusal decisions as SCITT Signed Statements. Explicit
+  limit: provides ``auditability of refusal decisions that are logged'' but
+  ``not cryptographic proof that no unlogged generation occurred''; verifiers
+  trusted to check completeness over logged events only.
+
+\bibitem[Laurie et~al.(2013)Laurie, Langley, and Kasper]{rfc6962}
+Ben Laurie, Adam Langley, and Emilia Kasper.
+\newblock Certificate transparency.
+\newblock RFC 6962, IETF, June 2013.
+\newblock URL \url{https://www.rfc-editor.org/rfc/rfc6962}.
+
+\bibitem[Laurie et~al.(2021)Laurie, Langley, Kasper, Messeri, and
+  Stradling]{rfc9162}
+Ben Laurie, Adam Langley, Emilia Kasper, Eran Messeri, and Rob Stradling.
+\newblock Certificate transparency version 2.0.
+\newblock RFC 9162, IETF, December 2021.
+\newblock URL \url{https://www.rfc-editor.org/rfc/rfc9162}.
+
+\bibitem[Mazzocchetti(2026)]{aegis2026}
+Adam~Massimo Mazzocchetti.
+\newblock Cryptographic runtime governance for autonomous {AI} systems: The
+  {Aegis} architecture for verifiable policy enforcement.
+\newblock arXiv:2603.16938 [cs.CR], March 2026.
+\newblock URL \url{https://arxiv.org/abs/2603.16938}.
+\newblock Cryptographic runtime governance enforcing agent behavioral/policy
+  compliance at execution time. Does not address subject-side inspection-log
+  completeness.
+
+\bibitem[Melara et~al.(2015)Melara, Blankstein, Bonneau, Felten, and
+  Freedman]{coniks2015}
+Marcela~S. Melara, Aaron Blankstein, Joseph Bonneau, Edward~W. Felten, and
+  Michael~J. Freedman.
+\newblock {CONIKS}: Bringing key transparency to end users.
+\newblock In \emph{24th USENIX Security Symposium (USENIX Security 15)}, pages
+  383--398, Washington, D.C., 2015. USENIX Association.
+\newblock URL
+  \url{https://www.usenix.org/conference/usenixsecurity15/technical-sessions/presentation/melara}.
+
+\bibitem[Messenger(2023)]{signalkt2023}
+Signal Messenger.
+\newblock Auditable key directory.
+\newblock Signal blog, 2023.
+\newblock URL \url{https://signal.org/blog/key-transparency/}.
+
+\bibitem[Meta(2023)]{wakt2023}
+Meta.
+\newblock Whatsapp key transparency.
+\newblock Engineering blog, Meta, 2023.
+\newblock URL
+  \url{https://engineering.fb.com/2023/04/13/security/whatsapp-key-transparency/}.
+
+\bibitem[Nasr et~al.(2025)Nasr, Carlini, Sitawarin, Schulhoff, Hayes, Tram\`er,
+  et~al.]{attacker2024}
+Milad Nasr, Nicholas Carlini, Chawin Sitawarin, Sander~V. Schulhoff, Jamie
+  Hayes, Florian Tram\`er, et~al.
+\newblock The attacker moves second: Stronger adaptive attacks bypass defenses
+  against {LLM} jailbreaks and prompt injections.
+\newblock arXiv:2510.09023 [cs.CR], October 2025.
+\newblock URL \url{https://arxiv.org/abs/2510.09023}.
+\newblock Shows stronger adaptive attacks bypass the large majority of
+  evaluated LLM jailbreak and prompt-injection defences.
+
+\bibitem[Nian et~al.(2026)Nian, Yuan, Zhang, Li, and Zhao]{auditableagents2026}
+Yi~Nian, Aojie Yuan, Haiyue Zhang, Jiate Li, and Yue Zhao.
+\newblock Auditable agents.
+\newblock arXiv:2604.05485 [cs.MA], April 2026.
+\newblock URL \url{https://arxiv.org/abs/2604.05485}.
+\newblock Framework for auditability of agent execution. Does not provide
+  subject-verifiable completeness against an operator that omits entries.
+
+\end{thebibliography}
