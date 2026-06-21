@@ -1,17 +1,5 @@
-"""Atlas Immunity — Afinidad Maduración (ADR-054 capa 5)."""
-from atlas.immunity.affinity_maturation import (
-    AffinityMaturation,
-    AffinityScorer,
-    ImmunityCandidate,
-    TextMutator,
-)
-from atlas.immunity.llm_scorer import LLMScorer, LLMTextMutator
+"""Atlas Immunity — lazo de aprendizaje auditable (live_loop + teacher_debate).
 
-__all__ = [
-    "AffinityMaturation",
-    "AffinityScorer",
-    "ImmunityCandidate",
-    "TextMutator",
-    "LLMScorer",
-    "LLMTextMutator",
-]
+La capa de afinidad/maduración (ADR-054) está en cuarentena (vapor de sistema, 1c);
+ver docs/archive/_graveyard/2026-06-21-f3/WHY.md.
+"""
