@@ -253,6 +253,20 @@ def test_find_matches_name_purpose_and_aliases(tmp_path: Path) -> None:
     assert h["sector"] == "ciberseguridad" and h["subsector"] == "pentesting"
 
 
+def test_classify_assigns_domain_by_tag_or_alias(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import classify, load_taxonomy
+
+    p = tmp_path / "v3.yaml"
+    p.write_text(_V3, encoding="utf-8")
+    tax = load_taxonomy(p)
+    # por tag que casa un alias de sector ("security" → ciberseguridad)
+    assert classify("foo", "", ["security"], tax) == "ciberseguridad"
+    # por palabra en el nombre/propósito ("pentest" → alias de pentesting → ciberseguridad)
+    assert classify("redteam-tool", "ofensiva", [], tax) == "ciberseguridad"
+    # sin señal → uncategorized (honesto, no fuerza)
+    assert classify("zxqw", "nada", [], tax) == "uncategorized"
+
+
 def test_find_orders_mature_first(tmp_path: Path) -> None:
     from atlas.mcp.catalog import find, load_catalog, load_taxonomy
 

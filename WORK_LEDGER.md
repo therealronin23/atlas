@@ -157,7 +157,15 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     apis(150) · tools(30) · prompts(80) · commands(23) · rules(80) · subagents(80) · hooks(12) ·
     plugins(80) · workflows(80) = **615 candidatos** en `docs/design/seeded/*.yaml`, todos
     candidato/uncategorized con procedencia. Guard de integridad en tests. Repos fuente verificados por
-    los subagentes. PENDIENTE: triar→clasificar a dominios + prove-it/consent por item (decisión).
+    los subagentes.
+  - ✅ **Auto-clasificador a dominios** (`catalog.classify`, por tags/alias, sin manual) +
+    `scripts/mcp_classify_seeded.py` → `mcp_catalog_classified.yaml` (724 candidatos clasificados).
+    Cobertura: TODOS los dominios poblados (programación 356, ia-agentes 36, diseño 34, datos 33,
+    infra 20, ciber/investig 17, …; 203 uncategorized sin señal = honesto). El tronco carga curado +
+    clasificado para el BROWSE (candidatos nunca se conectan; trunk_children filtra a verificado/
+    instalado). Live: 11 líneas, browse por dominio poblado, find sobre 700+. "En todas partes" ✅.
+  - ⬜ PENDIENTE (decisión/consent, no código): subir cobertura (más alias) + prove-it→verificar items
+    concretos por sector cuando se necesiten.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
