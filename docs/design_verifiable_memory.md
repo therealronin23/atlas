@@ -173,8 +173,16 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     LÍMITE: resolución de conflictos por reglas de autoridad (fuente/recencia/evidencia) aún manual
     (quien llama decide supersede); el motor registra, no arbitra. Tenant (SqliteLessonIndex) aún no
     expone supersede/retire (delega recall); cablear si se necesita.
-  - [ ] **1d-b — Tiers (hot/warm/cold/pending) + democión medible** (capa B): `last_access_ns`,
-    `access_count`, democión por desuso/recencia, `pending`=grace antes de retirar del índice.
+  - [x] **1d-b — Tiers (hot/warm/cold/pending) + democión medible** *(HECHO 2026-06-21; suite 2046
+    verde, mypy strict)* en `SqliteMemoryIndex` + `tests/test_memory_tiers.py` (7). Columnas `tier`,
+    `last_access_ns`, `access_count`. `touch(id)` = acceso → promociona a hot (RECUPERABLE) + cuenta
+    uso. `apply_decay(now, warm/cold/pending_after_ns)` demota memorias VIGENTES por ocio (now −
+    último acceso) en buckets ascendentes, reproducible, logueado en Merkle (`memory.decay`).
+    `pending` = SUELO/grace: NO auto-retira (el retiro sigue siendo decisión aparte, 1d-a). Solo
+    afecta a vigentes. `tier_counts()`/`tier()`/`access_count()`.
+    LÍMITE: los umbrales de ocio son POLÍTICA (parámetros), no aprendidos; "medible" = por
+    recencia/uso, no arbitrario. Falta cablear `pending→retire tras grace` como política explícita y
+    auto-touch en recall (hoy `touch` es manual). El tenant de seguridad aún no usa tiers.
 
 Notas de estado se anotan inline al cerrar cada casilla (fecha + commit + límite honesto).
 

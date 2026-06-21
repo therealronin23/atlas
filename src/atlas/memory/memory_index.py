@@ -41,15 +41,21 @@ CREATE TABLE IF NOT EXISTS records (
     created_at        TEXT,
     valid_from_ns     INTEGER,
     valid_until_ns    INTEGER,   -- NULL = vigente AHORA (1d-a: validez temporal)
-    supersedes        TEXT       -- id de la memoria que esta reemplaza (lineage)
+    supersedes        TEXT,      -- id de la memoria que esta reemplaza (lineage)
+    tier              TEXT,      -- hot|warm|cold|pending (1d-b: niveles)
+    last_access_ns    INTEGER,   -- para democión medible por ocio
+    access_count      INTEGER
 );
 """
 
-# Columnas de 1d-a a añadir si el índice viene de un esquema previo (migración suave).
+# Columnas a añadir si el índice viene de un esquema previo (migración suave).
 _TEMPORAL_COLUMNS = {
     "valid_from_ns": "INTEGER",
     "valid_until_ns": "INTEGER",
     "supersedes": "TEXT",
+    "tier": "TEXT",
+    "last_access_ns": "INTEGER",
+    "access_count": "INTEGER",
 }
 
 
@@ -115,8 +121,9 @@ class SqliteMemoryIndex:
         self._conn.execute(
             """
             INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
-                                 created_at, valid_from_ns, valid_until_ns, supersedes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+                                 created_at, valid_from_ns, valid_until_ns, supersedes,
+                                 tier, last_access_ns, access_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
@@ -125,7 +132,7 @@ class SqliteMemoryIndex:
                 created_at=excluded.created_at
             """,
             (record.record_id, record.text, _pack(vec), merkle_leaf_hash,
-             merkle_leaf_index, record.created_at, vfrom, supersedes),
+             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom),
         )
         self._conn.commit()
 
@@ -140,10 +147,11 @@ class SqliteMemoryIndex:
             self._conn.execute(
                 """
                 INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
-                                     created_at, valid_from_ns, valid_until_ns, supersedes)
-                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL)
+                                     created_at, valid_from_ns, valid_until_ns, supersedes,
+                                     tier, last_access_ns, access_count)
+                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0)
                 """,
-                (record.record_id, record.text, _pack(vec), record.created_at, now),
+                (record.record_id, record.text, _pack(vec), record.created_at, now, now),
             )
         self._conn.commit()
 
@@ -204,6 +212,71 @@ class SqliteMemoryIndex:
             "SELECT COUNT(*) FROM records WHERE valid_until_ns IS NULL"
         )
         return int(cur.fetchone()[0])
+
+    # ------------------------------------------------------------------
+    # Niveles (1d-b): democión MEDIBLE por ocio; recuperable; pending = grace.
+    # No borra: la cadena Merkle es la fuente; el tier solo gobierna el surfacing.
+    # ------------------------------------------------------------------
+
+    def touch(self, record_id: str, *, now_ns: int | None = None) -> None:
+        """Registra un acceso: promociona a hot (recuperable) y cuenta el uso."""
+        ts = now_ns if now_ns is not None else time.time_ns()
+        self._conn.execute(
+            "UPDATE records SET tier='hot', last_access_ns=?, "
+            "access_count=COALESCE(access_count,0)+1 WHERE id=?",
+            (ts, record_id),
+        )
+        self._conn.commit()
+
+    def apply_decay(
+        self,
+        *,
+        now_ns: int,
+        warm_after_ns: int,
+        cold_after_ns: int,
+        pending_after_ns: int,
+    ) -> dict[str, int]:
+        """Demota memorias VIGENTES por ocio (now - último acceso) en buckets
+        ascendentes. Medible y reproducible; pending es el SUELO (no retira: el
+        retiro es decisión aparte, honra el grace). Devuelve cuentas por tier."""
+        rows = self._conn.execute(
+            "SELECT id, COALESCE(last_access_ns, valid_from_ns, 0) "
+            "FROM records WHERE valid_until_ns IS NULL"
+        ).fetchall()
+        for rid, last in rows:
+            idle = now_ns - last
+            if idle >= pending_after_ns:
+                new_tier = "pending"
+            elif idle >= cold_after_ns:
+                new_tier = "cold"
+            elif idle >= warm_after_ns:
+                new_tier = "warm"
+            else:
+                new_tier = "hot"
+            self._conn.execute("UPDATE records SET tier=? WHERE id=?", (new_tier, rid))
+        self._conn.commit()
+        counts = self.tier_counts()
+        self._audit("memory.decay", {"at_ns": now_ns, "counts": counts})
+        return counts
+
+    def tier(self, record_id: str) -> str | None:
+        row = self._conn.execute(
+            "SELECT tier FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def access_count(self, record_id: str) -> int | None:
+        row = self._conn.execute(
+            "SELECT access_count FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def tier_counts(self) -> dict[str, int]:
+        """Cuenta por tier de las memorias VIGENTES."""
+        rows = self._conn.execute(
+            "SELECT tier, COUNT(*) FROM records WHERE valid_until_ns IS NULL GROUP BY tier"
+        ).fetchall()
+        return {tier: int(n) for tier, n in rows if tier is not None}
 
     # ------------------------------------------------------------------
     # Lectura interna
