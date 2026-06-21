@@ -48,5 +48,9 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
 
 ## Otras líneas (no activas ahora)
 
+- ⬜ **MCP trunk portable** — diseño en `docs/design/mcp_trunk_portable.md` (empaquetar el trabajo
+  como raíces MCP portables; F1 = tronco Python + raíz memoria; knowledge-src→run_mission→substrato).
+  NO empezado.
+
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
 - ⏸ Deuda diferida del sustrato: multihilo (sin consumidor), IC/corpus mayor en 1c.
