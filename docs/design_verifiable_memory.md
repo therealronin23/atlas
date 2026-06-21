@@ -133,7 +133,7 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
   inquilino delgado. `tests/test_memory_motor.py` (5 tests) demuestra agnosticidad en dominio
   no-seguridad (recetas). 60 tests del inquilino intactos = refactor behavior-preserving.
 - [x] **1c-seguridad — CERRADA 2026-06-21** (ver detalle abajo). **1c-motor CERRADA.**
-- [~] **1c — DOS ejes (antes fundidos; separados 2026-06-21):**
+- [x] **1c — DOS ejes (separados 2026-06-21; ambos cerrados):**
   - **1c-seguridad** *(HECHO 2026-06-21, primer corte; `scripts/redteam/transfer_experiment.py`
     + `docs/immune_transfer_experiment.md`):* held-out por familia (train: instruction_override,
     persona_jailbreak; held-out: exfiltration, encoding_evasion), anclado en Merkle. RESULTADO
@@ -165,7 +165,7 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     (qué cambió y cuándo). El eje genérico no es detección (frontera dura) sino conocimiento
     versionado con procedencia — donde el sustrato gana limpio. Transferencia/abstracción genérica
     ya cubierta por `test_memory_motor.py`. **CHECKLIST 1a–1d COMPLETA.**
-- [~] **1d — olvido principiado SOLO sobre el índice; la cadena Merkle nunca borra.**
+- [x] **1d — olvido principiado SOLO sobre el índice; la cadena Merkle nunca borra (a+b+tipo-1).**
   - [x] **1d-a — Validez temporal + supersesión + retiro auditables** *(HECHO 2026-06-21; suite
     2039 verde, mypy strict)* en `SqliteMemoryIndex` (motor genérico) + `tests/test_memory_temporal.py`
     (7 tests). Columnas `valid_from_ns`/`valid_until_ns` (NULL=vigente) + `supersedes` (lineage);
@@ -195,6 +195,43 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     tipo-3 (muro intención-vs-tema) y multihilo (sin consumidor aún).
 
 Notas de estado se anotan inline al cerrar cada casilla (fecha + commit + límite honesto).
+
+## PRINCIPIO DE PRIORIZACIÓN (registrado 2026-06-21 — la lógica que ordena las fases)
+
+No todo "pendiente" es igual; el orden de ataque se deriva de su NATURALEZA
+(ver `feedback-debt-closure-workflow`):
+- **Tipo-2 (fundacional/correctitud) PRIMERO** — si apilas encima, la corrupción se hereda
+  (p.ej. auditoría pre-merge). No diferir.
+- **Tipo-1 (construir-encima) por dependencia** — independientes en paralelo; lo que depende, después.
+- **Tipo-3 (muro/límite real) aparte** — se rodea o se acepta; no es "tarea que se termina".
+Regla de registro: ninguna priorización vive solo en la conversación; se escribe aquí (fuente única).
+
+**Mapa de fases:**
+- **FASE 1 — Sustrato verificable (1a–1d): COMPLETA** (núcleo + ciclo de vida + auditoría).
+- **MURO 1c — intención-vs-tema:** tipo-3. ATACADO 2026-06-21 (`docs/immune_intent_vs_topic_contrastive.md`
+  + `tests/test_contrastive_margin.py`): contrastive por prototipos (margen sim_ataque−sim_benigno)
+  **duplica/triplica la separación** (gap heldout−borderline +17→+25..57) → el muro se MOVIÓ, no cayó:
+  borderline_fp se queda ~33%, no es detector usable a FP bajo. Disciplina: un 0% de FP a margin 0.05
+  con n=5 era SUERTE de muestra; con n=15 → ~33%. Confirma: separación parcial medible, no clasificador
+  de intención; el eje ganador sigue siendo atribución+contención.
+- **FASE 2 — Huecos abiertos del campo de memoria ("la otra checklist"):** ver abajo.
+
+## FASE 2 — Huecos abiertos (la otra checklist; de `project-osmosis-future-roadmap`)
+
+Huecos que el campo de memoria (Mem0/Zep/Letta/MemPalace) admite no resolver. Orden propuesto
+por valor×naturaleza (no es ley; ver `feedback-roadmap-is-guide-not-law`).
+
+- [ ] **2.1 — Multi-hop** (encadenar N memorias para responder; lo que el usuario recordó). Tipo-1.
+- [ ] **2.2 — PII / crypto-shredding** (olvido REAL del contenido: borrar clave → dato cifrado
+  irrecuperable, sin romper Merkle). Tipo-1/2 FUNDACIONAL + **GAP-1 crítico EU AI Act**. Encaja con
+  `retire` ya existente (hoy olvida del índice; esto olvida el contenido).
+- [ ] **2.3 — Evaluación honesta** (benchmark anti-trampa; ya DISEÑADA en hilo-B, falta construir). Tipo-1.
+- [ ] **2.4 — Envenenamiento de memoria** (extender el write-gating `LessonVerifier` al motor genérico).
+  Tipo-1; PARCIAL (existe en el tenant de seguridad).
+- [ ] **2.5 — Fuga entre usuarios / tenancy** (namespacing). Tipo-1.
+- [ ] **2.6 — Personalización vs contaminación.** Tipo-3-ish (política/límite).
+- [x] **2.7 — Cold-start.** Tipo-3 epistémico — RESUELTO conceptualmente (procedencia bootstrap ≠
+  verdad; arrancar en dominio de muro bajo). No requiere código; ver memoria.
 
 ## Adiciones tras inteligencia competitiva (2026-06-20) — atacar los huecos abiertos del campo
 
