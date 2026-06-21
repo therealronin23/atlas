@@ -184,6 +184,47 @@ class TestRecallOverPatterns:
 # ---------------------------------------------------------------------------
 
 
+class TestSeparateThresholds:
+    """cluster_threshold (agrupar) y recall_threshold (match) son independientes
+    (refinamiento 1c: elimina el confound de usar un solo umbral)."""
+
+    def test_cluster_threshold_controls_grouping(self, tmp_path: Path) -> None:
+        lessons = [
+            _lesson("l1", "eval user_input ejecuta codigo arbitrario"),
+            _lesson("l2", "pickle loads datos serializados no confiables remotos"),
+        ]
+        store = _store(tmp_path, lessons)
+        # Clustering muy laxo (0.0) → todo en un patrón; recall aparte.
+        loose = PatternAbstractor(
+            embedder=StubEmbedder(dim=64), cluster_threshold=0.0, recall_threshold=0.8
+        )
+        assert len(loose.abstract(store.all())) == 1
+        # Clustering estricto → patrones separados.
+        strict = PatternAbstractor(
+            embedder=StubEmbedder(dim=64), cluster_threshold=0.99, recall_threshold=0.8
+        )
+        assert len(strict.abstract(store.all())) == 2
+
+    def test_recall_threshold_controls_match_not_grouping(self, tmp_path: Path) -> None:
+        lessons = [_lesson("l1", "eval user_input ejecuta codigo arbitrario")]
+        store = _store(tmp_path, lessons)
+        ab = PatternAbstractor(
+            embedder=StubEmbedder(dim=64), cluster_threshold=0.8, recall_threshold=0.99
+        )
+        ab.abstract(store.all())
+        # Una reformulación con score < 0.99 no debe contar como match.
+        m = ab.recall("arbitrario eval codigo")
+        assert m is not None
+        assert m.matched == (m.score >= 0.99)
+
+    def test_threshold_default_sets_both(self, tmp_path: Path) -> None:
+        lessons = [_lesson("l1", "eval user_input ejecuta codigo arbitrario")]
+        store = _store(tmp_path, lessons)
+        ab = PatternAbstractor(embedder=StubEmbedder(dim=64), threshold=0.8)
+        ab.abstract(store.all())
+        assert ab.recall("eval user_input ejecuta codigo arbitrario") is not None
+
+
 def test_pattern_label_is_a_member_avoid_text(tmp_path: Path) -> None:
     # La etiqueta es el ejemplo más cercano al centroide (representante auditable).
     lessons = [_lesson("l1", "eval user_input ejecuta codigo arbitrario")]

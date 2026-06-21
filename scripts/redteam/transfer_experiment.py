@@ -92,7 +92,7 @@ _PASS_EV = {"verdict": "pass"}
 
 def _seed_patterns(
     embedder: Embedder, train: list[str], merkle: MerkleLogger,
-    store: LessonStore, threshold: float,
+    store: LessonStore, cluster_threshold: float, recall_threshold: float,
 ) -> PatternAbstractor:
     """Siembra lecciones de las familias TRAIN (ancladas en cadena) y las abstrae."""
     for i, attack in enumerate(train):
@@ -110,7 +110,11 @@ def _seed_patterns(
             action="lesson.recorded", agent="transfer_exp", result="success",
             payload={"id": f"seed-{i:03d}"},
         )
-    abstractor = PatternAbstractor(embedder=embedder, threshold=threshold)
+    abstractor = PatternAbstractor(
+        embedder=embedder,
+        cluster_threshold=cluster_threshold,
+        recall_threshold=recall_threshold,
+    )
     abstractor.abstract(store.all())
     return abstractor
 
@@ -140,9 +144,10 @@ def main() -> None:
                         help="variantes triviales por ataque (distancia 0.15)")
     parser.add_argument("--embedder", choices=["stub", "hf"], default="stub",
                         help="stub=léxico (0 deps); hf=all-MiniLM-L6-v2 semántico (venv redteam)")
-    parser.add_argument("--threshold", type=float, default=0.8,
-                        help="umbral de match (calíbrese por embedder; el coseno mapeado "
-                             "de MiniLM se distribuye distinto al stub léxico)")
+    parser.add_argument("--cluster-threshold", type=float, default=0.8,
+                        help="cómo de apretado se agrupan ejemplos en un patrón (fino=alto)")
+    parser.add_argument("--recall-threshold", type=float, default=0.8,
+                        help="cómo de cerca una query para contar match (calíbrese por embedder)")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
@@ -162,7 +167,9 @@ def main() -> None:
     train = [a for fam in TRAIN_FAMILIES for a in FAMILIES[fam]]
     heldout = [a for fam in HELDOUT_FAMILIES for a in FAMILIES[fam]]
 
-    abstractor = _seed_patterns(embedder, train, merkle, store, args.threshold)
+    abstractor = _seed_patterns(
+        embedder, train, merkle, store, args.cluster_threshold, args.recall_threshold
+    )
     mutator = DeterministicMutator(seed=7)
 
     train_recall = _recall_rate(abstractor, mutator, train, args.variants)
@@ -186,7 +193,7 @@ def main() -> None:
 
     report = f"""# Experimento de transferencia cross-family — memoria de patrones (1c-seguridad)
 
-Embedder: {emb_note} · variantes/ataque: {args.variants} · umbral: {args.threshold} · patrones sembrados: {n_patterns}
+Embedder: {emb_note} · variantes/ataque: {args.variants} · cluster_thr: {args.cluster_threshold} · recall_thr: {args.recall_threshold} · patrones sembrados: {n_patterns}
 
 Familias TRAIN (sembradas): {", ".join(TRAIN_FAMILIES)}
 Familias HELD-OUT (jamás vistas): {", ".join(HELDOUT_FAMILIES)}

@@ -140,7 +140,13 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     umbral calibrado 0.60 con sanidad 100%) = transferencia PARCIAL REAL: **heldout_recall 33%
     con benign_fp 0%** → no es enciclopedia pura ni generalización resuelta. CONFOUNDS declarados:
     umbral clustering==recall (techo optimista), semillas ilustrativas (no Garak real aún),
-    conjuntos pequeños. PENDIENTE para rigor: separar los dos umbrales + corpus real de Garak.
+    conjuntos pequeños.
+    PULIDO 2026-06-21: confound clustering==recall RESUELTO (umbrales separados en
+    `MemoryAbstractor`: `cluster_threshold` vs `recall_threshold`, testeado). Medida limpia
+    (cluster 0.80 → 2 patrones, uno por familia): sanidad 100% con held-out 16.7%→66.7% según
+    recall (0.62→0.58) y benign_fp 0% → la transferencia SOBREVIVE al quitar el confound (no era
+    artefacto). PENDIENTE rigor: set benigno fronterizo (el 0% FP no está estresado) + corpus
+    real de Garak + intervalos de confianza.
   - **1c-motor:** el sustrato sabe versionar/superseder/transferir en CUALQUIER dominio (sin
     Garak). Va con 1d (validez temporal) + un test de transferencia genérico. PENDIENTE.
 - [ ] **1d — `Curator`** (olvido principiado: dedup/supersede/decay) SOLO sobre el índice; la cadena
