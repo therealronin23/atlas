@@ -110,8 +110,10 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     connected + instalado/verificado); nuestras raíces resuelven cmd con path arg, externos vía
     `install`. `serve()` ya no usa lista fija. Verificado E2E. 8 tests. (Spawn perezoso = follow-up
     cuando haya externos; hoy eager con 3 raíces es correcto, anti-vapor.)
-  - ⬜ SIGUIENTE: 3 skills servidos E2E (`get_skill`+prompt) · 4 sembrar registro oficial ·
-    5 prove-it→verificado · 6 instalador por mode.
+  - ✅ Paso 3 skills servidos: `SkillStore` (sirve `docs/skills/*.md` sin descarga) + tronco expone
+    `get_skill`/`list_skills`. 1er skill real: `atlas-coding-discipline` (nuestras máximas, fuente única
+    anti-deriva), registrado en catálogo (mode=served, tags coding+productivity-meta). 4 tests.
+  - ⬜ SIGUIENTE: 4 sembrar registro oficial (procedencia) · 5 prove-it→verificado · 6 instalador por mode.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

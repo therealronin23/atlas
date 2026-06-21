@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
     from atlas.mcp.catalog import CatalogEntry
+    from atlas.mcp.skills_store import SkillStore
 
 
 def root_configs(
@@ -75,8 +76,11 @@ def trunk_children(
     return out
 
 
-def build_trunk_server(agg: TrunkAggregator, *, name: str = "atlas-trunk") -> "FastMCP":
-    """Servidor FastMCP que expone la fachada meta lazy del tronco."""
+def build_trunk_server(
+    agg: TrunkAggregator, *, name: str = "atlas-trunk", skill_store: "SkillStore | None" = None
+) -> "FastMCP":
+    """Servidor FastMCP que expone la fachada meta lazy del tronco. Si se da un
+    `skill_store`, sirve skills como contenido (get_skill/list_skills + resources)."""
     from mcp.server.fastmcp import FastMCP
 
     server = FastMCP(name)
@@ -95,6 +99,17 @@ def build_trunk_server(agg: TrunkAggregator, *, name: str = "atlas-trunk") -> "F
     def trunk_invoke(tool: str, args: dict[str, Any] | None = None) -> Any:
         """Ejecuta una tool, enrutada a su raíz dueña (con audit/seguridad detrás)."""
         return agg.invoke(tool, args or {})
+
+    if skill_store is not None:
+        @server.tool()
+        def list_skills() -> list[str]:
+            """Skills servidos por el tronco (sin descarga)."""
+            return skill_store.list_skills()
+
+        @server.tool()
+        def get_skill(name: str) -> str:
+            """Devuelve el contenido de un skill (markdown). Acceso 'de una', sin instalar."""
+            return skill_store.get(name)
 
     return server
 
@@ -116,7 +131,10 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         roots=native_roots(),
         dispatcher=registry.dispatch,
     )
-    server = build_trunk_server(agg, name=name)
+    from atlas.mcp.skills_store import SkillStore
+
+    store = SkillStore(Path(repo_root) / "docs" / "skills")
+    server = build_trunk_server(agg, name=name, skill_store=store)
     try:
         server.run()
     finally:
