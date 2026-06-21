@@ -28,6 +28,7 @@ from atlas.knowledge.verifier import KnowledgeVerifier
 from atlas.security.ssrf_bridge import SSRFBridge
 
 _WIKI_DOMAIN = "knowledge/wikipedia"
+_WB_DOMAIN = "knowledge/worldbank"
 
 
 class WikipediaSource(HttpApiSource):
@@ -50,6 +51,31 @@ class WikipediaSource(HttpApiSource):
         return [self._request("GET", url)]
 
 
+class WorldBankSource(HttpApiSource):
+    """Fuente World Bank (datos abiertos, sin auth). Indicador por país →
+    `/country/<iso>/indicator/<code>?format=json`. Añade su host al gate SSRF."""
+
+    _HOST = "api.worldbank.org"
+
+    def __init__(self, *, fetcher: Fetcher | None = None) -> None:
+        super().__init__(
+            "worldbank",
+            _WB_DOMAIN,
+            bridge=SSRFBridge(extra_allowed={self._HOST}),
+            fetcher=fetcher,
+        )
+
+    def fetch(self, query: Any) -> list[RawRecord]:
+        # query = {"country": "ES", "indicator": "SP.POP.TOTL"}
+        country = str(query["country"]).strip()
+        indicator = str(query["indicator"]).strip()
+        url = (
+            f"https://{self._HOST}/v2/country/{country}/indicator/{indicator}"
+            "?format=json"
+        )
+        return [self._request("GET", url)]
+
+
 class KnowledgeTrunk:
     """Tools de conocimiento libre + ingesta cableada al sustrato."""
 
@@ -57,33 +83,35 @@ class KnowledgeTrunk:
         self._base = KnowledgeBase(Path(base_root))
         self._verifier = KnowledgeVerifier()
         self._wiki = WikipediaSource(fetcher=fetcher)
+        self._wb = WorldBankSource(fetcher=fetcher)
 
-    def wikipedia(self, title: str) -> list[dict[str, Any]]:
-        """Lookup crudo (sin ingestar): payload + url + status, con procedencia
-        de la URL. Útil para inspeccionar antes de comprometer al sustrato."""
+    # -- helpers genéricos (toda fuente usa el mismo pipeline) --------------
+
+    def _lookup(self, source: HttpApiSource, query: Any) -> list[dict[str, Any]]:
         return [
             {"url": r.url, "status": r.status, "payload": r.payload}
-            for r in self._wiki.fetch(title)
+            for r in source.fetch(query)
         ]
 
-    def ingest_wikipedia(
-        self, title: str, *, domain: str = _WIKI_DOMAIN, goal: str = ""
+    def _ingest(
+        self,
+        source_id: str,
+        source: HttpApiSource,
+        query: Any,
+        *,
+        mission_id: str,
+        domain: str,
+        goal: str,
     ) -> dict[str, Any]:
-        """Ejecuta run_mission con la fuente Wikipedia → verifica → sustrato.
-        Devuelve conteos + ids ingeridos + errores por fuente."""
         mission = Mission(
-            id=f"wiki:{title}",
-            domain=domain,
-            goal=goal,
-            source_ids=["wikipedia"],
-            cadence_s=0,
+            id=mission_id, domain=domain, goal=goal, source_ids=[source_id], cadence_s=0
         )
         report = run_mission(
             mission,
-            sources={"wikipedia": self._wiki},
+            sources={source_id: source},
             base=self._base,
             verifier=self._verifier,
-            queries={"wikipedia": title},
+            queries={source_id: query},
         )
         return {
             "ingested": report.ingested,
@@ -91,6 +119,40 @@ class KnowledgeTrunk:
             "ingested_ids": list(report.ingested_ids),
             "errors": [list(e) for e in report.errors],
         }
+
+    # -- Wikipedia ---------------------------------------------------------
+
+    def wikipedia(self, title: str) -> list[dict[str, Any]]:
+        """Lookup crudo (sin ingestar): payload + url + status, con procedencia
+        de la URL. Útil para inspeccionar antes de comprometer al sustrato."""
+        return self._lookup(self._wiki, title)
+
+    def ingest_wikipedia(
+        self, title: str, *, domain: str = _WIKI_DOMAIN, goal: str = ""
+    ) -> dict[str, Any]:
+        """Ejecuta run_mission con la fuente Wikipedia → verifica → sustrato."""
+        return self._ingest(
+            "wikipedia", self._wiki, title, mission_id=f"wiki:{title}", domain=domain, goal=goal
+        )
+
+    # -- World Bank (datos abiertos) ---------------------------------------
+
+    def worldbank(self, country: str, indicator: str) -> list[dict[str, Any]]:
+        """Lookup crudo de un indicador World Bank por país (sin ingestar)."""
+        return self._lookup(self._wb, {"country": country, "indicator": indicator})
+
+    def ingest_worldbank(
+        self, country: str, indicator: str, *, domain: str = _WB_DOMAIN, goal: str = ""
+    ) -> dict[str, Any]:
+        """Ejecuta run_mission con la fuente World Bank → verifica → sustrato."""
+        return self._ingest(
+            "worldbank",
+            self._wb,
+            {"country": country, "indicator": indicator},
+            mission_id=f"wb:{country}:{indicator}",
+            domain=domain,
+            goal=goal,
+        )
 
     def query(self, domain: str = _WIKI_DOMAIN) -> list[dict[str, Any]]:
         """Lo que ya entró al sustrato para un dominio (con su procedencia)."""

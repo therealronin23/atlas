@@ -64,7 +64,8 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   (`atlas.mcp.knowledge_server`): `WikipediaSource` (REST summary, gate SSRF, fetcher inyectable) →
   tools `wikipedia_lookup` / `ingest_wikipedia` cableados a `run_mission` → sustrato. PROBADO: el
   conocimiento entra con PROCEDENCIA (url+fecha+hash) (`tests/test_mcp_knowledge_trunk.py`, 4 tests).
-  Honesto: procedencia, no verdad (KnowledgeVerifier filtra grounding). Falta 2ª API (dataset).
+  Honesto: procedencia, no verdad (KnowledgeVerifier filtra grounding). 2ª API AÑADIDA: World Bank
+  (datos abiertos, indicador por país) — mismo pipeline verificado. F3 PLENO.
 - ✅ **F4 — Agregación + catálogo + instalador** — `TrunkManifest` (las 3 raíces nativas → config de
   cliente MCP unificada = "una conexión"; overhead 6 tools, anti-kitchen-sink) + `installer` (parsea
   `mcp_catalog.md`, instala SOLO `verificado` — hoy 0; wire-before-claim) + `scripts/mcp_install.py`
@@ -72,7 +73,7 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   (`tests/test_mcp_trunk_manifest.py`, 7 tests). Commodity (filesystem/git) = off-the-shelf vía
   instalador cuando se verifique, no reinventadas.
 - ✅ **LÍNEA MCP TRUNK F1–F4 CERRADA.** 3 raíces nativas portables + agregación + instalador honesto,
-  suite verde. Pendiente menor: 2ª API en knowledge-src (dataset). Próximo (si procede): mergeo/PR.
+  suite verde, mergeada y pusheada a origin/main. 2ª API (World Bank) ya añadida → F3 pleno.
 - ⏸ **F5 Rust por-raíz** — diferido; abordar tras el merge "si todo va bien" (reescribir solo raíces
   calientes en rmcp, una a una; políglota por proceso, sin big-bang).
 
