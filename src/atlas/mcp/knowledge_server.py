@@ -36,6 +36,18 @@ def build_knowledge_server(trunk: KnowledgeTrunk, *, name: str = "atlas-knowledg
         """Ingesta un artículo al sustrato verificable con procedencia."""
         return trunk.ingest_wikipedia(title, domain=domain, goal=goal)
 
+    @server.tool()
+    def worldbank_lookup(country: str, indicator: str) -> list[dict[str, Any]]:
+        """Consulta un indicador World Bank por país sin ingestar."""
+        return trunk.worldbank(country, indicator)
+
+    @server.tool()
+    def ingest_worldbank(
+        country: str, indicator: str, domain: str = "knowledge/worldbank", goal: str = ""
+    ) -> dict[str, Any]:
+        """Ingesta un indicador World Bank al sustrato con procedencia."""
+        return trunk.ingest_worldbank(country, indicator, domain=domain, goal=goal)
+
     return server
 
 

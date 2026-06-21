@@ -55,6 +55,56 @@ def test_wikipedia_source_hits_summary_api_through_gate() -> None:
     assert "/page/summary/Atlas" in seen[0]
 
 
+# Una respuesta tipo World Bank API (array JSON: [metadata, [filas]]).
+_WB_PAYLOAD = json.dumps(
+    [
+        {"page": 1, "total": 1},
+        [{"country": {"value": "Spain"}, "date": "2022", "value": 47558630}],
+    ],
+    ensure_ascii=False,
+)
+
+
+def _wb_fetcher(captured: list[str] | None = None):
+    def fetcher(method: str, url: str, body: bytes | None, headers: dict[str, str]):
+        if captured is not None:
+            captured.append(url)
+        return 200, _WB_PAYLOAD
+
+    return fetcher
+
+
+def test_worldbank_source_hits_indicator_api_through_gate() -> None:
+    from atlas.knowledge.sources import RawRecord
+    from atlas.mcp.knowledge_trunk import WorldBankSource
+
+    seen: list[str] = []
+    src = WorldBankSource(fetcher=_wb_fetcher(seen))
+    records = src.fetch({"country": "ES", "indicator": "SP.POP.TOTL"})
+
+    assert len(records) == 1
+    assert isinstance(records[0], RawRecord)
+    assert records[0].status == 200
+    assert "api.worldbank.org" in seen[0]
+    assert "/country/ES/indicator/SP.POP.TOTL" in seen[0]
+    assert "format=json" in seen[0]
+
+
+def test_ingest_worldbank_wires_to_substrate_with_provenance(tmp_path: Path) -> None:
+    from atlas.mcp.knowledge_trunk import KnowledgeTrunk
+
+    trunk = KnowledgeTrunk(tmp_path / "kb", fetcher=_wb_fetcher())
+    report = trunk.ingest_worldbank("ES", "SP.POP.TOTL", domain="knowledge/worldbank")
+    assert report["ingested"] == 1
+    assert report["rejected"] == 0
+
+    stored = trunk.query("knowledge/worldbank")
+    assert len(stored) == 1
+    prov = stored[0]["provenance"]
+    assert "api.worldbank.org" in prov["url"]
+    assert prov["fetched_at"] and prov["raw_sha256"]
+
+
 # ---------------------------------------------------------------------------
 # KnowledgeTrunk: tool de lookup + ingesta cableada al sustrato
 # ---------------------------------------------------------------------------
@@ -102,3 +152,4 @@ def test_build_knowledge_server_registers_tools(tmp_path: Path) -> None:
     server = build_knowledge_server(_trunk(tmp_path))
     names = {t.name for t in asyncio.run(server.list_tools())}
     assert {"wikipedia_lookup", "ingest_wikipedia"} <= names
+    assert {"worldbank_lookup", "ingest_worldbank"} <= names
