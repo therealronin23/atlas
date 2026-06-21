@@ -132,14 +132,17 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
   Extraído el motor genérico (`record.py`+`memory_index.py`+`memory_abstractor.py`); seguridad pasa a
   inquilino delgado. `tests/test_memory_motor.py` (5 tests) demuestra agnosticidad en dominio
   no-seguridad (recetas). 60 tests del inquilino intactos = refactor behavior-preserving.
-- [ ] **1c — DOS ejes (antes fundidos; separados 2026-06-21):**
-  - **1c-motor:** el sustrato sabe versionar/superseder/transferir conocimiento, medible en
-    CUALQUIER dominio (no necesita Garak). Forma parte de 1d (validez temporal) + un test de
-    transferencia genérico.
-  - **1c-seguridad:** ¿las lecciones adversariales transfieren a FAMILIAS held-out? Aquí SÍ entra
-    Garak (taxonomía de probes como ground-truth externo) + curva recall-vs-distancia con FP
-    controlado. La prueba decisiva del inquilino: ¿genera conocimiento o memoriza? Es la fase
-    PESADA (venv `.venv-redteam`).
+- [~] **1c — DOS ejes (antes fundidos; separados 2026-06-21):**
+  - **1c-seguridad** *(HECHO 2026-06-21, primer corte; `scripts/redteam/transfer_experiment.py`
+    + `docs/immune_transfer_experiment.md`):* held-out por familia (train: instruction_override,
+    persona_jailbreak; held-out: exfiltration, encoding_evasion), anclado en Merkle. RESULTADO
+    HONESTO: léxico = MEMORIZA (0% transferencia, vocabulario disjunto). Semántico (MiniLM,
+    umbral calibrado 0.60 con sanidad 100%) = transferencia PARCIAL REAL: **heldout_recall 33%
+    con benign_fp 0%** → no es enciclopedia pura ni generalización resuelta. CONFOUNDS declarados:
+    umbral clustering==recall (techo optimista), semillas ilustrativas (no Garak real aún),
+    conjuntos pequeños. PENDIENTE para rigor: separar los dos umbrales + corpus real de Garak.
+  - **1c-motor:** el sustrato sabe versionar/superseder/transferir en CUALQUIER dominio (sin
+    Garak). Va con 1d (validez temporal) + un test de transferencia genérico. PENDIENTE.
 - [ ] **1d — `Curator`** (olvido principiado: dedup/supersede/decay) SOLO sobre el índice; la cadena
   Merkle nunca borra. Incluye capa A (validez temporal `valid_from/until` + supersesión auditable)
   y capa B (tiers hot/warm/cold/pending con democión medible).
