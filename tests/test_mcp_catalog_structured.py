@@ -200,6 +200,40 @@ def test_load_taxonomy_declares_domains_subsectors_aliases(tmp_path: Path) -> No
     assert "redteam" in tax["ciberseguridad"]["subsectors"]["pentesting"]["aliases"]
 
 
+_KINDS_CAT = """
+sectors:
+  programacion:
+    label: Programación
+    entries:
+      - {name: a-skill, kind: skill, status: candidato}
+      - {name: a-prompt, kind: prompt, status: candidato}
+      - {name: a-hook, kind: hook, status: candidato}
+      - {name: a-plugin, kind: plugin, status: candidato}
+      - {name: a-rule, kind: rule, status: candidato}
+      - {name: a-subagent, kind: subagent, status: candidato}
+"""
+
+
+def test_full_kind_taxonomy_accepted(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import by_kind, load_catalog
+
+    p = tmp_path / "k.yaml"
+    p.write_text(_KINDS_CAT, encoding="utf-8")
+    counts = by_kind(load_catalog(p))
+    # las "líneas" nuevas se aceptan, no solo skill/mcp/api/tool
+    for k in ("skill", "prompt", "hook", "plugin", "rule", "subagent"):
+        assert counts.get(k) == 1
+
+
+def test_of_kind_filters_one_line(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog, of_kind
+
+    p = tmp_path / "k.yaml"
+    p.write_text(_KINDS_CAT, encoding="utf-8")
+    prompts = of_kind(load_catalog(p), "prompt")
+    assert [e.name for e in prompts] == ["a-prompt"]
+
+
 def test_find_matches_name_purpose_and_aliases(tmp_path: Path) -> None:
     from atlas.mcp.catalog import find, load_catalog, load_taxonomy
 
