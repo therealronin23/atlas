@@ -161,9 +161,20 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     CERRADA. Futuro NO prometido para subir señal: contrastive intención-vs-tema + drift+contenido + IC.
   - **1c-motor:** el sustrato sabe versionar/superseder/transferir en CUALQUIER dominio (sin
     Garak). Va con 1d (validez temporal) + un test de transferencia genérico. PENDIENTE.
-- [ ] **1d — `Curator`** (olvido principiado: dedup/supersede/decay) SOLO sobre el índice; la cadena
-  Merkle nunca borra. Incluye capa A (validez temporal `valid_from/until` + supersesión auditable)
-  y capa B (tiers hot/warm/cold/pending con democión medible).
+- [~] **1d — olvido principiado SOLO sobre el índice; la cadena Merkle nunca borra.**
+  - [x] **1d-a — Validez temporal + supersesión + retiro auditables** *(HECHO 2026-06-21; suite
+    2039 verde, mypy strict)* en `SqliteMemoryIndex` (motor genérico) + `tests/test_memory_temporal.py`
+    (7 tests). Columnas `valid_from_ns`/`valid_until_ns` (NULL=vigente) + `supersedes` (lineage);
+    migración suave para esquemas previos. `recall`/`recall_all` solo surfacean VIGENTES por defecto
+    (`include_superseded=` para auditar). `supersede(old→new)` caduca la vieja (NO la borra) y entra
+    la nueva con lineage; `retire(id)` = olvido sin reemplazo. Cada transición se ancla en Merkle
+    (`memory.superseded`/`memory.retired`) si se pasa logger → se PRUEBA qué era vigente y cuándo
+    caducó. Ataca staleness #1 + contradicciones (lo que el campo admite no resolver).
+    LÍMITE: resolución de conflictos por reglas de autoridad (fuente/recencia/evidencia) aún manual
+    (quien llama decide supersede); el motor registra, no arbitra. Tenant (SqliteLessonIndex) aún no
+    expone supersede/retire (delega recall); cablear si se necesita.
+  - [ ] **1d-b — Tiers (hot/warm/cold/pending) + democión medible** (capa B): `last_access_ns`,
+    `access_count`, democión por desuso/recencia, `pending`=grace antes de retirar del índice.
 
 Notas de estado se anotan inline al cerrar cada casilla (fecha + commit + límite honesto).
 
