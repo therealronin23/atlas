@@ -3,41 +3,49 @@
 This file is operational context, not marketing copy. If it conflicts with live
 evidence, live evidence wins.
 
-## OPERATING LOOP (read this first, every task — it's the forcing function)
+## OPERATING LOOP (read first, every task — forcing function; honestly: best-effort
+until a SessionStart hook enforces it)
 
 Lightweight pre-flight. Glance, don't deliberate — no MCP/API fan-out to "decide".
 
-**Matrioska (structure of all work):** `Gate → ADR → Fase → Tipo`. Every task declares
-its node. **Tipo** of debt/work: **1** = build-on-top (defer OK) · **2** =
-foundational/correctness (fix BEFORE stacking) · **3** = wall/real limit (work around
-or accept, not a "task"). Order: tipo-2 first, tipo-1 by dependency, tipo-3 apart.
+**Matrioska (flexible depth):** `Gate → ADR → Fase → Tipo`. Use the SHALLOWEST node that
+locates the work — not everything needs a Gate/ADR. **Tipo:** **1** = build-on-top (defer
+OK) · **2** = foundational/correctness (fix BEFORE stacking) · **3** = wall/real limit
+(work around or accept, not a task). Order: tipo-2 first, tipo-1 by dependency, tipo-3 apart.
 
-**Live state lives in `WORK_LEDGER.md`** (the "where are we"), never only in chat. Read
-it on resume; update it when you open/close a node. Compaction must lose nothing because
-state = ledger + design-doc checklists + memory, not the transcript.
+**Single authority per axis (do NOT duplicate state):** `WORK_LEDGER.md` = WHERE (status +
+next action; the only place status lives) · design docs = HOW (detail/checklists, not status)
+· `MEMORY.md`/`feedback-*.md` = WHY (lessons/manías). Update the ledger **in the same commit**
+as the work — that's part of "done". Compaction loses nothing because state = ledger + design
+checklists + memory, not the transcript. Compact when a node closes and context is heavy.
 
 **5 pre-flight questions (cheap, static):**
-1. Which matrioska node am I in? (record in `WORK_LEDGER.md`)
-2. Is there a **skill** for this? (see `.claude/skills/.../skills/`: `planning-and-task-breakdown`,
-   `test-driven-development`, `incremental-implementation`, `debugging-and-error-recovery`,
-   `code-review-and-quality`, `security-and-hardening`, `documentation-and-adrs`,
-   `code-simplification`, `spec-driven-development`). Invoke via the Skill tool.
-3. Design/plan/audit/decide → **Opus (me)**. Picar código → **delegate**: substantial →
-   Sonnet, trivial → Haiku, multi-step build → `/autobuild`. Default: delegate the typing.
-4. Which **tipo** (1/2/3)? It sets the order.
-5. Am I registering this in ledger + design doc + memory — **not only in chat**?
+1. Which matrioska node? (record in `WORK_LEDGER.md`)
+2. Which **skill** fits? `feature plan`→`planning-and-task-breakdown` · `tests`→`test-driven-development`
+   · `build`→`incremental-implementation` · `bug`→`debugging-and-error-recovery` · `review`→`code-review-and-quality`
+   · `harden`→`security-and-hardening` · `ADR/doc`→`documentation-and-adrs` · `cleanup`→`code-simplification`.
+   Invoke via the Skill tool. (Listing ≠ using: actually invoke it.)
+3. Design/plan/audit/decide → **Opus (me)**. Code → **delegate** (substantial→Sonnet, trivial→Haiku,
+   multi-step→`/autobuild`) — but only **self-contained units with acceptance criteria**; ambiguous/
+   exploratory work stays with Opus (cold subagents re-derive context).
+4. Which **tipo** (1/2/3)? Sets the order.
+5. Registering in ledger + design doc + memory — **not only in chat**?
+
+**Definition of done:** tests green + mypy strict + ledger updated + design-doc note + honest
+limit declared. **MCP/connectors:** none needed now; reach for one only if a task requires an
+external service not covered by CLI (`gh` covers git/GitHub).
 
 **Standing manías (canonical "how"; auto-memory `feedback-*.md`, obey them):**
 `plan-then-execute` · `decide-with-facts` · `honesty-over-sycophancy` ·
-`convergence-discipline-verification` · `debt-closure-workflow` · `roadmap-is-guide-not-law` ·
+`convergence-discipline-verification` · `debt-closure-workflow` · `operating-loop` ·
+`verify-the-real-case` · `internal-prior-art-first` · `roadmap-is-guide-not-law` ·
 `stdlib-over-new-deps` · `no-aux-scripts-bloat` · `no-cli-against-live-workspace` ·
 `no-gui-in-tests` · `no-deepen-hitl-coupling` · `no-security-lectures-local` ·
 `arxiv-citation-verification`.
 
 **This loop self-evolves:** when the user states a recurring preference or a workflow
-improvement → (a) write/update a `feedback-*.md` memory with Why + How-to-apply, (b) add a
-one-liner to `MEMORY.md`, (c) add its name to the manías line above. New manías join the
-forcing function automatically.
+improvement → (a) write/update a `feedback-*.md` memory (Why + How-to-apply), (b) one-liner in
+`MEMORY.md`, (c) add its name to the manías line above. New manías join the forcing function.
 
 ## Reality First
 

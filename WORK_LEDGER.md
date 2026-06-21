@@ -1,8 +1,10 @@
 # WORK LEDGER — estado vivo de la matrioska
 
-Fuente única del "¿dónde estamos?". Una línea por nodo activo. Se actualiza al abrir/cerrar
-un nodo. Sobrevive a compactaciones: leer esto al retomar y se está orientado.
+Fuente única del "¿dónde estamos?" (autoridad del ESTADO; el design doc NO duplica estado).
+Una línea por nodo activo. Se actualiza EN EL MISMO COMMIT que el trabajo (parte de "done").
+Sobrevive a compactaciones: leer esto al retomar y se está orientado.
 Detalle por feature en su design doc; el porqué/lecciones en memoria (`MEMORY.md`).
+Higiene: ≤ ~40 líneas; podar nodos cerrados a la sección de archivo cuando crezca.
 
 Formato: `[estado] nodo — próxima acción / bloqueado-por`. Estados: ✅ hecho · 🔄 en curso ·
 ⬜ pendiente · 🧱 muro (tipo-3) · ⏸ diferido.
