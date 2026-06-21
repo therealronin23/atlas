@@ -54,6 +54,19 @@ def root_configs(
     ]
 
 
+def servers_from_registry(registry: Any) -> dict[str, list[str]]:
+    """Mapa server → tools de lo realmente CONECTADO, parseando los nombres
+    namespaced `mcp__<server>__<tool>` de `registry.tool_specs()`. Así el
+    agregador indexa también los MCP externos, no solo native_roots."""
+    out: dict[str, list[str]] = {}
+    for spec in registry.tool_specs():
+        full = spec.get("function", {}).get("name", "")
+        parts = full.split("__")
+        if len(parts) >= 3 and parts[0] == "mcp":
+            out.setdefault(parts[1], []).append("__".join(parts[2:]))
+    return out
+
+
 def trunk_children(
     catalog: list["CatalogEntry"], *, save_dir: Path, repo_root: Path, python: str | None = None
 ) -> list[McpServerConfig]:
@@ -128,7 +141,7 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     registry.start_all()
     agg = TrunkAggregator(
         catalog=catalog,
-        roots=native_roots(),
+        servers=servers_from_registry(registry),  # indexa lo CONECTADO (incl. externos)
         dispatcher=registry.dispatch,
     )
     from atlas.mcp.skills_store import SkillStore

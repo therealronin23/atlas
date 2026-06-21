@@ -29,43 +29,48 @@ class TrunkAggregator:
         self,
         *,
         catalog: list[CatalogEntry],
-        roots: list[RootSpec],
         dispatcher: Dispatcher,
+        servers: dict[str, list[str]] | None = None,
+        roots: list[RootSpec] | None = None,
     ) -> None:
-        self._roots = roots
+        # `servers` = lo realmente conectado (server → tools), incl. externos. Si no
+        # se da, se deriva de `roots` (native_roots) por conveniencia/tests.
+        if servers is None:
+            servers = {r.name: list(r.tools) for r in (roots or [])}
+        self._servers = servers
         self._dispatcher = dispatcher
-        # Mapa raíz → (sector, label, purpose) desde el catálogo (la clasificación).
+        # Mapa server → entrada de catálogo (sector/label/purpose = la clasificación).
         self._meta: dict[str, CatalogEntry] = {e.name: e for e in catalog}
-        # Mapa tool → raíz (para el routing del dispatch).
+        # Mapa tool → server (para el routing del dispatch).
         self._owner: dict[str, str] = {
-            tool: root.name for root in roots for tool in root.tools
+            tool: server for server, tools in servers.items() for tool in tools
         }
 
     # -- Nivel 1: índice lazy de sectores (pequeño, sin schemas) -----------
 
     def sectors(self) -> list[dict[str, Any]]:
         agg: dict[str, dict[str, Any]] = {}
-        for root in self._roots:
-            entry = self._meta.get(root.name)
+        for server, tools in self._servers.items():
+            entry = self._meta.get(server)
             sector = entry.sector if entry else "unclassified"
             label = entry.sector_label if entry else "Sin clasificar"
             bucket = agg.setdefault(
                 sector, {"sector": sector, "label": label, "tool_count": 0}
             )
-            bucket["tool_count"] += len(root.tools)
+            bucket["tool_count"] += len(tools)
         return list(agg.values())
 
     # -- Nivel 2: drill-down a un sector ----------------------------------
 
     def tools_in(self, sector: str) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
-        for root in self._roots:
-            entry = self._meta.get(root.name)
+        for server, tools in self._servers.items():
+            entry = self._meta.get(server)
             if (entry.sector if entry else "unclassified") != sector:
                 continue
             purpose = entry.purpose if entry else ""
-            for tool in root.tools:
-                out.append({"name": tool, "root": root.name, "purpose": purpose})
+            for tool in tools:
+                out.append({"name": tool, "root": server, "purpose": purpose})
         return out
 
     # -- Dispatch: enruta a la raíz dueña vía namespacing -----------------

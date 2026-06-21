@@ -165,3 +165,55 @@ def test_trunk_children_derived_from_catalog(tmp_path: Path) -> None:
     assert "atlas.mcp.memory_server" in children["atlas-memory"].cmd
     assert str(tmp_path / "save" / "memory.db") in children["atlas-memory"].cmd
     assert children["ctx7"].cmd == ["npx", "-y", "@upstash/context7-mcp"]
+
+
+# ---------------------------------------------------------------------------
+# El agregador indexa lo realmente CONECTADO (incl. externos), no solo native_roots
+# ---------------------------------------------------------------------------
+
+_EXT_CATALOG = """
+sectors:
+  commodity-infra:
+    label: Commodity
+    entries:
+      - {name: everything, kind: mcp, purpose: "server de referencia", status: verificado}
+  memory-knowledge:
+    label: Memoria
+    entries:
+      - {name: atlas-memory, kind: mcp, source: atlas.mcp.memory_server, status: instalado}
+"""
+
+
+def test_aggregator_indexes_external_server_by_catalog_sector(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_aggregator import TrunkAggregator
+
+    cat = tmp_path / "c.yaml"
+    cat.write_text(_EXT_CATALOG, encoding="utf-8")
+    # servers = lo realmente conectado (server → tools), incluido el externo.
+    servers = {"everything": ["echo", "get-sum"], "atlas-memory": ["recall"]}
+    agg = TrunkAggregator(
+        catalog=load_catalog(cat), servers=servers,
+        dispatcher=lambda f, a: f,
+    )
+    sectors = {s["sector"]: s for s in agg.sectors()}
+    assert "commodity-infra" in sectors  # el externo aparece en su sector
+    assert {t["name"] for t in agg.tools_in("commodity-infra")} == {"echo", "get-sum"}
+    # y enruta al externo
+    assert agg.invoke("echo", {"m": "hi"}) == "mcp__everything__echo"
+
+
+def test_servers_from_registry_parses_tool_specs() -> None:
+    from atlas.mcp.trunk_server import servers_from_registry
+
+    class _Reg:
+        def tool_specs(self):
+            return [
+                {"function": {"name": "mcp__everything__echo"}},
+                {"function": {"name": "mcp__everything__get-sum"}},
+                {"function": {"name": "mcp__atlas-memory__recall"}},
+            ]
+
+    servers = servers_from_registry(_Reg())
+    assert servers["everything"] == ["echo", "get-sum"]
+    assert servers["atlas-memory"] == ["recall"]

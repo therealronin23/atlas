@@ -120,9 +120,13 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ Pasos 5-6 instalador por mode: `plan_install` (solo `verificado`, enruta served→noop /
     connected→connect / installed→place_skill) + `vet_action` (veto SentinelGate pre-spawn, metachars/
     IOC) + `execute` (runner inyectable). Script muestra el plan. 4 tests. Hoy plan vacío (0 verificado).
-  - ✅ **C CERRADO** (estructura): catálogo v2 + tronco catalog-driven + skills servidos + sembrado del
-    registro (100 cand.) + instalador por mode con veto. Falta SOLO el acto manual/incremental de
-    prove-it→marcar `verificado` candidatos concretos (decisión por candidato; la maquinaria ya está).
+  - ✅ Agregador indexa lo CONECTADO (no solo native_roots): `servers_from_registry` parsea
+    `mcp__server__tool`; `TrunkAggregator(servers=...)`. Así un MCP externo aparece en su sector.
+  - ✅ **FLUJO E2E PROBADO** con server externo real (`@modelcontextprotocol/server-everything`):
+    prove-it (13 tools) → marcado `verificado` en catálogo → tronco lo auto-spawnea → indexado en
+    commodity-infra (13) → `trunk_invoke echo` enruta y responde. La visión completa, en vivo.
+  - ✅ **C CERRADO**: catálogo v2 + tronco catalog-driven + skills servidos + sembrado del registro
+    (100) + instalador por mode con veto + e2e externo verificado. Maquinaria + flujo demostrados.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

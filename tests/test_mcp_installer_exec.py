@@ -60,14 +60,15 @@ def test_vet_blocks_command_with_shell_metachar() -> None:
     assert vet_action(bad) is not None         # metacaracter de shell → veto
 
 
-def test_real_catalog_plan_is_empty() -> None:
-    """Honesto: el catálogo curado no tiene mcp `verificado` aún → plan vacío."""
+def test_real_catalog_plan_only_proven_and_vetted() -> None:
+    """Honesto: el plan del catálogo curado = solo lo prove-it-eado, y pasa el
+    veto SentinelGate. Hoy: `everything` (connect, comando limpio)."""
     from pathlib import Path
 
     from atlas.mcp.catalog import load_catalog
-    from atlas.mcp.installer import plan_install
+    from atlas.mcp.installer import plan_install, vet_action
 
     cat = Path(__file__).resolve().parent.parent / "docs" / "design" / "mcp_catalog.yaml"
-    # served verificado podría existir, pero connected/installed verificado no.
-    actions = [a for a in plan_install(load_catalog(cat)) if a.action != "noop"]
-    assert actions == []
+    connects = [a for a in plan_install(load_catalog(cat)) if a.action == "connect"]
+    assert {a.name for a in connects} == {"everything"}
+    assert all(vet_action(a) is None for a in connects)  # ninguno vetado

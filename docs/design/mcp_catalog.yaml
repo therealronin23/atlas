@@ -104,6 +104,7 @@ sectors:
   commodity-infra:
     label: Commodity / infraestructura (off-the-shelf)
     entries:
+      - {name: everything, kind: mcp, purpose: "server de referencia MCP (prove-it OK 2026-06-21)", install: "npx -y @modelcontextprotocol/server-everything", transport: stdio, trust: vetted, status: verificado}
       - {name: Filesystem, kind: mcp, purpose: "acceso a ficheros", source: "modelcontextprotocol/servers", install: "", status: candidato}
       - {name: Git / GitHub, kind: mcp, purpose: "git + issues/PRs", source: "", install: "", status: candidato}
       - {name: Desktop Commander, kind: mcp, purpose: "archivos + terminal", source: "", install: "", status: candidato}

@@ -104,11 +104,12 @@ def test_real_catalog_loads_and_is_classified() -> None:
         assert e.sector and e.status in {"candidato", "verificado", "instalado"}
 
 
-def test_real_catalog_installs_nothing_unverified() -> None:
-    """Honesto: nada `verificado` aún → el instalador no instala nada."""
+def test_real_catalog_verified_are_only_proven() -> None:
+    """Honesto: solo lo prove-it-eado está `verificado`. Hoy: `everything`
+    (server de referencia, prove-it OK). Si crece, es decisión explícita."""
     from atlas.mcp.catalog import installable, load_catalog
 
-    assert installable(load_catalog(_CATALOG)) == []
+    assert {e.name for e in installable(load_catalog(_CATALOG))} == {"everything"}
 
 
 # ---------------------------------------------------------------------------
