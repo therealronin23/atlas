@@ -125,3 +125,43 @@ def test_root_configs_map_each_root_to_its_launch_command(tmp_path: Path) -> Non
     # operating recibe el repo; knowledge recibe el base (kb)
     assert "/repo" in cfgs["atlas-operating"].cmd
     assert str(tmp_path / "save" / "kb") in cfgs["atlas-knowledge"].cmd
+
+
+# ---------------------------------------------------------------------------
+# Paso 2: tronco DIRIGIDO POR CATÁLOGO — hijos derivados del catálogo
+# ---------------------------------------------------------------------------
+
+_CHILDREN_CATALOG = """
+sectors:
+  memory-knowledge:
+    label: Memoria
+    entries:
+      - {name: atlas-memory, kind: mcp, source: atlas.mcp.memory_server, status: instalado}
+      - {name: ctx7, kind: mcp, install: "npx -y @upstash/context7-mcp", status: verificado}
+      - {name: future-thing, kind: mcp, install: "npx foo", status: candidato}
+      - {name: some-skill, kind: skill, status: instalado}
+  operating:
+    label: Operativa
+    entries:
+      - {name: atlas-operating, kind: mcp, source: atlas.mcp.operating_server, status: instalado}
+"""
+
+
+def test_trunk_children_derived_from_catalog(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_server import trunk_children
+
+    cat = tmp_path / "c.yaml"
+    cat.write_text(_CHILDREN_CATALOG, encoding="utf-8")
+    children = {c.name: c for c in trunk_children(
+        load_catalog(cat), save_dir=tmp_path / "save", repo_root=Path("/repo"), python="/py"
+    )}
+
+    # Conectables = mode connected (mcp) + status instalado/verificado.
+    # Excluidos: candidato (future-thing) y skill (mode served, no se conecta).
+    assert set(children) == {"atlas-memory", "ctx7", "atlas-operating"}
+
+    # Nuestra raíz resuelve su comando con path arg (db); el externo usa su install.
+    assert "atlas.mcp.memory_server" in children["atlas-memory"].cmd
+    assert str(tmp_path / "save" / "memory.db") in children["atlas-memory"].cmd
+    assert children["ctx7"].cmd == ["npx", "-y", "@upstash/context7-mcp"]

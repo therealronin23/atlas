@@ -16,6 +16,7 @@ Diseño: docs/design/mcp_trunk_portable.md + WORK_LEDGER (línea TRONCO-AGREGADO
 
 from __future__ import annotations
 
+import shlex
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -26,6 +27,8 @@ from atlas.mcp.trunk_manifest import native_roots
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
+
+    from atlas.mcp.catalog import CatalogEntry
 
 
 def root_configs(
@@ -48,6 +51,28 @@ def root_configs(
         )
         for root in native_roots()
     ]
+
+
+def trunk_children(
+    catalog: list["CatalogEntry"], *, save_dir: Path, repo_root: Path, python: str | None = None
+) -> list[McpServerConfig]:
+    """Hijos del tronco DERIVADOS DEL CATÁLOGO (paso 2): toda entrada conectable
+    (kind=mcp, mode=connected, status instalado|verificado). Las raíces NUESTRAS
+    (source=atlas.mcp.*) resuelven su comando con path arg; las EXTERNAS usan su
+    campo `install`. Así un MCP externo verificado entra al tronco sin tocar código.
+    Excluye candidatos (wire-before-claim) y lo `served` (skills/APIs, no se conectan)."""
+    by_module = {r.module: r for r in native_roots()}
+    our_cfgs = {c.cmd[c.cmd.index("-m") + 1]: c
+                for c in root_configs(save_dir=save_dir, repo_root=repo_root, python=python)}
+    out: list[McpServerConfig] = []
+    for e in catalog:
+        if e.kind != "mcp" or e.mode != "connected" or e.status not in {"instalado", "verificado"}:
+            continue
+        if e.source in by_module:  # raíz nuestra → comando ya resuelto con path arg
+            out.append(our_cfgs[e.source])
+        elif e.install.strip():    # externa → comando de su `install`
+            out.append(McpServerConfig(name=e.name, cmd=shlex.split(e.install)))
+    return out
 
 
 def build_trunk_server(agg: TrunkAggregator, *, name: str = "atlas-trunk") -> "FastMCP":
@@ -81,11 +106,13 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     from atlas.mcp.catalog import load_catalog
     from atlas.mcp.registry import McpRegistry
 
-    registry = McpRegistry(root_configs(save_dir=save_dir, repo_root=repo_root))
-    registry.start_all()
     catalog_path = Path(repo_root) / "docs" / "design" / "mcp_catalog.yaml"
+    catalog = load_catalog(catalog_path)
+    # Hijos DERIVADOS DEL CATÁLOGO (paso 2): nuestras raíces + externos verificados.
+    registry = McpRegistry(trunk_children(catalog, save_dir=save_dir, repo_root=repo_root))
+    registry.start_all()
     agg = TrunkAggregator(
-        catalog=load_catalog(catalog_path),
+        catalog=catalog,
         roots=native_roots(),
         dispatcher=registry.dispatch,
     )
