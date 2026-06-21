@@ -103,7 +103,7 @@ class HttpApiSource:
                 status=-1,
             )
 
-        headers: dict[str, str] = {}
+        headers: dict[str, str] = {"User-Agent": "atlas-core"}
         body: bytes | None = None
         if json_body is not None:
             body = json.dumps(json_body).encode()

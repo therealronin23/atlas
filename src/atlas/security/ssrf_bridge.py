@@ -36,6 +36,7 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "api.together.xyz",                     # Together AI
     "api.mistral.ai",
     "api.osv.dev",                           # ADR-049 T4: OSV.dev vulnerabilities API
+    "api.apis.guru",                         # directorio OpenAPI (seeder de APIs, mcp trunk C)
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)
