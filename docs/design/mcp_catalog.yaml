@@ -1,0 +1,116 @@
+# Catálogo MCP estructurado — clasificado por SECTOR/necesidad.
+#
+# Fuente: triaje de docs/archive/_graveyard/2026-06-21/scratch/mcp grok.md (volcado
+# Grok, búsqueda real pero UNVERIFICADA) + lo ya construido en este repo.
+#
+# Este YAML es la fuente MÁQUINA del catálogo (lo consume atlas.mcp.catalog y el
+# instalador). El eje `sectors` es la clasificación del tronco-agregador.
+#
+# Estado por entrada:
+#   candidato  — nombre sin verificar (defecto). NO se instala.
+#   verificado — repo/comando comprobado (prove-it). El instalador SÍ lo instala.
+#   instalado  — ya está en el setup.
+#
+# REGLA: el instalador solo toca `verificado` (wire-before-claim). Pasar de
+# candidato→verificado es una DECISIÓN explícita tras comprobar que existe/funciona.
+
+sectors:
+
+  coding:
+    label: Coding y desarrollo
+    entries:
+      - {name: Code Reviewer / TDD, kind: skill, purpose: "review + TDD + simplify", source: "", install: "", status: candidato}
+      - {name: Karpathy Guidelines, kind: skill, purpose: "reglas de coding limpio", source: "", install: "", status: candidato}
+      - {name: Vercel React Best Practices, kind: skill, purpose: "patrones React/Next", source: "", install: "", status: candidato}
+      - {name: WarpGrep, kind: tool, purpose: "búsqueda ultrarrápida en repos (Codex)", source: "", install: "", status: candidato}
+      - {name: gh-fix-ci, kind: tool, purpose: "arregla CI fallido en background (Codex)", source: "", install: "", status: candidato}
+
+  planning-reasoning:
+    label: Planificación y reasoning (meta)
+    entries:
+      - {name: Grill-Me, kind: skill, purpose: "stress-test socrático de planes", source: "", install: "", status: candidato}
+      - {name: Create-Plan / Write-Plan, kind: skill, purpose: "planificar antes de ejecutar", source: "", install: "", status: candidato}
+      - {name: Skill-Creator, kind: skill, purpose: "crear skills (meta)", source: "", install: "", status: candidato}
+      - {name: Handoff / Yeet, kind: skill, purpose: "comprimir sesión + commits/PRs", source: "", install: "", status: candidato}
+
+  research:
+    label: Investigación
+    entries:
+      - {name: Firecrawl, kind: mcp, purpose: "búsqueda/scraping/contexto vivo", source: "", install: "", status: candidato}
+      - {name: Valyu, kind: tool, purpose: "research", source: "", install: "", status: candidato}
+      - {name: Context7, kind: mcp, purpose: "documentación en vivo", source: "", install: "", status: candidato}
+      - {name: Brave Search, kind: mcp, purpose: "búsqueda web", source: "", install: "", status: candidato}
+
+  data-automation:
+    label: Datos y automatización
+    entries:
+      - {name: Document Skills (PDF/DOCX/XLSX/PPTX), kind: skill, purpose: "ofimática", source: "", install: "", status: candidato}
+      - {name: Postgres / Supabase, kind: mcp, purpose: "queries DB", source: "", install: "", status: candidato}
+
+  design-frontend:
+    label: Diseño y frontend (UI/UX)
+    entries:
+      - {name: Frontend Design / Senior Frontend, kind: skill, purpose: "UI production-grade", source: "", install: "", status: candidato}
+      - {name: UI UX Pro Max, kind: skill, purpose: "paletas/tipografía/componentes", source: "", install: "", status: candidato}
+      - {name: Figma (MCP / Implement Design), kind: mcp, purpose: "Figma → código", source: "", install: "", status: candidato}
+      - {name: Vercel Web Design Guidelines, kind: skill, purpose: "auditoría UX/accesibilidad", source: "", install: "", status: candidato}
+
+  productivity-meta:
+    label: Productividad y meta
+    entries:
+      - {name: Superpowers, kind: skill, purpose: "orquestación multi-agente", source: "plugin", install: "", status: instalado}
+      - {name: Linear, kind: mcp, purpose: "tickets", source: "", install: "", status: candidato}
+      - {name: Slack, kind: mcp, purpose: "comunicación", source: "", install: "", status: candidato}
+
+  academic:
+    label: Académico
+    entries:
+      - {name: Zotero MCP, kind: mcp, purpose: "papers/citas", source: "", install: "", status: candidato}
+      - {name: Scientific Skills (LaTeX/papers), kind: skill, purpose: "papers/visualizaciones", source: "", install: "", status: candidato}
+
+  orchestration-agents:
+    label: Agentes multistep / orquestación
+    entries:
+      - {name: MCP Builder, kind: skill, purpose: "construir servers MCP", source: "", install: "", status: candidato}
+      - {name: Sequential Thinking, kind: mcp, purpose: "razonamiento por pasos", source: "", install: "", status: candidato}
+
+  testing-performance:
+    label: Testing y performance
+    entries:
+      - {name: Playwright / WebApp Testing, kind: mcp, purpose: "tests E2E browser", source: "", install: "", status: candidato}
+      - {name: Trail of Bits Security, kind: skill, purpose: "vulnerabilidades", source: "", install: "", status: candidato}
+
+  memory-knowledge:
+    label: Memoria y conocimiento
+    entries:
+      - {name: atlas-memory, kind: mcp, purpose: "sustrato verificable (NUESTRO)", source: "atlas.mcp.memory_server", install: "claude mcp add atlas-memory", status: instalado}
+      - {name: atlas-knowledge, kind: mcp, purpose: "knowledge-src → run_mission (NUESTRO)", source: "atlas.mcp.knowledge_server", install: "claude mcp add atlas-knowledge", status: instalado}
+      - {name: Knowledge Graph Memory (oficial), kind: mcp, purpose: "entidades+relaciones (benchmark)", source: "modelcontextprotocol/servers", install: "", status: candidato}
+      - {name: Graphiti MCP, kind: mcp, purpose: "shared memory Claude↔Cursor", source: "", install: "", status: candidato}
+      - {name: Memory Keeper, kind: mcp, purpose: "historia/decisiones", source: "mkreyman/mcp-memory-keeper", install: "", status: candidato}
+
+  apis-knowledge-src:
+    label: APIs de conocimiento (raíz knowledge-src)
+    entries:
+      - {name: Wikipedia REST, kind: api, purpose: "summary API (NUESTRO)", source: "atlas.mcp.knowledge_trunk:WikipediaSource", install: "", status: instalado}
+      - {name: World Bank, kind: api, purpose: "indicadores abiertos (NUESTRO)", source: "atlas.mcp.knowledge_trunk:WorldBankSource", install: "", status: instalado}
+
+  operating:
+    label: Disciplina operativa (raíz operating)
+    entries:
+      - {name: atlas-operating, kind: mcp, purpose: "OPERATING LOOP + ledger + sanitation (NUESTRO)", source: "atlas.mcp.operating_server", install: "claude mcp add atlas-operating", status: instalado}
+
+  commodity-infra:
+    label: Commodity / infraestructura (off-the-shelf)
+    entries:
+      - {name: Filesystem, kind: mcp, purpose: "acceso a ficheros", source: "modelcontextprotocol/servers", install: "", status: candidato}
+      - {name: Git / GitHub, kind: mcp, purpose: "git + issues/PRs", source: "", install: "", status: candidato}
+      - {name: Desktop Commander, kind: mcp, purpose: "archivos + terminal", source: "", install: "", status: candidato}
+
+  aggregators-trunk:
+    label: Agregadores / hubs (candidatos a tronco)
+    entries:
+      - {name: magg, kind: tool, purpose: "meta-MCP: descubre/instala/orquesta", source: "", install: "", status: candidato}
+      - {name: 1mcp/agent, kind: tool, purpose: "agrega múltiples servers en uno", source: "", install: "", status: candidato}
+      - {name: mcgravity, kind: tool, purpose: "proxy/load-balancer de servers", source: "", install: "", status: candidato}
+      - {name: StormMCP, kind: tool, purpose: "compone varios en endpoint unificado", source: "", install: "", status: candidato}

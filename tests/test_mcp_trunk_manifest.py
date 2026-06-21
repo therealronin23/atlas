@@ -53,44 +53,9 @@ def test_tool_overhead_is_small_anti_kitchen_sink() -> None:
 
 # ---------------------------------------------------------------------------
 # Installer: parsea el catálogo y respeta wire-before-claim
-# ---------------------------------------------------------------------------
-
-_CATALOG_SAMPLE = """
-| Skill | Para qué | Estado |
-|---|---|---|
-| MCP Builder | construir servers | verificado |
-| Find-Skills | buscador | candidato |
-| Superpowers | orquestación | instalado |
-"""
-
-
-def test_parse_catalog_extracts_name_and_status() -> None:
-    from atlas.mcp.installer import parse_catalog
-
-    entries = parse_catalog(_CATALOG_SAMPLE)
-    by_name = {e.name: e.status for e in entries}
-    assert by_name["MCP Builder"] == "verificado"
-    assert by_name["Find-Skills"] == "candidato"
-    assert by_name["Superpowers"] == "instalado"
-
-
-def test_only_verified_are_installable() -> None:
-    from atlas.mcp.installer import installable, parse_catalog
-
-    names = {e.name for e in installable(parse_catalog(_CATALOG_SAMPLE))}
-    assert names == {"MCP Builder"}  # ni candidato ni instalado
-
-
-def test_real_catalog_installs_nothing_yet() -> None:
-    """El catálogo real está todo en `candidato` → el instalador no instala nada
-    (honesto: no kitchen-sink). Si esto cambia, es una decisión explícita."""
-    from atlas.mcp.installer import installable, parse_catalog
-
-    catalog = (Path(__file__).resolve().parent.parent / "docs/design/mcp_catalog.md").read_text(
-        encoding="utf-8"
-    )
-    assert installable(parse_catalog(catalog)) == []
-
+# NOTA: el catálogo + instalable se prueban ahora sobre la fuente ESTRUCTURADA
+# (YAML) en tests/test_mcp_catalog_structured.py; el parser de tabla markdown
+# (atlas.mcp.installer) fue retirado al quedar superado por atlas.mcp.catalog.
 
 # ---------------------------------------------------------------------------
 # Prueba real "una conexión": cada raíz de la config unificada arranca y expone

@@ -87,9 +87,13 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 - ⬜ **B — TRONCO-AGREGADOR**: un MCP que conecta/frontea varias MCP, ordenadas y CLASIFICADAS por
   sector/necesidad, con enrutado por objetivo (franken-prompt modular → subconjunto pequeño de raíces,
   anti-overload) + permisos centralizados. Evaluar magg/1mcp/mcgravity (prove-it) vs construir.
-- ⬜ **C — Catálogo verificado + instalador real**: triar las 907 líneas de `mcp grok.md`, verificar
-  candidatos (prove-it), marcar `verificado` con comando, implementar la EJECUCIÓN de instalación
-  (hoy `installer.py` solo parsea+reporta, instala 0). Alimenta al tronco (B).
+- 🔄 **C — Catálogo verificado + instalador real**:
+  - ✅ Triaje del grok dump → **catálogo estructurado YAML** (`docs/design/mcp_catalog.yaml`, 43
+    entradas en 14 SECTORES) = el eje de clasificación del tronco. Loader `atlas.mcp.catalog`
+    (sector/kind/status) + instalador (`scripts/mcp_install.py`) que reporta por sector. md = narrativa,
+    YAML = fuente máquina. Viejo parser markdown (`installer.py`) retirado. 5+ tests.
+  - ⬜ FALTA: verificar candidatos (prove-it, 0 `verificado` aún) + implementar la EJECUCIÓN de
+    instalación (resolver→descargar→colocar). ← SIGUIENTE en C.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
