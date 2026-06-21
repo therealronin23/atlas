@@ -183,6 +183,31 @@ def installable(entries: list[CatalogEntry]) -> list[CatalogEntry]:
     return [e for e in entries if e.status == "verificado"]
 
 
+def classify(name: str, purpose: str, tags: list[str], taxonomy: dict[str, Any]) -> str:
+    """Auto-clasifica a un dominio (sector) por señales, sin manual: primero por TAGS
+    que casen el id/alias de un sector o subsector; luego por palabras del nombre/
+    propósito contra esos alias. Sin señal → 'uncategorized' (honesto, no fuerza).
+    Token-eficiente: reusa los alias declarados en la taxonomía."""
+    hay = " ".join([name, purpose, *tags]).lower()
+
+    def _matches(sblock: dict[str, Any]) -> bool:
+        terms = [sblock["label"]] + sblock["aliases"]
+        for sub in sblock["subsectors"].values():
+            terms += [sub["label"]] + sub["aliases"]
+        return any(t and t.lower() in hay for t in terms)
+
+    # 1) tag exacto = id de sector (señal fuerte)
+    tagset = {t.lower() for t in tags}
+    for sid in taxonomy:
+        if sid in tagset:
+            return sid
+    # 2) alias/label de sector o subsector en nombre/propósito/tags
+    for sid, sblock in taxonomy.items():
+        if sid.lower() in hay or _matches(sblock):
+            return sid
+    return "uncategorized"
+
+
 def by_kind(entries: list[CatalogEntry]) -> dict[str, int]:
     """Cuenta por kind = tamaño de cada 'línea' del catálogo."""
     counts: dict[str, int] = {}

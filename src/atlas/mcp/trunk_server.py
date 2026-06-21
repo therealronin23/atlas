@@ -182,6 +182,11 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     catalog_path = Path(repo_root) / "docs" / "design" / "mcp_catalog.yaml"
     catalog = load_catalog(catalog_path)
     taxonomy = load_taxonomy(catalog_path)
+    # Browse poblado: añade lo sembrado+clasificado (todo candidato → trunk_children
+    # lo ignora; solo enriquece trunk_catalog/find/kinds). "En todas partes".
+    classified = Path(repo_root) / "docs" / "design" / "mcp_catalog_classified.yaml"
+    if classified.is_file():
+        catalog = catalog + load_catalog(classified)
     # Hijos DERIVADOS DEL CATÁLOGO (paso 2): nuestras raíces + externos verificados.
     registry = McpRegistry(trunk_children(catalog, save_dir=save_dir, repo_root=repo_root))
     registry.start_all()
