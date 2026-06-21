@@ -1,0 +1,2073 @@
+_generated:
+  by: seed_apis (line_seed.ApisGuruSource)
+  at: '2026-06-21T23:38:30.950318+00:00'
+  source: https://api.apis.guru/v2/list.json
+  note: MÁQUINA-GENERADO, candidato/uncategorized
+sectors:
+  uncategorized:
+    label: APIs (sin clasificar) — apis.guru
+    entries:
+    - name: 1forge.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 1Forge Finance APIs — Stock and Forex Data and Realtime Quotes
+      source: 1forge.com
+      install: ''
+      status: candidato
+      tags:
+      - financial
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: 1password.com:events
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Events API — 1Password Events API Specification.
+      source: 1password.com:events
+      install: ''
+      status: candidato
+      tags:
+      - security
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: 1password.local:connect
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 1Password Connect — REST API interface for 1Password Connect.
+      source: 1password.local:connect
+      install: ''
+      status: candidato
+      tags:
+      - security
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: 6-dot-authentiqio.appspot.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Authentiq API — Strong authentication, without the passwords.
+      source: 6-dot-authentiqio.appspot.com
+      install: ''
+      status: candidato
+      tags:
+      - security
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: ably.io:platform
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Platform API — The [REST API specification](https://www.ably.io/documentation/rest-api)
+        for Abl
+      source: ably.io:platform
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: ably.net:control
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Control API v1 — Use the Control API to manage your applications, namespaces,
+        keys, queues, rules
+      source: ably.net:control
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: abstractapi.com:geolocation
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: IP geolocation API — Abstract IP geolocation API allows developers
+        to retrieve the region, country an
+      source: abstractapi.com:geolocation
+      install: ''
+      status: candidato
+      tags:
+      - location
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adafruit.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Adafruit IO REST API — ### The Internet of Things for Everyone
+
+
+        The Adafruit IO HTTP API provides acces'
+      source: adafruit.com
+      install: ''
+      status: candidato
+      tags:
+      - iot
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adobe.com:aem
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adobe Experience Manager (AEM) API — Swagger AEM is an OpenAPI specification
+        for Adobe Experience Manager (AEM) API
+      source: adobe.com:aem
+      install: ''
+      status: candidato
+      tags:
+      - marketing
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:AccountService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Account API — This API is used for the classic integration. If you
+        are just starting your impl
+      source: adyen.com:AccountService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BalanceControlService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Balance Control API — The Balance Control API lets you transfer
+        funds between merchant accounts that b
+      source: adyen.com:BalanceControlService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BalancePlatformConfigurationNotification-v1
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Configuration webhooks — Adyen sends notifications through webhooks
+        to inform your system about events th
+      source: adyen.com:BalancePlatformConfigurationNotification-v1
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BalancePlatformPaymentNotification-v1
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Payment webhooks (deprecated) — The payment webhooks are deprecated.
+        Use the [accounting webhooks](https://docs.
+      source: adyen.com:BalancePlatformPaymentNotification-v1
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BalancePlatformReportNotification-v1
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Report webhooks — Adyen sends notifications through webhooks to inform
+        your system that reports we
+      source: adyen.com:BalancePlatformReportNotification-v1
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BalancePlatformService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Configuration API — The Configuration API enables you to create a platform
+        where you can onboard you
+      source: adyen.com:BalancePlatformService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BalancePlatformTransferNotification-v3
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Transfer webhooks — Adyen sends notifications through webhooks to
+        inform your system about incoming '
+      source: adyen.com:BalancePlatformTransferNotification-v3
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:BinLookupService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen BinLookup API — The BIN Lookup API provides endpoints for retrieving
+        information, such as cost e
+      source: adyen.com:BinLookupService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:CheckoutService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Adyen Checkout API — Adyen Checkout API provides a simple and flexible
+        way to initiate and authorise '
+      source: adyen.com:CheckoutService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:CheckoutUtilityService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Checkout Utility Service — A web service containing utility functions
+        available for merchants integrating w
+      source: adyen.com:CheckoutUtilityService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:DataProtectionService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Data Protection API — Adyen Data Protection API provides a way
+        for you to process [Subject Erasure Req
+      source: adyen.com:DataProtectionService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:FundService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Fund API — This API is used for the classic integration. If you are
+        just starting your impl
+      source: adyen.com:FundService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:HopService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Hosted onboarding API — This API is used for the classic integration.
+        If you are just starting your impl
+      source: adyen.com:HopService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:LegalEntityService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Legal Entity Management API — The Legal Entity Management API enables
+        you to manage legal entities that contai
+      source: adyen.com:LegalEntityService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:ManagementNotificationService-v1
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Management Webhooks — Adyen uses webhooks to inform your system about
+        events that happen with your Ady
+      source: adyen.com:ManagementNotificationService-v1
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:ManagementService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Management API — Configure and manage your Adyen company and merchant
+        accounts, stores, and payme
+      source: adyen.com:ManagementService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:MarketPayNotificationService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Classic Platforms - Notifications — This API is used for the classic
+        integration. If you are just starting your impl
+      source: adyen.com:MarketPayNotificationService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:NotificationConfigurationService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Notification Configuration API — This API is used for the classic integration.
+        If you are just starting your impl
+      source: adyen.com:NotificationConfigurationService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:PaymentService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Payment API — A set of API endpoints that allow you to initiate,
+        settle, and modify payments o
+      source: adyen.com:PaymentService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:PayoutService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Payout API — A set of API endpoints that allow you to store payout
+        details, confirm, or decli
+      source: adyen.com:PayoutService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:RecurringService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Recurring API — The Recurring APIs allow you to manage and remove
+        your tokens or saved payment d
+      source: adyen.com:RecurringService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:StoredValueService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Stored Value API — A set of API endpoints to manage stored value
+        products.
+      source: adyen.com:StoredValueService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:TestCardService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Adyen Test Cards API — The Test Cards API provides endpoints for generating
+        custom test card numbers. F
+      source: adyen.com:TestCardService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:TfmAPIService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: POS Terminal Management API — This API provides endpoints for managing
+        your point-of-sale (POS) payment termin
+      source: adyen.com:TfmAPIService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: adyen.com:TransferService
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Transfers API — The Transfers API provides endpoints that you can use
+        to get information about a
+      source: adyen.com:TransferService
+      install: ''
+      status: candidato
+      tags:
+      - payment
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: afterbanks.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Afterbanks API — La estandarización de la conexión con cualquier banco
+        en tiempo real.
+      source: afterbanks.com
+      install: ''
+      status: candidato
+      tags:
+      - financial
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: agco-ats.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AGCO API
+      source: agco-ats.com
+      install: ''
+      status: candidato
+      tags:
+      - ecommerce
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: aiception.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AIception Interactive — Here you can play & test & prototype all the
+        endpoints using just your browser! '
+      source: aiception.com
+      install: ''
+      status: candidato
+      tags:
+      - machine_learning
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: airbyte.local:config
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Airbyte Configuration API — Airbyte Configuration API
+
+        [https://airbyte.io](https://airbyte.io).
+
+
+        This API is'
+      source: airbyte.local:config
+      install: ''
+      status: candidato
+      tags:
+      - developer_tools
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: airport-web.appspot.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'airportsapi — Get name and website-URL for airports by ICAO code.
+        Covered airports are mostly '
+      source: airport-web.appspot.com
+      install: ''
+      status: candidato
+      tags:
+      - transport
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: akeneo.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Akeneo PIM REST API
+      source: akeneo.com
+      install: ''
+      status: candidato
+      tags:
+      - enterprise
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: alertersystem.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Alerter System API — <p>This is the <a href="/">Alerter System</a>
+        API playground. More documentation
+      source: alertersystem.com
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Offers Search — \nBefore using this API, we recommend you read\
+        \ our **[Authorization Guide](https:"
+      source: amadeus.com
+      install: ''
+      status: candidato
+      tags:
+      - location
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-airline-code-lookup
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Airline Code Lookup API — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-airline-code-lookup
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-airport-&-city-search
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Airport & City Search — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-airport-&-city-search
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-airport-nearest-relevant
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Airport Nearest Relevant — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-airport-nearest-relevant
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-airport-on-time-performance
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Airport On-Time Performance — Before using this API, we recommend you
+        read our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-airport-on-time-performance
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-branded-fares-upsell
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Branded Fares Upsell — \nBefore using this API, we recommend you read\
+        \ our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-branded-fares-upsell
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-availabilities-search
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Availibilities Search — \nBefore using this API, we recommend\
+        \ you read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-availabilities-search
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-busiest-traveling-period
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Busiest Traveling Period — \nBefore using this API, we recommend\
+        \ you read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-busiest-traveling-period
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-cheapest-date-search
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Cheapest Date Search — \nBefore using this API, we recommend\
+        \ you read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-cheapest-date-search
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-check-in-links
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Check-in Links — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-check-in-links
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-choice-prediction
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Choice Prediction — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-choice-prediction
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-create-orders
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Flight Create Orders — Before using this API, we recommend you read
+        our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-flight-create-orders
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-delay-prediction
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Delay Prediction — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-delay-prediction
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-inspiration-search
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Inspiration Search — \nBefore using this API, we recommend\
+        \ you read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-inspiration-search
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-most-booked-destinations
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Most Booked Destinations — \nBefore using this API, we recommend\
+        \ you read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-most-booked-destinations
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-most-traveled-destinations
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Flight Most Traveled Destinations — \nBefore using this API, we recommend\
+        \ you read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-flight-most-traveled-destinations
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-offers-price
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Flight Offers Price — Before using this API, we recommend you read
+        our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-flight-offers-price
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-order-management
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Flight Order Management — Before using this API, we recommend you read
+        our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-flight-order-management
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-flight-price-analysis
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Flight Price Analysis API — Before using this API, we recommend you
+        read our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-flight-price-analysis
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-hotel-booking
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Hotel Booking — \nBefore using this API, we recommend you read our\
+        \ **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-hotel-booking
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-hotel-name-autocomplete
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Hotel Name Autocomplete — Before using this API, we recommend you read
+        our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-hotel-name-autocomplete
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-hotel-ratings
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Hotel Ratings — Before using this API, we recommend you read our **[Authorization
+        Guide](https:/
+      source: amadeus.com:amadeus-hotel-ratings
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-hotel-search
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Hotel Search API — Before using this API, we recommend you read our
+        **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-hotel-search
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-location-score
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Location Score — Before using this API, we recommend you read our **[Authorization
+        Guide](https:/
+      source: amadeus.com:amadeus-location-score
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-on-demand-flight-status
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "On-Demand Flight Status — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-on-demand-flight-status
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-points-of-interest
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Points of Interest — \nBefore using this API, we recommend you read\
+        \ our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-points-of-interest
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-safe-place-
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Safe Place — \nBefore using this API, we recommend you read our **[Authorization\
+        \ Guide](https:"
+      source: amadeus.com:amadeus-safe-place-
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-seatmap-display
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Seatmap Display — Before using this API, we recommend you read our
+        **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-seatmap-display
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-tours-and-activities
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Tours and Activities — \nBefore using this API, we recommend you read\
+        \ our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-tours-and-activities
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-travel-recommendations
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Travel Recommendations API — Before using this API, we recommend you
+        read our **[Authorization Guide](https:/
+      source: amadeus.com:amadeus-travel-recommendations
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-trip-parser
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Trip Parser — \nBefore using this API, we recommend you read our **[Authorization\
+        \ Guide](https:"
+      source: amadeus.com:amadeus-trip-parser
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amadeus.com:amadeus-trip-purpose-prediction
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: "Trip Purpose Prediction — \nBefore using this API, we recommend you\
+        \ read our **[Authorization Guide](https:"
+      source: amadeus.com:amadeus-trip-purpose-prediction
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:AWSMigrationHub
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Migration Hub — <p>The AWS Migration Hub API methods help to obtain
+        server and application migra
+      source: amazonaws.com:AWSMigrationHub
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:accessanalyzer
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Access Analyzer — <p>Identity and Access Management Access Analyzer
+        helps identify potential resou
+      source: amazonaws.com:accessanalyzer
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:acm
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Certificate Manager — <fullname>Certificate Manager</fullname>
+        <p>You can use Certificate Manager (ACM
+      source: amazonaws.com:acm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:acm-pca
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Certificate Manager Private Certificate Authority — <p>This is
+        the <i>Amazon Web Services Private Certificate Authority API Referenc
+      source: amazonaws.com:acm-pca
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:alexaforbusiness
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Alexa For Business — Alexa for Business helps you use Alexa in your
+        organization. Alexa for Business '
+      source: amazonaws.com:alexaforbusiness
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:amp
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Prometheus Service — Amazon Managed Service for Prometheus
+      source: amazonaws.com:amp
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:amplify
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Amplify — Amplify enables developers to develop and deploy cloud-powered
+        mobile and web ap
+      source: amazonaws.com:amplify
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:amplifybackend
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AmplifyBackend — AWS Amplify Admin API
+      source: amazonaws.com:amplifybackend
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:apigateway
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon API Gateway — <fullname>Amazon API Gateway</fullname> <p>Amazon
+        API Gateway helps developers d
+      source: amazonaws.com:apigateway
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:apigatewaymanagementapi
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AmazonApiGatewayManagementApi — The Amazon API Gateway Management API
+        allows you to directly manage runtime aspe
+      source: amazonaws.com:apigatewaymanagementapi
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:apigatewayv2
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AmazonApiGatewayV2 — Amazon API Gateway V2
+      source: amazonaws.com:apigatewayv2
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:appconfig
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon AppConfig — <p>Use AppConfig, a capability of Amazon Web Services
+        Systems Manager, to create
+      source: amazonaws.com:appconfig
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:appflow
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Appflow — <p>Welcome to the Amazon AppFlow API reference. This
+        guide is for developers who
+      source: amazonaws.com:appflow
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:appintegrations
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon AppIntegrations Service — <p>The Amazon AppIntegrations service
+        enables you to configure and reuse connect
+      source: amazonaws.com:appintegrations
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:application-autoscaling
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Application Auto Scaling — <p>With Application Auto Scaling, you can
+        configure automatic scaling for the fo
+      source: amazonaws.com:application-autoscaling
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:application-insights
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CloudWatch Application Insights — <fullname>Amazon CloudWatch
+        Application Insights</fullname> <p> Amazon CloudWatc
+      source: amazonaws.com:application-insights
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:applicationcostprofiler
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Application Cost Profiler — <p>This reference provides descriptions
+        of the AWS Application Cost Profiler API
+      source: amazonaws.com:applicationcostprofiler
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:appmesh
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS App Mesh — <p>App Mesh is a service mesh based on the Envoy proxy
+        that makes it easy to mon
+      source: amazonaws.com:appmesh
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:apprunner
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS App Runner — <fullname>App Runner</fullname> <p>App Runner is an
+        application service that pro
+      source: amazonaws.com:apprunner
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:appstream
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon AppStream — <fullname>Amazon AppStream 2.0</fullname> <p>This
+        is the <i>Amazon AppStream 2.0
+      source: amazonaws.com:appstream
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:appsync
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS AppSync — AppSync provides API actions for creating and interacting
+        with data sources usin
+      source: amazonaws.com:appsync
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:athena
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Amazon Athena — <p>Amazon Athena is an interactive query service that
+        lets you use standard SQL '
+      source: amazonaws.com:athena
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:auditmanager
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS Audit Manager — <p>Welcome to the Audit Manager API reference.
+        This guide is for developers who '
+      source: amazonaws.com:auditmanager
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:autoscaling
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Auto Scaling — <fullname>Amazon EC2 Auto Scaling</fullname> <p>Amazon
+        EC2 Auto Scaling is desig
+      source: amazonaws.com:autoscaling
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:autoscaling-plans
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS Auto Scaling Plans — <fullname>AWS Auto Scaling</fullname> <p>Use
+        AWS Auto Scaling to create scaling '
+      source: amazonaws.com:autoscaling-plans
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:backup
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Backup — <fullname>Backup</fullname> <p>Backup is a unified backup
+        service designed to pr
+      source: amazonaws.com:backup
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:batch
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Batch — <fullname>Batch</fullname> <p>Using Batch, you can run
+        batch computing workloads
+      source: amazonaws.com:batch
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:braket
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Braket — <p>The Amazon Braket API Reference provides information about
+        the operations and
+      source: amazonaws.com:braket
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:budgets
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Budgets — <p>Use the Amazon Web Services Budgets API to plan your
+        service usage, service c
+      source: amazonaws.com:budgets
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:ce
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Cost Explorer Service — <p>You can use the Cost Explorer API to
+        programmatically query your cost and usa
+      source: amazonaws.com:ce
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:chime
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Chime — <p>The Amazon Chime application programming interface
+        (API) is designed so admin
+      source: amazonaws.com:chime
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloud9
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS Cloud9 — <fullname>Cloud9</fullname> <p>Cloud9 is a collection
+        of tools that you can use '
+      source: amazonaws.com:cloud9
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:clouddirectory
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CloudDirectory — <fullname>Amazon Cloud Directory</fullname>
+        <p>Amazon Cloud Directory is a compo
+      source: amazonaws.com:clouddirectory
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudformation
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CloudFormation — <fullname>CloudFormation</fullname> <p>CloudFormation
+        allows you to create and m
+      source: amazonaws.com:cloudformation
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudfront
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CloudFront — <fullname>Amazon CloudFront</fullname> <p>This
+        is the <i>Amazon CloudFront API R
+      source: amazonaws.com:cloudfront
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudhsm
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CloudHSM — <fullname>AWS CloudHSM Service</fullname> <p>This
+        is documentation for <b>AWS Cl
+      source: amazonaws.com:cloudhsm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudhsmv2
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CloudHSM V2 — For more information about AWS CloudHSM, see <a href="http://aws.amazon.com/clou
+      source: amazonaws.com:cloudhsmv2
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudsearch
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CloudSearch — <fullname>Amazon CloudSearch Configuration Service</fullname>
+        <p>You use the Ama
+      source: amazonaws.com:cloudsearch
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudsearchdomain
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Amazon CloudSearch Domain — <p>You use the AmazonCloudSearch2013 API
+        to upload documents to a search domain '
+      source: amazonaws.com:cloudsearchdomain
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cloudtrail
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CloudTrail — <fullname>CloudTrail</fullname> <p>This is the CloudTrail
+        API Reference. It prov
+      source: amazonaws.com:cloudtrail
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codeartifact
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: CodeArtifact — <p> CodeArtifact is a fully managed artifact repository
+        compatible with language
+      source: amazonaws.com:codeartifact
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codebuild
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS CodeBuild — <fullname>CodeBuild</fullname> <p>CodeBuild is a fully
+        managed build service in '
+      source: amazonaws.com:codebuild
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codecommit
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CodeCommit — <fullname>AWS CodeCommit</fullname> <p>This is the
+        <i>AWS CodeCommit API Referen
+      source: amazonaws.com:codecommit
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codedeploy
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS CodeDeploy — <p>CodeDeploy is a deployment service that automates
+        application deployments to '
+      source: amazonaws.com:codedeploy
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codeguru-reviewer
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CodeGuru Reviewer — <p>This section provides documentation for
+        the Amazon CodeGuru Reviewer API oper
+      source: amazonaws.com:codeguru-reviewer
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codeguruprofiler
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon CodeGuru Profiler — <p> This section provides documentation
+        for the Amazon CodeGuru Profiler API ope
+      source: amazonaws.com:codeguruprofiler
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codepipeline
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CodePipeline — <fullname>AWS CodePipeline</fullname> <p> <b>Overview</b>
+        </p> <p>This is the AW
+      source: amazonaws.com:codepipeline
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codestar
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CodeStar — <fullname>AWS CodeStar</fullname> <p>This is the API
+        reference for AWS CodeStar.
+      source: amazonaws.com:codestar
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codestar-connections
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CodeStar connections — <fullname>AWS CodeStar Connections</fullname>
+        <p>This AWS CodeStar Connections A
+      source: amazonaws.com:codestar-connections
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:codestar-notifications
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS CodeStar Notifications — <p>This AWS CodeStar Notifications API
+        Reference provides descriptions and usage
+      source: amazonaws.com:codestar-notifications
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cognito-identity
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Cognito Identity — <fullname>Amazon Cognito Federated Identities</fullname>
+        <p>Amazon Cognito Feder
+      source: amazonaws.com:cognito-identity
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cognito-idp
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Cognito Identity Provider — <p>Using the Amazon Cognito user
+        pools API, you can create a user pool to manage
+      source: amazonaws.com:cognito-idp
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cognito-sync
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Amazon Cognito Sync — <fullname>Amazon Cognito Sync</fullname> <p>Amazon
+        Cognito Sync provides an AWS '
+      source: amazonaws.com:cognito-sync
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:comprehend
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Comprehend — Amazon Comprehend is an Amazon Web Services service
+        for gaining insight into the
+      source: amazonaws.com:comprehend
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:comprehendmedical
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS Comprehend Medical —  Comprehend Medical; extracts structured
+        information from unstructured clinical '
+      source: amazonaws.com:comprehendmedical
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:compute-optimizer
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Compute Optimizer — Compute Optimizer is a service that analyzes
+        the configuration and utilization m
+      source: amazonaws.com:compute-optimizer
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:config
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Config — <fullname>Config</fullname> <p>Config provides a way to
+        keep track of the config
+      source: amazonaws.com:config
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:connect
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Connect Service — <p>Amazon Connect is a cloud-based contact
+        center solution that you use to set u
+      source: amazonaws.com:connect
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:connect-contact-lens
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Amazon Connect Contact Lens — <p>Contact Lens for Amazon Connect enables
+        you to analyze conversations between '
+      source: amazonaws.com:connect-contact-lens
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:connectparticipant
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Connect Participant Service — <p>Amazon Connect is an easy-to-use
+        omnichannel cloud contact center service tha
+      source: amazonaws.com:connectparticipant
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:cur
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Cost and Usage Report Service — <p>The AWS Cost and Usage Report
+        API enables you to programmatically create, que
+      source: amazonaws.com:cur
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:customer-profiles
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Connect Customer Profiles — <fullname>Amazon Connect Customer
+        Profiles</fullname> <p>Amazon Connect Customer
+      source: amazonaws.com:customer-profiles
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:databrew
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Glue DataBrew — Glue DataBrew is a visual, cloud-scale data-preparation
+        service. DataBrew simpli
+      source: amazonaws.com:databrew
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:dataexchange
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Data Exchange — <p>AWS Data Exchange is a service that makes it
+        easy for AWS customers to exchan
+      source: amazonaws.com:dataexchange
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:datapipeline
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Data Pipeline — <p>AWS Data Pipeline configures and manages a data-driven
+        workflow called a pipe
+      source: amazonaws.com:datapipeline
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:datasync
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS DataSync — <fullname>DataSync</fullname> <p>DataSync is a managed
+        data transfer service tha
+      source: amazonaws.com:datasync
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:dax
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon DynamoDB Accelerator (DAX) — DAX is a managed caching service
+        engineered for Amazon DynamoDB. DAX dramaticall
+      source: amazonaws.com:dax
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:detective
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'Amazon Detective — <p>Detective uses machine learning and purpose-built
+        visualizations to help you '
+      source: amazonaws.com:detective
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:devicefarm
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Device Farm — <p>Welcome to the AWS Device Farm API documentation,
+        which contains APIs for:</p
+      source: amazonaws.com:devicefarm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:devops-guru
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon DevOps Guru — <p> Amazon DevOps Guru is a fully managed service
+        that helps you identify anomal
+      source: amazonaws.com:devops-guru
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:directconnect
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: 'AWS Direct Connect — Direct Connect links your internal network to
+        an Direct Connect location over a '
+      source: amazonaws.com:directconnect
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:discovery
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Application Discovery Service — <fullname>Amazon Web Services Application
+        Discovery Service</fullname> <p>Amazon
+      source: amazonaws.com:discovery
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:dlm
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon Data Lifecycle Manager — <fullname>Amazon Data Lifecycle Manager</fullname>
+        <p>With Amazon Data Lifecycle
+      source: amazonaws.com:dlm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:dms
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Database Migration Service — <fullname>Database Migration Service</fullname>
+        <p>Database Migration Service (D
+      source: amazonaws.com:dms
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:docdb
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon DocumentDB with MongoDB compatibility — Amazon DocumentDB API
+        documentation
+      source: amazonaws.com:docdb
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:ds
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: AWS Directory Service — <fullname>Directory Service</fullname> <p>Directory
+        Service is a web service tha
+      source: amazonaws.com:ds
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'
+    - name: amazonaws.com:dynamodb
+      sector: uncategorized
+      kind: api
+      mode: served
+      purpose: Amazon DynamoDB — <fullname>Amazon DynamoDB</fullname> <p>Amazon DynamoDB
+        is a fully managed NoSQL
+      source: amazonaws.com:dynamodb
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+      provenance:
+        source: https://apis.guru
+        fetched_at: '2026-06-21T23:38:30.931616+00:00'

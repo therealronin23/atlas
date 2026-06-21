@@ -85,3 +85,23 @@ def test_apis_to_candidates_extracts_title_and_provenance() -> None:
     assert c["status"] == "candidato"
     assert "1Forge" in c["purpose"]
     assert "apis.guru" in c["provenance"]["source"]
+
+
+# --- Ficheros sembrados por línea (guard de integridad) ---
+
+
+def test_all_seeded_line_files_load_and_are_candidato() -> None:
+    from pathlib import Path
+
+    from atlas.mcp.catalog import load_catalog
+
+    seeded = sorted((Path(__file__).resolve().parent.parent / "docs/design/seeded").glob("*_seeded.yaml"))
+    assert seeded, "debe haber ficheros sembrados por línea"
+    for p in seeded:
+        entries = load_catalog(p)
+        assert entries, f"{p.name} vacío"
+        # Honesto: lo sembrado entra sin verificar.
+        assert all(e.status == "candidato" for e in entries), f"{p.name} tiene no-candidatos"
+        # Un fichero por línea = un kind dominante.
+        kinds = {e.kind for e in entries}
+        assert len(kinds) == 1, f"{p.name} mezcla kinds {kinds}"

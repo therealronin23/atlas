@@ -1,0 +1,936 @@
+_generated:
+  by: scripts/seed_lines_pcr.py
+  at: '2026-06-21T23:39:53.064468+00:00'
+  source: https://github.com/PatrickJS/awesome-cursorrules
+  note: Línea rule sembrada desde awesome-cursorrules/rules (file-per-item .mdc).
+sectors:
+  uncategorized:
+    label: Sin clasificar
+    entries:
+    - name: ai-agent-specialist
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/ai-agent-specialist.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/ai-agent-specialist.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: alpha-skills-quant-factor-research
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/alpha-skills-quant-factor-research.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/alpha-skills-quant-factor-research.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: android-jetpack-compose-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/android-jetpack-compose-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/android-jetpack-compose-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: angular-novo-elements-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/angular-novo-elements-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/angular-novo-elements-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: angular-typescript-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/angular-typescript-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/angular-typescript-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: ankra-cli
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/ankra-cli.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/ankra-cli.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: anti-overengineering
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/anti-overengineering.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/anti-overengineering.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: anti-sycophancy-code-discipline-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/anti-sycophancy-code-discipline-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/anti-sycophancy-code-discipline-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: ascii-simulation-game-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/ascii-simulation-game-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/ascii-simulation-game-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: aspnet-abp-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/aspnet-abp-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/aspnet-abp-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: astro-typescript-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/astro-typescript-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/astro-typescript-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: automl-hyperparameter-optimization
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/automl-hyperparameter-optimization.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/automl-hyperparameter-optimization.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: beefreesdk-nocode-content-editor-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: beefreesdk
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/beefreeSDK.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: blender-python-addon
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/blender-python-addon.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/blender-python-addon.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: chrome-extension-dev-js-typescript-cursorrules-pro
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/chrome-extension-dev-js-typescript-cursorrules-pro.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/chrome-extension-dev-js-typescript-cursorrules-pro.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: clean-code
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/clean-code.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/clean-code.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cloudflare-email-telegram-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cloudflare-email-telegram-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cloudflare-email-telegram-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cloudflare-workers-hono-angular-saas-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cloudflare-workers-hono-angular-saas-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cloudflare-workers-hono-angular-saas-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: code-guidelines-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/code-guidelines-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-guidelines-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: code-pair-interviews
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/code-pair-interviews.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-pair-interviews.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: code-style-consistency-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/code-style-consistency-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-style-consistency-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: codequality
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/codequality.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/codequality.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: convex-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/convex-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/convex-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cpp-programming-guidelines-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cpp-programming-guidelines-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cpp-programming-guidelines-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cpp
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cpp.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cpp.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cursor-ai-react-typescript-shadcn-ui-cursorrules-p
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cursor-ai-react-typescript-shadcn-ui-cursorrules-p.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursor-ai-react-typescript-shadcn-ui-cursorrules-p.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cursor-rules-pack-v2-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cursor-rules-pack-v2-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursor-rules-pack-v2-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cursorrules-cursor-ai-nextjs-14-tailwind-seo-setup
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cursorrules-cursor-ai-nextjs-14-tailwind-seo-setup.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursorrules-cursor-ai-nextjs-14-tailwind-seo-setup.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cursorrules-cursor-ai-wordpress-draft-macos-prompt
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cursorrules-cursor-ai-wordpress-draft-macos-prompt.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursorrules-cursor-ai-wordpress-draft-macos-prompt.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cypress-accessibility-testing-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cypress-accessibility-testing-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-accessibility-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cypress-api-testing-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cypress-api-testing-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-api-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cypress-defect-tracking-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cypress-defect-tracking-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-defect-tracking-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cypress-e2e-testing-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cypress-e2e-testing-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-e2e-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: cypress-integration-testing-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cypress-integration-testing-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-integration-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: database
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/database.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/database.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: deno-integration-techniques-cursorrules-prompt-fil
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/deno-integration-techniques-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/deno-integration-techniques-cursorrules-prompt-fil.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: docker
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/docker.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/docker.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: dragonruby-best-practices-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: drupal-11-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/drupal-11-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/drupal-11-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: elixir-engineer-guidelines-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/elixir-engineer-guidelines-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/elixir-engineer-guidelines-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: elixir-phoenix-docker-setup-cursorrules-prompt-fil
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/elixir-phoenix-docker-setup-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/elixir-phoenix-docker-setup-cursorrules-prompt-fil.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: embedded-stm32-hal
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/embedded-stm32-hal.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/embedded-stm32-hal.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: engineering-ticket-template-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/engineering-ticket-template-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/engineering-ticket-template-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: es-module-nodejs-guidelines-cursorrules-prompt-fil
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/es-module-nodejs-guidelines-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/es-module-nodejs-guidelines-cursorrules-prompt-fil.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: fastapi-production-architecture-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/fastapi-production-architecture-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/fastapi-production-architecture-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: fastapi
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/fastapi.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/fastapi.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: flutter-app-expert-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/flutter-app-expert-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-app-expert-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: flutter-development-guidelines-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/flutter-development-guidelines-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-development-guidelines-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: flutter-riverpod-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/flutter-riverpod-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-riverpod-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: fortran
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/fortran.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/fortran.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: gamemaker-gml
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/gamemaker-gml.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/gamemaker-gml.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: gherkin-style-testing-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/gherkin-style-testing-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/gherkin-style-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: git-conventional-commit-messages
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/git-conventional-commit-messages.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/git-conventional-commit-messages.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: gitflow
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/gitflow.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/gitflow.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: github-code-quality-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/github-code-quality-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/github-code-quality-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: github-cursorrules-prompt-file-instructions
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/github-cursorrules-prompt-file-instructions.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/github-cursorrules-prompt-file-instructions.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: go-backend-scalability-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/go-backend-scalability-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go-backend-scalability-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: go-servemux-rest-api-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/go-servemux-rest-api-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go-servemux-rest-api-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: go-temporal-dsl-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/go-temporal-dsl-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go-temporal-dsl-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: go
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/go.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: google-adk
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/google-adk.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/google-adk.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: graphical-apps-development-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/graphical-apps-development-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/graphical-apps-development-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: harmony-arkts
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/harmony-arkts.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/harmony-arkts.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: helium-mcp-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/helium-mcp-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/helium-mcp-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: hol-hedera-typescript-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/hol-hedera-typescript-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/hol-hedera-typescript-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: how-to-documentation-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/how-to-documentation-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/how-to-documentation-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: html-tailwind-css-javascript-cursorrules-prompt-fi
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/html-tailwind-css-javascript-cursorrules-prompt-fi.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/html-tailwind-css-javascript-cursorrules-prompt-fi.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: htmx-basic-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-basic-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-basic-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: htmx-django-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-django-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-django-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: htmx-flask-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-flask-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-flask-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: htmx-go-basic-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-go-basic-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-go-basic-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: htmx-go-fiber-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-go-fiber-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-go-fiber-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: java-general-purpose-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/java-general-purpose-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/java-general-purpose-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: java-springboot-jpa-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/java-springboot-jpa-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/java-springboot-jpa-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: javascript-astro-tailwind-css-cursorrules-prompt-f
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/javascript-astro-tailwind-css-cursorrules-prompt-f.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-astro-tailwind-css-cursorrules-prompt-f.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: javascript-chrome-apis-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/javascript-chrome-apis-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-chrome-apis-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: javascript-typescript-code-quality-cursorrules-pro
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/javascript-typescript-code-quality-cursorrules-pro.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-typescript-code-quality-cursorrules-pro.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: jest-unit-testing-cursorrules-prompt-file
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/jest-unit-testing-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/jest-unit-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
+    - name: knative-istio-typesense-gpu-cursorrules-prompt-fil
+      sector: uncategorized
+      kind: rule
+      purpose: ''
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/knative-istio-typesense-gpu-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/knative-istio-typesense-gpu-cursorrules-prompt-fil.mdc
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/PatrickJS/awesome-cursorrules
+        fetched_at: '2026-06-21T23:39:53.063165+00:00'
