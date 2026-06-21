@@ -24,6 +24,7 @@ from atlas.memory.record import GenericRecord, MemoryRecord
 
 if TYPE_CHECKING:
     from atlas.core.lesson_store import Lesson, LessonStore
+    from atlas.logging.merkle_logger import MerkleLogger
 
 
 def lesson_to_record(lesson: Lesson) -> MemoryRecord:
@@ -56,8 +57,13 @@ class SqliteLessonIndex:
         embedder: Embedder | None = None,
         threshold: float = 0.8,
         store: LessonStore | None = None,
+        merkle: "MerkleLogger | None" = None,
+        auto_touch: bool = False,
     ) -> None:
-        self._engine = SqliteMemoryIndex(db_path, embedder=embedder, threshold=threshold)
+        self._engine = SqliteMemoryIndex(
+            db_path, embedder=embedder, threshold=threshold,
+            merkle=merkle, auto_touch=auto_touch,
+        )
         self._store = store
 
     # ------------------------------------------------------------------
@@ -100,6 +106,45 @@ class SqliteLessonIndex:
 
     def recall_all(self, attack_text: str, k: int = 5) -> list[RecallResult]:
         return self._engine.recall_all(attack_text, k=k)
+
+    # ------------------------------------------------------------------
+    # Ciclo de vida de lecciones (delega en el motor adaptando Lesson→record)
+    # ------------------------------------------------------------------
+
+    def supersede(
+        self, old_lesson_id: str, new_lesson: Lesson, *,
+        now_ns: int | None = None, reason: str = "",
+    ) -> None:
+        """Una lección mejor reemplaza a otra: la vieja caduca (auditable), la
+        nueva entra vigente con lineage. Útil cuando una heurística se refina."""
+        self._engine.supersede(
+            old_lesson_id, lesson_to_record(new_lesson), now_ns=now_ns, reason=reason
+        )
+
+    def retire(self, lesson_id: str, *, now_ns: int | None = None, reason: str = "") -> None:
+        """Olvido de una lección obsoleta (caduca; no se borra de la cadena)."""
+        self._engine.retire(lesson_id, now_ns=now_ns, reason=reason)
+
+    def touch(self, lesson_id: str, *, now_ns: int | None = None) -> None:
+        self._engine.touch(lesson_id, now_ns=now_ns)
+
+    def apply_decay(
+        self, *, now_ns: int, warm_after_ns: int, cold_after_ns: int,
+        pending_after_ns: int, retire_after_ns: int | None = None,
+    ) -> dict[str, int]:
+        return self._engine.apply_decay(
+            now_ns=now_ns, warm_after_ns=warm_after_ns, cold_after_ns=cold_after_ns,
+            pending_after_ns=pending_after_ns, retire_after_ns=retire_after_ns,
+        )
+
+    def tier(self, lesson_id: str) -> str | None:
+        return self._engine.tier(lesson_id)
+
+    def tier_counts(self) -> dict[str, int]:
+        return self._engine.tier_counts()
+
+    def active_count(self) -> int:
+        return self._engine.active_count()
 
     def merkle_leaf_hash(self, lesson_id: str) -> str | None:
         return self._engine.merkle_leaf_hash(lesson_id)
