@@ -46,6 +46,17 @@ TRONCO (MCP primario local, una conexión)
       5. commodity     → filesystem, git, browser (off-the-shelf, no reinventar).
 ```
 
+### Dos formas del "tronco" — no confundir (matiz 2026-06-21)
+
+1. **Bundle de config (lo construido en F4):** `trunk_manifest` EMITE un fichero de config y el
+   cliente se conecta a las N raíces **por separado**. Útil y reversible, pero el cliente ve N
+   servidores, no uno.
+2. **Tronco-AGREGADOR (la visión, PENDIENTE):** un MCP **único** al que el cliente se conecta y que
+   internamente **frontea/orquesta** las demás MCP, **ordenadas y clasificadas por sector/necesidad**,
+   con enrutado por objetivo (expone solo el subconjunto pequeño relevante) y permisos centralizados.
+   Esta es la "una conexión" de verdad. Candidatos a reutilizar (prove-it): magg, 1mcp, mcgravity.
+   El estado vivo de esta pieza está en `WORK_LEDGER.md` (línea TRONCO-AGREGADOR), no aquí.
+
 ## La pieza fuerte (idea del usuario): knowledge-src → ingestión de Atlas
 
 Una raíz de **fuentes de conocimiento verificable** (cientos de APIs libres: Wikipedia, NASA,
