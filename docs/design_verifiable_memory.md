@@ -141,12 +141,17 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     con benign_fp 0%** → no es enciclopedia pura ni generalización resuelta. CONFOUNDS declarados:
     umbral clustering==recall (techo optimista), semillas ilustrativas (no Garak real aún),
     conjuntos pequeños.
-    PULIDO 2026-06-21: confound clustering==recall RESUELTO (umbrales separados en
-    `MemoryAbstractor`: `cluster_threshold` vs `recall_threshold`, testeado). Medida limpia
-    (cluster 0.80 → 2 patrones, uno por familia): sanidad 100% con held-out 16.7%→66.7% según
-    recall (0.62→0.58) y benign_fp 0% → la transferencia SOBREVIVE al quitar el confound (no era
-    artefacto). PENDIENTE rigor: set benigno fronterizo (el 0% FP no está estresado) + corpus
-    real de Garak + intervalos de confianza.
+    PULIDO 2026-06-21 (a): confound clustering==recall RESUELTO (umbrales separados en
+    `MemoryAbstractor`, testeado).
+    PULIDO 2026-06-21 (b) — TEST BENIGNO FRONTERIZO, hallazgo que CORRIGE el corte anterior:
+    el "transfer con 0% FP" era artefacto de un benigno FÁCIL. Con benigno fronterizo (legítimo
+    que roza el tema), el FP sube en paralelo al heldout (recall 0.60: heldout 50% / borderline
+    33%; recall 0.62: heldout 17% < borderline 33%, margen NEGATIVO). VEREDICTO HONESTO: el
+    detector reconoce PROXIMIDAD TEMÁTICA, no "ataque-idad"; señal de intención REAL pero DÉBIL
+    (~17-33 pts de margen en umbrales laxos); NO hay punto de operación usable (transferencia alta
+    Y FP fronterizo bajo no coexisten). Refuerza la dirección: no apostar a DETECCIÓN, sino a
+    ATRIBUCIÓN+CONTENCIÓN ([[adaptive-defense-reframe]]). PENDIENTE: Garak real + IC + (futuro)
+    discriminación intención-vs-tema con contrastive, no coseno crudo.
   - **1c-motor:** el sustrato sabe versionar/superseder/transferir en CUALQUIER dominio (sin
     Garak). Va con 1d (validez temporal) + un test de transferencia genérico. PENDIENTE.
 - [ ] **1d — `Curator`** (olvido principiado: dedup/supersede/decay) SOLO sobre el índice; la cadena
