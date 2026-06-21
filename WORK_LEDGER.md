@@ -60,8 +60,12 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   portable, advisory) + `sanitation_audit` como TOOL read-only. 5 tests
   (`tests/test_mcp_operating_trunk.py`). DIFERIDO: franken-prompt por canal real (muro — MCP no
   impone system prompt; exige wrapper/CLI, no la primitiva MCP). ← SIGUIENTE: F3 knowledge-src.
-- ⬜ F3 knowledge-src (Wikipedia+1) → `run_mission` → sustrato · ⬜ F4 commodity+catálogo+instalador
-  · ⏸ F5 Rust por-raíz.
+- ✅ **F3 — Raíz knowledge-src** — `KnowledgeTrunk` (núcleo neutro) + shell FastMCP
+  (`atlas.mcp.knowledge_server`): `WikipediaSource` (REST summary, gate SSRF, fetcher inyectable) →
+  tools `wikipedia_lookup` / `ingest_wikipedia` cableados a `run_mission` → sustrato. PROBADO: el
+  conocimiento entra con PROCEDENCIA (url+fecha+hash) (`tests/test_mcp_knowledge_trunk.py`, 4 tests).
+  Honesto: procedencia, no verdad (KnowledgeVerifier filtra grounding). Falta 2ª API (dataset).
+- ⬜ F4 commodity+catálogo+instalador · ⏸ F5 Rust por-raíz.
 
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
 - ⏸ Deuda diferida del sustrato: multihilo (sin consumidor), IC/corpus mayor en 1c.
