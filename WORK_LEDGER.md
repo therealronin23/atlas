@@ -34,8 +34,13 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
   `.atlas-audit-home` vacío borrado
 - ✅ **Huérfanos cerrados** (0 importadores no-test) → cuarentena: witness_server, log_behavioral,
   kyc_binding (+ tests). Registrados en CAPABILITIES + graveyard MANIFEST. Suite 2041 verde.
-- ⬜ **F2** reorganizar `docs/` a la taxonomía (mover + actualizar refs)
-- ⬜ **F3** código muerto / zombies (auditoría de cableado completa) · ⬜ **F4** migrar Gates/seals + cierres roll-up
+- ✅ **F2** docs/ reorganizado a la taxonomía (refs actualizadas, 0 stale)
+- 🔄 **F3** código muerto: auditoría destapó clúster grande no-cableado.
+  - ✅ cuarentena F3 (reversible, `_graveyard/2026-06-21-f3/WHY.md`): affinity_maturation, scorers,
+    llm_scorer, security_worker, fuzzing, red_team, gossip, witness (+tests). Suite 1870 verde.
+  - ⬜ **CABLEAR lazo auditable** (live_loop+teacher_debate) + test integración ← SIGUIENTE
+  - ⬜ **CABLEAR mission** (consumidor + integración)
+- ⬜ **F4** migrar Gates/seals + cierres roll-up
 - ⬜ ciclo de saneamiento recurrente establecido
 
 ## Otras líneas (no activas ahora)
