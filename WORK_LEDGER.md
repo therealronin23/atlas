@@ -133,6 +133,14 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     `load_taxonomy` + `find` (buscador por nombre/alias, madurez-first) + navegación de 3 niveles en el
     tronco (`trunk_sectors`/`trunk_subsectors`/`trunk_tools`/`trunk_find`). `phase` para desarrollos
     nuestros. Verificado en vivo (find 'seguridad'→Trail+Playwright vía tag). Catálogo curado remapeado.
+  - ✅ **Skills ecosystem (saber) + MCP (hacer)** — desarrollo conceptual (Grok, prove-it-eado): son
+    complementarios; nuestro catálogo YA los co-clasifica por dominio. Cadena de suministro de skills:
+    descubrir (repos awesome-* + tech-leads-club/agent-skills), instalar (`npx skills add`, vercel-labs/
+    skills → `mode:installed`/`place_skill`), servir lo nuestro (`get_skill`/`mode:served`). Seguridad:
+    `vet_action` ahora veta TODO comando (connect + place_skill), no solo connect. Instalar externo =
+    consentimiento explícito (demostrado: harness bloqueó `npx skills` sin autorización). Diseño en doc.
+  - ⬜ PENDIENTE (con tu OK): seeder de skills (parsear awesome-* repo) + instalar 1 skill real E2E
+    (requiere tu consentimiento por ser código de terceros).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

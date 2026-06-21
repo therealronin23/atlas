@@ -51,9 +51,10 @@ def plan_install(entries: list[CatalogEntry]) -> list[InstallAction]:
 
 
 def vet_action(action: InstallAction, sentinel: SentinelGate | None = None) -> str | None:
-    """Veta un `connect` con SentinelGate pre-spawn (metacaracteres/IOC). Devuelve
-    la razón del veto o None si es admisible. noop/place_skill sin comando = None."""
-    if action.action != "connect" or not action.command:
+    """Veta CUALQUIER acción con comando (connect a un MCP o place_skill que instala
+    código de terceros) con SentinelGate pre-ejecución (metacaracteres/IOC). Devuelve
+    la razón del veto o None si es admisible. Acciones sin comando = None."""
+    if not action.command:
         return None
     # vet_command solo escanea el argv (metachars/IOC); snapshot_dir no se usa aquí.
     gate = sentinel if sentinel is not None else SentinelGate(Path(tempfile.gettempdir()))
