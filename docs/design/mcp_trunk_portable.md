@@ -16,6 +16,20 @@ portabilidad** ("para ahora y el futuro, fácil de instalar en cualquier platafo
 es el CONTENIDO** que metemos dentro (sustrato verificable + disciplina) y la portabilidad de TODO
 junto. Honesto: esto es packaging/distribución de lo ya construido, no una invención.
 
+## Principio rector: CROSS-PLAY (agnóstico de cliente y de modelo)
+
+Como el cross-play de consolas: continúas la **partida** (el trabajo) en cualquier plataforma —
+Claude Code, Codex, Cursor, Atlas, quien sea. Honesto sobre qué cruza y qué no:
+- **Cruza el "save file" (estado/progreso):** memoria, ledger, lecciones, design docs viven en una
+  capa NEUTRAL local (SQLite + Merkle + ficheros), no atada a ningún cliente. MCP es cross-client por
+  diseño; `AGENTS.md` es convención cross-tool (Codex también lo lee). Cualquier agente lo lee/escribe.
+- **NO cruza la "partida en vivo" (el transcript del chat):** cada cliente tiene su sesión. Pero al
+  retomar, cualquier cliente CARGA el save y sigue. Continuidad del TRABAJO, no del chat literal.
+- **Enforcement portable:** el hook SessionStart es específico de Claude Code. Para cross-play, exponer
+  OPERATING LOOP + WORK_LEDGER como **recurso MCP** que cualquier cliente extrae al arrancar (más
+  portable que un hook por-cliente; cada cliente puede además tener su adaptador de enforcement).
+Esto realiza la tesis model-agnostic: el agente "te conoce" y conoce el trabajo, da igual el modelo/cliente.
+
 ## Arquitectura: tronco + raíces
 
 ```
