@@ -23,7 +23,6 @@ sys.path.insert(0, str(ROOT / "src"))
 from atlas.mcp.catalog import (  # noqa: E402
     CatalogEntry,
     by_status,
-    installable,
     load_catalog,
     sectors,
 )
@@ -49,13 +48,18 @@ def main() -> int:
         marks = " ".join(f"{e.name}[{e.status[0]}]" for e in grouped[sec])
         print(f"  - {sec} ({label}): {marks}")
 
-    to_install = installable(entries)
-    print("\n## Instalable (estado=verificado)")
-    if not to_install:
+    from atlas.mcp.installer import plan_install, vet_action  # noqa: E402
+
+    plan = plan_install(entries)
+    print("\n## Plan de instalación (estado=verificado, por mode)")
+    if not plan:
         print("  (nada — wire-before-claim: marca `verificado` lo comprobado con prove-it)")
     else:
-        for e in to_install:
-            print(f"  - [{e.sector}] {e.name} → {e.install or '(sin comando)'}")
+        for a in plan:
+            veto = vet_action(a)
+            flag = f" ⛔ VETADO: {veto}" if veto else ""
+            cmd = " ".join(a.command) if a.command else "—"
+            print(f"  - {a.name}: {a.action} ({a.mode}) [{cmd}]{flag}")
 
     print("\n## Tronco nativo (vivo)")
     for r in native_roots():
