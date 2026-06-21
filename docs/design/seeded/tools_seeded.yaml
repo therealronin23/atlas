@@ -1,0 +1,428 @@
+_generated:
+  by: seed_tools (manual, awesome list has no dir-per-item)
+  at: '2026-06-21T23:39:19.362860+00:00'
+  source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+  note: MÁQUINA-GENERADO, candidato/uncategorized
+sectors:
+  uncategorized:
+    label: Tools / CLIs (sin clasificar)
+    entries:
+    - name: ripgrep
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Recursive regex search, fast grep alternative
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install ripgrep
+      status: candidato
+      tags:
+      - search
+      - dev
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: fd
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Simple, fast alternative to find
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install fd-find
+      status: candidato
+      tags:
+      - search
+      - files
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: bat
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: cat clone with syntax highlighting and git integration
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install bat
+      status: candidato
+      tags:
+      - files
+      - dev
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: eza
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Modern replacement for ls
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install eza
+      status: candidato
+      tags:
+      - files
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: fzf
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Command-line fuzzy finder
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: brew install fzf
+      status: candidato
+      tags:
+      - search
+      - productivity
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: jq
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Command-line JSON processor
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y jq
+      status: candidato
+      tags:
+      - data
+      - json
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: yq
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: YAML/XML/TOML processor (jq for YAML)
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: pipx install yq
+      status: candidato
+      tags:
+      - data
+      - yaml
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: htop
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Interactive process viewer
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y htop
+      status: candidato
+      tags:
+      - system
+      - monitoring
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: btop
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Resource monitor with TUI
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: snap install btop
+      status: candidato
+      tags:
+      - system
+      - monitoring
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: tldr
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Simplified, community-driven man pages
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: npm i -g tldr
+      status: candidato
+      tags:
+      - docs
+      - knowledge
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: delta
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Syntax-highlighting pager for git/diff
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install git-delta
+      status: candidato
+      tags:
+      - git
+      - dev
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: gh
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: GitHub official command-line tool
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y gh
+      status: candidato
+      tags:
+      - git
+      - github
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: lazygit
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Simple terminal UI for git commands
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: brew install lazygit
+      status: candidato
+      tags:
+      - git
+      - dev
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: httpie
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Human-friendly HTTP client
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: pipx install httpie
+      status: candidato
+      tags:
+      - http
+      - api
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: curlie
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: curl frontend with httpie ergonomics
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: brew install curlie
+      status: candidato
+      tags:
+      - http
+      - api
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: zoxide
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Smarter cd command (autojump)
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install zoxide
+      status: candidato
+      tags:
+      - navigation
+      - productivity
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: starship
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Cross-shell prompt
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install starship
+      status: candidato
+      tags:
+      - shell
+      - productivity
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: tmux
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Terminal multiplexer
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y tmux
+      status: candidato
+      tags:
+      - terminal
+      - productivity
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: ncdu
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Disk usage analyzer with ncurses interface
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y ncdu
+      status: candidato
+      tags:
+      - system
+      - files
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: dust
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Intuitive du alternative
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install du-dust
+      status: candidato
+      tags:
+      - files
+      - system
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: procs
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Modern replacement for ps
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install procs
+      status: candidato
+      tags:
+      - system
+      - monitoring
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: hyperfine
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Command-line benchmarking tool
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install hyperfine
+      status: candidato
+      tags:
+      - benchmark
+      - dev
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: tokei
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Count lines of code quickly
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install tokei
+      status: candidato
+      tags:
+      - dev
+      - metrics
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: sd
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Intuitive find-and-replace (sed alternative)
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install sd
+      status: candidato
+      tags:
+      - text
+      - dev
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: entr
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Run commands when files change
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y entr
+      status: candidato
+      tags:
+      - dev
+      - automation
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: glow
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Render markdown on the CLI
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: brew install glow
+      status: candidato
+      tags:
+      - docs
+      - markdown
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: aria2
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Lightweight multi-protocol download utility
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y aria2
+      status: candidato
+      tags:
+      - download
+      - net
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: rclone
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Sync files to/from cloud storage
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y rclone
+      status: candidato
+      tags:
+      - storage
+      - net
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: pre-commit
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Framework for managing git pre-commit hooks
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: pipx install pre-commit
+      status: candidato
+      tags:
+      - dev
+      - git
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'
+    - name: shellcheck
+      sector: uncategorized
+      kind: tool
+      mode: installed
+      purpose: Static analysis tool for shell scripts
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y shellcheck
+      status: candidato
+      tags:
+      - dev
+      - security
+      provenance:
+        source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+        fetched_at: '2026-06-21T23:39:19.362860+00:00'

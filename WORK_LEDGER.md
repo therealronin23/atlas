@@ -151,9 +151,13 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     con su `mode` por defecto (served/connected/installed). `by_kind`+`of_kind` + navegación POR LÍNEA
     en el tronco (`trunk_kinds`+`trunk_catalog`). "StormMCP por línea" realizado: 1 catálogo, N líneas,
     navegable por dominio Y por kind. Verificado en vivo. 4 tests.
-  - ⬜ PENDIENTE (cadena de suministro por línea, como MCP/skills): seeder de **APIs** (fuente limpia:
-    apis.guru/OpenAPI directory) + seeder de **tools** (pypi/npm o awesome-cli). Otras líneas
-    (prompts/hooks/subagents/plugins/rules) = sembrar de repos awesome-* cuando se priorice.
+  - ✅ **Foundation de sembrado por línea** (`atlas.mcp.line_seed`): `GithubLineSource`+`dirs_to_candidates`
+    (genérico GitHub) + `ApisGuruSource`+`apis_to_candidates` (APIs). UA por defecto + apis.guru allowlisted.
+  - ✅ **TODAS las líneas sembradas** (vía 3 subagentes paralelos, reusando foundation; cero conflicto):
+    apis(150) · tools(30) · prompts(80) · commands(23) · rules(80) · subagents(80) · hooks(12) ·
+    plugins(80) · workflows(80) = **615 candidatos** en `docs/design/seeded/*.yaml`, todos
+    candidato/uncategorized con procedencia. Guard de integridad en tests. Repos fuente verificados por
+    los subagentes. PENDIENTE: triar→clasificar a dominios + prove-it/consent por item (decisión).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

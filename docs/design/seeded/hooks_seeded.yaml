@@ -1,0 +1,166 @@
+_generated:
+  by: seed_lines (line_seed)
+  at: '2026-06-21T23:39:53.144341+00:00'
+  source: https://github.com/disler/claude-code-hooks-mastery/tree/main/.claude/hooks
+  note: 'MÁQUINA-GENERADO, candidato/uncategorized (repo pequeño: sembrados todos
+    los hooks de ciclo de vida reales)'
+sectors:
+  uncategorized:
+    label: Hooks (sin clasificar) — claude-code-hooks-mastery
+    entries:
+    - name: notification
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento notification'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/notification.py
+        -o ~/.claude/hooks/notification.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: permission_request
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento permission_request'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/permission_request.py
+        -o ~/.claude/hooks/permission_request.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: post_tool_use
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento post_tool_use'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/post_tool_use.py
+        -o ~/.claude/hooks/post_tool_use.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: post_tool_use_failure
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento post_tool_use_failure'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/post_tool_use_failure.py
+        -o ~/.claude/hooks/post_tool_use_failure.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: pre_compact
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento pre_compact'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/pre_compact.py
+        -o ~/.claude/hooks/pre_compact.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: pre_tool_use
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento pre_tool_use'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/pre_tool_use.py
+        -o ~/.claude/hooks/pre_tool_use.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: session_end
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento session_end'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/session_end.py
+        -o ~/.claude/hooks/session_end.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: session_start
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento session_start'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/session_start.py
+        -o ~/.claude/hooks/session_start.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: stop
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento stop'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/stop.py
+        -o ~/.claude/hooks/stop.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: subagent_start
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento subagent_start'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/subagent_start.py
+        -o ~/.claude/hooks/subagent_start.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: subagent_stop
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento subagent_stop'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/subagent_stop.py
+        -o ~/.claude/hooks/subagent_stop.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+    - name: user_prompt_submit
+      sector: uncategorized
+      kind: hook
+      purpose: 'Hook de Claude Code: evento user_prompt_submit'
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/user_prompt_submit.py
+        -o ~/.claude/hooks/user_prompt_submit.py
+      status: candidato
+      tags:
+      - lifecycle
+      provenance:
+        source: https://github.com/disler/claude-code-hooks-mastery
+        fetched_at: '2026-06-21T23:39:53.144341+00:00'

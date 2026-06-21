@@ -1,0 +1,286 @@
+_generated:
+  by: scripts/seed_lines_pcr.py
+  at: '2026-06-21T23:39:52.509110+00:00'
+  source: https://github.com/hesreallyhim/awesome-claude-code
+  note: Línea command sembrada desde awesome-claude-code/resources/slash-commands
+    (dir-per-item).
+sectors:
+  uncategorized:
+    label: Sin clasificar
+    entries:
+    - name: act
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/act ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: add-to-changelog
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/add-to-changelog ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: clean
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/clean ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: commit
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/commit ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: context-prime
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/context-prime ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-hook
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-hook ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-jtbd
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-jtbd ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-pr
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-pr ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-prd
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-prd ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-prp
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-prp ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-pull-request
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-pull-request ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: create-worktrees
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-worktrees ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: fix-github-issue
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/fix-github-issue ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: husky
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/husky ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: initref
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/initref ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: load-llms-txt
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/load-llms-txt ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: optimize
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/optimize ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: pr-review
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/pr-review ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: release
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/release ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: testing_plan_integration
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/testing_plan_integration ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: todo
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/todo ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: update-branch-name
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/update-branch-name ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'
+    - name: update-docs
+      sector: uncategorized
+      kind: command
+      purpose: ''
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/update-docs ~/.claude/commands/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/hesreallyhim/awesome-claude-code
+        fetched_at: '2026-06-21T23:39:52.508967+00:00'

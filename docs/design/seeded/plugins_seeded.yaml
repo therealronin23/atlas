@@ -1,0 +1,969 @@
+_generated:
+  by: seed_lines (line_seed)
+  at: '2026-06-21T23:39:53.144341+00:00'
+  source: https://github.com/rohitg00/awesome-claude-code-toolkit/tree/main/plugins
+  note: MÁQUINA-GENERADO, candidato/uncategorized
+sectors:
+  uncategorized:
+    label: Plugins (sin clasificar) — awesome-claude-code-toolkit
+    entries:
+    - name: a11y-audit
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: a11y-audit'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/a11y-audit ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: accessibility-checker
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: accessibility-checker'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/accessibility-checker ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: adr-writer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: adr-writer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/adr-writer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: ai-prompt-lab
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: ai-prompt-lab'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/ai-prompt-lab ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: analytics-reporter
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: analytics-reporter'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/analytics-reporter ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: android-developer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: android-developer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/android-developer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: api-architect
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: api-architect'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/api-architect ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: api-benchmarker
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: api-benchmarker'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/api-benchmarker ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: api-reference
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: api-reference'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/api-reference ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: api-tester
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: api-tester'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/api-tester ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: aws-helper
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: aws-helper'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/aws-helper ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: azure-helper
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: azure-helper'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/azure-helper ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: backend-architect
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: backend-architect'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/backend-architect ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: bug-detective
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: bug-detective'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/bug-detective ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: bundle-analyzer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: bundle-analyzer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/bundle-analyzer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: changelog-gen
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: changelog-gen'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/changelog-gen ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: changelog-writer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: changelog-writer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/changelog-writer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: ci-debugger
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: ci-debugger'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/ci-debugger ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: code-architect
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: code-architect'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/code-architect ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: code-explainer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: code-explainer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/code-explainer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: code-guardian
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: code-guardian'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/code-guardian ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: code-review-assistant
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: code-review-assistant'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/code-review-assistant ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: codebase-documenter
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: codebase-documenter'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/codebase-documenter ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: color-contrast
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: color-contrast'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/color-contrast ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: commit-commands
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: commit-commands'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/commit-commands ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: complexity-reducer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: complexity-reducer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/complexity-reducer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: compliance-checker
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: compliance-checker'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/compliance-checker ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: content-creator
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: content-creator'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/content-creator ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: context7-docs
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: context7-docs'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/context7-docs ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: contract-tester
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: contract-tester'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/contract-tester ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: create-worktrees
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: create-worktrees'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/create-worktrees ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: cron-scheduler
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: cron-scheduler'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/cron-scheduler ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: css-cleaner
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: css-cleaner'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/css-cleaner ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: data-privacy
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: data-privacy'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/data-privacy ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: database-optimizer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: database-optimizer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/database-optimizer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: dead-code-finder
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: dead-code-finder'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/dead-code-finder ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: debug-session
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: debug-session'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/debug-session ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: dependency-manager
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: dependency-manager'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/dependency-manager ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: deploy-pilot
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: deploy-pilot'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/deploy-pilot ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: desktop-app
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: desktop-app'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/desktop-app ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: devops-automator
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: devops-automator'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/devops-automator ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: discuss
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: discuss'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/discuss ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: doc-forge
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: doc-forge'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/doc-forge ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: docker-helper
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: docker-helper'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/docker-helper ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: double-check
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: double-check'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/double-check ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: e2e-runner
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: e2e-runner'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/e2e-runner ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: embedding-manager
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: embedding-manager'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/embedding-manager ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: env-manager
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: env-manager'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/env-manager ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: env-sync
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: env-sync'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/env-sync ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: experiment-tracker
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: experiment-tracker'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/experiment-tracker ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: explore
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: explore'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/explore ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: feature-dev
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: feature-dev'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/feature-dev ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: finance-tracker
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: finance-tracker'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/finance-tracker ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: fix-github-issue
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: fix-github-issue'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/fix-github-issue ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: fix-pr
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: fix-pr'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/fix-pr ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: flutter-mobile
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: flutter-mobile'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/flutter-mobile ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: frontend-developer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: frontend-developer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/frontend-developer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: gcp-helper
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: gcp-helper'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/gcp-helper ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: git-flow
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: git-flow'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/git-flow ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: github-issue-manager
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: github-issue-manager'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/github-issue-manager ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: helm-charts
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: helm-charts'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/helm-charts ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: import-organizer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: import-organizer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/import-organizer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: infrastructure-maintainer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: infrastructure-maintainer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/infrastructure-maintainer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: ios-developer
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: ios-developer'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/ios-developer ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: k8s-helper
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: k8s-helper'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/k8s-helper ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: license-checker
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: license-checker'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/license-checker ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: lighthouse-runner
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: lighthouse-runner'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/lighthouse-runner ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: linear-helper
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: linear-helper'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/linear-helper ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: load-tester
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: load-tester'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/load-tester ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: memory-profiler
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: memory-profiler'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/memory-profiler ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: migrate-tool
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: migrate-tool'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/migrate-tool ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: migration-generator
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: migration-generator'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/migration-generator ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: model-context-protocol
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: model-context-protocol'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/model-context-protocol ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: model-evaluator
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: model-evaluator'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/model-evaluator ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: monitoring-setup
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: monitoring-setup'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/monitoring-setup ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: monorepo-manager
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: monorepo-manager'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/monorepo-manager ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: mutation-tester
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: mutation-tester'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/mutation-tester ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: n8n-workflow
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: n8n-workflow'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/n8n-workflow ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: onboarding-guide
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: onboarding-guide'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/onboarding-guide ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'
+    - name: openapi-expert
+      sector: uncategorized
+      kind: plugin
+      purpose: 'Plugin de Claude Code: openapi-expert'
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/openapi-expert ~/.claude/plugins/
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/rohitg00/awesome-claude-code-toolkit
+        fetched_at: '2026-06-21T23:39:53.618626+00:00'

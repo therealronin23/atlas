@@ -1,0 +1,1049 @@
+_generated:
+  by: seed_lines (line_seed)
+  at: '2026-06-21T23:39:53.144341+00:00'
+  source: https://github.com/Zie619/n8n-workflows/tree/main/workflows
+  note: MÁQUINA-GENERADO, candidato/uncategorized
+sectors:
+  uncategorized:
+    label: Workflows (sin clasificar) — n8n-workflows
+    entries:
+    - name: Activecampaign
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Activecampaign'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Activecampaign/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Acuityscheduling
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Acuityscheduling'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Acuityscheduling/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Affinity
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Affinity'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Affinity/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Aggregate
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Aggregate'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Aggregate/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Airtable
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Airtable'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Airtable/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Airtabletool
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Airtabletool'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Airtabletool/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Airtoptool
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Airtoptool'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Airtoptool/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Amqp
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Amqp'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Amqp/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Apitemplateio
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Apitemplateio'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Apitemplateio/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Asana
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Asana'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Asana/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Automate
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Automate'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Automate/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Automation
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Automation'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Automation/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Autopilot
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Autopilot'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Autopilot/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Awsrekognition
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Awsrekognition'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Awsrekognition/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Awss3
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Awss3'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Awss3/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Awssns
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Awssns'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Awssns/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Awstextract
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Awstextract'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Awstextract/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Bannerbear
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Bannerbear'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Bannerbear/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Baserow
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Baserow'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Baserow/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Beeminder
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Beeminder'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Beeminder/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Bitbucket
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Bitbucket'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Bitbucket/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Bitly
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Bitly'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Bitly/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Bitwarden
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Bitwarden'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Bitwarden/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Box
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Box'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Box/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Calcslive
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Calcslive'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Calcslive/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Calendly
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Calendly'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Calendly/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Chargebee
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Chargebee'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Chargebee/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Clickup
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Clickup'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Clickup/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Clockify
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Clockify'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Clockify/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Code
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Code'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Code/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Coingecko
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Coingecko'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Coingecko/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Comparedatasets
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Comparedatasets'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Comparedatasets/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Compression
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Compression'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Compression/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Convertkit
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Convertkit'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Convertkit/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Converttofile
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Converttofile'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Converttofile/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Copper
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Copper'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Copper/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Cortex
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Cortex'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Cortex/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Create
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Create'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Create/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Cron
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Cron'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Cron/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Crypto
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Crypto'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Crypto/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Customerio
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Customerio'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Customerio/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Datetime
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Datetime'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Datetime/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Debughelper
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Debughelper'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Debughelper/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Deep
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Deep'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Deep/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Discord
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Discord'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Discord/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Discordtool
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Discordtool'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Discordtool/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Dropbox
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Dropbox'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Dropbox/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Editimage
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Editimage'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Editimage/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Elasticsearch
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Elasticsearch'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Elasticsearch/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Emailreadimap
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Emailreadimap'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Emailreadimap/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Emailsend
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Emailsend'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Emailsend/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Emelia
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Emelia'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Emelia/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Error
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Error'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Error/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Eventbrite
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Eventbrite'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Eventbrite/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Executecommand
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Executecommand'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Executecommand/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Executeworkflow
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Executeworkflow'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Executeworkflow/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Executiondata
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Executiondata'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Executiondata/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Export
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Export'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Export/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Extractfromfile
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Extractfromfile'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Extractfromfile/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Facebook
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Facebook'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Facebook/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Facebookleadads
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Facebookleadads'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Facebookleadads/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Figma
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Figma'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Figma/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Filter
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Filter'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Filter/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Flow
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Flow'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Flow/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Form
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Form'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Form/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Functionitem
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Functionitem'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Functionitem/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Getresponse
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Getresponse'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Getresponse/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Github
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Github'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Github/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Gitlab
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Gitlab'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Gitlab/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Gmail
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Gmail'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Gmail/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Gmailtool
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Gmailtool'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Gmailtool/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googleanalytics
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googleanalytics'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googleanalytics/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googlebigquery
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googlebigquery'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googlebigquery/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googlecalendar
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googlecalendar'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googlecalendar/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googlecalendartool
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googlecalendartool'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googlecalendartool/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googlecontacts
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googlecontacts'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googlecontacts/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googledocs
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googledocs'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googledocs/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googledrive
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googledrive'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googledrive/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googledrivetool
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googledrivetool'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googledrivetool/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'
+    - name: Googlesheets
+      sector: uncategorized
+      kind: workflow
+      purpose: 'Workflows n8n para la integración: Googlesheets'
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows; import n8n workflow
+        from workflows/Googlesheets/
+      status: candidato
+      tags:
+      - n8n
+      provenance:
+        source: https://github.com/Zie619/n8n-workflows
+        fetched_at: '2026-06-21T23:39:54.277653+00:00'

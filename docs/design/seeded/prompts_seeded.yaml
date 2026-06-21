@@ -1,0 +1,893 @@
+_generated:
+  by: scripts/seed_lines_pcr.py
+  at: '2026-06-21T23:39:52.082865+00:00'
+  source: https://github.com/ai-boost/awesome-prompts
+  note: Línea prompt sembrada desde awesome-prompts (file-per-item .txt/.md).
+sectors:
+  uncategorized:
+    label: Sin clasificar
+    entries:
+    - name: 3d-generative-artist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/3D_Generative_Artist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: ai-ethics-reviewer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/AI_Ethics_Reviewer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: academic-peer-reviewer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Academic_Peer_Reviewer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: adaptive-learning-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Adaptive_Learning_Designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agile-transformation-lead
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Agile_Transformation_Lead.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: autogpt
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/AutoGPT.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: beauty-dnd
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Beauty_DND.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: cinematography-prompt-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Cinematography_Prompt_Engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: clinical-research-coordinator
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Clinical_Research_Coordinator.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: contract-negotiation-strategist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Contract_Negotiation_Strategist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: creative-writing-coach
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Creative_Writing_Coach.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: cross-cultural-communication-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Cross_Cultural_Communication_Designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: data-governance-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Data_Governance_Architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: data-platform-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Data_Platform_Architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: deep-work-facilitator
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Deep_Work_Facilitator.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: executive-operations-partner
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Executive_Operations_Partner.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: game-economy-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Game_Economy_Designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: game-level-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Game_Level_Designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: health-informatics-specialist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Health_Informatics_Specialist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: immersive-narrative-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Immersive_Narrative_Designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: knowledge-base-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Knowledge_Base_Architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: learnos-pro
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/LearnOS_PRO.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: literature-professor
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Literature_Professor.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: localization-globalization-strategist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Localization_Globalization_Strategist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: mlops-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/MLOps_Engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: meta-mj
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Meta
+        MJ.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: mr-ranedeer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Mr_Ranedeer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: personal-knowledge-assistant
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Personal_Knowledge_Assistant.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: project-recovery-specialist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Project_Recovery_Specialist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: prompt-creater
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Prompt
+        Creater.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: quicksilver-os
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/QuickSilver
+        OS.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: regulatory-affairs-specialist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Regulatory_Affairs_Specialist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: superprompt
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/SuperPrompt.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: technical-documentation-strategist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Technical_Documentation_Strategist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: technical-program-manager
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Technical_Program_Manager.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: technical-translator-localizer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Technical_Translator_Localizer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: vampire-the-masquerade-lore-expert
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/Vampire
+        The Masquerade Lore Expert.md
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: a2a-agent-protocol-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/a2a_agent_protocol_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: a2ui-agent-to-user-interface-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/a2ui_agent_to_user_interface_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: academic-paper-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/academic_paper_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: accessibility-auditor
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/accessibility_auditor.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: adhd-parallel-ideation-skill
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/adhd_parallel_ideation_skill.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: adk-skilltoolset-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/adk_skilltoolset_designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: ag-ui-frontend-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/ag_ui_frontend_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-context-efficiency-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_context_efficiency_engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-cooperation-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_cooperation_designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-cost-observability-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_cost_observability_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-eval-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_eval_designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-first-language-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_first_language_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-governance-orchestrator
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_governance_orchestrator.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-harness-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_harness_designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-harness-performance-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_harness_performance_engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-memory-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_memory_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-permission-auto-mode-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_permission_auto_mode_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-powered-vulnerability-scanner-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_powered_vulnerability_scanner_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-protocol-advisor
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_protocol_advisor.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-red-team-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_red_team_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-reliability-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_reliability_engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-skill-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_skill_designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-skill-optimizer-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_skill_optimizer_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-skill-supply-chain-auditor
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_skill_supply_chain_auditor.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-state-hygiene-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_state_hygiene_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-style-enforcer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_style_enforcer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-tool-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_tool_engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-trajectory-triage-specialist
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_trajectory_triage_specialist.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-virtual-filesystem-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_virtual_filesystem_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agent-world-model-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_world_model_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agentic-cad-hardware-designer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agentic_cad_hardware_designer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agentic-code-reasoner
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agentic_code_reasoner.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agentic-coder
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agentic_coder.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agentic-company-orchestrator
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agentic_company_orchestrator.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agentic-video-editor
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agentic_video_editor.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agents-best-practices
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agents_best_practices.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: agents-md-author
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agents_md_author.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: ai-co-mathematician
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/ai_co_mathematician.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: ai-governance-legal-agent
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/ai_governance_legal_agent.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: ai-native-product-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/ai_native_product_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: analytics-engineer
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/analytics_engineer.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: andrej-karpathy-coding-guidelines
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/andrej_karpathy_coding_guidelines.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+    - name: anti-ai-slop-design-architect
+      sector: uncategorized
+      kind: prompt
+      purpose: ''
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/anti_ai_slop_design_architect.txt
+      status: candidato
+      tags: []
+      provenance:
+        source: https://github.com/ai-boost/awesome-prompts
+        fetched_at: '2026-06-21T23:39:52.077633+00:00'
