@@ -41,14 +41,14 @@ def _agg(dispatcher=None):
 
 def test_sectors_groups_live_roots_by_catalog_sector() -> None:
     sectors = {s["sector"]: s for s in _agg().sectors()}
-    # Las raíces vivas se agrupan por su sector del catálogo.
-    assert "operating" in sectors
-    assert "memory-knowledge" in sectors
-    # operating solo tiene atlas-operating (1 tool: sanitation_audit)
-    assert sectors["operating"]["tool_count"] == 1
+    # Las raíces vivas se agrupan por su sector (dominio) del catálogo v3.
+    assert "infraestructura" in sectors      # atlas-operating vive aquí (operación)
+    assert "conocimiento-memoria" in sectors  # atlas-memory + atlas-knowledge
+    # infraestructura solo tiene atlas-operating (1 tool: sanitation_audit)
+    assert sectors["infraestructura"]["tool_count"] == 1
     # cada sector trae label + cuenta, NO los schemas (lazy)
-    assert sectors["operating"]["label"]
-    assert "tools" not in sectors["operating"]
+    assert sectors["infraestructura"]["label"]
+    assert "tools" not in sectors["infraestructura"]
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ def test_sectors_groups_live_roots_by_catalog_sector() -> None:
 
 
 def test_tools_in_sector_returns_tools_with_root_and_purpose() -> None:
-    tools = _agg().tools_in("operating")
+    tools = _agg().tools_in("infraestructura")
     names = {t["name"] for t in tools}
     assert "sanitation_audit" in names
     san = next(t for t in tools if t["name"] == "sanitation_audit")

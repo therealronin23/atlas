@@ -96,8 +96,8 @@ def test_real_catalog_loads_and_is_classified() -> None:
     entries = load_catalog(_CATALOG)
     assert entries, "el catálogo real debe tener entradas"
     tax = sectors(entries)
-    # Sectores que pediste explícitamente (coding, frontend/diseño, research, etc.)
-    for required in ("coding", "design-frontend", "research", "memory-knowledge", "commodity-infra"):
+    # Dominios humanos autoexplicativos (v3).
+    for required in ("programacion", "diseno", "ciberseguridad", "conocimiento-memoria", "infraestructura"):
         assert required in tax, f"falta sector {required}"
     # Toda entrada tiene un sector y un estado válido.
     for e in entries:
@@ -154,6 +154,80 @@ def test_v2_fields_parse_with_defaults(tmp_path: Path) -> None:
     # mcp sin tags → tags = [sector]; sin mode → default "connected"
     assert m.tags == ["coding"]
     assert m.mode == "connected"
+
+
+_V3 = """
+sectors:
+  ciberseguridad:
+    label: Ciberseguridad
+    desc: Atacar y defender sistemas.
+    aliases: [security, seguridad, infosec]
+    subsectors:
+      pentesting: {label: Pentesting, aliases: [redteam, ofensiva]}
+      defensa: {label: Defensa}
+    entries:
+      - {name: Trail of Bits, kind: skill, subsector: pentesting, status: candidato}
+  programacion:
+    label: Programación
+    aliases: [coding]
+    subsectors:
+      testing: {label: Testing}
+    entries:
+      - {name: atlas-trunk-f, kind: mcp, subsector: testing, phase: 4, status: instalado}
+"""
+
+
+def test_v3_entry_has_subsector_and_phase(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+
+    p = tmp_path / "v3.yaml"
+    p.write_text(_V3, encoding="utf-8")
+    by_name = {e.name: e for e in load_catalog(p)}
+    assert by_name["Trail of Bits"].subsector == "pentesting"
+    assert by_name["atlas-trunk-f"].phase == 4
+    assert by_name["Trail of Bits"].phase is None  # opcional
+
+
+def test_load_taxonomy_declares_domains_subsectors_aliases(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_taxonomy
+
+    p = tmp_path / "v3.yaml"
+    p.write_text(_V3, encoding="utf-8")
+    tax = load_taxonomy(p)
+    assert tax["ciberseguridad"]["label"] == "Ciberseguridad"
+    assert "seguridad" in tax["ciberseguridad"]["aliases"]
+    assert "pentesting" in tax["ciberseguridad"]["subsectors"]
+    assert "redteam" in tax["ciberseguridad"]["subsectors"]["pentesting"]["aliases"]
+
+
+def test_find_matches_name_purpose_and_aliases(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import find, load_catalog, load_taxonomy
+
+    p = tmp_path / "v3.yaml"
+    p.write_text(_V3, encoding="utf-8")
+    entries, tax = load_catalog(p), load_taxonomy(p)
+
+    # por alias de sector ("seguridad" → ciberseguridad) encuentra su entrada
+    hits = find(entries, tax, "seguridad")
+    assert any(h["name"] == "Trail of Bits" for h in hits)
+    # por alias de subsector ("redteam" → pentesting)
+    assert any(h["subsector"] == "pentesting" for h in find(entries, tax, "redteam"))
+    # por nombre directo
+    assert find(entries, tax, "trail")[0]["name"] == "Trail of Bits"
+    # cada hit trae el camino sector/subsector (accesible sin navegar)
+    h = find(entries, tax, "trail")[0]
+    assert h["sector"] == "ciberseguridad" and h["subsector"] == "pentesting"
+
+
+def test_find_orders_mature_first(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import find, load_catalog, load_taxonomy
+
+    p = tmp_path / "v3.yaml"
+    p.write_text(_V3, encoding="utf-8")
+    entries, tax = load_catalog(p), load_taxonomy(p)
+    # "test" casa con atlas-trunk-f (instalado, subsector testing) y nada más maduro
+    hits = find(entries, tax, "test")
+    assert hits[0]["status"] == "instalado"
 
 
 def test_in_sector_matches_any_tag(tmp_path: Path) -> None:

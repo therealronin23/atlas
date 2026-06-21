@@ -62,3 +62,25 @@ def test_trunk_serves_get_skill_tool(tmp_path: Path) -> None:
 
     names = {t.name for t in asyncio.run(server.list_tools())}
     assert {"get_skill", "list_skills"} <= names
+
+
+def test_trunk_3level_nav_and_find() -> None:
+    import asyncio
+    from pathlib import Path
+
+    import pytest
+
+    pytest.importorskip("mcp")
+
+    from atlas.mcp.catalog import load_catalog, load_taxonomy
+    from atlas.mcp.trunk_aggregator import TrunkAggregator
+    from atlas.mcp.trunk_manifest import native_roots
+    from atlas.mcp.trunk_server import build_trunk_server
+
+    cat = Path(__file__).resolve().parent.parent / "docs" / "design" / "mcp_catalog.yaml"
+    catalog, tax = load_catalog(cat), load_taxonomy(cat)
+    agg = TrunkAggregator(catalog=catalog, roots=native_roots(), dispatcher=lambda f, a: "x")
+    server = build_trunk_server(agg, catalog=catalog, taxonomy=tax)
+    names = {t.name for t in asyncio.run(server.list_tools())}
+    # navegación 3 niveles + buscador
+    assert {"trunk_sectors", "trunk_subsectors", "trunk_tools", "trunk_find"} <= names
