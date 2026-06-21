@@ -62,15 +62,18 @@ class TrunkAggregator:
 
     # -- Nivel 2: drill-down a un sector ----------------------------------
 
-    def tools_in(self, sector: str) -> list[dict[str, Any]]:
+    def tools_in(self, sector: str, subsector: str | None = None) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for server, tools in self._servers.items():
             entry = self._meta.get(server)
             if (entry.sector if entry else "unclassified") != sector:
                 continue
+            if subsector is not None and (entry.subsector if entry else "") != subsector:
+                continue
             purpose = entry.purpose if entry else ""
+            sub = entry.subsector if entry else ""
             for tool in tools:
-                out.append({"name": tool, "root": server, "purpose": purpose})
+                out.append({"name": tool, "root": server, "subsector": sub, "purpose": purpose})
         return out
 
     # -- Dispatch: enruta a la raíz dueña vía namespacing -----------------

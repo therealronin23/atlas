@@ -127,6 +127,12 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     commodity-infra (13) → `trunk_invoke echo` enruta y responde. La visión completa, en vivo.
   - ✅ **C CERRADO**: catálogo v2 + tronco catalog-driven + skills servidos + sembrado del registro
     (100) + instalador por mode con veto + e2e externo verificado. Maquinaria + flujo demostrados.
+  - ✅ **Taxonomía v3 — dominios humanos** (a petición del usuario: autoexplicativos, sin manual):
+    9 sectores (programación/diseño/ciberseguridad/datos/investigación/conocimiento-memoria/
+    productividad/ia-agentes/infraestructura) × subsectores, con alias y solapamiento por tags.
+    `load_taxonomy` + `find` (buscador por nombre/alias, madurez-first) + navegación de 3 niveles en el
+    tronco (`trunk_sectors`/`trunk_subsectors`/`trunk_tools`/`trunk_find`). `phase` para desarrollos
+    nuestros. Verificado en vivo (find 'seguridad'→Trail+Playwright vía tag). Catálogo curado remapeado.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

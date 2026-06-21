@@ -90,10 +90,16 @@ def trunk_children(
 
 
 def build_trunk_server(
-    agg: TrunkAggregator, *, name: str = "atlas-trunk", skill_store: "SkillStore | None" = None
+    agg: TrunkAggregator,
+    *,
+    name: str = "atlas-trunk",
+    skill_store: "SkillStore | None" = None,
+    catalog: "list[CatalogEntry] | None" = None,
+    taxonomy: dict[str, Any] | None = None,
 ) -> "FastMCP":
-    """Servidor FastMCP que expone la fachada meta lazy del tronco. Si se da un
-    `skill_store`, sirve skills como contenido (get_skill/list_skills + resources)."""
+    """Servidor FastMCP que expone la fachada meta lazy del tronco (navegación de 3
+    niveles + buscador). Con `skill_store` sirve skills; con `catalog`+`taxonomy`
+    expone `trunk_subsectors` y `trunk_find` (salto directo, sin manual)."""
     from mcp.server.fastmcp import FastMCP
 
     server = FastMCP(name)
@@ -104,14 +110,30 @@ def build_trunk_server(
         return agg.sectors()
 
     @server.tool()
-    def trunk_tools(sector: str) -> list[dict[str, Any]]:
-        """Tools de un sector (nivel 2): baja aquí solo cuando sabes el sector."""
-        return agg.tools_in(sector)
+    def trunk_tools(sector: str, subsector: str | None = None) -> list[dict[str, Any]]:
+        """Tools de un sector (nivel 3): opcionalmente filtra por subsector."""
+        return agg.tools_in(sector, subsector)
 
     @server.tool()
     def trunk_invoke(tool: str, args: dict[str, Any] | None = None) -> Any:
         """Ejecuta una tool, enrutada a su raíz dueña (con audit/seguridad detrás)."""
         return agg.invoke(tool, args or {})
+
+    if taxonomy is not None:
+        @server.tool()
+        def trunk_subsectors(sector: str) -> list[dict[str, Any]]:
+            """Subsectores de un sector (nivel 2): el mapa fino, sin manual."""
+            sub = (taxonomy.get(sector) or {}).get("subsectors", {})
+            return [{"id": sid, "label": s["label"]} for sid, s in sub.items()]
+
+    if catalog is not None and taxonomy is not None:
+        from atlas.mcp.catalog import find as _find
+
+        @server.tool()
+        def trunk_find(query: str) -> list[dict[str, Any]]:
+            """Salto directo: busca por nombre/alias (p.ej. 'seguridad', 'figma') y
+            devuelve el camino sector/subsector, madurez-first. No hace falta navegar."""
+            return _find(catalog, taxonomy, query)
 
     if skill_store is not None:
         @server.tool()
@@ -131,11 +153,12 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     """Entry stdio del tronco: arranca un McpRegistry sobre las 3 raíces (Merkle +
     SentinelGate), las frontea con descubrimiento lazy por sector, y sirve UNA
     conexión. El cliente se conecta SOLO aquí."""
-    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.catalog import load_catalog, load_taxonomy
     from atlas.mcp.registry import McpRegistry
 
     catalog_path = Path(repo_root) / "docs" / "design" / "mcp_catalog.yaml"
     catalog = load_catalog(catalog_path)
+    taxonomy = load_taxonomy(catalog_path)
     # Hijos DERIVADOS DEL CATÁLOGO (paso 2): nuestras raíces + externos verificados.
     registry = McpRegistry(trunk_children(catalog, save_dir=save_dir, repo_root=repo_root))
     registry.start_all()
@@ -147,7 +170,9 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     from atlas.mcp.skills_store import SkillStore
 
     store = SkillStore(Path(repo_root) / "docs" / "skills")
-    server = build_trunk_server(agg, name=name, skill_store=store)
+    server = build_trunk_server(
+        agg, name=name, skill_store=store, catalog=catalog, taxonomy=taxonomy
+    )
     try:
         server.run()
     finally:

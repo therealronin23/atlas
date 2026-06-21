@@ -44,6 +44,8 @@ class CatalogEntry:
     status: str
     tags: list[str]
     mode: str
+    subsector: str = ""
+    phase: int | None = None
     version: str = ""
     license: str = ""
     trust: str = ""
@@ -79,6 +81,8 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
                     status=status,
                     tags=tags,
                     mode=mode,
+                    subsector=str(raw.get("subsector", "")),
+                    phase=raw.get("phase") if isinstance(raw.get("phase"), int) else None,
                     version=str(raw.get("version", "")),
                     license=str(raw.get("license", "")),
                     trust=str(raw.get("trust", "")),
@@ -86,6 +90,69 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
                 )
             )
     return out
+
+
+def load_taxonomy(path: Path) -> dict[str, Any]:
+    """Declara la taxonomía: dominio → {label, desc, aliases, subsectors}. Es el
+    'mapa sin manual' (nombres humanos + alias para que se encuentre como se diga)."""
+    data: dict[str, Any] = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    out: dict[str, Any] = {}
+    for sector_id, block in (data.get("sectors") or {}).items():
+        block = block or {}
+        out[sector_id] = {
+            "label": str(block.get("label", sector_id)),
+            "desc": str(block.get("desc", "")),
+            "aliases": [str(a) for a in (block.get("aliases") or [])],
+            "subsectors": {
+                sid: {
+                    "label": str((sub or {}).get("label", sid)),
+                    "aliases": [str(a) for a in ((sub or {}).get("aliases") or [])],
+                }
+                for sid, sub in (block.get("subsectors") or {}).items()
+            },
+        }
+    return out
+
+
+_MATURITY = {"instalado": 0, "verificado": 1, "candidato": 2}
+
+
+def find(
+    entries: list[CatalogEntry], taxonomy: dict[str, Any], query: str, limit: int = 10
+) -> list[dict[str, Any]]:
+    """Buscador 'sin manual': casa `query` contra nombre/propósito/tags/kind y
+    contra los ALIAS de sector y subsector (para que se encuentre como cada uno lo
+    diga: 'seguridad'→ciberseguridad, 'redteam'→pentesting). Devuelve el camino
+    sector/subsector, ordenado madurez-first. Salto directo, sin navegar."""
+    q = query.strip().lower()
+    if not q:
+        return []
+    # Sectores/subsectores cuyo id/label/alias casa la query → expanden el match.
+    sec_hit, sub_hit = set(), set()
+    for sid, sblock in taxonomy.items():
+        if q in sid.lower() or q in sblock["label"].lower() or any(q in a.lower() for a in sblock["aliases"]):
+            sec_hit.add(sid)
+        for subid, sub in sblock["subsectors"].items():
+            if q in subid.lower() or q in sub["label"].lower() or any(q in a.lower() for a in sub["aliases"]):
+                sub_hit.add((sid, subid))
+
+    hits: list[dict[str, Any]] = []
+    for e in entries:
+        match = (
+            q in e.name.lower()
+            or q in e.purpose.lower()
+            or q in e.kind.lower()
+            or any(q in t.lower() for t in e.tags)
+            or e.sector in sec_hit
+            or (e.sector, e.subsector) in sub_hit
+        )
+        if match:
+            hits.append({
+                "name": e.name, "sector": e.sector, "subsector": e.subsector,
+                "kind": e.kind, "status": e.status,
+            })
+    hits.sort(key=lambda h: (_MATURITY.get(h["status"], 3), h["name"].lower()))
+    return hits[:limit]
 
 
 def in_sector(entries: list[CatalogEntry], sector: str) -> list[CatalogEntry]:
