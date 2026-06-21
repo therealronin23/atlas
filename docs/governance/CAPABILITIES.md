@@ -23,7 +23,7 @@ Actualizar al cerrar cada nodo. Última pasada: 2026-06-21.
 | Capa de afinidad/maduración (affinity_maturation, scorers, llm_scorer) | **no-cableado** → cuarentena F3 2026-06-21 | es la DETECCIÓN que 1c midió que reconoce tema, no intención; 0 consumidores |
 | gossip/witness (split-view RFC 9162) | **no-cableado** → cuarentena F3 | exige ≥2 operadores independientes (no existen); 0 consumidores |
 | security_worker / fuzzing / red_team (en src) | **fuera de sitio** → cuarentena F3 | red-team en src viola ADR-056 (dev-only); security_worker sin uso |
-| Lazo de aprendizaje AUDITABLE (live_loop + teacher_debate) | **no-cableado → CABLEANDO** | eje ganador (procedencia), NO detección; siguiente: cablear + test de integración |
-| Knowledge missions (`knowledge/mission`) | **no-cableado → CABLEANDO** | funcional de verdad (ingesta+verificación); siguiente: consumidor + integración |
+| Lazo de aprendizaje AUDITABLE (live_loop + teacher_debate) | **cableado + probado** | test de integración end-to-end (gateway escala→GatedLessonRecorder→TeacherDebate→LessonStore→Merkle verify_chain). Funcional/probado; valor PLENO solo con tráfico vivo. Es procedencia auditable, NO detección |
+| Knowledge missions (`knowledge/mission` + `knowledge/run.py`) | **cableado + funcional** | `run_mission()` consumidor no-test + integración (ingesta+verificación reales, camino feliz y rechazo). Funcional de verdad ya |
 
 Pendiente de declarar al avanzar: shadow_model, behavioral, bwrap_jail (slices 2-5).

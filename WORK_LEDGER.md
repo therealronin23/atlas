@@ -35,11 +35,12 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
 - ✅ **Huérfanos cerrados** (0 importadores no-test) → cuarentena: witness_server, log_behavioral,
   kyc_binding (+ tests). Registrados en CAPABILITIES + graveyard MANIFEST. Suite 2041 verde.
 - ✅ **F2** docs/ reorganizado a la taxonomía (refs actualizadas, 0 stale)
-- 🔄 **F3** código muerto: auditoría destapó clúster grande no-cableado.
+- ✅ **F3** código muerto cerrado.
   - ✅ cuarentena F3 (reversible, `_graveyard/2026-06-21-f3/WHY.md`): affinity_maturation, scorers,
-    llm_scorer, security_worker, fuzzing, red_team, gossip, witness (+tests). Suite 1870 verde.
-  - ⬜ **CABLEAR lazo auditable** (live_loop+teacher_debate) + test integración ← SIGUIENTE
-  - ⬜ **CABLEAR mission** (consumidor + integración)
+    llm_scorer, security_worker, fuzzing, red_team, gossip, witness (+tests).
+  - ✅ lazo auditable CABLEADO + probado (`tests/test_live_loop_integration.py`, vía autobuild)
+  - ✅ mission CABLEADO funcional (`knowledge/run.py` + `tests/test_knowledge_mission_integration.py`)
+  - suite 1875 verde. (FYI: `cli.py` WIP del usuario tiene 13 errores mypy — no nuestros)
 - ⬜ **F4** migrar Gates/seals + cierres roll-up
 - ⬜ ciclo de saneamiento recurrente establecido
 
