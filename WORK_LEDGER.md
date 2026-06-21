@@ -101,8 +101,13 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     entradas en 14 SECTORES) = el eje de clasificación del tronco. Loader `atlas.mcp.catalog`
     (sector/kind/status) + instalador (`scripts/mcp_install.py`) que reporta por sector. md = narrativa,
     YAML = fuente máquina. Viejo parser markdown (`installer.py`) retirado. 5+ tests.
-  - ⬜ FALTA: verificar candidatos (prove-it, 0 `verificado` aún) + implementar la EJECUCIÓN de
-    instalación (resolver→descargar→colocar). ← SIGUIENTE en C.
+  - ✅ Auditoría + premortem (`docs/design/mcp_sector_architecture_audit.md`): arquitectura =
+    sectores LÓGICOS + spawn perezoso (NO proceso-por-sector); skills vía `get_skill`+prompt+resource.
+  - ✅ Paso 0 SPIKE: FastMCP sirve tool+prompt+resource (listables/recuperables) → mecanismo de skills OK.
+  - ✅ Paso 1 catálogo v2: tags multi-sector, mode (served/connected/installed), version/license/trust/
+    transport + `in_sector` (sector = vista). Retrocompatible. 7 tests.
+  - ⬜ SIGUIENTE: paso 2 tronco dirigido por catálogo (sectores lógicos + spawn perezoso) · 3 skills
+    servidos E2E · 4 sembrar registro oficial · 5 prove-it→verificado · 6 instalador por mode.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

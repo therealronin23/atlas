@@ -109,3 +109,59 @@ def test_real_catalog_installs_nothing_unverified() -> None:
     from atlas.mcp.catalog import installable, load_catalog
 
     assert installable(load_catalog(_CATALOG)) == []
+
+
+# ---------------------------------------------------------------------------
+# Catálogo v2: tags multi-sector + mode operativo + metadatos
+# ---------------------------------------------------------------------------
+
+_V2 = """
+sectors:
+  coding:
+    label: Coding
+    entries:
+      - name: Karpathy
+        kind: skill
+        purpose: reglas
+        tags: [coding, productivity-meta]
+        version: "1.0"
+        license: MIT
+        trust: unvetted
+        status: candidato
+      - name: atlas-memory
+        kind: mcp
+        purpose: sustrato
+        source: atlas.mcp.memory_server
+        status: instalado
+"""
+
+
+def test_v2_fields_parse_with_defaults(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+
+    p = tmp_path / "v2.yaml"
+    p.write_text(_V2, encoding="utf-8")
+    by_name = {e.name: e for e in load_catalog(p)}
+
+    k = by_name["Karpathy"]
+    assert k.tags == ["coding", "productivity-meta"]   # multi-sector explícito
+    assert k.version == "1.0" and k.license == "MIT" and k.trust == "unvetted"
+    # skill sin mode explícito → default "served" (lo servimos, sin descarga)
+    assert k.mode == "served"
+
+    m = by_name["atlas-memory"]
+    # mcp sin tags → tags = [sector]; sin mode → default "connected"
+    assert m.tags == ["coding"]
+    assert m.mode == "connected"
+
+
+def test_in_sector_matches_any_tag(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import in_sector, load_catalog
+
+    p = tmp_path / "v2.yaml"
+    p.write_text(_V2, encoding="utf-8")
+    entries = load_catalog(p)
+    # Karpathy aparece en AMBOS sectores por sus tags (sector = vista, no carpeta).
+    coding = {e.name for e in in_sector(entries, "coding")}
+    prod = {e.name for e in in_sector(entries, "productivity-meta")}
+    assert "Karpathy" in coding and "Karpathy" in prod

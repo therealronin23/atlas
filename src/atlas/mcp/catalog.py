@@ -23,6 +23,13 @@ import yaml
 
 _STATES = {"candidato", "verificado", "instalado"}
 _KINDS = {"skill", "mcp", "api", "tool"}
+_MODES = {"served", "connected", "installed"}
+
+# Modo operativo por defecto según kind (cuando el YAML no lo declara):
+#   served    = lo servimos inline (sin descarga): skills-como-prompt, APIs envueltas.
+#   connected = MCP server (nuestro o externo) al que el tronco se conecta.
+#   installed = skill colocado en el dir (solo si no se sirve).
+_DEFAULT_MODE = {"mcp": "connected", "api": "served", "skill": "served", "tool": "installed"}
 
 
 @dataclass(frozen=True)
@@ -35,6 +42,12 @@ class CatalogEntry:
     source: str
     install: str
     status: str
+    tags: list[str]
+    mode: str
+    version: str = ""
+    license: str = ""
+    trust: str = ""
+    transport: str = ""
 
 
 def load_catalog(path: Path) -> list[CatalogEntry]:
@@ -50,6 +63,10 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
             kind = str(raw.get("kind", "")).strip()
             if kind not in _KINDS:
                 raise ValueError(f"kind inválido {kind!r} en {raw.get('name')!r}")
+            tags = [str(t) for t in (raw.get("tags") or [])] or [str(sector_id)]
+            mode = str(raw.get("mode", "") or _DEFAULT_MODE.get(kind, "connected"))
+            if mode not in _MODES:
+                raise ValueError(f"mode inválido {mode!r} en {raw.get('name')!r}")
             out.append(
                 CatalogEntry(
                     name=str(raw["name"]),
@@ -60,9 +77,21 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
                     source=str(raw.get("source", "")),
                     install=str(raw.get("install", "")),
                     status=status,
+                    tags=tags,
+                    mode=mode,
+                    version=str(raw.get("version", "")),
+                    license=str(raw.get("license", "")),
+                    trust=str(raw.get("trust", "")),
+                    transport=str(raw.get("transport", "")),
                 )
             )
     return out
+
+
+def in_sector(entries: list[CatalogEntry], sector: str) -> list[CatalogEntry]:
+    """Entradas cuyo sector primario o TAGS incluyen `sector` (sector = vista,
+    no carpeta exclusiva: un item puede vivir en varios sectores)."""
+    return [e for e in entries if e.sector == sector or sector in e.tags]
 
 
 def sectors(entries: list[CatalogEntry]) -> dict[str, str]:
