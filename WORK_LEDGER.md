@@ -117,7 +117,12 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     `registry_to_candidates` (con procedencia) + `scripts/mcp_seed_registry.py`. Sembrados 100
     candidatos reales → `docs/design/mcp_catalog_seeded.yaml` (máquina-generado, candidato/uncategorized,
     0 instalable). 3 tests. Triaje/clasificación = decisión posterior.
-  - ⬜ SIGUIENTE: 5 prove-it→verificado (veto SentinelGate) · 6 instalador por mode (served/connected/installed).
+  - ✅ Pasos 5-6 instalador por mode: `plan_install` (solo `verificado`, enruta served→noop /
+    connected→connect / installed→place_skill) + `vet_action` (veto SentinelGate pre-spawn, metachars/
+    IOC) + `execute` (runner inyectable). Script muestra el plan. 4 tests. Hoy plan vacío (0 verificado).
+  - ✅ **C CERRADO** (estructura): catálogo v2 + tronco catalog-driven + skills servidos + sembrado del
+    registro (100 cand.) + instalador por mode con veto. Falta SOLO el acto manual/incremental de
+    prove-it→marcar `verificado` candidatos concretos (decisión por candidato; la maquinaria ya está).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
