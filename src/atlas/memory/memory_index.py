@@ -18,12 +18,17 @@ from __future__ import annotations
 
 import sqlite3
 import struct
+import time
 from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from atlas.immunity.lesson_recaller import RecallResult, _cosine_similarity
 from atlas.memory.embeddings import Embedder, StubEmbedder
 from atlas.memory.record import MemoryRecord
+
+if TYPE_CHECKING:
+    from atlas.logging.merkle_logger import MerkleLogger
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS records (
@@ -33,9 +38,19 @@ CREATE TABLE IF NOT EXISTS records (
     vector            BLOB NOT NULL,
     merkle_leaf_hash  TEXT,
     merkle_leaf_index INTEGER,
-    created_at        TEXT
+    created_at        TEXT,
+    valid_from_ns     INTEGER,
+    valid_until_ns    INTEGER,   -- NULL = vigente AHORA (1d-a: validez temporal)
+    supersedes        TEXT       -- id de la memoria que esta reemplaza (lineage)
 );
 """
+
+# Columnas de 1d-a a añadir si el índice viene de un esquema previo (migración suave).
+_TEMPORAL_COLUMNS = {
+    "valid_from_ns": "INTEGER",
+    "valid_until_ns": "INTEGER",
+    "supersedes": "TEXT",
+}
 
 
 def _pack(vec: list[float]) -> bytes:
@@ -61,14 +76,24 @@ class SqliteMemoryIndex:
         *,
         embedder: Embedder | None = None,
         threshold: float = 0.8,
+        merkle: "MerkleLogger | None" = None,
     ) -> None:
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._embedder: Embedder = embedder if embedder is not None else StubEmbedder(dim=64)
         self._threshold = threshold
+        self._merkle = merkle
         self._conn = sqlite3.connect(str(self._path))
         self._conn.execute(_SCHEMA)
+        self._migrate_temporal()
         self._conn.commit()
+
+    def _migrate_temporal(self) -> None:
+        """Añade las columnas de 1d-a a un índice de esquema previo (idempotente)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        for col, decl in _TEMPORAL_COLUMNS.items():
+            if col not in existing:
+                self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
 
     # ------------------------------------------------------------------
     # Escritura
@@ -80,13 +105,18 @@ class SqliteMemoryIndex:
         *,
         merkle_leaf_hash: str | None = None,
         merkle_leaf_index: int | None = None,
+        valid_from_ns: int | None = None,
+        supersedes: str | None = None,
     ) -> None:
-        """Inserta o actualiza un registro. Idempotente por `record_id`."""
+        """Inserta o actualiza un registro VIGENTE (valid_until_ns NULL).
+        Idempotente por `record_id`."""
         vec = self._embedder.embed(record.text)
+        vfrom = valid_from_ns if valid_from_ns is not None else time.time_ns()
         self._conn.execute(
             """
-            INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
+                                 created_at, valid_from_ns, valid_until_ns, supersedes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
@@ -95,7 +125,7 @@ class SqliteMemoryIndex:
                 created_at=excluded.created_at
             """,
             (record.record_id, record.text, _pack(vec), merkle_leaf_hash,
-             merkle_leaf_index, record.created_at),
+             merkle_leaf_index, record.created_at, vfrom, supersedes),
         )
         self._conn.commit()
 
@@ -104,32 +134,95 @@ class SqliteMemoryIndex:
         de verdad es el CORE; esto es una vista derivada)."""
         self._conn.execute("DELETE FROM records")
         self._conn.execute("DELETE FROM sqlite_sequence WHERE name='records'")
+        now = time.time_ns()
         for record in records:
             vec = self._embedder.embed(record.text)
             self._conn.execute(
                 """
-                INSERT INTO records (id, text, vector, merkle_leaf_hash,
-                                     merkle_leaf_index, created_at)
-                VALUES (?, ?, ?, NULL, NULL, ?)
+                INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
+                                     created_at, valid_from_ns, valid_until_ns, supersedes)
+                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL)
                 """,
-                (record.record_id, record.text, _pack(vec), record.created_at),
+                (record.record_id, record.text, _pack(vec), record.created_at, now),
             )
         self._conn.commit()
+
+    # ------------------------------------------------------------------
+    # Validez temporal / supersesión / olvido (1d-a) — el índice nunca BORRA;
+    # "olvidar" = caducar (valid_until_ns) y dejar de surfacear. La fila persiste.
+    # ------------------------------------------------------------------
+
+    def supersede(
+        self,
+        old_id: str,
+        new_record: MemoryRecord,
+        *,
+        now_ns: int | None = None,
+        reason: str = "",
+    ) -> None:
+        """La memoria `new_record` reemplaza a `old_id`: la vieja caduca (sigue en la
+        tabla, auditable) y la nueva entra vigente con lineage `supersedes=old_id`."""
+        ts = now_ns if now_ns is not None else time.time_ns()
+        self.upsert(new_record, valid_from_ns=ts, supersedes=old_id)
+        self._conn.execute(
+            "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL",
+            (ts, old_id),
+        )
+        self._conn.commit()
+        self._audit("memory.superseded", {"old": old_id, "new": new_record.record_id,
+                                          "at_ns": ts, "reason": reason})
+
+    def retire(self, record_id: str, *, now_ns: int | None = None, reason: str = "") -> None:
+        """Olvido sin reemplazo: la memoria caduca y deja de surfacearse. No se borra."""
+        ts = now_ns if now_ns is not None else time.time_ns()
+        self._conn.execute(
+            "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL",
+            (ts, record_id),
+        )
+        self._conn.commit()
+        self._audit("memory.retired", {"id": record_id, "at_ns": ts, "reason": reason})
+
+    def _audit(self, action: str, payload: dict[str, object]) -> None:
+        if self._merkle is not None:
+            self._merkle.log(action=action, agent="memory_index",
+                             result="success", payload=payload)
+
+    def valid_until(self, record_id: str) -> int | None:
+        row = self._conn.execute(
+            "SELECT valid_until_ns FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def supersedes_of(self, record_id: str) -> str | None:
+        row = self._conn.execute(
+            "SELECT supersedes FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def active_count(self) -> int:
+        cur = self._conn.execute(
+            "SELECT COUNT(*) FROM records WHERE valid_until_ns IS NULL"
+        )
+        return int(cur.fetchone()[0])
 
     # ------------------------------------------------------------------
     # Lectura interna
     # ------------------------------------------------------------------
 
-    def _rows(self) -> list[tuple[str, list[float]]]:
-        cur = self._conn.execute("SELECT id, vector FROM records ORDER BY ordinal")
+    def _rows(self, include_superseded: bool = False) -> list[tuple[str, list[float]]]:
+        sql = "SELECT id, vector FROM records"
+        if not include_superseded:
+            sql += " WHERE valid_until_ns IS NULL"
+        sql += " ORDER BY ordinal"
+        cur = self._conn.execute(sql)
         return [(rid, _unpack(blob)) for rid, blob in cur.fetchall()]
 
     # ------------------------------------------------------------------
-    # Recall
+    # Recall (por defecto solo memorias VIGENTES)
     # ------------------------------------------------------------------
 
-    def recall(self, query_text: str) -> RecallResult | None:
-        rows = self._rows()
+    def recall(self, query_text: str, *, include_superseded: bool = False) -> RecallResult | None:
+        rows = self._rows(include_superseded)
         if not rows:
             return None
         if not query_text.strip():
@@ -147,8 +240,10 @@ class SqliteMemoryIndex:
             lesson_id=best_id, score=best_score, matched=best_score >= self._threshold
         )
 
-    def recall_all(self, query_text: str, k: int = 5) -> list[RecallResult]:
-        rows = self._rows()
+    def recall_all(
+        self, query_text: str, k: int = 5, *, include_superseded: bool = False
+    ) -> list[RecallResult]:
+        rows = self._rows(include_superseded)
         if not rows:
             return []
         if not query_text.strip():
