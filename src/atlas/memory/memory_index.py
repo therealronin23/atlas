@@ -428,6 +428,15 @@ class SqliteMemoryIndex:
         row = cur.fetchone()
         return row[0] if row else None
 
+    def text_of(self, record_id: str) -> str | None:
+        """Texto almacenado de un id, o None si no existe. Hace el recall útil
+        (el recall devuelve ids/scores; quien consume necesita el texto)."""
+        cur = self._conn.execute(
+            "SELECT text FROM records WHERE id=?", (record_id,)
+        )
+        row = cur.fetchone()
+        return row[0] if row else None
+
     def count(self) -> int:
         cur = self._conn.execute("SELECT COUNT(*) FROM records")
         return int(cur.fetchone()[0])

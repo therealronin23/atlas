@@ -46,11 +46,35 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
 - ✅ **Ciclo de saneamiento** establecido: `scripts/sanitation_audit.py` (read-only) cada Gate/~mensual
 - ✅ **GATE DE GOBERNANZA CERRADO** (tipo-2). Próximo ciclo: revisar `_graveyard/2026-06-21*` al vencer grace (~2026-07-21)
 
-## Otras líneas (no activas ahora)
+## Línea activa secundaria: MCP trunk portable
 
-- ⬜ **MCP trunk portable** — diseño en `docs/design/mcp_trunk_portable.md` (empaquetar el trabajo
-  como raíces MCP portables; F1 = tronco Python + raíz memoria; knowledge-src→run_mission→substrato).
-  NO empezado.
+Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
+
+- ✅ **F1 — Tronco Python + raíz memoria** — `MemoryTrunk` (núcleo neutro: add/recall/supersede sobre
+  `SqliteMemoryIndex`) + shell FastMCP (`atlas.mcp.memory_server`, dep opcional `[mcp]`). Roundtrip
+  cross-cwd/cross-proceso/cross-cliente por stdio PROBADO (`tests/test_mcp_memory_trunk.py`, 8 tests;
+  guardados con importorskip → suite verde sin la dep). Portabilidad cross-INSTALL (instalar en otro
+  proyecto) diferida a F4/empaquetado. `text_of` añadido al índice.
+- ✅ **F2 — Raíz operating** — `OperatingTrunk` (núcleo neutro) + shell FastMCP
+  (`atlas.mcp.operating_server`): AGENTS.md y WORK_LEDGER.md como RECURSOS MCP (vía enforcement
+  portable, advisory) + `sanitation_audit` como TOOL read-only. 5 tests
+  (`tests/test_mcp_operating_trunk.py`). DIFERIDO: franken-prompt por canal real (muro — MCP no
+  impone system prompt; exige wrapper/CLI, no la primitiva MCP). ← SIGUIENTE: F3 knowledge-src.
+- ✅ **F3 — Raíz knowledge-src** — `KnowledgeTrunk` (núcleo neutro) + shell FastMCP
+  (`atlas.mcp.knowledge_server`): `WikipediaSource` (REST summary, gate SSRF, fetcher inyectable) →
+  tools `wikipedia_lookup` / `ingest_wikipedia` cableados a `run_mission` → sustrato. PROBADO: el
+  conocimiento entra con PROCEDENCIA (url+fecha+hash) (`tests/test_mcp_knowledge_trunk.py`, 4 tests).
+  Honesto: procedencia, no verdad (KnowledgeVerifier filtra grounding). Falta 2ª API (dataset).
+- ✅ **F4 — Agregación + catálogo + instalador** — `TrunkManifest` (las 3 raíces nativas → config de
+  cliente MCP unificada = "una conexión"; overhead 6 tools, anti-kitchen-sink) + `installer` (parsea
+  `mcp_catalog.md`, instala SOLO `verificado` — hoy 0; wire-before-claim) + `scripts/mcp_install.py`
+  (reporte read-only). PROBADO: cada raíz de la config unificada arranca y expone sus tools
+  (`tests/test_mcp_trunk_manifest.py`, 7 tests). Commodity (filesystem/git) = off-the-shelf vía
+  instalador cuando se verifique, no reinventadas.
+- ✅ **LÍNEA MCP TRUNK F1–F4 CERRADA.** 3 raíces nativas portables + agregación + instalador honesto,
+  suite verde. Pendiente menor: 2ª API en knowledge-src (dataset). Próximo (si procede): mergeo/PR.
+- ⏸ **F5 Rust por-raíz** — diferido; abordar tras el merge "si todo va bien" (reescribir solo raíces
+  calientes en rmcp, una a una; políglota por proceso, sin big-bang).
 
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
 - ⏸ Deuda diferida del sustrato: multihilo (sin consumidor), IC/corpus mayor en 1c.
