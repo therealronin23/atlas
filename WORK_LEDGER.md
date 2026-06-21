@@ -106,8 +106,12 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ Paso 0 SPIKE: FastMCP sirve tool+prompt+resource (listables/recuperables) → mecanismo de skills OK.
   - ✅ Paso 1 catálogo v2: tags multi-sector, mode (served/connected/installed), version/license/trust/
     transport + `in_sector` (sector = vista). Retrocompatible. 7 tests.
-  - ⬜ SIGUIENTE: paso 2 tronco dirigido por catálogo (sectores lógicos + spawn perezoso) · 3 skills
-    servidos E2E · 4 sembrar registro oficial · 5 prove-it→verificado · 6 instalador por mode.
+  - ✅ Paso 2 tronco dirigido por catálogo: `trunk_children()` deriva los hijos del catálogo (mcp +
+    connected + instalado/verificado); nuestras raíces resuelven cmd con path arg, externos vía
+    `install`. `serve()` ya no usa lista fija. Verificado E2E. 8 tests. (Spawn perezoso = follow-up
+    cuando haya externos; hoy eager con 3 raíces es correcto, anti-vapor.)
+  - ⬜ SIGUIENTE: 3 skills servidos E2E (`get_skill`+prompt) · 4 sembrar registro oficial ·
+    5 prove-it→verificado · 6 instalador por mode.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
