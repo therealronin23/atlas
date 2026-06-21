@@ -87,9 +87,17 @@ class MemoryAbstractor:
         *,
         embedder: Embedder | None = None,
         threshold: float = 0.8,
+        cluster_threshold: float | None = None,
+        recall_threshold: float | None = None,
     ) -> None:
+        """`threshold` es el default de ambos umbrales; sepáralos para evitar el
+        confound de 1c (agrupar fino vs reconocer laxo son decisiones distintas):
+        - `cluster_threshold`: cómo de apretado se agrupan ejemplos en un patrón.
+        - `recall_threshold`: cómo de cerca debe estar una query para contar match.
+        """
         self._embedder: Embedder = embedder if embedder is not None else StubEmbedder(dim=64)
-        self._threshold = threshold
+        self._cluster_threshold = cluster_threshold if cluster_threshold is not None else threshold
+        self._recall_threshold = recall_threshold if recall_threshold is not None else threshold
         self._patterns: list[Pattern] = []
         self._assignment: dict[str, str] = {}
 
@@ -110,7 +118,7 @@ class MemoryAbstractor:
                 if score > best_score:
                     best_score = score
                     best = b
-            if best is not None and best_score >= self._threshold:
+            if best is not None and best_score >= self._cluster_threshold:
                 best.add(record.record_id, vec, text)
             else:
                 nb = _Bucket()
@@ -172,7 +180,7 @@ class MemoryAbstractor:
             PatternMatch(
                 pattern_id=p.id,
                 score=_cosine_similarity(query_vec, p.centroid),
-                matched=_cosine_similarity(query_vec, p.centroid) >= self._threshold,
+                matched=_cosine_similarity(query_vec, p.centroid) >= self._recall_threshold,
             )
             for p in self._patterns
         ]

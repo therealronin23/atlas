@@ -33,8 +33,15 @@ class PatternAbstractor:
         *,
         embedder: Embedder | None = None,
         threshold: float = 0.8,
+        cluster_threshold: float | None = None,
+        recall_threshold: float | None = None,
     ) -> None:
-        self._engine = MemoryAbstractor(embedder=embedder, threshold=threshold)
+        self._engine = MemoryAbstractor(
+            embedder=embedder,
+            threshold=threshold,
+            cluster_threshold=cluster_threshold,
+            recall_threshold=recall_threshold,
+        )
 
     def abstract(self, lessons: list[Lesson]) -> list[Pattern]:
         return self._engine.abstract([lesson_to_record(le) for le in lessons])
