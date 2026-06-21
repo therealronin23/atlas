@@ -185,8 +185,14 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     `pending` = SUELO/grace: NO auto-retira (el retiro sigue siendo decisión aparte, 1d-a). Solo
     afecta a vigentes. `tier_counts()`/`tier()`/`access_count()`.
     LÍMITE: los umbrales de ocio son POLÍTICA (parámetros), no aprendidos; "medible" = por
-    recencia/uso, no arbitrario. Falta cablear `pending→retire tras grace` como política explícita y
-    auto-touch en recall (hoy `touch` es manual). El tenant de seguridad aún no usa tiers.
+    recencia/uso, no arbitrario.
+  - [x] **Deudas tipo-1 CERRADAS 2026-06-21** *(suite 2059 verde, mypy strict;
+    `tests/test_memory_lifecycle.py` 6 tests)*: (1) `apply_decay(retire_after_ns=...)` retira tras el
+    grace (pending→retire explícito, auditado; la cadena nunca borra); (2) `auto_touch=True` +
+    `now_ns` opcional en recall → el uso real revive memorias sin tocar manual; (3) el tenant
+    `SqliteLessonIndex` expone supersede/retire/touch/apply_decay/tier(_counts)/active_count. Test de
+    CICLO DE VIDA completo (acceso→pending→revive→grace→retire) anclado en cadena. Quedan solo el
+    tipo-3 (muro intención-vs-tema) y multihilo (sin consumidor aún).
 
 Notas de estado se anotan inline al cerrar cada casilla (fecha + commit + límite honesto).
 

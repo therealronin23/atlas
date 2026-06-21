@@ -92,12 +92,16 @@ class SqliteMemoryIndex:
         embedder: Embedder | None = None,
         threshold: float = 0.8,
         merkle: "MerkleLogger | None" = None,
+        auto_touch: bool = False,
     ) -> None:
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._embedder: Embedder = embedder if embedder is not None else StubEmbedder(dim=64)
         self._threshold = threshold
         self._merkle = merkle
+        # auto_touch: registrar el acceso (promover a hot + contar) en cada recall que
+        # devuelve un match → la democión refleja el uso REAL sin llamadas manuales.
+        self._auto_touch = auto_touch
         self._conn = sqlite3.connect(str(self._path))
         self._conn.executescript(_SCHEMA)
         self._migrate_temporal()
@@ -293,16 +297,22 @@ class SqliteMemoryIndex:
         warm_after_ns: int,
         cold_after_ns: int,
         pending_after_ns: int,
+        retire_after_ns: int | None = None,
     ) -> dict[str, int]:
         """Demota memorias VIGENTES por ocio (now - último acceso) en buckets
-        ascendentes. Medible y reproducible; pending es el SUELO (no retira: el
-        retiro es decisión aparte, honra el grace). Devuelve cuentas por tier."""
+        ascendentes. `pending` es el SUELO/grace. Si se da `retire_after_ns`
+        (> pending_after_ns), las que llevan MÁS ocio que el grace se RETIRAN
+        (caducan, auditado) — así el ciclo pending→retire es una política explícita,
+        no un borrado implícito. La cadena nunca borra. Devuelve cuentas por tier."""
         rows = self._conn.execute(
             "SELECT id, COALESCE(last_access_ns, valid_from_ns, 0) "
             "FROM records WHERE valid_until_ns IS NULL"
         ).fetchall()
         for rid, last in rows:
             idle = now_ns - last
+            if retire_after_ns is not None and idle >= retire_after_ns:
+                self.retire(rid, now_ns=now_ns, reason="decayed past grace")
+                continue
             if idle >= pending_after_ns:
                 new_tier = "pending"
             elif idle >= cold_after_ns:
@@ -352,7 +362,9 @@ class SqliteMemoryIndex:
     # Recall (por defecto solo memorias VIGENTES)
     # ------------------------------------------------------------------
 
-    def recall(self, query_text: str, *, include_superseded: bool = False) -> RecallResult | None:
+    def recall(
+        self, query_text: str, *, include_superseded: bool = False, now_ns: int | None = None
+    ) -> RecallResult | None:
         rows = self._rows(include_superseded)
         if not rows:
             return None
@@ -367,12 +379,16 @@ class SqliteMemoryIndex:
                 best_score = score
                 best_id = rid
         assert best_id is not None
-        return RecallResult(
+        result = RecallResult(
             lesson_id=best_id, score=best_score, matched=best_score >= self._threshold
         )
+        if self._auto_touch and result.matched:
+            self.touch(result.lesson_id, now_ns=now_ns)
+        return result
 
     def recall_all(
-        self, query_text: str, k: int = 5, *, include_superseded: bool = False
+        self, query_text: str, k: int = 5, *, include_superseded: bool = False,
+        now_ns: int | None = None,
     ) -> list[RecallResult]:
         rows = self._rows(include_superseded)
         if not rows:
@@ -387,7 +403,12 @@ class SqliteMemoryIndex:
                 RecallResult(lesson_id=rid, score=score, matched=score >= self._threshold)
             )
         results.sort(key=lambda r: r.score, reverse=True)
-        return results[:k]
+        top = results[:k]
+        if self._auto_touch:
+            for r in top:
+                if r.matched:
+                    self.touch(r.lesson_id, now_ns=now_ns)
+        return top
 
     # ------------------------------------------------------------------
     # Procedencia / utilidades
