@@ -1,5 +1,9 @@
 # Catálogo de skills / tools / MCP servers (candidatos)
 
+> **FUENTE MÁQUINA = `docs/design/mcp_catalog.yaml`** (clasificado por sector/necesidad; lo consume
+> `atlas.mcp.catalog` + el instalador). Este `.md` es la **narrativa humana** (contexto, decisiones,
+> orígenes); si hay discrepancia, manda el YAML.
+
 <!-- Extraído del volcado Grok (docs/archive/_graveyard/2026-06-21/scratch/mcp grok.md), 2026-06-21.
      Insumo para el instalador automático del MCP trunk (docs/design/mcp_trunk_portable.md). -->
 
