@@ -39,7 +39,11 @@ duplica (vive solo en el ledger).
   duplicado · carpeta vacía · artefacto de build · **código sin importadores no-test**.
 - **Auditoría de cableado (anti-vapor de sistema):** un módulo con 0 importadores no-test
   → revisar: **cablear o a cuarentena**. Comando: `grep -rln "import .*<mod>" src/ | grep -v test`.
-- **Cíclico:** un "pase de saneamiento" recurrente; el grueso es la limpieza inicial.
+- **Cíclico (automatizado):** `python3 scripts/sanitation_audit.py` (read-only) cada ciclo —
+  al cerrar un Gate o ~mensual. Reporta: vapor de sistema (0 importadores no-test), cuarentena
+  vencida (grace 30d → candidata a `git rm` si nadie la rescató), carpetas vacías, refs stale.
+  El humano/agente decide KEEP/QUARANTINE/DELETE sobre el informe. El grueso fue la limpieza
+  inicial (Gate de gobernanza 2026-06-21, ver `CLOSURE_governance_2026-06-21.md`).
 
 ## 4. Anti-vapor (regla `wire-before-claim`)
 

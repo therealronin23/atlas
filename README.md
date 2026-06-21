@@ -170,10 +170,10 @@ Todo IO con efecto externo va por capability tokens (AtlasExecutor).
 - [CLAUDE.md](CLAUDE.md) — contexto para Claude Code (sincronizado con AGENTS.md).
 - [docs/reference/USAGE.md](docs/reference/USAGE.md) — guía de operación detallada,
   configuración, troubleshooting.
-- [docs/auditoria_final_postmortem.md](docs/auditoria_final_postmortem.md) —
-  auditoría completa + postmortem técnico (verificación independiente).
-- [docs/AUDIT_COMPLETO_2026-05-25.md](docs/AUDIT_COMPLETO_2026-05-25.md) —
-  auditoría técnica de 8 partes (arquitectura, seguridad, tests, rendimiento).
+- [docs/governance/gates/CLOSURE.md](docs/governance/gates/CLOSURE.md) — cierre/roll-up de
+  los Gates A–I (históricos, sellados; el proyecto pivotó a Osmosis).
+- [docs/governance/audits/](docs/governance/audits/) — auditorías y postmortems técnicos
+  (incluye `audit_postmortem_memory_substrate_2026-06-21.md` y los self-audits diarios).
 - [docs/reference/prometheus_setup.md](docs/reference/prometheus_setup.md) — guía operacional
   Prometheus + alertas + Grafana.
 - [docs/governance/gates/gate_c_seal.md](docs/governance/gates/gate_c_seal.md) — evidencia cierre Gate C.
