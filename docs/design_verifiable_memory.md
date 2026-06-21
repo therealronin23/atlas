@@ -132,7 +132,7 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
   Extraído el motor genérico (`record.py`+`memory_index.py`+`memory_abstractor.py`); seguridad pasa a
   inquilino delgado. `tests/test_memory_motor.py` (5 tests) demuestra agnosticidad en dominio
   no-seguridad (recetas). 60 tests del inquilino intactos = refactor behavior-preserving.
-- [x] **1c-seguridad — CERRADA 2026-06-21** (ver detalle abajo). 1c-motor sigue PENDIENTE.
+- [x] **1c-seguridad — CERRADA 2026-06-21** (ver detalle abajo). **1c-motor CERRADA.**
 - [~] **1c — DOS ejes (antes fundidos; separados 2026-06-21):**
   - **1c-seguridad** *(HECHO 2026-06-21, primer corte; `scripts/redteam/transfer_experiment.py`
     + `docs/immune_transfer_experiment.md`):* held-out por familia (train: instruction_override,
@@ -159,8 +159,12 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     fiables). Veredicto firme: coseno-a-centroide reconoce PROXIMIDAD TEMÁTICA, no intención; el
     valor real = reconocimiento auditable de variantes, NO detección de familias nuevas. 1c-seguridad
     CERRADA. Futuro NO prometido para subir señal: contrastive intención-vs-tema + drift+contenido + IC.
-  - **1c-motor:** el sustrato sabe versionar/superseder/transferir en CUALQUIER dominio (sin
-    Garak). Va con 1d (validez temporal) + un test de transferencia genérico. PENDIENTE.
+  - [x] **1c-motor — CERRADA 2026-06-21** (suite 2048 verde): `tests/test_motor_versioned_knowledge.py`
+    (2) demuestra el valor genérico en dominio NO-seguridad (hechos de empresa que cambian): recall
+    refleja la verdad VIGENTE tras supersesión, la historia es recuperable y PROBABLE en cadena
+    (qué cambió y cuándo). El eje genérico no es detección (frontera dura) sino conocimiento
+    versionado con procedencia — donde el sustrato gana limpio. Transferencia/abstracción genérica
+    ya cubierta por `test_memory_motor.py`. **CHECKLIST 1a–1d COMPLETA.**
 - [~] **1d — olvido principiado SOLO sobre el índice; la cadena Merkle nunca borra.**
   - [x] **1d-a — Validez temporal + supersesión + retiro auditables** *(HECHO 2026-06-21; suite
     2039 verde, mypy strict)* en `SqliteMemoryIndex` (motor genérico) + `tests/test_memory_temporal.py`
