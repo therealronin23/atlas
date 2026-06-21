@@ -85,6 +85,8 @@ concreta lo justifique por performance.
   por objetivo entregado por el canal real (probar enforcement honesto).
 - **F3** — Raíz knowledge-src (empezar con 1-2 APIs libres: Wikipedia + una dataset) → cablear a
   `run_mission` → verificar que el conocimiento entra al sustrato con procedencia.
-- **F4** — Agregación de raíces commodity (filesystem/git) + catálogo; medir overhead de contexto.
+- **F4** — Agregación de raíces commodity (filesystem/git) + catálogo (`docs/design/mcp_catalog.md`)
+  + **instalador automático** (script que verifica+instala lo marcado; ley del mínimo esfuerzo, el
+  agente decide qué, el código lo descarga); medir overhead de contexto.
 - **F5** — (si procede) reescritura por-raíz en Rust de lo que lo justifique.
 Criterio de éxito por fase: instalable de una, superficie enrutada pequeña, contenido con procedencia.
