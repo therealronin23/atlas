@@ -38,7 +38,7 @@ external service not covered by CLI (`gh` covers git/GitHub).
 **Standing manías (canonical "how"; auto-memory `feedback-*.md`, obey them):**
 `plan-then-execute` · `decide-with-facts` · `honesty-over-sycophancy` ·
 `convergence-discipline-verification` · `debt-closure-workflow` · `operating-loop` ·
-`verify-the-real-case` · `internal-prior-art-first` · `roadmap-is-guide-not-law` ·
+`verify-the-real-case` · `internal-prior-art-first` · `wire-before-claim` · `roadmap-is-guide-not-law` ·
 `stdlib-over-new-deps` · `no-aux-scripts-bloat` · `no-cli-against-live-workspace` ·
 `no-gui-in-tests` · `no-deepen-hitl-coupling` · `no-security-lectures-local` ·
 `arxiv-citation-verification`.

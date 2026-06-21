@@ -61,6 +61,7 @@ docs/security_audit_latest.json
 docs/self_audit_latest.json
 docs/self_audit_*.md
 .atlas_self_audit_stop
+patches/
 
 # Scratch / brainstorm dumps (raw editor captures, preserved on disk only).
 # Their distilled value already lives in docs/membrana/OSM-* and the ADRs.
@@ -85,3 +86,13 @@ docs/*.toc
 docs/*.out
 docs/*.log
 .autobuild/
+.aider*
+
+# LaTeX build cruft (paper) — no versionar; regenerables al compilar
+*.aux
+*.blg
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
