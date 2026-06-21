@@ -25,6 +25,19 @@ Design doc: `docs/design_verifiable_memory.md` · rama: trabajo mergeado a `main
   - ⬜ 2.3 evaluación honesta (diseñada, falta construir) · ⬜ 2.4 envenenamiento (parcial)
   - ⬜ 2.5 fuga entre usuarios/tenancy · 🧱 2.6 personalización-vs-contaminación · ✅ 2.7 cold-start (conceptual)
 
+## Gate de gobernanza (tipo-2 — orden = base de todo)
+
+Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CAPABILITIES.md`.
+
+- ✅ **F0** estándar + CAPABILITIES + manía `wire-before-claim` (anti-vapor) cableada en AGENTS.md
+- ✅ **F1** limpieza riesgo-bajo: 5 artefactos LaTeX a .gitignore, 7 scratch de raíz a graveyard,
+  `.atlas-audit-home` vacío borrado
+- ✅ **Huérfanos cerrados** (0 importadores no-test) → cuarentena: witness_server, log_behavioral,
+  kyc_binding (+ tests). Registrados en CAPABILITIES + graveyard MANIFEST. Suite 2041 verde.
+- ⬜ **F2** reorganizar `docs/` a la taxonomía (mover + actualizar refs)
+- ⬜ **F3** código muerto / zombies (auditoría de cableado completa) · ⬜ **F4** migrar Gates/seals + cierres roll-up
+- ⬜ ciclo de saneamiento recurrente establecido
+
 ## Otras líneas (no activas ahora)
 
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
