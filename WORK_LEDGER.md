@@ -84,9 +84,17 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 
 - ⬜ **A — Desplegar** las 3 raíces Python al cliente (`claude mcp add`, save en /home/ronin/atlas).
   Quick win reversible; aún es bundle (N conexiones), no tronco único. ← EN CURSO.
-- ⬜ **B — TRONCO-AGREGADOR**: un MCP que conecta/frontea varias MCP, ordenadas y CLASIFICADAS por
-  sector/necesidad, con enrutado por objetivo (franken-prompt modular → subconjunto pequeño de raíces,
-  anti-overload) + permisos centralizados. Evaluar magg/1mcp/mcgravity (prove-it) vs construir.
+- 🔄 **B — TRONCO-AGREGADOR**:
+  - ✅ Prove-it de agregadores → NO adoptar ninguno (magg=AGPL, 1mcp=Node, metamcp=enterprise,
+    mcgravity=load-balancer, StormMCP=SaaS). Construir sobre `McpRegistry` (ADR-035, vivo: agrega +
+    namespacing + Merkle + SentinelGate, diferencial que ninguno tiene). Auditoría de asimilación en
+    design doc. Catálogo se siembra de registros ABIERTOS, no StormMCP.
+  - ✅ `TrunkAggregator` + shell FastMCP (`atlas.mcp.trunk_server`): fachada META PEQUEÑA
+    (trunk_sectors/trunk_tools/trunk_invoke) con descubrimiento LAZY por sector (anti-kitchen-sink) +
+    purpose para routing + dispatcher inyectable. 6 tests (`tests/test_mcp_trunk_aggregator.py`).
+  - ⬜ FALTA: dispatcher REAL = McpRegistry sobre las 3 raíces + `serve()` + desplegar el tronco
+    (cliente→tronco único). ← SIGUIENTE en B. Luego: filtro/middleware ligero; sembrar catálogo del
+    registro oficial (vía knowledge-src, ya en allowlist).
 - 🔄 **C — Catálogo verificado + instalador real**:
   - ✅ Triaje del grok dump → **catálogo estructurado YAML** (`docs/design/mcp_catalog.yaml`, 43
     entradas en 14 SECTORES) = el eje de clasificación del tronco. Loader `atlas.mcp.catalog`
