@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_classify_seeded.py
-  at: '2026-06-21T23:45:46.844009+00:00'
+  at: '2026-06-22T01:54:20.768242+00:00'
   note: MÁQUINA-GENERADO. Clasificación automática por alias; todo candidato.
 sectors:
   ciberseguridad:
@@ -315,6 +315,60 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: amazonaws.com:accessanalyzer
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:accessanalyzer
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:acm
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:acm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:alexaforbusiness
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:alexaforbusiness
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:amp
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:amp
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:appintegrations
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:appintegrations
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:application-autoscaling
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:application-autoscaling
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: amazonaws.com:application-insights
       kind: api
       subsector: ''
@@ -324,11 +378,209 @@ sectors:
       status: candidato
       tags:
       - cloud
+    - name: amazonaws.com:appmesh
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:appmesh
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:apprunner
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:apprunner
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:appstream
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:appstream
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: amazonaws.com:athena
       kind: api
       subsector: ''
       mode: served
       source: amazonaws.com:athena
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:autoscaling
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:autoscaling
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:batch
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:batch
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:cloud9
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:cloud9
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:clouddirectory
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:clouddirectory
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:cloudformation
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:cloudformation
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:cloudhsm
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:cloudhsm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:cloudhsmv2
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:cloudhsmv2
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:codeartifact
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:codeartifact
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:codedeploy
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:codedeploy
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:codepipeline
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:codepipeline
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:codestar-connections
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:codestar-connections
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:cognito-identity
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:cognito-identity
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:cognito-sync
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:cognito-sync
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:comprehendmedical
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:comprehendmedical
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:compute-optimizer
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:compute-optimizer
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:config
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:config
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:connect
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:connect
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:connect-contact-lens
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:connect-contact-lens
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:customer-profiles
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:customer-profiles
       install: ''
       status: candidato
       tags:
@@ -356,6 +608,15 @@ sectors:
       subsector: ''
       mode: served
       source: amazonaws.com:dax
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:directconnect
+      kind: api
+      subsector: ''
+      mode: served
+      source: amazonaws.com:directconnect
       install: ''
       status: candidato
       tags:
@@ -1062,6 +1323,26 @@ sectors:
       status: candidato
       tags:
       - lifecycle
+    - name: accessibility-checker
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/accessibility-checker ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: adr-writer
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/adr-writer ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
     - name: ai-prompt-lab
       kind: plugin
       subsector: ''
@@ -1069,6 +1350,76 @@ sectors:
       source: rohitg00/awesome-claude-code-toolkit
       install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
         cp -r awesome-claude-code-toolkit/plugins/ai-prompt-lab ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: aws-helper
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/aws-helper ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: azure-helper
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/azure-helper ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: bug-detective
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/bug-detective ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: bundle-analyzer
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/bundle-analyzer ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: changelog-gen
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/changelog-gen ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: changelog-writer
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/changelog-writer ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: code-architect
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/code-architect ~/.claude/plugins/
       status: candidato
       tags:
       - uncategorized
@@ -1082,6 +1433,316 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: code-guardian
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/code-guardian ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: codebase-documenter
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/codebase-documenter ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: color-contrast
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/color-contrast ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: commit-commands
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/commit-commands ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: complexity-reducer
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/complexity-reducer ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: compliance-checker
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/compliance-checker ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: content-creator
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/content-creator ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: contract-tester
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/contract-tester ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-worktrees
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/create-worktrees ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: cron-scheduler
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/cron-scheduler ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: css-cleaner
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/css-cleaner ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: dead-code-finder
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/dead-code-finder ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: debug-session
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/debug-session ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: dependency-manager
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/dependency-manager ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: deploy-pilot
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/deploy-pilot ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: desktop-app
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/desktop-app ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: discuss
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/discuss ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: doc-forge
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/doc-forge ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: docker-helper
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/docker-helper ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: double-check
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/double-check ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: embedding-manager
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/embedding-manager ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: env-manager
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/env-manager ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: env-sync
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/env-sync ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: experiment-tracker
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/experiment-tracker ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: explore
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/explore ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: finance-tracker
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/finance-tracker ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: fix-pr
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/fix-pr ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: flutter-mobile
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/flutter-mobile ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: gcp-helper
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/gcp-helper ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: helm-charts
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/helm-charts ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: import-organizer
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/import-organizer ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
     - name: infrastructure-maintainer
       kind: plugin
       subsector: ''
@@ -1089,6 +1750,116 @@ sectors:
       source: rohitg00/awesome-claude-code-toolkit
       install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
         cp -r awesome-claude-code-toolkit/plugins/infrastructure-maintainer ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: k8s-helper
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/k8s-helper ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: license-checker
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/license-checker ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: lighthouse-runner
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/lighthouse-runner ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: load-tester
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/load-tester ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: migrate-tool
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/migrate-tool ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: migration-generator
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/migration-generator ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: model-evaluator
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/model-evaluator ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: monitoring-setup
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/monitoring-setup ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: monorepo-manager
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/monorepo-manager ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: mutation-tester
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/mutation-tester ~/.claude/plugins/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: n8n-workflow
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
+        cp -r awesome-claude-code-toolkit/plugins/n8n-workflow ~/.claude/plugins/
       status: candidato
       tags:
       - uncategorized
@@ -1200,6 +1971,116 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: notification
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/notification.py
+        -o ~/.claude/hooks/notification.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: permission_request
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/permission_request.py
+        -o ~/.claude/hooks/permission_request.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: post_tool_use
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/post_tool_use.py
+        -o ~/.claude/hooks/post_tool_use.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: pre_compact
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/pre_compact.py
+        -o ~/.claude/hooks/pre_compact.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: pre_tool_use
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/pre_tool_use.py
+        -o ~/.claude/hooks/pre_tool_use.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: session_end
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/session_end.py
+        -o ~/.claude/hooks/session_end.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: session_start
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/session_start.py
+        -o ~/.claude/hooks/session_start.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: stop
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/stop.py
+        -o ~/.claude/hooks/stop.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: subagent_start
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/subagent_start.py
+        -o ~/.claude/hooks/subagent_start.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: subagent_stop
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/subagent_stop.py
+        -o ~/.claude/hooks/subagent_stop.py
+      status: candidato
+      tags:
+      - lifecycle
+    - name: user_prompt_submit
+      kind: hook
+      subsector: ''
+      mode: installed
+      source: disler/claude-code-hooks-mastery
+      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/user_prompt_submit.py
+        -o ~/.claude/hooks/user_prompt_submit.py
+      status: candidato
+      tags:
+      - lifecycle
     - name: fix-github-issue
       kind: plugin
       subsector: ''
@@ -1386,6 +2267,65 @@ sectors:
       status: candidato
       tags:
       - 03-infrastructure
+    - name: eza
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install eza
+      status: candidato
+      tags:
+      - files
+    - name: htop
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y htop
+      status: candidato
+      tags:
+      - system
+      - monitoring
+    - name: ncdu
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y ncdu
+      status: candidato
+      tags:
+      - system
+      - files
+    - name: procs
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install procs
+      status: candidato
+      tags:
+      - system
+      - monitoring
+    - name: aria2
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y aria2
+      status: candidato
+      tags:
+      - download
+      - net
+    - name: rclone
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y rclone
+      status: candidato
+      tags:
+      - storage
+      - net
   investigacion:
     label: Investigación
     entries:
@@ -3080,6 +4020,146 @@ sectors:
       status: candidato
       tags:
       - cloud
+    - name: act
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/act ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: add-to-changelog
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/add-to-changelog ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: clean
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/clean ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: commit
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/commit ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-hook
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-hook ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-jtbd
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-jtbd ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-pr
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-pr ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-prd
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-prd ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-prp
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-prp ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-pull-request
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-pull-request ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: create-worktrees
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/create-worktrees ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: husky
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/husky ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: initref
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/initref ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: optimize
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/optimize ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
     - name: pr-review
       kind: command
       subsector: ''
@@ -3090,6 +4170,16 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: release
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/release ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
     - name: testing_plan_integration
       kind: command
       subsector: ''
@@ -3097,6 +4187,26 @@ sectors:
       source: hesreallyhim/awesome-claude-code
       install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
         -r resources/slash-commands/testing_plan_integration ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: todo
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/todo ~/.claude/commands/
+      status: candidato
+      tags:
+      - uncategorized
+    - name: update-branch-name
+      kind: command
+      subsector: ''
+      mode: served
+      source: hesreallyhim/awesome-claude-code
+      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
+        -r resources/slash-commands/update-branch-name ~/.claude/commands/
       status: candidato
       tags:
       - uncategorized
@@ -3357,6 +4467,54 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: android-jetpack-compose-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/android-jetpack-compose-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/android-jetpack-compose-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: angular-novo-elements-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/angular-novo-elements-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/angular-novo-elements-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: angular-typescript-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/angular-typescript-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/angular-typescript-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ankra-cli
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/ankra-cli.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/ankra-cli.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: anti-overengineering
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/anti-overengineering.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/anti-overengineering.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: anti-sycophancy-code-discipline-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -3377,6 +4535,62 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: aspnet-abp-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/aspnet-abp-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/aspnet-abp-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: astro-typescript-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/astro-typescript-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/astro-typescript-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: automl-hyperparameter-optimization
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/automl-hyperparameter-optimization.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/automl-hyperparameter-optimization.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: beefreesdk-nocode-content-editor-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: beefreesdk
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/beefreeSDK.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: blender-python-addon
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/blender-python-addon.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/blender-python-addon.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: chrome-extension-dev-js-typescript-cursorrules-pro
       kind: rule
       subsector: ''
@@ -3384,6 +4598,53 @@ sectors:
       source: PatrickJS/awesome-cursorrules
       install: curl -o .cursor/rules/chrome-extension-dev-js-typescript-cursorrules-pro.mdc
         https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/chrome-extension-dev-js-typescript-cursorrules-pro.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: clean-code
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/clean-code.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/clean-code.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: cloudflare-workers-hono-angular-saas-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cloudflare-workers-hono-angular-saas-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cloudflare-workers-hono-angular-saas-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: code-style-consistency-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/code-style-consistency-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-style-consistency-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: codequality
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/codequality.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/codequality.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: convex-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/convex-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/convex-cursorrules-prompt-file.mdc
       status: candidato
       tags:
       - uncategorized
@@ -3397,6 +4658,15 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: cpp
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cpp.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cpp.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: cursor-ai-react-typescript-shadcn-ui-cursorrules-p
       kind: rule
       subsector: ''
@@ -3404,6 +4674,16 @@ sectors:
       source: PatrickJS/awesome-cursorrules
       install: curl -o .cursor/rules/cursor-ai-react-typescript-shadcn-ui-cursorrules-p.mdc
         https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursor-ai-react-typescript-shadcn-ui-cursorrules-p.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: cursor-rules-pack-v2-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cursor-rules-pack-v2-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursor-rules-pack-v2-cursorrules-prompt-file.mdc
       status: candidato
       tags:
       - uncategorized
@@ -3427,6 +4707,16 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: cypress-defect-tracking-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/cypress-defect-tracking-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-defect-tracking-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: cypress-e2e-testing-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -3444,6 +4734,73 @@ sectors:
       source: PatrickJS/awesome-cursorrules
       install: curl -o .cursor/rules/cypress-integration-testing-cursorrules-prompt-file.mdc
         https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-integration-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: deno-integration-techniques-cursorrules-prompt-fil
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/deno-integration-techniques-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/deno-integration-techniques-cursorrules-prompt-fil.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: docker
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/docker.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/docker.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: dragonruby-best-practices-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: drupal-11-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/drupal-11-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/drupal-11-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: elixir-phoenix-docker-setup-cursorrules-prompt-fil
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/elixir-phoenix-docker-setup-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/elixir-phoenix-docker-setup-cursorrules-prompt-fil.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: embedded-stm32-hal
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/embedded-stm32-hal.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/embedded-stm32-hal.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: engineering-ticket-template-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/engineering-ticket-template-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/engineering-ticket-template-cursorrules-prompt-file.mdc
       status: candidato
       tags:
       - uncategorized
@@ -3466,6 +4823,16 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: flutter-app-expert-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/flutter-app-expert-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-app-expert-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: flutter-development-guidelines-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -3473,6 +4840,34 @@ sectors:
       source: PatrickJS/awesome-cursorrules
       install: curl -o .cursor/rules/flutter-development-guidelines-cursorrules-prompt-file.mdc
         https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-development-guidelines-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: flutter-riverpod-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/flutter-riverpod-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-riverpod-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: fortran
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/fortran.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/fortran.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: gamemaker-gml
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/gamemaker-gml.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/gamemaker-gml.mdc
       status: candidato
       tags:
       - uncategorized
@@ -3506,6 +4901,33 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: go-temporal-dsl-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/go-temporal-dsl-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go-temporal-dsl-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: go
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/go.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: google-adk
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/google-adk.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/google-adk.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: graphical-apps-development-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -3513,6 +4935,109 @@ sectors:
       source: PatrickJS/awesome-cursorrules
       install: curl -o .cursor/rules/graphical-apps-development-cursorrules-prompt-file.mdc
         https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/graphical-apps-development-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: harmony-arkts
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/harmony-arkts.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/harmony-arkts.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: helium-mcp-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/helium-mcp-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/helium-mcp-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: hol-hedera-typescript-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/hol-hedera-typescript-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/hol-hedera-typescript-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: how-to-documentation-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/how-to-documentation-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/how-to-documentation-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: htmx-basic-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-basic-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-basic-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: htmx-django-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-django-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-django-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: htmx-flask-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-flask-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-flask-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: htmx-go-basic-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-go-basic-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-go-basic-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: htmx-go-fiber-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/htmx-go-fiber-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-go-fiber-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: java-general-purpose-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/java-general-purpose-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/java-general-purpose-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: java-springboot-jpa-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/java-springboot-jpa-cursorrules-prompt-file.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/java-springboot-jpa-cursorrules-prompt-file.mdc
       status: candidato
       tags:
       - uncategorized
@@ -3526,6 +5051,16 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: javascript-typescript-code-quality-cursorrules-pro
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/javascript-typescript-code-quality-cursorrules-pro.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-typescript-code-quality-cursorrules-pro.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: jest-unit-testing-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -3533,6 +5068,16 @@ sectors:
       source: PatrickJS/awesome-cursorrules
       install: curl -o .cursor/rules/jest-unit-testing-cursorrules-prompt-file.mdc
         https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/jest-unit-testing-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: knative-istio-typesense-gpu-cursorrules-prompt-fil
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -o .cursor/rules/knative-istio-typesense-gpu-cursorrules-prompt-fil.mdc
+        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/knative-istio-typesense-gpu-cursorrules-prompt-fil.mdc
       status: candidato
       tags:
       - uncategorized
@@ -5005,1057 +6550,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: amazonaws.com:accessanalyzer
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:accessanalyzer
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:acm
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:acm
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:alexaforbusiness
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:alexaforbusiness
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:amp
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:amp
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:appintegrations
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:appintegrations
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:application-autoscaling
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:application-autoscaling
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:appmesh
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:appmesh
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:apprunner
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:apprunner
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:appstream
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:appstream
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:autoscaling
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:autoscaling
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:batch
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:batch
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:cloud9
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cloud9
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:clouddirectory
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:clouddirectory
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:cloudformation
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cloudformation
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:cloudhsm
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cloudhsm
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:cloudhsmv2
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cloudhsmv2
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:codeartifact
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codeartifact
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:codedeploy
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codedeploy
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:codepipeline
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codepipeline
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:codestar-connections
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codestar-connections
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:cognito-identity
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cognito-identity
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:cognito-sync
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cognito-sync
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:comprehendmedical
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:comprehendmedical
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:compute-optimizer
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:compute-optimizer
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:config
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:config
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:connect
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:connect
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:connect-contact-lens
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:connect-contact-lens
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:customer-profiles
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:customer-profiles
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:directconnect
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:directconnect
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: act
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/act ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: add-to-changelog
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/add-to-changelog ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: clean
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/clean ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: commit
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/commit ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-hook
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-hook ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-jtbd
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-jtbd ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-pr
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-pr ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-prd
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-prd ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-prp
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-prp ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-pull-request
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-pull-request ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-worktrees
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/create-worktrees ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: husky
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/husky ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: initref
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/initref ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: optimize
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/optimize ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: release
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/release ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: todo
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/todo ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: update-branch-name
-      kind: command
-      subsector: ''
-      mode: served
-      source: hesreallyhim/awesome-claude-code
-      install: git clone https://github.com/hesreallyhim/awesome-claude-code && cp
-        -r resources/slash-commands/update-branch-name ~/.claude/commands/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: notification
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/notification.py
-        -o ~/.claude/hooks/notification.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: permission_request
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/permission_request.py
-        -o ~/.claude/hooks/permission_request.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: post_tool_use
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/post_tool_use.py
-        -o ~/.claude/hooks/post_tool_use.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: pre_compact
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/pre_compact.py
-        -o ~/.claude/hooks/pre_compact.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: pre_tool_use
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/pre_tool_use.py
-        -o ~/.claude/hooks/pre_tool_use.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: session_end
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/session_end.py
-        -o ~/.claude/hooks/session_end.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: session_start
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/session_start.py
-        -o ~/.claude/hooks/session_start.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: stop
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/stop.py
-        -o ~/.claude/hooks/stop.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: subagent_start
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/subagent_start.py
-        -o ~/.claude/hooks/subagent_start.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: subagent_stop
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/subagent_stop.py
-        -o ~/.claude/hooks/subagent_stop.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: user_prompt_submit
-      kind: hook
-      subsector: ''
-      mode: installed
-      source: disler/claude-code-hooks-mastery
-      install: curl -sL https://raw.githubusercontent.com/disler/claude-code-hooks-mastery/main/.claude/hooks/user_prompt_submit.py
-        -o ~/.claude/hooks/user_prompt_submit.py
-      status: candidato
-      tags:
-      - lifecycle
-    - name: accessibility-checker
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/accessibility-checker ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: adr-writer
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/adr-writer ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: aws-helper
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/aws-helper ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: azure-helper
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/azure-helper ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: bug-detective
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/bug-detective ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: bundle-analyzer
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/bundle-analyzer ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: changelog-gen
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/changelog-gen ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: changelog-writer
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/changelog-writer ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: code-architect
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/code-architect ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: code-guardian
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/code-guardian ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: codebase-documenter
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/codebase-documenter ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: color-contrast
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/color-contrast ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: commit-commands
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/commit-commands ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: complexity-reducer
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/complexity-reducer ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: compliance-checker
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/compliance-checker ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: content-creator
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/content-creator ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: contract-tester
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/contract-tester ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: create-worktrees
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/create-worktrees ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: cron-scheduler
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/cron-scheduler ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: css-cleaner
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/css-cleaner ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: dead-code-finder
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/dead-code-finder ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: debug-session
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/debug-session ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: dependency-manager
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/dependency-manager ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: deploy-pilot
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/deploy-pilot ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: desktop-app
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/desktop-app ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: discuss
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/discuss ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: doc-forge
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/doc-forge ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: docker-helper
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/docker-helper ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: double-check
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/double-check ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: embedding-manager
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/embedding-manager ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: env-manager
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/env-manager ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: env-sync
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/env-sync ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: experiment-tracker
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/experiment-tracker ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: explore
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/explore ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: finance-tracker
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/finance-tracker ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: fix-pr
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/fix-pr ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: flutter-mobile
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/flutter-mobile ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: gcp-helper
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/gcp-helper ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: helm-charts
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/helm-charts ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: import-organizer
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/import-organizer ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: k8s-helper
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/k8s-helper ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: license-checker
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/license-checker ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: lighthouse-runner
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/lighthouse-runner ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: load-tester
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/load-tester ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: migrate-tool
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/migrate-tool ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: migration-generator
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/migration-generator ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: model-evaluator
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/model-evaluator ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: monitoring-setup
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/monitoring-setup ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: monorepo-manager
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/monorepo-manager ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: mutation-tester
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/mutation-tester ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
-    - name: n8n-workflow
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit;
-        cp -r awesome-claude-code-toolkit/plugins/n8n-workflow ~/.claude/plugins/
-      status: candidato
-      tags:
-      - uncategorized
     - name: 3d-generative-artist
       kind: prompt
       subsector: ''
@@ -6410,497 +6904,3 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: android-jetpack-compose-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/android-jetpack-compose-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/android-jetpack-compose-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: angular-novo-elements-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/angular-novo-elements-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/angular-novo-elements-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: angular-typescript-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/angular-typescript-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/angular-typescript-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ankra-cli
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/ankra-cli.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/ankra-cli.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: anti-overengineering
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/anti-overengineering.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/anti-overengineering.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: aspnet-abp-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/aspnet-abp-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/aspnet-abp-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: astro-typescript-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/astro-typescript-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/astro-typescript-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: automl-hyperparameter-optimization
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/automl-hyperparameter-optimization.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/automl-hyperparameter-optimization.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: beefreesdk-nocode-content-editor-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: beefreesdk
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/beefreeSDK.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: blender-python-addon
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/blender-python-addon.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/blender-python-addon.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: clean-code
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/clean-code.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/clean-code.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: cloudflare-workers-hono-angular-saas-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/cloudflare-workers-hono-angular-saas-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cloudflare-workers-hono-angular-saas-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: code-style-consistency-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/code-style-consistency-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-style-consistency-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: codequality
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/codequality.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/codequality.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: convex-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/convex-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/convex-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: cpp
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/cpp.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cpp.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: cursor-rules-pack-v2-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/cursor-rules-pack-v2-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cursor-rules-pack-v2-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: cypress-defect-tracking-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/cypress-defect-tracking-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/cypress-defect-tracking-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: deno-integration-techniques-cursorrules-prompt-fil
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/deno-integration-techniques-cursorrules-prompt-fil.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/deno-integration-techniques-cursorrules-prompt-fil.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: docker
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/docker.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/docker.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: dragonruby-best-practices-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/dragonruby-best-practices-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: drupal-11-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/drupal-11-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/drupal-11-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: elixir-phoenix-docker-setup-cursorrules-prompt-fil
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/elixir-phoenix-docker-setup-cursorrules-prompt-fil.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/elixir-phoenix-docker-setup-cursorrules-prompt-fil.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: embedded-stm32-hal
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/embedded-stm32-hal.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/embedded-stm32-hal.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: engineering-ticket-template-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/engineering-ticket-template-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/engineering-ticket-template-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: flutter-app-expert-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/flutter-app-expert-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-app-expert-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: flutter-riverpod-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/flutter-riverpod-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/flutter-riverpod-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: fortran
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/fortran.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/fortran.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: gamemaker-gml
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/gamemaker-gml.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/gamemaker-gml.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: go-temporal-dsl-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/go-temporal-dsl-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go-temporal-dsl-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: go
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/go.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/go.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: google-adk
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/google-adk.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/google-adk.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: harmony-arkts
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/harmony-arkts.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/harmony-arkts.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: helium-mcp-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/helium-mcp-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/helium-mcp-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: hol-hedera-typescript-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/hol-hedera-typescript-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/hol-hedera-typescript-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: how-to-documentation-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/how-to-documentation-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/how-to-documentation-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: htmx-basic-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/htmx-basic-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-basic-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: htmx-django-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/htmx-django-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-django-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: htmx-flask-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/htmx-flask-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-flask-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: htmx-go-basic-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/htmx-go-basic-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-go-basic-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: htmx-go-fiber-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/htmx-go-fiber-cursorrules-prompt-file.mdc https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/htmx-go-fiber-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: java-general-purpose-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/java-general-purpose-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/java-general-purpose-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: java-springboot-jpa-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/java-springboot-jpa-cursorrules-prompt-file.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/java-springboot-jpa-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: javascript-typescript-code-quality-cursorrules-pro
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/javascript-typescript-code-quality-cursorrules-pro.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-typescript-code-quality-cursorrules-pro.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: knative-istio-typesense-gpu-cursorrules-prompt-fil
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -o .cursor/rules/knative-istio-typesense-gpu-cursorrules-prompt-fil.mdc
-        https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/knative-istio-typesense-gpu-cursorrules-prompt-fil.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: eza
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: cargo install eza
-      status: candidato
-      tags:
-      - files
-    - name: htop
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: apt-get install -y htop
-      status: candidato
-      tags:
-      - system
-      - monitoring
-    - name: ncdu
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: apt-get install -y ncdu
-      status: candidato
-      tags:
-      - system
-      - files
-    - name: procs
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: cargo install procs
-      status: candidato
-      tags:
-      - system
-      - monitoring
-    - name: aria2
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: apt-get install -y aria2
-      status: candidato
-      tags:
-      - download
-      - net
-    - name: rclone
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: apt-get install -y rclone
-      status: candidato
-      tags:
-      - storage
-      - net

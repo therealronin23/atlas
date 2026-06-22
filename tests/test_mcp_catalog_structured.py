@@ -265,6 +265,12 @@ def test_classify_assigns_domain_by_tag_or_alias(tmp_path: Path) -> None:
     assert classify("redteam-tool", "ofensiva", [], tax) == "ciberseguridad"
     # sin señal → uncategorized (honesto, no fuerza)
     assert classify("zxqw", "nada", [], tax) == "uncategorized"
+    # fallback por línea (política declarada): sin señal pero kind con default → ese sector
+    assert classify("zxqw", "", [], tax, kind="workflow",
+                    kind_default={"workflow": "productividad"}) == "productividad"
+    # la señal por alias SIEMPRE gana al fallback
+    assert classify("redteam", "", [], tax, kind="workflow",
+                    kind_default={"workflow": "productividad"}) == "ciberseguridad"
 
 
 def test_find_orders_mature_first(tmp_path: Path) -> None:

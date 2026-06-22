@@ -183,11 +183,15 @@ def installable(entries: list[CatalogEntry]) -> list[CatalogEntry]:
     return [e for e in entries if e.status == "verificado"]
 
 
-def classify(name: str, purpose: str, tags: list[str], taxonomy: dict[str, Any]) -> str:
+def classify(
+    name: str, purpose: str, tags: list[str], taxonomy: dict[str, Any],
+    *, kind: str | None = None, kind_default: dict[str, str] | None = None,
+) -> str:
     """Auto-clasifica a un dominio (sector) por señales, sin manual: primero por TAGS
     que casen el id/alias de un sector o subsector; luego por palabras del nombre/
-    propósito contra esos alias. Sin señal → 'uncategorized' (honesto, no fuerza).
-    Token-eficiente: reusa los alias declarados en la taxonomía."""
+    propósito contra esos alias. La SEÑAL siempre gana. Sin señal: si el `kind` tiene
+    un `kind_default` declarado (política de línea), se usa ese; si no → 'uncategorized'
+    (honesto, no fuerza). Token-eficiente: reusa los alias de la taxonomía."""
     hay = " ".join([name, purpose, *tags]).lower()
 
     def _matches(sblock: dict[str, Any]) -> bool:
@@ -205,6 +209,9 @@ def classify(name: str, purpose: str, tags: list[str], taxonomy: dict[str, Any])
     for sid, sblock in taxonomy.items():
         if sid.lower() in hay or _matches(sblock):
             return sid
+    # 3) sin señal: fallback por línea (política declarada), si la hay
+    if kind and kind_default and kind in kind_default:
+        return kind_default[kind]
     return "uncategorized"
 
 
