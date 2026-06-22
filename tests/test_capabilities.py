@@ -368,7 +368,7 @@ class TestExecuteNetwork:
         fake_resp.__enter__.return_value = fake_resp
         fake_resp.__exit__.return_value = False
 
-        with patch("urllib.request.urlopen", return_value=fake_resp):
+        with patch("urllib.request.OpenerDirector.open", return_value=fake_resp):
             result = executor.execute_network(cap)
 
         assert isinstance(result, NetworkResponse)
@@ -386,7 +386,7 @@ class TestExecuteNetwork:
         fake_resp.__enter__.return_value = fake_resp
         fake_resp.__exit__.return_value = False
 
-        with patch("urllib.request.urlopen", return_value=fake_resp):
+        with patch("urllib.request.OpenerDirector.open", return_value=fake_resp):
             result = executor.execute_network(cap)
 
         assert result.truncated is True

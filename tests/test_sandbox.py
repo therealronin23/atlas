@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from atlas.core.contracts import OperationalMode
+from atlas.security.bwrap_jail import BwrapUnavailableError
 from atlas.security.sandbox import LayeredIsolationSandbox
 
 
@@ -85,3 +87,60 @@ class TestOmegaTakesRealSnapshot:
         assert result.operational_mode == OperationalMode.OMEGA
         assert result.snapshot_id is not None
         assert sandbox._archive_path(result.snapshot_id).is_file()
+
+
+class TestJailRouting:
+    """ADR-055: todo código generado por modelo debe pasar por execute_in_jail."""
+
+    def test_omega_routes_through_jail_not_normal(self, sandbox: LayeredIsolationSandbox, tmp_path: Path) -> None:
+        """_execute_omega debe delegar en execute_in_jail, no en _execute_normal."""
+        jail_calls: list[str] = []
+        normal_calls: list[str] = []
+
+        from atlas.security.sandbox import SandboxResult
+
+        def fake_jail(code: str, *, timeout_s: int | None = None) -> SandboxResult:
+            jail_calls.append(code)
+            return SandboxResult(
+                success=True, stdout="ok", stderr="", exit_code=0,
+                duration_ms=1, operational_mode=OperationalMode.NORMAL,
+            )
+
+        def fake_normal(code: str, working_dir: Path | None, timeout_s: int | None = None) -> SandboxResult:
+            normal_calls.append(code)
+            return SandboxResult(
+                success=True, stdout="ok", stderr="", exit_code=0,
+                duration_ms=1, operational_mode=OperationalMode.NORMAL,
+            )
+
+        sandbox.execute_in_jail = fake_jail  # type: ignore[method-assign]
+        sandbox._execute_normal = fake_normal  # type: ignore[method-assign]
+
+        sandbox.execute("print('hi')", operational_mode=OperationalMode.OMEGA)
+
+        assert jail_calls == ["print('hi')"], "OMEGA debe usar jail"
+        assert normal_calls == [], "_execute_normal NO debe ser llamado para OMEGA"
+
+    def test_omega_fail_closed_when_bwrap_absent(self, sandbox: LayeredIsolationSandbox) -> None:
+        """Sin bwrap, execute() en OMEGA debe fallar (fail-closed), no degradar a NORMAL."""
+        with patch.object(sandbox, "_get_bwrap", return_value=None):
+            result = sandbox.execute("print('hi')", operational_mode=OperationalMode.OMEGA)
+        assert result.success is False
+        assert "bwrap" in result.stderr.lower() or result.exit_code != 0
+
+    def test_normal_execute_without_omega_still_works(self, sandbox: LayeredIsolationSandbox) -> None:
+        """execute() en modo NORMAL (código interno de confianza) sigue usando _execute_normal."""
+        normal_calls: list[str] = []
+
+        from atlas.security.sandbox import SandboxResult
+
+        def fake_normal(code: str, working_dir: Path | None, timeout_s: int | None = None) -> SandboxResult:
+            normal_calls.append(code)
+            return SandboxResult(
+                success=True, stdout="ok", stderr="", exit_code=0,
+                duration_ms=1, operational_mode=OperationalMode.NORMAL,
+            )
+
+        sandbox._execute_normal = fake_normal  # type: ignore[method-assign]
+        sandbox.execute("x = 1", operational_mode=OperationalMode.NORMAL)
+        assert normal_calls == ["x = 1"]

@@ -6,36 +6,7 @@ ninguna SaaS. Atlas decide; el resto sirve a Atlas.
 
 ## Estado
 
-- **Gate A — SEALED**: visión, entidades y principios fijados.
-- **Gate B — COMPLETE**: core local funcional.
-- **Gate C — COMPLETE** (tag `v0.2-gate-c`): Hermes-VPS desplegado en
-  Hetzner CPX22 con Tailscale, REST + HMAC-SHA256 end-to-end.
-- **Gate D — COMPLETE** (tag `v0.3-gate-d`): InferenceHub real (LiteLLM),
-  KuzuDB vector + grafo, MemoryDistiller, capability tokens + AtlasExecutor,
-  Time-Travel checkpoints, Ghost Replay cache, PII Surrogate, SLM Classifier,
-  pipeline integrado en Orchestrator.
-- **Gate E — COMPLETE** (tag `v0.4-gate-e`): ADR-002 sellado como bare metal +
-  venv, dashboard web FastAPI/Jinja2 en localhost:7331, voz STT/TTS con
-  extras opcionales.
-- **Gate F — COMPLETE** (tag `v0.5-gate-f`): computer-use con Playwright
-  (BrowserTool + EditorTool + VisionLoop), Merkle logging, Orchestrator routing
-  con approval flow, ADR-013b resuelto.
-- **Gate G — COMPLETE** (tag `v0.6-gate-g`): operacionalización local.
-  Hermes-VPS restaurado y smoked, GitHub sincronizado, approvals persistentes
-  por CLI, Telegram autorizado y smoked, runbook operacional.
-- **Gate H — MVP COMPLETE** (tag `v0.7-gate-h`): H1–H6 audited synthesis,
-  gate_h_smoke.py, `atlas gate-h` CLI.
-- **Gate I — COMPLETE** (tag `v0.8-gate-i`): `atlas serve`, `atlas health`,
-  `/api/health`, `AtlasServiceRunner`, systemd unit.
-- **ADR-024 — Observability v2**: MVP sellado. TelemetryBus, MicroLedger,
-  OperationalWAL, ObservabilityStack, Prometheus opt-in (`ATLAS_PROMETHEUS=1`),
-  dashboard `/observability`.
-- **ADR-025 — ColdUpdateManager**: MVP sellado + SelfAuditLoop. Worktree
-  aislado, `atlas update propose|validate|approve|apply`, `atlas self-audit
-  run|status|proposals|report|stop`. Ciclos fríos auditables sin hot-patch.
-- **Estado vivo**: no se mantiene a mano en este README. Ejecuta
-  `atlas reality` para versión, git SHA, checks, browser, Hermes, LLM, MCP,
-  Merkle y docs freshness.
+**Gates A–I (fundaciones históricas)**: sellados en tags v0.2–v0.8 (vision → local core → inference → dashboard/voice → computer-use → operational service → synthesis → health endpoints). Incluyen ADRs de observability y cold updates. El estado vivo se consulta con `atlas reality` (versión, git SHA, checks, browser, Hermes, LLM, MCP, Merkle y freshness de docs).
 
 ## Quick start
 

@@ -207,9 +207,14 @@ class FakeSandbox:
     def __init__(self, result: FakeSandboxResult) -> None:
         self._result = result
         self.executed: list[str] = []
+        self.jail_executed: list[str] = []
 
     def execute(self, code: str, **kwargs: Any) -> FakeSandboxResult:
         self.executed.append(code)
+        return self._result
+
+    def execute_in_jail(self, code: str, **kwargs: Any) -> FakeSandboxResult:
+        self.jail_executed.append(code)
         return self._result
 
 
@@ -218,13 +223,23 @@ class TestSandboxRunVerifier:
         sandbox = FakeSandbox(FakeSandboxResult(success=True))
         v = SandboxRunVerifier(sandbox)
         assert v.verify(_artifact()).verdict is Verdict.PASS
-        assert sandbox.executed == ["x = 1"]
+        # Debe haber usado jail, no execute()
+        assert sandbox.jail_executed == ["x = 1"]
+        assert sandbox.executed == []
 
     def test_fail_carries_stderr(self) -> None:
         v = SandboxRunVerifier(FakeSandbox(FakeSandboxResult(success=False, stderr="boom", exit_code=1)))
         evidence = v.verify(_artifact())
         assert evidence.verdict is Verdict.FAIL
         assert "boom" in evidence.reason
+
+    def test_uses_jail_not_execute(self) -> None:
+        """SandboxRunVerifier debe llamar execute_in_jail, no execute() (ADR-055)."""
+        sandbox = FakeSandbox(FakeSandboxResult(success=True))
+        v = SandboxRunVerifier(sandbox)
+        v.verify(_artifact())
+        assert sandbox.jail_executed == ["x = 1"], "debe usar execute_in_jail"
+        assert sandbox.executed == [], "NO debe usar execute() directamente"
 
 
 class TestUnifiedDiffVerifier:
