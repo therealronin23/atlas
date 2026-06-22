@@ -253,7 +253,8 @@ class OutputShapeVerifier:
 
 
 class _SandboxLike(Protocol):
-    def execute(self, code: str, **kwargs: Any) -> Any: ...  # SandboxResult
+    def execute(self, code: str, **kwargs: Any) -> Any: ...  # SandboxResult (código interno de confianza)
+    def execute_in_jail(self, code: str, **kwargs: Any) -> Any: ...  # ADR-055: código generado por modelo
 
 
 class SandboxRunVerifier:
@@ -274,7 +275,8 @@ class SandboxRunVerifier:
         return artifact.kind is ArtifactKind.CODE and "code" in artifact.payload
 
     def verify(self, artifact: Artifact) -> Evidence:
-        result = self._sandbox.execute(str(artifact.payload["code"]))
+        # ADR-055: código generado por modelo SIEMPRE via jail OS-level (fail-closed).
+        result = self._sandbox.execute_in_jail(str(artifact.payload["code"]))
         ok = bool(result.success)
         detail = "" if ok else (result.stderr or f"exit={result.exit_code}")
         check = Check(name="sandbox_exec", passed=ok, detail=detail[:500], cost=self.cost)

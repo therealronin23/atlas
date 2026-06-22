@@ -174,7 +174,35 @@ def parse_gate_f_command(
 
 
 def resolve_path(workspace: Path, value: str) -> Path:
-    path = Path(value).expanduser()
-    if path.is_absolute():
-        return path
-    return (workspace / path).resolve()
+    """Resuelve *value* relativo a *workspace* y garantiza contención.
+
+    Reglas (fail-closed, input no confiable):
+    - Tilde (~) en input externo se rechaza: expanduser() podría escapar.
+    - Rutas absolutas se aceptan solo si ya están bajo *workspace*.
+    - Traversal relativo (../../) se detecta tras resolve() y se rechaza.
+    Lanza ValueError si el path resultante escapa del workspace.
+    """
+    # Rechazar tilde explícita: expanduser sobre input no confiable escapa.
+    if value.startswith("~"):
+        raise ValueError(
+            f"resolve_path: tilde en input no confiable rechazado: {value!r}"
+        )
+
+    workspace_resolved = workspace.resolve()
+    raw = Path(value)
+
+    if raw.is_absolute():
+        candidate = raw.resolve()
+    else:
+        candidate = (workspace_resolved / raw).resolve()
+
+    # Verificar contención estricta.
+    try:
+        candidate.relative_to(workspace_resolved)
+    except ValueError:
+        raise ValueError(
+            f"resolve_path: path {candidate!r} escapa del workspace "
+            f"{workspace_resolved!r} (input: {value!r})"
+        )
+
+    return candidate
