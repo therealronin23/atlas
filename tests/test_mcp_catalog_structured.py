@@ -104,13 +104,13 @@ def test_real_catalog_loads_and_is_classified() -> None:
         assert e.sector and e.status in {"candidato", "verificado", "instalado"}
 
 
-def test_real_catalog_verified_are_only_proven() -> None:
-    """Honesto: solo lo prove-it-eado está `verificado`. Hoy: `everything`
-    (server de referencia, prove-it OK). Si crece, es decisión explícita."""
+def test_real_catalog_verified_are_vetted_and_installable() -> None:
+    """Invariante: toda entrada verificada tiene install no vacío y trust==vetted."""
     from atlas.mcp.catalog import installable, load_catalog
 
-    assert {e.name for e in installable(load_catalog(_CATALOG))} == {
-        "everything", "sequential-thinking", "mcp-memory"}
+    for e in installable(load_catalog(_CATALOG)):
+        assert e.install, f"{e.name}: verificado pero install vacío"
+        assert e.trust == "vetted", f"{e.name}: verificado pero trust={e.trust!r}, se esperaba 'vetted'"
 
 
 # ---------------------------------------------------------------------------
