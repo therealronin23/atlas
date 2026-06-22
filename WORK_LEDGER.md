@@ -208,3 +208,4 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 - ⏸ Paper `subject_enforced_completeness` — listo; subida a arXiv = acción del usuario.
 - ⏸ Deuda diferida del sustrato: multihilo (sin consumidor), IC/corpus mayor en 1c.
 - ✅ **opt#1 lazy-spawn**: McpRegistry.ensure_started + dispatch arranca el owner on-demand; serve() sin start_all (índice desde native_roots). Cero spawns/descargas al conectar el tronco. 7 tests.
+- ✅ **opt#2 creds-en-tronco**: serve() carga ~/.config/atlas-mcp/secrets.env (setdefault) → los MCP con env_passthrough (google-workspace) se pueden frontear por el tronco. Secretos fuera de git.
