@@ -228,3 +228,6 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 - ✅ **opt#5 subdirs-anidados**: `nested_dir_candidates` (categories/<cat>/<item>) en line_seed + subagents añadido a LINES del sync (item:nested) → ya no queda congelado. 1 test. (2 nits mypy pre-existentes corregidos.)
 - ✅ **opt#6 dedup**: `dedupe_by_kind_name` (por kind+name, conserva primero) en catalog, aplicado en mcp_sync y mcp_classify_seeded antes de clasificar → sin duplicados entre fuentes. 3 tests.
 - ✅ **opt#7 classify-refinado**: podados alias genéricos de programación + subsector pesa 2× (específico gana). programación 258→195 (−24
+## Línea: Atlas usa el ecosistema + motor de auto-construcción
+- ✅ **A conectar Atlas al tronco**: `atlas_mcp_config` + `scripts/atlas_install_trunk.py` → escribe ~/atlas/mcp_servers.json apuntando al tronco (fusiona, no pisa). Atlas pasa a USAR memoria/knowledge/skills/APIs. 9 tests.
+- ✅ **B motor backlog (dry-run honesto)**: `self_maintenance/backlog.py` (BacklogItem/load_backlog/pending) + `docs/backlog.yaml` (6 huecos Fase 2) + `scripts/atlas_self_build.py` (lista qué atacar por prioridad). Base del motor de auto-construcción; no genera código aún (consent). 5 tests.

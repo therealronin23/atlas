@@ -79,3 +79,44 @@ def tool_overhead() -> int:
     """Cuántas tools ve el cliente sumando las raíces nativas. Mide el coste de
     contexto (el problema real del kitchen-sink: cuántas tools a la vez)."""
     return sum(len(r.tools) for r in native_roots())
+
+
+# ---------------------------------------------------------------------------
+# Config para el tronco agregado (atlas.mcp.trunk_server)
+# ---------------------------------------------------------------------------
+
+_TRUNK_READ_ONLY_TOOLS = [
+    "trunk_sectors",
+    "trunk_subsectors",
+    "trunk_tools",
+    "trunk_kinds",
+    "trunk_catalog",
+    "trunk_find",
+    "list_skills",
+    "get_skill",
+]
+
+
+def atlas_mcp_config(
+    *, save_dir: Path, repo_root: Path, python: str | None = None
+) -> list[dict[str, object]]:
+    """Devuelve la lista de un server MCP (formato mcp_servers.json) que
+    arranca el tronco agregado (atlas.mcp.trunk_server).
+
+    Args:
+        save_dir:  Ruta al directorio de persistencia del tronco (~/atlas-mcp).
+        repo_root: Raíz del repositorio atlas-core.
+        python:    Ejecutable Python; si None, usa sys.executable.
+
+    Returns:
+        Lista con un dict listo para serializar como mcp_servers.json.
+    """
+    exe = python if python is not None else sys.executable
+    entry: dict[str, object] = {
+        "name": "atlas-trunk",
+        "cmd": [exe, "-m", "atlas.mcp.trunk_server", str(save_dir), str(repo_root)],
+        "read_only_tools": _TRUNK_READ_ONLY_TOOLS,
+        "enabled": True,
+        "timeout_seconds": 30.0,
+    }
+    return [entry]

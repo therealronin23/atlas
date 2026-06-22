@@ -1,0 +1,102 @@
+items:
+  - id: f2-1-multihop
+    title: "Multi-hop recall en el sustrato de memoria"
+    why: >
+      El recall actual es plano: devuelve memorias individuales pero no encadena N memorias
+      para responder a preguntas que requieren razonamiento entre ellas. Es el próximo hito
+      Fase 2 según el ledger y es de tipo-1 (afecta la utilidad central del sustrato).
+    targets:
+      - "src/atlas/memory/sqlite_memory_index.py"
+      - "src/atlas/memory/memory_manager.py"
+    acceptance: >
+      `recall_multihop(query, hops=N)` devuelve una cadena verificable de hasta N memorias
+      relacionadas; test de integración demuestra que la respuesta final no es alcanzable
+      con un solo hop; Merkle chain sigue válida.
+    priority: 1
+    status: pending
+
+  - id: f2-2-pii-crypto-shredding
+    title: "PII/crypto-shredding: olvido real del contenido"
+    why: >
+      Hoy `retire` elimina del índice pero el contenido persiste cifrado en disco. Para
+      cumplir el EU AI Act (GAP-1 crítico) el olvido debe ser irrecuperable: destruir la
+      clave → dato cifrado ilegible, sin romper la cadena Merkle. Es tipo-1/2 FUNDACIONAL.
+    targets:
+      - "src/atlas/memory/sqlite_memory_index.py"
+      - "src/atlas/memory/memory_manager.py"
+    acceptance: >
+      `shred(memory_id)` destruye la clave de cifrado del ítem; tras shred, cualquier
+      intento de recuperar el contenido devuelve error irrecuperable; el índice Merkle
+      sigue siendo verificable (el slot aparece como 'shredded', no ausente); test de
+      integración con un ítem PII sintético demuestra irrecuperabilidad.
+    priority: 1
+    status: pending
+
+  - id: f2-3-honest-eval
+    title: "Evaluación honesta: benchmark anti-trampa"
+    why: >
+      El diseño ya existe (hilo-B del design doc) pero no está construido. Sin un benchmark
+      que mida honestamente la calidad del recall evitamos el riesgo de optimizar métricas
+      que no reflejan la realidad (Goodhart). Es tipo-1.
+    targets:
+      - "src/atlas/memory/"
+      - "tests/benchmarks/"
+    acceptance: >
+      Script `scripts/eval_memory_benchmark.py` ejecuta un conjunto fijo de N queries sobre
+      un corpus sintético controlado, reporta precision/recall/F1 sin acceso al corpus
+      durante la indexación (anti-leak), y produce un informe reproducible; CI no lo puede
+      pasar sin datos reales.
+    priority: 2
+    status: pending
+
+  - id: f2-4-memory-poisoning
+    title: "Envenenamiento de memoria: write-gating genérico"
+    why: >
+      `LessonVerifier` existe en el tenant de seguridad pero el motor genérico no tiene
+      write-gating. Un adversario puede inyectar memorias falsas por cualquier path no
+      asegurado. Es tipo-1; el ledger lo marca como 'parcial'.
+    targets:
+      - "src/atlas/memory/memory_manager.py"
+      - "src/atlas/core/self_maintenance/analyst.py"
+    acceptance: >
+      Todo `add_memory` pasa por un `WriteGate` configurable (por defecto: hash de
+      procedencia requerido); test de integración demuestra que una memoria sin procedencia
+      válida es rechazada; el tenant de seguridad puede inyectar un `LessonVerifier`
+      como política.
+    priority: 2
+    status: pending
+
+  - id: f2-5-tenancy-isolation
+    title: "Fuga entre usuarios/tenancy: namespacing del índice"
+    why: >
+      El índice SQLite actual no separa namespaces por tenant/usuario. En despliegues multi-
+      usuario cualquier query puede filtrar memorias de otro usuario. Es tipo-1: defecto de
+      seguridad fundamental antes de cualquier despliegue real.
+    targets:
+      - "src/atlas/memory/sqlite_memory_index.py"
+      - "src/atlas/memory/memory_manager.py"
+    acceptance: >
+      Cada operación de índice acepta un `tenant_id`; queries de tenant A no devuelven
+      resultados de tenant B bajo ninguna condición; test de integración con 2 tenants
+      sintéticos y 10 memorias cada uno demuestra aislamiento completo; migración de índices
+      existentes documentada.
+    priority: 1
+    status: pending
+
+  - id: f2-6-personalization-vs-contamination
+    title: "Personalización vs contaminación: política de límite"
+    why: >
+      El sustrato aprende patrones del usuario (personalización deseable) pero puede
+      contaminar el conocimiento objetivo con sesgos individuales (contaminación indeseable).
+      No existe política ni mecanismo de separación. Es tipo-3-ish según el ledger: afecta
+      la fiabilidad del conocimiento a largo plazo. Marcado como 'muro' en el ledger.
+    targets:
+      - "src/atlas/memory/memory_manager.py"
+      - "src/atlas/core/self_maintenance/analyst.py"
+    acceptance: >
+      `MemoryManager` distingue entre memorias 'personal' y 'factual' por metadato de
+      procedencia; el recall por defecto no mezcla tipos sin flag explícito; existe política
+      de expiración diferenciada (personal: TTL corto; factual: TTL largo o sin expiración);
+      test demuestra que contaminación sintética no afecta recall factual.
+    priority: 3
+    status: pending
