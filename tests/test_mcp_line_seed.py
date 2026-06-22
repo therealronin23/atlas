@@ -107,6 +107,47 @@ def test_apis_to_candidates_extracts_title_and_provenance() -> None:
     assert "apis.guru" in c["provenance"]["source"]
 
 
+# --- nested_dir_candidates (repos anidados: categories/<cat>/<item>.md) ---
+
+import json as _json
+
+_NESTED_CATS = _json.dumps([
+    {"name": "core-development", "type": "dir"},
+    {"name": "data-ai", "type": "dir"},
+])
+_NESTED_CORE = _json.dumps([{"name": "backend-dev.md", "type": "file"}])
+_NESTED_AI = _json.dumps([{"name": "ml-engineer.md", "type": "file"}])
+
+
+def _nested_stub(method, url, body, headers):
+    if url.endswith("/contents/categories"):
+        return 200, _NESTED_CATS
+    if "/categories/core-development" in url:
+        return 200, _NESTED_CORE
+    if "/categories/data-ai" in url:
+        return 200, _NESTED_AI
+    return 404, "[]"
+
+
+def test_nested_dir_candidates_returns_two_items_with_category_tags() -> None:
+    from atlas.mcp.line_seed import nested_dir_candidates
+
+    cands = nested_dir_candidates(
+        repo="VoltAgent/awesome-claude-code-subagents",
+        parent_subdir="categories",
+        kind="subagent",
+        install_template="curl -O https://raw.githubusercontent.com/{repo}/main/{subdir}/{file}",
+        fetcher=_nested_stub,
+    )
+    assert len(cands) == 2, f"esperados 2 candidatos, got {len(cands)}"
+    by_name = {c["name"]: c for c in cands}
+    assert set(by_name) == {"backend-dev", "ml-engineer"}
+    assert by_name["backend-dev"]["kind"] == "subagent"
+    assert by_name["ml-engineer"]["kind"] == "subagent"
+    assert "core-development" in by_name["backend-dev"]["tags"]
+    assert "data-ai" in by_name["ml-engineer"]["tags"]
+
+
 # --- Ficheros sembrados por línea (guard de integridad) ---
 
 

@@ -74,6 +74,46 @@ def dirs_to_candidates(
     return out
 
 
+def nested_dir_candidates(
+    *, repo: str, parent_subdir: str, kind: str, install_template: str,
+    fetcher: Fetcher | None = None, sector: str = "uncategorized",
+) -> list[dict[str, Any]]:
+    """Repos anidados: <parent_subdir>/<categoria>/<item>.md (e.g. subagents).
+
+    1. Fetch <parent_subdir> → lista de dirs de categoría.
+    2. Por cada categoría, fetch <parent_subdir>/<cat> → ficheros.
+    3. Aplica files_to_candidates y añade el nombre de la categoría a `tags`.
+    """
+    cat_source = GithubLineSource(repo, parent_subdir, fetcher=fetcher)
+    cat_records = cat_source.fetch(None)
+    if not cat_records or cat_records[0].status != 200:
+        return []
+
+    import json as _json
+    cat_payload: list[dict[str, Any]] = _json.loads(cat_records[0].payload)
+    out: list[dict[str, Any]] = []
+    for entry in cat_payload:
+        if entry.get("type") != "dir":
+            continue
+        cat = entry.get("name")
+        if not cat:
+            continue
+        item_source = GithubLineSource(repo, f"{parent_subdir}/{cat}", fetcher=fetcher)
+        item_records = item_source.fetch(None)
+        if not item_records or item_records[0].status != 200:
+            continue
+        item_payload: list[dict[str, Any]] = _json.loads(item_records[0].payload)
+        cands = files_to_candidates(
+            item_payload, repo=repo, subdir=f"{parent_subdir}/{cat}",
+            kind=kind, install_template=install_template, sector=sector,
+        )
+        for c in cands:
+            if cat not in c["tags"]:
+                c["tags"] = [cat] + c["tags"]
+        out.extend(cands)
+    return out
+
+
 def files_to_candidates(
     payload: list[dict[str, Any]], *, repo: str, subdir: str, kind: str,
     install_template: str, sector: str = "uncategorized",

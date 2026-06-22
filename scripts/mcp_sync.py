@@ -18,6 +18,7 @@ import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -27,7 +28,7 @@ import yaml  # noqa: E402
 from atlas.mcp.catalog import classify, classify_subsector, load_catalog, load_taxonomy  # noqa: E402
 from atlas.mcp.line_seed import (  # noqa: E402
     ApisGuruSource, GithubLineSource, apis_to_candidates,
-    dirs_to_candidates, files_to_candidates,
+    dirs_to_candidates, files_to_candidates, nested_dir_candidates,
 )
 from atlas.mcp.registry_seed import RegistrySource, registry_to_candidates  # noqa: E402
 
@@ -38,7 +39,7 @@ CLASSIFIED = ROOT / "docs" / "design" / "mcp_catalog_classified.yaml"
 # Fuentes por LÍNEA (repos awesome-* verificados). item: dir|file.
 _NPX = "npx skills add {repo} --skill {name}"
 _CURL = "curl -O https://raw.githubusercontent.com/{repo}/main/{subdir}/{file}"
-LINES = [
+LINES: list[dict[str, Any]] = [
     {"line": "skills", "repo": "vercel-labs/agent-skills", "subdir": "skills", "kind": "skill", "item": "dir", "install": _NPX, "cap": 80},
     {"line": "commands", "repo": "hesreallyhim/awesome-claude-code", "subdir": "resources/slash-commands", "kind": "command", "item": "dir", "install": "git clone https://github.com/{repo}", "cap": 80},
     {"line": "rules", "repo": "PatrickJS/awesome-cursorrules", "subdir": "rules", "kind": "rule", "item": "file", "install": _CURL, "cap": 80},
@@ -46,6 +47,7 @@ LINES = [
     {"line": "plugins", "repo": "rohitg00/awesome-claude-code-toolkit", "subdir": "plugins", "kind": "plugin", "item": "dir", "install": "git clone https://github.com/{repo}", "cap": 80},
     {"line": "workflows", "repo": "Zie619/n8n-workflows", "subdir": "workflows", "kind": "workflow", "item": "dir", "install": "git clone https://github.com/{repo}", "cap": 80},
     {"line": "hooks", "repo": "disler/claude-code-hooks-mastery", "subdir": ".claude/hooks", "kind": "hook", "item": "file", "install": _CURL, "cap": 40},
+    {"line": "subagents", "repo": "VoltAgent/awesome-claude-code-subagents", "subdir": "categories", "kind": "subagent", "item": "nested", "install": "curl -O https://raw.githubusercontent.com/{repo}/main/{subdir}/{file}", "cap": 80},
 ]
 # Política de fallback de clasificación por línea (sin señal de alias).
 KIND_DEFAULT = {"workflow": "productividad", "plugin": "ia-agentes", "subagent": "ia-agentes",
@@ -53,7 +55,7 @@ KIND_DEFAULT = {"workflow": "productividad", "plugin": "ia-agentes", "subagent":
                 "tool": "infraestructura", "api": "datos"}
 
 
-def _write(path: Path, entries: list[dict], label: str, source: str) -> int:
+def _write(path: Path, entries: list[dict[str, Any]], label: str, source: str) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     doc = {"_generated": {"by": "scripts/mcp_sync.py", "at": datetime.now(timezone.utc).isoformat(),
                           "source": source, "note": "MÁQUINA-GENERADO. candidato/uncategorized."},
@@ -86,6 +88,15 @@ def _download() -> None:
     # Líneas GitHub
     for s in LINES:
         try:
+            if s["item"] == "nested":
+                cands = nested_dir_candidates(
+                    repo=str(s["repo"]), parent_subdir=str(s["subdir"]),
+                    kind=str(s["kind"]), install_template=str(s["install"]),
+                    fetcher=None,
+                )[: int(s["cap"])]
+                n = _write(SEEDED / f"{s['line']}_seeded.yaml", cands, f"{s['line']} (sembrado)", f"github.com/{s['repo']}")
+                print(f"  {s['line']}: {n}")
+                continue
             rec = GithubLineSource(s["repo"], s["subdir"]).fetch(None)[0]
             if rec.status != 200:
                 print(f"  {s['line']}: status {rec.status}"); continue
@@ -105,7 +116,7 @@ def _classify() -> None:
     print("== clasificación ==")
     tax = load_taxonomy(CURATED)
     seeded = sorted(set((ROOT / "docs/design").glob("*seeded*.yaml")) | set(SEEDED.glob("*.yaml")))
-    by_sector: dict[str, list[dict]] = {}
+    by_sector: dict[str, list[dict[str, Any]]] = {}
     for f in seeded:
         for e in load_catalog(f):
             sec = classify(e.name, e.purpose, e.tags, tax, kind=e.kind, kind_default=KIND_DEFAULT)
