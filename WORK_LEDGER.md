@@ -164,8 +164,11 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     infra 20, ciber/investig 17, …; 203 uncategorized sin señal = honesto). El tronco carga curado +
     clasificado para el BROWSE (candidatos nunca se conectan; trunk_children filtra a verificado/
     instalado). Live: 11 líneas, browse por dominio poblado, find sobre 700+. "En todas partes" ✅.
-  - ⬜ PENDIENTE (decisión/consent, no código): subir cobertura (más alias) + prove-it→verificar items
-    concretos por sector cuando se necesiten.
+  - ✅ Fallback por línea en `classify` (`kind_default`): sin señal de alias, enruta por naturaleza del
+    kind (workflow→productividad, plugin/subagent→ia-agentes, hook/tool→infra, command/rule→programación,
+    api→datos); transversales (prompt/skill/mcp) a alias-only. Uncategorized 203→43. La señal SIEMPRE gana.
+  - ⬜ PENDIENTE (decisión/consent, no código): prove-it→verificar items concretos por sector cuando se
+    necesiten (el flujo ya está estrenado para mcp/skills/externos).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

@@ -25,6 +25,20 @@ from atlas.mcp.catalog import classify, load_catalog, load_taxonomy  # noqa: E40
 _CURATED = ROOT / "docs" / "design" / "mcp_catalog.yaml"
 _OUT = ROOT / "docs" / "design" / "mcp_catalog_classified.yaml"
 
+# Política de fallback por LÍNEA (cuando el nombre/tags no dan señal de dominio):
+# enruta por la naturaleza del kind. Las líneas transversales (prompt/skill/mcp) se
+# dejan a alias-only (no se fuerzan).
+_KIND_DEFAULT = {
+    "workflow": "productividad",   # automatizaciones/integraciones SaaS
+    "plugin": "ia-agentes",
+    "subagent": "ia-agentes",
+    "hook": "infraestructura",     # ciclo de vida/ops
+    "command": "programacion",
+    "rule": "programacion",
+    "tool": "infraestructura",
+    "api": "datos",                # servicios de datos por defecto
+}
+
 
 def _seeded_files() -> list[Path]:
     d = ROOT / "docs" / "design"
@@ -37,7 +51,8 @@ def main() -> int:
     line_counts: Counter[str] = Counter()
     for f in _seeded_files():
         for e in load_catalog(f):
-            sector = classify(e.name, e.purpose, e.tags, tax)
+            sector = classify(e.name, e.purpose, e.tags, tax,
+                               kind=e.kind, kind_default=_KIND_DEFAULT)
             line_counts[e.kind] += 1
             by_sector.setdefault(sector, []).append({
                 "name": e.name, "kind": e.kind, "subsector": e.subsector,
