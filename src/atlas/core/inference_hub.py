@@ -181,13 +181,15 @@ DEFAULT_PROVIDERS: list[Provider] = [
         rpm_limit=15,
         context_tokens=1000000,
     ),
-    # L2 — Frontier: NVIDIA NIM (meta/llama-3.1-405b-instruct, pool 2 cuentas)
+    # L2 — NVIDIA NIM (meta/llama-3.3-70b-instruct, pool 2 cuentas). Prove-it 2026-06-22:
+    # en este tier responden modelos 70B; 405b/deepseek/nemotron dan 404/410. Aporta
+    # 2º proveedor + account_pool/fallback, no un modelo mayor que groq-70b.
     Provider(
         name="nvidia_llama_large",
         level=InferenceLevel.L2,
         base_url="https://integrate.api.nvidia.com/v1",
-        model_id="meta/llama-3.1-405b-instruct",
-        litellm_model="nvidia_nim/meta/llama-3.1-405b-instruct",
+        model_id="meta/llama-3.3-70b-instruct",
+        litellm_model="nvidia_nim/meta/llama-3.3-70b-instruct",
         api_key_env="NVIDIA_API_KEY",
         free_tier=False,
         rpm_limit=30,
