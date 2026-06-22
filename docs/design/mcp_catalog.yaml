@@ -42,7 +42,7 @@ sectors:
       - {name: Frontend Design / Senior Frontend, kind: skill, subsector: ui, purpose: "UI production-grade", tags: [diseno, programacion], status: candidato}
       - {name: UI UX Pro Max, kind: skill, subsector: ui, purpose: "paletas/tipografía/componentes", status: candidato}
       - {name: Figma (MCP / Implement Design), kind: mcp, subsector: grafico, purpose: "Figma → código", status: candidato}
-      - {name: Vercel Web Design Guidelines, kind: skill, subsector: ux, purpose: "auditoría UX/accesibilidad", status: candidato}
+      - {name: web-design-guidelines, kind: skill, subsector: ux, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill web-design-guidelines", purpose: "auditoría UX/accesibilidad (instalado E2E)", trust: vetted, status: instalado}
 
   ciberseguridad:
     label: Ciberseguridad
@@ -114,6 +114,7 @@ sectors:
       - {name: Linear, kind: mcp, subsector: gestion, purpose: "tickets", status: candidato}
       - {name: Slack, kind: mcp, subsector: comunicacion, purpose: "comunicación", status: candidato}
       - {name: Document Skills (PDF/DOCX/XLSX/PPTX), kind: skill, subsector: ofimatica, purpose: "ofimática", tags: [productividad, datos], status: candidato}
+      - {name: writing-guidelines, kind: skill, subsector: ofimatica, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill writing-guidelines", purpose: "guías de escritura/contenido (instalado E2E)", trust: vetted, status: instalado}
 
   ia-agentes:
     label: IA y agentes

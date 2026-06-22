@@ -174,6 +174,9 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ **MCP de referencia verificados** (prove-it LIVE, sin secretos): `sequential-thinking` (ia-agentes/
     planning) + `mcp-memory` (knowledge graph oficial, conocimiento-memoria/grafos). Catálogo verificado/
     vetted; el tronco los frontea automáticamente → 6 hijos (3 nuestros + everything + 2 nuevos).
+  - ✅ **2 skills más instalados E2E** (sin secretos): `web-design-guidelines` (diseño/ux) +
+    `writing-guidelines` (productividad/ofimática), vivos en la lista de skills. Catálogo: 48 entradas
+    (12 instalado, 3 verificado). Items verificados/instalados ya cubren mcp·api·skill en varios dominios.
   - PENDIENTE (consent/credenciales): items que requieran secretos (Slack/Linear/Postgres/…) =
     autorización explícita por item.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
