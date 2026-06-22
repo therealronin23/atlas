@@ -6,14 +6,13 @@ items:
       para responder a preguntas que requieren razonamiento entre ellas. Es el próximo hito
       Fase 2 según el ledger y es de tipo-1 (afecta la utilidad central del sustrato).
     targets:
-      - "src/atlas/memory/sqlite_memory_index.py"
-      - "src/atlas/memory/memory_manager.py"
+      - "src/atlas/memory/memory_index.py"
     acceptance: >
       `recall_multihop(query, hops=N)` devuelve una cadena verificable de hasta N memorias
       relacionadas; test de integración demuestra que la respuesta final no es alcanzable
       con un solo hop; Merkle chain sigue válida.
     priority: 1
-    status: pending
+    status: done  # 2026-06-22: SqliteMemoryIndex.recall_multihop + 11 tests (criterio central: C no alcanzable en 1 hop)
 
   - id: f2-2-pii-crypto-shredding
     title: "PII/crypto-shredding: olvido real del contenido"
