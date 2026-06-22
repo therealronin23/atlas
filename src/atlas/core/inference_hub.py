@@ -181,6 +181,19 @@ DEFAULT_PROVIDERS: list[Provider] = [
         rpm_limit=15,
         context_tokens=1000000,
     ),
+    # L2 — Frontier: NVIDIA NIM (meta/llama-3.1-405b-instruct, pool 2 cuentas)
+    Provider(
+        name="nvidia_llama_large",
+        level=InferenceLevel.L2,
+        base_url="https://integrate.api.nvidia.com/v1",
+        model_id="meta/llama-3.1-405b-instruct",
+        litellm_model="nvidia_nim/meta/llama-3.1-405b-instruct",
+        api_key_env="NVIDIA_API_KEY",
+        free_tier=False,
+        rpm_limit=30,
+        context_tokens=128000,
+        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+    ),
     Provider(
         name="ollama_local",
         level=InferenceLevel.L0,
@@ -396,6 +409,8 @@ class InferenceHub:
         # Si Ollama no esta corriendo, _call_provider_real captura el error.
         if provider.api_key_env is None:
             return True
+        if provider.account_pool:
+            return any(os.environ.get(k) for k in provider.account_pool)
         return bool(os.environ.get(provider.api_key_env))
 
     def _call_provider(
@@ -451,7 +466,16 @@ class InferenceHub:
                 extra_kwargs["api_base"] = provider.base_url
                 extra_kwargs["api_key"] = "ollama"
             else:
-                key = os.environ.get(provider.api_key_env)
+                # Si hay account_pool, prueba cada clave en orden hasta encontrar una.
+                # Sin pool (providers legacy), usa api_key_env directamente.
+                key: str | None = None
+                if provider.account_pool:
+                    for env_var in provider.account_pool:
+                        key = os.environ.get(env_var)
+                        if key:
+                            break
+                else:
+                    key = os.environ.get(provider.api_key_env)
                 if key:
                     extra_kwargs["api_key"] = key
             if request.tools:
