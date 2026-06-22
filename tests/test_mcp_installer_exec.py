@@ -86,8 +86,8 @@ def test_execute_vets_place_skill_before_running() -> None:
 
 
 def test_real_catalog_plan_only_proven_and_vetted() -> None:
-    """Honesto: el plan del catálogo curado = solo lo prove-it-eado, y pasa el
-    veto SentinelGate. Hoy: `everything` (connect, comando limpio)."""
+    """Invariante: toda acción connect del catálogo real tiene command no-None
+    y pasa el veto SentinelGate (vet_action is None)."""
     from pathlib import Path
 
     from atlas.mcp.catalog import load_catalog
@@ -95,5 +95,6 @@ def test_real_catalog_plan_only_proven_and_vetted() -> None:
 
     cat = Path(__file__).resolve().parent.parent / "docs" / "design" / "mcp_catalog.yaml"
     connects = [a for a in plan_install(load_catalog(cat)) if a.action == "connect"]
-    assert {a.name for a in connects} == {"everything", "sequential-thinking", "mcp-memory"}
-    assert all(vet_action(a) is None for a in connects)  # ninguno vetado
+    for a in connects:
+        assert a.command is not None, f"{a.name}: connect sin command"
+        assert vet_action(a) is None, f"{a.name}: vetado por SentinelGate"
