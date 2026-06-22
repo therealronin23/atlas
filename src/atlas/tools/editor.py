@@ -301,52 +301,21 @@ class EditorTool:
         clearance: str | None = None,
     ) -> DiffResult:
         """
-        Aplica un diff unificado a un archivo usando git apply o patch.
-        Si el archivo esta bajo un repositorio git, intenta primero `git apply`.
-        Si no hay repo git o git falla, usa `patch` si está disponible.
+        Aplica un diff unificado a un archivo usando `patch`.
+        Desde SEC-01 `git apply` está bloqueado como verbo mutante (no debe ser
+        invocable por shell crudo); la ruta sancionada del editor aplica el diff
+        con `patch` (gateado por HITL + AtlasExecutor). Si el archivo está bajo un
+        repo git se ejecuta `patch` desde la raíz del repo (los diffs `a/`/`b/`
+        resuelven con `-p1`); si no, desde el directorio del archivo.
         """
         resolved = file_path.expanduser().resolve()
         git_dir = self._find_git_dir(resolved)
         diff_path = self._write_tmp_diff(diff_text)
 
         try:
-            if git_dir is not None:
-                result = self._executor.execute_exec(
-                    self._executor.issuer.issue_exec(
-                        "git",
-                        args=("apply", str(diff_path)),
-                        working_dir=git_dir,
-                        timeout_s=10,
-                        clearance=clearance,
-                    )
-                )
-                if result.exit_code == 0:
-                    return DiffResult(
-                        success=True, file=str(resolved), applied=True,
-                        stdout=result.stdout, stderr=result.stderr,
-                    )
-
-                result2 = self._executor.execute_exec(
-                    self._executor.issuer.issue_exec(
-                        "git",
-                        args=("apply", "--recount", str(diff_path)),
-                        working_dir=git_dir,
-                        timeout_s=10,
-                        clearance=clearance,
-                    )
-                )
-                if result2.exit_code == 0:
-                    return DiffResult(
-                        success=True, file=str(resolved), applied=True,
-                        stdout=result2.stdout, stderr=result2.stderr,
-                    )
-
-                return self._try_patch_apply(
-                    diff_path, resolved.parent, str(resolved), clearance=clearance,
-                )
-
+            patch_cwd = git_dir if git_dir is not None else resolved.parent
             return self._try_patch_apply(
-                diff_path, resolved.parent, str(resolved), clearance=clearance,
+                diff_path, patch_cwd, str(resolved), clearance=clearance,
             )
         except (CapabilityDenied, ExecutorError) as e:
             return DiffResult(
