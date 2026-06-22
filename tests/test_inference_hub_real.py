@@ -446,3 +446,111 @@ class TestOllamaL0:
         assert resp.success is True
         assert resp.provider == "ollama_local"
         assert resp.text == "respuesta L0"
+
+
+# ---------------------------------------------------------------------------
+# Tests NVIDIA NIM frontier (L2)
+# ---------------------------------------------------------------------------
+
+class TestNvidiaNimProvider:
+
+    def test_nvidia_provider_in_default_providers(self) -> None:
+        """nvidia_llama_large debe estar en DEFAULT_PROVIDERS con campos correctos."""
+        nvidia = next((p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large"), None)
+        assert nvidia is not None, "nvidia_llama_large no encontrado en DEFAULT_PROVIDERS"
+        assert nvidia.level == InferenceLevel.L2
+        assert nvidia.litellm_model == "nvidia_nim/meta/llama-3.1-405b-instruct"
+        assert nvidia.model_id == "meta/llama-3.1-405b-instruct"
+        assert nvidia.base_url == "https://integrate.api.nvidia.com/v1"
+        assert nvidia.api_key_env == "NVIDIA_API_KEY"
+        assert nvidia.account_pool == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
+        assert len(nvidia.account_pool) == 2
+
+    def test_nvidia_resolve_live_with_primary_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Hub considera NVIDIA disponible cuando NVIDIA_API_KEY está en entorno."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("NVIDIA_API_KEY", "test-nvidia-key")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        # Clonar para no mutar el singleton
+        import copy
+        prov = copy.copy(nvidia)
+        hub = InferenceHub(providers=[prov], mode="auto")
+        assert hub._resolve_live_for(prov) is True
+
+    def test_nvidia_resolve_live_with_secondary_key_only(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Hub considera NVIDIA disponible cuando solo NVIDIA_API_KEY_2 está en entorno."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+        monkeypatch.setenv("NVIDIA_API_KEY_2", "test-nvidia-key-2")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        import copy
+        prov = copy.copy(nvidia)
+        hub = InferenceHub(providers=[prov], mode="auto")
+        assert hub._resolve_live_for(prov) is True
+
+    def test_nvidia_resolve_live_false_without_keys(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Hub no activa NVIDIA si ninguna clave del pool está en entorno."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+        monkeypatch.delenv("NVIDIA_API_KEY_2", raising=False)
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        import copy
+        prov = copy.copy(nvidia)
+        hub = InferenceHub(providers=[prov], mode="auto")
+        assert hub._resolve_live_for(prov) is False
+
+    def test_nvidia_uses_primary_key_in_litellm_call(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Cuando NVIDIA_API_KEY está seteada, se pasa al litellm.completion."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("NVIDIA_API_KEY", "primary-nvidia-key")
+        monkeypatch.delenv("NVIDIA_API_KEY_2", raising=False)
+
+        captured: dict[str, Any] = {}
+
+        def mock_completion(**kw: Any) -> Any:
+            captured.update(kw)
+            return _ok_completion("nvidia response")
+
+        monkeypatch.setattr(litellm, "completion", mock_completion)
+
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        import copy
+        prov = copy.copy(nvidia)
+        hub = InferenceHub(providers=[prov], mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="hello", level=InferenceLevel.L2))
+
+        assert resp.success is True
+        assert captured.get("api_key") == "primary-nvidia-key"
+
+    def test_nvidia_uses_secondary_key_when_primary_absent(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Cuando solo NVIDIA_API_KEY_2 existe, se usa esa clave en litellm."""
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+        monkeypatch.setenv("NVIDIA_API_KEY_2", "secondary-nvidia-key")
+
+        captured: dict[str, Any] = {}
+
+        def mock_completion(**kw: Any) -> Any:
+            captured.update(kw)
+            return _ok_completion("nvidia secondary response")
+
+        monkeypatch.setattr(litellm, "completion", mock_completion)
+
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        import copy
+        prov = copy.copy(nvidia)
+        hub = InferenceHub(providers=[prov], mode="auto")
+        resp = hub.infer(InferenceRequest(prompt="hello", level=InferenceLevel.L2))
+
+        assert resp.success is True
+        assert captured.get("api_key") == "secondary-nvidia-key"

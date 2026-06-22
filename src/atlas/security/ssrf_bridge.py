@@ -39,6 +39,7 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "api.apis.guru",                         # directorio OpenAPI (seeder de APIs, mcp trunk C)
     "api.open-meteo.com",                     # clima sin auth (knowledge-src, mcp trunk C)
     "api.frankfurter.app",                    # tipos de cambio sin auth (knowledge-src)
+    "integrate.api.nvidia.com",               # NVIDIA NIM frontier, inference_hub
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)
