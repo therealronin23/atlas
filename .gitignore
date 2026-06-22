@@ -96,3 +96,8 @@ docs/*.log
 *.toc
 *.fls
 *.fdb_latexmk
+
+# Artefactos locales de `npx skills` (la fuente de verdad es el catálogo)
+.claude/skills/
+.agents/skills/
+skills-lock.json
