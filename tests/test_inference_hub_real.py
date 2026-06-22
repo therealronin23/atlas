@@ -466,6 +466,29 @@ class TestNvidiaNimProvider:
         assert nvidia.account_pool == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
         assert len(nvidia.account_pool) == 2
 
+    def test_nvidia_extra_frontier_models_present(self) -> None:
+        """Kimi, Mistral-Large-3 y GLM deben estar como L2 NVIDIA NIM con el mismo pool.
+
+        Prove-it 2026-06-22 contra integrate.api.nvidia.com: responden
+        moonshotai/kimi-k2.6, mistralai/mistral-large-3-675b-instruct-2512 y
+        z-ai/glm-5.1 (mistral-large-2-instruct da 404 en este tier).
+        """
+        expected = {
+            "nvidia_kimi": "nvidia_nim/moonshotai/kimi-k2.6",
+            "nvidia_mistral_large": (
+                "nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512"
+            ),
+            "nvidia_glm": "nvidia_nim/z-ai/glm-5.1",
+        }
+        for name, litellm_model in expected.items():
+            prov = next((p for p in DEFAULT_PROVIDERS if p.name == name), None)
+            assert prov is not None, f"{name} no encontrado en DEFAULT_PROVIDERS"
+            assert prov.level == InferenceLevel.L2
+            assert prov.litellm_model == litellm_model
+            assert prov.base_url == "https://integrate.api.nvidia.com/v1"
+            assert prov.api_key_env == "NVIDIA_API_KEY"
+            assert prov.account_pool == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
+
     def test_nvidia_resolve_live_with_primary_key(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

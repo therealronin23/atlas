@@ -196,6 +196,46 @@ DEFAULT_PROVIDERS: list[Provider] = [
         context_tokens=128000,
         account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
     ),
+    # L2 — NVIDIA NIM modelos frontier extra. Prove-it 2026-06-22 contra
+    # integrate.api.nvidia.com (chat/completions): responden Kimi K2.6, Mistral
+    # Large 3 (675B) y GLM 5.1. Mismo account_pool → fallback entre modelos y
+    # entre cuentas. mistral-large-2-instruct da 404 en este tier (descartado).
+    Provider(
+        name="nvidia_kimi",
+        level=InferenceLevel.L2,
+        base_url="https://integrate.api.nvidia.com/v1",
+        model_id="moonshotai/kimi-k2.6",
+        litellm_model="nvidia_nim/moonshotai/kimi-k2.6",
+        api_key_env="NVIDIA_API_KEY",
+        free_tier=False,
+        rpm_limit=30,
+        context_tokens=128000,
+        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+    ),
+    Provider(
+        name="nvidia_mistral_large",
+        level=InferenceLevel.L2,
+        base_url="https://integrate.api.nvidia.com/v1",
+        model_id="mistralai/mistral-large-3-675b-instruct-2512",
+        litellm_model="nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512",
+        api_key_env="NVIDIA_API_KEY",
+        free_tier=False,
+        rpm_limit=30,
+        context_tokens=128000,
+        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+    ),
+    Provider(
+        name="nvidia_glm",
+        level=InferenceLevel.L2,
+        base_url="https://integrate.api.nvidia.com/v1",
+        model_id="z-ai/glm-5.1",
+        litellm_model="nvidia_nim/z-ai/glm-5.1",
+        api_key_env="NVIDIA_API_KEY",
+        free_tier=False,
+        rpm_limit=30,
+        context_tokens=128000,
+        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+    ),
     Provider(
         name="ollama_local",
         level=InferenceLevel.L0,
