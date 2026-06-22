@@ -29,6 +29,8 @@ from atlas.security.ssrf_bridge import SSRFBridge
 
 _WIKI_DOMAIN = "knowledge/wikipedia"
 _WB_DOMAIN = "knowledge/worldbank"
+_OM_DOMAIN = "knowledge/open-meteo"
+_FX_DOMAIN = "knowledge/frankfurter"
 
 
 class WikipediaSource(HttpApiSource):
@@ -76,6 +78,37 @@ class WorldBankSource(HttpApiSource):
         return [self._request("GET", url)]
 
 
+class OpenMeteoSource(HttpApiSource):
+    """Open-Meteo (clima, sin auth). query = {"latitude":..,"longitude":..}."""
+
+    _HOST = "api.open-meteo.com"
+
+    def __init__(self, *, fetcher: Fetcher | None = None) -> None:
+        super().__init__("open-meteo", _OM_DOMAIN,
+                         bridge=SSRFBridge(extra_allowed={self._HOST}), fetcher=fetcher)
+
+    def fetch(self, query: Any) -> list[RawRecord]:
+        lat, lon = query["latitude"], query["longitude"]
+        url = (f"https://{self._HOST}/v1/forecast?latitude={lat}&longitude={lon}"
+               "&current=temperature_2m")
+        return [self._request("GET", url)]
+
+
+class FrankfurterSource(HttpApiSource):
+    """Frankfurter (tipos de cambio, sin auth). query = {"from":"USD","to":"EUR"}."""
+
+    _HOST = "api.frankfurter.app"
+
+    def __init__(self, *, fetcher: Fetcher | None = None) -> None:
+        super().__init__("frankfurter", _FX_DOMAIN,
+                         bridge=SSRFBridge(extra_allowed={self._HOST}), fetcher=fetcher)
+
+    def fetch(self, query: Any) -> list[RawRecord]:
+        frm, to = str(query["from"]).strip(), str(query["to"]).strip()
+        url = f"https://{self._HOST}/latest?from={frm}&to={to}"
+        return [self._request("GET", url)]
+
+
 class KnowledgeTrunk:
     """Tools de conocimiento libre + ingesta cableada al sustrato."""
 
@@ -84,6 +117,8 @@ class KnowledgeTrunk:
         self._verifier = KnowledgeVerifier()
         self._wiki = WikipediaSource(fetcher=fetcher)
         self._wb = WorldBankSource(fetcher=fetcher)
+        self._om = OpenMeteoSource(fetcher=fetcher)
+        self._fx = FrankfurterSource(fetcher=fetcher)
 
     # -- helpers genéricos (toda fuente usa el mismo pipeline) --------------
 
@@ -152,6 +187,26 @@ class KnowledgeTrunk:
             mission_id=f"wb:{country}:{indicator}",
             domain=domain,
             goal=goal,
+        )
+
+    # -- Open-Meteo (clima) / Frankfurter (divisas) ------------------------
+
+    def ingest_open_meteo(
+        self, latitude: float, longitude: float, *, domain: str = _OM_DOMAIN, goal: str = ""
+    ) -> dict[str, Any]:
+        """Ingesta el clima actual de unas coordenadas al sustrato con procedencia."""
+        return self._ingest(
+            "open-meteo", self._om, {"latitude": latitude, "longitude": longitude},
+            mission_id=f"om:{latitude},{longitude}", domain=domain, goal=goal,
+        )
+
+    def ingest_frankfurter(
+        self, frm: str, to: str, *, domain: str = _FX_DOMAIN, goal: str = ""
+    ) -> dict[str, Any]:
+        """Ingesta un tipo de cambio al sustrato con procedencia."""
+        return self._ingest(
+            "frankfurter", self._fx, {"from": frm, "to": to},
+            mission_id=f"fx:{frm}:{to}", domain=domain, goal=goal,
         )
 
     def query(self, domain: str = _WIKI_DOMAIN) -> list[dict[str, Any]]:
