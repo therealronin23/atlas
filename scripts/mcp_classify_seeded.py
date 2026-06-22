@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import yaml  # noqa: E402
 
-from atlas.mcp.catalog import classify, load_catalog, load_taxonomy  # noqa: E402
+from atlas.mcp.catalog import classify, classify_subsector, load_catalog, load_taxonomy  # noqa: E402
 
 _CURATED = ROOT / "docs" / "design" / "mcp_catalog.yaml"
 _OUT = ROOT / "docs" / "design" / "mcp_catalog_classified.yaml"
@@ -53,9 +53,10 @@ def main() -> int:
         for e in load_catalog(f):
             sector = classify(e.name, e.purpose, e.tags, tax,
                                kind=e.kind, kind_default=_KIND_DEFAULT)
+            subsector = classify_subsector(e.name, e.purpose, e.tags, sector, tax)
             line_counts[e.kind] += 1
             by_sector.setdefault(sector, []).append({
-                "name": e.name, "kind": e.kind, "subsector": e.subsector,
+                "name": e.name, "kind": e.kind, "subsector": subsector,
                 "mode": e.mode, "source": e.source, "install": e.install,
                 "status": e.status, "tags": e.tags,
             })
