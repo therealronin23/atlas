@@ -191,8 +191,14 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     re-siembra del registro MCP + apis.guru + 7 repos awesome-* (config `LINES`) y re-clasifica a
     dominios. `files_to_candidates` (fichero-por-item) añadido a line_seed. `--offline` solo reclasifica.
     Idempotente, fuentes caídas aisladas. Probado live (734 clasificados). Listo para cron/scheduled.
-  - ⬜ Automatización periódica ("cada X"): pendiente elegir intervalo + mecanismo (cron/scheduled task)
-    con el usuario. Credenciales de otros servicios = el usuario las consigue (lista dada).
+  - ✅ **Automatización periódica (3 capas, robusta)**:
+    (1) Agente programado de Claude `mcp-catalog-sync` (diario 08:07 local; corre mcp_sync, commitea en
+        rama si cambia, reporta cobertura; no mergea ni instala). En `~/.claude/scheduled-tasks/`.
+    (2) Cron local de respaldo (diario 04:00 → log `~/.config/atlas-mcp/sync.log`) por si el agente falla.
+    (3) "en atlas": el `self_maintenance/scheduler.py` YA scoutea MCP (registry_scout/community_scout) →
+        capa de descubrimiento interna existente. POSIBLE follow-up: puentear mcp_sync ↔ ese scheduler.
+  - Credenciales de otros servicios (GitHub/Slack/Linear/Notion/Postgres/Firecrawl/Brave/Figma) = el
+    usuario las consigue (lista + env vars dada); se enchufan como Google al recibirlas.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
