@@ -48,6 +48,16 @@ def build_knowledge_server(trunk: KnowledgeTrunk, *, name: str = "atlas-knowledg
         """Ingesta un indicador World Bank al sustrato con procedencia."""
         return trunk.ingest_worldbank(country, indicator, domain=domain, goal=goal)
 
+    @server.tool()
+    def ingest_open_meteo(latitude: float, longitude: float, goal: str = "") -> dict[str, Any]:
+        """Ingesta el clima actual de unas coordenadas (Open-Meteo, sin auth)."""
+        return trunk.ingest_open_meteo(latitude, longitude, goal=goal)
+
+    @server.tool()
+    def ingest_frankfurter(frm: str, to: str, goal: str = "") -> dict[str, Any]:
+        """Ingesta un tipo de cambio (Frankfurter, sin auth) con procedencia."""
+        return trunk.ingest_frankfurter(frm, to, goal=goal)
+
     return server
 
 

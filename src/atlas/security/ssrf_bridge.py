@@ -37,6 +37,8 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "api.mistral.ai",
     "api.osv.dev",                           # ADR-049 T4: OSV.dev vulnerabilities API
     "api.apis.guru",                         # directorio OpenAPI (seeder de APIs, mcp trunk C)
+    "api.open-meteo.com",                     # clima sin auth (knowledge-src, mcp trunk C)
+    "api.frankfurter.app",                    # tipos de cambio sin auth (knowledge-src)
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)

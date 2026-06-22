@@ -105,6 +105,51 @@ def test_ingest_worldbank_wires_to_substrate_with_provenance(tmp_path: Path) -> 
     assert prov["fetched_at"] and prov["raw_sha256"]
 
 
+def _json_fetcher(payload: str, seen=None):
+    def f(method, url, body, headers):
+        if seen is not None:
+            seen.append(url)
+        return 200, payload
+    return f
+
+
+def test_open_meteo_source_hits_forecast_api_through_gate() -> None:
+    from atlas.knowledge.sources import RawRecord
+    from atlas.mcp.knowledge_trunk import OpenMeteoSource
+
+    seen: list[str] = []
+    src = OpenMeteoSource(fetcher=_json_fetcher('{"latitude":40.4}', seen))
+    rec = src.fetch({"latitude": 40.4, "longitude": -3.7})
+    assert isinstance(rec[0], RawRecord) and rec[0].status == 200
+    assert "api.open-meteo.com" in seen[0]
+    assert "latitude=40.4" in seen[0] and "longitude=-3.7" in seen[0]
+
+
+def test_frankfurter_source_hits_rates_api_through_gate() -> None:
+    from atlas.mcp.knowledge_trunk import FrankfurterSource
+
+    seen: list[str] = []
+    src = FrankfurterSource(fetcher=_json_fetcher('{"rates":{"EUR":0.87}}', seen))
+    rec = src.fetch({"from": "USD", "to": "EUR"})
+    assert rec[0].status == 200
+    assert "api.frankfurter.app" in seen[0]
+    assert "from=USD" in seen[0] and "to=EUR" in seen[0]
+
+
+def test_ingest_open_meteo_and_frankfurter_with_provenance(tmp_path: Path) -> None:
+    from atlas.mcp.knowledge_trunk import KnowledgeTrunk
+
+    t1 = KnowledgeTrunk(tmp_path / "k1", fetcher=_json_fetcher('{"latitude":40.4,"x":1}'))
+    r1 = t1.ingest_open_meteo(40.4, -3.7)
+    assert r1["ingested"] == 1
+    assert "api.open-meteo.com" in t1.query("knowledge/open-meteo")[0]["provenance"]["url"]
+
+    t2 = KnowledgeTrunk(tmp_path / "k2", fetcher=_json_fetcher('{"rates":{"EUR":0.87},"y":2}'))
+    r2 = t2.ingest_frankfurter("USD", "EUR")
+    assert r2["ingested"] == 1
+    assert "api.frankfurter.app" in t2.query("knowledge/frankfurter")[0]["provenance"]["url"]
+
+
 # ---------------------------------------------------------------------------
 # KnowledgeTrunk: tool de lookup + ingesta cableada al sustrato
 # ---------------------------------------------------------------------------

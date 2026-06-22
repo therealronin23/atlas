@@ -49,7 +49,8 @@ def native_roots() -> list[RootSpec]:
             "atlas-knowledge",
             "atlas.mcp.knowledge_server",
             "base",
-            tools=("wikipedia_lookup", "ingest_wikipedia", "worldbank_lookup", "ingest_worldbank"),
+            tools=("wikipedia_lookup", "ingest_wikipedia", "worldbank_lookup", "ingest_worldbank",
+                   "ingest_open_meteo", "ingest_frankfurter"),
         ),
     ]
 

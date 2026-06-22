@@ -167,8 +167,12 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ Fallback por línea en `classify` (`kind_default`): sin señal de alias, enruta por naturaleza del
     kind (workflow→productividad, plugin/subagent→ia-agentes, hook/tool→infra, command/rule→programación,
     api→datos); transversales (prompt/skill/mcp) a alias-only. Uncategorized 203→43. La señal SIEMPRE gana.
-  - ⬜ PENDIENTE (decisión/consent, no código): prove-it→verificar items concretos por sector cuando se
-    necesiten (el flujo ya está estrenado para mcp/skills/externos).
+  - ✅ **Línea APIs verificada E2E** (nuestro código, sin consent): `OpenMeteoSource` (clima) +
+    `FrankfurterSource` (divisas), sin auth, por el pipeline knowledge-src (run_mission→sustrato con
+    procedencia). prove-it LIVE (ingesta real ok). tools en knowledge_server + manifest; catálogo
+    instalado (datos). Ahora 4 APIs nuestras vivas (Wikipedia/WorldBank/Open-Meteo/Frankfurter).
+  - 🔄 EN CURSO (autónomo, orden propio): verificar MCP de referencia sin secretos (prove-it) + instalar
+    más skills sin secretos. PENDIENTE: items que requieran credenciales = consent.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.
