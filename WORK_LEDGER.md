@@ -213,3 +213,4 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 - ✅ **opt#4 branch-policy**: el agente mcp-catalog-sync reutiliza UNA rama estable `chore/mcp-sync` (force-push) en vez de ramas por fecha → no se acumulan.
 - ✅ **opt#5 subdirs-anidados**: `nested_dir_candidates` (categories/<cat>/<item>) en line_seed + subagents añadido a LINES del sync (item:nested) → ya no queda congelado. 1 test. (2 nits mypy pre-existentes corregidos.)
 - ✅ **opt#6 dedup**: `dedupe_by_kind_name` (por kind+name, conserva primero) en catalog, aplicado en mcp_sync y mcp_classify_seeded antes de clasificar → sin duplicados entre fuentes. 3 tests.
+- ✅ **opt#7 classify-refinado**: podados alias genéricos de programación + subsector pesa 2× (específico gana). programación 258→195 (−24

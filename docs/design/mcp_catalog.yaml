@@ -13,7 +13,7 @@ sectors:
   programacion:
     label: Programación
     desc: Hacer software — escribir, revisar, probar y entregar código.
-    aliases: [programming, coding, dev, desarrollo, software, code, sdk, library, framework, compiler, language, python, javascript, typescript, golang, rust, java, php, ruby]
+    aliases: [programming, coding, dev, desarrollo, python, javascript, typescript, golang, rust, java, php, ruby, tdd, linter, debugger, refactor, snippet, codebase, repository, repo, git]
     subsectors:
       frontend: {label: Frontend, aliases: [front, web, react]}
       backend: {label: Backend, aliases: [server, api]}
