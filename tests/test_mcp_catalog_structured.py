@@ -273,6 +273,20 @@ def test_classify_assigns_domain_by_tag_or_alias(tmp_path: Path) -> None:
                     kind_default={"workflow": "productividad"}) == "ciberseguridad"
 
 
+def test_classify_subsector_within_sector(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import classify_subsector, load_taxonomy
+
+    p = tmp_path / "v3.yaml"
+    p.write_text(_V3, encoding="utf-8")
+    tax = load_taxonomy(p)
+    # dentro de ciberseguridad, "redteam"/"ofensiva" → subsector pentesting
+    assert classify_subsector("x", "ofensiva", [], "ciberseguridad", tax) == "pentesting"
+    # sin señal de subsector → "" (vacío, honesto)
+    assert classify_subsector("x", "nada", [], "ciberseguridad", tax) == ""
+    # sector sin subsectores o desconocido → ""
+    assert classify_subsector("x", "y", [], "no-existe", tax) == ""
+
+
 def test_find_orders_mature_first(tmp_path: Path) -> None:
     from atlas.mcp.catalog import find, load_catalog, load_taxonomy
 

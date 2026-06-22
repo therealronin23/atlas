@@ -15,6 +15,7 @@ Diseño: docs/design/mcp_trunk_portable.md + WORK_LEDGER (línea TRONCO-AGREGADO
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -194,25 +195,50 @@ def classify(
     (honesto, no fuerza). Token-eficiente: reusa los alias de la taxonomía."""
     hay = " ".join([name, purpose, *tags]).lower()
 
-    def _matches(sblock: dict[str, Any]) -> bool:
-        terms = [sblock["label"]] + sblock["aliases"]
-        for sub in sblock["subsectors"].values():
-            terms += [sub["label"]] + sub["aliases"]
-        return any(t and t.lower() in hay for t in terms)
-
-    # 1) tag exacto = id de sector (señal fuerte)
+    # 1) tag exacto = id de sector (señal fuerte, gana directo)
     tagset = {t.lower() for t in tags}
     for sid in taxonomy:
         if sid in tagset:
             return sid
-    # 2) alias/label de sector o subsector en nombre/propósito/tags
+
+    # 2) SCORE por sector: nº de términos (alias/label de sector+subsectores) que
+    #    aparecen como PALABRA COMPLETA en hay. argmax (no first-hit) → evita que un
+    #    sector amplio se quede con todo; gana la señal más fuerte.
+    def _terms(sblock: dict[str, Any]) -> list[str]:
+        out = [sblock["label"], *sblock["aliases"]]
+        for sub in sblock["subsectors"].values():
+            out += [sub["label"], *sub["aliases"]]
+        return [t.lower() for t in out if t]
+
+    best_sid, best_score = "", 0
     for sid, sblock in taxonomy.items():
-        if sid.lower() in hay or _matches(sblock):
-            return sid
+        terms = set(_terms(sblock)) | {sid.lower()}
+        score = sum(1 for t in terms if re.search(rf"\b{re.escape(t)}\b", hay))
+        if score > best_score:
+            best_sid, best_score = sid, score
+    if best_score > 0:
+        return best_sid
+
     # 3) sin señal: fallback por línea (política declarada), si la hay
     if kind and kind_default and kind in kind_default:
         return kind_default[kind]
     return "uncategorized"
+
+
+def classify_subsector(
+    name: str, purpose: str, tags: list[str], sector: str, taxonomy: dict[str, Any]
+) -> str:
+    """Dentro de un sector ya elegido, asigna subsector por alias/label de subsector
+    en nombre/propósito/tags. Sin señal o sector sin subsectores → '' (honesto)."""
+    subs = (taxonomy.get(sector) or {}).get("subsectors", {})
+    if not subs:
+        return ""
+    hay = " ".join([name, purpose, *tags]).lower()
+    for subid, sub in subs.items():
+        terms = [subid, sub["label"], *sub["aliases"]]
+        if any(t and t.lower() in hay for t in terms):
+            return str(subid)
+    return ""
 
 
 def by_kind(entries: list[CatalogEntry]) -> dict[str, int]:

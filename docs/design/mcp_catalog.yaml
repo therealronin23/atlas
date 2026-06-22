@@ -13,7 +13,7 @@ sectors:
   programacion:
     label: Programación
     desc: Hacer software — escribir, revisar, probar y entregar código.
-    aliases: [programming, coding, dev, desarrollo]
+    aliases: [programming, coding, dev, desarrollo, software, code, sdk, library, framework, compiler, language, python, javascript, typescript, golang, rust, java, php, ruby]
     subsectors:
       frontend: {label: Frontend, aliases: [front, web, react]}
       backend: {label: Backend, aliases: [server, api]}
@@ -33,7 +33,7 @@ sectors:
   diseno:
     label: Diseño
     desc: Interfaces y estética — UI, UX y gráfico.
-    aliases: [design, ui, ux, frontend-design]
+    aliases: [design, ui, ux, frontend-design, css, tailwind, image, icon, svg, font, color, layout, theme, brand]
     subsectors:
       ui: {label: UI, aliases: [interfaz, componentes]}
       ux: {label: UX, aliases: [usabilidad, accesibilidad]}
@@ -47,7 +47,7 @@ sectors:
   ciberseguridad:
     label: Ciberseguridad
     desc: Atacar y defender — pentesting, defensa, auditoría y secretos.
-    aliases: [security, seguridad, infosec, cyber]
+    aliases: [security, seguridad, infosec, cyber, vulnerability, vuln, cve, exploit, scan, auth, oauth, encryption, crypto, malware, threat, audit, compliance]
     subsectors:
       pentesting: {label: Pentesting, aliases: [redteam, ofensiva, ataque]}
       defensa: {label: Defensa, aliases: [blueteam, hardening]}
@@ -59,7 +59,7 @@ sectors:
   datos:
     label: Datos
     desc: Bases de datos, análisis y extracción.
-    aliases: [data, database, db]
+    aliases: [data, database, db, sql, postgres, mysql, mongodb, analytics, etl, csv, json, bigquery, warehouse, spreadsheet, excel, dataset, finance, financial, payments, stocks, crypto-market]
     subsectors:
       bases-de-datos: {label: Bases de datos, aliases: [sql, postgres]}
       analisis: {label: Análisis, aliases: [analytics, insights]}
@@ -70,7 +70,7 @@ sectors:
   investigacion:
     label: Investigación
     desc: Buscar, leer y sintetizar — web, académico y documentación.
-    aliases: [research, search, busqueda]
+    aliases: [research, search, busqueda, scrape, crawl, news, wiki, web-search, browser, fetch, papers, arxiv, academic, scholar]
     subsectors:
       web: {label: Web, aliases: [scraping, search, navegacion]}
       academico: {label: Académico, aliases: [papers, citas, zotero]}
@@ -86,7 +86,7 @@ sectors:
   conocimiento-memoria:
     label: Conocimiento y memoria
     desc: Saber y recordar entre sesiones — memoria, grafos y fuentes.
-    aliases: [knowledge, memory, memoria, conocimiento]
+    aliases: [knowledge, memory, memoria, conocimiento, vector, embedding, rag, notes, zettelkasten, graph, recall, context, semantic]
     subsectors:
       memoria: {label: Memoria, aliases: [recall, persistencia]}
       grafos: {label: Grafos de conocimiento, aliases: [graph, kg, entidades]}
@@ -103,7 +103,7 @@ sectors:
   productividad:
     label: Productividad
     desc: Gestión, comunicación y ofimática.
-    aliases: [productivity, oficina, office]
+    aliases: [productivity, oficina, office, calendar, email, crm, notion, jira, trello, asana, slack, linear, automation, zapier, n8n, workflow, integration, saas, scheduling, tasks, project]
     subsectors:
       gestion: {label: Gestión, aliases: [tickets, tasks, linear, jira]}
       comunicacion: {label: Comunicación, aliases: [chat, slack]}
@@ -116,7 +116,7 @@ sectors:
   ia-agentes:
     label: IA y agentes
     desc: Construir y orquestar agentes — orquestación, builders y planificación.
-    aliases: [ai, agents, agentes, llm, orquestacion]
+    aliases: [ai, agents, agentes, llm, orquestacion, gpt, model, prompt, chain, openai, anthropic, claude, gemini, ml, machine-learning, inference, fine-tuning, multiagent]
     subsectors:
       orquestacion: {label: Orquestación, aliases: [multiagente, aggregator, tronco]}
       builders: {label: Builders, aliases: [mcp-builder, crear]}
@@ -138,7 +138,7 @@ sectors:
   infraestructura:
     label: Infraestructura
     desc: Ejecutar y mantener — ficheros, git, terminal y operación.
-    aliases: [infra, devops, sistema, commodity]
+    aliases: [infra, devops, sistema, commodity, docker, kubernetes, k8s, cloud, aws, gcp, azure, server, deploy, deployment, monitoring, observability, network, storage, terraform, ci-cd, hosting, terminal, shell, filesystem, git, github]
     subsectors:
       ficheros: {label: Ficheros, aliases: [filesystem, archivos]}
       git: {label: Git, aliases: [github, control-versiones]}
