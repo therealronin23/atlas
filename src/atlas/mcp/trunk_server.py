@@ -22,6 +22,36 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from atlas.mcp.config import McpServerConfig
+
+
+def load_secrets_env(path: Path) -> dict[str, str]:
+    """Lee un fichero .env de secretos y devuelve {KEY: VALUE}.
+
+    Acepta ``export KEY="VALUE"`` y ``KEY=VALUE``; ignora comentarios y líneas
+    vacías; quita comillas envolventes (dobles o simples).  Si el fichero no
+    existe devuelve {}.  Los valores NO se loggean (secretos).
+    """
+    if not path.is_file():
+        return {}
+    result: dict[str, str] = {}
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        # Quita prefijo "export " opcional
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip()
+        # Quita comillas envolventes dobles o simples
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
+        if key:
+            result[key] = value
+    return result
 from atlas.mcp.trunk_aggregator import TrunkAggregator
 from atlas.mcp.trunk_manifest import native_roots
 
@@ -187,8 +217,18 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     Trade-off documentado: cero spawns/descargas al conectar; las tools de MCP
     externos no son visibles en trunk_tools hasta que se haya invocado al menos
     una vez su server dueño."""
+    import os
+
     from atlas.mcp.catalog import load_catalog, load_taxonomy
     from atlas.mcp.registry import McpRegistry
+
+    # Carga credenciales del fichero de secretos LOCAL (nunca en git/catálogo).
+    # Usa setdefault para no pisar vars ya presentes en el entorno real.
+    # Permite que los MCP externos con env_passthrough (p.ej. google-workspace)
+    # encuentren sus secretos cuando el tronco los frontea.
+    _secrets_path = Path.home() / ".config" / "atlas-mcp" / "secrets.env"
+    for _k, _v in load_secrets_env(_secrets_path).items():
+        os.environ.setdefault(_k, _v)
 
     catalog_path = Path(repo_root) / "docs" / "design" / "mcp_catalog.yaml"
     catalog = load_catalog(catalog_path)
