@@ -64,6 +64,9 @@ class BridgeDecision:
     url: str
     reason: str
     domain: str
+    # IP resuelta en check() — usar para conectar y evitar 2ª resolución DNS (TOCTOU).
+    # None cuando el host ya es una IP literal o cuando la decisión es blocked.
+    pinned_ip: str | None = None
 
 
 class SSRFBridge:
@@ -146,8 +149,10 @@ class SSRFBridge:
                 domain=domain,
             )
 
-        # 3. Resolucion DNS — todos los A/AAAA deben ser publicos
-        dns_block = self._check_resolved_ips(domain)
+        # 3. Resolucion DNS — todos los A/AAAA deben ser publicos.
+        #    Fail-closed: si DNS falla la solicitud se rechaza.
+        #    Se devuelve también la primera IP resuelta para fijarla (evitar TOCTOU).
+        dns_block, pinned_ip = self._check_resolved_ips(domain)
         if dns_block is not None:
             return BridgeDecision(
                 allowed=False,
@@ -163,6 +168,7 @@ class SSRFBridge:
                 url=url,
                 reason=f"Dominio en allowlist: {domain}",
                 domain=domain,
+                pinned_ip=pinned_ip,
             )
 
         return BridgeDecision(
@@ -208,20 +214,30 @@ class SSRFBridge:
             or addr.is_unspecified
         )
 
-    def _check_resolved_ips(self, host: str) -> str | None:
+    def _check_resolved_ips(self, host: str) -> tuple[str | None, str | None]:
         """Resuelve el hostname y comprueba que TODOS los A/AAAA sean publicos.
 
-        Retorna None si OK, o un mensaje de error si alguna IP es privada/reservada.
-        Si la resolucion falla (host desconocido), retorna None para no bloquear
-        dominios que la allowlist puede manejar offline (tests sin red).
+        Retorna (None, pinned_ip) si OK, o (mensaje_error, None) si hay problema.
+
+        Fail-CLOSED: si la resolucion DNS falla (gaierror / OSError) se bloquea
+        la solicitud — no se permite pasar solo porque no hay red, ya que eso
+        abriría una ventana de bypass. Los tests sin red deben mockear getaddrinfo.
+
+        El pinned_ip retornado es la primera IP publica resuelta; el caller debe
+        usarla para conectar directamente y evitar una segunda resolución (TOCTOU
+        DNS-rebinding).
         """
         try:
             infos = socket.getaddrinfo(host, None)
-        except (socket.gaierror, OSError):
-            # Sin red o dominio desconocido — no bloquear; la allowlist decide
-            return None
+        except (socket.gaierror, OSError) as exc:
+            # Fail-closed: DNS no disponible o dominio desconocido => bloquear.
+            return (
+                f"Resolución DNS fallida para {host}: {exc} (SSRF protection, fail-closed).",
+                None,
+            )
+        first_public_ip: str | None = None
         for _family, _type, _proto, _canonname, sockaddr in infos:
-            ip_str = sockaddr[0]
+            ip_str = str(sockaddr[0])
             try:
                 addr = ipaddress.ip_address(ip_str)
             except ValueError:
@@ -229,6 +245,9 @@ class SSRFBridge:
             if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_unspecified:
                 return (
                     f"DNS rebinding bloqueado: {host} resuelve a IP privada/reservada "
-                    f"{ip_str} (SSRF protection)."
+                    f"{ip_str} (SSRF protection).",
+                    None,
                 )
-        return None
+            if first_public_ip is None:
+                first_public_ip = ip_str
+        return None, first_public_ip

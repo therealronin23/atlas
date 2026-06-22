@@ -46,6 +46,20 @@ Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CA
 - ✅ **Ciclo de saneamiento** establecido: `scripts/sanitation_audit.py` (read-only) cada Gate/~mensual
 - ✅ **GATE DE GOBERNANZA CERRADO** (tipo-2). Próximo ciclo: revisar `_graveyard/2026-06-21*` al vencer grace (~2026-07-21)
 
+## Línea activa: endurecimiento auditoría 2026-06-22 (lecciones en `MEMORY.md`)
+
+Auditoría multi-subagente + correcciones vía `/autobuild` (auditor cazó 2 regresiones sutiles).
+
+- ✅ **Seguridad (tipo-2)**: jail fail-closed para código generado (OMEGA+verify ya NO usan `_execute_normal`),
+  SSRF pin a nivel de conexión (TLS contra hostname), HMAC de aprobaciones con clave local dedicada,
+  `resolve_path` contención estricta (bug real de escape de workspace), `BLOCKED_IMPORTS` += egress.
+- ✅ **Split orchestrator**: `maintenance_facade` + `pipeline_runner` extraídos. orchestrator.py 2691→2029
+  (−662, ~25%). Lección: llamadas a métodos públicos parcheables van por `self._orch.X()`.
+- ✅ **Honestidad docs**: README histórico, ROADMAP coherente, cabeceras ADR-039/040 Implemented.
+- 🔄 **Cablear código muerto** ← SIGUIENTE: `cascade.py` (ADR-042) + `lesson_store.py` (ADR-044) a caller vivo.
+- ⬜ Backlog técnico: jail rootfs mínimo, seccomp, `git apply`, snapshot integrity, tests `operational_wal`/
+  `AgenticExecutor`, consolidar coseno duplicado, warning Starlette.
+
 ## Línea activa secundaria: MCP trunk portable
 
 Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.

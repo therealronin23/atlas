@@ -142,15 +142,7 @@ class Orchestrator:
     _observability: Any
     _cold_update_manager: Any
     _self_audit_runner: Any
-    _maintenance_scout: Any
-    _maintenance_adopter: Any
-    _maintenance_registry_scout: Any
-    _maintenance_scheduler: Any
     _swarm_cycle: Any
-    _maintenance_dep_scout: Any
-    _maintenance_dep_proposer: Any
-    _maintenance_codegen_proposer: Any
-    _maintenance_community_scout: Any
     _knowledge_cve_proposer: Any
 
     # Politica del hybrid classifier:
@@ -623,172 +615,28 @@ class Orchestrator:
         return self._self_audit_runner
 
     def maintenance_scout(self) -> Any:
-        """ADR-039 slice 1 — Scout read-only de salud/deuda (no muta, no propone).
-
-        Cableado a las primitivas read-only existentes (``health_report``,
-        ``GitReadTools``, ``ErrorRegistry``). ``survey()`` devuelve un informe
-        estructurado auditado en Merkle. El front-half del agente de
-        auto-mantenimiento; Analyst/Proposer entran en slices posteriores."""
-        if self._maintenance_scout is None:
-            from atlas.core.self_maintenance import MaintenanceScout
-
-            self._maintenance_scout = MaintenanceScout(
-                merkle=self._merkle,
-                health_provider=self.health_report,
-                git_status_provider=self._run_git_status,
-                failure_provider=self._error_registry.all,
-            )
-        return self._maintenance_scout
+        """ADR-039 slice 1 — Scout read-only de salud/deuda. Delegado al facade."""
+        return self._maintenance_facade.maintenance_scout()
 
     def maintenance_adopter(self) -> Any:
-        """ADR-039 slice 3 — wire propuesta → ``add_server`` (reuso puro del seam).
-
-        Traduce una ``McpProposal`` corroborada (slice 2) en una adopción real
-        vía ``adopt_mcp_server``, que consulta el decisor (ADR-040). El adopter
-        no decide: bajo ``HumanDecider`` el seam exige aprobación humana y nada
-        se adopta; bajo autónomo/híbrido con la intención anclada, adopta y
-        registra el undo reversible (``remove_server``)."""
-        if self._maintenance_adopter is None:
-            from atlas.core.self_maintenance import MaintenanceAdopter
-
-            self._maintenance_adopter = MaintenanceAdopter(
-                adopt=self.adopt_mcp_server,
-                merkle=self._merkle,
-            )
-        return self._maintenance_adopter
+        """ADR-039 slice 3 — wire propuesta → ``adopt_mcp_server``. Delegado al facade."""
+        return self._maintenance_facade.maintenance_adopter()
 
     def maintenance_registry_scout(self) -> Any:
-        """ADR-039 slice 1 (literal) — Scout externo autoritativo (read-only).
-
-        Descubre candidatos de server MCP en el registro MCP oficial. Gatea el
-        egress por ``SSRFBridge`` y transporta la prosa de cada entrada como
-        ``Source`` no confiable (la digiere el Analyst, no el Scout). No muta ni
-        propone: emite ``McpCandidate`` etiquetados como autoritativos para el
-        gate de corroboración (slice 2)."""
-        if self._maintenance_registry_scout is None:
-            from atlas.core.self_maintenance import RegistryScout
-
-            self._maintenance_registry_scout = RegistryScout(
-                merkle=self._merkle,
-                bridge=self._ssrf_bridge,
-                fetch=self._egress_fetch_text,
-            )
-        return self._maintenance_registry_scout
-
-    # Cota del cuerpo descargado (mismo criterio que SecureExecutor: no leer
-    # respuestas ilimitadas aunque la URL esté en la allowlist).
-    _EGRESS_MAX_BYTES = 5 * 1024 * 1024
-
-    @staticmethod
-    def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
-        """Descarga el cuerpo de una URL ya autorizada por el bridge (stdlib).
-
-        El gateo de egress lo hace el llamador vía ``SSRFBridge.check`` antes de
-        invocar esto; aquí solo se hace el GET HTTP, acotando el tamaño leído."""
-        import urllib.request
-
-        req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — gateado por SSRFBridge
-            raw: bytes = resp.read(Orchestrator._EGRESS_MAX_BYTES)
-        return raw.decode("utf-8", errors="replace")
+        """ADR-039 slice 1 (literal) — Scout externo autoritativo. Delegado al facade."""
+        return self._maintenance_facade.maintenance_registry_scout()
 
     def maintenance_scheduler(self) -> Any:
-        """ADR-039 slice 4 — Scheduler cron del front-half. Cierra el lazo vía el decisor.
-
-        Ata las piezas ya existentes: descubre con el ``RegistryScout``
-        autoritativo, analiza con el ``MaintenanceAnalyst`` (dual-LLM + gate de
-        corroboración) y, por cada propuesta corroborada, (1) la surfa publicando
-        ``MAINTENANCE_PROPOSED`` en el bus y (2) la enruta al ``MaintenanceAdopter``.
-
-        El cron no decide ni aplica por sí mismo: la adopción pasa SIEMPRE por
-        ``adopt_mcp_server`` → seam del decisor (ADR-040). Bajo ``HumanDecider``
-        (default) el seam devuelve "requiere aprobación humana" y nada se adopta
-        — paridad exacta con el HITL de hoy, surfado por el evento. Bajo
-        autónomo/híbrido con la intención anclada, adopta en caliente y registra
-        el undo reversible. Esto es human-ON-the-loop: el punto de decisión es el
-        decisor intercambiable, no un botón hardcodeado."""
-        if self._maintenance_scheduler is None:
-            from atlas.core.inference_hub import InferenceHub
-            from atlas.core.self_maintenance import (
-                MaintenanceAnalyst,
-                MaintenanceScheduler,
-                McpProposal,
-            )
-
-            hub = self._inference_hub or InferenceHub(mode="auto")
-            analyst = MaintenanceAnalyst(merkle=self._merkle, hub=hub)
-
-            def _notify(proposals: list[McpProposal]) -> None:
-                self._bus.publish_type(
-                    EventType.MAINTENANCE_PROPOSED,
-                    {
-                        "proposal_ids": [p.id for p in proposals],
-                        "capabilities": [p.capability for p in proposals],
-                        "count": len(proposals),
-                    },
-                )
-                # Cierre del lazo: cada propuesta pasa por el seam del decisor.
-                # Bajo HumanDecider es no-op (requiere aprobación); bajo autónomo
-                # adopta lo reversible. El adopter no lanza: el veredicto es un
-                # resultado, no un fallo.
-                adopter = self.maintenance_adopter()
-                for proposal in proposals:
-                    adopter.adopt(proposal)
-
-            def _dep_cycle() -> None:
-                # Rama de auto-actualización de deps: descubre bumps PyPI →
-                # materializa patch en ColdUpdate → lo avanza por el seam del
-                # decisor. Bajo HumanDecider queda 'validated' esperando el CLI;
-                # bajo autónomo, los bumps de bajo riesgo se aplican validados y
-                # reversibles (undo COLD_PATCH). El alto riesgo se escala/deniega.
-                scout = self.maintenance_dep_scout()
-                proposer = self.maintenance_dep_proposer()
-                for cand in scout.discover() or []:
-                    proposal = proposer.propose_bump(cand)
-                    if proposal is not None:
-                        self.advance_cold_update(proposal.id)
-
-            self._maintenance_scheduler = MaintenanceScheduler(
-                merkle=self._merkle,
-                discover=self.maintenance_registry_scout().discover,
-                analyze=analyst.analyze,
-                notify=_notify,
-                extra_cycles=(_dep_cycle,),
-            )
-        return self._maintenance_scheduler
+        """ADR-039 slice 4 — Scheduler cron del front-half. Delegado al facade."""
+        return self._maintenance_facade.maintenance_scheduler()
 
     def maintenance_dep_scout(self) -> Any:
-        """ADR-039 slice 6 — Scout de bumps de dependencias PyPI (read-only).
-
-        Lee los pisos de ``[project.dependencies]`` del ``pyproject`` y consulta
-        PyPI (autoritativo, egress gateado) por la última estable. No muta:
-        emite ``DepCandidate``; la materialización del patch es del proposer."""
-        if self._maintenance_dep_scout is None:
-            from atlas.core.self_maintenance import DepScout
-
-            self._maintenance_dep_scout = DepScout(
-                merkle=self._merkle,
-                bridge=self._ssrf_bridge,
-                fetch=self._egress_fetch_text,
-                deps_provider=self._pyproject_dep_floors,
-            )
-        return self._maintenance_dep_scout
+        """ADR-039 slice 6 — Scout de bumps de dependencias PyPI. Delegado al facade."""
+        return self._maintenance_facade.maintenance_dep_scout()
 
     def maintenance_dep_proposer(self) -> Any:
-        """ADR-039 slice 6 — Materializa un bump como patch revisable de ColdUpdate.
-
-        Construye el diff del bump y lo entrega a ``ColdUpdateManager.propose``
-        con ``origin="self_audit"``. Nunca aplica: ColdUpdate valida en worktree
-        y la adopción exige el seam del decisor (ADR-040)."""
-        if self._maintenance_dep_proposer is None:
-            from atlas.core.self_maintenance import DepProposer
-
-            self._maintenance_dep_proposer = DepProposer(
-                merkle=self._merkle,
-                propose=self.cold_update().propose,
-                pyproject_path=self._project_root() / "pyproject.toml",
-            )
-        return self._maintenance_dep_proposer
+        """ADR-039 slice 6 — Materializa bump como patch de ColdUpdate. Delegado al facade."""
+        return self._maintenance_facade.maintenance_dep_proposer()
 
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
@@ -803,109 +651,77 @@ class Orchestrator:
         return self._knowledge_cve_proposer
 
     def maintenance_community_scout(self) -> Any:
-        """ADR-039 slice 5 — Scout community (foros) con corroboración obligatoria.
-
-        El foro solo *surge* nombres candidatos; cada uno se contrasta contra el
-        registro MCP oficial (autoritativo). Sin respaldo autoritativo se descarta
-        (fail-closed): un candidato solo-foro nunca se propone. Los campos salen
-        del candidato autoritativo; la prosa del foro viaja como ``Source``
-        community no confiable."""
-        if self._maintenance_community_scout is None:
-            from atlas.core.self_maintenance import CommunityScout, McpCandidate
-
-            index: dict[str, McpCandidate] = {}
-            built = [False]
-
-            def _lookup(name: str) -> "McpCandidate | None":
-                if not built[0]:
-                    for c in self.maintenance_registry_scout().discover():
-                        index[c.name] = c
-                    built[0] = True
-                if name in index:
-                    return index[name]
-                # Coincidencia laxa: el foro suele citar el nombre corto del paquete.
-                for cname, cand in index.items():
-                    if cname.endswith("/" + name) or name in cname.split("/"):
-                        return cand
-                return None
-
-            self._maintenance_community_scout = CommunityScout(
-                merkle=self._merkle,
-                bridge=self._ssrf_bridge,
-                fetch=self._egress_fetch_text,
-                forum_urls=[
-                    "https://hn.algolia.com/api/v1/search?query=mcp%20server&tags=story",
-                ],
-                authoritative_lookup=_lookup,
-            )
-        return self._maintenance_community_scout
+        """ADR-039 slice 5 — Scout community (foros). Delegado al facade."""
+        return self._maintenance_facade.maintenance_community_scout()
 
     def maintenance_codegen_proposer(self) -> Any:
-        """ADR-039 slice 7 — Codegen como patch dirigido (revisable, nunca apply solo).
+        """ADR-039 slice 7 — Codegen como patch dirigido. Delegado al facade."""
+        return self._maintenance_facade.maintenance_codegen_proposer()
 
-        El humano apunta el objetivo (``CodegenTarget``); el LLM de control genera
-        un diff; el proposer impone que solo toque el fichero apuntado y lo entrega
-        a ColdUpdate con ``origin="self_audit"``. Coherente con ADR-025: la
-        generación es libre, la aplicación nunca es autónoma."""
-        if self._maintenance_codegen_proposer is None:
-            from atlas.core.inference_hub import InferenceHub, InferenceLevel
-            from atlas.core.self_maintenance import CodegenProposer, CodegenTarget
-            from atlas.core.verify import ArtifactKind, UnifiedDiffVerifier, UniversalVerifier
-            from atlas.router.cascade import CascadeRouter, Difficulty, InferenceProducer, TaskSpec
+    @property
+    def _maintenance_scheduler(self) -> Any:
+        """Acceso directo al scheduler lazy (service_runner lo lee para hacer stop)."""
+        return self._maintenance_facade._maintenance_scheduler
 
-            hub = self._inference_hub or InferenceHub(mode="auto")
-            # Capa 2 (ADR-042): L0 local primero, escalada a L1 si el diff no
-            # verifica. FRONTIER queda preparado: cuando exista un provider L2
-            # es añadir un rung aquí. El path conversacional (CLAIM) NO se
-            # cablea: sin verificador más barato que el modelo, la cascada
-            # solo diría UNKNOWN — sería teatro de verificación.
-            cascade = CascadeRouter(
-                UniversalVerifier([UnifiedDiffVerifier()]),
-                [
-                    InferenceProducer(
-                        hub, level=InferenceLevel.L0,
-                        capability=Difficulty.HARD, temperature=0.0,
-                    ),
-                    InferenceProducer(
-                        hub, level=InferenceLevel.L1,
-                        capability=Difficulty.HARD, temperature=0.0,
-                    ),
-                ],
-            )
+    @_maintenance_scheduler.setter
+    def _maintenance_scheduler(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_scheduler = value
 
-            def _generate(target: CodegenTarget) -> str:
-                prompt = (
-                    "Genera SOLO un diff unificado (git apply) que logre el objetivo, "
-                    f"tocando únicamente el fichero {target.path}. No expliques.\n\n"
-                    f"Objetivo: {target.goal}\n"
-                )
-                result = cascade.route(TaskSpec(
-                    intent=prompt,
-                    kind=ArtifactKind.PATCH,
-                    metadata={
-                        "context": target.context,
-                        "task_id": "codegen.patch",
-                        "allowed_paths": [target.path],
-                    },
-                ))
-                self._merkle.log(
-                    action="cascade.route",
-                    agent="codegen_cascade",
-                    result="success" if result.verified else "failure",
-                    risk_level="safe",
-                    payload=result.to_dict(),
-                    task_id="codegen.patch",
-                )
-                if not (result.verified and result.artifact is not None):
-                    return ""
-                return str(result.artifact.payload.get("diff", ""))
+    @property
+    def _maintenance_scout(self) -> Any:
+        return self._maintenance_facade._maintenance_scout
 
-            self._maintenance_codegen_proposer = CodegenProposer(
-                merkle=self._merkle,
-                generate=_generate,
-                propose=self.cold_update().propose,
-            )
-        return self._maintenance_codegen_proposer
+    @_maintenance_scout.setter
+    def _maintenance_scout(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_scout = value
+
+    @property
+    def _maintenance_adopter(self) -> Any:
+        return self._maintenance_facade._maintenance_adopter
+
+    @_maintenance_adopter.setter
+    def _maintenance_adopter(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_adopter = value
+
+    @property
+    def _maintenance_registry_scout(self) -> Any:
+        return self._maintenance_facade._maintenance_registry_scout
+
+    @_maintenance_registry_scout.setter
+    def _maintenance_registry_scout(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_registry_scout = value
+
+    @property
+    def _maintenance_dep_scout(self) -> Any:
+        return self._maintenance_facade._maintenance_dep_scout
+
+    @_maintenance_dep_scout.setter
+    def _maintenance_dep_scout(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_dep_scout = value
+
+    @property
+    def _maintenance_dep_proposer(self) -> Any:
+        return self._maintenance_facade._maintenance_dep_proposer
+
+    @_maintenance_dep_proposer.setter
+    def _maintenance_dep_proposer(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_dep_proposer = value
+
+    @property
+    def _maintenance_codegen_proposer(self) -> Any:
+        return self._maintenance_facade._maintenance_codegen_proposer
+
+    @_maintenance_codegen_proposer.setter
+    def _maintenance_codegen_proposer(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_codegen_proposer = value
+
+    @property
+    def _maintenance_community_scout(self) -> Any:
+        return self._maintenance_facade._maintenance_community_scout
+
+    @_maintenance_community_scout.setter
+    def _maintenance_community_scout(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_community_scout = value
 
     @staticmethod
     def _project_root() -> Path:
@@ -1462,387 +1278,22 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _run_pipeline(self, task: Task) -> None:
-        if self._gate_d_enabled:
-            self._run_pipeline_gate_d(task)
-            return
-
-        # 1. Governance L0
-        task.transition(TaskStatus.CLASSIFYING)
-        gov = GovernanceL0.get_instance()
-        if gov.in_emergency_mode:
-            self._block_task(task, "Atlas en modo de emergencia.", "critical")
-            return
-
-        gate_f = self._parse_gate_f_command(task.intent)
-        if gate_f is not None:
-            self._route_gate_f_command(task, gate_f)
-            return
-
-        # 2. Clasificar
-        result = self._classifier.classify(task.intent, sensitivity=task.sensitivity)
-
-        if result.governance_blocked:
-            self._block_task(task, result.reason, "critical")
-            self._bus.publish_type(EventType.SECURITY_VIOLATION, {
-                "reason": result.reason, "intent": task.intent
-            }, task.id)
-            return
-
-        task.transition(TaskStatus.ROUTING)
-        task.route = result.level
-        self._merkle.log(
-            action="task.classified",
-            agent="classifier",
-            result="success",
-            risk_level="safe",
-            payload={"route": result.level.value, "reason": result.reason},
-            task_id=task.id,
-        )
-
-        # 3. Enrutar
-        if result.level == RoutingLevel.BLOCKED:
-            self._block_task(task, result.reason, "high")
-            return
-
-        if result.level == RoutingLevel.DELEGATE_HERMES:
-            self._delegate_to_hermes(task)
-            return
-
-        if result.level == RoutingLevel.REQUIRES_APPROVAL:
-            verdict, _ = self._consult_decider(
-                DecisionAction(
-                    kind="route",
-                    requires_approval=True,
-                    sensitivity=task.sensitivity,
-                    reason=result.reason,
-                ),
-                task,
-            )
-            if isinstance(verdict, RequiresHuman):
-                task.transition(TaskStatus.AWAITING_APPROVAL)
-                task.result = {
-                    "message": f"Accion requiere aprobacion explicita. Razon: {result.reason}",
-                    "approved": False,
-                    "reason": result.reason,
-                }
-                self._approvals.register(task)
-                self._persist_pending_approval(task)
-                self._merkle.log(
-                    action="task.routed",
-                    agent="router",
-                    result="pending",
-                    risk_level="high",
-                    payload={"requires_approval": True, "reason": result.reason},
-                    task_id=task.id,
-                )
-                self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
-                    "task_id": task.id,
-                    "intent": task.intent,
-                    "reason": result.reason,
-                }, task.id)
-                return
-            if isinstance(verdict, Deny):
-                self._block_task(task, verdict.reason or result.reason, "high")
-                return
-            # Allow → el decisor autoriza sin humano; cae a ejecución.
-
-        # DETERMINISTIC_TOOL o LOCAL_SAFE (o Allow del decisor) → ejecutar
-        task.transition(TaskStatus.EXECUTING)
-        self._execute_task(task)
+        self._pipeline_runner._run_pipeline(task)
 
     # ------------------------------------------------------------------
     # Gate D — pipeline integrado opt-in
     # ------------------------------------------------------------------
 
     def _run_pipeline_gate_d(self, task: Task) -> None:
-        """
-        Variante del pipeline que enlaza las piezas Gate D:
-
-            governance -> ghost.lookup -> hybrid_classify (rule+SLM)
-              -> route -> [execute|delegate|approve|block]
-              -> ghost.record -> timetravel.record_step
-        """
-        # 0. Snapshot inicial
-        if self._timetravel is None:
-            raise RuntimeError(
-                "Gate D pipeline: _timetravel no inicializado "
-                "(llama a enable_gate_d_pipeline)"
-            )
-        if self._ghost_replay is None:
-            raise RuntimeError(
-                "Gate D pipeline: _ghost_replay no inicializado "
-                "(llama a enable_gate_d_pipeline)"
-            )
-        if self._slm_classifier is None:
-            raise RuntimeError(
-                "Gate D pipeline: _slm_classifier no inicializado "
-                "(llama a enable_gate_d_pipeline)"
-            )
-
-        self._timetravel.record_step(
-            task.id, "received",
-            {"intent": task.intent, "source": task.source.value},
-        )
-
-        # 1. Governance L0
-        task.transition(TaskStatus.CLASSIFYING)
-        gov = GovernanceL0.get_instance()
-        if gov.in_emergency_mode:
-            self._block_task(task, "Atlas en modo de emergencia.", "critical")
-            self._timetravel.record_step(task.id, "blocked_emergency", {"intent": task.intent})
-            return
-
-        # 2. Ghost cache lookup — solo intenta para tareas que NO requieran
-        # aprobacion ni delegacion. Para mantenerlo simple, consultamos
-        # siempre antes del classifier: si hit, devolvemos directamente.
-        sensitivity = task.sensitivity   # "low" | "medium" | "high"
-        ctx_sig = "pipeline-d-v1"
-
-        gate_f = self._parse_gate_f_command(task.intent)
-        if gate_f is not None:
-            self._route_gate_f_command(task, gate_f)
-            self._timetravel.record_step(
-                task.id,
-                "gate_f_routed",
-                {
-                    "tool": gate_f.tool,
-                    "action": gate_f.action,
-                    "requires_approval": gate_f.requires_approval,
-                },
-            )
-            return
-
-        if self._ghost_cache_eligible(sensitivity):
-            hit = self._ghost_replay.lookup(task.intent, sensitivity, ctx_sig)
-        else:
-            hit = None
-        if hit is not None:
-            # Camino corto: ya estamos en CLASSIFYING desde el paso 1.
-            # Cumplimos el state machine CLASSIFYING -> ROUTING -> EXECUTING
-            # -> DONE para mantener invariantes.
-            task.transition(TaskStatus.ROUTING)
-            task.route = RoutingLevel(hit.result.get("route", "local_safe"))
-            task.tool_name = hit.result.get("tool_name") or "ghost.cache"
-            task.transition(TaskStatus.EXECUTING)
-            task.result = hit.result.get("payload", {"cached": True})
-            task.transition(TaskStatus.DONE)
-            self._merkle.log(
-                action="task.ghost_hit",
-                agent="orchestrator",
-                result="success",
-                risk_level="safe",
-                payload={"intent": task.intent, "route": task.route.value},
-                task_id=task.id,
-            )
-            self._timetravel.record_step(
-                task.id, "ghost_hit",
-                {"route": task.route.value, "cached": True},
-            )
-            self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
-            return
-
-        # 3. Hybrid classify
-        cls = self._hybrid_classify(task.intent, task.sensitivity, task_id=task.id)
-
-        if cls.governance_blocked:
-            self._block_task(task, cls.reason, "critical")
-            self._bus.publish_type(EventType.SECURITY_VIOLATION, {
-                "reason": cls.reason, "intent": task.intent,
-            }, task.id)
-            self._timetravel.record_step(task.id, "blocked_governance", {"reason": cls.reason})
-            return
-
-        task.transition(TaskStatus.ROUTING)
-        task.route = cls.level
-        winner = "slm" if isinstance(cls.reason, str) and cls.reason.startswith("SLM:") else "rule"
-        self._merkle.log(
-            action="task.classified",
-            agent="classifier_hybrid",
-            result="success",
-            risk_level="safe",
-            payload={
-                "route":      cls.level.value,
-                "reason":     cls.reason,
-                "confidence": cls.confidence,
-                "winner":     winner,
-            },
-            task_id=task.id,
-        )
-        self._timetravel.record_step(
-            task.id, "classified",
-            {"route": cls.level.value, "confidence": cls.confidence, "reason": cls.reason},
-        )
-
-        # 4. Route
-        if cls.level == RoutingLevel.BLOCKED:
-            self._block_task(task, cls.reason, "high")
-            return
-
-        if cls.level == RoutingLevel.DELEGATE_HERMES:
-            self._delegate_to_hermes(task)
-            self._timetravel.record_step(task.id, "delegated", {"target": "hermes"})
-            return
-
-        if cls.level == RoutingLevel.REQUIRES_APPROVAL:
-            verdict, _ = self._consult_decider(
-                DecisionAction(
-                    kind="route",
-                    requires_approval=True,
-                    sensitivity=task.sensitivity,
-                    reason=cls.reason,
-                ),
-                task,
-            )
-            if isinstance(verdict, RequiresHuman):
-                task.transition(TaskStatus.AWAITING_APPROVAL)
-                task.result = {
-                    "message": f"Accion requiere aprobacion explicita. Razon: {cls.reason}",
-                    "approved": False,
-                    "reason": cls.reason,
-                }
-                self._approvals.register(task)
-                self._persist_pending_approval(task)
-                self._merkle.log(
-                    action="task.routed",
-                    agent="router",
-                    result="pending",
-                    risk_level="high",
-                    payload={"requires_approval": True, "reason": cls.reason},
-                    task_id=task.id,
-                )
-                self._bus.publish_type(EventType.APPROVAL_REQUIRED, {
-                    "task_id": task.id, "intent": task.intent, "reason": cls.reason,
-                }, task.id)
-                self._timetravel.record_step(task.id, "awaiting_approval", {"reason": cls.reason})
-                return
-            if isinstance(verdict, Deny):
-                self._block_task(task, verdict.reason or cls.reason, "high")
-                self._timetravel.record_step(task.id, "denied", {"reason": verdict.reason or cls.reason})
-                return
-            # Allow → el decisor autoriza sin humano; cae a ejecución.
-
-        # 5. Execute (DETERMINISTIC_TOOL o LOCAL_SAFE o Allow del decisor)
-        task.transition(TaskStatus.EXECUTING)
-        self._execute_task(task)
-
-        # 6. Ghost record si la ejecucion fue OK (nunca cachear approval/high)
-        if task.status == TaskStatus.DONE and self._ghost_cache_eligible(
-            sensitivity, route=task.route,
-        ):
-            try:
-                self._ghost_replay.record(
-                    task.intent, sensitivity, ctx_sig,
-                    {
-                        "route":     task.route.value if task.route else "local_safe",
-                        "tool_name": task.tool_name,
-                        "payload":   task.result or {},
-                    },
-                    metadata={"task_id": task.id},
-                )
-            except Exception:  # noqa: BLE001
-                # Cache no debe romper la tarea
-                pass
-            self._timetravel.record_step(
-                task.id, "done",
-                {"tool": task.tool_name, "route": task.route.value if task.route else None},
-            )
+        self._pipeline_runner._run_pipeline_gate_d(task)
 
     def _hybrid_classify(
         self, intent: str, sensitivity: str | None, *, task_id: str | None = None,
     ) -> ClassificationResult:
-        return self._hybrid.classify(intent, sensitivity, task_id=task_id)
+        return self._pipeline_runner._hybrid_classify(intent, sensitivity, task_id=task_id)
 
     def _execute_task(self, task: Task) -> None:
-        """Ejecuta la tarea con la herramienta deterministica correspondiente."""
-        if self._thermal_watchdog is not None:
-            task.operational_mode = self._thermal_watchdog.current_operational_mode()
-
-        tool_key = task.tool_name or "legacy"
-        gate_h_block = self._check_gate_h_tool_allowed(tool_key, task.id)
-        if gate_h_block:
-            task.transition(TaskStatus.FAILED)
-            task.error = gate_h_block
-            task.result = {"error": gate_h_block, "paused": True}
-            return
-
-        # ADR-032: reanudación de un loop agéntico suspendido. Si la tarea trae
-        # estado serializado, la aprobación HITL ya ejecutó mark_confirmed; aquí
-        # se ejecutan las mutaciones pendientes y el loop continúa.
-        if "agentic_state" in task.metadata:
-            self._agentic_executor.resume(task)
-            return
-
-        if "gate_f_command" in task.metadata:
-            self._execute_gate_f_task(task)
-            return
-
-        intent_lower = task.intent.lower()
-
-        # Mapear intencion a herramienta
-        if any(kw in intent_lower for kw in ["estado de atlas", "atlas status"]):
-            task.tool_name = "atlas.status"
-            task.result = self.status().__dict__
-        elif any(kw in intent_lower for kw in ["git status", "estado git"]):
-            task.tool_name = "git.status"
-            task.result = self._run_git_status(task)
-        elif any(
-            kw in intent_lower
-            for kw in [
-                "git log",
-                "historial",
-                "commit",  # cubre "commits", "último commit", "recent commits"
-                "últimos cambios",
-                "ultimos cambios",
-                "recent commits",
-            ]
-        ):
-            # Grounding: preguntas factuales sobre commits van a la tool git real,
-            # NO a inferencia LOCAL_SAFE (que inventaría hashes/mensajes).
-            task.tool_name = "git.log"
-            task.result = self._run_git_log(task)
-        elif any(
-            kw in intent_lower
-            for kw in ["git diff", "diferencias", "qué cambió", "que cambio", "what changed"]
-        ):
-            task.tool_name = "git.diff"
-            task.result = self._run_git_diff(task)
-        elif any(kw in intent_lower for kw in ["lista", "listar", "list"]):
-            task.tool_name = "fs.list_dir"
-            task.result = self._list_workspace()
-        else:
-            # LOCAL_SAFE: si pipeline Gate D activo + InferenceHub disponible,
-            # responder via inferencia real con MemoryDistiller + PIISurrogate.
-            # Si no, fallback al passthrough informativo de v0.1.
-            if self._gate_d_enabled and self._inference_hub is not None:
-                self._agentic_executor.execute_local_safe(task)
-            else:
-                task.tool_name = "local_safe.passthrough"
-                task.result = {
-                    "message": "Tarea LOCAL_SAFE recibida. InferenceHub no inyectado en este Orchestrator.",
-                    "intent": task.intent,
-                }
-
-        # ADR-032: el loop agéntico pudo SUSPENDERSE durante la inferencia
-        # (mutación pendiente de aprobación). En ese caso la tarea ya está
-        # AWAITING_APPROVAL y persistida; no la cerremos como DONE.
-        if task.status == TaskStatus.AWAITING_APPROVAL:
-            return
-
-        self._merkle.log(
-            action="tool.invoked",
-            agent=task.tool_name or "unknown",
-            result="success",
-            risk_level="safe",
-            payload={"tool": task.tool_name},
-            task_id=task.id,
-        )
-        self._record_tool_receipt(
-            task,
-            purpose="Ejecucion de herramienta determinista",
-            approval_path="explicit" if task.route == RoutingLevel.REQUIRES_APPROVAL else "automatic",
-        )
-        task.transition(TaskStatus.DONE)
-        self._bus.publish_type(EventType.TASK_COMPLETED, {"task_id": task.id}, task.id)
+        self._pipeline_runner._execute_task(task)
 
     # ------------------------------------------------------------------
     # Gate F — Browser / Editor / VisionLoop routing
@@ -2160,16 +1611,7 @@ class Orchestrator:
         }, task.id)
 
     def _block_task(self, task: Task, reason: str, risk_level: str) -> None:
-        task.transition(TaskStatus.BLOCKED)
-        task.error = reason
-        self._merkle.log(
-            action="task.blocked",
-            agent="orchestrator",
-            result="blocked",
-            risk_level=risk_level,
-            payload={"reason": reason, "intent": task.intent},
-            task_id=task.id,
-        )
+        self._pipeline_runner._block_task(task, reason, risk_level)
 
     # ------------------------------------------------------------------
     # Herramientas simples
@@ -2191,27 +1633,7 @@ class Orchestrator:
         *,
         task: Task | None = None,
     ) -> dict[str, Any]:
-        """Helper comun: emite capability, ejecuta en sandbox y normaliza salida."""
-        from atlas.security.capabilities import CapabilityDenied  # noqa: PLC0415
-        from atlas.security.executor import ExecutorError          # noqa: PLC0415
-        clearance = f"task:{task.id}" if task is not None else None
-        try:
-            cap = self._capability_issuer.issue_exec(
-                command, args=args, timeout_s=10, clearance=clearance,
-            )
-            result = self._executor.execute_exec(cap)
-            return {
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "returncode": result.exit_code,
-                "duration_ms": result.duration_ms,
-            }
-        except CapabilityDenied as e:
-            return {"error": f"capability denegada: {e}"}
-        except ExecutorError as e:
-            return {"error": f"executor: {e}"}
-        except Exception as e:
-            return {"error": str(e)}
+        return self._pipeline_runner._run_via_executor(command, args, task=task)
 
     def _run_git_status(self, task: Task | None = None) -> dict[str, Any]:
         return self._git.status(task)
@@ -2287,15 +1709,13 @@ class Orchestrator:
         self._cold_update_manager = None
         self._swarm_cycle = None
         self._self_audit_runner = None
-        self._maintenance_scout = None
-        self._maintenance_adopter = None
-        self._maintenance_registry_scout = None
-        self._maintenance_scheduler = None
-        self._maintenance_dep_scout = None
-        self._maintenance_dep_proposer = None
-        self._maintenance_codegen_proposer = None
-        self._maintenance_community_scout = None
         self._knowledge_cve_proposer = None
+
+        from atlas.core.orchestrator_parts.maintenance_facade import MaintenanceFacade
+        self._maintenance_facade = MaintenanceFacade(self)
+
+        from atlas.core.orchestrator_parts.pipeline_runner import PipelineRunner
+        self._pipeline_runner = PipelineRunner(self)
 
         # Verificar integridad al arrancar
         ok, msg = self._merkle.verify_chain()

@@ -44,8 +44,8 @@ additive library; operational wiring is tracked in `docs/design/backlog.md`.
 - **Layer 1 — Universal verifier** (ADR-041): `verify(artifact) -> Evidence`,
   asymmetric rule (nothing rises without a cheaper verifier; else `UNKNOWN`).
 - **Layer 2 — Cascade routing** (ADR-042): cheapest capable producer, escalate
-  on FAIL/UNKNOWN, `CostLedger` (cost per verified result). Production entry
-  point is Layer 3 (no autonomous `cascade.route` until then).
+  on FAIL/UNKNOWN, `CostLedger` (cost per verified result). Layer 3 will serve as
+  production entry point once wiring is complete (operational wiring currently deferred).
 - **Layer 3 — Swarm on blackboard** (ADR-045/046): workers coordinated by
   verifiable artifacts; `Envelope` policies; sole-writer coordinator; worker
   backend (disposable git worktrees, pure producers, env-hijack-safe);

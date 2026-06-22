@@ -100,7 +100,19 @@ class LayeredIsolationSandbox:
 
         # 3. Ejecutar segun modo
         if operational_mode == OperationalMode.OMEGA:
-            return self._execute_omega(code, working_dir, snapshot_id, wall)
+            try:
+                return self._execute_omega(code, working_dir, snapshot_id, wall)
+            except BwrapUnavailableError as exc:
+                # ADR-055 fail-closed: sin bwrap, OMEGA se deniega.
+                return SandboxResult(
+                    success=False,
+                    stdout="",
+                    stderr=f"[jail fail-closed] {exc}",
+                    exit_code=-1,
+                    duration_ms=0,
+                    operational_mode=OperationalMode.OMEGA,
+                    snapshot_id=snapshot_id,
+                )
         else:
             return self._execute_normal(code, working_dir, wall)
 
@@ -312,7 +324,9 @@ class LayeredIsolationSandbox:
         snapshot_id: str | None,
         timeout_s: int,
     ) -> SandboxResult:
-        result = self._execute_normal(code, working_dir, timeout_s)
+        # ADR-055 fail-closed: código OMEGA (alto riesgo) SIEMPRE pasa por jail OS-level.
+        # Sin bwrap, denegamos; no degradamos a NORMAL.
+        result = self.execute_in_jail(code, timeout_s=timeout_s)
         result.operational_mode = OperationalMode.OMEGA
         result.snapshot_id = snapshot_id
         return result

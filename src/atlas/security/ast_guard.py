@@ -21,10 +21,11 @@ from dataclasses import dataclass
 # ---------------------------------------------------------------------------
 
 BLOCKED_IMPORTS: frozenset[str] = frozenset({
-    "os", "subprocess", "socket", "ctypes", "importlib",
-    "shutil", "tempfile", "pty", "tty", "termios", "signal",
-    "multiprocessing", "threading", "concurrent",
-    "pickle", "shelve", "marshal",
+    "asyncio", "concurrent", "ctypes", "ftplib", "http",
+    "importlib", "marshal", "multiprocessing", "os", "pickle",
+    "shelve", "signal", "socket", "subprocess", "tempfile",
+    "threading", "tty", "termios", "pty", "shutil", "urllib",
+    "webbrowser",
 })
 
 # Importaciones con acceso parcial permitido
