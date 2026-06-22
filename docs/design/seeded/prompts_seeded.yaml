@@ -1,13 +1,13 @@
 _generated:
-  by: scripts/seed_lines_pcr.py
-  at: '2026-06-21T23:39:52.082865+00:00'
-  source: https://github.com/ai-boost/awesome-prompts
-  note: Línea prompt sembrada desde awesome-prompts (file-per-item .txt/.md).
+  by: scripts/mcp_sync.py
+  at: '2026-06-22T07:03:42.759038+00:00'
+  source: github.com/ai-boost/awesome-prompts
+  note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
   uncategorized:
-    label: Sin clasificar
+    label: prompts (sembrado)
     entries:
-    - name: 3d-generative-artist
+    - name: 3D_Generative_Artist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -17,8 +17,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: ai-ethics-reviewer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: AI_Ethics_Reviewer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -28,8 +28,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: academic-peer-reviewer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Academic_Peer_Reviewer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -39,8 +39,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: adaptive-learning-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Adaptive_Learning_Designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -50,8 +50,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agile-transformation-lead
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Agile_Transformation_Lead
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -61,8 +61,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: autogpt
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: AutoGPT
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -72,8 +72,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: beauty-dnd
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Beauty_DND
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -83,8 +83,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: cinematography-prompt-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Cinematography_Prompt_Engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -94,8 +94,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: clinical-research-coordinator
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Clinical_Research_Coordinator
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -105,8 +105,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: contract-negotiation-strategist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Contract_Negotiation_Strategist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -116,8 +116,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: creative-writing-coach
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Creative_Writing_Coach
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -127,8 +127,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: cross-cultural-communication-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Cross_Cultural_Communication_Designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -138,8 +138,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: data-governance-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Data_Governance_Architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -149,8 +149,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: data-platform-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Data_Platform_Architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -160,8 +160,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: deep-work-facilitator
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Deep_Work_Facilitator
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -171,8 +171,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: executive-operations-partner
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Executive_Operations_Partner
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -182,8 +182,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: game-economy-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Game_Economy_Designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -193,8 +193,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: game-level-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Game_Level_Designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -204,8 +204,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: health-informatics-specialist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Health_Informatics_Specialist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -215,8 +215,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: immersive-narrative-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Immersive_Narrative_Designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -226,8 +226,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: knowledge-base-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Knowledge_Base_Architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -237,8 +237,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: learnos-pro
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: LearnOS_PRO
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -248,8 +248,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: literature-professor
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Literature_Professor
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -259,8 +259,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: localization-globalization-strategist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Localization_Globalization_Strategist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -270,8 +270,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: mlops-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: MLOps_Engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -281,8 +281,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: meta-mj
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Meta MJ
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -293,8 +293,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: mr-ranedeer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Mr_Ranedeer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -304,8 +304,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: personal-knowledge-assistant
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Personal_Knowledge_Assistant
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -315,8 +315,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: project-recovery-specialist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Project_Recovery_Specialist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -326,8 +326,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: prompt-creater
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Prompt Creater
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -338,8 +338,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: quicksilver-os
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: QuickSilver OS
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -350,8 +350,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: regulatory-affairs-specialist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Regulatory_Affairs_Specialist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -361,8 +361,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: superprompt
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: SuperPrompt
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -372,8 +372,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: technical-documentation-strategist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Technical_Documentation_Strategist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -383,8 +383,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: technical-program-manager
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Technical_Program_Manager
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -394,8 +394,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: technical-translator-localizer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Technical_Translator_Localizer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -405,8 +405,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: vampire-the-masquerade-lore-expert
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: Vampire The Masquerade Lore Expert
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -417,8 +417,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: a2a-agent-protocol-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: a2a_agent_protocol_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -428,8 +428,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: a2ui-agent-to-user-interface-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: a2ui_agent_to_user_interface_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -439,8 +439,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: academic-paper-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: academic_paper_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -450,8 +450,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: accessibility-auditor
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: accessibility_auditor
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -461,8 +461,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: adhd-parallel-ideation-skill
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: adhd_parallel_ideation_skill
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -472,8 +472,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: adk-skilltoolset-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: adk_skilltoolset_designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -483,8 +483,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: ag-ui-frontend-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: ag_ui_frontend_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -494,8 +494,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-context-efficiency-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_context_efficiency_engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -505,8 +505,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-cooperation-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_cooperation_designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -516,8 +516,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-cost-observability-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_cost_observability_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -527,8 +527,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-eval-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_eval_designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -538,8 +538,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-first-language-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_first_language_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -549,8 +549,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-governance-orchestrator
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_governance_orchestrator
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -560,8 +560,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-harness-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_harness_designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -571,8 +571,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-harness-performance-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_harness_performance_engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -582,8 +582,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-memory-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_memory_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -593,8 +593,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-permission-auto-mode-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_permission_auto_mode_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -604,8 +604,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-powered-vulnerability-scanner-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_powered_vulnerability_scanner_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -615,8 +615,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-protocol-advisor
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_protocol_advisor
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -626,8 +626,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-red-team-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_red_team_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -637,8 +637,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-reliability-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_reliability_engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -648,8 +648,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-skill-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_skill_designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -659,8 +659,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-skill-optimizer-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_skill_optimizer_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -670,8 +670,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-skill-supply-chain-auditor
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_skill_supply_chain_auditor
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -681,8 +681,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-state-hygiene-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_state_hygiene_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -692,8 +692,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-style-enforcer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_style_enforcer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -703,8 +703,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-tool-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_tool_engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -714,8 +714,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-trajectory-triage-specialist
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_trajectory_triage_specialist
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -725,8 +725,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-virtual-filesystem-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_virtual_filesystem_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -736,8 +736,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agent-world-model-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agent_world_model_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -747,8 +747,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agentic-cad-hardware-designer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agentic_cad_hardware_designer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -758,8 +758,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agentic-code-reasoner
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agentic_code_reasoner
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -769,8 +769,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agentic-coder
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agentic_coder
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -780,8 +780,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agentic-company-orchestrator
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agentic_company_orchestrator
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -791,8 +791,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agentic-video-editor
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agentic_video_editor
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -802,8 +802,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agents-best-practices
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agents_best_practices
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -813,8 +813,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: agents-md-author
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: agents_md_author
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -824,8 +824,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: ai-co-mathematician
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: ai_co_mathematician
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -835,8 +835,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: ai-governance-legal-agent
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: ai_governance_legal_agent
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -846,8 +846,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: ai-native-product-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: ai_native_product_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -857,8 +857,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: analytics-engineer
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: analytics_engineer
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -868,8 +868,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: andrej-karpathy-coding-guidelines
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: andrej_karpathy_coding_guidelines
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -879,8 +879,8 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
-    - name: anti-ai-slop-design-architect
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'
+    - name: anti_ai_slop_design_architect
       sector: uncategorized
       kind: prompt
       purpose: ''
@@ -890,4 +890,4 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/ai-boost/awesome-prompts
-        fetched_at: '2026-06-21T23:39:52.077633+00:00'
+        fetched_at: '2026-06-22T07:03:42.756933+00:00'

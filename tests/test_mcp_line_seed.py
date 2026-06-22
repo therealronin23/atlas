@@ -37,6 +37,26 @@ def test_github_line_source_targets_repo_subdir() -> None:
     assert "api.github.com/repos/owner/repo/contents/prompts" in seen[0]
 
 
+def test_files_to_candidates_handles_file_per_item() -> None:
+    from atlas.mcp.line_seed import files_to_candidates
+
+    payload = json.dumps([
+        {"name": "expert.md", "type": "file"},
+        {"name": "coder.txt", "type": "file"},
+        {"name": "sub", "type": "dir"},
+        {"name": "README.md", "type": "file"},
+    ])
+    cands = files_to_candidates(
+        json.loads(payload), repo="o/r", subdir="prompts", kind="prompt",
+        install_template="curl -O https://raw.githubusercontent.com/{repo}/main/prompts/{file}",
+    )
+    by = {c["name"]: c for c in cands}
+    # files (sin extensión en el name), excluye dirs y README
+    assert set(by) == {"expert", "coder"}
+    assert by["expert"]["kind"] == "prompt"
+    assert "prompts/expert.md" in by["expert"]["install"]
+
+
 def test_dirs_to_candidates_uses_kind_and_install_template() -> None:
     from atlas.mcp.line_seed import dirs_to_candidates
 
