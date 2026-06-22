@@ -171,8 +171,11 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     `FrankfurterSource` (divisas), sin auth, por el pipeline knowledge-src (run_mission→sustrato con
     procedencia). prove-it LIVE (ingesta real ok). tools en knowledge_server + manifest; catálogo
     instalado (datos). Ahora 4 APIs nuestras vivas (Wikipedia/WorldBank/Open-Meteo/Frankfurter).
-  - 🔄 EN CURSO (autónomo, orden propio): verificar MCP de referencia sin secretos (prove-it) + instalar
-    más skills sin secretos. PENDIENTE: items que requieran credenciales = consent.
+  - ✅ **MCP de referencia verificados** (prove-it LIVE, sin secretos): `sequential-thinking` (ia-agentes/
+    planning) + `mcp-memory` (knowledge graph oficial, conocimiento-memoria/grafos). Catálogo verificado/
+    vetted; el tronco los frontea automáticamente → 6 hijos (3 nuestros + everything + 2 nuevos).
+  - PENDIENTE (consent/credenciales): items que requieran secretos (Slack/Linear/Postgres/…) =
+    autorización explícita por item.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

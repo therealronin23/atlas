@@ -95,5 +95,5 @@ def test_real_catalog_plan_only_proven_and_vetted() -> None:
 
     cat = Path(__file__).resolve().parent.parent / "docs" / "design" / "mcp_catalog.yaml"
     connects = [a for a in plan_install(load_catalog(cat)) if a.action == "connect"]
-    assert {a.name for a in connects} == {"everything"}
+    assert {a.name for a in connects} == {"everything", "sequential-thinking", "mcp-memory"}
     assert all(vet_action(a) is None for a in connects)  # ninguno vetado

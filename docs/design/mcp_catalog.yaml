@@ -98,7 +98,7 @@ sectors:
       - {name: World Bank, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:WorldBankSource", purpose: "indicadores abiertos (NUESTRO)", tags: [conocimiento-memoria, datos], status: instalado}
       - {name: Open-Meteo, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:OpenMeteoSource", purpose: "clima sin auth (NUESTRO, prove-it E2E)", tags: [conocimiento-memoria, datos], trust: vetted, status: instalado}
       - {name: Frankfurter, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:FrankfurterSource", purpose: "tipos de cambio sin auth (NUESTRO, prove-it E2E)", tags: [conocimiento-memoria, datos], trust: vetted, status: instalado}
-      - {name: Knowledge Graph Memory (oficial), kind: mcp, subsector: grafos, source: "modelcontextprotocol/servers", purpose: "entidades+relaciones (benchmark)", status: candidato}
+      - {name: mcp-memory, kind: mcp, subsector: grafos, install: "npx -y @modelcontextprotocol/server-memory", transport: stdio, trust: vetted, purpose: "knowledge graph oficial (benchmark; prove-it OK). Complementa nuestro sustrato verificable", status: verificado}
       - {name: Graphiti MCP, kind: mcp, subsector: grafos, purpose: "shared memory Claude↔Cursor", status: candidato}
       - {name: Memory Keeper, kind: mcp, subsector: memoria, source: "mkreyman/mcp-memory-keeper", purpose: "historia/decisiones", status: candidato}
 
@@ -127,7 +127,7 @@ sectors:
     entries:
       - {name: Superpowers, kind: skill, subsector: orquestacion, source: "plugin", purpose: "orquestación multi-agente", status: instalado}
       - {name: MCP Builder, kind: skill, subsector: builders, purpose: "construir servers MCP", status: candidato}
-      - {name: Sequential Thinking, kind: mcp, subsector: planning, purpose: "razonamiento por pasos", status: candidato}
+      - {name: sequential-thinking, kind: mcp, subsector: planning, install: "npx -y @modelcontextprotocol/server-sequential-thinking", transport: stdio, trust: vetted, purpose: "razonamiento por pasos (oficial, prove-it OK)", status: verificado}
       - {name: Grill-Me, kind: skill, subsector: planning, purpose: "stress-test socrático de planes", status: candidato}
       - {name: Create-Plan / Write-Plan, kind: skill, subsector: planning, purpose: "planificar antes de ejecutar", status: candidato}
       - {name: Skill-Creator, kind: skill, subsector: builders, purpose: "crear skills (meta)", status: candidato}

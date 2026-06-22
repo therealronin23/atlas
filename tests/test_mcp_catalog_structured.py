@@ -109,7 +109,8 @@ def test_real_catalog_verified_are_only_proven() -> None:
     (server de referencia, prove-it OK). Si crece, es decisión explícita."""
     from atlas.mcp.catalog import installable, load_catalog
 
-    assert {e.name for e in installable(load_catalog(_CATALOG))} == {"everything"}
+    assert {e.name for e in installable(load_catalog(_CATALOG))} == {
+        "everything", "sequential-thinking", "mcp-memory"}
 
 
 # ---------------------------------------------------------------------------
