@@ -187,7 +187,12 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
     Catálogo: instalado. NOTA seguridad: client secret pegado en chat → rotar tras confirmar. NO se usó
     el flag inseguro OAUTHLIB_INSECURE_TRANSPORT ni el token ADC (no necesarios). Está como conexión
     DIRECTA (no vía tronco; el tronco necesitaría el env en shell + restart).
-  - PENDIENTE (consent/credenciales): otros servicios con secretos = autorización por item.
+  - ✅ **Sincronizador `scripts/mcp_sync.py`** (un comando = descarga + ordena TODAS las líneas):
+    re-siembra del registro MCP + apis.guru + 7 repos awesome-* (config `LINES`) y re-clasifica a
+    dominios. `files_to_candidates` (fichero-por-item) añadido a line_seed. `--offline` solo reclasifica.
+    Idempotente, fuentes caídas aisladas. Probado live (734 clasificados). Listo para cron/scheduled.
+  - ⬜ Automatización periódica ("cada X"): pendiente elegir intervalo + mecanismo (cron/scheduled task)
+    con el usuario. Credenciales de otros servicios = el usuario las consigue (lista dada).
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

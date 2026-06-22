@@ -74,6 +74,32 @@ def dirs_to_candidates(
     return out
 
 
+def files_to_candidates(
+    payload: list[dict[str, Any]], *, repo: str, subdir: str, kind: str,
+    install_template: str, sector: str = "uncategorized",
+) -> list[dict[str, Any]]:
+    """Variante FICHERO-por-item (repos awesome-* que usan ficheros, no dirs): cada
+    fichero (excepto README) → candidato. `name` = stem (sin extensión). El template
+    se formatea con {repo}, {subdir}, {file} (nombre completo) y {name} (stem)."""
+    fetched_at, src = _now(), f"https://github.com/{repo}"
+    out: list[dict[str, Any]] = []
+    for item in payload:
+        if item.get("type") != "file":
+            continue
+        fname = item.get("name") or ""
+        stem = fname.rsplit(".", 1)[0]
+        if not stem or stem.lower() == "readme":
+            continue
+        out.append({
+            "name": stem, "sector": sector, "kind": kind,
+            "purpose": "", "source": repo,
+            "install": install_template.format(repo=repo, subdir=subdir, file=fname, name=stem),
+            "status": "candidato", "tags": [],
+            "provenance": {"source": src, "fetched_at": fetched_at},
+        })
+    return out
+
+
 # ---------------------------------------------------------------------------
 # APIs (apis.guru): directorio OpenAPI
 # ---------------------------------------------------------------------------
