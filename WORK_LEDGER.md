@@ -180,10 +180,13 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ **Soporte de credenciales**: `CatalogEntry.env_passthrough` + `trunk_children` pasa los NOMBRES
     de env vars (nunca el valor) a `McpServerConfig` → servicios con secreto funcionan al verificarse,
     sin meter secretos en git/catálogo. Infra para TODO servicio con credencial.
-  - 🔄 **Google Workspace (OAuth)**: registrado `google-workspace` (taylorwilsdon/google_workspace_mcp,
-    `uvx workspace-mcp`, env_passthrough GOOGLE_OAUTH_CLIENT_ID/SECRET), status candidato hasta que el
-    usuario cree credenciales OAuth en Google Cloud Console. Bloqueado-por: acción del usuario (crear
-    OAuth client + habilitar APIs). Tras eso: set env vars → verificado → el tronco lo frontea.
+  - ✅ **Google Workspace ENCHUFADO** (OAuth): el usuario creó el OAuth client (Desktop/PKCE); secretos
+    en `~/.config/atlas-mcp/secrets.env` (chmod 600, fuera de git). Desplegado en Claude Code vía
+    `claude mcp add -e` → `uvx workspace-mcp --tool-tier core` ✔ Connected (45 tools: Gmail/Calendar/
+    Drive/Docs/Sheets/Tasks/…). OAuth de navegador al PRIMER uso (token en `~/.google_workspace_mcp/`).
+    Catálogo: instalado. NOTA seguridad: client secret pegado en chat → rotar tras confirmar. NO se usó
+    el flag inseguro OAUTHLIB_INSECURE_TRANSPORT ni el token ADC (no necesarios). Está como conexión
+    DIRECTA (no vía tronco; el tronco necesitaría el env en shell + restart).
   - PENDIENTE (consent/credenciales): otros servicios con secretos = autorización por item.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
