@@ -441,5 +441,63 @@ class SqliteMemoryIndex:
         cur = self._conn.execute("SELECT COUNT(*) FROM records")
         return int(cur.fetchone()[0])
 
+    def recall_multihop(
+        self,
+        query_text: str,
+        *,
+        hops: int = 2,
+        include_superseded: bool = False,
+        now_ns: int | None = None,
+    ) -> list[RecallResult]:
+        """Encadena recalls: cada hop usa el texto del resultado anterior como query.
+
+        Hop 0: recall(query_text). Si no hay match, devuelve [].
+        Hop i+1: recall sobre el texto del hop anterior, excluyendo ids ya visitados.
+        Para cuando: se alcanza `hops` saltos o no hay siguiente con matched=True.
+
+        Args:
+            query_text: texto inicial de la cadena.
+            hops: número máximo de saltos (0 o negativo → []).
+            include_superseded: si True, incluye memorias caducadas en cada hop.
+            now_ns: timestamp en nanosegundos para auto_touch (opcional).
+
+        Returns:
+            Lista ordenada (cadena) de RecallResult, longitud entre 0 y hops.
+        """
+        if hops <= 0 or not query_text.strip():
+            return []
+
+        chain: list[RecallResult] = []
+        visited: set[str] = set()
+        current_query = query_text
+
+        for _ in range(hops):
+            candidates = self.recall_all(
+                current_query,
+                k=len(self._rows(include_superseded)) + 1,
+                include_superseded=include_superseded,
+                now_ns=now_ns,
+            )
+            # Selecciona el mejor candidato no visitado que supere el umbral.
+            next_result: RecallResult | None = None
+            for candidate in candidates:
+                if candidate.matched and candidate.lesson_id not in visited:
+                    next_result = candidate
+                    break
+
+            if next_result is None:
+                break
+
+            chain.append(next_result)
+            visited.add(next_result.lesson_id)
+
+            # El texto de este resultado es la query del siguiente hop.
+            next_text = self.text_of(next_result.lesson_id)
+            if next_text is None:
+                break
+            current_query = next_text
+
+        return chain
+
     def close(self) -> None:
         self._conn.close()
