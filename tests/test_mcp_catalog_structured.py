@@ -309,3 +309,88 @@ def test_in_sector_matches_any_tag(tmp_path: Path) -> None:
     coding = {e.name for e in in_sector(entries, "coding")}
     prod = {e.name for e in in_sector(entries, "productivity-meta")}
     assert "Karpathy" in coding and "Karpathy" in prod
+
+
+# ---------------------------------------------------------------------------
+# dedupe_by_kind_name — helper puro de deduplicación (#6 dedup)
+# ---------------------------------------------------------------------------
+
+_DEDUP_YAML = """
+sectors:
+  coding:
+    label: Coding
+    entries:
+      - name: X
+        kind: mcp
+        purpose: primera aparicion
+        status: candidato
+      - name: X
+        kind: mcp
+        purpose: duplicado (debe ignorarse)
+        status: candidato
+      - name: Y
+        kind: mcp
+        purpose: distinto nombre
+        status: candidato
+"""
+
+_DEDUP_YAML_CASE = """
+sectors:
+  coding:
+    label: Coding
+    entries:
+      - name: MyTool
+        kind: skill
+        purpose: primera aparicion
+        status: candidato
+      - name: mytool
+        kind: skill
+        purpose: duplicado en minuscula (debe ignorarse)
+        status: candidato
+"""
+
+
+def test_dedupe_by_kind_name_removes_duplicate_keeps_first(tmp_path: Path) -> None:
+    """Lista con 2 entradas (kind=mcp, name=X) + 1 distinta → devuelve 2, con el
+    primer 'X' (purpose='primera aparicion')."""
+    from atlas.mcp.catalog import dedupe_by_kind_name, load_catalog
+
+    p = tmp_path / "dedup.yaml"
+    p.write_text(_DEDUP_YAML, encoding="utf-8")
+    entries = load_catalog(p)
+    assert len(entries) == 3  # antes del dedup hay 3
+
+    result = dedupe_by_kind_name(entries)
+    assert len(result) == 2
+    by_name = {e.name: e for e in result}
+    assert "X" in by_name and "Y" in by_name
+    assert by_name["X"].purpose == "primera aparicion"
+
+
+def test_dedupe_by_kind_name_is_case_insensitive_on_name(tmp_path: Path) -> None:
+    """name.lower() es la clave: 'MyTool' y 'mytool' son el mismo item."""
+    from atlas.mcp.catalog import dedupe_by_kind_name, load_catalog
+
+    p = tmp_path / "dedup_case.yaml"
+    p.write_text(_DEDUP_YAML_CASE, encoding="utf-8")
+    entries = load_catalog(p)
+    assert len(entries) == 2  # antes del dedup hay 2
+
+    result = dedupe_by_kind_name(entries)
+    assert len(result) == 1
+    assert result[0].purpose == "primera aparicion"
+
+
+def test_dedupe_by_kind_name_same_name_different_kind_not_deduped(tmp_path: Path) -> None:
+    """Clave es (kind, name.lower()): mismo nombre, distinto kind → NO es duplicado."""
+    from atlas.mcp.catalog import CatalogEntry, dedupe_by_kind_name
+
+    def _e(kind: str, name: str) -> CatalogEntry:
+        return CatalogEntry(
+            name=name, sector="s", sector_label="S", kind=kind,
+            purpose="", source="", install="", status="candidato", tags=[], mode="served",
+        )
+
+    entries = [_e("mcp", "Foo"), _e("skill", "Foo")]
+    result = dedupe_by_kind_name(entries)
+    assert len(result) == 2

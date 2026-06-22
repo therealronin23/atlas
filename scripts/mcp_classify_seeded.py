@@ -14,13 +14,14 @@ import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import yaml  # noqa: E402
 
-from atlas.mcp.catalog import classify, classify_subsector, load_catalog, load_taxonomy  # noqa: E402
+from atlas.mcp.catalog import classify, classify_subsector, dedupe_by_kind_name, load_catalog, load_taxonomy  # noqa: E402
 
 _CURATED = ROOT / "docs" / "design" / "mcp_catalog.yaml"
 _OUT = ROOT / "docs" / "design" / "mcp_catalog_classified.yaml"
@@ -47,19 +48,22 @@ def _seeded_files() -> list[Path]:
 
 def main() -> int:
     tax = load_taxonomy(_CURATED)
-    by_sector: dict[str, list[dict]] = {}
+    by_sector: dict[str, list[dict[str, Any]]] = {}
     line_counts: Counter[str] = Counter()
+    all_entries = []
     for f in _seeded_files():
-        for e in load_catalog(f):
-            sector = classify(e.name, e.purpose, e.tags, tax,
-                               kind=e.kind, kind_default=_KIND_DEFAULT)
-            subsector = classify_subsector(e.name, e.purpose, e.tags, sector, tax)
-            line_counts[e.kind] += 1
-            by_sector.setdefault(sector, []).append({
-                "name": e.name, "kind": e.kind, "subsector": subsector,
-                "mode": e.mode, "source": e.source, "install": e.install,
-                "status": e.status, "tags": e.tags,
-            })
+        all_entries.extend(load_catalog(f))
+    all_entries = dedupe_by_kind_name(all_entries)
+    for e in all_entries:
+        sector = classify(e.name, e.purpose, e.tags, tax,
+                          kind=e.kind, kind_default=_KIND_DEFAULT)
+        subsector = classify_subsector(e.name, e.purpose, e.tags, sector, tax)
+        line_counts[e.kind] += 1
+        by_sector.setdefault(sector, []).append({
+            "name": e.name, "kind": e.kind, "subsector": subsector,
+            "mode": e.mode, "source": e.source, "install": e.install,
+            "status": e.status, "tags": e.tags,
+        })
 
     sectors_doc = {}
     for sid, entries in sorted(by_sector.items()):

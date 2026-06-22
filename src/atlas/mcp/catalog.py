@@ -263,3 +263,16 @@ def by_status(entries: list[CatalogEntry]) -> dict[str, int]:
     for e in entries:
         counts[e.status] = counts.get(e.status, 0) + 1
     return counts
+
+
+def dedupe_by_kind_name(entries: list[CatalogEntry]) -> list[CatalogEntry]:
+    """Elimina duplicados por clave `(kind, name.lower())`, conservando la PRIMERA
+    aparición. Puro: no muta la lista de entrada."""
+    seen: set[tuple[str, str]] = set()
+    out: list[CatalogEntry] = []
+    for e in entries:
+        key = (e.kind, e.name.lower())
+        if key not in seen:
+            seen.add(key)
+            out.append(e)
+    return out

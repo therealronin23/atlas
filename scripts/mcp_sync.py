@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import yaml  # noqa: E402
 
-from atlas.mcp.catalog import classify, classify_subsector, load_catalog, load_taxonomy  # noqa: E402
+from atlas.mcp.catalog import classify, classify_subsector, dedupe_by_kind_name, load_catalog, load_taxonomy  # noqa: E402
 from atlas.mcp.line_seed import (  # noqa: E402
     ApisGuruSource, GithubLineSource, apis_to_candidates,
     dirs_to_candidates, files_to_candidates, nested_dir_candidates,
@@ -116,14 +116,17 @@ def _classify() -> None:
     print("== clasificación ==")
     tax = load_taxonomy(CURATED)
     seeded = sorted(set((ROOT / "docs/design").glob("*seeded*.yaml")) | set(SEEDED.glob("*.yaml")))
-    by_sector: dict[str, list[dict[str, Any]]] = {}
+    all_entries = []
     for f in seeded:
-        for e in load_catalog(f):
-            sec = classify(e.name, e.purpose, e.tags, tax, kind=e.kind, kind_default=KIND_DEFAULT)
-            sub = classify_subsector(e.name, e.purpose, e.tags, sec, tax)
-            by_sector.setdefault(sec, []).append({
-                "name": e.name, "kind": e.kind, "subsector": sub, "mode": e.mode,
-                "source": e.source, "install": e.install, "status": e.status, "tags": e.tags})
+        all_entries.extend(load_catalog(f))
+    all_entries = dedupe_by_kind_name(all_entries)
+    by_sector: dict[str, list[dict[str, Any]]] = {}
+    for e in all_entries:
+        sec = classify(e.name, e.purpose, e.tags, tax, kind=e.kind, kind_default=KIND_DEFAULT)
+        sub = classify_subsector(e.name, e.purpose, e.tags, sec, tax)
+        by_sector.setdefault(sec, []).append({
+            "name": e.name, "kind": e.kind, "subsector": sub, "mode": e.mode,
+            "source": e.source, "install": e.install, "status": e.status, "tags": e.tags})
     doc = {"_generated": {"by": "scripts/mcp_sync.py", "at": datetime.now(timezone.utc).isoformat(),
                           "note": "Clasificación automática; todo candidato."},
            "sectors": {sid: {"label": tax.get(sid, {}).get("label", sid), "entries": v}
