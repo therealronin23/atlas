@@ -85,7 +85,10 @@ def trunk_children(
         if e.source in by_module:  # raíz nuestra → comando ya resuelto con path arg
             out.append(our_cfgs[e.source])
         elif e.install.strip():    # externa → comando de su `install`
-            out.append(McpServerConfig(name=e.name, cmd=shlex.split(e.install)))
+            out.append(McpServerConfig(
+                name=e.name, cmd=shlex.split(e.install),
+                env_passthrough=list(e.env_passthrough),  # secretos por entorno, no en cmd
+            ))
     return out
 
 
