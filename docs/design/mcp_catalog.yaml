@@ -111,6 +111,7 @@ sectors:
       comunicacion: {label: Comunicación, aliases: [chat, slack]}
       ofimatica: {label: Ofimática, aliases: [docs, pdf, excel]}
     entries:
+      - {name: google-workspace, kind: mcp, subsector: gestion, install: "uvx workspace-mcp --tool-tier core", transport: stdio, env_passthrough: [GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET], source: "taylorwilsdon/google_workspace_mcp", purpose: "Gmail/Calendar/Drive/Docs/Sheets con tu cuenta Google (OAuth). NECESITA credenciales OAuth de Google Cloud → status candidato hasta tenerlas", tags: [productividad, conocimiento-memoria], status: candidato}
       - {name: Linear, kind: mcp, subsector: gestion, purpose: "tickets", status: candidato}
       - {name: Slack, kind: mcp, subsector: comunicacion, purpose: "comunicación", status: candidato}
       - {name: Document Skills (PDF/DOCX/XLSX/PPTX), kind: skill, subsector: ofimatica, purpose: "ofimática", tags: [productividad, datos], status: candidato}

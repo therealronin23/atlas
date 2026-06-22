@@ -177,8 +177,14 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
   - ✅ **2 skills más instalados E2E** (sin secretos): `web-design-guidelines` (diseño/ux) +
     `writing-guidelines` (productividad/ofimática), vivos en la lista de skills. Catálogo: 48 entradas
     (12 instalado, 3 verificado). Items verificados/instalados ya cubren mcp·api·skill en varios dominios.
-  - PENDIENTE (consent/credenciales): items que requieran secretos (Slack/Linear/Postgres/…) =
-    autorización explícita por item.
+  - ✅ **Soporte de credenciales**: `CatalogEntry.env_passthrough` + `trunk_children` pasa los NOMBRES
+    de env vars (nunca el valor) a `McpServerConfig` → servicios con secreto funcionan al verificarse,
+    sin meter secretos en git/catálogo. Infra para TODO servicio con credencial.
+  - 🔄 **Google Workspace (OAuth)**: registrado `google-workspace` (taylorwilsdon/google_workspace_mcp,
+    `uvx workspace-mcp`, env_passthrough GOOGLE_OAUTH_CLIENT_ID/SECRET), status candidato hasta que el
+    usuario cree credenciales OAuth en Google Cloud Console. Bloqueado-por: acción del usuario (crear
+    OAuth client + habilitar APIs). Tras eso: set env vars → verificado → el tronco lo frontea.
+  - PENDIENTE (consent/credenciales): otros servicios con secretos = autorización por item.
 - ⏸ **F5 Rust por-raíz** — GATILLO NO DISPARADO: el design pide Rust solo cuando una raíz concreta lo
   justifique por performance; hoy ninguna es caliente (coseno sobre conjuntos pequeños, I/O). No se
   arranca por arrancar (anti-vapor). Reabrir cuando haya un cuello de botella MEDIDO.

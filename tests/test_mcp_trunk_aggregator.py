@@ -167,6 +167,25 @@ def test_trunk_children_derived_from_catalog(tmp_path: Path) -> None:
     assert children["ctx7"].cmd == ["npx", "-y", "@upstash/context7-mcp"]
 
 
+def test_trunk_children_pass_env_passthrough_from_catalog(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_server import trunk_children
+
+    cat = tmp_path / "c.yaml"
+    cat.write_text("""
+sectors:
+  productividad:
+    label: Productividad
+    entries:
+      - {name: gworkspace, kind: mcp, install: "uvx workspace-mcp", env_passthrough: [GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET], status: verificado}
+""", encoding="utf-8")
+    ch = {c.name: c for c in trunk_children(
+        load_catalog(cat), save_dir=tmp_path, repo_root=Path("/repo"), python="/py")}
+    # el secreto NO va en cmd; va como nombres de env vars a copiar del entorno.
+    assert ch["gworkspace"].env_passthrough == ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"]
+    assert "GOOGLE_OAUTH_CLIENT_SECRET" not in " ".join(ch["gworkspace"].cmd)
+
+
 # ---------------------------------------------------------------------------
 # El agregador indexa lo realmente CONECTADO (incl. externos), no solo native_roots
 # ---------------------------------------------------------------------------

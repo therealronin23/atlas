@@ -63,6 +63,9 @@ class CatalogEntry:
     license: str = ""
     trust: str = ""
     transport: str = ""
+    # Nombres de env vars (secretos) a copiar del entorno al subproceso. NUNCA el
+    # valor — solo el nombre. El secreto vive en el entorno, jamás en el catálogo.
+    env_passthrough: tuple[str, ...] = ()
 
 
 def load_catalog(path: Path) -> list[CatalogEntry]:
@@ -100,6 +103,7 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
                     license=str(raw.get("license", "")),
                     trust=str(raw.get("trust", "")),
                     transport=str(raw.get("transport", "")),
+                    env_passthrough=tuple(str(v) for v in (raw.get("env_passthrough") or [])),
                 )
             )
     return out
