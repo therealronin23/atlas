@@ -210,3 +210,4 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 - ✅ **opt#1 lazy-spawn**: McpRegistry.ensure_started + dispatch arranca el owner on-demand; serve() sin start_all (índice desde native_roots). Cero spawns/descargas al conectar el tronco. 7 tests.
 - ✅ **opt#2 creds-en-tronco**: serve() carga ~/.config/atlas-mcp/secrets.env (setdefault) → los MCP con env_passthrough (google-workspace) se pueden frontear por el tronco. Secretos fuera de git.
 - ✅ **opt#3 tests-invariante**: los tests del catálogo real afirman invariantes (verificado→vetted+install; connect→command+no-vetado) en vez de listas exactas → dejan de romperse al verificar items nuevos.
+- ✅ **opt#4 branch-policy**: el agente mcp-catalog-sync reutiliza UNA rama estable `chore/mcp-sync` (force-push) en vez de ramas por fecha → no se acumulan.
