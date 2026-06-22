@@ -176,9 +176,17 @@ def build_trunk_server(
 
 
 def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None:
-    """Entry stdio del tronco: arranca un McpRegistry sobre las 3 raíces (Merkle +
-    SentinelGate), las frontea con descubrimiento lazy por sector, y sirve UNA
-    conexión. El cliente se conecta SOLO aquí."""
+    """Entry stdio del tronco: construye el McpRegistry PEREZOSO (sin start_all),
+    frontea con descubrimiento lazy por sector y sirve UNA conexión stdio.
+
+    Spawn perezoso: los MCP externos (npx/uvx) NO se arrancan al conectar; cada
+    raíz se levanta al PRIMER dispatch de una de sus tools. El índice de sectores
+    y herramientas en trunk_sectors/trunk_tools se construye con las raíces
+    nativas estáticas (native_roots); los externos aparecen al invocarse.
+
+    Trade-off documentado: cero spawns/descargas al conectar; las tools de MCP
+    externos no son visibles en trunk_tools hasta que se haya invocado al menos
+    una vez su server dueño."""
     from atlas.mcp.catalog import load_catalog, load_taxonomy
     from atlas.mcp.registry import McpRegistry
 
@@ -191,11 +199,12 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     if classified.is_file():
         catalog = catalog + load_catalog(classified)
     # Hijos DERIVADOS DEL CATÁLOGO (paso 2): nuestras raíces + externos verificados.
+    # NO se llama start_all() — spawn perezoso, cada raíz arranca al primer dispatch.
     registry = McpRegistry(trunk_children(catalog, save_dir=save_dir, repo_root=repo_root))
-    registry.start_all()
+    # Índice estático usando solo las raíces nativas (no requiere spawn).
     agg = TrunkAggregator(
         catalog=catalog,
-        servers=servers_from_registry(registry),  # indexa lo CONECTADO (incl. externos)
+        roots=native_roots(),  # índice estático, sin spawnear
         dispatcher=registry.dispatch,
     )
     from atlas.mcp.skills_store import SkillStore

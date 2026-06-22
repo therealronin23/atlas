@@ -140,6 +140,24 @@ class McpRegistry:
             "success",
         )
 
+    def ensure_started(self, server_name: str) -> bool:
+        """Arranca ``server_name`` en diferido si aún no está activo.
+
+        Idempotente: si ya está en ``_transports``, no hace nada. Devuelve
+        ``True`` si el server quedó disponible (en ``_transports``). Los fallos
+        se loggean pero no se elevan — igual que ``start_all``."""
+        if server_name in self._transports:
+            return True
+        cfg = next((c for c in self._configs if c.name == server_name and c.enabled), None)
+        if cfg is None:
+            return False
+        try:
+            self._start_one(cfg)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("MCP server '%s' failed to start (lazy): %s", server_name, exc)
+            self._audit("mcp.server_failed", server_name, str(exc)[:300], "failure")
+        return server_name in self._transports
+
     def close_all(self) -> None:
         for transport in self._transports.values():
             try:
@@ -216,6 +234,12 @@ class McpRegistry:
         """Llama ``tools/call`` en el server correcto y devuelve el resultado
         como texto. Errores se devuelven como texto (consistente con el
         contrato del loop: el modelo debe poder reaccionar)."""
+        # Spawn perezoso: si el nombre tiene el prefijo mcp__ intentamos arrancar
+        # el server dueño antes de consultar el índice.
+        if full_name.startswith("mcp__"):
+            server_hint = full_name.split("__")[1]
+            self.ensure_started(server_hint)
+
         if full_name not in self._tool_index:
             return f"error: tool MCP desconocida '{full_name}'"
         server, tool = self._tool_index[full_name]
