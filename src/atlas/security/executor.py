@@ -12,7 +12,11 @@ backstop cuando la capability transporta codigo Python a ejecutar.
 
 from __future__ import annotations
 
+import http.client
+import socket
+import ssl
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +35,105 @@ from atlas.security.capabilities import (
 from atlas.security.bwrap_jail import BwrapUnavailableError
 from atlas.security.sandbox import LayeredIsolationSandbox, SandboxResult
 from atlas.security.ssrf_bridge import SSRFBridge
+
+
+# ---------------------------------------------------------------------------
+# Pinned-IP connection helpers (evitar TOCTOU de DNS-rebinding)
+# ---------------------------------------------------------------------------
+#
+# Estrategia: la URL original (con el hostname) se mantiene intacta —
+# urllib construye el Request con ella— pero sobreescribimos la capa de
+# transporte para que el socket se conecte a la pinned_ip (ya validada)
+# en lugar de volver a resolver DNS.  La negociación TLS sigue usando el
+# hostname original como server_hostname → check_hostname=True funciona
+# y el certificado se valida contra el hostname, no contra la IP.
+#
+# Para HTTP plano basta con conectar a la IP; el header Host (que urllib
+# añade automáticamente desde la URL original) garantiza el vhost routing.
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """HTTPSConnection que conecta a una IP fijada pero valida TLS contra el hostname."""
+
+    def __init__(self, host: str, port: int | None, *, pinned_ip: str, **kwargs: object) -> None:
+        super().__init__(host, port, **kwargs)  # type: ignore[arg-type]
+        self._pinned_ip = pinned_ip
+
+    def connect(self) -> None:
+        # Conectar al socket contra la IP fijada (no hay segunda resolución DNS).
+        base: http.client.HTTPConnection = self  # acceso a atributos heredados sin confundir mypy
+        src = getattr(base, "source_address", None)
+        sock = socket.create_connection(
+            (self._pinned_ip, base.port or 443),
+            timeout=base.timeout,
+            source_address=src,
+        )
+        # Envolver el socket con TLS usando el hostname original como SNI.
+        ctx: ssl.SSLContext = getattr(self, "_context", None) or ssl.create_default_context()
+        self.sock = ctx.wrap_socket(sock, server_hostname=base.host)
+
+
+class _PinnedHTTPConnection(http.client.HTTPConnection):
+    """HTTPConnection que conecta a una IP fijada (HTTP plano)."""
+
+    def __init__(self, host: str, port: int | None, *, pinned_ip: str, **kwargs: object) -> None:
+        super().__init__(host, port, **kwargs)  # type: ignore[arg-type]
+        self._pinned_ip = pinned_ip
+
+    def connect(self) -> None:
+        base: http.client.HTTPConnection = self
+        src = getattr(base, "source_address", None)
+        self.sock = socket.create_connection(
+            (self._pinned_ip, base.port or 80),
+            timeout=base.timeout,
+            source_address=src,
+        )
+
+
+class _PinnedHTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, pinned_ip: str) -> None:
+        super().__init__()
+        self._pinned_ip = pinned_ip
+
+    def https_open(self, req: urllib.request.Request) -> http.client.HTTPResponse:
+        return self.do_open(
+            lambda host, **kw: _PinnedHTTPSConnection(host, None, pinned_ip=self._pinned_ip, **kw),
+            req,
+            context=ssl.create_default_context(),
+        )
+
+
+class _PinnedHTTPHandler(urllib.request.AbstractHTTPHandler):
+    def __init__(self, pinned_ip: str) -> None:
+        super().__init__()
+        self._pinned_ip = pinned_ip
+
+    def http_open(self, req: urllib.request.Request) -> http.client.HTTPResponse:
+        return self.do_open(
+            lambda host, **kw: _PinnedHTTPConnection(host, None, pinned_ip=self._pinned_ip, **kw),
+            req,
+        )
+
+    http_request = urllib.request.AbstractHTTPHandler.do_request_
+
+
+def _build_opener_with_pinned_ip(
+    pinned_ip: str | None,
+    url: str,
+    timeout_s: int,
+) -> urllib.request.OpenerDirector:
+    """Construye un opener que conecta a pinned_ip si está disponible.
+
+    Si pinned_ip es None (host ya era IP literal), devuelve el opener por
+    defecto sin modificaciones.
+    """
+    if pinned_ip is None:
+        return urllib.request.build_opener()
+    scheme = urllib.parse.urlparse(url).scheme
+    if scheme == "https":
+        return urllib.request.build_opener(_PinnedHTTPSHandler(pinned_ip))
+    # http
+    return urllib.request.build_opener(_PinnedHTTPHandler(pinned_ip))
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +294,12 @@ class AtlasExecutor:
         req_headers = dict(headers or {})
         req_headers.setdefault("User-Agent", "AtlasCore/0.3")
 
+        # Pin a nivel de CONEXIÓN (no de URL) para evitar segunda resolución DNS (TOCTOU).
+        # Conectamos a la IP ya validada por el SSRF bridge, pero la URL y el SNI/cert
+        # validation usan siempre el hostname original → TLS funciona correctamente.
+        pinned_ip = sink_decision.pinned_ip
+        opener = _build_opener_with_pinned_ip(pinned_ip, cap.url, timeout_s)
+
         request = urllib.request.Request(
             cap.url,
             data=body,
@@ -199,7 +308,7 @@ class AtlasExecutor:
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=timeout_s) as resp:
+            with opener.open(request, timeout=timeout_s) as resp:
                 response_bytes = resp.read(cap.max_response_bytes + 1)
                 truncated = len(response_bytes) > cap.max_response_bytes
                 if truncated:

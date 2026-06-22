@@ -270,24 +270,32 @@ class TestSSRFBridge:
         assert d.allowed is False
 
     def test_add_domain_at_runtime(self):
+        import socket
+        from unittest.mock import patch
         from atlas.security.ssrf_bridge import SSRFBridge
-        bridge = SSRFBridge()
-        assert bridge.check("https://custom-api.example.com/v1").allowed is False
-        bridge.add_domain("custom-api.example.com")
-        assert bridge.check("https://custom-api.example.com/v1").allowed is True
+        _fake = [(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 0))]
+        with patch("socket.getaddrinfo", return_value=_fake):
+            bridge = SSRFBridge()
+            assert bridge.check("https://custom-api.example.com/v1").allowed is False
+            bridge.add_domain("custom-api.example.com")
+            assert bridge.check("https://custom-api.example.com/v1").allowed is True
 
     def test_subdomain_of_allowed(self):
         """SEC-1: match exacto — 'openrouter.ai' en allowlist NO cubre 'api.openrouter.ai'.
         Para permitir api.openrouter.ai hay que anadir el subdominio exacto."""
+        import socket
+        from unittest.mock import patch
         from atlas.security.ssrf_bridge import SSRFBridge
-        # Subdominio exacto en allowlist → permitido
-        bridge = SSRFBridge(extra_allowed={"api.openrouter.ai"})
-        d = bridge.check("https://api.openrouter.ai/v1/completions")
-        assert d.allowed is True
-        # Solo el padre en allowlist → denegado (no wildcard subtree)
-        bridge2 = SSRFBridge(extra_allowed={"openrouter.ai"})
-        d2 = bridge2.check("https://api.openrouter.ai/v1/completions")
-        assert d2.allowed is False
+        _fake = [(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("93.184.216.34", 0))]
+        with patch("socket.getaddrinfo", return_value=_fake):
+            # Subdominio exacto en allowlist → permitido
+            bridge = SSRFBridge(extra_allowed={"api.openrouter.ai"})
+            d = bridge.check("https://api.openrouter.ai/v1/completions")
+            assert d.allowed is True
+            # Solo el padre en allowlist → denegado (no wildcard subtree)
+            bridge2 = SSRFBridge(extra_allowed={"openrouter.ai"})
+            d2 = bridge2.check("https://api.openrouter.ai/v1/completions")
+            assert d2.allowed is False
 
 
 # ===========================================================================
