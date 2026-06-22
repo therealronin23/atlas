@@ -288,6 +288,38 @@ def test_classify_subsector_within_sector(tmp_path: Path) -> None:
     assert classify_subsector("x", "y", [], "no-existe", tax) == ""
 
 
+_TAX_DATOS_VS_PROG = """
+sectors:
+  datos:
+    label: Datos
+    desc: Bases de datos y análisis.
+    aliases: [data, database, sql, analytics]
+    subsectors:
+      sql: {label: SQL, aliases: [postgres, mysql, query]}
+    entries: []
+  programacion:
+    label: Programación
+    aliases: [coding, dev, python, javascript]
+    subsectors:
+      testing: {label: Testing, aliases: [tdd, qa]}
+    entries: []
+"""
+
+
+def test_classify_subsector_signal_beats_generic_sector_alias(tmp_path: Path) -> None:
+    """Un item con señal de subsector de 'datos' (e.g. 'sql') MÁS un alias genérico
+    de 'programacion' (e.g. 'dev') debe ir a 'datos' porque el subsector pesa 2x."""
+    from atlas.mcp.catalog import classify, load_taxonomy
+
+    p = tmp_path / "tax.yaml"
+    p.write_text(_TAX_DATOS_VS_PROG, encoding="utf-8")
+    tax = load_taxonomy(p)
+
+    # "sql query builder dev" → sql es subsector de datos (2pts) vs dev = sector alias de programacion (1pt)
+    result = classify("sql query builder", "dev tool for postgres", [], tax)
+    assert result == "datos", f"expected datos, got {result!r}"
+
+
 def test_find_orders_mature_first(tmp_path: Path) -> None:
     from atlas.mcp.catalog import find, load_catalog, load_taxonomy
 

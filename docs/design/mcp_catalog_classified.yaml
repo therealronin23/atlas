@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-22T07:03:46.287242+00:00'
+  at: '2026-06-22T08:51:52.242485+00:00'
   note: Clasificación automática; todo candidato.
 sectors:
   ciberseguridad:
@@ -15,78 +15,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bluenexus/universal-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bluenexus/universal-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.boolsai/scan
       kind: mcp
       subsector: ''
@@ -96,6 +24,15 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: amazonaws.com:auditmanager
+      kind: api
+      subsector: auditoria
+      mode: served
+      source: amazonaws.com:auditmanager
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: a11y-audit
       kind: plugin
       subsector: auditoria
@@ -114,6 +51,66 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: security-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/security-engineer.md
+        -o ~/.claude/agents/security-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: accessibility-tester
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/accessibility-tester.md
+        -o ~/.claude/agents/accessibility-tester.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: ad-security-reviewer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ad-security-reviewer.md
+        -o ~/.claude/agents/ad-security-reviewer.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: architect-reviewer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/architect-reviewer.md
+        -o ~/.claude/agents/architect-reviewer.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: chaos-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/chaos-engineer.md
+        -o ~/.claude/agents/chaos-engineer.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: code-reviewer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/code-reviewer.md
+        -o ~/.claude/agents/code-reviewer.md
+      status: candidato
+      tags:
+      - 04-quality-security
     - name: compliance-auditor
       kind: subagent
       subsector: auditoria
@@ -121,6 +118,16 @@ sectors:
       source: VoltAgent/awesome-claude-code-subagents
       install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/compliance-auditor.md
         -o ~/.claude/agents/compliance-auditor.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: error-detective
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/error-detective.md
+        -o ~/.claude/agents/error-detective.md
       status: candidato
       tags:
       - 04-quality-security
@@ -134,6 +141,26 @@ sectors:
       status: candidato
       tags:
       - 04-quality-security
+    - name: penetration-tester
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/penetration-tester.md
+        -o ~/.claude/agents/penetration-tester.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: performance-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/performance-engineer.md
+        -o ~/.claude/agents/performance-engineer.md
+      status: candidato
+      tags:
+      - 04-quality-security
     - name: powershell-security-hardening
       kind: subagent
       subsector: defensa
@@ -141,6 +168,26 @@ sectors:
       source: VoltAgent/awesome-claude-code-subagents
       install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/powershell-security-hardening.md
         -o ~/.claude/agents/powershell-security-hardening.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: security-auditor
+      kind: subagent
+      subsector: auditoria
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/security-auditor.md
+        -o ~/.claude/agents/security-auditor.md
+      status: candidato
+      tags:
+      - 04-quality-security
+    - name: test-automator
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/test-automator.md
+        -o ~/.claude/agents/test-automator.md
       status: candidato
       tags:
       - 04-quality-security
@@ -165,6 +212,15 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: ai.bluenexus/universal-mcp
+      kind: mcp
+      subsector: fuentes
+      mode: connected
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
     - name: embedding-manager
       kind: plugin
       subsector: ''
@@ -183,6 +239,15 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: javascript-chrome-apis-cursorrules-prompt-file
+      kind: rule
+      subsector: fuentes
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-chrome-apis-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
   datos:
     label: Datos
     entries:
@@ -195,11 +260,11 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.agenticterminal/directory
+    - name: ai.alpic.mcp/alpic-mcp
       kind: mcp
-      subsector: ''
+      subsector: analisis
       mode: connected
-      source: ai.agenticterminal/directory
+      source: ai.alpic.mcp/alpic-mcp
       install: ''
       status: candidato
       tags:
@@ -209,6 +274,15 @@ sectors:
       subsector: ''
       mode: connected
       source: ai.anomalyarmor/armor-mcp
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ai.autorfp/mcp
+      kind: mcp
+      subsector: analisis
+      mode: connected
+      source: ai.autorfp/mcp
       install: ''
       status: candidato
       tags:
@@ -339,6 +413,26 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: sql-pro
+      kind: subagent
+      subsector: bases-de-datos
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/sql-pro.md
+        -o ~/.claude/agents/sql-pro.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: database-administrator
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/database-administrator.md
+        -o ~/.claude/agents/database-administrator.md
+      status: candidato
+      tags:
+      - 03-infrastructure
     - name: database-optimizer
       kind: subagent
       subsector: ''
@@ -372,6 +466,15 @@ sectors:
   diseno:
     label: Diseño
     entries:
+    - name: amazonaws.com:databrew
+      kind: api
+      subsector: grafico
+      mode: served
+      source: amazonaws.com:databrew
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: color-contrast
       kind: plugin
       subsector: ''
@@ -417,6 +520,26 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: design-bridge
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/design-bridge.md
+        -o ~/.claude/agents/design-bridge.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: ui-designer
+      kind: subagent
+      subsector: ui
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/ui-designer.md
+        -o ~/.claude/agents/ui-designer.md
+      status: candidato
+      tags:
+      - 01-core-development
     - name: ui-ux-tester
       kind: subagent
       subsector: ui
@@ -448,29 +571,11 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ac.inference.sh/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ac.inference.sh/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.aarna/atars-mcp
       kind: mcp
       subsector: ''
       mode: connected
       source: ai.aarna/atars-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.adeu/adeu
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.adeu/adeu
       install: ''
       status: candidato
       tags:
@@ -502,33 +607,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.agentdm/agentdm
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.agentdm/agentdm
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.agenticshelf/graffeo
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.agenticshelf/graffeo
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.agenticshelf/graffeo
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.agenticshelf/graffeo
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.agenticshelf/graffeo
       kind: mcp
       subsector: ''
@@ -556,42 +634,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.agenttrust/mcp-server
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.agenttrust/mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.aient/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.aient/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.airshelf/catalog
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.airshelf/catalog
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.alphacreek/alphacreek-mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.alphacreek/alphacreek-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.alphacreek/alphacreek-mcp
       kind: mcp
       subsector: ''
@@ -610,38 +652,11 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.artidrop/artidrop
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.artidrop/artidrop
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.auteng/mcp
       kind: mcp
       subsector: ''
       mode: connected
       source: ai.auteng/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.auteng/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.auteng/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.autonomad/computeback
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.autonomad/computeback
       install: ''
       status: candidato
       tags:
@@ -651,24 +666,6 @@ sectors:
       subsector: ''
       mode: connected
       source: ai.autonomad/travel
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.auxen/auxen
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.auxen/auxen
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.auxen/auxen
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.auxen/auxen
       install: ''
       status: candidato
       tags:
@@ -705,60 +702,6 @@ sectors:
       subsector: ''
       mode: connected
       source: ai.boolsai/grep
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bowmark/bowmark
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bowmark/bowmark
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bowmark/bowmark
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bowmark/bowmark
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bowmark/bowmark
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.bowmark/bowmark
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.bowmark/bowmark
       install: ''
       status: candidato
       tags:
@@ -844,7 +787,25 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: codebase-documenter
+    - name: code-architect
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit
+      status: candidato
+      tags:
+      - uncategorized
+    - name: code-explainer
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit
+      status: candidato
+      tags:
+      - uncategorized
+    - name: code-guardian
       kind: plugin
       subsector: ''
       mode: installed
@@ -899,6 +860,15 @@ sectors:
       tags:
       - uncategorized
     - name: cron-scheduler
+      kind: plugin
+      subsector: ''
+      mode: installed
+      source: rohitg00/awesome-claude-code-toolkit
+      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit
+      status: candidato
+      tags:
+      - uncategorized
+    - name: dead-code-finder
       kind: plugin
       subsector: ''
       mode: installed
@@ -1178,6 +1148,15 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: anti-sycophancy-code-discipline-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/anti-sycophancy-code-discipline-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
     - name: ascii-simulation-game-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -1202,6 +1181,24 @@ sectors:
       mode: installed
       source: PatrickJS/awesome-cursorrules
       install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/beefreeSDK-nocode-content-editor-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: code-guidelines-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-guidelines-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: code-style-consistency-cursorrules-prompt-file
+      kind: rule
+      subsector: ''
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-style-consistency-cursorrules-prompt-file.mdc
       status: candidato
       tags:
       - uncategorized
@@ -1331,15 +1328,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: github-cursorrules-prompt-file-instructions
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/github-cursorrules-prompt-file-instructions.mdc
-      status: candidato
-      tags:
-      - uncategorized
     - name: go-temporal-dsl-prompt-file
       kind: rule
       subsector: ''
@@ -1430,6 +1418,396 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: electron-pro
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/electron-pro.md
+        -o ~/.claude/agents/electron-pro.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: fullstack-developer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/fullstack-developer.md
+        -o ~/.claude/agents/fullstack-developer.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: graphql-architect
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/graphql-architect.md
+        -o ~/.claude/agents/graphql-architect.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: microservices-architect
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/microservices-architect.md
+        -o ~/.claude/agents/microservices-architect.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: mobile-developer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/mobile-developer.md
+        -o ~/.claude/agents/mobile-developer.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: websocket-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/websocket-engineer.md
+        -o ~/.claude/agents/websocket-engineer.md
+      status: candidato
+      tags:
+      - 01-core-development
+    - name: angular-architect
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/angular-architect.md
+        -o ~/.claude/agents/angular-architect.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: cpp-pro
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/cpp-pro.md
+        -o ~/.claude/agents/cpp-pro.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: csharp-developer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/csharp-developer.md
+        -o ~/.claude/agents/csharp-developer.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: django-developer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/django-developer.md
+        -o ~/.claude/agents/django-developer.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: dotnet-core-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-core-expert.md
+        -o ~/.claude/agents/dotnet-core-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: dotnet-framework-4.8-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-framework-4.8-expert.md
+        -o ~/.claude/agents/dotnet-framework-4.8-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: elixir-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/elixir-expert.md
+        -o ~/.claude/agents/elixir-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: fastapi-developer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/fastapi-developer.md
+        -o ~/.claude/agents/fastapi-developer.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: flutter-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/flutter-expert.md
+        -o ~/.claude/agents/flutter-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: kotlin-specialist
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/kotlin-specialist.md
+        -o ~/.claude/agents/kotlin-specialist.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: laravel-specialist
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/laravel-specialist.md
+        -o ~/.claude/agents/laravel-specialist.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: nextjs-developer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/nextjs-developer.md
+        -o ~/.claude/agents/nextjs-developer.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: node-specialist
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/node-specialist.md
+        -o ~/.claude/agents/node-specialist.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: powershell-5.1-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-5.1-expert.md
+        -o ~/.claude/agents/powershell-5.1-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: powershell-7-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-7-expert.md
+        -o ~/.claude/agents/powershell-7-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: rails-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/rails-expert.md
+        -o ~/.claude/agents/rails-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: spring-boot-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/spring-boot-engineer.md
+        -o ~/.claude/agents/spring-boot-engineer.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: swift-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/swift-expert.md
+        -o ~/.claude/agents/swift-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: symfony-specialist
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/symfony-specialist.md
+        -o ~/.claude/agents/symfony-specialist.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: vue-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/vue-expert.md
+        -o ~/.claude/agents/vue-expert.md
+      status: candidato
+      tags:
+      - 02-language-specialists
+    - name: cloud-architect
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/cloud-architect.md
+        -o ~/.claude/agents/cloud-architect.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: deployment-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/deployment-engineer.md
+        -o ~/.claude/agents/deployment-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: devops-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-engineer.md
+        -o ~/.claude/agents/devops-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: devops-incident-responder
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-incident-responder.md
+        -o ~/.claude/agents/devops-incident-responder.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: docker-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/docker-expert.md
+        -o ~/.claude/agents/docker-expert.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: incident-responder
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/incident-responder.md
+        -o ~/.claude/agents/incident-responder.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: kubernetes-specialist
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/kubernetes-specialist.md
+        -o ~/.claude/agents/kubernetes-specialist.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: network-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/network-engineer.md
+        -o ~/.claude/agents/network-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: platform-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/platform-engineer.md
+        -o ~/.claude/agents/platform-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: sre-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/sre-engineer.md
+        -o ~/.claude/agents/sre-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: terraform-engineer
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terraform-engineer.md
+        -o ~/.claude/agents/terraform-engineer.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: terragrunt-expert
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terragrunt-expert.md
+        -o ~/.claude/agents/terragrunt-expert.md
+      status: candidato
+      tags:
+      - 03-infrastructure
+    - name: windows-infra-admin
+      kind: subagent
+      subsector: ''
+      mode: installed
+      source: VoltAgent/awesome-claude-code-subagents
+      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/windows-infra-admin.md
+        -o ~/.claude/agents/windows-infra-admin.md
+      status: candidato
+      tags:
+      - 03-infrastructure
     - name: ai-writing-auditor
       kind: subagent
       subsector: ''
@@ -1493,47 +1871,11 @@ sectors:
   infraestructura:
     label: Infraestructura
     entries:
-    - name: ai.alpic.mcp/alpic-mcp
+    - name: ai.aient/mcp
       kind: mcp
-      subsector: ''
+      subsector: git
       mode: connected
-      source: ai.alpic.mcp/alpic-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.borealhost/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.borealhost/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.borealhost/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.borealhost/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.borealhost/mcp
+      source: ai.aient/mcp
       install: ''
       status: candidato
       tags:
@@ -1547,15 +1889,15 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: amazonaws.com:AWSMigrationHub
+    - name: adyen.com:TfmAPIService
       kind: api
-      subsector: ''
+      subsector: terminal
       mode: served
-      source: amazonaws.com:AWSMigrationHub
+      source: adyen.com:TfmAPIService
       install: ''
       status: candidato
       tags:
-      - cloud
+      - payment
     - name: amazonaws.com:accessanalyzer
       kind: api
       subsector: ''
@@ -1601,15 +1943,6 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:amplifybackend
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:amplifybackend
-      install: ''
-      status: candidato
-      tags:
-      - cloud
     - name: amazonaws.com:appintegrations
       kind: api
       subsector: ''
@@ -1624,15 +1957,6 @@ sectors:
       subsector: ''
       mode: served
       source: amazonaws.com:application-autoscaling
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:applicationcostprofiler
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:applicationcostprofiler
       install: ''
       status: candidato
       tags:
@@ -1660,24 +1984,6 @@ sectors:
       subsector: ''
       mode: served
       source: amazonaws.com:appstream
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:appsync
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:appsync
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:auditmanager
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:auditmanager
       install: ''
       status: candidato
       tags:
@@ -1714,15 +2020,6 @@ sectors:
       subsector: ''
       mode: served
       source: amazonaws.com:batch
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:ce
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:ce
       install: ''
       status: candidato
       tags:
@@ -1781,29 +2078,11 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:cloudtrail
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cloudtrail
-      install: ''
-      status: candidato
-      tags:
-      - cloud
     - name: amazonaws.com:codebuild
       kind: api
       subsector: ''
       mode: served
       source: amazonaws.com:codebuild
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:codecommit
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codecommit
       install: ''
       status: candidato
       tags:
@@ -1826,29 +2105,11 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:codestar
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codestar
-      install: ''
-      status: candidato
-      tags:
-      - cloud
     - name: amazonaws.com:codestar-connections
       kind: api
       subsector: ''
       mode: served
       source: amazonaws.com:codestar-connections
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:codestar-notifications
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:codestar-notifications
       install: ''
       status: candidato
       tags:
@@ -1925,29 +2186,11 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:cur
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:cur
-      install: ''
-      status: candidato
-      tags:
-      - cloud
     - name: amazonaws.com:customer-profiles
       kind: api
       subsector: ''
       mode: served
       source: amazonaws.com:customer-profiles
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:databrew
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:databrew
       install: ''
       status: candidato
       tags:
@@ -1997,15 +2240,6 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:devicefarm
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:devicefarm
-      install: ''
-      status: candidato
-      tags:
-      - cloud
     - name: amazonaws.com:devops-guru
       kind: api
       subsector: operacion
@@ -2024,29 +2258,11 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:discovery
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:discovery
-      install: ''
-      status: candidato
-      tags:
-      - cloud
     - name: amazonaws.com:dms
       kind: api
       subsector: ''
       mode: served
       source: amazonaws.com:dms
-      install: ''
-      status: candidato
-      tags:
-      - cloud
-    - name: amazonaws.com:ds
-      kind: api
-      subsector: ''
-      mode: served
-      source: amazonaws.com:ds
       install: ''
       status: candidato
       tags:
@@ -2303,12 +2519,21 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: deploy-to-vercel
-      kind: skill
-      subsector: ''
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill deploy-to-vercel
+    - name: github-code-quality-cursorrules-prompt-file
+      kind: rule
+      subsector: git
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/github-code-quality-cursorrules-prompt-file.mdc
+      status: candidato
+      tags:
+      - uncategorized
+    - name: github-cursorrules-prompt-file-instructions
+      kind: rule
+      subsector: git
+      mode: installed
+      source: PatrickJS/awesome-cursorrules
+      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/github-cursorrules-prompt-file-instructions.mdc
       status: candidato
       tags:
       - uncategorized
@@ -2322,6 +2547,16 @@ sectors:
       status: candidato
       tags:
       - 03-infrastructure
+    - name: bat
+      kind: tool
+      subsector: git
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install bat
+      status: candidato
+      tags:
+      - files
+      - dev
     - name: eza
       kind: tool
       subsector: ''
@@ -2351,6 +2586,16 @@ sectors:
       tags:
       - system
       - monitoring
+    - name: delta
+      kind: tool
+      subsector: git
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install git-delta
+      status: candidato
+      tags:
+      - git
+      - dev
     - name: gh
       kind: tool
       subsector: git
@@ -2371,6 +2616,26 @@ sectors:
       tags:
       - git
       - dev
+    - name: starship
+      kind: tool
+      subsector: terminal
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install starship
+      status: candidato
+      tags:
+      - shell
+      - productivity
+    - name: tmux
+      kind: tool
+      subsector: terminal
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y tmux
+      status: candidato
+      tags:
+      - terminal
+      - productivity
     - name: ncdu
       kind: tool
       subsector: ''
@@ -2421,6 +2686,26 @@ sectors:
       tags:
       - storage
       - net
+    - name: pre-commit
+      kind: tool
+      subsector: git
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: pipx install pre-commit
+      status: candidato
+      tags:
+      - dev
+      - git
+    - name: shellcheck
+      kind: tool
+      subsector: terminal
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: apt-get install -y shellcheck
+      status: candidato
+      tags:
+      - dev
+      - security
     - name: Github
       kind: workflow
       subsector: git
@@ -2438,6 +2723,33 @@ sectors:
       subsector: web
       mode: connected
       source: ai.agentic-news/mcp
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ai.agenticterminal/directory
+      kind: mcp
+      subsector: web
+      mode: connected
+      source: ai.agenticterminal/directory
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ai.airshelf/catalog
+      kind: mcp
+      subsector: web
+      mode: connected
+      source: ai.airshelf/catalog
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ai.auralogs/auralogs
+      kind: mcp
+      subsector: web
+      mode: connected
+      source: ai.auralogs/auralogs
       install: ''
       status: candidato
       tags:
@@ -2514,6 +2826,69 @@ sectors:
       status: candidato
       tags:
       - machine_learning
+    - name: amadeus.com
+      kind: api
+      subsector: web
+      mode: served
+      source: amadeus.com
+      install: ''
+      status: candidato
+      tags:
+      - location
+    - name: amadeus.com:amadeus-airport-&-city-search
+      kind: api
+      subsector: web
+      mode: served
+      source: amadeus.com:amadeus-airport-&-city-search
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: amadeus.com:amadeus-flight-availabilities-search
+      kind: api
+      subsector: web
+      mode: served
+      source: amadeus.com:amadeus-flight-availabilities-search
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: amadeus.com:amadeus-flight-cheapest-date-search
+      kind: api
+      subsector: web
+      mode: served
+      source: amadeus.com:amadeus-flight-cheapest-date-search
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: amadeus.com:amadeus-flight-inspiration-search
+      kind: api
+      subsector: web
+      mode: served
+      source: amadeus.com:amadeus-flight-inspiration-search
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: amadeus.com:amadeus-hotel-search
+      kind: api
+      subsector: web
+      mode: served
+      source: amadeus.com:amadeus-hotel-search
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: amazonaws.com:cloudsearchdomain
+      kind: api
+      subsector: web
+      mode: served
+      source: amazonaws.com:cloudsearchdomain
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: context-prime
       kind: command
       subsector: documentacion
@@ -2559,6 +2934,16 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: ripgrep
+      kind: tool
+      subsector: web
+      mode: installed
+      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
+      install: cargo install ripgrep
+      status: candidato
+      tags:
+      - search
+      - dev
     - name: fd
       kind: tool
       subsector: web
@@ -2656,26 +3041,6 @@ sectors:
       status: candidato
       tags:
       - navigation
-      - productivity
-    - name: starship
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: cargo install starship
-      status: candidato
-      tags:
-      - shell
-      - productivity
-    - name: tmux
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: apt-get install -y tmux
-      status: candidato
-      tags:
-      - terminal
       - productivity
     - name: Activecampaign
       kind: workflow
@@ -2921,6 +3286,15 @@ sectors:
       tags:
       - uncategorized
     - name: Clockify
+      kind: workflow
+      subsector: ''
+      mode: installed
+      source: Zie619/n8n-workflows
+      install: git clone https://github.com/Zie619/n8n-workflows
+      status: candidato
+      tags:
+      - uncategorized
+    - name: Code
       kind: workflow
       subsector: ''
       mode: installed
@@ -3364,24 +3738,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ac.tandem/docs-mcp
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ac.tandem/docs-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ac.tandem/docs-mcp
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ac.tandem/docs-mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.abmeter/abmeter
       kind: mcp
       subsector: testing
@@ -3400,42 +3756,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.adadvisor/mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.adadvisor/mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.adramp/google-ads
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.adramp/google-ads
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.adramp/google-ads
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.adramp/google-ads
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.adramp/google-ads
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.adramp/google-ads
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.adramp/google-ads
       kind: mcp
       subsector: backend
@@ -3450,6 +3770,15 @@ sectors:
       subsector: backend
       mode: connected
       source: ai.adweave/meta-ads-mcp
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ai.agenttrust/mcp-server
+      kind: mcp
+      subsector: backend
+      mode: connected
+      source: ai.agenttrust/mcp-server
       install: ''
       status: candidato
       tags:
@@ -3477,114 +3806,6 @@ sectors:
       subsector: backend
       mode: connected
       source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server-addon
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server-addon
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server-addon
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server-addon
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server-addon
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server-addon
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.ankimcp/anki-mcp-server-addon
-      kind: mcp
-      subsector: backend
-      mode: connected
-      source: ai.ankimcp/anki-mcp-server-addon
       install: ''
       status: candidato
       tags:
@@ -3625,24 +3846,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.auralogs/auralogs
-      kind: mcp
-      subsector: code-review
-      mode: connected
-      source: ai.auralogs/auralogs
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai.autorfp/mcp
-      kind: mcp
-      subsector: ''
-      mode: connected
-      source: ai.autorfp/mcp
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: ai.bareun/bareun
       kind: mcp
       subsector: backend
@@ -3670,11 +3873,11 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: ai.bolthub/registry
+    - name: ai.borealhost/mcp
       kind: mcp
-      subsector: backend
+      subsector: frontend
       mode: connected
-      source: ai.bolthub/registry
+      source: ai.borealhost/mcp
       install: ''
       status: candidato
       tags:
@@ -3949,15 +4152,6 @@ sectors:
       status: candidato
       tags:
       - payment
-    - name: adyen.com:TfmAPIService
-      kind: api
-      subsector: backend
-      mode: served
-      source: adyen.com:TfmAPIService
-      install: ''
-      status: candidato
-      tags:
-      - payment
     - name: adyen.com:TransferService
       kind: api
       subsector: backend
@@ -4021,29 +4215,11 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: amadeus.com
-      kind: api
-      subsector: backend
-      mode: served
-      source: amadeus.com
-      install: ''
-      status: candidato
-      tags:
-      - location
     - name: amadeus.com:amadeus-airline-code-lookup
       kind: api
       subsector: backend
       mode: served
       source: amadeus.com:amadeus-airline-code-lookup
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: amadeus.com:amadeus-airport-&-city-search
-      kind: api
-      subsector: backend
-      mode: served
-      source: amadeus.com:amadeus-airport-&-city-search
       install: ''
       status: candidato
       tags:
@@ -4075,29 +4251,11 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: amadeus.com:amadeus-flight-availabilities-search
-      kind: api
-      subsector: backend
-      mode: served
-      source: amadeus.com:amadeus-flight-availabilities-search
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
     - name: amadeus.com:amadeus-flight-busiest-traveling-period
       kind: api
       subsector: backend
       mode: served
       source: amadeus.com:amadeus-flight-busiest-traveling-period
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: amadeus.com:amadeus-flight-cheapest-date-search
-      kind: api
-      subsector: backend
-      mode: served
-      source: amadeus.com:amadeus-flight-cheapest-date-search
       install: ''
       status: candidato
       tags:
@@ -4134,15 +4292,6 @@ sectors:
       subsector: backend
       mode: served
       source: amadeus.com:amadeus-flight-delay-prediction
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: amadeus.com:amadeus-flight-inspiration-search
-      kind: api
-      subsector: backend
-      mode: served
-      source: amadeus.com:amadeus-flight-inspiration-search
       install: ''
       status: candidato
       tags:
@@ -4215,15 +4364,6 @@ sectors:
       subsector: backend
       mode: served
       source: amadeus.com:amadeus-hotel-ratings
-      install: ''
-      status: candidato
-      tags:
-      - uncategorized
-    - name: amadeus.com:amadeus-hotel-search
-      kind: api
-      subsector: backend
-      mode: served
-      source: amadeus.com:amadeus-hotel-search
       install: ''
       status: candidato
       tags:
@@ -4309,11 +4449,29 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: amazonaws.com:AWSMigrationHub
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:AWSMigrationHub
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: amazonaws.com:acm-pca
       kind: api
       subsector: frontend
       mode: served
       source: amazonaws.com:acm-pca
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:amplifybackend
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:amplifybackend
       install: ''
       status: candidato
       tags:
@@ -4363,6 +4521,24 @@ sectors:
       status: candidato
       tags:
       - cloud
+    - name: amazonaws.com:applicationcostprofiler
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:applicationcostprofiler
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:appsync
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:appsync
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: amazonaws.com:braket
       kind: api
       subsector: backend
@@ -4377,6 +4553,15 @@ sectors:
       subsector: frontend
       mode: served
       source: amazonaws.com:budgets
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:ce
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:ce
       install: ''
       status: candidato
       tags:
@@ -4399,11 +4584,11 @@ sectors:
       status: candidato
       tags:
       - cloud
-    - name: amazonaws.com:cloudsearchdomain
+    - name: amazonaws.com:cloudtrail
       kind: api
       subsector: backend
       mode: served
-      source: amazonaws.com:cloudsearchdomain
+      source: amazonaws.com:cloudtrail
       install: ''
       status: candidato
       tags:
@@ -4413,6 +4598,15 @@ sectors:
       subsector: ''
       mode: served
       source: amazonaws.com:codeartifact
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:codecommit
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:codecommit
       install: ''
       status: candidato
       tags:
@@ -4435,6 +4629,24 @@ sectors:
       status: candidato
       tags:
       - cloud
+    - name: amazonaws.com:codestar
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:codestar
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:codestar-notifications
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:codestar-notifications
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: amazonaws.com:cognito-idp
       kind: api
       subsector: backend
@@ -4453,11 +4665,47 @@ sectors:
       status: candidato
       tags:
       - cloud
+    - name: amazonaws.com:cur
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:cur
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:devicefarm
+      kind: api
+      subsector: backend
+      mode: served
+      source: amazonaws.com:devicefarm
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:discovery
+      kind: api
+      subsector: frontend
+      mode: served
+      source: amazonaws.com:discovery
+      install: ''
+      status: candidato
+      tags:
+      - cloud
     - name: amazonaws.com:docdb
       kind: api
       subsector: backend
       mode: served
       source: amazonaws.com:docdb
+      install: ''
+      status: candidato
+      tags:
+      - cloud
+    - name: amazonaws.com:ds
+      kind: api
+      subsector: frontend
+      mode: served
+      source: amazonaws.com:ds
       install: ''
       status: candidato
       tags:
@@ -4696,33 +4944,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: code-architect
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit
-      status: candidato
-      tags:
-      - uncategorized
-    - name: code-explainer
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit
-      status: candidato
-      tags:
-      - uncategorized
-    - name: code-guardian
-      kind: plugin
-      subsector: ''
-      mode: installed
-      source: rohitg00/awesome-claude-code-toolkit
-      install: git clone https://github.com/rohitg00/awesome-claude-code-toolkit
-      status: candidato
-      tags:
-      - uncategorized
     - name: code-review-assistant
       kind: plugin
       subsector: code-review
@@ -4732,7 +4953,7 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: dead-code-finder
+    - name: codebase-documenter
       kind: plugin
       subsector: ''
       mode: installed
@@ -4795,15 +5016,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: anti-sycophancy-code-discipline-cursorrules-prompt-file
-      kind: rule
-      subsector: cicd
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/anti-sycophancy-code-discipline-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
     - name: astro-typescript-cursorrules-prompt-file
       kind: rule
       subsector: ''
@@ -4858,30 +5070,12 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: code-guidelines-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-guidelines-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
     - name: code-pair-interviews
       kind: rule
       subsector: ''
       mode: installed
       source: PatrickJS/awesome-cursorrules
       install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-pair-interviews.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: code-style-consistency-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/code-style-consistency-cursorrules-prompt-file.mdc
       status: candidato
       tags:
       - uncategorized
@@ -5011,15 +5205,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: github-code-quality-cursorrules-prompt-file
-      kind: rule
-      subsector: ''
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/github-code-quality-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
     - name: go-backend-scalability-cursorrules-prompt-file
       kind: rule
       subsector: backend
@@ -5092,15 +5277,6 @@ sectors:
       status: candidato
       tags:
       - uncategorized
-    - name: javascript-chrome-apis-cursorrules-prompt-file
-      kind: rule
-      subsector: backend
-      mode: installed
-      source: PatrickJS/awesome-cursorrules
-      install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/javascript-chrome-apis-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
     - name: javascript-typescript-code-quality-cursorrules-pro
       kind: rule
       subsector: ''
@@ -5116,42 +5292,6 @@ sectors:
       mode: installed
       source: PatrickJS/awesome-cursorrules
       install: curl -O https://raw.githubusercontent.com/PatrickJS/awesome-cursorrules/main/rules/jest-unit-testing-cursorrules-prompt-file.mdc
-      status: candidato
-      tags:
-      - uncategorized
-    - name: react-best-practices
-      kind: skill
-      subsector: frontend
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill react-best-practices
-      status: candidato
-      tags:
-      - uncategorized
-    - name: react-native-skills
-      kind: skill
-      subsector: frontend
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill react-native-skills
-      status: candidato
-      tags:
-      - uncategorized
-    - name: react-view-transitions
-      kind: skill
-      subsector: frontend
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill react-view-transitions
-      status: candidato
-      tags:
-      - uncategorized
-    - name: web-design-guidelines
-      kind: skill
-      subsector: frontend
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill web-design-guidelines
       status: candidato
       tags:
       - uncategorized
@@ -5175,26 +5315,6 @@ sectors:
       status: candidato
       tags:
       - 01-core-development
-    - name: design-bridge
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/design-bridge.md
-        -o ~/.claude/agents/design-bridge.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: electron-pro
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/electron-pro.md
-        -o ~/.claude/agents/electron-pro.md
-      status: candidato
-      tags:
-      - 01-core-development
     - name: frontend-developer
       kind: subagent
       subsector: frontend
@@ -5205,136 +5325,6 @@ sectors:
       status: candidato
       tags:
       - 01-core-development
-    - name: fullstack-developer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/fullstack-developer.md
-        -o ~/.claude/agents/fullstack-developer.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: graphql-architect
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/graphql-architect.md
-        -o ~/.claude/agents/graphql-architect.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: microservices-architect
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/microservices-architect.md
-        -o ~/.claude/agents/microservices-architect.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: mobile-developer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/mobile-developer.md
-        -o ~/.claude/agents/mobile-developer.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: ui-designer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/ui-designer.md
-        -o ~/.claude/agents/ui-designer.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: websocket-engineer
-      kind: subagent
-      subsector: frontend
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/websocket-engineer.md
-        -o ~/.claude/agents/websocket-engineer.md
-      status: candidato
-      tags:
-      - 01-core-development
-    - name: angular-architect
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/angular-architect.md
-        -o ~/.claude/agents/angular-architect.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: cpp-pro
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/cpp-pro.md
-        -o ~/.claude/agents/cpp-pro.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: csharp-developer
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/csharp-developer.md
-        -o ~/.claude/agents/csharp-developer.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: django-developer
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/django-developer.md
-        -o ~/.claude/agents/django-developer.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: dotnet-core-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-core-expert.md
-        -o ~/.claude/agents/dotnet-core-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: dotnet-framework-4.8-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-framework-4.8-expert.md
-        -o ~/.claude/agents/dotnet-framework-4.8-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: elixir-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/elixir-expert.md
-        -o ~/.claude/agents/elixir-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
     - name: expo-react-native-expert
       kind: subagent
       subsector: frontend
@@ -5342,26 +5332,6 @@ sectors:
       source: VoltAgent/awesome-claude-code-subagents
       install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/expo-react-native-expert.md
         -o ~/.claude/agents/expo-react-native-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: fastapi-developer
-      kind: subagent
-      subsector: backend
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/fastapi-developer.md
-        -o ~/.claude/agents/fastapi-developer.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: flutter-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/flutter-expert.md
-        -o ~/.claude/agents/flutter-expert.md
       status: candidato
       tags:
       - 02-language-specialists
@@ -5395,46 +5365,6 @@ sectors:
       status: candidato
       tags:
       - 02-language-specialists
-    - name: kotlin-specialist
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/kotlin-specialist.md
-        -o ~/.claude/agents/kotlin-specialist.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: laravel-specialist
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/laravel-specialist.md
-        -o ~/.claude/agents/laravel-specialist.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: nextjs-developer
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/nextjs-developer.md
-        -o ~/.claude/agents/nextjs-developer.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: node-specialist
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/node-specialist.md
-        -o ~/.claude/agents/node-specialist.md
-      status: candidato
-      tags:
-      - 02-language-specialists
     - name: php-pro
       kind: subagent
       subsector: cicd
@@ -5445,26 +5375,6 @@ sectors:
       status: candidato
       tags:
       - 02-language-specialists
-    - name: powershell-5.1-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-5.1-expert.md
-        -o ~/.claude/agents/powershell-5.1-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: powershell-7-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-7-expert.md
-        -o ~/.claude/agents/powershell-7-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
     - name: python-pro
       kind: subagent
       subsector: cicd
@@ -5472,16 +5382,6 @@ sectors:
       source: VoltAgent/awesome-claude-code-subagents
       install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/python-pro.md
         -o ~/.claude/agents/python-pro.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: rails-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/rails-expert.md
-        -o ~/.claude/agents/rails-expert.md
       status: candidato
       tags:
       - 02-language-specialists
@@ -5505,46 +5405,6 @@ sectors:
       status: candidato
       tags:
       - 02-language-specialists
-    - name: spring-boot-engineer
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/spring-boot-engineer.md
-        -o ~/.claude/agents/spring-boot-engineer.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: sql-pro
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/sql-pro.md
-        -o ~/.claude/agents/sql-pro.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: swift-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/swift-expert.md
-        -o ~/.claude/agents/swift-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: symfony-specialist
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/symfony-specialist.md
-        -o ~/.claude/agents/symfony-specialist.md
-      status: candidato
-      tags:
-      - 02-language-specialists
     - name: typescript-pro
       kind: subagent
       subsector: cicd
@@ -5555,216 +5415,6 @@ sectors:
       status: candidato
       tags:
       - 02-language-specialists
-    - name: vue-expert
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/vue-expert.md
-        -o ~/.claude/agents/vue-expert.md
-      status: candidato
-      tags:
-      - 02-language-specialists
-    - name: cloud-architect
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/cloud-architect.md
-        -o ~/.claude/agents/cloud-architect.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: database-administrator
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/database-administrator.md
-        -o ~/.claude/agents/database-administrator.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: deployment-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/deployment-engineer.md
-        -o ~/.claude/agents/deployment-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: devops-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-engineer.md
-        -o ~/.claude/agents/devops-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: devops-incident-responder
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-incident-responder.md
-        -o ~/.claude/agents/devops-incident-responder.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: docker-expert
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/docker-expert.md
-        -o ~/.claude/agents/docker-expert.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: incident-responder
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/incident-responder.md
-        -o ~/.claude/agents/incident-responder.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: kubernetes-specialist
-      kind: subagent
-      subsector: cicd
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/kubernetes-specialist.md
-        -o ~/.claude/agents/kubernetes-specialist.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: network-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/network-engineer.md
-        -o ~/.claude/agents/network-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: platform-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/platform-engineer.md
-        -o ~/.claude/agents/platform-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: security-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/security-engineer.md
-        -o ~/.claude/agents/security-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: sre-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/sre-engineer.md
-        -o ~/.claude/agents/sre-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: terraform-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terraform-engineer.md
-        -o ~/.claude/agents/terraform-engineer.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: terragrunt-expert
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terragrunt-expert.md
-        -o ~/.claude/agents/terragrunt-expert.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: windows-infra-admin
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/windows-infra-admin.md
-        -o ~/.claude/agents/windows-infra-admin.md
-      status: candidato
-      tags:
-      - 03-infrastructure
-    - name: accessibility-tester
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/accessibility-tester.md
-        -o ~/.claude/agents/accessibility-tester.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: ad-security-reviewer
-      kind: subagent
-      subsector: code-review
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ad-security-reviewer.md
-        -o ~/.claude/agents/ad-security-reviewer.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: architect-reviewer
-      kind: subagent
-      subsector: code-review
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/architect-reviewer.md
-        -o ~/.claude/agents/architect-reviewer.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: chaos-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/chaos-engineer.md
-        -o ~/.claude/agents/chaos-engineer.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: code-reviewer
-      kind: subagent
-      subsector: code-review
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/code-reviewer.md
-        -o ~/.claude/agents/code-reviewer.md
-      status: candidato
-      tags:
-      - 04-quality-security
     - name: debugger
       kind: subagent
       subsector: ''
@@ -5772,36 +5422,6 @@ sectors:
       source: VoltAgent/awesome-claude-code-subagents
       install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/debugger.md
         -o ~/.claude/agents/debugger.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: error-detective
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/error-detective.md
-        -o ~/.claude/agents/error-detective.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: penetration-tester
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/penetration-tester.md
-        -o ~/.claude/agents/penetration-tester.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: performance-engineer
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/performance-engineer.md
-        -o ~/.claude/agents/performance-engineer.md
       status: candidato
       tags:
       - 04-quality-security
@@ -5815,56 +5435,6 @@ sectors:
       status: candidato
       tags:
       - 04-quality-security
-    - name: security-auditor
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/security-auditor.md
-        -o ~/.claude/agents/security-auditor.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: test-automator
-      kind: subagent
-      subsector: ''
-      mode: installed
-      source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/test-automator.md
-        -o ~/.claude/agents/test-automator.md
-      status: candidato
-      tags:
-      - 04-quality-security
-    - name: ripgrep
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: cargo install ripgrep
-      status: candidato
-      tags:
-      - search
-      - dev
-    - name: bat
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: cargo install bat
-      status: candidato
-      tags:
-      - files
-      - dev
-    - name: delta
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: cargo install git-delta
-      status: candidato
-      tags:
-      - git
-      - dev
     - name: httpie
       kind: tool
       subsector: backend
@@ -5925,38 +5495,9 @@ sectors:
       tags:
       - dev
       - automation
-    - name: pre-commit
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: pipx install pre-commit
-      status: candidato
-      tags:
-      - dev
-      - git
-    - name: shellcheck
-      kind: tool
-      subsector: ''
-      mode: installed
-      source: https://github.com/toolleeo/awesome-cli-apps-in-a-csv
-      install: apt-get install -y shellcheck
-      status: candidato
-      tags:
-      - dev
-      - security
     - name: Automation
       kind: workflow
       subsector: cicd
-      mode: installed
-      source: Zie619/n8n-workflows
-      install: git clone https://github.com/Zie619/n8n-workflows
-      status: candidato
-      tags:
-      - uncategorized
-    - name: Code
-      kind: workflow
-      subsector: ''
       mode: installed
       source: Zie619/n8n-workflows
       install: git clone https://github.com/Zie619/n8n-workflows
@@ -6713,42 +6254,6 @@ sectors:
       mode: served
       source: ai-boost/awesome-prompts
       install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/anti_ai_slop_design_architect.txt
-      status: candidato
-      tags:
-      - uncategorized
-    - name: composition-patterns
-      kind: skill
-      subsector: ''
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill composition-patterns
-      status: candidato
-      tags:
-      - uncategorized
-    - name: vercel-cli-with-tokens
-      kind: skill
-      subsector: ''
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill vercel-cli-with-tokens
-      status: candidato
-      tags:
-      - uncategorized
-    - name: vercel-optimize
-      kind: skill
-      subsector: ''
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill vercel-optimize
-      status: candidato
-      tags:
-      - uncategorized
-    - name: writing-guidelines
-      kind: skill
-      subsector: ''
-      mode: served
-      source: vercel-labs/agent-skills
-      install: npx skills add vercel-labs/agent-skills --skill writing-guidelines
       status: candidato
       tags:
       - uncategorized

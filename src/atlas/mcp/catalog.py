@@ -205,19 +205,20 @@ def classify(
         if sid in tagset:
             return sid
 
-    # 2) SCORE por sector: nº de términos (alias/label de sector+subsectores) que
-    #    aparecen como PALABRA COMPLETA en hay. argmax (no first-hit) → evita que un
-    #    sector amplio se quede con todo; gana la señal más fuerte.
-    def _terms(sblock: dict[str, Any]) -> list[str]:
-        out = [sblock["label"], *sblock["aliases"]]
+    # 2) SCORE por sector: alias/label de sector valen 1 punto; alias/label de
+    #    subsector valen 2 puntos (señal más específica). argmax → gana la señal
+    #    más fuerte; en caso de empate exacto el orden del YAML es desempate estable.
+    def _score(sblock: dict[str, Any]) -> int:
+        sector_terms = {sblock["label"].lower(), *[a.lower() for a in sblock["aliases"]]}
+        s = sum(1 for t in sector_terms if t and re.search(rf"\b{re.escape(t)}\b", hay))
         for sub in sblock["subsectors"].values():
-            out += [sub["label"], *sub["aliases"]]
-        return [t.lower() for t in out if t]
+            sub_terms = {sub["label"].lower(), *[a.lower() for a in sub["aliases"]]}
+            s += 2 * sum(1 for t in sub_terms if t and re.search(rf"\b{re.escape(t)}\b", hay))
+        return s
 
     best_sid, best_score = "", 0
     for sid, sblock in taxonomy.items():
-        terms = set(_terms(sblock)) | {sid.lower()}
-        score = sum(1 for t in terms if re.search(rf"\b{re.escape(t)}\b", hay))
+        score = _score(sblock) + (1 if re.search(rf"\b{re.escape(sid.lower())}\b", hay) else 0)
         if score > best_score:
             best_sid, best_score = sid, score
     if best_score > 0:
