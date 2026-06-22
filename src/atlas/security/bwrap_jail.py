@@ -7,7 +7,7 @@ ASTGuard es defensa en profundidad (lint), no contención — este módulo es la
 Propiedades enforced:
   1. uid/gid 65534 (nobody) via user namespace
   2. Network namespace sin veth — red bloqueada en el kernel
-  3. Raíz bind-mounted read-only; /tmp como tmpfs efímero
+  3. Rootfs mínimo (/usr ro + symlinks); /tmp como tmpfs efímero; sin $HOME
   4. --die-with-parent: el hijo muere si el padre muere
   5. Fail-closed: sin bwrap disponible, lanza BwrapUnavailableError
 
@@ -88,6 +88,11 @@ _BLOCKED_X86_64: tuple[int, ...] = (
     313,  # finit_module
     320,  # kexec_file_load
     321,  # bpf
+    323,  # userfaultfd      — LPE vía kernel UAF chains
+    425,  # io_uring_setup   — LPE via io_uring subsystem
+    426,  # io_uring_enter
+    427,  # io_uring_register
+    435,  # clone3           — bypass de filtros de clone flags
 )
 
 
@@ -140,7 +145,10 @@ def build_bwrap_argv(
     El jail:
     - --unshare-all: user, net, mount, uts, ipc, pid. Sin veth → sin red.
     - uid/gid mapeados a 65534 (nobody) dentro del namespace de usuario.
-    - / bind-mounted read-only; /tmp y /run como tmpfs efímeros.
+    - Rootfs MÍNIMO: solo /usr (+ symlinks para /bin /lib /lib64 /sbin),
+      /etc/ssl (certs SSL para Python), /tmp efímero, /proc y /dev mínimos.
+      NO se monta $HOME ni / completo → los secretos del host (~/.ssh, .env,
+      .aws) son inaccesibles dentro del jail.
     - script_path bind-mounted read-only en /tmp/atlas_script.py.
     - output_dir bind-mounted como único directorio escribible.
     - --die-with-parent / --new-session.
@@ -154,8 +162,15 @@ def build_bwrap_argv(
         "--cap-drop", "ALL",          # Slice 2: ninguna capability dentro del jail
         "--uid", "65534",
         "--gid", "65534",
-        # Raíz read-only
-        "--ro-bind", "/", "/",
+        # Rootfs mínimo: solo /usr (contiene bin, lib, lib64, sbin en sistemas mergedusr)
+        "--ro-bind", "/usr", "/usr",
+        # Symlinks para distros usr-merged (bin → usr/bin, lib → usr/lib, etc.)
+        "--symlink", "usr/bin", "/bin",
+        "--symlink", "usr/lib", "/lib",
+        "--symlink", "usr/lib64", "/lib64",
+        "--symlink", "usr/sbin", "/sbin",
+        # SSL certs para Python (urllib/ssl)
+        "--ro-bind", "/etc/ssl", "/etc/ssl",
         # /tmp efímero (vacío — el script se añade a continuación)
         "--tmpfs", "/tmp",
         # /proc y /dev mínimos (Python los necesita)
