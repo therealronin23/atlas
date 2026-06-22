@@ -1,6 +1,6 @@
 # ADR-040 — Decisor central y modelo human-ON-the-loop (diseño)
 
-- Status: **Proposed** — diseño, sin implementar. Abre el hito de autonomía tras
+- Status: **Implemented** — abre el hito de autonomía tras
   cerrar el ciclo MCP (ADR-035/037/038 + registro dinámico) y sellar el lazo
   Hermes (smoke `/api/exec/intent` verde, 2026-05-31).
 - Módulo previsto: `src/atlas/core/decider/` (nuevo)

@@ -1,6 +1,6 @@
 # ADR-039 — Agente de auto-mantenimiento (diseño)
 
-- Status: **Proposed** — diseño, sin implementar. Decisiones fijadas con Tomás
+- Status: **Implemented** — decisiones fijadas con Tomás
   (2026-05-31): D1 = las tres por fases (MCP → deps → codegen-como-patch); D2 =
   cron background; D4 = registry+arxiv y foros **controlados con corroboración
   obligatoria**.
