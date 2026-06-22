@@ -459,8 +459,8 @@ class TestNvidiaNimProvider:
         nvidia = next((p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large"), None)
         assert nvidia is not None, "nvidia_llama_large no encontrado en DEFAULT_PROVIDERS"
         assert nvidia.level == InferenceLevel.L2
-        assert nvidia.litellm_model == "nvidia_nim/meta/llama-3.1-405b-instruct"
-        assert nvidia.model_id == "meta/llama-3.1-405b-instruct"
+        assert nvidia.litellm_model == "nvidia_nim/meta/llama-3.3-70b-instruct"
+        assert nvidia.model_id == "meta/llama-3.3-70b-instruct"
         assert nvidia.base_url == "https://integrate.api.nvidia.com/v1"
         assert nvidia.api_key_env == "NVIDIA_API_KEY"
         assert nvidia.account_pool == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
