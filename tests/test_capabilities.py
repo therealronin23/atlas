@@ -189,6 +189,40 @@ class TestIssueExec:
         assert cap.command == "git"
         assert cap.level.value == "auto"
 
+    # SEC-01 git apply es mutante, no inspeccion read-only ----------------
+
+    def test_git_apply_denied_by_evaluate_shell_command(
+        self, issuer: CapabilityIssuer
+    ) -> None:
+        """SEC-01: git apply es un verbo mutante; debe bloquearse igual que
+        git push/commit/reset, NO aprobarse con CONFIRM."""
+        d = issuer.profile.evaluate_shell_command("git apply patch.diff")
+        assert not d.allowed, (
+            "git apply no debe estar permitido: puede escribir ficheros "
+            "arbitrarios y escapar el árbol con patches manipulados."
+        )
+
+    def test_git_apply_not_in_inspect_only_allowlist(
+        self, issuer: CapabilityIssuer
+    ) -> None:
+        """apply no debe aparecer en el allowlist de inspección read-only."""
+        from atlas.governance.permission_profile import _GIT_ALLOWED_SUBCOMMANDS
+        assert "apply" not in _GIT_ALLOWED_SUBCOMMANDS, (
+            "'apply' sigue en _GIT_ALLOWED_SUBCOMMANDS: es un verbo mutante."
+        )
+
+    def test_git_inspect_subcommands_still_allowed(
+        self, issuer: CapabilityIssuer, workspace: Path
+    ) -> None:
+        """Los subcomandos de inspección legítimos siguen aprobados (AUTO)."""
+        for sub in ("status", "log", "diff", "show", "rev-parse", "branch", "describe"):
+            cap = issuer.issue_exec(
+                "git", args=(sub,), working_dir=workspace / "tmp"
+            )
+            assert cap.level.value == "auto", (
+                f"git {sub} debería ser AUTO pero fue {cap.level.value}"
+            )
+
     # SEC-01 `-C` retarget (grounding del repo de código propio) ----------
 
     def test_git_dash_C_to_inspect_root_allowed(

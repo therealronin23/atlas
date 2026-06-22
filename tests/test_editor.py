@@ -181,8 +181,10 @@ class TestWriteFile:
 
 class TestApplyDiff:
 
-    def test_git_apply_simple_diff(self, sample_project_with_git: Path, editor: EditorTool) -> None:
-        """Aplicar un diff simple sobre un archivo en repo git."""
+    def test_apply_diff_simple(self, sample_project_with_git: Path, editor: EditorTool) -> None:
+        """Aplicar un diff simple. Desde SEC-01 git apply está bloqueado como
+        verbo mutante; el editor usa `patch` como fallback."""
+        import shutil
         main_py = sample_project_with_git / "src" / "main.py"
         diff = (
             "--- a/src/main.py\n"
@@ -196,9 +198,13 @@ class TestApplyDiff:
         )
         editor._executor.issuer.profile.mark_confirmed("task:editor-test")
         result = editor.apply_diff(main_py, diff, clearance="task:editor-test")
-        assert result.success is True, f"git apply fallo: {result.stderr}"
-        assert "Hello Atlas" in main_py.read_text()
-        assert "Hello World" not in main_py.read_text()
+        if shutil.which("patch") is None:
+            # Sin patch instalado el fallback falla, lo cual es aceptable.
+            assert result.success is False
+        else:
+            assert result.success is True, f"apply_diff fallo: {result.error or result.stderr}"
+            assert "Hello Atlas" in main_py.read_text()
+            assert "Hello World" not in main_py.read_text()
 
     def test_git_apply_invalid_diff(self, sample_project_with_git: Path, editor: EditorTool) -> None:
         """Diff invalido debe fallar gracefulmente."""

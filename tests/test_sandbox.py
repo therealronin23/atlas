@@ -60,6 +60,43 @@ class TestSnapshotRestore:
     def test_restore_unknown_snapshot_returns_false(self, sandbox: LayeredIsolationSandbox) -> None:
         assert sandbox.restore_snapshot("atlas-snap-nope") is False
 
+    def test_restore_tampered_snapshot_is_rejected(
+        self, sandbox: LayeredIsolationSandbox, tmp_path: Path
+    ) -> None:
+        """Un .tar.gz cuyo contenido fue modificado tras crear el snapshot debe ser rechazado."""
+        (tmp_path / "data.txt").write_text("safe", encoding="utf-8")
+        snap = sandbox._take_snapshot(tmp_path)
+        archive = sandbox._archive_path(snap)
+        # Corrompe el archivo (flip de último byte)
+        data = bytearray(archive.read_bytes())
+        data[-1] ^= 0xFF
+        archive.write_bytes(bytes(data))
+
+        assert sandbox.restore_snapshot(snap, tmp_path) is False
+
+    def test_restore_without_hmac_sidecar_is_rejected(
+        self, sandbox: LayeredIsolationSandbox, tmp_path: Path
+    ) -> None:
+        """Un snapshot sin sidecar .hmac (sin firma) debe ser rechazado fail-closed."""
+        (tmp_path / "data.txt").write_text("safe", encoding="utf-8")
+        snap = sandbox._take_snapshot(tmp_path)
+        # Elimina el sidecar HMAC
+        hmac_path = sandbox._archive_path(snap).with_suffix(".hmac")
+        hmac_path.unlink()
+
+        assert sandbox.restore_snapshot(snap, tmp_path) is False
+
+    def test_restore_intact_snapshot_succeeds(
+        self, sandbox: LayeredIsolationSandbox, tmp_path: Path
+    ) -> None:
+        """Un snapshot íntegro (HMAC válido) debe restaurarse correctamente."""
+        (tmp_path / "data.txt").write_text("original", encoding="utf-8")
+        snap = sandbox._take_snapshot(tmp_path)
+        (tmp_path / "data.txt").write_text("mutado", encoding="utf-8")
+
+        assert sandbox.restore_snapshot(snap, tmp_path) is True
+        assert (tmp_path / "data.txt").read_text(encoding="utf-8") == "original"
+
     def test_snapshot_excludes_snapshot_dir(
         self, sandbox: LayeredIsolationSandbox, tmp_path: Path
     ) -> None:

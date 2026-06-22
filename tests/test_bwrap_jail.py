@@ -1,15 +1,17 @@
 """Tests for ADR-055 Slice 1 — BwrapJail + Slice 3 (executor wiring).
 
-Mocks subprocess entirely — no real processes launched (per project convention).
+La mayoría de los tests mockean subprocess. Los tests marcados con
+pytestmark_bwrap requieren bwrap instalado y ejecutan el jail real (sin mocks)
+para verificar el rootfs mínimo y el seccomp BPF activo.
 """
 from __future__ import annotations
 
+import shutil
+import struct
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-import struct
 
 from atlas.security.bwrap_jail import (
     _BLOCKED_X86_64,
@@ -73,12 +75,26 @@ def test_bwrap_argv_maps_nobody_uid_gid():
     assert argv[gid_idx + 1] == "65534"
 
 
-def test_bwrap_argv_ro_binds_root():
+def test_bwrap_argv_ro_binds_usr_not_root():
     argv = build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out")
-    # --ro-bind / / must appear
+    # Rootfs mínimo: debe montar /usr read-only, NO / completo
     assert "--ro-bind" in argv
-    idx = argv.index("--ro-bind")
-    assert argv[idx + 1] == "/" and argv[idx + 2] == "/"
+    ro_bind_pairs = [
+        (argv[i + 1], argv[i + 2])
+        for i in range(len(argv) - 2)
+        if argv[i] == "--ro-bind"
+    ]
+    sources = [src for src, _dst in ro_bind_pairs]
+    assert "/usr" in sources, "--ro-bind /usr /usr debe aparecer"
+    assert "/" not in sources, "--ro-bind / / NO debe aparecer (exfiltración de secretos)"
+
+
+def test_bwrap_argv_home_not_mounted():
+    argv = build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out")
+    # Ningún argumento debe referenciar el home del host
+    import os
+    host_home = os.path.expanduser("~")
+    assert host_home not in argv, f"$HOME del host ({host_home}) no debe aparecer en el argv del jail"
 
 
 def test_bwrap_argv_tmpfs_on_tmp():
@@ -309,3 +325,101 @@ def test_execute_in_jail_clean_code_calls_jail_run():
     assert result.success is True
     assert result.stdout == "42\n"
     mock_jail.run.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Tests de ejecución real en el jail (bwrap instalado, x86_64)
+# Estos tests NO mockean subprocess — ejercitan el jail real.
+# ---------------------------------------------------------------------------
+
+_bwrap_available = shutil.which("bwrap") is not None
+pytestmark_bwrap = pytest.mark.skipif(
+    not _bwrap_available, reason="bwrap no disponible en este entorno"
+)
+
+
+@pytest.fixture(scope="module")
+def real_jail() -> BwrapJail:
+    """BwrapJail real (no mockeada) para tests de integración."""
+    return BwrapJail()
+
+
+@pytestmark_bwrap
+def test_real_jail_basic_python(real_jail: BwrapJail) -> None:
+    """Python básico funciona dentro del jail mínimo."""
+    result = real_jail.run("print(2 + 2)")
+    assert result.success, f"stderr: {result.stderr}"
+    assert result.stdout.strip() == "4"
+
+
+@pytestmark_bwrap
+def test_real_jail_cannot_read_ssh_dir(real_jail: BwrapJail) -> None:
+    """El jail no puede listar ~/.ssh — no está montado (canal de exfiltración cerrado)."""
+    script = """
+import os, sys
+ssh_dir = os.path.join(os.path.expanduser('~'), '.ssh')
+try:
+    os.listdir(ssh_dir)
+    print('FAIL: ssh dir accesible', file=sys.stderr)
+    sys.exit(1)
+except (FileNotFoundError, PermissionError):
+    print('ok: ssh dir no accesible')
+"""
+    result = real_jail.run(script)
+    assert result.success, f"stderr: {result.stderr}"
+    assert "ok" in result.stdout
+
+
+@pytestmark_bwrap
+def test_real_jail_cannot_read_dotenv(real_jail: BwrapJail) -> None:
+    """El jail no puede leer el .env del repo (canal de exfiltración cerrado)."""
+    import os as _os
+    repo_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    dotenv_path = _os.path.join(repo_root, ".env")
+    script = f"""
+import sys
+try:
+    with open({dotenv_path!r}) as f:
+        f.read()
+    print('FAIL: .env accesible', file=sys.stderr)
+    sys.exit(1)
+except (FileNotFoundError, PermissionError):
+    print('ok: .env no accesible')
+"""
+    result = real_jail.run(script)
+    assert result.success, f"stderr: {result.stderr}"
+    assert "ok" in result.stdout
+
+
+@pytestmark_bwrap
+def test_real_jail_ptrace_blocked_eperm(real_jail: BwrapJail) -> None:
+    """ptrace (nr=101) retorna EPERM — el BPF blocklist no está degradado a allow-all."""
+    import platform
+    if platform.machine() != "x86_64":
+        pytest.skip("seccomp blocklist solo en x86_64")
+
+    script = """
+import ctypes, errno, sys
+PTRACE_TRACEME = 0
+libc = ctypes.CDLL(None, use_errno=True)
+libc.ptrace.restype = ctypes.c_long
+libc.ptrace.argtypes = [ctypes.c_long, ctypes.c_long, ctypes.c_void_p, ctypes.c_void_p]
+ret = libc.ptrace(PTRACE_TRACEME, 0, None, None)
+err = ctypes.get_errno()
+if err == errno.EPERM:
+    print('ok: ptrace bloqueado EPERM')
+else:
+    print(f'FAIL: ret={ret} errno={err} (esperado EPERM=1)', file=sys.stderr)
+    sys.exit(1)
+"""
+    result = real_jail.run(script)
+    assert result.success, f"stderr: {result.stderr}"
+    assert "ok" in result.stdout
+
+
+def test_new_lpe_syscalls_in_blocklist() -> None:
+    """io_uring (425-427), userfaultfd (323) y clone3 (435) están en _BLOCKED_X86_64."""
+    new_syscalls = {323, 425, 426, 427, 435}
+    assert new_syscalls <= set(_BLOCKED_X86_64), (
+        f"Faltan syscalls en el blocklist: {new_syscalls - set(_BLOCKED_X86_64)}"
+    )

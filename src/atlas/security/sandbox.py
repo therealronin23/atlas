@@ -21,6 +21,8 @@ Dos capas:
 
 from __future__ import annotations
 
+import hashlib
+import hmac as _hmac
 import subprocess
 import tarfile
 import tempfile
@@ -32,6 +34,7 @@ from pathlib import Path
 from atlas.core.contracts import OperationalMode
 from atlas.security.ast_guard import ASTGuard
 from atlas.security.bwrap_jail import BwrapJail, BwrapUnavailableError
+from atlas.security.pending_store import pending_hmac_secret
 from atlas.security.process_hardening import apply_in_child
 
 
@@ -339,6 +342,16 @@ class LayeredIsolationSandbox:
     def _archive_path(self, snapshot_id: str) -> Path:
         return self._snapshots_dir() / f"{snapshot_id}.tar.gz"
 
+    def _hmac_path(self, snapshot_id: str) -> Path:
+        """Ruta del sidecar HMAC-SHA256 para un snapshot dado."""
+        return self._snapshots_dir() / f"{snapshot_id}.tar.hmac"
+
+    def _compute_archive_hmac(self, archive: Path) -> str:
+        """Calcula HMAC-SHA256 del archivo .tar.gz usando la clave local de pending_store."""
+        key = pending_hmac_secret()
+        mac = _hmac.new(key, archive.read_bytes(), hashlib.sha256)
+        return mac.hexdigest()
+
     def _take_snapshot(self, target: Path) -> str:
         """Empaqueta ``target`` en un tar.gz local; devuelve el snapshot_id.
 
@@ -353,18 +366,39 @@ class LayeredIsolationSandbox:
             parts = Path(info.name).parts
             return None if any(p in excluded for p in parts) else info
 
-        with tarfile.open(self._archive_path(snapshot_id), "w:gz") as tar:
+        archive = self._archive_path(snapshot_id)
+        with tarfile.open(archive, "w:gz") as tar:
             tar.add(str(target), arcname=".", filter=_filter)
+        # Persiste el HMAC del archivo recién creado como sidecar 0600.
+        mac = self._compute_archive_hmac(archive)
+        hmac_path = self._hmac_path(snapshot_id)
+        import os as _os
+        fd = _os.open(str(hmac_path), _os.O_CREAT | _os.O_WRONLY | _os.O_TRUNC, 0o600)
+        try:
+            _os.write(fd, mac.encode("utf-8"))
+        finally:
+            _os.close(fd)
         return snapshot_id
 
     def restore_snapshot(self, snapshot_id: str, target: Path | None = None) -> bool:
         """Restaura un snapshot previo sobre ``target`` (default: workspace).
 
-        Devuelve False si el archivo no existe. El contenido es de confianza
-        (lo generamos nosotros), pero usamos el filtro ``data`` por defensa.
+        Fail-closed: rechaza la extracción si:
+        - el archivo .tar.gz no existe,
+        - el sidecar .hmac no existe, o
+        - el HMAC no coincide con el del archivo actual (snapshot envenenado).
         """
         archive = self._archive_path(snapshot_id)
         if not archive.is_file():
+            return False
+        hmac_path = self._hmac_path(snapshot_id)
+        if not hmac_path.is_file():
+            # Sin sidecar de integridad → rechazado fail-closed.
+            return False
+        stored_mac = hmac_path.read_text(encoding="utf-8").strip()
+        actual_mac = self._compute_archive_hmac(archive)
+        if not _hmac.compare_digest(actual_mac, stored_mac):
+            # Archivo manipulado → rechazado fail-closed, no se extrae nada.
             return False
         dest = target or self._workspace
         with tarfile.open(archive, "r:gz") as tar:

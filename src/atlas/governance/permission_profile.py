@@ -31,8 +31,12 @@ class AccessDecision:
 
 
 # Subcomandos git permitidos (solo inspeccion read-only). SEC-01.
+# NOTA: `apply` no está aquí. Es un verbo MUTANTE (escribe ficheros; con
+# patches manipulados puede escapar el árbol vía `a/../../`). Va en
+# _GIT_DENIED_SUBCOMMANDS. La aplicación de patches usa el camino
+# editor/HITL + AtlasExecutor que ya pasa por CONFIRM + revisión humana.
 _GIT_ALLOWED_SUBCOMMANDS: frozenset[str] = frozenset({
-    "status", "log", "diff", "show", "rev-parse", "branch", "describe", "apply",
+    "status", "log", "diff", "show", "rev-parse", "branch", "describe",
 })
 # Metacaracteres de encadenamiento shell (SEC shell-chain).
 _SHELL_CHAIN_PATTERN = re.compile(
@@ -43,6 +47,8 @@ _GIT_DENIED_SUBCOMMANDS: frozenset[str] = frozenset({
     "push", "pull", "fetch", "merge", "rebase", "reset", "checkout",
     "commit", "am", "cherry-pick", "revert", "tag", "stash", "clone",
     "remote", "submodule", "worktree",
+    # `apply` escribe ficheros y puede escapar el árbol con paths manipulados.
+    "apply",
 })
 
 
@@ -211,14 +217,9 @@ class PermissionProfile:
                     reason=f"Subcomando git no permitido: {sub}",
                     path=cmd_strip,
                 )
-            level = (
-                PermissionLevel.CONFIRM
-                if sub == "apply"
-                else PermissionLevel.AUTO
-            )
             return AccessDecision(
                 allowed=True,
-                level=level,
+                level=PermissionLevel.AUTO,
                 reason=f"git {sub} permitido",
                 path=cmd_strip,
             )
