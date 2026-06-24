@@ -27,7 +27,7 @@ import struct
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from cryptography.fernet import Fernet
 
@@ -37,6 +37,44 @@ from atlas.memory.record import MemoryRecord
 
 if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
+
+
+class WriteRejected(Exception):
+    """El WriteGate rechazó la escritura (provenance inválida u otra política)."""
+
+
+@runtime_checkable
+class WriteGate(Protocol):
+    """Protocolo de gating de escritura.
+
+    Implementaciones inspeccionan el registro y su hash de procedencia antes
+    de permitir la inserción en el índice. Lanzar `WriteRejected` para bloquear;
+    no retornar nada si la escritura es admisible.
+    """
+
+    def check(self, record: MemoryRecord, *, provenance: str | None) -> None: ...
+
+
+class AllowAllWriteGate:
+    """Política nula: nunca rechaza ninguna escritura."""
+
+    def check(self, record: MemoryRecord, *, provenance: str | None) -> None:
+        pass
+
+
+class ProvenanceWriteGate:
+    """Política recomendada: exige un hash de procedencia no vacío.
+
+    Rechaza la escritura si `provenance` es None o sólo whitespace, lo que
+    previene el envenenamiento de memoria con registros sin trazabilidad Merkle.
+    """
+
+    def check(self, record: MemoryRecord, *, provenance: str | None) -> None:
+        if not provenance or not provenance.strip():
+            raise WriteRejected(
+                f"WriteGate rechazó la escritura de {record.record_id!r}: "
+                f"provenance es None o vacía (merkle_leaf_hash requerido)."
+            )
 
 
 class ShreddedContentError(Exception):
@@ -119,6 +157,7 @@ class SqliteMemoryIndex:
         threshold: float = 0.8,
         merkle: "MerkleLogger | None" = None,
         auto_touch: bool = False,
+        write_gate: WriteGate | None = None,
     ) -> None:
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -129,6 +168,7 @@ class SqliteMemoryIndex:
         # auto_touch: registrar el acceso (promover a hot + contar) en cada recall que
         # devuelve un match → la democión refleja el uso REAL sin llamadas manuales.
         self._auto_touch = auto_touch
+        self._write_gate = write_gate
         self._conn = sqlite3.connect(str(self._path))
         self._conn.execute("PRAGMA secure_delete=ON")  # crypto-shred: sobrescribe páginas borradas
         self._conn.executescript(_SCHEMA)
@@ -224,6 +264,8 @@ class SqliteMemoryIndex:
         """Inserta o actualiza un registro VIGENTE (valid_until_ns NULL).
         Idempotente por `record_id`. El texto se cifra con Fernet y la clave se guarda
         en content_keys — el embedding se calcula del texto EN CLARO antes de cifrar."""
+        if self._write_gate is not None:
+            self._write_gate.check(record, provenance=merkle_leaf_hash)
         vec = self._embedder.embed(record.text)
         vfrom = valid_from_ns if valid_from_ns is not None else time.time_ns()
         # Guard anti-fuga: si ya existe una fila con este id pero en otro tenant, rechaza.

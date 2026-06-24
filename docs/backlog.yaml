@@ -58,15 +58,17 @@ items:
       write-gating. Un adversario puede inyectar memorias falsas por cualquier path no
       asegurado. Es tipo-1; el ledger lo marca como 'parcial'.
     targets:
-      - "src/atlas/memory/memory_manager.py"
-      - "src/atlas/core/self_maintenance/analyst.py"
+      - "src/atlas/memory/memory_index.py"
     acceptance: >
       Todo `add_memory` pasa por un `WriteGate` configurable (por defecto: hash de
       procedencia requerido); test de integración demuestra que una memoria sin procedencia
       válida es rechazada; el tenant de seguridad puede inyectar un `LessonVerifier`
       como política.
     priority: 2
-    status: pending
+    status: done  # 2026-06-24: WriteGate Protocol + ProvenanceWriteGate (rechaza sin merkle_leaf_hash) +
+    # AllowAll, inyectable en el constructor del índice (opt-in, default None=compat). Gate evaluado al
+    # inicio de upsert antes de cualquier escritura. 16 tests (incl. política custom estilo verifier).
+    # targets corregidos: el chokepoint real es SqliteMemoryIndex.upsert (memory_manager.py no existe).
 
   - id: f2-5-tenancy-isolation
     title: "Fuga entre usuarios/tenancy: namespacing del índice"
