@@ -83,8 +83,17 @@ class LlmReviewer:
                 "revisión no disponible (fail-closed)",
             )
         lines = resp.text.strip().splitlines()
-        sev = _SEVERITIES.get(lines[0].strip().upper(), Severity.MAJOR)
-        detail = "\n".join(lines[1:]).strip()
+        first_norm = lines[0].strip().strip("[](){}*#:.- ").upper() if lines else ""
+        if first_norm in _SEVERITIES:
+            sev = _SEVERITIES[first_norm]
+            detail = "\n".join(lines[1:]).strip()
+        else:
+            # 1a línea no es severidad limpia: fail-closed MAJOR, pero CONSERVA el
+            # texto completo (no tirar lines[0], que es el contenido real de la voz).
+            # Anclado a 1a línea a propósito: NO escanear el cuerpo (evita el falso
+            # positivo "no es MAJOR").
+            sev = Severity.MAJOR
+            detail = resp.text.strip()
         return Objection(self._id, self._provider, sev, detail)
 
 

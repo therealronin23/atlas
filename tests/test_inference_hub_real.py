@@ -27,8 +27,10 @@ from atlas.logging.merkle_logger import MerkleLogger
 
 def test_default_gemini_provider_uses_stable_model_id() -> None:
     gemini = next(p for p in DEFAULT_PROVIDERS if p.name == "gemini_free")
-    assert gemini.model_id == "gemini-3.5-flash"
-    assert gemini.litellm_model == "gemini/gemini-3.5-flash"
+    # gemini-3.5-flash da 503 crónico (free saturado, verificado en vivo 2026-06-24);
+    # 2.5-flash responde estable. Pin, NO alias -latest (también 503).
+    assert gemini.model_id == "gemini-2.5-flash"
+    assert gemini.litellm_model == "gemini/gemini-2.5-flash"
     assert not gemini.model_id.endswith("-latest")
 
 
@@ -577,3 +579,73 @@ class TestNvidiaNimProvider:
 
         assert resp.success is True
         assert captured.get("api_key") == "secondary-nvidia-key"
+
+
+class TestRetry:
+    def test_transient_503_retries_then_succeeds(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = [_providers_with_keys(monkeypatch)[0]]  # solo groq_test, L1
+        calls = {"n": 0}
+
+        def flaky_completion(**kwargs: Any) -> Any:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise litellm.exceptions.ServiceUnavailableError(
+                    message="503 high demand", model="m", llm_provider="p"
+                )
+            return _ok_completion(text="al fin")
+
+        sleeps: list[float] = []
+        monkeypatch.setattr(litellm, "completion", flaky_completion)
+        hub = InferenceHub(
+            providers=providers, mode="live", sleep_fn=sleeps.append
+        )
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is True
+        assert resp.text == "al fin"
+        assert calls["n"] == 2          # reintentó exactamente una vez
+        assert len(sleeps) == 1         # durmió entre intentos (mockeado, instantáneo)
+
+    def test_permanent_404_does_not_retry(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = [_providers_with_keys(monkeypatch)[0]]
+        calls = {"n": 0}
+
+        def not_found(**kwargs: Any) -> Any:
+            calls["n"] += 1
+            raise litellm.exceptions.NotFoundError(
+                message="model not found", model="m", llm_provider="p"
+            )
+
+        monkeypatch.setattr(litellm, "completion", not_found)
+        hub = InferenceHub(
+            providers=providers, mode="live", sleep_fn=lambda _s: None
+        )
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert calls["n"] == 1          # 404 = config, NO se reintenta
+
+    def test_transient_exhausts_retries_then_fails(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = [_providers_with_keys(monkeypatch)[0]]
+        calls = {"n": 0}
+
+        def always_503(**kwargs: Any) -> Any:
+            calls["n"] += 1
+            raise litellm.exceptions.ServiceUnavailableError(
+                message="503", model="m", llm_provider="p"
+            )
+
+        monkeypatch.setattr(litellm, "completion", always_503)
+        hub = InferenceHub(
+            providers=providers, mode="live", sleep_fn=lambda _s: None
+        )
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert calls["n"] == 3          # 1 inicial + INFER_MAX_RETRIES (2)
