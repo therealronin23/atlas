@@ -17,6 +17,8 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 from atlas.memory.memory_index import SqliteMemoryIndex
 from atlas.memory.record import GenericRecord
@@ -78,3 +80,60 @@ class MemoryTrunk:
         created_at = str(time.time_ns())
         self._index.supersede(old_id, GenericRecord(rid, new_text, created_at))
         return rid
+
+    def close(self) -> None:
+        """Cierra el índice subyacente."""
+        self._index.close()
+
+
+class MemoryTrunkRouter:
+    """Enruta cada tenant a su MemoryTrunk sobre un índice tenant-scoped (mismo db_path).
+    Cachea por tenant. Aísla: el trunk de A nunca ve memorias de B."""
+
+    def __init__(
+        self,
+        db_path: Path | str,
+        *,
+        embedder: Any = None,
+        threshold: float = 0.8,
+        merkle: Any = None,
+        auto_touch: bool = False,
+        write_gate: Any = None,
+    ) -> None:
+        self._db_path = Path(db_path)
+        # Si no se provee embedder, crea uno compartido para que todos los tenants
+        # usen la misma dimensión (distinta dim rompería el guard del índice).
+        if embedder is None:
+            from atlas.memory.embeddings import StubEmbedder
+
+            embedder = StubEmbedder(dim=64)
+        self._embedder = embedder
+        self._threshold = threshold
+        self._merkle = merkle
+        self._auto_touch = auto_touch
+        self._write_gate = write_gate
+        self._trunks: dict[str, MemoryTrunk] = {}
+
+    def for_tenant(self, tenant_id: str) -> MemoryTrunk:
+        """Devuelve el MemoryTrunk para `tenant_id`, creándolo si no existe.
+        Lanza ValueError si tenant_id está vacío o es solo whitespace."""
+        if not tenant_id or not tenant_id.strip():
+            raise ValueError(f"tenant_id no puede ser vacío: {tenant_id!r}")
+        if tenant_id not in self._trunks:
+            index = SqliteMemoryIndex(
+                self._db_path,
+                tenant=tenant_id,
+                embedder=self._embedder,
+                threshold=self._threshold,
+                merkle=self._merkle,
+                auto_touch=self._auto_touch,
+                write_gate=self._write_gate,
+            )
+            self._trunks[tenant_id] = MemoryTrunk(index)
+        return self._trunks[tenant_id]
+
+    def close(self) -> None:
+        """Cierra el índice de cada trunk cacheado."""
+        for trunk in self._trunks.values():
+            trunk.close()
+        self._trunks.clear()
