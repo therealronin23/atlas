@@ -143,3 +143,26 @@ def test_convene_unknown_when_diversity_insufficient() -> None:
         "x", difficulty=Difficulty.HARD, risk="high", reviewers=pair,
     )
     assert ev is not None and ev.verdict == Verdict.UNKNOWN
+
+
+# ---------------------------------------------------------------------------
+# B4 — record_synthesis (side-effect de destilación, recorder inyectable)
+# ---------------------------------------------------------------------------
+
+
+def test_record_synthesis_writes_verdict_and_reason() -> None:
+    from atlas.core.verify import Evidence, Verdict
+    from atlas.core.deliberation_council import record_synthesis
+
+    class _Rec:
+        def __init__(self) -> None:
+            self.entries: list[str] = []
+
+        def record(self, text: str) -> None:
+            self.entries.append(text)
+
+    rec = _Rec()
+    ev = Evidence(verdict=Verdict.FAIL, reason="Kimi: asume X falso")
+    record_synthesis(rec, "¿migrar a GraphQL?", ev)
+    assert len(rec.entries) == 1
+    assert "FAIL" in rec.entries[0] and "GraphQL" in rec.entries[0]
