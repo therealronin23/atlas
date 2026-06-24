@@ -87,6 +87,11 @@ _SHRED_COLUMNS = {
     "shredded": "INTEGER NOT NULL DEFAULT 0",
 }
 
+# Columnas añadidas por multi-tenancy (migración idempotente independiente).
+_TENANT_COLUMNS = {
+    "tenant": "TEXT NOT NULL DEFAULT 'default'",
+}
+
 
 def _pack(vec: list[float]) -> bytes:
     return struct.pack(f"<{len(vec)}d", *vec)
@@ -109,6 +114,7 @@ class SqliteMemoryIndex:
         self,
         db_path: Path,
         *,
+        tenant: str = "default",
         embedder: Embedder | None = None,
         threshold: float = 0.8,
         merkle: "MerkleLogger | None" = None,
@@ -116,6 +122,7 @@ class SqliteMemoryIndex:
     ) -> None:
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._tenant = tenant
         self._embedder: Embedder = embedder if embedder is not None else StubEmbedder(dim=64)
         self._threshold = threshold
         self._merkle = merkle
@@ -127,6 +134,7 @@ class SqliteMemoryIndex:
         self._conn.executescript(_SCHEMA)
         self._migrate_temporal()
         self._migrate_shred()
+        self._migrate_tenant()
         self._guard_embedder_dim()
         self._conn.commit()
 
@@ -161,6 +169,22 @@ class SqliteMemoryIndex:
             if col not in existing:
                 try:
                     self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                except Exception:
+                    pass  # ya existe en una carrera de inicio concurrente, seguro ignorar
+
+    def _migrate_tenant(self) -> None:
+        """Añade columna tenant (multi-tenancy) a un índice de esquema previo (idempotente).
+        Las filas existentes quedan en 'default' (el DEFAULT del ALTER ya lo garantiza;
+        el UPDATE adicional cubre drivers que no aplican DEFAULT en ALTER TABLE)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        for col, decl in _TENANT_COLUMNS.items():
+            if col not in existing:
+                try:
+                    self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                    # Backfill explícito por si el driver dejó NULLs en vez del DEFAULT.
+                    self._conn.execute(
+                        "UPDATE records SET tenant='default' WHERE tenant IS NULL"
+                    )
                 except Exception:
                     pass  # ya existe en una carrera de inicio concurrente, seguro ignorar
 
@@ -202,6 +226,16 @@ class SqliteMemoryIndex:
         en content_keys — el embedding se calcula del texto EN CLARO antes de cifrar."""
         vec = self._embedder.embed(record.text)
         vfrom = valid_from_ns if valid_from_ns is not None else time.time_ns()
+        # Guard anti-fuga: si ya existe una fila con este id pero en otro tenant, rechaza.
+        existing_tenant_row = self._conn.execute(
+            "SELECT tenant FROM records WHERE id=?", (record.record_id,)
+        ).fetchone()
+        if existing_tenant_row is not None and existing_tenant_row[0] != self._tenant:
+            raise ValueError(
+                f"upsert: el id {record.record_id!r} ya pertenece al tenant "
+                f"{existing_tenant_row[0]!r}; el tenant {self._tenant!r} no puede "
+                f"sobrescribirlo (anti-fuga de tenant)."
+            )
         # Cifrado Fernet: genera clave nueva en cada upsert (re-cifra si ya existe).
         key = Fernet.generate_key()
         token: str = Fernet(key).encrypt(record.text.encode()).decode()
@@ -209,8 +243,8 @@ class SqliteMemoryIndex:
             """
             INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                  created_at, valid_from_ns, valid_until_ns, supersedes,
-                                 tier, last_access_ns, access_count, shredded)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0)
+                                 tier, last_access_ns, access_count, shredded, tenant)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
@@ -220,7 +254,7 @@ class SqliteMemoryIndex:
                 shredded=0
             """,
             (record.record_id, token, _pack(vec), merkle_leaf_hash,
-             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom),
+             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant),
         )
         # Upsert de la clave: si ya existía (re-upsert del mismo id), se reemplaza.
         self._conn.execute(
@@ -233,8 +267,9 @@ class SqliteMemoryIndex:
     def rebuild_from(self, records: Iterable[MemoryRecord]) -> None:
         """Reconstruye el índice desde cero a partir de los registros (la fuente
         de verdad es el CORE; esto es una vista derivada)."""
-        self._conn.execute("DELETE FROM records")
-        self._conn.execute("DELETE FROM sqlite_sequence WHERE name='records'")
+        self._conn.execute("DELETE FROM records WHERE tenant=?", (self._tenant,))
+        # No borramos sqlite_sequence globalmente (afectaría otros tenants);
+        # el ordinal autoincrement global sigue siendo válido para orden de inserción.
         now = time.time_ns()
         for record in records:
             vec = self._embedder.embed(record.text)
@@ -242,10 +277,11 @@ class SqliteMemoryIndex:
                 """
                 INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                      created_at, valid_from_ns, valid_until_ns, supersedes,
-                                     tier, last_access_ns, access_count)
-                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0)
+                                     tier, last_access_ns, access_count, tenant)
+                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0, ?)
                 """,
-                (record.record_id, record.text, _pack(vec), record.created_at, now, now),
+                (record.record_id, record.text, _pack(vec), record.created_at, now, now,
+                 self._tenant),
             )
         self._conn.commit()
 
@@ -265,12 +301,13 @@ class SqliteMemoryIndex:
         """La memoria `new_record` reemplaza a `old_id`: la vieja caduca (sigue en la
         tabla, auditable) y la nueva entra vigente con lineage `supersedes=old_id`."""
         old = self._conn.execute(
-            "SELECT valid_until_ns FROM records WHERE id=?", (old_id,)
+            "SELECT valid_until_ns FROM records WHERE id=? AND tenant=?",
+            (old_id, self._tenant),
         ).fetchone()
         if old is None:
             raise KeyError(f"supersede: la memoria a reemplazar {old_id!r} no existe")
         if self._conn.execute(
-            "SELECT 1 FROM records WHERE id=?", (new_record.record_id,)
+            "SELECT 1 FROM records WHERE id=? AND tenant=?", (new_record.record_id, self._tenant)
         ).fetchone() is not None:
             raise ValueError(
                 f"supersede: el nuevo id {new_record.record_id!r} ya existe; usa un id "
@@ -279,8 +316,9 @@ class SqliteMemoryIndex:
         ts = now_ns if now_ns is not None else time.time_ns()
         self.upsert(new_record, valid_from_ns=ts, supersedes=old_id)
         self._conn.execute(
-            "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL",
-            (ts, old_id),
+            "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL "
+            "AND tenant=?",
+            (ts, old_id, self._tenant),
         )
         self._conn.commit()
         self._audit("memory.superseded", {"old": old_id, "new": new_record.record_id,
@@ -290,8 +328,9 @@ class SqliteMemoryIndex:
         """Olvido sin reemplazo: la memoria caduca y deja de surfacearse. No se borra."""
         ts = now_ns if now_ns is not None else time.time_ns()
         self._conn.execute(
-            "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL",
-            (ts, record_id),
+            "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL "
+            "AND tenant=?",
+            (ts, record_id, self._tenant),
         )
         self._conn.commit()
         self._audit("memory.retired", {"id": record_id, "at_ns": ts, "reason": reason})
@@ -303,19 +342,22 @@ class SqliteMemoryIndex:
 
     def valid_until(self, record_id: str) -> int | None:
         row = self._conn.execute(
-            "SELECT valid_until_ns FROM records WHERE id=?", (record_id,)
+            "SELECT valid_until_ns FROM records WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         ).fetchone()
         return row[0] if row else None
 
     def supersedes_of(self, record_id: str) -> str | None:
         row = self._conn.execute(
-            "SELECT supersedes FROM records WHERE id=?", (record_id,)
+            "SELECT supersedes FROM records WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         ).fetchone()
         return row[0] if row else None
 
     def active_count(self) -> int:
         cur = self._conn.execute(
-            "SELECT COUNT(*) FROM records WHERE valid_until_ns IS NULL"
+            "SELECT COUNT(*) FROM records WHERE valid_until_ns IS NULL AND tenant=?",
+            (self._tenant,),
         )
         return int(cur.fetchone()[0])
 
@@ -329,8 +371,8 @@ class SqliteMemoryIndex:
         ts = now_ns if now_ns is not None else time.time_ns()
         self._conn.execute(
             "UPDATE records SET tier='hot', last_access_ns=?, "
-            "access_count=COALESCE(access_count,0)+1 WHERE id=?",
-            (ts, record_id),
+            "access_count=COALESCE(access_count,0)+1 WHERE id=? AND tenant=?",
+            (ts, record_id, self._tenant),
         )
         self._conn.commit()
 
@@ -350,7 +392,8 @@ class SqliteMemoryIndex:
         no un borrado implícito. La cadena nunca borra. Devuelve cuentas por tier."""
         rows = self._conn.execute(
             "SELECT id, COALESCE(last_access_ns, valid_from_ns, 0) "
-            "FROM records WHERE valid_until_ns IS NULL"
+            "FROM records WHERE valid_until_ns IS NULL AND tenant=?",
+            (self._tenant,),
         ).fetchall()
         for rid, last in rows:
             idle = now_ns - last
@@ -365,7 +408,10 @@ class SqliteMemoryIndex:
                 new_tier = "warm"
             else:
                 new_tier = "hot"
-            self._conn.execute("UPDATE records SET tier=? WHERE id=?", (new_tier, rid))
+            self._conn.execute(
+                "UPDATE records SET tier=? WHERE id=? AND tenant=?",
+                (new_tier, rid, self._tenant),
+            )
         self._conn.commit()
         counts = self.tier_counts()
         self._audit("memory.decay", {"at_ns": now_ns, "counts": counts})
@@ -373,20 +419,23 @@ class SqliteMemoryIndex:
 
     def tier(self, record_id: str) -> str | None:
         row = self._conn.execute(
-            "SELECT tier FROM records WHERE id=?", (record_id,)
+            "SELECT tier FROM records WHERE id=? AND tenant=?", (record_id, self._tenant)
         ).fetchone()
         return row[0] if row else None
 
     def access_count(self, record_id: str) -> int | None:
         row = self._conn.execute(
-            "SELECT access_count FROM records WHERE id=?", (record_id,)
+            "SELECT access_count FROM records WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         ).fetchone()
         return row[0] if row else None
 
     def tier_counts(self) -> dict[str, int]:
         """Cuenta por tier de las memorias VIGENTES."""
         rows = self._conn.execute(
-            "SELECT tier, COUNT(*) FROM records WHERE valid_until_ns IS NULL GROUP BY tier"
+            "SELECT tier, COUNT(*) FROM records "
+            "WHERE valid_until_ns IS NULL AND tenant=? GROUP BY tier",
+            (self._tenant,),
         ).fetchall()
         return {tier: int(n) for tier, n in rows if tier is not None}
 
@@ -395,11 +444,12 @@ class SqliteMemoryIndex:
     # ------------------------------------------------------------------
 
     def _rows(self, include_superseded: bool = False) -> list[tuple[str, list[float]]]:
-        sql = "SELECT id, vector FROM records"
         if not include_superseded:
-            sql += " WHERE valid_until_ns IS NULL"
+            sql = "SELECT id, vector FROM records WHERE valid_until_ns IS NULL AND tenant=?"
+        else:
+            sql = "SELECT id, vector FROM records WHERE tenant=?"
         sql += " ORDER BY ordinal"
-        cur = self._conn.execute(sql)
+        cur = self._conn.execute(sql, (self._tenant,))
         return [(rid, _unpack(blob)) for rid, blob in cur.fetchall()]
 
     # ------------------------------------------------------------------
@@ -460,14 +510,16 @@ class SqliteMemoryIndex:
 
     def merkle_leaf_hash(self, record_id: str) -> str | None:
         cur = self._conn.execute(
-            "SELECT merkle_leaf_hash FROM records WHERE id=?", (record_id,)
+            "SELECT merkle_leaf_hash FROM records WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         )
         row = cur.fetchone()
         return row[0] if row else None
 
     def merkle_leaf_index(self, record_id: str) -> int | None:
         cur = self._conn.execute(
-            "SELECT merkle_leaf_index FROM records WHERE id=?", (record_id,)
+            "SELECT merkle_leaf_index FROM records WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         )
         row = cur.fetchone()
         return row[0] if row else None
@@ -482,7 +534,8 @@ class SqliteMemoryIndex:
         - id legacy (sin entrada en content_keys y shredded=0) → devuelve text tal cual.
         """
         row = self._conn.execute(
-            "SELECT text, shredded FROM records WHERE id=?", (record_id,)
+            "SELECT text, shredded FROM records WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         ).fetchone()
         if row is None:
             return None
@@ -502,7 +555,7 @@ class SqliteMemoryIndex:
         """Destrucción irrecuperable del contenido: borra la clave Fernet y marca la
         fila como shredded. El slot (ordinal, vector, Merkle) se preserva íntegramente."""
         exists = self._conn.execute(
-            "SELECT 1 FROM records WHERE id=?", (record_id,)
+            "SELECT 1 FROM records WHERE id=? AND tenant=?", (record_id, self._tenant)
         ).fetchone()
         if exists is None:
             raise KeyError(f"shred: la memoria {record_id!r} no existe")
@@ -510,13 +563,16 @@ class SqliteMemoryIndex:
             "DELETE FROM content_keys WHERE id=?", (record_id,)
         )
         self._conn.execute(
-            "UPDATE records SET text='', shredded=1 WHERE id=?", (record_id,)
+            "UPDATE records SET text='', shredded=1 WHERE id=? AND tenant=?",
+            (record_id, self._tenant),
         )
         self._conn.commit()
         self._audit("memory.shredded", {"id": record_id, "at_ns": time.time_ns()})
 
     def count(self) -> int:
-        cur = self._conn.execute("SELECT COUNT(*) FROM records")
+        cur = self._conn.execute(
+            "SELECT COUNT(*) FROM records WHERE tenant=?", (self._tenant,)
+        )
         return int(cur.fetchone()[0])
 
     def recall_multihop(
