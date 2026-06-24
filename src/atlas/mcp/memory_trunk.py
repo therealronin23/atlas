@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from atlas.memory.memory_index import SqliteMemoryIndex
+from atlas.memory.memory_index import ShreddedContentError, SqliteMemoryIndex
 from atlas.memory.record import GenericRecord
 
 
@@ -59,7 +59,10 @@ class MemoryTrunk:
         results = self._index.recall_all(query, k=k)
         hits: list[RecallHit] = []
         for r in results:
-            text = self._index.text_of(r.lesson_id)
+            try:
+                text = self._index.text_of(r.lesson_id)
+            except ShreddedContentError:
+                continue
             if text is None:
                 continue
             hits.append(
@@ -72,6 +75,35 @@ class MemoryTrunk:
                 )
             )
         return hits
+
+    def recall_multihop(self, query: str, *, hops: int = 2) -> list[RecallHit]:
+        """Encadena recalls hasta `hops` saltos semánticos. Cada salto parte del
+        texto del hit anterior como nueva query. Devuelve la cadena ordenada (sin
+        repeticiones), saltando hits shredded o sin texto."""
+        results = self._index.recall_multihop(query, hops=hops)
+        hits: list[RecallHit] = []
+        for r in results:
+            try:
+                text = self._index.text_of(r.lesson_id)
+            except ShreddedContentError:
+                continue
+            if text is None:
+                continue
+            hits.append(
+                RecallHit(
+                    record_id=r.lesson_id,
+                    text=text,
+                    score=r.score,
+                    matched=r.matched,
+                    merkle_leaf_hash=self._index.merkle_leaf_hash(r.lesson_id),
+                )
+            )
+        return hits
+
+    def shred(self, record_id: str) -> None:
+        """Destruye irreversiblemente el contenido de `record_id` (derecho al olvido).
+        Propaga `KeyError` si el id no existe."""
+        self._index.shred(record_id)
 
     def supersede(self, old_id: str, new_text: str, *, record_id: str | None = None) -> str:
         """`new_text` reemplaza a `old_id`: la vieja caduca (auditable, no se

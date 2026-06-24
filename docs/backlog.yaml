@@ -146,7 +146,9 @@ items:
       puede invocarlas; tras shred vía MCP el contenido es irrecuperable; test de integración
       cubre ambas rutas.
     priority: 2
-    status: pending
+    status: done  # 2026-06-24: MemoryTrunk.recall_multihop + .shred; tools MCP en ambos builders
+    # (single y multi-tenant). Arreglado bug latente: trunk.recall ahora salta shredded (text_of
+    # lanzaba ShreddedContentError tras f2-2). 10 tests incl. e2e shred via call_tool y aislamiento.
 
   - id: f2-9-keystore-hardening
     title: "Crypto-shred: keystore separado + cifrar rebuild_from"
