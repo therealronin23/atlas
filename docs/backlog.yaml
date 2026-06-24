@@ -242,7 +242,7 @@ items:
       idempotente; test: sembrar una clave huérfana directa en el keystore + un id vivo, correr gc → la
       huérfana desaparece y la viva permanece; shred y round-trip intactos; suite verde.
     priority: 2
-    status: pending
+    status: done  # 2026-06-24 autobuild: gc_keystore() borra claves sin record (huerfanas de cualquier origen), idempotente, reutiliza _del_key. 6 tests.
 
   - id: tech-1-cosine-dedup
     title: "Consolidar la implementación duplicada de similitud coseno"
@@ -256,7 +256,7 @@ items:
       Localizar las implementaciones de coseno duplicadas (grep), extraer UNA util compartida con tests,
       y reemplazar los call-sites; comportamiento idéntico (tests existentes verdes); sin nueva dep.
     priority: 3
-    status: pending
+    status: done  # 2026-06-24 autobuild: lesson_recaller._cosine_similarity delega el coseno crudo a vector_store.cosine_similarity (canonica) preservando mapeo [0,1]+zero-norm. 5 tests, sin import circular.
 
   - id: tech-2-operational-wal-tests
     title: "Tests de operational_wal y AgenticExecutor (cobertura de la deuda)"
@@ -269,5 +269,36 @@ items:
       Tests de unidad/integración para los caminos principales de operational_wal (append/replay/truncado)
       y AgenticExecutor (suspend/resume HITL, dispatch de mutación); cubren el caso real, no triviales;
       suite verde.
+    priority: 3
+    status: done  # 2026-06-24 autobuild: tests gaps de operational_wal (concurrencia/tipos/rotacion) y AgenticExecutor (suspend/resume HITL/dispatch). 29 tests. BUG hallado -> tech-3.
+
+  # --- Reposición 2026-06-24 (4ª): runway guard ≥3. Gaps reales hallados en la corrida.
+  - id: tech-3-wal-rotation-collision
+    title: "OperationalWAL: colisión de sufijo de rotación en el mismo segundo (data loss)"
+    why: >
+      Hallado por los tests de tech-2: `OperationalWAL._rotate_if_needed` usa strftime('%Y%m%d%H%M%S')
+      como sufijo del archivo rotado. Si dos rotaciones ocurren en el mismo segundo, la segunda
+      SOBRESCRIBE la primera silenciosamente → pérdida de datos del WAL. Bug real preexistente.
+    targets:
+      - "src/atlas/core/operational_wal.py"
+    acceptance: >
+      El sufijo de rotación es único aunque dos rotaciones caigan en el mismo segundo (p.ej. añadir
+      contador/nanos/uuid corto); test que fuerza 2 rotaciones en el mismo segundo demuestra que NINGÚN
+      archivo rotado se sobrescribe (ambos conjuntos de registros recuperables); suite verde.
+    priority: 2
+    status: pending
+
+  - id: tech-4-property-verifier-wiring
+    title: "PropertyVerifier: cablear a un consumidor o cuarentena (wire-before-claim)"
+    why: >
+      `src/atlas/core/decider/property_verifier.py` existe (PropertyVerifier, ADR-040 ext) pero NINGÚN
+      caller lo usa y no tiene tests. Es capacidad sin cablear = vapor. O se cablea al Decider (antes de
+      emitir Allow para acción reversible verifica el patch) con tests, o se manda a cuarentena/graveyard.
+    targets:
+      - "src/atlas/core/decider/property_verifier.py"
+    acceptance: >
+      Decisión registrada: (a) cableado a un consumidor real (Decider) con test de integración que
+      demuestra que un patch que viola una propiedad es rechazado; o (b) movido a _graveyard con WHY.md.
+      No queda como módulo huérfano sin tests en src/.
     priority: 3
     status: pending

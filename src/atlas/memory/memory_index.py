@@ -757,6 +757,39 @@ class SqliteMemoryIndex:
 
         return chain
 
+    # ------------------------------------------------------------------
+    # Mantenimiento del keystore (f2-13)
+    # ------------------------------------------------------------------
+
+    def gc_keystore(self) -> int:
+        """Barre TODAS las claves huérfanas del keystore.
+
+        Una clave es huérfana si su id no existe en la tabla ``records``
+        (independientemente del tenant o del motivo por el que desapareció:
+        rebuild interrumpido, borrado manual, procesos fallidos, etc.).
+
+        Returns:
+            Número de claves borradas. Idempotente: 2ª llamada devuelve 0.
+        """
+        # Obtener todos los ids presentes en records (todos los tenants).
+        live_ids: set[str] = {
+            row[0]
+            for row in self._conn.execute("SELECT id FROM records").fetchall()
+        }
+        # Obtener todos los ids presentes en el keystore.
+        keystore_ids: list[str] = [
+            row[0]
+            for row in self._keys_conn.execute(
+                "SELECT id FROM content_keys"
+            ).fetchall()
+        ]
+        deleted = 0
+        for kid in keystore_ids:
+            if kid not in live_ids:
+                self._del_key(kid)
+                deleted += 1
+        return deleted
+
     def close(self) -> None:
         self._conn.close()
         self._keys_conn.close()
