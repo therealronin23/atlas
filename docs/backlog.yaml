@@ -185,7 +185,10 @@ items:
       test demuestra que con ProvenanceWriteGate activo un add legítimo entra y una escritura sin procedencia
       (path crudo) es rechazada; el default sigue sin gate para no romper compat.
     priority: 1
-    status: pending
+    status: done  # 2026-06-24: MemoryTrunk.add genera procedencia sha256(text+created_at)→merkle_leaf_hash;
+    # serve(require_provenance=True) + build_gated_index construyen el índice con ProvenanceWriteGate.
+    # 7 tests: add legítima entra, upsert crudo sin procedencia rechazado, aislamiento por tenant intacto.
+    # LIMITACIÓN: index.supersede no enruta procedencia → bajo gate, supersede falla (deuda anotada).
 
   - id: f2-10-keystore-orphan-gc
     title: "Keystore: recolectar claves huérfanas tras rebuild_from"
@@ -198,5 +201,21 @@ items:
     acceptance: >
       tras rebuild_from, el keystore no contiene claves de ids ausentes del índice (test: id viejo eliminado
       en rebuild → su clave ya no está en el keystore); shred y round-trip siguen intactos; suite verde.
+    priority: 2
+    status: pending
+
+  - id: f2-12-supersede-provenance
+    title: "supersede bajo WriteGate: enrutar procedencia"
+    why: >
+      f2-11 hizo que MemoryTrunk.add aporte procedencia, pero index.supersede llama internamente a
+      upsert sin merkle_leaf_hash, así que bajo un ProvenanceWriteGate activo cualquier supersede es
+      rechazado. La supersesión (reemplazo con lineage) es un write legítimo y debe pasar el gate.
+    targets:
+      - "src/atlas/memory/memory_index.py"
+      - "src/atlas/mcp/memory_trunk.py"
+    acceptance: >
+      index.supersede acepta/propaga una procedencia hasta su upsert interno; MemoryTrunk.supersede
+      genera procedencia como add; test demuestra que con ProvenanceWriteGate activo un supersede
+      legítimo entra (no es rechazado) y conserva el lineage; suite verde.
     priority: 2
     status: pending

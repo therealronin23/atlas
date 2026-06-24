@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 from atlas.mcp.memory_trunk import MemoryTrunk, MemoryTrunkRouter
 
 if TYPE_CHECKING:
+    from atlas.memory.memory_index import SqliteMemoryIndex
     from mcp.server.fastmcp import FastMCP
 
 
@@ -154,13 +155,25 @@ def build_tenant_memory_server(
     return server
 
 
-def serve(db_path: Path, *, name: str = "atlas-memory") -> None:
-    """Punto de entrada stdio: monta la raíz de memoria sobre el índice en
-    `db_path` y la sirve por stdio (el transporte por defecto de los clientes MCP)."""
+def build_gated_index(
+    db_path: Path, *, require_provenance: bool = False
+) -> "SqliteMemoryIndex":
+    """Construye un SqliteMemoryIndex con el gate correcto según `require_provenance`.
+    Extraído para poder testearlo sin arrancar transporte real."""
     from atlas.memory.embeddings import StubEmbedder
-    from atlas.memory.memory_index import SqliteMemoryIndex
+    from atlas.memory.memory_index import ProvenanceWriteGate, SqliteMemoryIndex
 
-    index = SqliteMemoryIndex(db_path, embedder=StubEmbedder(dim=64))
+    gate = ProvenanceWriteGate() if require_provenance else None
+    return SqliteMemoryIndex(db_path, embedder=StubEmbedder(dim=64), write_gate=gate)
+
+
+def serve(db_path: Path, *, name: str = "atlas-memory", require_provenance: bool = False) -> None:
+    """Punto de entrada stdio: monta la raíz de memoria sobre el índice en
+    `db_path` y la sirve por stdio (el transporte por defecto de los clientes MCP).
+
+    Si `require_provenance` es True, el índice exige procedencia en cada escritura
+    (anti-envenenamiento en producción). Default False = compat sin gate."""
+    index = build_gated_index(db_path, require_provenance=require_provenance)
     try:
         server = build_memory_server(MemoryTrunk(index), name=name)
         server.run()
