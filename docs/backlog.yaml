@@ -301,7 +301,7 @@ items:
       demuestra que un patch que viola una propiedad es rechazado; o (b) movido a _graveyard con WHY.md.
       No queda como módulo huérfano sin tests en src/.
     priority: 3
-    status: pending
+    status: done  # 2026-06-25: investigado (decide-with-facts) -> NO hay flujo consumidor (ColdUpdate usa patches diff no source; autonomous_decider recibe forensics no codigo; adopter adopta McpProposal). Cuarentena REVERSIBLE a docs/archive/_graveyard/2026-06-25-tech4-property-verifier/ con WHY.md. Rescatar cuando exista auto-codegen de source Python.
 
   - id: tech-5-starlette-deprecation
     title: "Silenciar/migrar el DeprecationWarning de Starlette TestClient (httpx)"
@@ -317,4 +317,19 @@ items:
       acotado SOLO a ese warning concreto en la config de pytest, documentando por qué); suite verde; no se
       silencian otros warnings de forma genérica.
     priority: 3
+    status: pending
+
+  - id: tech-6-coldupdate-apply-patch-coverage
+    title: "ColdUpdateManager._apply_patch: cobertura de fallos de git apply"
+    why: >
+      `_apply_patch` (cold_update_manager.py) aplica el patch al worktree con git apply, pero su manejo de
+      fallos (patch corrupto, conflicto, git ausente) no tiene cobertura de tests dedicada. Es ruta de
+      auto-modificación (ADR-025) — un fallo silencioso o un estado a medias es deuda tipo-1/2.
+    targets:
+      - "src/atlas/core/cold_update_manager.py"
+    acceptance: >
+      Tests que ejercitan: patch que no aplica limpio → estado terminal/error explícito sin dejar el worktree
+      a medias; patch válido → aplicado y verificable; (si aplica) rollback/limpieza del worktree en fallo.
+      Cubren el caso real (no triviales); suite verde. Si se halla un fallo silencioso, anotarlo (no forzar fix).
+    priority: 2
     status: pending
