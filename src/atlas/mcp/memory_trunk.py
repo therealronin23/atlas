@@ -14,13 +14,14 @@ tronco+raÃ­ces es commodity; el moat es ESTE contenido (procedencia + supersesiÃ
 
 from __future__ import annotations
 
+import hashlib
 import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from atlas.memory.memory_index import ShreddedContentError, SqliteMemoryIndex
+from atlas.memory.memory_index import ShreddedContentError, SqliteMemoryIndex, WriteGate
 from atlas.memory.record import GenericRecord
 
 
@@ -48,7 +49,8 @@ class MemoryTrunk:
         """Recuerda `text`. Devuelve el id (generado si no se da)."""
         rid = record_id if record_id is not None else uuid.uuid4().hex
         created_at = str(time.time_ns())
-        self._index.upsert(GenericRecord(rid, text, created_at, record_type))
+        provenance = hashlib.sha256(f"{text}{created_at}".encode()).hexdigest()
+        self._index.upsert(GenericRecord(rid, text, created_at, record_type), merkle_leaf_hash=provenance)
         return rid
 
     def recall(self, query: str, k: int = 5) -> list[RecallHit]:
@@ -130,7 +132,7 @@ class MemoryTrunkRouter:
         threshold: float = 0.8,
         merkle: Any = None,
         auto_touch: bool = False,
-        write_gate: Any = None,
+        write_gate: "WriteGate | None" = None,
     ) -> None:
         self._db_path = Path(db_path)
         # Si no se provee embedder, crea uno compartido para que todos los tenants
