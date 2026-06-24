@@ -52,7 +52,14 @@ class OperationalWAL:
             return
         if self._file.stat().st_size + incoming <= self.MAX_BYTES:
             return
-        rotated = self._dir / f"operational.{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.jsonl"
+        ts = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+        rotated = self._dir / f"operational.{ts}.jsonl"
+        # Avoid silent overwrite when two rotations happen within the same second:
+        # append a collision counter until we find an unused path.
+        counter = 1
+        while rotated.exists():
+            rotated = self._dir / f"operational.{ts}-{counter}.jsonl"
+            counter += 1
         self._file.replace(rotated)
 
     def tail(self, n: int = 50) -> list[dict[str, Any]]:
