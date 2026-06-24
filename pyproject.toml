@@ -69,6 +69,12 @@ markers = [
     "computer_use: requires Playwright (pip install 'atlas-core[computer-use]')",
 ]
 addopts = "-m 'not computer_use'"
+filterwarnings = [
+    # httpx2 no es instalable como dependencia directa (conflictos de ecosistema);
+    # este warning viene de starlette.testclient importado por fastapi.testclient
+    # y es ruido externo sin acción posible en nuestro lado.
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
 
 [tool.mypy]
 strict = true
