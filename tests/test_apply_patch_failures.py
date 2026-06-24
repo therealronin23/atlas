@@ -141,10 +141,9 @@ class TestApplyPatchCorrupt:
             "No debería haber propuestas almacenadas tras fallo en _apply_patch"
         )
 
-    def test_corrupt_patch_worktree_left_behind(self, tmp_path: Path) -> None:
-        """HALLAZGO: tras RuntimeError en _apply_patch durante propose(), el worktree
-        creado por _create_worktree NO se limpia. El directorio queda huérfano en el
-        store. Este test documenta el comportamiento actual (no lo corrige)."""
+    def test_corrupt_patch_worktree_cleaned_up(self, tmp_path: Path) -> None:
+        """Tras RuntimeError en _apply_patch durante propose(), el worktree creado
+        por _create_worktree debe ser eliminado — sin worktrees huérfanos en el store."""
         root = _make_git_project(tmp_path, "orphan_proj")
         store = tmp_path / "orphan_store"
         ws = tmp_path / "atlas-orphan"
@@ -158,18 +157,11 @@ class TestApplyPatchCorrupt:
         with pytest.raises(RuntimeError, match="Patch no aplicable"):
             mgr.propose("orphan wt test", patch)
 
-        # Documentar: worktrees huérfanos pueden quedar en el store.
-        # En un repo git real, git worktree add crea un directorio; si _apply_patch
-        # falla después, ese directorio persiste sin limpiar.
-        # Aquí verificamos que el store existe (el manager se inicializó),
-        # lo cual confirma que el path es real; el worktree huérfano, si existe,
-        # estaría bajo store / "worktree-<id>".
         assert store.exists()
         orphaned_wts = list(store.glob("worktree-*"))
-        # HALLAZGO documentado: si hay worktrees huérfanos, no son 0.
-        # No forzamos fallo del test aquí; solo registramos el conteo.
-        # Si el código algún día los limpie, este número será 0.
-        _ = len(orphaned_wts)  # puede ser > 0 — comportamiento real sin cleanup
+        assert orphaned_wts == [], (
+            f"Worktrees huérfanos encontrados tras fallo en _apply_patch: {orphaned_wts}"
+        )
 
 
 # ---------------------------------------------------------------------------
