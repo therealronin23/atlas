@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from atlas.core.lesson_store import Lesson, LessonProvenance, LessonStore
-from atlas.immunity.lesson_recaller import LessonRecaller, RecallResult
+from atlas.immunity.lesson_recaller import LessonRecaller, RecallResult, _cosine_similarity
 from atlas.memory.embeddings import StubEmbedder
 
 
@@ -344,3 +344,40 @@ class TestRecallResult:
         assert result is not None
         # Con threshold=0.99 y texto no relacionado, matched debe ser False
         assert result.matched is False
+
+
+# ---------------------------------------------------------------------------
+# Tests de _cosine_similarity (wrapper [0,1] sobre la canónica)
+# ---------------------------------------------------------------------------
+
+
+class TestCosineSimilarityWrapper:
+    """Verifica que _cosine_similarity mapea al rango [0, 1]."""
+
+    def test_identical_vectors_returns_one(self) -> None:
+        a = [1.0, 0.0, 0.0]
+        assert _cosine_similarity(a, a) == pytest.approx(1.0)
+
+    def test_orthogonal_vectors_returns_half(self) -> None:
+        # Vectores ortogonales: raw=0 → (0+1)/2 = 0.5
+        a = [1.0, 0.0]
+        b = [0.0, 1.0]
+        assert _cosine_similarity(a, b) == pytest.approx(0.5)
+
+    def test_opposite_vectors_returns_zero(self) -> None:
+        # Vectores opuestos: raw=-1 → (−1+1)/2 = 0
+        a = [1.0, 0.0]
+        b = [-1.0, 0.0]
+        assert _cosine_similarity(a, b) == pytest.approx(0.0)
+
+    def test_zero_vector_returns_zero(self) -> None:
+        assert _cosine_similarity([0.0, 0.0], [1.0, 1.0]) == 0.0
+
+    def test_result_always_in_zero_one_range(self) -> None:
+        import random
+        rng = random.Random(42)
+        for _ in range(50):
+            a = [rng.uniform(-1, 1) for _ in range(8)]
+            b = [rng.uniform(-1, 1) for _ in range(8)]
+            score = _cosine_similarity(a, b)
+            assert 0.0 <= score <= 1.0

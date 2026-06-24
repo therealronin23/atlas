@@ -90,8 +90,9 @@ Auditoría multi-subagente + correcciones vía `/autobuild` (auditor cazó 2 reg
   (−662, ~25%). Lección: llamadas a métodos públicos parcheables van por `self._orch.X()`.
 - ✅ **Honestidad docs**: README histórico, ROADMAP coherente, cabeceras ADR-039/040 Implemented.
 - 🔄 **Cablear código muerto** ← SIGUIENTE: `cascade.py` (ADR-042) + `lesson_store.py` (ADR-044) a caller vivo.
-- ⬜ Backlog técnico: jail rootfs mínimo, seccomp, `git apply`, snapshot integrity, tests `operational_wal`/
-  `AgenticExecutor`, consolidar coseno duplicado, warning Starlette.
+- 🔄 Backlog técnico: ✅ tests `operational_wal`/`AgenticExecutor` (autobuild, +29 tests; cazó bug rotación→tech-3)
+  · ✅ consolidar coseno duplicado (autobuild; canónica vector_store, lesson_recaller delega) · ⬜ jail rootfs
+  mínimo, seccomp, `git apply`, snapshot integrity, warning Starlette.
 
 ## Línea activa secundaria: MCP trunk portable
 
