@@ -57,6 +57,30 @@ def build_memory_server(trunk: MemoryTrunk, *, name: str = "atlas-memory") -> "F
         vigente con lineage. Devuelve el id nuevo."""
         return trunk.supersede(old_id, new_text, record_id=record_id)
 
+    @server.tool()
+    def recall_multihop(query: str, hops: int = 2) -> list[dict[str, object]]:
+        """Encadena recalls semánticos hasta `hops` saltos. Útil para recuperar
+        memorias no directamente relacionadas con la query pero sí con sus vecinos.
+        Devuelve la cadena ordenada con texto y procedencia."""
+        return [
+            {
+                "record_id": h.record_id,
+                "text": h.text,
+                "score": h.score,
+                "matched": h.matched,
+                "merkle_leaf_hash": h.merkle_leaf_hash,
+            }
+            for h in trunk.recall_multihop(query, hops=hops)
+        ]
+
+    @server.tool()
+    def shred(record_id: str) -> str:
+        """Ejerce el derecho al olvido: destruye irreversiblemente el contenido
+        de `record_id`. El vector persiste (para auditoría) pero el texto no.
+        Lanza KeyError si el id no existe."""
+        trunk.shred(record_id)
+        return f"shredded:{record_id}"
+
     return server
 
 
@@ -102,6 +126,30 @@ def build_tenant_memory_server(
         """Reemplaza un recuerdo del tenant activo. Devuelve el id nuevo."""
         trunk = router.for_tenant(tenant_resolver())
         return trunk.supersede(old_id, new_text, record_id=record_id)
+
+    @server.tool()
+    def recall_multihop(query: str, hops: int = 2) -> list[dict[str, object]]:
+        """Encadena recalls semánticos hasta `hops` saltos para el tenant activo.
+        Devuelve la cadena ordenada con texto y procedencia."""
+        trunk = router.for_tenant(tenant_resolver())
+        return [
+            {
+                "record_id": h.record_id,
+                "text": h.text,
+                "score": h.score,
+                "matched": h.matched,
+                "merkle_leaf_hash": h.merkle_leaf_hash,
+            }
+            for h in trunk.recall_multihop(query, hops=hops)
+        ]
+
+    @server.tool()
+    def shred(record_id: str) -> str:
+        """Ejerce el derecho al olvido del tenant activo: destruye irreversiblemente
+        el contenido de `record_id`. Lanza KeyError si el id no existe."""
+        trunk = router.for_tenant(tenant_resolver())
+        trunk.shred(record_id)
+        return f"shredded:{record_id}"
 
     return server
 
