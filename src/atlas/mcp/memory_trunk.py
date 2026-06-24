@@ -109,10 +109,17 @@ class MemoryTrunk:
 
     def supersede(self, old_id: str, new_text: str, *, record_id: str | None = None) -> str:
         """`new_text` reemplaza a `old_id`: la vieja caduca (auditable, no se
-        borra) y la nueva entra vigente con lineage. Devuelve el id nuevo."""
+        borra) y la nueva entra vigente con lineage. Genera procedencia igual
+        que `add` (sha256 de text+created_at) para satisfacer WriteGate activos.
+        Devuelve el id nuevo."""
         rid = record_id if record_id is not None else uuid.uuid4().hex
         created_at = str(time.time_ns())
-        self._index.supersede(old_id, GenericRecord(rid, new_text, created_at))
+        provenance = hashlib.sha256(f"{new_text}{created_at}".encode()).hexdigest()
+        self._index.supersede(
+            old_id,
+            GenericRecord(rid, new_text, created_at),
+            merkle_leaf_hash=provenance,
+        )
         return rid
 
     def close(self) -> None:

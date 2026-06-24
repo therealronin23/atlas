@@ -49,7 +49,9 @@ items:
       durante la indexación (anti-leak), y produce un informe reproducible; CI no lo puede
       pasar sin datos reales.
     priority: 2
-    status: pending
+    status: done  # 2026-06-24 (autobuild): scripts/eval_memory_benchmark.py + tests/benchmarks/ (10 tests).
+    # Anti-leak real (FASE 1 indexa sin ver queries / FASE 2 consulta), determinista (StubEmbedder con
+    # corpus+queries fijos, test_reproducibility con 2 DBs). Honesto: StubEmbedder da métricas reales bajas.
 
   - id: f2-4-memory-poisoning
     title: "Envenenamiento de memoria: write-gating genérico"
@@ -202,7 +204,9 @@ items:
       tras rebuild_from, el keystore no contiene claves de ids ausentes del índice (test: id viejo eliminado
       en rebuild → su clave ya no está en el keystore); shred y round-trip siguen intactos; suite verde.
     priority: 2
-    status: pending
+    status: done  # 2026-06-24 (autobuild): rebuild_from recoge old_ids antes del DELETE, reinserta, y tras
+    # commit corre GC (orphan = old_ids - new_ids) borrando sus claves del keystore. 4 tests.
+    # NOTA: solo limpia ids ausentes de ESTE rebuild; un barrido total keystore-vs-records queda como follow-up.
 
   - id: f2-12-supersede-provenance
     title: "supersede bajo WriteGate: enrutar procedencia"
@@ -218,4 +222,52 @@ items:
       genera procedencia como add; test demuestra que con ProvenanceWriteGate activo un supersede
       legítimo entra (no es rechazado) y conserva el lineage; suite verde.
     priority: 2
+    status: done  # 2026-06-24 (autobuild): SqliteMemoryIndex.supersede acepta merkle_leaf_hash keyword-only
+    # opcional y lo propaga al upsert interno; MemoryTrunk.supersede genera procedencia sha256(text+created_at)
+    # como add. 5 tests (rechazo sin proc bajo gate, aceptación con proc, lineage preservado). Retrocompat:
+    # lesson_index.supersede no se rompe (param keyword-only con default).
+
+  # --- Reposición 2026-06-24 (3ª): gaps reales tras cerrar f2-3/f2-10/f2-12 (runway guard ≥3).
+  # Documentados, no inventados: follow-up de f2-10 + deuda técnica del WORK_LEDGER (línea "Backlog técnico").
+  - id: f2-13-keystore-full-sweep
+    title: "Keystore: barrido total keystore-vs-records (huérfanas de rebuilds previos)"
+    why: >
+      f2-10 limpia las claves de ids que desaparecen en ESE rebuild, pero claves huérfanas de rebuilds
+      anteriores (o de procesos interrumpidos) quedan en el keystore sin record que las referencie. No es
+      fuga (sin ciphertext asociado) pero ensucia el almacén y contradice el espíritu del olvido.
+    targets:
+      - "src/atlas/memory/memory_index.py"
+    acceptance: >
+      Método `gc_keystore()` (o equivalente) que borra del keystore toda clave cuyo id no exista en records;
+      idempotente; test: sembrar una clave huérfana directa en el keystore + un id vivo, correr gc → la
+      huérfana desaparece y la viva permanece; shred y round-trip intactos; suite verde.
+    priority: 2
+    status: pending
+
+  - id: tech-1-cosine-dedup
+    title: "Consolidar la implementación duplicada de similitud coseno"
+    why: >
+      El WORK_LEDGER (Backlog técnico) anota coseno duplicado en varios módulos. Duplicación = riesgo de
+      divergencia sutil (un sitio normaliza, otro no). Consolidar en una sola util compartida.
+    targets:
+      - "src/atlas/memory/"
+      - "src/atlas/core/"
+    acceptance: >
+      Localizar las implementaciones de coseno duplicadas (grep), extraer UNA util compartida con tests,
+      y reemplazar los call-sites; comportamiento idéntico (tests existentes verdes); sin nueva dep.
+    priority: 3
+    status: pending
+
+  - id: tech-2-operational-wal-tests
+    title: "Tests de operational_wal y AgenticExecutor (cobertura de la deuda)"
+    why: >
+      El WORK_LEDGER marca operational_wal / AgenticExecutor sin cobertura de tests dedicada. Código de
+      ruta crítica (WAL operacional, loop agéntico) sin red de seguridad es deuda tipo-1.
+    targets:
+      - "src/atlas/core/"
+    acceptance: >
+      Tests de unidad/integración para los caminos principales de operational_wal (append/replay/truncado)
+      y AgenticExecutor (suspend/resume HITL, dispatch de mutación); cubren el caso real, no triviales;
+      suite verde.
+    priority: 3
     status: pending
