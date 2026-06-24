@@ -25,6 +25,17 @@ Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado 
   - ⬜ 2.3 evaluación honesta (diseñada, falta construir) · ⬜ 2.4 envenenamiento (parcial)
   - ⬜ 2.5 fuga entre usuarios/tenancy · 🧱 2.6 personalización-vs-contaminación · ✅ 2.7 cold-start (conceptual)
 
+## Línea activa: Cónclave (`deliberation_council`) — deliberación verificable multi-voz
+
+Design doc: `docs/design/design_deliberation_council.md` · alias narrativo: Cónclave.
+
+- ⬜ **v1 — skill de deliberación** ← SIGUIENTE (diseño aprobado, falta construir).
+  - Juez (Claude, slot pluggable) + trío Gemini/Kimi/Mistral sobre `adversarial_panel` (ADR-047).
+  - Protocolo 4 pasos (encuadre→lentes→escalada→síntesis honesta), gating adaptativo, reglas=manías.
+  - Artefactos: `.claude/skills/...` (yo) + `docs/skills/...` servido por el tronco (Atlas) + copy-pega degradada.
+- ⏸ **v2 (tras validar v1)**: puerta de reinicio de loop con el trío · debate por rondas
+  (`adversarial_panel` hoy one-shot) · máquina de sucesión (silla pluggable + 4º sintetizador).
+
 ## Gate de gobernanza (tipo-2 — orden = base de todo)
 
 Estándar: `docs/governance/REPO_STANDARD.md` · honestidad: `docs/governance/CAPABILITIES.md`.
