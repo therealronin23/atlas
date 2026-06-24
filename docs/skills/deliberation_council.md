@@ -21,10 +21,12 @@ Palancas manuales: `council: full` (fuerza escalada al trío) · `council: quick
 
 1. **Encuadre** (juez, barato). Reformula la decisión + criterios de éxito medibles + qué manías
    están en juego. Si la decisión es trivial, dilo y para aquí.
-2. **Lentes** (juez, barato). Aplica SOLO los Sombreros que la decisión pide — por defecto
-   **Negro** (riesgos, puntos ciegos, qué asume falso) + **Verde** (la alternativa más simple y
-   quirúrgica). Añade **Blanco** (hechos/gaps) o **Amarillo** (upside real) solo si aportan.
-   Es un checklist de lentes, NO seis secciones obligatorias.
+2. **Lentes** (juez, barato). Los **seis sombreros** de de Bono, aplicando SOLO los que la
+   decisión pide (checklist, NO liturgia de seis secciones): por defecto **⚫ Negro** (riesgos,
+   puntos ciegos, qué asume falso) + **🟢 Verde** (la alternativa más simple y quirúrgica). Suma
+   **⚪ Blanco** (hechos/gaps), **🟡 Amarillo** (upside real) y **🔴 Rojo** (la corazonada —
+   nómbrala COMO corazonada, sin disfrazarla de hecho) cuando aporten. El **🔵 Azul** (control del
+   proceso + síntesis) no es una lente que se elige: es el juez mismo (pasos 1 y 4).
 3. **Escalada** (trío, caro — SOLO alto riesgo / irreversible). Convoca el trío de linajes
    distintos (Gemini 🇺🇸 + Kimi 🇨🇳 + Mistral 🇪🇺) vía `adversarial_panel`. **Diversidad
    obligatoria**: sin tres proveedores distintos vivos → veredicto **UNKNOWN** (unknown > mentir).
