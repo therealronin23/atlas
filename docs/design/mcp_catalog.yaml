@@ -137,6 +137,7 @@ sectors:
       - {name: magg, kind: tool, subsector: orquestacion, purpose: "meta-MCP: descubre/instala/orquesta", status: candidato}
       - {name: 1mcp/agent, kind: tool, subsector: orquestacion, purpose: "agrega múltiples servers en uno", status: candidato}
       - {name: mcgravity, kind: tool, subsector: orquestacion, purpose: "proxy/load-balancer de servers", status: candidato}
+      - {name: deliberation_council, kind: skill, subsector: planning, mode: served, source: "docs/skills/deliberation_council.md", purpose: "Cónclave: deliberación multi-voz + veredicto honesto (NUESTRO)", tags: [ia-agentes, productividad], status: instalado}
       - {name: StormMCP, kind: tool, subsector: orquestacion, purpose: "compone varios en endpoint unificado", status: candidato}
 
   infraestructura:
