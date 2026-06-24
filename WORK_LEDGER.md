@@ -38,8 +38,17 @@ Design doc: `docs/design/design_deliberation_council.md` · alias narrativo: Có
     (detalle a veces vacío), Gemini 503 transitorio. Honestidad en CAPABILITIES. Juez-único validado
     en decisión real del usuario (f2-3).
   - Deuda menor: parseo detalle Kimi · reintento 503 · cablear `record_synthesis` al recorder real.
-- ⏸ **v2 (tras validar v1)**: puerta de reinicio de loop con el trío · debate por rondas
-  (`adversarial_panel` hoy one-shot) · máquina de sucesión (silla pluggable + 4º sintetizador).
+- 🔄 **v2 — reordenado por el Cónclave en vivo (council:full sobre sí mismo, 2026-06-24)**:
+  - ⬜ **v2.0 fiabilidad del trío** ← SIGUIENTE (lo reveló el demo: trío ~1/3 fiable en vivo). Reintento
+    ante 503 (Gemini transitorio) + parseo robusto del detalle vacío de Kimi. `wire-before-claim`:
+    no apilar debate-rondas sobre un panel que falla 2/3 voces.
+  - ⬜ **v2.1 debate por rondas** (opt-in, NO cambia el one-shot → `verified_producer` a salvo).
+    CAVEAT grabado por Mistral en vivo: el spec debe resolver estado/abandono a mitad + interacción
+    con colas/permisos/métricas; "aditivo" es necesario, NO suficiente.
+  - ⬜ **v2.2 puerta de reinicio de loop** (mayor radio; toca loops vivos; después).
+  - ✗ **sucesión = MEDIR antes de construir** (¿`record_synthesis` mejora el juicio de Atlas?), no
+    máquina. `wire-before-claim` aplicado al roadmap.
+  - Próxima acción: brainstorming de v2.0 (fiabilidad) en sesión limpia → spec → plan.
 
 ## Gate de gobernanza (tipo-2 — orden = base de todo)
 
