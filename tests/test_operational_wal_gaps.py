@@ -180,3 +180,67 @@ class TestMultipleRotations:
         # tail() lee solo el archivo activo — debe haber al menos 1 entrada
         entries = wal.tail(n=100)
         assert len(entries) >= 1
+
+    def test_same_second_rotation_no_overwrite(self, tmp_path: Path) -> None:
+        """tech-3: dos rotaciones en el mismo segundo no deben sobrescribirse.
+
+        Congela datetime.now dentro del módulo WAL para que ambas rotaciones
+        produzcan el MISMO timestamp de segundos. El fix debe garantizar que
+        los dos archivos rotados sean únicos; de lo contrario la segunda
+        sobrescribe a la primera y hay pérdida de datos.
+        """
+        import unittest.mock as mock
+        from datetime import datetime, timezone
+
+        frozen_ts = datetime(2026, 6, 24, 12, 0, 0, tzinfo=timezone.utc)
+
+        wal_dir = tmp_path / "wal"
+        wal = OperationalWAL(wal_dir)
+        wal.MAX_BYTES = 10  # umbral mínimo → toda escritura dispara rotación
+
+        # Escribimos dos veces con el reloj congelado para garantizar colisión
+        # de timestamp de segundos en ambas rotaciones.
+        with mock.patch(
+            "atlas.logging.operational_wal.datetime",
+            wraps=datetime,
+        ) as mock_dt:
+            mock_dt.now.return_value = frozen_ts
+
+            # Primera escritura: crea operational.jsonl con "batch-A"
+            # y forza rotación al llegar la segunda.
+            # Necesitamos precargar el archivo activo para que la rotación se dispare.
+
+            # Cargamos el archivo activo manualmente con datos del "batch A"
+            active = wal_dir / "operational.jsonl"
+            batch_a_line = json.dumps({"batch": "A", "component": "c", "message": "a1", "ts": "x", "fields": {}})
+            active.write_text(batch_a_line + "\n", encoding="utf-8")
+
+            # Segunda escritura: el archivo supera MAX_BYTES → rotación #1
+            wal.write("c", "b1")
+
+            # Volvemos a llenar el archivo activo con datos del "batch B"
+            batch_b_line = json.dumps({"batch": "B", "component": "c", "message": "b2", "ts": "x", "fields": {}})
+            # El archivo activo ahora tiene "b1"; lo sobreescribimos con batch B
+            # para simular que vuelve a llenarse
+            active.write_text(batch_b_line + "\n", encoding="utf-8")
+
+            # Segunda escritura: dispara rotación #2 — mismo segundo que #1
+            wal.write("c", "c1")
+
+        # Deben existir exactamente 2 archivos rotados (o más); si hay colisión
+        # habrá solo 1 y el primero habrá sido sobrescrito → pérdida de datos.
+        archive_files = sorted(
+            f for f in wal_dir.iterdir()
+            if f.name.startswith("operational.") and f.name != "operational.jsonl"
+        )
+        assert len(archive_files) >= 2, (
+            f"Se esperaban >=2 archivos rotados únicos, se encontraron {len(archive_files)}: "
+            f"{[f.name for f in archive_files]}. "
+            "Colisión de timestamp: la segunda rotación sobrescribió a la primera."
+        )
+
+        # Verificar que los datos del batch A siguen recuperables
+        all_content = "".join(f.read_text(encoding="utf-8") for f in archive_files)
+        assert '"A"' in all_content, (
+            "Datos del primer archivo rotado (batch A) perdidos por sobrescritura."
+        )
