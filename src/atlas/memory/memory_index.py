@@ -371,11 +371,25 @@ class SqliteMemoryIndex:
         de verdad es el CORE; esto es una vista derivada).
 
         El texto se cifra por-ítem igual que en upsert — rebuild_from NO deja
-        plaintext en la columna text (gap cerrado en f2-9)."""
+        plaintext en la columna text (gap cerrado en f2-9).
+
+        GC keystore (f2-10): tras borrar las filas del tenant del índice, las
+        claves Fernet de ids que ya no aparecerán en los nuevos records quedan
+        huérfanas. Se calculan los ids que van a entrar, se determinan los ids
+        del keystore que pertenecen al tenant pero que NO están en el nuevo
+        conjunto, y se borran antes de insertar."""
+        # Recopilar ids pre-rebuild del tenant para GC posterior.
+        old_ids: set[str] = {
+            row[0]
+            for row in self._conn.execute(
+                "SELECT id FROM records WHERE tenant=?", (self._tenant,)
+            ).fetchall()
+        }
         self._conn.execute("DELETE FROM records WHERE tenant=?", (self._tenant,))
         # No borramos sqlite_sequence globalmente (afectaría otros tenants);
         # el ordinal autoincrement global sigue siendo válido para orden de inserción.
         now = time.time_ns()
+        new_ids: set[str] = set()
         for record in records:
             vec = self._embedder.embed(record.text)
             # Cifrado Fernet: genera clave nueva por record, igual que upsert.
@@ -392,7 +406,12 @@ class SqliteMemoryIndex:
                  self._tenant),
             )
             self._put_key(record.record_id, key)
+            new_ids.add(record.record_id)
         self._conn.commit()
+        # GC (f2-10): borrar claves huérfanas (ids que estaban antes pero no ahora).
+        orphan_ids = old_ids - new_ids
+        for orphan_id in orphan_ids:
+            self._del_key(orphan_id)
 
     # ------------------------------------------------------------------
     # Validez temporal / supersesión / olvido (1d-a) — el índice nunca BORRA;
@@ -404,6 +423,7 @@ class SqliteMemoryIndex:
         old_id: str,
         new_record: MemoryRecord,
         *,
+        merkle_leaf_hash: str | None = None,
         now_ns: int | None = None,
         reason: str = "",
     ) -> None:
@@ -423,7 +443,7 @@ class SqliteMemoryIndex:
                 f"distinto para preservar el lineage"
             )
         ts = now_ns if now_ns is not None else time.time_ns()
-        self.upsert(new_record, valid_from_ns=ts, supersedes=old_id)
+        self.upsert(new_record, merkle_leaf_hash=merkle_leaf_hash, valid_from_ns=ts, supersedes=old_id)
         self._conn.execute(
             "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL "
             "AND tenant=?",
