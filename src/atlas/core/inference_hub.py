@@ -20,7 +20,9 @@ ADR-016: LiteLLM como capa de abstraccion sobre proveedores.
 from __future__ import annotations
 
 import os
+import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -52,6 +54,21 @@ except ImportError:  # pragma: no cover
 
 
 RATE_LIMIT_COOLDOWN_S = 60.0
+
+# Reintento ante transitorios (503/500/timeout/conexión). Constantes de módulo
+# diseñadas-para-promover: el día que un Provider concreto necesite otra política
+# (medido), se promueven a campo de Provider con estas como default — cambio aditivo.
+INFER_MAX_RETRIES = 2          # reintentos extra → 3 intentos totales
+INFER_RETRY_BASE_S = 0.5       # backoff: intento k espera ~BASE*2**(k-1) + jitter
+
+# Substring del nombre de excepción litellm que SÍ se reintenta. RateLimit queda
+# fuera (ya tiene cooldown); Authentication/BadRequest/NotFound son permanentes.
+_TRANSIENT_MARKERS = ("ServiceUnavailable", "InternalServer", "Timeout", "APIConnection")
+
+
+def _is_transient(exc: BaseException) -> bool:
+    name = type(exc).__name__
+    return any(m in name for m in _TRANSIENT_MARKERS)
 
 
 class InferenceLevel(str, Enum):
@@ -261,6 +278,7 @@ class InferenceHub:
         mode: str = "auto",
         merkle: "MerkleLogger" | None = None,
         transparency: "TransparencyGateway | None" = None,
+        sleep_fn: Callable[[float], None] = time.sleep,
     ) -> None:
         if mode not in ("auto", "live", "stub"):
             raise ValueError(f"mode invalido: {mode}")
@@ -270,6 +288,7 @@ class InferenceHub:
         self._rate_limited_until: dict[str, float] = {}
         self._merkle = merkle
         self._transparency = transparency
+        self._sleep = sleep_fn
 
     @property
     def mode(self) -> str:
@@ -501,40 +520,54 @@ class InferenceHub:
             if request.context:
                 messages.insert(0, {"role": "system", "content": request.context})
 
-        try:
-            assert litellm is not None
-            extra_kwargs: dict[str, Any] = {}
-            if provider.api_key_env is None:
-                extra_kwargs["api_base"] = provider.base_url
-                extra_kwargs["api_key"] = "ollama"
+        assert litellm is not None
+        extra_kwargs: dict[str, Any] = {}
+        if provider.api_key_env is None:
+            extra_kwargs["api_base"] = provider.base_url
+            extra_kwargs["api_key"] = "ollama"
+        else:
+            # Si hay account_pool, prueba cada clave en orden hasta encontrar una.
+            # Sin pool (providers legacy), usa api_key_env directamente.
+            key: str | None = None
+            if provider.account_pool:
+                for env_var in provider.account_pool:
+                    key = os.environ.get(env_var)
+                    if key:
+                        break
             else:
-                # Si hay account_pool, prueba cada clave en orden hasta encontrar una.
-                # Sin pool (providers legacy), usa api_key_env directamente.
-                key: str | None = None
-                if provider.account_pool:
-                    for env_var in provider.account_pool:
-                        key = os.environ.get(env_var)
-                        if key:
-                            break
-                else:
-                    key = os.environ.get(provider.api_key_env)
-                if key:
-                    extra_kwargs["api_key"] = key
-            if request.tools:
-                extra_kwargs["tools"] = request.tools
-                extra_kwargs["tool_choice"] = request.tool_choice
-            completion = litellm.completion(
-                model=provider.litellm_model,
-                messages=messages,
-                max_tokens=request.max_tokens,
-                temperature=request.temperature,
-                **extra_kwargs,
-            )
-        except Exception as exc:  # noqa: BLE001 — clasificamos abajo
+                key = os.environ.get(provider.api_key_env)
+            if key:
+                extra_kwargs["api_key"] = key
+        if request.tools:
+            extra_kwargs["tools"] = request.tools
+            extra_kwargs["tool_choice"] = request.tool_choice
+
+        completion: Any = None
+        last_exc: BaseException | None = None
+        for attempt in range(INFER_MAX_RETRIES + 1):
+            try:
+                completion = litellm.completion(
+                    model=provider.litellm_model,
+                    messages=messages,
+                    max_tokens=request.max_tokens,
+                    temperature=request.temperature,
+                    **extra_kwargs,
+                )
+                last_exc = None
+                break
+            except Exception as exc:  # noqa: BLE001 — clasificamos abajo
+                last_exc = exc
+                if _is_transient(exc) and attempt < INFER_MAX_RETRIES:
+                    backoff = INFER_RETRY_BASE_S * (2 ** attempt)
+                    self._sleep(backoff + random.uniform(0.0, INFER_RETRY_BASE_S))
+                    continue
+                break
+
+        if last_exc is not None:
             duration_ms = int((time.perf_counter() - start) * 1000)
-            err_name = type(exc).__name__
-            err_msg = f"{err_name}: {exc}"
-            self._classify_error(provider, exc)
+            err_name = type(last_exc).__name__
+            err_msg = f"{err_name}: {last_exc}"
+            self._classify_error(provider, last_exc)
             self._log_model_call(provider, request, success=False, error=err_msg)
             self._calls.append({
                 "provider": provider.name,
