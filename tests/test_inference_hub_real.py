@@ -27,8 +27,10 @@ from atlas.logging.merkle_logger import MerkleLogger
 
 def test_default_gemini_provider_uses_stable_model_id() -> None:
     gemini = next(p for p in DEFAULT_PROVIDERS if p.name == "gemini_free")
-    assert gemini.model_id == "gemini-3.5-flash"
-    assert gemini.litellm_model == "gemini/gemini-3.5-flash"
+    # gemini-3.5-flash da 503 crónico (free saturado, verificado en vivo 2026-06-24);
+    # 2.5-flash responde estable. Pin, NO alias -latest (también 503).
+    assert gemini.model_id == "gemini-2.5-flash"
+    assert gemini.litellm_model == "gemini/gemini-2.5-flash"
     assert not gemini.model_id.endswith("-latest")
 
 
