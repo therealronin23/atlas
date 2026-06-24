@@ -81,3 +81,65 @@ def test_build_trio_has_three_distinct_providers() -> None:
     assert len(trio) == 3
     provs = {r.provider for r in trio}
     assert provs == {"gemini_free", "nvidia_kimi", "nvidia_mistral_large"}
+
+
+# ---------------------------------------------------------------------------
+# B3 — convene_for_decision (gating + panel + veredicto)
+# ---------------------------------------------------------------------------
+
+
+class _Rev:
+    """Reviewer falso para tests de panel: severidad fija inyectada."""
+
+    def __init__(self, pid: str, prov: str, sev: Severity) -> None:
+        self._id, self._prov, self._sev = pid, prov, sev
+
+    @property
+    def reviewer_id(self) -> str:
+        return self._id
+
+    @property
+    def provider(self) -> str:
+        return self._prov
+
+    def review(self, diff: str, context: str = "") -> Objection:
+        return Objection(self._id, self._prov, self._sev, "obj")
+
+
+def test_convene_returns_none_when_gating_says_skip() -> None:
+    from atlas.router.cascade import Difficulty
+    from atlas.core.deliberation_council import convene_for_decision
+
+    out = convene_for_decision(
+        "renombrar variable", difficulty=Difficulty.MECHANICAL, risk="low", irreversible=False,
+    )
+    assert out is None
+
+
+def test_convene_runs_panel_on_high_risk() -> None:
+    from atlas.router.cascade import Difficulty
+    from atlas.core.verify import Verdict
+    from atlas.core.deliberation_council import convene_for_decision
+
+    trio = [
+        _Rev("a", "p1", Severity.NONE),
+        _Rev("b", "p2", Severity.NONE),
+        _Rev("c", "p3", Severity.NONE),
+    ]
+    ev = convene_for_decision(
+        "¿migrar a GraphQL?", difficulty=Difficulty.HARD, risk="high", reviewers=trio,
+    )
+    assert ev is not None and ev.verdict == Verdict.PASS
+
+
+def test_convene_unknown_when_diversity_insufficient() -> None:
+    from atlas.router.cascade import Difficulty
+    from atlas.core.verify import Verdict
+    from atlas.core.deliberation_council import convene_for_decision
+
+    # Dos revisores del MISMO provider → < 3 distintos → UNKNOWN.
+    pair = [_Rev("a", "same", Severity.NONE), _Rev("b", "same", Severity.NONE)]
+    ev = convene_for_decision(
+        "x", difficulty=Difficulty.HARD, risk="high", reviewers=pair,
+    )
+    assert ev is not None and ev.verdict == Verdict.UNKNOWN

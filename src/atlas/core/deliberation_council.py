@@ -13,7 +13,13 @@ vivos → UNKNOWN, no se miente) y gating (lo trivial no quema modelos). El juez
 
 from __future__ import annotations
 
-from atlas.core.adversarial_panel import Objection, Severity
+from atlas.core.adversarial_panel import (
+    AdversarialPanel,
+    Objection,
+    Reviewer,
+    Severity,
+    should_convene,
+)
 from atlas.core.inference_hub import (
     DEFAULT_PROVIDERS,
     InferenceHub,
@@ -21,6 +27,8 @@ from atlas.core.inference_hub import (
     InferenceRequest,
     Provider,
 )
+from atlas.core.verify import Evidence
+from atlas.router.cascade import Difficulty
 
 _HOSTILE_PROMPT = (
     "Eres un revisor hostil. Ataca esta decisión: ¿qué rompe, qué asume falso, "
@@ -83,7 +91,7 @@ class LlmReviewer:
 _TRIO_NAMES = ("gemini_free", "nvidia_kimi", "nvidia_mistral_large")
 
 
-def build_trio_reviewers(providers: list[Provider] | None = None) -> list[LlmReviewer]:
+def build_trio_reviewers(providers: list[Provider] | None = None) -> list[Reviewer]:
     """Ensambla el trío de revisores, uno por proveedor de linaje distinto.
 
     Cada reviewer recibe un `InferenceHub` de UN solo proveedor (así `infer`
@@ -92,10 +100,31 @@ def build_trio_reviewers(providers: list[Provider] | None = None) -> list[LlmRev
     UNKNOWN aguas abajo (no se finge un trío incompleto).
     """
     pool = {p.name: p for p in (providers or DEFAULT_PROVIDERS)}
-    out: list[LlmReviewer] = []
+    out: list[Reviewer] = []
     for name in _TRIO_NAMES:
         p = pool.get(name)
         if p is None:
             continue
         out.append(LlmReviewer(name, name, InferenceHub(providers=[p]), p.level))
     return out
+
+
+def convene_for_decision(
+    decision: str,
+    context: str = "",
+    *,
+    difficulty: Difficulty,
+    risk: str,
+    irreversible: bool = False,
+    reviewers: list[Reviewer] | None = None,
+) -> Evidence | None:
+    """Convoca el trío sobre una decisión, con gating y diversidad obligatoria.
+
+    Devuelve `None` si el gating dice que NO escale (lo trivial-reversible no
+    quema modelos). Si escala, corre el panel exigiendo 3 proveedores distintos;
+    sin esa diversidad el panel devuelve `Verdict.UNKNOWN` (unknown > mentir).
+    """
+    if not should_convene(difficulty, risk, irreversible=irreversible):
+        return None
+    panel = AdversarialPanel(reviewers or build_trio_reviewers(), min_providers=3)
+    return panel.verify(decision, context)
