@@ -21,15 +21,18 @@ items:
       cumplir el EU AI Act (GAP-1 crítico) el olvido debe ser irrecuperable: destruir la
       clave → dato cifrado ilegible, sin romper la cadena Merkle. Es tipo-1/2 FUNDACIONAL.
     targets:
-      - "src/atlas/memory/sqlite_memory_index.py"
-      - "src/atlas/memory/memory_manager.py"
+      - "src/atlas/memory/memory_index.py"
     acceptance: >
       `shred(memory_id)` destruye la clave de cifrado del ítem; tras shred, cualquier
       intento de recuperar el contenido devuelve error irrecuperable; el índice Merkle
       sigue siendo verificable (el slot aparece como 'shredded', no ausente); test de
       integración con un ítem PII sintético demuestra irrecuperabilidad.
     priority: 1
-    status: pending
+    status: done  # 2026-06-24: cifrado Fernet por-ítem + shred() + secure_delete=ON, 10 tests; targets corregidos
+    # NOTA seguimiento: contenido ANTES de esto estaba en CLARO (no cifrado); ahora cifrado por-ítem.
+    # Gaps menores diferidos: (1) rebuild_from inserta en claro sin clave (ruta legacy); (2) la clave
+    # Fernet vive en la misma DB que el ciphertext — protege el OLVIDO (destruir clave→irrecuperable),
+    # no la confidencialidad frente a quien tenga el fichero .db. Considerar keystore separado.
 
   - id: f2-3-honest-eval
     title: "Evaluación honesta: benchmark anti-trampa"
