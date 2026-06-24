@@ -75,15 +75,17 @@ items:
       usuario cualquier query puede filtrar memorias de otro usuario. Es tipo-1: defecto de
       seguridad fundamental antes de cualquier despliegue real.
     targets:
-      - "src/atlas/memory/sqlite_memory_index.py"
-      - "src/atlas/memory/memory_manager.py"
+      - "src/atlas/memory/memory_index.py"
     acceptance: >
       Cada operación de índice acepta un `tenant_id`; queries de tenant A no devuelven
       resultados de tenant B bajo ninguna condición; test de integración con 2 tenants
       sintéticos y 10 memorias cada uno demuestra aislamiento completo; migración de índices
       existentes documentada.
     priority: 1
-    status: pending
+    status: done  # 2026-06-24: tenant ligado a la INSTANCIA (self._tenant, default 'default'); todas las
+    # lecturas/escrituras filtran por tenant; rebuild_from acotado; upsert guard anti-fuga; 9 tests
+    # (2 tenants x 10 memorias, mismo .db). Migración: columna tenant idempotente, filas previas → 'default'.
+    # Decisión: tenant por-instancia (no param por-op, que se olvida y filtra). targets corregidos.
 
   - id: f2-6-personalization-vs-contamination
     title: "Personalización vs contaminación: política de límite"
