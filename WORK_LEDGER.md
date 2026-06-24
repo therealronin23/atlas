@@ -39,9 +39,17 @@ Design doc: `docs/design/design_deliberation_council.md` · alias narrativo: Có
     en decisión real del usuario (f2-3).
   - Deuda menor: parseo detalle Kimi · reintento 503 · cablear `record_synthesis` al recorder real.
 - 🔄 **v2 — reordenado por el Cónclave en vivo (council:full sobre sí mismo, 2026-06-24)**:
-  - ⬜ **v2.0 fiabilidad del trío** ← SIGUIENTE (lo reveló el demo: trío ~1/3 fiable en vivo). Reintento
-    ante 503 (Gemini transitorio) + parseo robusto del detalle vacío de Kimi. `wire-before-claim`:
-    no apilar debate-rondas sobre un panel que falla 2/3 voces.
+  - ✅ **v2.0 fiabilidad del trío** — HECHO. Tres fixes (rama `feat/council-v2.0-trio-reliability`):
+    Fix 0 config `gemini_free`→`gemini-2.5-flash` (3.5-flash daba 503 crónico, no transitorio —
+    diagnóstico de raíz en vivo); Fix 1 reintento ante transitorios en `inference_hub`
+    (allowlist 503/500/timeout/conn, 2 reintentos, sleep inyectable); Fix 2 parseo anclado a 1ª
+    línea en `LlmReviewer.review` (conserva detalle, antes tiraba lines[0]). Suite 2186 verde,
+    mypy strict limpio (nuestros archivos). **Smoke vivo: 3/3 voces útiles** (antes ~1/3).
+    Spec/plan en `docs/superpowers/{specs,plans}/2026-06-24-council-v2.0-*`. ← SIGUIENTE: v2.0.5.
+  - ⬜ **v2.0.5 fallback de slot por-linaje** (cura el fallo correlacionado NIM: Kimi+Mistral misma
+    infra). Cada voz = lista ordenada de proveedores del MISMO linaje (preserva diversidad).
+    Pre-requisito: mapear proveedores gratis/multi-cuenta por linaje vivos (CN no-NIM). Aquí se paga
+    la config retry por-`Provider` con consumidor real.
   - ⬜ **v2.1 debate por rondas** (opt-in, NO cambia el one-shot → `verified_producer` a salvo).
     CAVEAT grabado por Mistral en vivo: el spec debe resolver estado/abandono a mitad + interacción
     con colas/permisos/métricas; "aditivo" es necesario, NO suficiente.
