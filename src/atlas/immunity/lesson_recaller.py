@@ -27,11 +27,11 @@ API pública:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.memory.vector_store import cosine_similarity as _cosine_similarity_raw
 
 if TYPE_CHECKING:
     from atlas.core.lesson_store import Lesson, LessonStore
@@ -75,19 +75,18 @@ class Recaller(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Similitud coseno inline (evita dep circular con drift.py que importa de core)
+# Similitud coseno — delegada a vector_store.cosine_similarity (canónica).
+# Devuelve [0, 1]: aplica (raw + 1) / 2 sobre el coseno en [-1, 1].
 # ---------------------------------------------------------------------------
 
 
 def _cosine_similarity(a: list[float], b: list[float]) -> float:
     """Similitud coseno en [0, 1]. Vectores de igual dimensión. 0 si alguno es nulo."""
-    dot = sum(x * y for x, y in zip(a, b))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(x * x for x in b))
-    if norm_a == 0.0 or norm_b == 0.0:
+    # Caso borde: vector nulo → 0.0 (preserva comportamiento original)
+    if not any(a) or not any(b):
         return 0.0
-    raw = dot / (norm_a * norm_b)
-    # Clamp numérico [-1, 1] → [0, 1]
+    raw = _cosine_similarity_raw(a, b)
+    # Mapear [-1, 1] → [0, 1] con clamp numérico
     return max(0.0, min(1.0, (raw + 1.0) / 2.0))
 
 
