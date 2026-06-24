@@ -13,6 +13,8 @@ vivos → UNKNOWN, no se miente) y gating (lo trivial no quema modelos). El juez
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from atlas.core.adversarial_panel import (
     AdversarialPanel,
     Objection,
@@ -128,3 +130,22 @@ def convene_for_decision(
         return None
     panel = AdversarialPanel(reviewers or build_trio_reviewers(), min_providers=3)
     return panel.verify(decision, context)
+
+
+class SynthesisRecorder(Protocol):
+    """Sumidero inyectable para la síntesis del juez (destilación, v1 mínima).
+
+    Mantenerlo como Protocol evita acoplar a la firma concreta del LessonStore;
+    se cablea al recorder real (teacher_debate/LessonStore) cuando se valide
+    (`wire-before-claim`: registrar lecciones ≠ garantizar que Atlas herede juicio).
+    """
+
+    def record(self, text: str) -> None: ...
+
+
+def record_synthesis(
+    recorder: SynthesisRecorder, decision: str, evidence: Evidence
+) -> None:
+    """Registra el veredicto + razón legible de una deliberación. Side-effect barato."""
+    reason = f" — {evidence.reason}" if evidence.reason else ""
+    recorder.record(f"[{evidence.verdict.name}] {decision}{reason}")
