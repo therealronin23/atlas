@@ -29,12 +29,23 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from cryptography.fernet import Fernet
+
 from atlas.immunity.lesson_recaller import RecallResult, _cosine_similarity
 from atlas.memory.embeddings import Embedder, StubEmbedder
 from atlas.memory.record import MemoryRecord
 
 if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
+
+
+class ShreddedContentError(Exception):
+    """El contenido de esta memoria ha sido destruido irrecuperablemente (crypto-shred)."""
+
+    def __init__(self, record_id: str) -> None:
+        super().__init__(f"El contenido de la memoria {record_id!r} ha sido destruido (shred).")
+        self.record_id = record_id
+
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS records (
@@ -53,6 +64,10 @@ CREATE TABLE IF NOT EXISTS records (
     access_count      INTEGER
 );
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS content_keys (
+    id         TEXT PRIMARY KEY,
+    fernet_key BLOB NOT NULL
+);
 """
 
 _META_EMBEDDER_DIM = "embedder_dim"
@@ -65,6 +80,11 @@ _TEMPORAL_COLUMNS = {
     "tier": "TEXT",
     "last_access_ns": "INTEGER",
     "access_count": "INTEGER",
+}
+
+# Columnas añadidas por crypto-shredding (migración idempotente independiente).
+_SHRED_COLUMNS = {
+    "shredded": "INTEGER NOT NULL DEFAULT 0",
 }
 
 
@@ -103,8 +123,10 @@ class SqliteMemoryIndex:
         # devuelve un match → la democión refleja el uso REAL sin llamadas manuales.
         self._auto_touch = auto_touch
         self._conn = sqlite3.connect(str(self._path))
+        self._conn.execute("PRAGMA secure_delete=ON")  # crypto-shred: sobrescribe páginas borradas
         self._conn.executescript(_SCHEMA)
         self._migrate_temporal()
+        self._migrate_shred()
         self._guard_embedder_dim()
         self._conn.commit()
 
@@ -130,6 +152,17 @@ class SqliteMemoryIndex:
                 "UPDATE records SET last_access_ns=valid_from_ns "
                 "WHERE last_access_ns IS NULL AND valid_from_ns IS NOT NULL"
             )
+
+    def _migrate_shred(self) -> None:
+        """Añade columna shredded (crypto-shredding) y crea content_keys si no existen
+        (idempotente — igual que _migrate_temporal)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        for col, decl in _SHRED_COLUMNS.items():
+            if col not in existing:
+                try:
+                    self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                except Exception:
+                    pass  # ya existe en una carrera de inicio concurrente, seguro ignorar
 
     def _guard_embedder_dim(self) -> None:
         """Persiste/verifica la dim del embedder: reabrir un índice con un embedder
@@ -165,24 +198,35 @@ class SqliteMemoryIndex:
         supersedes: str | None = None,
     ) -> None:
         """Inserta o actualiza un registro VIGENTE (valid_until_ns NULL).
-        Idempotente por `record_id`."""
+        Idempotente por `record_id`. El texto se cifra con Fernet y la clave se guarda
+        en content_keys — el embedding se calcula del texto EN CLARO antes de cifrar."""
         vec = self._embedder.embed(record.text)
         vfrom = valid_from_ns if valid_from_ns is not None else time.time_ns()
+        # Cifrado Fernet: genera clave nueva en cada upsert (re-cifra si ya existe).
+        key = Fernet.generate_key()
+        token: str = Fernet(key).encrypt(record.text.encode()).decode()
         self._conn.execute(
             """
             INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                  created_at, valid_from_ns, valid_until_ns, supersedes,
-                                 tier, last_access_ns, access_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0)
+                                 tier, last_access_ns, access_count, shredded)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
                 merkle_leaf_hash=COALESCE(excluded.merkle_leaf_hash, records.merkle_leaf_hash),
                 merkle_leaf_index=COALESCE(excluded.merkle_leaf_index, records.merkle_leaf_index),
-                created_at=excluded.created_at
+                created_at=excluded.created_at,
+                shredded=0
             """,
-            (record.record_id, record.text, _pack(vec), merkle_leaf_hash,
+            (record.record_id, token, _pack(vec), merkle_leaf_hash,
              merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom),
+        )
+        # Upsert de la clave: si ya existía (re-upsert del mismo id), se reemplaza.
+        self._conn.execute(
+            "INSERT INTO content_keys (id, fernet_key) VALUES (?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET fernet_key=excluded.fernet_key",
+            (record.record_id, key),
         )
         self._conn.commit()
 
@@ -429,13 +473,47 @@ class SqliteMemoryIndex:
         return row[0] if row else None
 
     def text_of(self, record_id: str) -> str | None:
-        """Texto almacenado de un id, o None si no existe. Hace el recall útil
-        (el recall devuelve ids/scores; quien consume necesita el texto)."""
-        cur = self._conn.execute(
-            "SELECT text FROM records WHERE id=?", (record_id,)
+        """Texto descifrado de un id.
+
+        Tri-estado:
+        - id inexistente → None.
+        - id con shredded=1 → ShreddedContentError.
+        - id vigente cifrado → descifra con su clave y devuelve plaintext.
+        - id legacy (sin entrada en content_keys y shredded=0) → devuelve text tal cual.
+        """
+        row = self._conn.execute(
+            "SELECT text, shredded FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        stored_text, shredded = row[0], row[1]
+        if shredded:
+            raise ShreddedContentError(record_id)
+        key_row = self._conn.execute(
+            "SELECT fernet_key FROM content_keys WHERE id=?", (record_id,)
+        ).fetchone()
+        if key_row is None:
+            # Compat legacy: datos insertados en claro antes del cifrado.
+            return str(stored_text)
+        key: bytes = key_row[0]
+        return Fernet(key).decrypt(stored_text.encode()).decode()
+
+    def shred(self, record_id: str) -> None:
+        """Destrucción irrecuperable del contenido: borra la clave Fernet y marca la
+        fila como shredded. El slot (ordinal, vector, Merkle) se preserva íntegramente."""
+        exists = self._conn.execute(
+            "SELECT 1 FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        if exists is None:
+            raise KeyError(f"shred: la memoria {record_id!r} no existe")
+        self._conn.execute(
+            "DELETE FROM content_keys WHERE id=?", (record_id,)
         )
-        row = cur.fetchone()
-        return row[0] if row else None
+        self._conn.execute(
+            "UPDATE records SET text='', shredded=1 WHERE id=?", (record_id,)
+        )
+        self._conn.commit()
+        self._audit("memory.shredded", {"id": record_id, "at_ns": time.time_ns()})
 
     def count(self) -> int:
         cur = self._conn.execute("SELECT COUNT(*) FROM records")
