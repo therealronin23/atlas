@@ -317,7 +317,7 @@ items:
       acotado SOLO a ese warning concreto en la config de pytest, documentando por qué); suite verde; no se
       silencian otros warnings de forma genérica.
     priority: 3
-    status: pending
+    status: done  # 2026-06-25 autobuild: filterwarnings acotado a starlette.exceptions.StarletteDeprecationWarning en pyproject; warning count 0, suite verde. No silencia otros.
 
   - id: tech-6-coldupdate-apply-patch-coverage
     title: "ColdUpdateManager._apply_patch: cobertura de fallos de git apply"
@@ -332,4 +332,37 @@ items:
       a medias; patch válido → aplicado y verificable; (si aplica) rollback/limpieza del worktree en fallo.
       Cubren el caso real (no triviales); suite verde. Si se halla un fallo silencioso, anotarlo (no forzar fix).
     priority: 2
+    status: done  # 2026-06-25 autobuild: tests/test_apply_patch_failures.py (8 tests git real): patch valido aplicado, corrupto/hunk-mismatch -> RuntimeError explicito, propuesta no almacenada. BUG hallado (worktree huerfano sin try/finally) -> tech-7.
+
+  - id: tech-7-coldupdate-worktree-leak
+    title: "ColdUpdateManager: worktree huérfano cuando _apply_patch falla (leak de directorios)"
+    why: >
+      Hallado por los tests de tech-6: en `propose()`, `_create_worktree()` se llama ANTES de
+      `_apply_patch()`. Si `_apply_patch` lanza (patch corrupto/no-aplicable), el worktree creado queda
+      huérfano en el store (`store/worktree-<id>/`) — sin try/finally ni limpieza, y el manager no guarda
+      referencia para limpiarlo a posteriori. En repos git reales deja un `git worktree` registrado sin uso.
+    targets:
+      - "src/atlas/core/cold_update_manager.py"
+    acceptance: >
+      `propose()` envuelve la creación de worktree + apply en try/except (o equivalente) de modo que un
+      fallo de `_apply_patch` limpia/elimina el worktree creado antes de propagar el error; test demuestra
+      que tras un patch corrupto NO queda worktree huérfano en el store (el de tech-6
+      `test_corrupt_patch_worktree_left_behind` se actualiza para afirmar limpieza); suite verde.
+    priority: 2
+    status: pending
+
+  - id: tech-8-snapshot-integrity
+    title: "Snapshot integrity: verificar integridad de snapshots de estado (backlog técnico del ledger)"
+    why: >
+      El WORK_LEDGER (Backlog técnico) lista 'snapshot integrity' como deuda abierta. Los snapshots de
+      estado (rollback/recuperación) sin verificación de integridad pueden restaurar estado corrupto
+      silenciosamente. Requiere primero localizar el mecanismo de snapshot vivo y su superficie.
+    targets:
+      - "src/atlas/core/"
+    acceptance: >
+      Localizado el mecanismo de snapshot real (grep), se añade verificación de integridad (hash/checksum)
+      al guardar y una comprobación al restaurar que rechaza un snapshot corrupto con error explícito;
+      test con snapshot manipulado demuestra el rechazo; suite verde. Si no hay mecanismo de snapshot vivo,
+      cerrar el item como no-aplicable con nota (no inventar infraestructura).
+    priority: 3
     status: pending
