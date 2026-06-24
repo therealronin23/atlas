@@ -57,7 +57,42 @@ def test_review_unparseable_first_line_is_major_failclosed() -> None:
 
     hub = _FakeHub("bla bla sin etiqueta")
     r = LlmReviewer("g", "google", hub, InferenceLevel.L1)
-    assert r.review("x").severity == Severity.MAJOR
+    obj = r.review("d")
+    assert obj.severity is Severity.MAJOR
+    assert obj.detail == "bla bla sin etiqueta"   # conserva contenido (antes: vacío)
+
+
+def test_review_no_severity_keeps_full_text_as_detail() -> None:
+    from atlas.core.deliberation_council import LlmReviewer
+
+    # Kimi devuelve contenido real SIN severidad en 1a línea (bug reproducido en vivo).
+    hub = _FakeHub("Esta decisión asume disponibilidad no probada.\ny encima ignora X.")
+    r = LlmReviewer("kimi", "moonshot", hub, InferenceLevel.L2)
+    obj = r.review("diff", "ctx")
+    assert obj.severity is Severity.MAJOR  # fail-closed, sin cambio
+    assert "disponibilidad no probada" in obj.detail  # NO se tira lines[0]
+    assert "ignora X" in obj.detail
+
+
+def test_review_bracketed_severity_in_first_line() -> None:
+    from atlas.core.deliberation_council import LlmReviewer
+
+    hub = _FakeHub("[MAJOR] rompe el contrato de tipos.")
+    r = LlmReviewer("g", "google", hub, InferenceLevel.L1)
+    obj = r.review("diff")
+    assert obj.severity is Severity.MAJOR
+    assert "rompe el contrato" in obj.detail
+
+
+def test_review_negation_is_not_false_positive() -> None:
+    from atlas.core.deliberation_council import LlmReviewer
+
+    # "no es MAJOR" NO debe casar severidad (anclado a 1a línea, no scan global).
+    hub = _FakeHub("no es MAJOR, pero hay un caso límite con NONE de los flujos.")
+    r = LlmReviewer("m", "mistral", hub, InferenceLevel.L2)
+    obj = r.review("diff")
+    assert obj.severity is Severity.MAJOR          # default fail-closed
+    assert "caso límite" in obj.detail             # texto completo conservado
 
 
 def test_review_failed_inference_is_failclosed_major() -> None:
