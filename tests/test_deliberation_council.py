@@ -67,3 +67,17 @@ def test_review_failed_inference_is_failclosed_major() -> None:
     hub = _FakeHub("", success=False)
     r = LlmReviewer("g", "google", hub, InferenceLevel.L1)
     assert r.review("x").severity == Severity.MAJOR
+
+
+# ---------------------------------------------------------------------------
+# B2 — build_trio_reviewers
+# ---------------------------------------------------------------------------
+
+
+def test_build_trio_has_three_distinct_providers() -> None:
+    from atlas.core.deliberation_council import build_trio_reviewers
+
+    trio = build_trio_reviewers()
+    assert len(trio) == 3
+    provs = {r.provider for r in trio}
+    assert provs == {"gemini_free", "nvidia_kimi", "nvidia_mistral_large"}
