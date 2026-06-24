@@ -14,7 +14,13 @@ vivos → UNKNOWN, no se miente) y gating (lo trivial no quema modelos). El juez
 from __future__ import annotations
 
 from atlas.core.adversarial_panel import Objection, Severity
-from atlas.core.inference_hub import InferenceHub, InferenceLevel, InferenceRequest
+from atlas.core.inference_hub import (
+    DEFAULT_PROVIDERS,
+    InferenceHub,
+    InferenceLevel,
+    InferenceRequest,
+    Provider,
+)
 
 _HOSTILE_PROMPT = (
     "Eres un revisor hostil. Ataca esta decisión: ¿qué rompe, qué asume falso, "
@@ -70,3 +76,26 @@ class LlmReviewer:
         sev = _SEVERITIES.get(lines[0].strip().upper(), Severity.MAJOR)
         detail = "\n".join(lines[1:]).strip()
         return Objection(self._id, self._provider, sev, detail)
+
+
+# El trío: tres linajes ortogonales (🇺🇸 Gemini · 🇨🇳 Kimi · 🇪🇺 Mistral).
+# La distancia entre linajes maximiza la señal de desacuerdo útil.
+_TRIO_NAMES = ("gemini_free", "nvidia_kimi", "nvidia_mistral_large")
+
+
+def build_trio_reviewers(providers: list[Provider] | None = None) -> list[LlmReviewer]:
+    """Ensambla el trío de revisores, uno por proveedor de linaje distinto.
+
+    Cada reviewer recibe un `InferenceHub` de UN solo proveedor (así `infer`
+    llama solo a ese, sin fallback cruzado). Si falta un proveedor del trío en
+    el pool, queda fuera — el panel detectará la falta de diversidad y emitirá
+    UNKNOWN aguas abajo (no se finge un trío incompleto).
+    """
+    pool = {p.name: p for p in (providers or DEFAULT_PROVIDERS)}
+    out: list[LlmReviewer] = []
+    for name in _TRIO_NAMES:
+        p = pool.get(name)
+        if p is None:
+            continue
+        out.append(LlmReviewer(name, name, InferenceHub(providers=[p]), p.level))
+    return out
