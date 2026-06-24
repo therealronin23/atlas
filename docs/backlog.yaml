@@ -286,7 +286,7 @@ items:
       contador/nanos/uuid corto); test que fuerza 2 rotaciones en el mismo segundo demuestra que NINGÚN
       archivo rotado se sobrescribe (ambos conjuntos de registros recuperables); suite verde.
     priority: 2
-    status: pending
+    status: done  # 2026-06-25 autobuild: sufijo de colisión incremental (-1,-2) cuando el path rotado existe; bajo self._lock (sin TOCTOU). Test fuerza 2 rotaciones/mismo segundo. mypy OK.
 
   - id: tech-4-property-verifier-wiring
     title: "PropertyVerifier: cablear a un consumidor o cuarentena (wire-before-claim)"
@@ -300,5 +300,21 @@ items:
       Decisión registrada: (a) cableado a un consumidor real (Decider) con test de integración que
       demuestra que un patch que viola una propiedad es rechazado; o (b) movido a _graveyard con WHY.md.
       No queda como módulo huérfano sin tests en src/.
+    priority: 3
+    status: pending
+
+  - id: tech-5-starlette-deprecation
+    title: "Silenciar/migrar el DeprecationWarning de Starlette TestClient (httpx)"
+    why: >
+      La suite emite 1 warning persistente: starlette.testclient usa httpx de forma deprecada ("install
+      httpx2"). Ruido en cada corrida; conviene migrar o filtrar explícitamente para mantener la salida limpia
+      y no enmascarar warnings futuros reales.
+    targets:
+      - "tests/"
+      - "pyproject.toml"
+    acceptance: >
+      La suite corre sin ese DeprecationWarning (vía migración a httpx2 si es viable, o un filterwarnings
+      acotado SOLO a ese warning concreto en la config de pytest, documentando por qué); suite verde; no se
+      silencian otros warnings de forma genérica.
     priority: 3
     status: pending
