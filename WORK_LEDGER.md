@@ -29,10 +29,15 @@ Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado 
 
 Design doc: `docs/design/design_deliberation_council.md` · alias narrativo: Cónclave.
 
-- ⬜ **v1 — skill de deliberación** ← SIGUIENTE (diseño aprobado, falta construir).
-  - Juez (Claude, slot pluggable) + trío Gemini/Kimi/Mistral sobre `adversarial_panel` (ADR-047).
-  - Protocolo 4 pasos (encuadre→lentes→escalada→síntesis honesta), gating adaptativo, reglas=manías.
-  - Artefactos: `.claude/skills/...` (yo) + `docs/skills/...` servido por el tronco (Atlas) + copy-pega degradada.
+- ✅ **v1 — skill de deliberación** — CONSTRUIDO y probado.
+  - Fase A (prosa): skill servido + espejo `.claude/skills` + catálogo (planning/served) + portable
+    degradada. Vivo en AMBOS canales (Claude Code + tronco MCP).
+  - Fase B (código): `LlmReviewer`+`build_trio_reviewers`+`convene_for_decision`+`record_synthesis`
+    sobre `adversarial_panel` (ADR-047). 8 tests verdes, mypy strict.
+  - Smoke en vivo 2026-06-24: 3 proveedores `mode=live`; Mistral revisión hostil real, Kimi vivo
+    (detalle a veces vacío), Gemini 503 transitorio. Honestidad en CAPABILITIES. Juez-único validado
+    en decisión real del usuario (f2-3).
+  - Deuda menor: parseo detalle Kimi · reintento 503 · cablear `record_synthesis` al recorder real.
 - ⏸ **v2 (tras validar v1)**: puerta de reinicio de loop con el trío · debate por rondas
   (`adversarial_panel` hoy one-shot) · máquina de sucesión (silla pluggable + 4º sintetizador).
 
