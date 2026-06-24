@@ -163,4 +163,40 @@ items:
       rebuild); el keystore de claves Fernet vive en un almacén separado de la DB principal
       (test: no hay claves en la DB de records); suite verde.
     priority: 2
+    status: done  # 2026-06-24: keystore en fichero hermano <db>.keys (conexión propia, secure_delete=ON);
+    # migración idempotente saca claves de records.content_keys → keystore; rebuild_from cifra por-ítem.
+    # 10 tests; shred sigue irrecuperable. content_keys de la DB de records queda a 0 filas.
+
+  # --- Reposición 2026-06-24 (2ª): más gaps reales wire-before-claim / hardening.
+  - id: f2-11-writegate-wiring
+    title: "Cablear el WriteGate (f2-4) al MCP/trunk para que el anti-envenenamiento aplique en prod"
+    why: >
+      f2-4 dio un WriteGate inyectable pero el MCP (MemoryTrunk/MemoryTrunkRouter/serve) lo construye con
+      write_gate=None → el anti-envenenamiento NO está activo en producción (mismo patrón que f2-5→f2-7).
+      Además MemoryTrunk.add llama upsert sin merkle_leaf_hash, así que activar ProvenanceWriteGate exige
+      que add calcule/aporte una procedencia (hash del texto + origen) para no rechazar toda escritura legítima.
+      Es tipo-1: la defensa existe pero no protege hasta cablearla.
+    targets:
+      - "src/atlas/mcp/memory_trunk.py"
+      - "src/atlas/mcp/memory_server.py"
+    acceptance: >
+      El trunk puede construirse con un WriteGate por defecto; MemoryTrunk.add genera una procedencia
+      (p.ej. hash sha256 del texto+timestamp) y la pasa como merkle_leaf_hash a upsert para pasar el gate;
+      test demuestra que con ProvenanceWriteGate activo un add legítimo entra y una escritura sin procedencia
+      (path crudo) es rechazada; el default sigue sin gate para no romper compat.
+    priority: 1
+    status: pending
+
+  - id: f2-10-keystore-orphan-gc
+    title: "Keystore: recolectar claves huérfanas tras rebuild_from"
+    why: >
+      rebuild_from re-cifra por-ítem pero las claves de ids que desaparecen del índice quedan huérfanas en
+      el keystore (sin record que las referencie). No es una fuga (no hay ciphertext asociado) pero ensucia
+      el almacén y contradice el espíritu del olvido. Limpieza acotada.
+    targets:
+      - "src/atlas/memory/memory_index.py"
+    acceptance: >
+      tras rebuild_from, el keystore no contiene claves de ids ausentes del índice (test: id viejo eliminado
+      en rebuild → su clave ya no está en el keystore); shred y round-trip siguen intactos; suite verde.
+    priority: 2
     status: pending

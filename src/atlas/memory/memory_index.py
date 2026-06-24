@@ -172,9 +172,21 @@ class SqliteMemoryIndex:
         self._conn = sqlite3.connect(str(self._path))
         self._conn.execute("PRAGMA secure_delete=ON")  # crypto-shred: sobrescribe páginas borradas
         self._conn.executescript(_SCHEMA)
+        # Keystore separado: fichero hermano <db>.keys con su propia conexión.
+        # Separar las claves de los datos garantiza que el shred es irrecuperable
+        # incluso si alguien obtiene la DB de records (no encontrará las claves).
+        keys_path = self._path.with_name(self._path.name + ".keys")
+        self._keys_conn = sqlite3.connect(str(keys_path))
+        self._keys_conn.execute("PRAGMA secure_delete=ON")  # sobrescribe páginas al borrar claves
+        self._keys_conn.execute(
+            "CREATE TABLE IF NOT EXISTS content_keys "
+            "(id TEXT PRIMARY KEY, fernet_key BLOB NOT NULL)"
+        )
+        self._keys_conn.commit()
         self._migrate_temporal()
         self._migrate_shred()
         self._migrate_tenant()
+        self._migrate_keystore()
         self._guard_embedder_dim()
         self._conn.commit()
 
@@ -227,6 +239,58 @@ class SqliteMemoryIndex:
                     )
                 except Exception:
                     pass  # ya existe en una carrera de inicio concurrente, seguro ignorar
+
+    def _migrate_keystore(self) -> None:
+        """Migración idempotente: mueve claves de records.content_keys → keystore separado.
+
+        En versiones anteriores a f2-9 las claves Fernet se guardaban en la misma DB
+        que los records (tabla content_keys). Esta migración copia todas las filas
+        existentes al keystore externo y vacía la tabla en la DB de records.
+        Si ya está vacía, no hace nada (idempotente).
+        """
+        try:
+            rows = self._conn.execute(
+                "SELECT id, fernet_key FROM content_keys"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # La tabla no existe en la DB de records (DB nueva); nada que migrar.
+            return
+        if not rows:
+            return
+        for row_id, fernet_key in rows:
+            self._keys_conn.execute(
+                "INSERT OR REPLACE INTO content_keys (id, fernet_key) VALUES (?, ?)",
+                (row_id, fernet_key),
+            )
+        self._keys_conn.commit()
+        self._conn.execute("DELETE FROM content_keys")
+        self._conn.commit()
+
+    # ------------------------------------------------------------------
+    # Helpers privados: lectura/escritura/borrado de claves en el keystore externo
+    # ------------------------------------------------------------------
+
+    def _put_key(self, record_id: str, key: bytes) -> None:
+        """Guarda o reemplaza la clave Fernet de un record en el keystore separado."""
+        self._keys_conn.execute(
+            "INSERT OR REPLACE INTO content_keys (id, fernet_key) VALUES (?, ?)",
+            (record_id, key),
+        )
+        self._keys_conn.commit()
+
+    def _get_key(self, record_id: str) -> bytes | None:
+        """Devuelve la clave Fernet del record, o None si no existe."""
+        row = self._keys_conn.execute(
+            "SELECT fernet_key FROM content_keys WHERE id=?", (record_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def _del_key(self, record_id: str) -> None:
+        """Borra la clave Fernet del keystore (operación de shred irrecuperable)."""
+        self._keys_conn.execute(
+            "DELETE FROM content_keys WHERE id=?", (record_id,)
+        )
+        self._keys_conn.commit()
 
     def _guard_embedder_dim(self) -> None:
         """Persiste/verifica la dim del embedder: reabrir un índice con un embedder
@@ -298,33 +362,36 @@ class SqliteMemoryIndex:
             (record.record_id, token, _pack(vec), merkle_leaf_hash,
              merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant),
         )
-        # Upsert de la clave: si ya existía (re-upsert del mismo id), se reemplaza.
-        self._conn.execute(
-            "INSERT INTO content_keys (id, fernet_key) VALUES (?, ?) "
-            "ON CONFLICT(id) DO UPDATE SET fernet_key=excluded.fernet_key",
-            (record.record_id, key),
-        )
+        # Upsert de la clave en el keystore separado.
+        self._put_key(record.record_id, key)
         self._conn.commit()
 
     def rebuild_from(self, records: Iterable[MemoryRecord]) -> None:
         """Reconstruye el índice desde cero a partir de los registros (la fuente
-        de verdad es el CORE; esto es una vista derivada)."""
+        de verdad es el CORE; esto es una vista derivada).
+
+        El texto se cifra por-ítem igual que en upsert — rebuild_from NO deja
+        plaintext en la columna text (gap cerrado en f2-9)."""
         self._conn.execute("DELETE FROM records WHERE tenant=?", (self._tenant,))
         # No borramos sqlite_sequence globalmente (afectaría otros tenants);
         # el ordinal autoincrement global sigue siendo válido para orden de inserción.
         now = time.time_ns()
         for record in records:
             vec = self._embedder.embed(record.text)
+            # Cifrado Fernet: genera clave nueva por record, igual que upsert.
+            key = Fernet.generate_key()
+            token: str = Fernet(key).encrypt(record.text.encode()).decode()
             self._conn.execute(
                 """
                 INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                      created_at, valid_from_ns, valid_until_ns, supersedes,
-                                     tier, last_access_ns, access_count, tenant)
-                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0, ?)
+                                     tier, last_access_ns, access_count, shredded, tenant)
+                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0, 0, ?)
                 """,
-                (record.record_id, record.text, _pack(vec), record.created_at, now, now,
+                (record.record_id, token, _pack(vec), record.created_at, now, now,
                  self._tenant),
             )
+            self._put_key(record.record_id, key)
         self._conn.commit()
 
     # ------------------------------------------------------------------
@@ -584,13 +651,10 @@ class SqliteMemoryIndex:
         stored_text, shredded = row[0], row[1]
         if shredded:
             raise ShreddedContentError(record_id)
-        key_row = self._conn.execute(
-            "SELECT fernet_key FROM content_keys WHERE id=?", (record_id,)
-        ).fetchone()
-        if key_row is None:
+        key = self._get_key(record_id)
+        if key is None:
             # Compat legacy: datos insertados en claro antes del cifrado.
             return str(stored_text)
-        key: bytes = key_row[0]
         return Fernet(key).decrypt(stored_text.encode()).decode()
 
     def shred(self, record_id: str) -> None:
@@ -601,9 +665,7 @@ class SqliteMemoryIndex:
         ).fetchone()
         if exists is None:
             raise KeyError(f"shred: la memoria {record_id!r} no existe")
-        self._conn.execute(
-            "DELETE FROM content_keys WHERE id=?", (record_id,)
-        )
+        self._del_key(record_id)
         self._conn.execute(
             "UPDATE records SET text='', shredded=1 WHERE id=? AND tenant=?",
             (record_id, self._tenant),
@@ -677,3 +739,4 @@ class SqliteMemoryIndex:
 
     def close(self) -> None:
         self._conn.close()
+        self._keys_conn.close()
