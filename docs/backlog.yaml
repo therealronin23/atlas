@@ -126,7 +126,11 @@ items:
       el índice con ese tenant; una petición del cliente A no recupera memorias del cliente B;
       test de integración con 2 clientes sintéticos demuestra aislamiento extremo-a-extremo.
     priority: 1
-    status: pending
+    status: done  # 2026-06-24: MemoryTrunkRouter.for_tenant (cachea trunk tenant-scoped/mismo db) +
+    # build_tenant_memory_server(router, tenant_resolver): cada tool deriva el tenant server-side
+    # (no param del cliente, no falsificable). 6 tests incl. e2e FastMCP real (client-a no ve client-b).
+    # NOTA: serve() stdio sigue single-tenant 'default' (1 cliente/proceso); un transporte compartido
+    # (HTTP) debe pasar un resolver de sesión a build_tenant_memory_server. Capacidad cableada y probada.
 
   - id: f2-8-expose-multihop-shred
     title: "Exponer recall_multihop y shred por el MCP de memoria"

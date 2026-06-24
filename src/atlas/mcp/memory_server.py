@@ -15,10 +15,11 @@ Diseño: docs/design/mcp_trunk_portable.md (F1).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from atlas.mcp.memory_trunk import MemoryTrunk
+from atlas.mcp.memory_trunk import MemoryTrunk, MemoryTrunkRouter
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -54,6 +55,52 @@ def build_memory_server(trunk: MemoryTrunk, *, name: str = "atlas-memory") -> "F
     def supersede(old_id: str, new_text: str, record_id: str | None = None) -> str:
         """Reemplaza un recuerdo: el viejo caduca (auditable), el nuevo entra
         vigente con lineage. Devuelve el id nuevo."""
+        return trunk.supersede(old_id, new_text, record_id=record_id)
+
+    return server
+
+
+def build_tenant_memory_server(
+    router: MemoryTrunkRouter,
+    tenant_resolver: Callable[[], str],
+    *,
+    name: str = "atlas-memory",
+) -> "FastMCP":
+    """Construye un servidor FastMCP multi-tenant donde cada ejecución de tool
+    deriva el tenant mediante `tenant_resolver()`.
+
+    El tenant se resuelve server-side en cada llamada: el cliente NO lo pasa
+    como argumento (evita suplantación). Registra las mismas tools que
+    `build_memory_server` pero enrutando al trunk correcto por sesión."""
+    from mcp.server.fastmcp import FastMCP
+
+    server = FastMCP(name)
+
+    @server.tool()
+    def recall(query: str, k: int = 5) -> list[dict[str, object]]:
+        """Recuerda lo que el usuario/agente ya sabe, con texto y procedencia."""
+        trunk = router.for_tenant(tenant_resolver())
+        return [
+            {
+                "record_id": h.record_id,
+                "text": h.text,
+                "score": h.score,
+                "matched": h.matched,
+                "merkle_leaf_hash": h.merkle_leaf_hash,
+            }
+            for h in trunk.recall(query, k=k)
+        ]
+
+    @server.tool()
+    def add(text: str, record_id: str | None = None, record_type: str | None = None) -> str:
+        """Recuerda un hecho nuevo para el tenant activo. Devuelve su id."""
+        trunk = router.for_tenant(tenant_resolver())
+        return trunk.add(text, record_id=record_id, record_type=record_type)
+
+    @server.tool()
+    def supersede(old_id: str, new_text: str, record_id: str | None = None) -> str:
+        """Reemplaza un recuerdo del tenant activo. Devuelve el id nuevo."""
+        trunk = router.for_tenant(tenant_resolver())
         return trunk.supersede(old_id, new_text, record_id=record_id)
 
     return server
