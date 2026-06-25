@@ -301,7 +301,13 @@ NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:22
   ✅ **Roots** (`trunk_list_roots`). 6 tests vía harness in-memory (cliente real), mypy strict.
   Client-features = capacidad lista; consumidor pleno = SP-E. Spec
   `docs/superpowers/specs/2026-06-25-mcp-close-primitives-design.md`.
-  ⬜ **LOTE C pendiente**: push-subscriptions (low-level Server) + Tasks (extensión async — evaluar/defer).
+  ✅ **LOTE C**: push-subscriptions REAL (subscribe/unsubscribe + seam publish `trunk_notify_catalog_changed`;
+  el cliente recibe `resources/updated`, 7º test). Watcher AUTOMÁTICO diferido (`mcp-subscriptions-auto-watcher`,
+  necesita low-level loop). Tasks ⏸ VERIFICADO sin soporte SDK (solo tipos) → se construye CON SP-E
+  (`mcp-tasks-extension`); es el motor del loop async.
+- ✅ **MCP CERRADO** (decisión usuario): 6 primitivos + Completion/Logging/Progress + subscriptions. Lo único
+  fuera = lo que honestamente depende del workflow (Tasks) o de consumidor en caliente (auto-watcher).
+  **PRÓXIMO según la estrategia del usuario: el workflow Dynamic (SP-E) → capacidad de auto-construir de Atlas.**
 - 🔵 **Hallazgo extra (investigado)**: hay MÁS que 6 primitivos (Completion/Resource-templates/Subscriptions/
   Logging/Progress) Y se EXPANDEN vía **Extensions** (`atlas/...`, opt-in, aditivas). Oficiales: **Tasks**
   (async largo → loop autónomo/SP-E) y **MCP Apps** (UI HTML iframe → mesa SP-A). Detalle en el audit doc.

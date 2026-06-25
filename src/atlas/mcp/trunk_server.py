@@ -240,12 +240,15 @@ def build_trunk_server(
     # Cierre de primitivos MCP (audit): Completion + Logging/Progress (consumidor real).
     from atlas.mcp.trunk_capabilities import (
         register_discovery_capabilities,
+        register_subscription_capabilities,
         register_workflow_capabilities,
     )
 
     register_discovery_capabilities(server, catalog=catalog, skill_store=skill_store)
     # Client-features (Elicitation/Sampling/Roots): capacidad lista; consumidor = SP-E.
     register_workflow_capabilities(server)
+    if catalog is not None:
+        register_subscription_capabilities(server)
 
     return server
 

@@ -146,3 +146,40 @@ def register_workflow_capabilities(server: FastMCP) -> None:
         workflow opere sobre rutas acotadas por el host."""
         result = await ctx.session.list_roots()
         return [str(r.uri) for r in result.roots]
+
+
+def register_subscription_capabilities(
+    server: FastMCP, *, manifest_uri: str = "catalog://manifest"
+) -> set[str]:
+    """SUBSCRIPTIONS del catálogo: el cliente se subscribe a `catalog://manifest` y
+    recibe `resources/updated` cuando el catálogo cambia.
+
+    Entrega la CAPACIDAD real (handlers subscribe/unsubscribe + seam de publish), no el
+    watcher automático de fondo: FastMCP corre un loop síncrono y el push out-of-band
+    exigiría reescribir el server a low-level (su propio proyecto). El seam
+    `trunk_notify_catalog_changed` es el punto que el watcher/sync invocará al madurar.
+    Devuelve el set vivo de URIs subscritas (para tests/observabilidad)."""
+    from pydantic import AnyUrl
+
+    subscribed: set[str] = set()
+    low_level = server._mcp_server
+
+    @low_level.subscribe_resource()
+    async def _subscribe(uri: AnyUrl) -> None:
+        subscribed.add(str(uri))
+
+    @low_level.unsubscribe_resource()
+    async def _unsubscribe(uri: AnyUrl) -> None:
+        subscribed.discard(str(uri))
+
+    @server.tool()
+    async def trunk_notify_catalog_changed(ctx: Context[Any, Any]) -> dict[str, Any]:
+        """Emite `resources/updated` a los subscritos del manifest. Seam de publish que
+        el watcher/sync invocará cuando el catálogo cambie (hoy disparable a mano)."""
+        sent: list[str] = []
+        for uri in list(subscribed):
+            await ctx.session.send_resource_updated(AnyUrl(uri))
+            sent.append(uri)
+        return {"notified": sent}
+
+    return subscribed
