@@ -308,7 +308,11 @@ NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:22
   - SP-B **regulador de tokens**: conoce gasto, sube/baja consumo según dificultad (atada al modelo), acelera lo
     fácil, cuida lo difícil.
   - SP-C **memoria al máximo**: trust-scoring, FTS/híbrido, grafo temporal tipado, recall verbatim-sin-resumen
-    (anti-alucinación, lección Hermes), user-modeling. Empieza por el embedder local (SP-C ladrillo 1).
+    (anti-alucinación, lección Hermes), user-modeling. ✅ **Ladrillo 1 HECHO: embedder local semántico** —
+    `FastEmbedEmbedder` (fastembed/ONNX, SIN torch; extra opcional `[embeddings]`; modelo multilingüe
+    paraphrase-MiniLM-L12-v2 dim 384). `default_embedder()` por env `ATLAS_EMBEDDER=fastembed` (opt-in;
+    default stub; fail-closed). Cableado en memory_server + MemoryTrunk. Verificado EN VIVO (test semántico
+    español verde). Siguientes ladrillos SP-C: FTS/híbrido, trust-scoring, verbatim-no-resumen.
   - SP-D **copia-digital / reducir HITL** (con investigación de por medio, prioridad seguridad; Elicitation MCP
     es el hook nativo). Manía: `no-deepen-hitl-coupling` mientras no haya mecanismo seguro.
   - SP-E **workflow por-Gate** (Dynamic Workflows): el primitivo NATIVO para el loop autónomo autobuild +

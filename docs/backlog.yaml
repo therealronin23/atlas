@@ -474,7 +474,13 @@ items:
       space, fail-closed (NO mezclar vectores stub y reales en el mismo store). wire-before-claim: no se declara
       "memoria semántica" sin tests de recall real verdes.
     priority: 2
-    status: pending
+    status: done  # 2026-06-25: FastEmbedEmbedder (fastembed, ONNX SIN torch — extra opcional [embeddings];
+      # modelo paraphrase-multilingual-MiniLM-L12-v2 dim 384, multilingüe). default_embedder() gobernado por
+      # env ATLAS_EMBEDDER=fastembed (opt-in; default stub), fail-closed si la dep falta (no mezcla stub/real).
+      # Cableado en build_gated_index (memory_server) y MemoryTrunk. Verificado EN VIVO: test semántico español
+      # (perro~can > perro~banco) verde con fastembed instalado. mypy strict. Migración honesta: store stub dim
+      # 64 → fastembed dim 384 dispara el guard del índice (rebuild, no mezcla). Follow-up posible: backend torch
+      # (otro Embedder del Protocol) si se quiere; prefijos query/passage si se cambia a un modelo e5.
 
   - id: catalog-resources-mcp
     title: "Catálogo del tronco como Resources MCP (índice + detalle) — hueco #1 del audit"
