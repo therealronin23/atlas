@@ -110,3 +110,22 @@ def test_recall_split_separates_buckets(tmp_path: Path) -> None:
     factual, personal = idx.recall_split("fotosíntesis", k=10)
     assert {r.lesson_id for r in factual} == {"f1"}
     assert {r.lesson_id for r in personal} == {"p1"}
+
+
+def test_expire_stale_retires_expired_and_counts(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    idx.upsert(GenericRecord(record_id="dead", text="caduca"),
+               memory_class="personal", expires_at=1.0)
+    idx.upsert(GenericRecord(record_id="live", text="vive"),
+               memory_class="personal", expires_at=time.time() + 10_000)
+    n = idx.expire_stale()
+    assert n == 1
+    # 'dead' quedó soft-retired (valid_until_ns no NULL); 'live' sigue vigente.
+    dead = idx._conn.execute(
+        "SELECT valid_until_ns FROM records WHERE id='dead'").fetchone()
+    live = idx._conn.execute(
+        "SELECT valid_until_ns FROM records WHERE id='live'").fetchone()
+    assert dead[0] is not None
+    assert live[0] is None
+    # idempotente: 2ª pasada no retira nada.
+    assert idx.expire_stale() == 0

@@ -498,6 +498,27 @@ class SqliteMemoryIndex:
         self._conn.commit()
         self._audit("memory.retired", {"id": record_id, "at_ns": ts, "reason": reason})
 
+    def expire_stale(self, *, now_ns: int | None = None) -> int:
+        """Barrido perezoso (on-demand, sin daemon): soft-retira los ítems con
+        expires_at <= now. Reusa la semántica de retire (valid_until_ns)."""
+        now = time.time()
+        ts = now_ns if now_ns is not None else time.time_ns()
+        rows = self._conn.execute(
+            "SELECT id FROM records WHERE tenant=? AND valid_until_ns IS NULL "
+            "AND expires_at IS NOT NULL AND expires_at <= ?",
+            (self._tenant, now),
+        ).fetchall()
+        for (rid,) in rows:
+            self._conn.execute(
+                "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL "
+                "AND tenant=?",
+                (ts, rid, self._tenant),
+            )
+        self._conn.commit()
+        if rows:
+            self._audit("memory.expired_swept", {"count": len(rows), "at_ns": ts})
+        return len(rows)
+
     def _audit(self, action: str, payload: dict[str, object]) -> None:
         if self._merkle is not None:
             self._merkle.log(action=action, agent="memory_index",
