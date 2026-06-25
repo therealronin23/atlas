@@ -130,6 +130,13 @@ _TENANT_COLUMNS = {
     "tenant": "TEXT NOT NULL DEFAULT 'default'",
 }
 
+PERSONAL_TTL_S = 90 * 24 * 3600  # 90 días; default de expiración para clase 'personal'
+
+_CLASS_TTL_COLUMNS = {
+    "memory_class": "TEXT NOT NULL DEFAULT 'factual'",
+    "expires_at": "REAL",
+}
+
 
 def _pack(vec: list[float]) -> bytes:
     return struct.pack(f"<{len(vec)}d", *vec)
@@ -186,6 +193,7 @@ class SqliteMemoryIndex:
         self._migrate_temporal()
         self._migrate_shred()
         self._migrate_tenant()
+        self._migrate_class_ttl()
         self._migrate_keystore()
         self._guard_embedder_dim()
         self._conn.commit()
@@ -239,6 +247,23 @@ class SqliteMemoryIndex:
                     )
                 except Exception:
                     pass  # ya existe en una carrera de inicio concurrente, seguro ignorar
+
+    def _migrate_class_ttl(self) -> None:
+        """Añade memory_class (personal/factual) y expires_at (idempotente).
+        Filas existentes → 'factual' sin expiración (lo seguro/objetivo)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        for col, decl in _CLASS_TTL_COLUMNS.items():
+            if col not in existing:
+                try:
+                    self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                    if col == "memory_class":
+                        self._conn.execute(
+                            "UPDATE records SET memory_class='factual' "
+                            "WHERE memory_class IS NULL"
+                        )
+                except Exception:
+                    pass  # carrera de init concurrente: seguro ignorar
+        self._conn.commit()
 
     def _migrate_keystore(self) -> None:
         """Migración idempotente: mueve claves de records.content_keys → keystore separado.
