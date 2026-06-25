@@ -349,6 +349,8 @@ class SqliteMemoryIndex:
         merkle_leaf_index: int | None = None,
         valid_from_ns: int | None = None,
         supersedes: str | None = None,
+        memory_class: str = "factual",
+        expires_at: float | None = None,
     ) -> None:
         """Inserta o actualiza un registro VIGENTE (valid_until_ns NULL).
         Idempotente por `record_id`. El texto se cifra con Fernet y la clave se guarda
@@ -367,6 +369,9 @@ class SqliteMemoryIndex:
                 f"{existing_tenant_row[0]!r}; el tenant {self._tenant!r} no puede "
                 f"sobrescribirlo (anti-fuga de tenant)."
             )
+        eff_expires_at = expires_at
+        if eff_expires_at is None and memory_class == "personal":
+            eff_expires_at = time.time() + PERSONAL_TTL_S
         # Cifrado Fernet: genera clave nueva en cada upsert (re-cifra si ya existe).
         key = Fernet.generate_key()
         token: str = Fernet(key).encrypt(record.text.encode()).decode()
@@ -374,18 +379,22 @@ class SqliteMemoryIndex:
             """
             INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                  created_at, valid_from_ns, valid_until_ns, supersedes,
-                                 tier, last_access_ns, access_count, shredded, tenant)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?)
+                                 tier, last_access_ns, access_count, shredded, tenant,
+                                 memory_class, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
                 merkle_leaf_hash=COALESCE(excluded.merkle_leaf_hash, records.merkle_leaf_hash),
                 merkle_leaf_index=COALESCE(excluded.merkle_leaf_index, records.merkle_leaf_index),
                 created_at=excluded.created_at,
-                shredded=0
+                shredded=0,
+                memory_class=excluded.memory_class,
+                expires_at=excluded.expires_at
             """,
             (record.record_id, token, _pack(vec), merkle_leaf_hash,
-             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant),
+             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant,
+             memory_class, eff_expires_at),
         )
         # Upsert de la clave en el keystore separado.
         self._put_key(record.record_id, key)
