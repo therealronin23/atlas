@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "click>=8.4.1",
     "rich>=15.0.0",
-    "fastapi>=0.136.1",
+    "fastapi>=0.136.3",
     "uvicorn[standard]>=0.29",
     "pydantic>=2.6",
     "pyyaml>=6.0",
