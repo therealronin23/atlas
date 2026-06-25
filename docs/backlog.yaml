@@ -420,4 +420,58 @@ items:
       binds ya NO incluye '/' sino el conjunto acotado. Si el riesgo de romper ejecuciones reales es alto,
       entregar como flag opt-in con default actual y anotar el trade-off. No instalar deps nuevas.
     priority: 3
+    status: done  # 2026-06-25: VERIFICADO ya hecho en código. bwrap_jail.py:159-185 usa rootfs mínimo
+      # (--ro-bind /usr + symlinks usr-merged + /etc/ssl + tmpfs/tmp + --proc/--dev mínimos), NO bind de '/'.
+      # Acceptance cumplida (binds NO incluyen '/'); tests/test_bwrap_jail.py:89 ya afirma "/" not in sources.
+      # Doc-honestidad: AGENTS.md:220 corregida (decía '/ bind read-only', ahora refleja rootfs mínimo).
+
+  - id: mcp-audit-six-primitives
+    title: "Auditoría MCP del tronco: mapear a los 6 primitivos (Tools/Resources/Prompts/Sampling/Roots/Elicitation)"
+    why: >
+      Sesión 2026-06-25 (investigación, no implementado): el spec MCP define 6 primitivos de servidor y el
+      tronco usa ~2-3 (Tools + Prompts/skills). NO usa Resources (la idea del usuario de "un JSON índice para
+      todo el MCP" = exactamente el primitivo Resources; hoy el catálogo se sirve como tool-calls que queman un
+      turno por consulta), ni Sampling (servidor pide completion al cliente → offload de razonamiento sin pagar
+      modelo), ni Roots, ni Elicitation (servidor pide input ESTRUCTURADO al humano a mitad de llamada = el hook
+      nativo para la visión de reducción de HITL / copia-digital). Fuentes: modelcontextprotocol.io,
+      workos.com/blog/mcp-features-guide.
+    targets:
+      - "src/atlas/mcp/"
+      - "docs/design/mcp_trunk_portable.md"
+    acceptance: >
+      Documento de auditoría que (1) mapea cada superficie del tronco a los 6 primitivos, (2) identifica los
+      huecos reales con su valor/coste (Resources para el catálogo/manifest = candidato claro; Sampling = ahorro;
+      Elicitation = HITL), (3) propone diseño priorizado. NO implementa: alimenta una sesión de brainstorming.
+      decide-with-facts + internal-prior-art-first (ver qué ya hay en TrunkAggregator/FastMCP antes de proponer).
+    priority: 2
+    status: done  # 2026-06-25: docs/design/mcp_six_primitives_audit.md. Recuento honesto 2/6 (Tools a fondo +
+      # Resources 2 docs; Prompts/Sampling/Roots/Elicitation = 0; skills van por Tools no Prompts; RootSpec es
+      # nombre interno no el primitivo). Huecos priorizados: #1 Resources del catálogo (= "JSON índice" del
+      # usuario, mesa de trabajo SP-A, internal-prior-art) ← EMPEZAR; #2 Prompts para skills; #3 Elicitation
+      # (marco de HITL/SP-D, no construir aún); #4 Sampling (medir, SP-B); #5 Roots diferido. Próxima:
+      # brainstorming de Resources del catálogo.
+
+  - id: memory-mcp-local-embedder
+    title: "Memoria MCP: reemplazar StubEmbedder por embedder LOCAL universal (sin lock-in de API)"
+    why: >
+      Sesión 2026-06-25: memory_server.py:163-167 y memory_trunk.py:148-150 corren sobre StubEmbedder(dim=64)
+      (hash bag-of-words, no semántico). LiteLLMEmbedder ya existe (embeddings.py, no Gemini-locked: litellm
+      enruta cualquier proveedor). PERO el usuario rechaza (con razón) cualquier API hospedada: lock-in +
+      coste/llamada + el vector space es propio del proveedor (cambiar = re-embeber todo). La respuesta universal
+      = modelo LOCAL in-process (BGE-M3 1024 / Qwen3-Embedding-0.6B / EmbeddingGemma-300M / all-MiniLM-L6-v2 384).
+      Trade-off real: dependencia (sentence-transformers+torch pesado, o ONNX ligero) + descarga de modelo, frente
+      al stub de cero-deps. Decisión pendiente: modelo + dim + dependencia + migración del vector space (cambiar
+      embedder invalida vectores stub; el store está casi vacío hoy → opt-in + rebuild documentado). Fuentes:
+      bentoml.com/blog/a-guide-to-open-source-embedding-models, huggingface TEI.
+    targets:
+      - "src/atlas/memory/embeddings.py"
+      - "src/atlas/mcp/memory_server.py"
+      - "src/atlas/mcp/memory_trunk.py"
+    acceptance: >
+      DEPENDE de mcp-audit-six-primitives (embeddings deben aterrizar en el MCP con forma correcta). Tras el
+      audit: brainstorming → spec → plan que elige modelo local + dim, añade un Embedder local (o ruta litellm a
+      endpoint local TEI/Ollama), lo cablea como default del memory MCP con opt-in + migración honesta del vector
+      space, fail-closed (NO mezclar vectores stub y reales en el mismo store). wire-before-claim: no se declara
+      "memoria semántica" sin tests de recall real verdes.
+    priority: 2
     status: pending
