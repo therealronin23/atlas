@@ -364,6 +364,10 @@ items:
       add_memory/upsert rutas derivadoras de origen: `add_from_knowledge_src(mem, class="factual")`,
       `add_from_user_preference(mem, class="personal")`; test de integración demuestra que lecciones vivas
       etiquetan correctamente; suite verde.
+      IMPRESCINDIBLE (review final f2-6): `rebuild_from` y `supersede` en memory_index.py deben PRESERVAR
+      memory_class+expires_at (hoy reinsertan sin clase → demotan a 'factual' y pierden TTL). Inerte
+      mientras nadie escribe 'personal'; se activa con este cableado. Test: rebuild/supersede de un ítem
+      personal conserva su clase y expiry.
     priority: 2
     status: pending
 
