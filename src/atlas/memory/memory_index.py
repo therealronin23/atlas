@@ -39,6 +39,31 @@ if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
 
 
+# ------------------------------------------------------------------
+# rrf_fuse — función pura de Reciprocal Rank Fusion
+# ------------------------------------------------------------------
+
+def rrf_fuse(rankings: list[list[str]], *, k: int = 60) -> list[str]:
+    """Reciprocal Rank Fusion (RRF) sobre múltiples listas ordenadas de record_ids.
+
+    Para cada lista, contribuye 1/(k+rank) al score del id (rank empieza en 1).
+    Devuelve los record_ids únicos ordenados por score RRF desc.
+
+    Args:
+        rankings: lista de listas de record_ids; cada lista está ordenada por
+                  relevancia descendente.
+        k:        constante de suavizado RRF; el valor canónico es 60.
+
+    Returns:
+        Lista de record_ids únicos ordenados por puntuación RRF (mayor primero).
+    """
+    scores: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, rid in enumerate(ranking, start=1):
+            scores[rid] = scores.get(rid, 0.0) + 1.0 / (k + rank)
+    return sorted(scores, key=lambda r: scores[r], reverse=True)
+
+
 class WriteRejected(Exception):
     """El WriteGate rechazó la escritura (provenance inválida u otra política)."""
 
@@ -165,7 +190,19 @@ class SqliteMemoryIndex:
         merkle: "MerkleLogger | None" = None,
         auto_touch: bool = False,
         write_gate: WriteGate | None = None,
+        lexical_index: bool = False,
     ) -> None:
+        """Inicializa el índice SQLite.
+
+        Args:
+            lexical_index: si True, crea/mantiene un índice FTS5 (``records_fts``)
+                que almacena el PLAINTEXT de cada record para búsqueda léxica BM25.
+                **Trade-off de confidencialidad:** activar este parámetro almacena
+                tokens en claro en el índice FTS; la confidencialidad at-rest se
+                reduce respecto al modo cifrado por defecto. El crypto-shred SIGUE
+                funcionando: al invocar ``shred()`` también se borra la fila FTS.
+                Default False → comportamiento y esquema actuales INTACTOS.
+        """
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._tenant = tenant
@@ -176,6 +213,7 @@ class SqliteMemoryIndex:
         # devuelve un match → la democión refleja el uso REAL sin llamadas manuales.
         self._auto_touch = auto_touch
         self._write_gate = write_gate
+        self._lexical_index = lexical_index
         self._conn = sqlite3.connect(str(self._path))
         self._conn.execute("PRAGMA secure_delete=ON")  # crypto-shred: sobrescribe páginas borradas
         self._conn.executescript(_SCHEMA)
@@ -196,7 +234,76 @@ class SqliteMemoryIndex:
         self._migrate_class_ttl()
         self._migrate_keystore()
         self._guard_embedder_dim()
+        if self._lexical_index:
+            self._init_fts()
         self._conn.commit()
+
+    # ------------------------------------------------------------------
+    # FTS5 — índice léxico OPT-IN (lexical_index=True)
+    # ------------------------------------------------------------------
+
+    def _init_fts(self) -> None:
+        """Crea la tabla virtual FTS5 (idempotente) y la tabla puente record_id↔rowid.
+
+        Usamos una tabla FTS5 standalone (content='') para desacoplarla de la tabla
+        ``records`` (cuya columna text contiene CIPHERTEXT). La tabla puente
+        ``records_fts_map`` mapea record_id → rowid FTS para permitir borrado directo.
+        """
+        self._conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS records_fts
+            USING fts5(text, content='')
+            """
+        )
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS records_fts_map (
+                record_id TEXT PRIMARY KEY,
+                fts_rowid INTEGER NOT NULL,
+                plaintext TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        # Migración suave: añadir columna plaintext si existe de una versión previa.
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records_fts_map)")}
+        if "plaintext" not in existing:
+            self._conn.execute(
+                "ALTER TABLE records_fts_map ADD COLUMN plaintext TEXT NOT NULL DEFAULT ''"
+            )
+        self._conn.commit()
+
+    def _fts_upsert(self, record_id: str, plaintext: str) -> None:
+        """Inserta o reemplaza la entrada FTS de un record (plaintext en claro)."""
+        # Borra entrada previa si existe (por-id).
+        self._fts_delete(record_id)
+        self._conn.execute("INSERT INTO records_fts(text) VALUES (?)", (plaintext,))
+        rowid: int = self._conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        self._conn.execute(
+            "INSERT OR REPLACE INTO records_fts_map (record_id, fts_rowid, plaintext) "
+            "VALUES (?, ?, ?)",
+            (record_id, rowid, plaintext),
+        )
+
+    def _fts_delete(self, record_id: str) -> None:
+        """Borra la entrada FTS de un record (sincronización con shred/retire).
+
+        FTS5 standalone (content='') requiere el texto original para el comando
+        'delete'; lo tenemos guardado en records_fts_map.plaintext.
+        """
+        row = self._conn.execute(
+            "SELECT fts_rowid, plaintext FROM records_fts_map WHERE record_id=?",
+            (record_id,),
+        ).fetchone()
+        if row is not None:
+            fts_rowid: int = row[0]
+            stored_text: str = row[1]
+            self._conn.execute(
+                "INSERT INTO records_fts(records_fts, rowid, text) VALUES ('delete', ?, ?)",
+                (fts_rowid, stored_text),
+            )
+            self._conn.execute(
+                "DELETE FROM records_fts_map WHERE record_id=?", (record_id,)
+            )
 
     def _migrate_temporal(self) -> None:
         """Añade las columnas de 1d-a/b a un índice de esquema previo (idempotente)
@@ -398,6 +505,9 @@ class SqliteMemoryIndex:
         )
         # Upsert de la clave en el keystore separado.
         self._put_key(record.record_id, key)
+        # Índice léxico OPT-IN: indexar el plaintext en FTS si está activo.
+        if self._lexical_index:
+            self._fts_upsert(record.record_id, record.text)
         self._conn.commit()
 
     def rebuild_from(self, records: Iterable[MemoryRecord]) -> None:
@@ -715,6 +825,157 @@ class SqliteMemoryIndex:
         )
         return factual, personal
 
+    def recall_temporal(
+        self,
+        query_text: str,
+        *,
+        k: int = 10,
+        as_of_ns: int | None = None,
+        half_life_ns: int | None = None,
+    ) -> list[RecallResult]:
+        """Recall consciente de validez temporal: reconstruye qué era vigente en as_of_ns.
+
+        Señal de ranking determinista y auditable — NO borra nada, solo reordena/filtra.
+
+        Semántica de validez: un record es válido en T si
+            valid_from_ns <= T AND (valid_until_ns IS NULL OR T < valid_until_ns).
+        Esto permite recuperar versiones que eran vigentes en el PASADO aunque hoy
+        estén superseded, y excluir versiones que todavía no habían entrado (futuro).
+        Respeta tenant y expires_at igual que recall_all.
+
+        Ranking:
+          - Con half_life_ns dado: score = coseno * 0.5^(age/half_life_ns)
+            donde age = max(0, as_of_ns - valid_from_ns). Favorece lo más reciente.
+          - Con half_life_ns=None: coseno puro; desempate por valid_from_ns desc
+            (lo más reciente primero, determinista).
+
+        Args:
+            query_text:   texto de la query.
+            k:            número máximo de resultados.
+            as_of_ns:     instante de consulta en nanosegundos; None → ahora.
+            half_life_ns: vida media del decaimiento exponencial en ns; None → sin decay.
+
+        Returns:
+            Lista de RecallResult ordenada por score combinado, top-k.
+        """
+        t_ns = as_of_ns if as_of_ns is not None else time.time_ns()
+        now_epoch = t_ns / 1e9  # para filtro expires_at
+
+        # Recuperamos TODAS las filas del tenant (include_superseded=True) y aplicamos
+        # el filtro de validez en as_of_ns + expires_at manualmente.
+        sql = (
+            "SELECT id, vector, valid_from_ns "
+            "FROM records WHERE tenant=? "
+            "AND valid_from_ns IS NOT NULL "
+            "AND valid_from_ns <= ? "
+            "AND (valid_until_ns IS NULL OR ? < valid_until_ns) "
+            "AND (expires_at IS NULL OR expires_at > ?) "
+            "ORDER BY ordinal"
+        )
+        cur = self._conn.execute(sql, (self._tenant, t_ns, t_ns, now_epoch))
+        raw_rows: list[tuple[str, list[float], int]] = [
+            (rid, _unpack(blob), vfrom)
+            for rid, blob, vfrom in cur.fetchall()
+        ]
+
+        if not raw_rows:
+            return []
+
+        if not query_text.strip():
+            # Sin query: devolvemos los más recientes primero, sin score.
+            raw_rows.sort(key=lambda r: r[2], reverse=True)
+            return [
+                RecallResult(lesson_id=rid, score=0.0, matched=False)
+                for rid, _, _ in raw_rows
+            ][:k]
+
+        query_vec = self._embedder.embed(query_text)
+
+        scored: list[tuple[float, int, str]] = []
+        for rid, vec, vfrom in raw_rows:
+            cosine = _cosine_similarity(query_vec, vec)
+            age = max(0, t_ns - vfrom)
+            if half_life_ns is not None and half_life_ns > 0:
+                combined = cosine * (0.5 ** (age / half_life_ns))
+            else:
+                # Coseno puro; valid_from_ns desc como desempate determinista.
+                combined = cosine
+            # Guardamos (combined, vfrom, rid) para sort: combined desc, vfrom desc.
+            scored.append((combined, vfrom, rid))
+
+        scored.sort(key=lambda x: (x[0], x[1]), reverse=True)
+
+        return [
+            RecallResult(
+                lesson_id=rid,
+                score=combined,
+                matched=combined >= self._threshold,
+            )
+            for combined, _vfrom, rid in scored[:k]
+        ]
+
+    def recall_lexical(
+        self,
+        query_text: str,
+        *,
+        k: int = 10,
+        memory_class: str = "factual",
+        now_epoch: float | None = None,
+    ) -> list[RecallResult]:
+        """Búsqueda léxica BM25 sobre el índice FTS5.
+
+        Solo disponible cuando el índice se creó con ``lexical_index=True``.
+        Respeta tenant, superseded y expiry igual que ``recall_all``.
+
+        Los términos de la query se escapan envolviendo cada uno en comillas dobles
+        para que caracteres especiales FTS (guiones, operadores, etc.) no rompan
+        la sintaxis.
+
+        Raises:
+            RuntimeError: si el índice fue creado con ``lexical_index=False``.
+        """
+        if not self._lexical_index:
+            raise RuntimeError(
+                "recall_lexical requiere lexical_index=True en el constructor."
+            )
+        # Escapado: cada token entre comillas dobles → '"tok1" "tok2"'
+        terms = query_text.split()
+        escaped = " ".join(f'"{t}"' for t in terms) if terms else '""'
+
+        # Obtener record_ids vigentes del tenant (para filtrar FTS).
+        valid_ids: set[str] = {
+            row[0]
+            for row in self._rows(memory_class=memory_class, now_epoch=now_epoch)
+        }
+
+        try:
+            rows = self._conn.execute(
+                """
+                SELECT m.record_id, bm25(records_fts)
+                FROM records_fts
+                JOIN records_fts_map m ON records_fts.rowid = m.fts_rowid
+                WHERE records_fts MATCH ?
+                ORDER BY bm25(records_fts)
+                LIMIT ?
+                """,
+                (escaped, k * 10),  # sobresolicitamos para filtrar por tenant/valid
+            ).fetchall()
+        except Exception:
+            # FTS fallback por si la query sigue siendo sintácticamente inválida.
+            return []
+
+        results: list[RecallResult] = []
+        for record_id, bm25_score in rows:
+            if record_id not in valid_ids:
+                continue
+            # bm25() en SQLite devuelve valores negativos (más negativo = más relevante).
+            # Normalizamos a positivo para RecallResult.score.
+            results.append(RecallResult(lesson_id=record_id, score=-bm25_score, matched=True))
+            if len(results) >= k:
+                break
+
+        return results
+
     # ------------------------------------------------------------------
     # Procedencia / utilidades
     # ------------------------------------------------------------------
@@ -772,6 +1033,9 @@ class SqliteMemoryIndex:
             "UPDATE records SET text='', shredded=1 WHERE id=? AND tenant=?",
             (record_id, self._tenant),
         )
+        # Sincronización FTS: borrar la fila del índice léxico si está activo.
+        if self._lexical_index:
+            self._fts_delete(record_id)
         self._conn.commit()
         self._audit("memory.shredded", {"id": record_id, "at_ns": time.time_ns()})
 
