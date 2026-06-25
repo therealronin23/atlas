@@ -1,0 +1,50 @@
+{
+  "n": 500,
+  "k": 5,
+  "elapsed_s": 83.2,
+  "overall": {
+    "cosine": 0.294,
+    "hybrid": 0.356,
+    "temporal": 0.294
+  },
+  "per_type": {
+    "knowledge-update": {
+      "cosine": 0.2564,
+      "hybrid": 0.5128,
+      "temporal": 0.2564
+    },
+    "multi-session": {
+      "cosine": 0.3008,
+      "hybrid": 0.3083,
+      "temporal": 0.3008
+    },
+    "single-session-assistant": {
+      "cosine": 0.5179,
+      "hybrid": 0.5179,
+      "temporal": 0.5179
+    },
+    "single-session-preference": {
+      "cosine": 0.1,
+      "hybrid": 0.2,
+      "temporal": 0.1
+    },
+    "single-session-user": {
+      "cosine": 0.2571,
+      "hybrid": 0.3571,
+      "temporal": 0.2571
+    },
+    "temporal-reasoning": {
+      "cosine": 0.2782,
+      "hybrid": 0.2782,
+      "temporal": 0.2782
+    }
+  },
+  "counts_per_type": {
+    "single-session-user": 70,
+    "multi-session": 133,
+    "single-session-preference": 30,
+    "temporal-reasoning": 133,
+    "knowledge-update": 78,
+    "single-session-assistant": 56
+  }
+}

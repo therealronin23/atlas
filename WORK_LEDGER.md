@@ -22,7 +22,7 @@ Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado 
 - 🔄 **Fase 2 — Huecos abiertos** (checklist en design doc):
   - ⬜ **2.1 multi-hop** ← SIGUIENTE
   - ⬜ 2.2 PII/crypto-shredding (fundacional + GAP-1 EU AI Act)
-  - ✅ 2.3 evaluación honesta (autobuild 2026-06-24: benchmark anti-leak + 10 tests) · ⬜ 2.4 envenenamiento (parcial)
+  - ✅ 2.3 evaluación honesta (autobuild 2026-06-24: benchmark anti-leak + 10 tests; **LongMemEval_S n=500 k=5: cosine=0.294, hybrid=0.356, temporal=0.294** — hybrid +21%, knowledge-update +100%; baseline en `docs/reference/reports/longmemeval_s_baseline_2026-06-26.json`) · ⬜ 2.4 envenenamiento (parcial)
   - ⬜ 2.5 fuga entre usuarios/tenancy · ✅ 2.6 (mitad tratable; clasificador automático = muro 1c registrado) · ✅ 2.7 cold-start (conceptual)
 
 ## Línea activa: capacidades usables (catálogo → routing) — NUEVA 2026-06-26
@@ -33,7 +33,7 @@ determinista (solo un hook/router lo fuerza). Fundación = hacer el catálogo US
 nombres), luego enrutarlo a la fuerza. 3 ejes ortogonales: purpose(afirmado)/signal(prior popularidad)/
 status(verificación) — nunca confundir.
 
-- ✅ **Pieza 1 — enriquecer** — CONSTRUIDO + auditado (rama `feat/catalog-enrichment`, **SIN mergear**).
+- ✅ **Pieza 1 — enriquecer** — CONSTRUIDO + auditado + **MERGEADO a main** (2026-06-26).
   `enrichment.py` (rellena purpose-afirmado + signal de la fuente, `status` INTACTO, idempotente) +
   `scripts/mcp_enrich.py` + 16 tests. Reusa HttpApiSource+SSRFBridge (0 deps). Suite 2340 verde, auditor
   Opus PASS (SSRF probado con inyección). 554 entradas enriquecibles (--offline). Gap declarado: sub-ítems
