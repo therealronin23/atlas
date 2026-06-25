@@ -268,3 +268,48 @@ Design doc: `docs/design/mcp_trunk_portable.md` · principio rector: cross-play.
 - ✅ **A DESPLEGADO**: `atlas reality` → mcp server_count 1, status configured. Atlas (su orchestrator/McpRegistry) ya consume el tronco: memoria/knowledge/skills/APIs disponibles a su loop. La desconexión cliente-vs-runtime, cerrada.
 - 🔄 **B base puesta**: backlog + dry-run vivo. FALTA (gran salto, con consent): cablear generate capaz + auditoría autobuild para que Atlas GENERE+adopte sobre su backlog (no solo lo liste).
 - ✅ **L2 frontier (NVIDIA)**: `inference_hub` gana provider `nvidia_llama_large` (llama-3.1-405b) en L2 (antes vacío) con `account_pool` de 2 cuentas (NVIDIA_API_KEY/_2) + fallback. integrate.api.nvidia.com allowlisted. Es la palanca #1: cerebro potente para self-build. 6 tests. (2ª cuenta: añadir NVIDIA_API_KEY_2.)
+
+## Línea: profundizar el MCP + memoria al máximo (sesión 2026-06-25 — INVESTIGACIÓN, sin implementar)
+
+Contexto: el usuario pide exprimir el MCP (sospecha que lo infrautilizamos) y desarrollar la memoria al
+máximo, hacia una visión larga (workflow por-Gate, regulador de tokens, copia-digital → reducir HITL).
+NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:220). HARD-GATE brainstorming.
+
+- ✅ **Honestidad-docs**: tech-9 marcado done (rootfs mínimo ya existía en `bwrap_jail.py:159-185`, verificado);
+  `AGENTS.md:220` corregida ("/ bind read-only" → rootfs mínimo).
+- ✅ **Auditoría MCP HECHA** (`docs/design/mcp_six_primitives_audit.md`, grep no asunción): recuento honesto
+  **2 de 6** — Tools a fondo + Resources solo 2 docs (`operating://agents|ledger`). Prompts=0 (skills van por
+  Tools `get_skill`, NO por el primitivo Prompts), Sampling=0, Roots=0 (`RootSpec` es nombre interno, colisión
+  léxica), Elicitation=0. Huecos priorizados: **#1 Resources del catálogo** (= "JSON índice" del usuario =
+  mesa SP-A, internal-prior-art, coste bajo) ← EMPEZAR · #2 Prompts para skills · #3 Elicitation (marco de
+  HITL/SP-D, NO construir aún; verificar floor `mcp>=1.2`) · #4 Sampling (medir, SP-B) · #5 Roots diferido.
+  → **PRÓXIMA ACCIÓN: brainstorming de "Resources del catálogo" (#1).**
+- 🔄 **Hallazgo embeddings (investigado)**: memory MCP corre sobre `StubEmbedder(dim=64)` (hash, no semántico).
+  `LiteLLMEmbedder` ya existe y NO es Gemini-locked. Pero API hospedada = lock-in (usuario lo rechaza con razón).
+  Respuesta universal = modelo LOCAL in-process (BGE-M3/Qwen3-0.6B/EmbeddingGemma-300M/MiniLM). Trade-off:
+  dep pesada + descarga vs stub cero-deps. → backlog `memory-mcp-local-embedder` (prio-2, DEPENDE del audit).
+- ⏸ **Visión larga (registrada, NO empezada — cada una su spec→plan cuando toque)**:
+  - SP-B **regulador de tokens**: conoce gasto, sube/baja consumo según dificultad (atada al modelo), acelera lo
+    fácil, cuida lo difícil.
+  - SP-C **memoria al máximo**: trust-scoring, FTS/híbrido, grafo temporal tipado, recall verbatim-sin-resumen
+    (anti-alucinación, lección Hermes), user-modeling. Empieza por el embedder local (SP-C ladrillo 1).
+  - SP-D **copia-digital / reducir HITL** (con investigación de por medio, prioridad seguridad; Elicitation MCP
+    es el hook nativo). Manía: `no-deepen-hitl-coupling` mientras no haya mecanismo seguro.
+  - SP-E **workflow por-Gate** (Dynamic Workflows): el primitivo NATIVO para el loop autónomo autobuild +
+    Cónclave + tronco MCP. Mapeo: orchestrator-script=Opus · subagents por tier=impl-sonnet/haiku ·
+    adversarial-review=auditor · ledger=variables del script (resume tras compact — PRUEBA en vivo 2026-06-25:
+    un subagente murió por límite de sesión porque el plan vivía en mi contexto; el workflow lo arregla) ·
+    trunk_find/invoke=agents llaman al tronco por subtarea. Planificar 1 vez → mesa de trabajo compartida
+    agentes/subagentes (= Resources MCP, SP-A), todo con etiqueta de estado; con el tiempo un proyecto entero
+    por workflow. Disponible: CLI 2.1.177 ≥ 2.1.154. Invocación `ultracode:` / `/effort ultracode`. Guardar:
+    `/workflows`→`s`→`.claude/workflows/atlas-autobuild.md` (= mecanismo de evolución versionable).
+    **Caveats grabados:** (1) FRONTERA HITL — sin sign-off a mitad de run; lo autónomo solo tipo-1 reversible
+    test-gated; lo irreversible/sensitivity=high sigue escalando (choca con `no-deepen-hitl-coupling`).
+    (2) coste vs ahorro → tier por necesidad, no max-paralelismo. (3) pre-allowlistear `mcp__atlas-trunk__*`.
+    (4) research preview, sale-de-sesión = reinicia. INTENTO 2026-06-25: lancé `ultracode:` para tech-9 y NO
+    apareció tarjeta de aprobación → el runtime DW no es drivable desde mi lado (assistant); queda como acción
+    del USUARIO. **Próxima acción (plan medido-primero, no vapor):** el usuario lanza un prototipo de 1 item como
+    `ultracode:` en slice pequeño → medir coste/calidad en `/workflows` vs autobuild-skill → si gana, diseñar
+    frontera HITL + allowlist tronco → guardar el workflow. Ver [[dynamic-workflows-autobuild-conclave]].
+  - SP-A **mesa de trabajo** (consultar el tronco 1 vez al planificar → manifest compartido a agentes) = depende
+    de que el MCP exponga Resources → BLOQUEADO por `mcp-audit-six-primitives`.

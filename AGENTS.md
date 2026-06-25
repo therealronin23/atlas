@@ -217,7 +217,8 @@ Requirements:
 Jail properties enforced (Slice 1):
 - uid/gid 65534 (nobody) via user namespace
 - Network namespace — no external network access
-- `/` bind-mounted read-only; `/tmp` ephemeral tmpfs
+- minimal rootfs (`/usr` ro-bind + usr-merged symlinks + `/etc/ssl`), NOT `/` —
+  host paths/secrets on disk are not visible to jailed code; `/tmp` ephemeral tmpfs
 - `--die-with-parent` — child dies if parent exits
 
 Slice 2 (seccomp-bpf allowlist) deferred — requires `libseccomp` (external dep,
