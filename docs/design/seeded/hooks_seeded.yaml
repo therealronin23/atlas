@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-22T07:03:44.285911+00:00'
+  at: '2026-06-25T07:33:08.940783+00:00'
   source: github.com/disler/claude-code-hooks-mastery
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -17,7 +17,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: permission_request
       sector: uncategorized
       kind: hook
@@ -28,7 +28,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: post_tool_use
       sector: uncategorized
       kind: hook
@@ -39,7 +39,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: post_tool_use_failure
       sector: uncategorized
       kind: hook
@@ -50,7 +50,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: pre_compact
       sector: uncategorized
       kind: hook
@@ -61,7 +61,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: pre_tool_use
       sector: uncategorized
       kind: hook
@@ -72,7 +72,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: session_end
       sector: uncategorized
       kind: hook
@@ -83,7 +83,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: session_start
       sector: uncategorized
       kind: hook
@@ -94,7 +94,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: setup
       sector: uncategorized
       kind: hook
@@ -105,7 +105,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: stop
       sector: uncategorized
       kind: hook
@@ -116,7 +116,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: subagent_start
       sector: uncategorized
       kind: hook
@@ -127,7 +127,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: subagent_stop
       sector: uncategorized
       kind: hook
@@ -138,7 +138,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'
     - name: user_prompt_submit
       sector: uncategorized
       kind: hook
@@ -149,4 +149,4 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/disler/claude-code-hooks-mastery
-        fetched_at: '2026-06-22T07:03:44.285690+00:00'
+        fetched_at: '2026-06-25T07:33:08.940367+00:00'

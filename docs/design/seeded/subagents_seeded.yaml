@@ -1,1049 +1,969 @@
 _generated:
-  by: seed_lines (line_seed)
-  at: '2026-06-21T23:39:53.144341+00:00'
-  source: https://github.com/VoltAgent/awesome-claude-code-subagents/tree/main/categories
-  note: MÁQUINA-GENERADO, candidato/uncategorized
+  by: scripts/mcp_sync.py
+  at: '2026-06-25T07:33:13.037138+00:00'
+  source: github.com/VoltAgent/awesome-claude-code-subagents
+  note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
   uncategorized:
-    label: Subagentes (sin clasificar) — awesome-claude-code-subagents
+    label: subagents (sembrado)
     entries:
     - name: api-designer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: api-designer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/api-designer.md
-        -o ~/.claude/agents/api-designer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/api-designer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: backend-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: backend-developer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/backend-developer.md
-        -o ~/.claude/agents/backend-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/backend-developer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: design-bridge
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: design-bridge (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/design-bridge.md
-        -o ~/.claude/agents/design-bridge.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/design-bridge.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: electron-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: electron-pro (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/electron-pro.md
-        -o ~/.claude/agents/electron-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/electron-pro.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: frontend-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: frontend-developer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/frontend-developer.md
-        -o ~/.claude/agents/frontend-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/frontend-developer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: fullstack-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: fullstack-developer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/fullstack-developer.md
-        -o ~/.claude/agents/fullstack-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/fullstack-developer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: graphql-architect
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: graphql-architect (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/graphql-architect.md
-        -o ~/.claude/agents/graphql-architect.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/graphql-architect.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: microservices-architect
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: microservices-architect (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/microservices-architect.md
-        -o ~/.claude/agents/microservices-architect.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/microservices-architect.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: mobile-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: mobile-developer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/mobile-developer.md
-        -o ~/.claude/agents/mobile-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/mobile-developer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: ui-designer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: ui-designer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/ui-designer.md
-        -o ~/.claude/agents/ui-designer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/ui-designer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: websocket-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: websocket-engineer (01-core-development)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/websocket-engineer.md
-        -o ~/.claude/agents/websocket-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/01-core-development/websocket-engineer.md
       status: candidato
       tags:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:09.653897+00:00'
     - name: angular-architect
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: angular-architect (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/angular-architect.md
-        -o ~/.claude/agents/angular-architect.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/angular-architect.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: cpp-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: cpp-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/cpp-pro.md
-        -o ~/.claude/agents/cpp-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/cpp-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: csharp-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: csharp-developer (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/csharp-developer.md
-        -o ~/.claude/agents/csharp-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/csharp-developer.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: django-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: django-developer (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/django-developer.md
-        -o ~/.claude/agents/django-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/django-developer.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: dotnet-core-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: dotnet-core-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-core-expert.md
-        -o ~/.claude/agents/dotnet-core-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-core-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: dotnet-framework-4.8-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: dotnet-framework-4.8-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-framework-4.8-expert.md
-        -o ~/.claude/agents/dotnet-framework-4.8-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/dotnet-framework-4.8-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: elixir-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: elixir-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/elixir-expert.md
-        -o ~/.claude/agents/elixir-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/elixir-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: expo-react-native-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: expo-react-native-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/expo-react-native-expert.md
-        -o ~/.claude/agents/expo-react-native-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/expo-react-native-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: fastapi-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: fastapi-developer (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/fastapi-developer.md
-        -o ~/.claude/agents/fastapi-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/fastapi-developer.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: flutter-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: flutter-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/flutter-expert.md
-        -o ~/.claude/agents/flutter-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/flutter-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: golang-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: golang-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/golang-pro.md
-        -o ~/.claude/agents/golang-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/golang-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: java-architect
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: java-architect (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/java-architect.md
-        -o ~/.claude/agents/java-architect.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/java-architect.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: javascript-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: javascript-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/javascript-pro.md
-        -o ~/.claude/agents/javascript-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/javascript-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: kotlin-specialist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: kotlin-specialist (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/kotlin-specialist.md
-        -o ~/.claude/agents/kotlin-specialist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/kotlin-specialist.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: laravel-specialist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: laravel-specialist (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/laravel-specialist.md
-        -o ~/.claude/agents/laravel-specialist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/laravel-specialist.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: nextjs-developer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: nextjs-developer (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/nextjs-developer.md
-        -o ~/.claude/agents/nextjs-developer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/nextjs-developer.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: node-specialist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: node-specialist (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/node-specialist.md
-        -o ~/.claude/agents/node-specialist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/node-specialist.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: php-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: php-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/php-pro.md
-        -o ~/.claude/agents/php-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/php-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: powershell-5.1-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: powershell-5.1-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-5.1-expert.md
-        -o ~/.claude/agents/powershell-5.1-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-5.1-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: powershell-7-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: powershell-7-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-7-expert.md
-        -o ~/.claude/agents/powershell-7-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/powershell-7-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: python-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: python-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/python-pro.md
-        -o ~/.claude/agents/python-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/python-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: rails-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: rails-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/rails-expert.md
-        -o ~/.claude/agents/rails-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/rails-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: react-specialist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: react-specialist (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/react-specialist.md
-        -o ~/.claude/agents/react-specialist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/react-specialist.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: rust-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: rust-engineer (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/rust-engineer.md
-        -o ~/.claude/agents/rust-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/rust-engineer.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: spring-boot-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: spring-boot-engineer (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/spring-boot-engineer.md
-        -o ~/.claude/agents/spring-boot-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/spring-boot-engineer.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: sql-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: sql-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/sql-pro.md
-        -o ~/.claude/agents/sql-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/sql-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: swift-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: swift-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/swift-expert.md
-        -o ~/.claude/agents/swift-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/swift-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: symfony-specialist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: symfony-specialist (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/symfony-specialist.md
-        -o ~/.claude/agents/symfony-specialist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/symfony-specialist.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: typescript-pro
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: typescript-pro (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/typescript-pro.md
-        -o ~/.claude/agents/typescript-pro.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/typescript-pro.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: vue-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: vue-expert (02-language-specialists)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/vue-expert.md
-        -o ~/.claude/agents/vue-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/02-language-specialists/vue-expert.md
       status: candidato
       tags:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.023262+00:00'
     - name: azure-infra-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: azure-infra-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/azure-infra-engineer.md
-        -o ~/.claude/agents/azure-infra-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/azure-infra-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: cloud-architect
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: cloud-architect (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/cloud-architect.md
-        -o ~/.claude/agents/cloud-architect.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/cloud-architect.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: database-administrator
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: database-administrator (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/database-administrator.md
-        -o ~/.claude/agents/database-administrator.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/database-administrator.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: deployment-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: deployment-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/deployment-engineer.md
-        -o ~/.claude/agents/deployment-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/deployment-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: devops-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: devops-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-engineer.md
-        -o ~/.claude/agents/devops-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: devops-incident-responder
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: devops-incident-responder (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-incident-responder.md
-        -o ~/.claude/agents/devops-incident-responder.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/devops-incident-responder.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: docker-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: docker-expert (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/docker-expert.md
-        -o ~/.claude/agents/docker-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/docker-expert.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: incident-responder
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: incident-responder (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/incident-responder.md
-        -o ~/.claude/agents/incident-responder.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/incident-responder.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: kubernetes-specialist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: kubernetes-specialist (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/kubernetes-specialist.md
-        -o ~/.claude/agents/kubernetes-specialist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/kubernetes-specialist.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: network-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: network-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/network-engineer.md
-        -o ~/.claude/agents/network-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/network-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: platform-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: platform-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/platform-engineer.md
-        -o ~/.claude/agents/platform-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/platform-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: security-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: security-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/security-engineer.md
-        -o ~/.claude/agents/security-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/security-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: sre-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: sre-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/sre-engineer.md
-        -o ~/.claude/agents/sre-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/sre-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: terraform-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: terraform-engineer (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terraform-engineer.md
-        -o ~/.claude/agents/terraform-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terraform-engineer.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: terragrunt-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: terragrunt-expert (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terragrunt-expert.md
-        -o ~/.claude/agents/terragrunt-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/terragrunt-expert.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: windows-infra-admin
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: windows-infra-admin (03-infrastructure)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/windows-infra-admin.md
-        -o ~/.claude/agents/windows-infra-admin.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/03-infrastructure/windows-infra-admin.md
       status: candidato
       tags:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.402188+00:00'
     - name: accessibility-tester
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: accessibility-tester (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/accessibility-tester.md
-        -o ~/.claude/agents/accessibility-tester.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/accessibility-tester.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: ad-security-reviewer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: ad-security-reviewer (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ad-security-reviewer.md
-        -o ~/.claude/agents/ad-security-reviewer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ad-security-reviewer.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: ai-writing-auditor
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: ai-writing-auditor (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ai-writing-auditor.md
-        -o ~/.claude/agents/ai-writing-auditor.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ai-writing-auditor.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: architect-reviewer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: architect-reviewer (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/architect-reviewer.md
-        -o ~/.claude/agents/architect-reviewer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/architect-reviewer.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: chaos-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: chaos-engineer (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/chaos-engineer.md
-        -o ~/.claude/agents/chaos-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/chaos-engineer.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: code-reviewer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: code-reviewer (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/code-reviewer.md
-        -o ~/.claude/agents/code-reviewer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/code-reviewer.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: compliance-auditor
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: compliance-auditor (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/compliance-auditor.md
-        -o ~/.claude/agents/compliance-auditor.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/compliance-auditor.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: debugger
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: debugger (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/debugger.md
-        -o ~/.claude/agents/debugger.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/debugger.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: error-detective
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: error-detective (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/error-detective.md
-        -o ~/.claude/agents/error-detective.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/error-detective.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: gdpr-ccpa-compliance
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: gdpr-ccpa-compliance (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/gdpr-ccpa-compliance.md
-        -o ~/.claude/agents/gdpr-ccpa-compliance.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/gdpr-ccpa-compliance.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: penetration-tester
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: penetration-tester (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/penetration-tester.md
-        -o ~/.claude/agents/penetration-tester.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/penetration-tester.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: performance-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: performance-engineer (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/performance-engineer.md
-        -o ~/.claude/agents/performance-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/performance-engineer.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: powershell-security-hardening
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: powershell-security-hardening (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/powershell-security-hardening.md
-        -o ~/.claude/agents/powershell-security-hardening.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/powershell-security-hardening.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: qa-expert
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: qa-expert (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/qa-expert.md
-        -o ~/.claude/agents/qa-expert.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/qa-expert.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: security-auditor
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: security-auditor (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/security-auditor.md
-        -o ~/.claude/agents/security-auditor.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/security-auditor.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: test-automator
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: test-automator (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/test-automator.md
-        -o ~/.claude/agents/test-automator.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/test-automator.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: ui-ux-tester
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: ui-ux-tester (04-quality-security)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ui-ux-tester.md
-        -o ~/.claude/agents/ui-ux-tester.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/04-quality-security/ui-ux-tester.md
       status: candidato
       tags:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:10.767035+00:00'
     - name: ai-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: ai-engineer (05-data-ai)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/ai-engineer.md
-        -o ~/.claude/agents/ai-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/ai-engineer.md
       status: candidato
       tags:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:11.133654+00:00'
     - name: data-analyst
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: data-analyst (05-data-ai)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/data-analyst.md
-        -o ~/.claude/agents/data-analyst.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/data-analyst.md
       status: candidato
       tags:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:11.133654+00:00'
     - name: data-engineer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: data-engineer (05-data-ai)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/data-engineer.md
-        -o ~/.claude/agents/data-engineer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/data-engineer.md
       status: candidato
       tags:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:11.133654+00:00'
     - name: data-scientist
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: data-scientist (05-data-ai)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/data-scientist.md
-        -o ~/.claude/agents/data-scientist.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/data-scientist.md
       status: candidato
       tags:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:11.133654+00:00'
     - name: database-optimizer
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: database-optimizer (05-data-ai)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/database-optimizer.md
-        -o ~/.claude/agents/database-optimizer.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/database-optimizer.md
       status: candidato
       tags:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:11.133654+00:00'
     - name: llm-architect
       sector: uncategorized
       kind: subagent
-      purpose: 'Subagente Claude Code: llm-architect (05-data-ai)'
+      purpose: ''
       source: VoltAgent/awesome-claude-code-subagents
-      install: curl -sL https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/llm-architect.md
-        -o ~/.claude/agents/llm-architect.md
+      install: curl -O https://raw.githubusercontent.com/VoltAgent/awesome-claude-code-subagents/main/categories/05-data-ai/llm-architect.md
       status: candidato
       tags:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-21T23:39:53.144341+00:00'
+        fetched_at: '2026-06-25T07:33:11.133654+00:00'

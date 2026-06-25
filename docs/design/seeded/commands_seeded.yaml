@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-22T07:03:41.580221+00:00'
+  at: '2026-06-25T07:33:06.142220+00:00'
   source: github.com/hesreallyhim/awesome-claude-code
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -17,7 +17,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: add-to-changelog
       sector: uncategorized
       kind: command
@@ -28,7 +28,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: clean
       sector: uncategorized
       kind: command
@@ -39,7 +39,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: commit
       sector: uncategorized
       kind: command
@@ -50,7 +50,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: context-prime
       sector: uncategorized
       kind: command
@@ -61,7 +61,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-hook
       sector: uncategorized
       kind: command
@@ -72,7 +72,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-jtbd
       sector: uncategorized
       kind: command
@@ -83,7 +83,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-pr
       sector: uncategorized
       kind: command
@@ -94,7 +94,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-prd
       sector: uncategorized
       kind: command
@@ -105,7 +105,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-prp
       sector: uncategorized
       kind: command
@@ -116,7 +116,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-pull-request
       sector: uncategorized
       kind: command
@@ -127,7 +127,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: create-worktrees
       sector: uncategorized
       kind: command
@@ -138,7 +138,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: fix-github-issue
       sector: uncategorized
       kind: command
@@ -149,7 +149,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: husky
       sector: uncategorized
       kind: command
@@ -160,7 +160,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: initref
       sector: uncategorized
       kind: command
@@ -171,7 +171,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: load-llms-txt
       sector: uncategorized
       kind: command
@@ -182,7 +182,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: optimize
       sector: uncategorized
       kind: command
@@ -193,7 +193,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: pr-review
       sector: uncategorized
       kind: command
@@ -204,7 +204,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: release
       sector: uncategorized
       kind: command
@@ -215,7 +215,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: testing_plan_integration
       sector: uncategorized
       kind: command
@@ -226,7 +226,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: todo
       sector: uncategorized
       kind: command
@@ -237,7 +237,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: update-branch-name
       sector: uncategorized
       kind: command
@@ -248,7 +248,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
     - name: update-docs
       sector: uncategorized
       kind: command
@@ -259,4 +259,4 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/hesreallyhim/awesome-claude-code
-        fetched_at: '2026-06-22T07:03:41.580034+00:00'
+        fetched_at: '2026-06-25T07:33:06.141887+00:00'
