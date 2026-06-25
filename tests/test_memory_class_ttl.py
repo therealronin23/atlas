@@ -102,3 +102,11 @@ def test_contamination_does_not_affect_factual_recall(tmp_path: Path) -> None:
                    memory_class="personal")
     after = {r.lesson_id for r in idx.recall_all("distancia al sol", k=10)}
     assert before == after  # las personales no contaminan el recall factual
+
+
+def test_recall_split_separates_buckets(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    _seed_mixed(idx)
+    factual, personal = idx.recall_split("fotosíntesis", k=10)
+    assert {r.lesson_id for r in factual} == {"f1"}
+    assert {r.lesson_id for r in personal} == {"p1"}

@@ -678,6 +678,22 @@ class SqliteMemoryIndex:
                     self.touch(r.lesson_id, now_ns=now_ns)
         return top
 
+    def recall_split(
+        self, query_text: str, k: int = 5, *,
+        include_superseded: bool = False, now_ns: int | None = None,
+    ) -> tuple[list[RecallResult], list[RecallResult]]:
+        """Recall en buckets SEPARADOS (factual, personal) — nunca mezclados en un
+        ranking único. Para personalización + hechos sin contaminar el ranking factual."""
+        factual = self.recall_all(
+            query_text, k, include_superseded=include_superseded,
+            now_ns=now_ns, memory_class="factual",
+        )
+        personal = self.recall_all(
+            query_text, k, include_superseded=include_superseded,
+            now_ns=now_ns, memory_class="personal",
+        )
+        return factual, personal
+
     # ------------------------------------------------------------------
     # Procedencia / utilidades
     # ------------------------------------------------------------------
