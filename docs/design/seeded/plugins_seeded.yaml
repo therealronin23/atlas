@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-22T07:03:43.278271+00:00'
+  at: '2026-06-25T07:33:07.929558+00:00'
   source: github.com/rohitg00/awesome-claude-code-toolkit
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -17,7 +17,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: accessibility-checker
       sector: uncategorized
       kind: plugin
@@ -28,7 +28,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: adr-writer
       sector: uncategorized
       kind: plugin
@@ -39,7 +39,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: ai-prompt-lab
       sector: uncategorized
       kind: plugin
@@ -50,7 +50,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: analytics-reporter
       sector: uncategorized
       kind: plugin
@@ -61,7 +61,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: android-developer
       sector: uncategorized
       kind: plugin
@@ -72,7 +72,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: api-architect
       sector: uncategorized
       kind: plugin
@@ -83,7 +83,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: api-benchmarker
       sector: uncategorized
       kind: plugin
@@ -94,7 +94,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: api-reference
       sector: uncategorized
       kind: plugin
@@ -105,7 +105,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: api-tester
       sector: uncategorized
       kind: plugin
@@ -116,7 +116,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: aws-helper
       sector: uncategorized
       kind: plugin
@@ -127,7 +127,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: azure-helper
       sector: uncategorized
       kind: plugin
@@ -138,7 +138,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: backend-architect
       sector: uncategorized
       kind: plugin
@@ -149,7 +149,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: bug-detective
       sector: uncategorized
       kind: plugin
@@ -160,7 +160,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: bundle-analyzer
       sector: uncategorized
       kind: plugin
@@ -171,7 +171,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: changelog-gen
       sector: uncategorized
       kind: plugin
@@ -182,7 +182,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: changelog-writer
       sector: uncategorized
       kind: plugin
@@ -193,7 +193,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: ci-debugger
       sector: uncategorized
       kind: plugin
@@ -204,7 +204,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: code-architect
       sector: uncategorized
       kind: plugin
@@ -215,7 +215,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: code-explainer
       sector: uncategorized
       kind: plugin
@@ -226,7 +226,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: code-guardian
       sector: uncategorized
       kind: plugin
@@ -237,7 +237,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: code-review-assistant
       sector: uncategorized
       kind: plugin
@@ -248,7 +248,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: codebase-documenter
       sector: uncategorized
       kind: plugin
@@ -259,7 +259,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: color-contrast
       sector: uncategorized
       kind: plugin
@@ -270,7 +270,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: commit-commands
       sector: uncategorized
       kind: plugin
@@ -281,7 +281,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: complexity-reducer
       sector: uncategorized
       kind: plugin
@@ -292,7 +292,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: compliance-checker
       sector: uncategorized
       kind: plugin
@@ -303,7 +303,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: content-creator
       sector: uncategorized
       kind: plugin
@@ -314,7 +314,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: context7-docs
       sector: uncategorized
       kind: plugin
@@ -325,7 +325,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: contract-tester
       sector: uncategorized
       kind: plugin
@@ -336,7 +336,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: create-worktrees
       sector: uncategorized
       kind: plugin
@@ -347,7 +347,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: cron-scheduler
       sector: uncategorized
       kind: plugin
@@ -358,7 +358,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: css-cleaner
       sector: uncategorized
       kind: plugin
@@ -369,7 +369,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: data-privacy
       sector: uncategorized
       kind: plugin
@@ -380,7 +380,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: database-optimizer
       sector: uncategorized
       kind: plugin
@@ -391,7 +391,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: dead-code-finder
       sector: uncategorized
       kind: plugin
@@ -402,7 +402,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: debug-session
       sector: uncategorized
       kind: plugin
@@ -413,7 +413,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: dependency-manager
       sector: uncategorized
       kind: plugin
@@ -424,7 +424,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: deploy-pilot
       sector: uncategorized
       kind: plugin
@@ -435,7 +435,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: desktop-app
       sector: uncategorized
       kind: plugin
@@ -446,7 +446,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: devops-automator
       sector: uncategorized
       kind: plugin
@@ -457,7 +457,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: discuss
       sector: uncategorized
       kind: plugin
@@ -468,7 +468,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: doc-forge
       sector: uncategorized
       kind: plugin
@@ -479,7 +479,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: docker-helper
       sector: uncategorized
       kind: plugin
@@ -490,7 +490,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: double-check
       sector: uncategorized
       kind: plugin
@@ -501,7 +501,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: e2e-runner
       sector: uncategorized
       kind: plugin
@@ -512,7 +512,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: embedding-manager
       sector: uncategorized
       kind: plugin
@@ -523,7 +523,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: env-manager
       sector: uncategorized
       kind: plugin
@@ -534,7 +534,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: env-sync
       sector: uncategorized
       kind: plugin
@@ -545,7 +545,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: experiment-tracker
       sector: uncategorized
       kind: plugin
@@ -556,7 +556,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: explore
       sector: uncategorized
       kind: plugin
@@ -567,7 +567,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: feature-dev
       sector: uncategorized
       kind: plugin
@@ -578,7 +578,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: finance-tracker
       sector: uncategorized
       kind: plugin
@@ -589,7 +589,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: fix-github-issue
       sector: uncategorized
       kind: plugin
@@ -600,7 +600,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: fix-pr
       sector: uncategorized
       kind: plugin
@@ -611,7 +611,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: flutter-mobile
       sector: uncategorized
       kind: plugin
@@ -622,7 +622,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: frontend-developer
       sector: uncategorized
       kind: plugin
@@ -633,7 +633,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: gcp-helper
       sector: uncategorized
       kind: plugin
@@ -644,7 +644,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: git-flow
       sector: uncategorized
       kind: plugin
@@ -655,7 +655,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: github-issue-manager
       sector: uncategorized
       kind: plugin
@@ -666,7 +666,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: helm-charts
       sector: uncategorized
       kind: plugin
@@ -677,7 +677,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: import-organizer
       sector: uncategorized
       kind: plugin
@@ -688,7 +688,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: infrastructure-maintainer
       sector: uncategorized
       kind: plugin
@@ -699,7 +699,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: ios-developer
       sector: uncategorized
       kind: plugin
@@ -710,7 +710,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: k8s-helper
       sector: uncategorized
       kind: plugin
@@ -721,7 +721,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: license-checker
       sector: uncategorized
       kind: plugin
@@ -732,7 +732,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: lighthouse-runner
       sector: uncategorized
       kind: plugin
@@ -743,7 +743,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: linear-helper
       sector: uncategorized
       kind: plugin
@@ -754,7 +754,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: load-tester
       sector: uncategorized
       kind: plugin
@@ -765,7 +765,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: memory-profiler
       sector: uncategorized
       kind: plugin
@@ -776,7 +776,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: migrate-tool
       sector: uncategorized
       kind: plugin
@@ -787,7 +787,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: migration-generator
       sector: uncategorized
       kind: plugin
@@ -798,7 +798,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: model-context-protocol
       sector: uncategorized
       kind: plugin
@@ -809,7 +809,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: model-evaluator
       sector: uncategorized
       kind: plugin
@@ -820,7 +820,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: monitoring-setup
       sector: uncategorized
       kind: plugin
@@ -831,7 +831,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: monorepo-manager
       sector: uncategorized
       kind: plugin
@@ -842,7 +842,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: mutation-tester
       sector: uncategorized
       kind: plugin
@@ -853,7 +853,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: n8n-workflow
       sector: uncategorized
       kind: plugin
@@ -864,7 +864,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: onboarding-guide
       sector: uncategorized
       kind: plugin
@@ -875,7 +875,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'
     - name: openapi-expert
       sector: uncategorized
       kind: plugin
@@ -886,4 +886,4 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/rohitg00/awesome-claude-code-toolkit
-        fetched_at: '2026-06-22T07:03:43.277990+00:00'
+        fetched_at: '2026-06-25T07:33:07.928815+00:00'

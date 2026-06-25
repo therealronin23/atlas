@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-22T07:03:41.204146+00:00'
+  at: '2026-06-25T07:33:05.803029+00:00'
   source: github.com/vercel-labs/agent-skills
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -17,7 +17,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: deploy-to-vercel
       sector: uncategorized
       kind: skill
@@ -28,7 +28,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: react-best-practices
       sector: uncategorized
       kind: skill
@@ -39,7 +39,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: react-native-skills
       sector: uncategorized
       kind: skill
@@ -50,7 +50,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: react-view-transitions
       sector: uncategorized
       kind: skill
@@ -61,7 +61,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: vercel-cli-with-tokens
       sector: uncategorized
       kind: skill
@@ -72,7 +72,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: vercel-optimize
       sector: uncategorized
       kind: skill
@@ -83,7 +83,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: web-design-guidelines
       sector: uncategorized
       kind: skill
@@ -94,7 +94,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
     - name: writing-guidelines
       sector: uncategorized
       kind: skill
@@ -105,4 +105,4 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/vercel-labs/agent-skills
-        fetched_at: '2026-06-22T07:03:41.203974+00:00'
+        fetched_at: '2026-06-25T07:33:05.802854+00:00'
