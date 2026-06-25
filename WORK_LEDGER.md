@@ -25,6 +25,28 @@ Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado 
   - ✅ 2.3 evaluación honesta (autobuild 2026-06-24: benchmark anti-leak + 10 tests) · ⬜ 2.4 envenenamiento (parcial)
   - ⬜ 2.5 fuga entre usuarios/tenancy · ✅ 2.6 (mitad tratable; clasificador automático = muro 1c registrado) · ✅ 2.7 cold-start (conceptual)
 
+## Línea activa: capacidades usables (catálogo → routing) — NUEVA 2026-06-26
+
+Design: `docs/design/design_catalog_enrichment.md`. Memoria: [[capability-routing-structural]] · [[adopt-real-not-shell]].
+Origen: el modelo no usa lo propio (MCP/skills/prompts) porque la autoselección es probabilística, no
+determinista (solo un hook/router lo fuerza). Fundación = hacer el catálogo USABLE (hoy 700+ = solo
+nombres), luego enrutarlo a la fuerza. 3 ejes ortogonales: purpose(afirmado)/signal(prior popularidad)/
+status(verificación) — nunca confundir.
+
+- ✅ **Pieza 1 — enriquecer** — CONSTRUIDO + auditado (rama `feat/catalog-enrichment`, **SIN mergear**).
+  `enrichment.py` (rellena purpose-afirmado + signal de la fuente, `status` INTACTO, idempotente) +
+  `scripts/mcp_enrich.py` + 16 tests. Reusa HttpApiSource+SSRFBridge (0 deps). Suite 2340 verde, auditor
+  Opus PASS (SSRF probado con inyección). 554 entradas enriquecibles (--offline). Gap declarado: sub-ítems
+  de awesome-lists y caracterización de prompts FUERA de Pieza 1.
+- ⬜ **Pieza 2 — trial-en-jaula per-kind + escáneres adoptados** ← SIGUIENTE. Rompe la serpiente-cola
+  (candidato→verificado). Estado graduado: candidato → probado-en-jaula (funciona+CONTENIDO, sin red) →
+  verificado-confiado (escáner + uso/humano). Escáneres por-primitivo ADOPTADOS (envolver, no forkear:
+  `adopt-real-not-shell`; candidatos: Invariant mcp-scan, Snyk agent-scan). Barrido por saneamiento
+  graduado (candidato rancio → cuarentena → delete, NUNCA de una pasada). Defensa = CONTENCIÓN (jaula) +
+  detección (escáner adoptado), no un antivirus propio (no-existe).
+- ⬜ **Pieza 3 — routing hook** `UserPromptSubmit` que consume el catálogo ya enriquecido/verificado
+  (consumo determinista). El más fácil, el último (necesita 1 y 2).
+
 ## Línea activa: Cónclave (`deliberation_council`) — deliberación verificable multi-voz
 
 Design doc: `docs/design/design_deliberation_council.md` · alias narrativo: Cónclave.
