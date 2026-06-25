@@ -295,6 +295,13 @@ NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:22
   como Prompt MCP nativo (`add_prompt`/`Prompt.from_function`), descubrible por el cliente sin tool-call; cuerpo
   cargado perezosamente vía `skill_store.get`. Aditivo a `list_skills`/`get_skill`. Test in-process
   (list_prompts ⊇ skills, get_prompt = contenido). mypy strict limpio.
+- 🔄 **CIERRE DEL MCP en curso** (decisión usuario: 6 primitivos + Tasks). `trunk_capabilities.py`:
+  ✅ **Completion** (autocompletado catálogo/skills) · ✅ **Logging+Progress** (`trunk_selfcheck`) ·
+  ✅ **Elicitation** (`trunk_confirm`, hook HITL) · ✅ **Sampling** (`trunk_reason`, base SP-B) ·
+  ✅ **Roots** (`trunk_list_roots`). 6 tests vía harness in-memory (cliente real), mypy strict.
+  Client-features = capacidad lista; consumidor pleno = SP-E. Spec
+  `docs/superpowers/specs/2026-06-25-mcp-close-primitives-design.md`.
+  ⬜ **LOTE C pendiente**: push-subscriptions (low-level Server) + Tasks (extensión async — evaluar/defer).
 - 🔵 **Hallazgo extra (investigado)**: hay MÁS que 6 primitivos (Completion/Resource-templates/Subscriptions/
   Logging/Progress) Y se EXPANDEN vía **Extensions** (`atlas/...`, opt-in, aditivas). Oficiales: **Tasks**
   (async largo → loop autónomo/SP-E) y **MCP Apps** (UI HTML iframe → mesa SP-A). Detalle en el audit doc.

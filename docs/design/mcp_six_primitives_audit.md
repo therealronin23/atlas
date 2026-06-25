@@ -93,9 +93,14 @@ workos.com/blog/mcp-2025-11-25-spec-update.
    al "JSON índice" del usuario. Internal-prior-art, coste bajo. **Empezar aquí.**
 2. **Prompts para skills** (#2) — ✅ HECHO 2026-06-25: `build_trunk_server` registra cada skill servido como
    Prompt MCP nativo (aditivo a `get_skill`), cuerpo perezoso. Complemento barato, mejora descubribilidad.
-3. **Elicitation** (#3) — NO construir aún; es el marco que SP-D (HITL) debe heredar. Verificar floor `mcp`.
-4. **Sampling** (#4) — medir necesidad real (SP-B) antes.
-5. **Roots** (#5) — diferido.
+3. **Elicitation** (#3) — ✅ HECHO 2026-06-25 (`trunk_confirm`, capacidad lista; consumidor pleno = SP-E/HITL).
+4. **Sampling** (#4) — ✅ HECHO 2026-06-25 (`trunk_reason` vía `ctx.session.create_message`; base de SP-B).
+5. **Roots** (#5) — ✅ HECHO 2026-06-25 (`trunk_list_roots`).
+
+**Cierre del MCP (decisión del usuario: 6 primitivos + Tasks).** También HECHO 2026-06-25: **Completion**
+(autocompletado catálogo/skills), **Logging + Progress** (`trunk_selfcheck`). Ver
+`docs/superpowers/specs/2026-06-25-mcp-close-primitives-design.md` y `src/atlas/mcp/trunk_capabilities.py`.
+PENDIENTE (lote C): **push-subscriptions** (low-level) y **Tasks** (extensión async — evaluar/defer honesto).
 
 Embeddings (`memory-mcp-local-embedder`): el embedder local aterriza DENTRO de este marco — la memoria
 semántica es una capacidad que el catálogo-como-Resource debe reflejar con su etiqueta de estado.

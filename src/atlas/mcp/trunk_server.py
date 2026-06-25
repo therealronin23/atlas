@@ -237,6 +237,16 @@ def build_trunk_server(
         for _sname in skill_store.list_skills():
             server.add_prompt(_make_skill_prompt(_sname))
 
+    # Cierre de primitivos MCP (audit): Completion + Logging/Progress (consumidor real).
+    from atlas.mcp.trunk_capabilities import (
+        register_discovery_capabilities,
+        register_workflow_capabilities,
+    )
+
+    register_discovery_capabilities(server, catalog=catalog, skill_store=skill_store)
+    # Client-features (Elicitation/Sampling/Roots): capacidad lista; consumidor = SP-E.
+    register_workflow_capabilities(server)
+
     return server
 
 
