@@ -23,7 +23,7 @@ Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado 
   - ⬜ **2.1 multi-hop** ← SIGUIENTE
   - ⬜ 2.2 PII/crypto-shredding (fundacional + GAP-1 EU AI Act)
   - ✅ 2.3 evaluación honesta (autobuild 2026-06-24: benchmark anti-leak + 10 tests) · ⬜ 2.4 envenenamiento (parcial)
-  - ⬜ 2.5 fuga entre usuarios/tenancy · 🧱 2.6 personalización-vs-contaminación · ✅ 2.7 cold-start (conceptual)
+  - ⬜ 2.5 fuga entre usuarios/tenancy · ✅ 2.6 (mitad tratable; clasificador automático = muro 1c registrado) · ✅ 2.7 cold-start (conceptual)
 
 ## Línea activa: Cónclave (`deliberation_council`) — deliberación verificable multi-voz
 

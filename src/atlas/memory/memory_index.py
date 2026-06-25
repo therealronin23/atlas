@@ -130,6 +130,13 @@ _TENANT_COLUMNS = {
     "tenant": "TEXT NOT NULL DEFAULT 'default'",
 }
 
+PERSONAL_TTL_S = 90 * 24 * 3600  # 90 días; default de expiración para clase 'personal'
+
+_CLASS_TTL_COLUMNS = {
+    "memory_class": "TEXT NOT NULL DEFAULT 'factual'",
+    "expires_at": "REAL",
+}
+
 
 def _pack(vec: list[float]) -> bytes:
     return struct.pack(f"<{len(vec)}d", *vec)
@@ -186,6 +193,7 @@ class SqliteMemoryIndex:
         self._migrate_temporal()
         self._migrate_shred()
         self._migrate_tenant()
+        self._migrate_class_ttl()
         self._migrate_keystore()
         self._guard_embedder_dim()
         self._conn.commit()
@@ -239,6 +247,23 @@ class SqliteMemoryIndex:
                     )
                 except Exception:
                     pass  # ya existe en una carrera de inicio concurrente, seguro ignorar
+
+    def _migrate_class_ttl(self) -> None:
+        """Añade memory_class (personal/factual) y expires_at (idempotente).
+        Filas existentes → 'factual' sin expiración (lo seguro/objetivo)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        for col, decl in _CLASS_TTL_COLUMNS.items():
+            if col not in existing:
+                try:
+                    self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                    if col == "memory_class":
+                        self._conn.execute(
+                            "UPDATE records SET memory_class='factual' "
+                            "WHERE memory_class IS NULL"
+                        )
+                except Exception:
+                    pass  # carrera de init concurrente: seguro ignorar
+        self._conn.commit()
 
     def _migrate_keystore(self) -> None:
         """Migración idempotente: mueve claves de records.content_keys → keystore separado.
@@ -324,6 +349,8 @@ class SqliteMemoryIndex:
         merkle_leaf_index: int | None = None,
         valid_from_ns: int | None = None,
         supersedes: str | None = None,
+        memory_class: str = "factual",
+        expires_at: float | None = None,
     ) -> None:
         """Inserta o actualiza un registro VIGENTE (valid_until_ns NULL).
         Idempotente por `record_id`. El texto se cifra con Fernet y la clave se guarda
@@ -342,6 +369,9 @@ class SqliteMemoryIndex:
                 f"{existing_tenant_row[0]!r}; el tenant {self._tenant!r} no puede "
                 f"sobrescribirlo (anti-fuga de tenant)."
             )
+        eff_expires_at = expires_at
+        if eff_expires_at is None and memory_class == "personal":
+            eff_expires_at = time.time() + PERSONAL_TTL_S
         # Cifrado Fernet: genera clave nueva en cada upsert (re-cifra si ya existe).
         key = Fernet.generate_key()
         token: str = Fernet(key).encrypt(record.text.encode()).decode()
@@ -349,18 +379,22 @@ class SqliteMemoryIndex:
             """
             INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                  created_at, valid_from_ns, valid_until_ns, supersedes,
-                                 tier, last_access_ns, access_count, shredded, tenant)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?)
+                                 tier, last_access_ns, access_count, shredded, tenant,
+                                 memory_class, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
                 merkle_leaf_hash=COALESCE(excluded.merkle_leaf_hash, records.merkle_leaf_hash),
                 merkle_leaf_index=COALESCE(excluded.merkle_leaf_index, records.merkle_leaf_index),
                 created_at=excluded.created_at,
-                shredded=0
+                shredded=0,
+                memory_class=excluded.memory_class,
+                expires_at=excluded.expires_at
             """,
             (record.record_id, token, _pack(vec), merkle_leaf_hash,
-             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant),
+             merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant,
+             memory_class, eff_expires_at),
         )
         # Upsert de la clave en el keystore separado.
         self._put_key(record.record_id, key)
@@ -463,6 +497,27 @@ class SqliteMemoryIndex:
         )
         self._conn.commit()
         self._audit("memory.retired", {"id": record_id, "at_ns": ts, "reason": reason})
+
+    def expire_stale(self, *, now_ns: int | None = None) -> int:
+        """Barrido perezoso (on-demand, sin daemon): soft-retira los ítems con
+        expires_at <= now. Reusa la semántica de retire (valid_until_ns)."""
+        now = time.time()
+        ts = now_ns if now_ns is not None else time.time_ns()
+        rows = self._conn.execute(
+            "SELECT id FROM records WHERE tenant=? AND valid_until_ns IS NULL "
+            "AND expires_at IS NOT NULL AND expires_at <= ?",
+            (self._tenant, now),
+        ).fetchall()
+        for (rid,) in rows:
+            self._conn.execute(
+                "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL "
+                "AND tenant=?",
+                (ts, rid, self._tenant),
+            )
+        self._conn.commit()
+        if rows:
+            self._audit("memory.expired_swept", {"count": len(rows), "at_ns": ts})
+        return len(rows)
 
     def _audit(self, action: str, payload: dict[str, object]) -> None:
         if self._merkle is not None:
@@ -572,13 +627,21 @@ class SqliteMemoryIndex:
     # Lectura interna
     # ------------------------------------------------------------------
 
-    def _rows(self, include_superseded: bool = False) -> list[tuple[str, list[float]]]:
+    def _rows(
+        self, include_superseded: bool = False, *,
+        memory_class: str = "factual", now_epoch: float | None = None,
+    ) -> list[tuple[str, list[float]]]:
+        now = now_epoch if now_epoch is not None else time.time()
+        sql = "SELECT id, vector FROM records WHERE tenant=?"
+        params: list[object] = [self._tenant]
         if not include_superseded:
-            sql = "SELECT id, vector FROM records WHERE valid_until_ns IS NULL AND tenant=?"
-        else:
-            sql = "SELECT id, vector FROM records WHERE tenant=?"
+            sql += " AND valid_until_ns IS NULL"
+        sql += " AND memory_class=?"
+        params.append(memory_class)
+        sql += " AND (expires_at IS NULL OR expires_at > ?)"
+        params.append(now)
         sql += " ORDER BY ordinal"
-        cur = self._conn.execute(sql, (self._tenant,))
+        cur = self._conn.execute(sql, tuple(params))
         return [(rid, _unpack(blob)) for rid, blob in cur.fetchall()]
 
     # ------------------------------------------------------------------
@@ -586,9 +649,11 @@ class SqliteMemoryIndex:
     # ------------------------------------------------------------------
 
     def recall(
-        self, query_text: str, *, include_superseded: bool = False, now_ns: int | None = None
+        self, query_text: str, *, include_superseded: bool = False, now_ns: int | None = None,
+        memory_class: str | None = None,
     ) -> RecallResult | None:
-        rows = self._rows(include_superseded)
+        cls = memory_class if memory_class is not None else "factual"
+        rows = self._rows(include_superseded, memory_class=cls)
         if not rows:
             return None
         if not query_text.strip():
@@ -611,9 +676,10 @@ class SqliteMemoryIndex:
 
     def recall_all(
         self, query_text: str, k: int = 5, *, include_superseded: bool = False,
-        now_ns: int | None = None,
+        now_ns: int | None = None, memory_class: str | None = None,
     ) -> list[RecallResult]:
-        rows = self._rows(include_superseded)
+        cls = memory_class if memory_class is not None else "factual"
+        rows = self._rows(include_superseded, memory_class=cls)
         if not rows:
             return []
         if not query_text.strip():
@@ -632,6 +698,22 @@ class SqliteMemoryIndex:
                 if r.matched:
                     self.touch(r.lesson_id, now_ns=now_ns)
         return top
+
+    def recall_split(
+        self, query_text: str, k: int = 5, *,
+        include_superseded: bool = False, now_ns: int | None = None,
+    ) -> tuple[list[RecallResult], list[RecallResult]]:
+        """Recall en buckets SEPARADOS (factual, personal) — nunca mezclados en un
+        ranking único. Para personalización + hechos sin contaminar el ranking factual."""
+        factual = self.recall_all(
+            query_text, k, include_superseded=include_superseded,
+            now_ns=now_ns, memory_class="factual",
+        )
+        personal = self.recall_all(
+            query_text, k, include_superseded=include_superseded,
+            now_ns=now_ns, memory_class="personal",
+        )
+        return factual, personal
 
     # ------------------------------------------------------------------
     # Procedencia / utilidades
