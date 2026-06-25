@@ -283,7 +283,19 @@ NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:22
   léxica), Elicitation=0. Huecos priorizados: **#1 Resources del catálogo** (= "JSON índice" del usuario =
   mesa SP-A, internal-prior-art, coste bajo) ← EMPEZAR · #2 Prompts para skills · #3 Elicitation (marco de
   HITL/SP-D, NO construir aún; verificar floor `mcp>=1.2`) · #4 Sampling (medir, SP-B) · #5 Roots diferido.
-  → **PRÓXIMA ACCIÓN: brainstorming de "Resources del catálogo" (#1).**
+- ✅ **#1 Resources del catálogo CONSTRUIDO** (spec `docs/superpowers/specs/2026-06-25-catalog-resources-design.md`):
+  `catalog_resources.py` (builder puro: `manifest_json` con 4 ejes + summary + `fresh`-hash · `item_detail`
+  por kind/name; 8 tests) + 2 resources aditivos en `trunk_server.py` (`catalog://manifest` +
+  `catalog://item/{kind}/{name}`; test in-process FastMCP con mcp 1.28 en `.venv`). mypy strict limpio. Los
+  tools `trunk_catalog/find/kinds` siguen intactos. Backlog `catalog-resources-mcp` done.
+  ⚠️ **Push de subscriptions NO incluido** (decide-with-facts: FastMCP high-level no expone `resources/updated`;
+  existe solo en el Server low-level). Entregado `fresh`-hash para change-detection; push = follow-up
+  `catalog-resources-live-subscriptions` (pendiente). wire-before-claim: no se fingió.
+- 🔵 **Hallazgo extra (investigado)**: hay MÁS que 6 primitivos (Completion/Resource-templates/Subscriptions/
+  Logging/Progress) Y se EXPANDEN vía **Extensions** (`atlas/...`, opt-in, aditivas). Oficiales: **Tasks**
+  (async largo → loop autónomo/SP-E) y **MCP Apps** (UI HTML iframe → mesa SP-A). Detalle en el audit doc.
+  → **PRÓXIMAS ACCIONES posibles**: #2 Prompts para skills · embedder local (`memory-mcp-local-embedder`) ·
+  push-subscriptions del catálogo · explorar Tasks/MCP-Apps para SP-E/SP-A.
 - 🔄 **Hallazgo embeddings (investigado)**: memory MCP corre sobre `StubEmbedder(dim=64)` (hash, no semántico).
   `LiteLLMEmbedder` ya existe y NO es Gemini-locked. Pero API hospedada = lock-in (usuario lo rechaza con razón).
   Respuesta universal = modelo LOCAL in-process (BGE-M3/Qwen3-0.6B/EmbeddingGemma-300M/MiniLM). Trade-off:
