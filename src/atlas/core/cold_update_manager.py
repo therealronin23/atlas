@@ -121,7 +121,20 @@ class ColdUpdateManager:
         # que rollback_applied necesita.
         stored_patch = self._store_dir / f"patch-{proposal_id}.patch"
         shutil.copy2(patch_path, stored_patch)
-        self._apply_patch(wt_dir, stored_patch)
+        try:
+            self._apply_patch(wt_dir, stored_patch)
+        except Exception:
+            # Worktree creado pero patch no aplicable: limpiar antes de propagar.
+            _stub = ColdUpdateProposal(
+                id=proposal_id,
+                intent="",
+                status="failed",
+                worktree_path=str(wt_dir),
+                patch_path=str(stored_patch),
+                base_ref=base_ref,
+            )
+            self._remove_worktree(_stub)
+            raise
 
         proposal = ColdUpdateProposal(
             id=proposal_id,

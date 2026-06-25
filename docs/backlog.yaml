@@ -349,7 +349,7 @@ items:
       que tras un patch corrupto NO queda worktree huérfano en el store (el de tech-6
       `test_corrupt_patch_worktree_left_behind` se actualiza para afirmar limpieza); suite verde.
     priority: 2
-    status: pending
+    status: done  # 2026-06-25 autobuild: propose() envuelve _apply_patch en try/except que limpia el worktree via _remove_worktree (mismo mecanismo que apply/rollback/reject) antes de re-propagar; happy path intacto. Test renombrado test_corrupt_patch_worktree_cleaned_up (rojo->verde).
 
   - id: tech-8-snapshot-integrity
     title: "Snapshot integrity: verificar integridad de snapshots de estado (backlog técnico del ledger)"
@@ -364,5 +364,23 @@ items:
       al guardar y una comprobación al restaurar que rechaza un snapshot corrupto con error explícito;
       test con snapshot manipulado demuestra el rechazo; suite verde. Si no hay mecanismo de snapshot vivo,
       cerrar el item como no-aplicable con nota (no inventar infraestructura).
+    priority: 3
+    status: pending
+
+  - id: tech-9-jail-rootfs-minimo
+    title: "BwrapJail: rootfs mínimo en vez de bind read-only de / (reducir superficie)"
+    why: >
+      El WORK_LEDGER (Backlog técnico) lista 'jail rootfs mínimo'. Hoy `LayeredIsolationSandbox`/BwrapJail
+      (ADR-055 Slice 1) hace `/` bind-mount read-only — el código aislado VE todo el filesystem del host (en
+      solo-lectura, pero visible: rutas, configs, secretos en disco). Un rootfs mínimo (solo lo necesario para
+      ejecutar Python) reduce la superficie de información expuesta al código generado.
+    targets:
+      - "src/atlas/core/"
+    acceptance: >
+      Primero localizar BwrapJail/execute_in_jail (grep) y su construcción de binds. Acotar qué necesita un
+      ejecutable Python mínimo (intérprete + stdlib). Sustituir el bind de '/' por binds selectivos read-only de
+      esos paths; test (mockeando subprocess como los tests existentes de BwrapJail) demuestra que la lista de
+      binds ya NO incluye '/' sino el conjunto acotado. Si el riesgo de romper ejecuciones reales es alto,
+      entregar como flag opt-in con default actual y anotar el trade-off. No instalar deps nuevas.
     priority: 3
     status: pending
