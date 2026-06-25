@@ -44,7 +44,7 @@ external service not covered by CLI (`gh` covers git/GitHub). **Repo hygiene:** 
 `least-effort-automation` · `roadmap-is-guide-not-law` ·
 `stdlib-over-new-deps` · `no-aux-scripts-bloat` · `no-cli-against-live-workspace` ·
 `no-gui-in-tests` · `no-deepen-hitl-coupling` · `no-security-lectures-local` ·
-`arxiv-citation-verification`.
+`arxiv-citation-verification` · `adopt-real-not-shell`.
 
 **This loop self-evolves:** when the user states a recurring preference or a workflow
 improvement → (a) write/update a `feedback-*.md` memory (Why + How-to-apply), (b) one-liner in
