@@ -100,7 +100,13 @@ workos.com/blog/mcp-2025-11-25-spec-update.
 **Cierre del MCP (decisión del usuario: 6 primitivos + Tasks).** También HECHO 2026-06-25: **Completion**
 (autocompletado catálogo/skills), **Logging + Progress** (`trunk_selfcheck`). Ver
 `docs/superpowers/specs/2026-06-25-mcp-close-primitives-design.md` y `src/atlas/mcp/trunk_capabilities.py`.
-PENDIENTE (lote C): **push-subscriptions** (low-level) y **Tasks** (extensión async — evaluar/defer honesto).
+LOTE C: ✅ **push-subscriptions** (capacidad real — subscribe/unsubscribe + seam de publish; el cliente recibe
+`resources/updated`. Watcher AUTOMÁTICO diferido → `mcp-subscriptions-auto-watcher`). ⏸ **Tasks**: VERIFICADO
+que el SDK tiene los tipos pero NO handlers/soporte → hand-rollear sin consumidor sería vapor; se construye CON
+el workflow (SP-E), donde Tasks es el motor del loop async (`mcp-tasks-extension`).
+
+**CIERRE DEL MCP: completo** salvo lo que honestamente depende del workflow (Tasks) o de un consumidor en
+caliente (auto-watcher). De 2/6 a los 6 primitivos + utilidades (Completion/Logging/Progress) + subscriptions.
 
 Embeddings (`memory-mcp-local-embedder`): el embedder local aterriza DENTRO de este marco — la memoria
 semántica es una capacidad que el catálogo-como-Resource debe reflejar con su etiqueta de estado.

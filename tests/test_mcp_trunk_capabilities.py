@@ -162,3 +162,32 @@ def test_roots_listing() -> None:
 
     out = asyncio.run(run())
     assert any("file:///workspace" in r for r in out)
+
+
+def test_subscription_tracks_and_pushes_update() -> None:
+    pytest.importorskip("mcp")
+    import asyncio
+
+    from mcp.shared.memory import create_connected_server_and_client_session as connect
+    from mcp.types import ResourceUpdatedNotification, ServerNotification
+    from pydantic import AnyUrl
+
+    received: list[str] = []
+
+    async def message_handler(message) -> None:  # type: ignore[no-untyped-def]
+        if isinstance(message, ServerNotification) and isinstance(
+            message.root, ResourceUpdatedNotification
+        ):
+            received.append(str(message.root.params.uri))
+
+    async def run() -> None:
+        async with connect(_server(), message_handler=message_handler) as client:
+            # El cliente se subscribe al índice del catálogo.
+            await client.subscribe_resource(AnyUrl("catalog://manifest"))
+            # El server publica un cambio (seam que el watcher/sync invocará).
+            await client.call_tool("trunk_notify_catalog_changed", {})
+            await asyncio.sleep(0.05)
+
+    asyncio.run(run())
+    # El cliente subscrito recibió resources/updated del manifest.
+    assert any("catalog://manifest" in u for u in received)

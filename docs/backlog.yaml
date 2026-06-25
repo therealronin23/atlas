@@ -517,4 +517,38 @@ items:
       demuestre la notificación al cambiar el catálogo. Alternativa más simple si basta: recarga-desde-disco en
       cada lectura del resource (hoy serializa la lista en memoria cargada en serve()). Medir cuál aporta antes.
     priority: 3
+    status: done  # 2026-06-25: register_subscription_capabilities — handlers subscribe/unsubscribe (low-level)
+      # + seam de publish trunk_notify_catalog_changed; el cliente se subscribe a catalog://manifest y recibe
+      # resources/updated (test vía harness in-memory). DIFERIDO (honesto): el watcher AUTOMÁTICO de fondo
+      # (push out-of-band al cambiar el mtime) exige reescribir el server a low-level (loop síncrono de FastMCP)
+      # → follow-up mcp-subscriptions-auto-watcher cuando haya consumidor.
+
+  - id: mcp-subscriptions-auto-watcher
+    title: "Subscriptions: watcher automático que publica al cambiar el catálogo (low-level run loop)"
+    why: >
+      catalog-resources-live-subscriptions entregó la capacidad (subscribe + seam de publish), pero el disparo
+      AUTOMÁTICO (background, al cambiar mcp_catalog*.yaml) necesita el Server low-level con run loop propio
+      (FastMCP corre síncrono). Sin consumidor todavía → diferido (wire-before-claim).
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Watcher de mtime en serve() (o reescritura a low-level) que invoque el seam de publish al detectar cambio;
+      test que demuestre el push automático. Reabrir cuando el catálogo cambie en caliente con cliente conectado.
+    priority: 3
+    status: pending
+
+  - id: mcp-tasks-extension
+    title: "Extensión Tasks (async/largo) — construir CON el workflow (SP-E)"
+    why: >
+      El usuario pidió cerrar el MCP con Tasks. Hecho 2026-06-25: VERIFICADO que el SDK (mcp 1.28) tiene los
+      TIPOS de Task (CreateTaskResult/GetTaskRequest/…) pero NO handlers ni soporte high-level/low-level — habría
+      que hand-rollear el ciclo entero sobre JSON-RPC crudo. Sin consumidor (el workflow async no existe aún),
+      eso es vapor → DIFERIDO. Tasks ES el motor del loop autónomo: se construye DENTRO de SP-E, donde tiene
+      consumidor real (decide-with-facts + wire-before-claim).
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Junto a SP-E (workflow Dynamic): declarar la experimental_capability de Tasks + handlers create/get/cancel
+      sobre el trabajo async del loop; test del ciclo de vida. No antes de que exista el consumidor.
+    priority: 3
     status: pending
