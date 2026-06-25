@@ -606,13 +606,21 @@ class SqliteMemoryIndex:
     # Lectura interna
     # ------------------------------------------------------------------
 
-    def _rows(self, include_superseded: bool = False) -> list[tuple[str, list[float]]]:
+    def _rows(
+        self, include_superseded: bool = False, *,
+        memory_class: str = "factual", now_epoch: float | None = None,
+    ) -> list[tuple[str, list[float]]]:
+        now = now_epoch if now_epoch is not None else time.time()
+        sql = "SELECT id, vector FROM records WHERE tenant=?"
+        params: list[object] = [self._tenant]
         if not include_superseded:
-            sql = "SELECT id, vector FROM records WHERE valid_until_ns IS NULL AND tenant=?"
-        else:
-            sql = "SELECT id, vector FROM records WHERE tenant=?"
+            sql += " AND valid_until_ns IS NULL"
+        sql += " AND memory_class=?"
+        params.append(memory_class)
+        sql += " AND (expires_at IS NULL OR expires_at > ?)"
+        params.append(now)
         sql += " ORDER BY ordinal"
-        cur = self._conn.execute(sql, (self._tenant,))
+        cur = self._conn.execute(sql, tuple(params))
         return [(rid, _unpack(blob)) for rid, blob in cur.fetchall()]
 
     # ------------------------------------------------------------------
@@ -620,9 +628,11 @@ class SqliteMemoryIndex:
     # ------------------------------------------------------------------
 
     def recall(
-        self, query_text: str, *, include_superseded: bool = False, now_ns: int | None = None
+        self, query_text: str, *, include_superseded: bool = False, now_ns: int | None = None,
+        memory_class: str | None = None,
     ) -> RecallResult | None:
-        rows = self._rows(include_superseded)
+        cls = memory_class if memory_class is not None else "factual"
+        rows = self._rows(include_superseded, memory_class=cls)
         if not rows:
             return None
         if not query_text.strip():
@@ -645,9 +655,10 @@ class SqliteMemoryIndex:
 
     def recall_all(
         self, query_text: str, k: int = 5, *, include_superseded: bool = False,
-        now_ns: int | None = None,
+        now_ns: int | None = None, memory_class: str | None = None,
     ) -> list[RecallResult]:
-        rows = self._rows(include_superseded)
+        cls = memory_class if memory_class is not None else "factual"
+        rows = self._rows(include_superseded, memory_class=cls)
         if not rows:
             return []
         if not query_text.strip():

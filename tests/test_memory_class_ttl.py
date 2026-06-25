@@ -60,3 +60,45 @@ def test_upsert_explicit_expires_at_wins(tmp_path: Path) -> None:
                expires_at=123.0)
     row = idx._conn.execute("SELECT expires_at FROM records WHERE id='p2'").fetchone()
     assert row[0] == 123.0
+
+
+def _seed_mixed(idx: SqliteMemoryIndex) -> None:
+    idx.upsert(GenericRecord(record_id="f1", text="la fotosíntesis ocurre en los cloroplastos"),
+               memory_class="factual")
+    idx.upsert(GenericRecord(record_id="p1", text="creo que la fotosíntesis es sobrevalorada"),
+               memory_class="personal")
+
+
+def test_recall_default_returns_only_factual(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    _seed_mixed(idx)
+    ids = {r.lesson_id for r in idx.recall_all("fotosíntesis", k=10)}
+    assert "f1" in ids
+    assert "p1" not in ids  # personal NO se mezcla por defecto
+
+
+def test_recall_personal_returns_only_personal(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    _seed_mixed(idx)
+    ids = {r.lesson_id for r in idx.recall_all("fotosíntesis", k=10, memory_class="personal")}
+    assert ids == {"p1"}
+
+
+def test_recall_excludes_expired(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    idx.upsert(GenericRecord(record_id="old", text="preferencia caduca"),
+               memory_class="personal", expires_at=1.0)  # epoch lejano en el pasado
+    ids = {r.lesson_id for r in idx.recall_all("preferencia", k=10, memory_class="personal")}
+    assert "old" not in ids
+
+
+def test_contamination_does_not_affect_factual_recall(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    idx.upsert(GenericRecord(record_id="f1", text="el sol está a 150M km de la Tierra"),
+               memory_class="factual")
+    before = {r.lesson_id for r in idx.recall_all("distancia al sol", k=10)}
+    for i in range(5):
+        idx.upsert(GenericRecord(record_id=f"bias{i}", text="el sol está cerquísima"),
+                   memory_class="personal")
+    after = {r.lesson_id for r in idx.recall_all("distancia al sol", k=10)}
+    assert before == after  # las personales no contaminan el recall factual
