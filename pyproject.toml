@@ -40,6 +40,13 @@ mcp = [
     # (MemoryTrunk) es usable sin esta dep; solo el shell de transporte la pide.
     "mcp>=1.2",
 ]
+embeddings = [
+    # Memoria semántica LOCAL (ONNX, SIN torch) — embeddings in-process/offline.
+    # OPCIONAL: el default es StubEmbedder; se activa con ATLAS_EMBEDDER=fastembed.
+    # Elegido sobre sentence-transformers para EVITAR torch (~GBs), coherente con
+    # la regla anti-deps-pesadas del repo (ver el extra `redteam`).
+    "fastembed>=0.3",
+]
 redteam = [
     # ADR-056: tooling de red-team SOLO dev/CI — NUNCA importado por el runtime.
     # Instalar en venv aislado y FIJAR torch al índice CPU para quedarse en ~1.8GB

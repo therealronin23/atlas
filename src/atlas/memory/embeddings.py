@@ -230,3 +230,82 @@ PRESET_TOGETHER_M2_BERT = LiteLLMEmbedderConfig(
     dim=768,
     api_key_env="TOGETHERAI_API_KEY",
 )
+
+
+# ---------------------------------------------------------------------------
+# Local: fastembed (ONNX, SIN torch) — embeddings semánticos in-process, offline
+# ---------------------------------------------------------------------------
+
+# Modelo por defecto: multilingüe (la memoria de Atlas puede ser en español) y
+# ligero (dim 384, cuantizado ONNX). fastembed descarga+cachea el modelo en el
+# primer uso. Extra opcional `[embeddings]`; el núcleo sigue usable sin la dep.
+FASTEMBED_DEFAULT_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+FASTEMBED_DEFAULT_DIM = 384
+
+
+class FastEmbedEmbedder:
+    """Embedder semántico LOCAL vía fastembed (ONNX, sin torch).
+
+    A diferencia de `LiteLLMEmbedder` (API hospedada, lock-in + coste/llamada),
+    corre in-process y offline: ni red ni proveedor. Misma familia de modelos que
+    sentence-transformers (BGE/E5/MiniLM) pero servidos por ONNX, sin los GBs de
+    torch. `dim` debe coincidir con el modelo (e5-small/BGE-small = 384).
+
+    Fail-closed: si `fastembed` no está instalado, lanza RuntimeError explícito —
+    NO cae a stub callado (mezclar vectores stub y reales corrompe el recall)."""
+
+    def __init__(
+        self, model_name: str = FASTEMBED_DEFAULT_MODEL, dim: int = FASTEMBED_DEFAULT_DIM
+    ) -> None:
+        try:
+            from fastembed import TextEmbedding
+        except ImportError as exc:  # pragma: no cover - depende de extra opcional
+            raise RuntimeError(
+                "fastembed no instalado: pip install 'atlas-core[embeddings]' "
+                "(o quita ATLAS_EMBEDDER=fastembed para usar el stub)"
+            ) from exc
+        self._model = TextEmbedding(model_name=model_name)
+        self._dim = dim
+        self._model_name = model_name
+
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+    @property
+    def model(self) -> str:
+        return self._model_name
+
+    def embed(self, text: str) -> list[float]:
+        return self.embed_batch([text])[0]
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        out = [[float(x) for x in vec] for vec in self._model.embed(texts)]
+        if len(out) != len(texts):
+            raise RuntimeError(
+                f"fastembed devolvió {len(out)} vectores para {len(texts)} inputs"
+            )
+        for v in out:
+            if len(v) != self._dim:
+                raise RuntimeError(
+                    f"dim inesperada: {len(v)} vs {self._dim} (modelo {self._model_name})"
+                )
+        return out
+
+
+def default_embedder() -> "Embedder":
+    """Selector del embedder para la memoria del tronco, gobernado por env.
+
+    - `ATLAS_EMBEDDER=fastembed` → `FastEmbedEmbedder` (semántico local, dim 384).
+      Fail-closed: si la dep no está, propaga el RuntimeError (no cae a stub).
+    - cualquier otro valor / sin definir → `StubEmbedder(dim=64)` (default actual).
+
+    Opt-in DELIBERADO: cambiar de embedder cambia el espacio vectorial; un store
+    existente con dim distinta dispara el guard de dimensión del índice (migración
+    honesta = rebuild, no mezcla silenciosa)."""
+    choice = os.environ.get("ATLAS_EMBEDDER", "stub").strip().lower()
+    if choice == "fastembed":
+        return FastEmbedEmbedder()
+    return StubEmbedder(dim=64)
