@@ -475,3 +475,40 @@ items:
       "memoria semántica" sin tests de recall real verdes.
     priority: 2
     status: pending
+
+  - id: catalog-resources-mcp
+    title: "Catálogo del tronco como Resources MCP (índice + detalle) — hueco #1 del audit"
+    why: >
+      El audit (mcp-audit-six-primitives) priorizó #1: exponer el catálogo como Resources (el "JSON índice"
+      del usuario) en vez de solo tool-calls que queman turno. Spec:
+      docs/superpowers/specs/2026-06-25-catalog-resources-design.md.
+    targets:
+      - "src/atlas/mcp/catalog_resources.py"
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Builder puro (manifest_json con 4 ejes + summary + fresh-hash; item_detail por kind/name) + cableado
+      aditivo en build_trunk_server (catalog://manifest + catalog://item/{kind}/{name}). Tests builder +
+      in-process FastMCP verdes; mypy strict.
+    priority: 2
+    status: done  # 2026-06-25: catalog_resources.py (manifest_json/item_detail/manifest_hash, 8 tests) +
+      # 2 resources en trunk_server (catalog://manifest + catalog://item/{kind}/{name}), test in-process FastMCP
+      # (mcp 1.28 en .venv). mypy strict limpio. Aditivo: trunk_catalog/find/kinds tools intactos. Push de
+      # subscriptions NO incluido (FastMCP high-level no lo expone) → follow-up catalog-resources-live-subscriptions.
+
+  - id: catalog-resources-live-subscriptions
+    title: "Catálogo Resources: push de subscriptions (resources/updated) cuando el sync cambia el catálogo"
+    why: >
+      El usuario pidió el índice VIVO con subscriptions. El slice 1 (catalog-resources-mcp) entrega índice +
+      detalle + `fresh` hash para change-detection, pero NO el push: FastMCP high-level no expone emisión de
+      `resources/updated` (verificado mcp 1.28: existe en el Server low-level `subscribe_resource` +
+      `ResourceUpdatedNotification`, no en FastMCP). wire-before-claim: no se fingió subscriptions sobre una API
+      que no las soporta.
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Bajar al Server low-level (o el mecanismo que FastMCP ofrezca al madurar) + watcher de mtime de
+      mcp_catalog*.yaml que emita `resources/updated` de catalog://manifest a los clientes subscritos; test que
+      demuestre la notificación al cambiar el catálogo. Alternativa más simple si basta: recarga-desde-disco en
+      cada lectura del resource (hoy serializa la lista en memoria cargada en serve()). Medir cuál aporta antes.
+    priority: 3
+    status: pending

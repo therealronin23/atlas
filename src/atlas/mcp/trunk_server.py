@@ -161,6 +161,23 @@ def build_trunk_server(
 
     if catalog is not None:
         from atlas.mcp.catalog import by_kind as _by_kind
+        from atlas.mcp.catalog_resources import item_detail as _item_detail
+        from atlas.mcp.catalog_resources import manifest_json as _manifest_json
+
+        @server.resource("catalog://manifest", mime_type="application/json")
+        def catalog_manifest() -> str:
+            """Índice del catálogo (JSON): summary + `fresh` + items con sus 4 ejes
+            (status/kind/domain+subsector/mode). Léelo UNA vez en vez de navegar por
+            tool-calls. El detalle de un item va por `catalog://item/{kind}/{name}`."""
+            return _manifest_json(catalog)
+
+        @server.resource("catalog://item/{kind}/{name}", mime_type="application/json")
+        def catalog_item(kind: str, name: str) -> str:
+            """Detalle COMPLETO de un item del catálogo (todos sus campos)."""
+            detail = _item_detail(catalog, f"{kind}/{name}")
+            if detail is None:
+                raise ValueError(f"catalog item not found: {kind}/{name}")
+            return detail
 
         @server.tool()
         def trunk_kinds() -> dict[str, int]:

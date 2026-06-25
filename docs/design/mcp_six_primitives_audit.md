@@ -57,6 +57,36 @@ antes (`wire-before-claim`): ¿hay una tool del tronco que hoy necesita un LLM y
 cliente. Diferir (anti-vapor). Nota: renombrar nuestro `RootSpec` evitaría la colisión léxica si algún día
 se adopta el primitivo.
 
+## Más allá de los 6: utilidades + EXTENSIONES (investigación 2026-06-25)
+
+Respuesta a "¿hay más primitivos y se pueden expandir?" — **sí, en dos niveles**. Fuentes:
+modelcontextprotocol.io/specification/draft, blog.modelcontextprotocol.io/posts/2026-03-11-understanding-mcp-extensions,
+workos.com/blog/mcp-2025-11-25-spec-update.
+
+**Utilidades del core (más allá de Tools/Resources/Prompts):**
+- **Completion** — autocompletado de argumentos para prompts y URIs de resources (experiencia tipo-IDE).
+- **Resource templates** — resources parametrizados por URI (`catalog://sector/{sector}`), no N resources fijos.
+- **Resource subscriptions + Notifications** (`resources/subscribe`, list-changed/updated) — el resource avisa
+  cuando cambia.
+- **Logging, Progress, Cancellation, Ping** — utilidades para operaciones largas.
+
+**Los primitivos SÍ se expanden — framework de EXTENSIONS (spec 2026-03):**
+- Opt-in, negociadas en el handshake `initialize` (campo `extensions` en client/server capabilities).
+  Identificador `{vendor-prefix}/{extension-name}` (oficiales: `io.modelcontextprotocol`). **Estrictamente
+  aditivas**: quien no reconoce una extensión la ignora, nada rompe. → podríamos definir extensiones `atlas/...`.
+- Extensiones oficiales notables: **Tasks** (trabajo async/largo; de core experimental → extensión en 2025-11-25)
+  y **MCP Apps** (el server sirve UI HTML interactiva en iframe sandboxed; las tools declaran su template de UI).
+
+**Implicaciones para Atlas (estratégicas, registradas; NO construir aún):**
+- **Tasks** = primitivo nativo de trabajo largo → encaja con el loop autónomo (autobuild/Dynamic Workflows)
+  mejor que el caveat DW; reabrir al diseñar SP-E.
+- **MCP Apps** = posible UI real de la "mesa de trabajo" (SP-A) / dashboards de estado.
+- **Resource templates + subscriptions + Completion** = CÓMO exponer el catálogo (#1) bien: navegable por
+  URI, con etiqueta de estado VIVA (el sync diario `mcp-catalog-sync` empuja updates) y autocompletado.
+- **Extensions `atlas/...`** = vía nativa para lo que el core no cubre (p.ej. routing por sector, manifest con
+  estado) sin romper clientes ajenos. Medir necesidad antes (`wire-before-claim`); no inventar extensión por
+  inventarla.
+
 ## Recomendación priorizada (para brainstorming, no implementación)
 
 1. **Resources del catálogo/manifest** (#1) — el ladrillo de la "mesa de trabajo" (SP-A) y respuesta directa

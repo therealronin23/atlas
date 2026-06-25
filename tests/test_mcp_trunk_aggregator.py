@@ -236,3 +236,36 @@ def test_servers_from_registry_parses_tool_specs() -> None:
     servers = servers_from_registry(_Reg())
     assert servers["everything"] == ["echo", "get-sum"]
     assert servers["atlas-memory"] == ["recall"]
+
+
+def test_build_trunk_server_exposes_catalog_resources() -> None:
+    pytest.importorskip("mcp")
+    import asyncio
+    import json
+
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_server import build_trunk_server
+
+    catalog = load_catalog(_CATALOG)
+    server = build_trunk_server(_agg(), catalog=catalog)
+
+    # El índice está registrado como resource.
+    resources = {str(r.uri) for r in asyncio.run(server.list_resources())}
+    assert "catalog://manifest" in resources
+
+    # Y se lee como JSON parseable con los 4 ejes + summary + fresh.
+    manifest = list(asyncio.run(server.read_resource("catalog://manifest")))[0].content
+    data = json.loads(manifest)
+    assert data["summary"]["total"] == len(catalog)
+    assert isinstance(data["fresh"], str) and data["fresh"]
+    assert set(data["items"][0].keys()) == {
+        "id", "name", "status", "kind", "domain", "subsector", "mode",
+    }
+
+    # El detalle por template devuelve el item completo.
+    e = next(x for x in catalog if "/" not in x.name and " " not in x.name)
+    uri = f"catalog://item/{e.kind}/{e.name}"
+    detail = list(asyncio.run(server.read_resource(uri)))[0].content
+    dd = json.loads(detail)
+    assert dd["name"] == e.name and dd["kind"] == e.kind
+    assert dd["purpose"] == e.purpose
