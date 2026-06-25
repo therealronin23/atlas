@@ -291,6 +291,10 @@ NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:22
   ⚠️ **Push de subscriptions NO incluido** (decide-with-facts: FastMCP high-level no expone `resources/updated`;
   existe solo en el Server low-level). Entregado `fresh`-hash para change-detection; push = follow-up
   `catalog-resources-live-subscriptions` (pendiente). wire-before-claim: no se fingió.
+- ✅ **#2 Prompts para skills CONSTRUIDO**: en `build_trunk_server`, cada skill servido se registra TAMBIÉN
+  como Prompt MCP nativo (`add_prompt`/`Prompt.from_function`), descubrible por el cliente sin tool-call; cuerpo
+  cargado perezosamente vía `skill_store.get`. Aditivo a `list_skills`/`get_skill`. Test in-process
+  (list_prompts ⊇ skills, get_prompt = contenido). mypy strict limpio.
 - 🔵 **Hallazgo extra (investigado)**: hay MÁS que 6 primitivos (Completion/Resource-templates/Subscriptions/
   Logging/Progress) Y se EXPANDEN vía **Extensions** (`atlas/...`, opt-in, aditivas). Oficiales: **Tasks**
   (async largo → loop autónomo/SP-E) y **MCP Apps** (UI HTML iframe → mesa SP-A). Detalle en el audit doc.

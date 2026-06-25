@@ -219,6 +219,24 @@ def build_trunk_server(
             """Devuelve el contenido de un skill (markdown). Acceso 'de una', sin instalar."""
             return skill_store.get(name)
 
+        # Además: cada skill como PROMPT MCP nativo (descubrible por el cliente —
+        # slash-commands/autocompletado — sin un tool-call). Aditivo a get_skill.
+        # El cuerpo se carga PEREZOSAMENTE al pedir el prompt (registro = solo nombres).
+        from mcp.server.fastmcp.prompts.base import Prompt
+
+        def _make_skill_prompt(skill_name: str) -> Prompt:
+            def _skill_body() -> str:
+                return skill_store.get(skill_name)
+
+            return Prompt.from_function(
+                _skill_body,
+                name=skill_name,
+                description=f"Atlas skill servido por el tronco: {skill_name}",
+            )
+
+        for _sname in skill_store.list_skills():
+            server.add_prompt(_make_skill_prompt(_sname))
+
     return server
 
 

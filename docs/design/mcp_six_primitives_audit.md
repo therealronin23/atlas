@@ -91,7 +91,8 @@ workos.com/blog/mcp-2025-11-25-spec-update.
 
 1. **Resources del catálogo/manifest** (#1) — el ladrillo de la "mesa de trabajo" (SP-A) y respuesta directa
    al "JSON índice" del usuario. Internal-prior-art, coste bajo. **Empezar aquí.**
-2. **Prompts para skills** (#2) — complemento barato, mejora descubribilidad.
+2. **Prompts para skills** (#2) — ✅ HECHO 2026-06-25: `build_trunk_server` registra cada skill servido como
+   Prompt MCP nativo (aditivo a `get_skill`), cuerpo perezoso. Complemento barato, mejora descubribilidad.
 3. **Elicitation** (#3) — NO construir aún; es el marco que SP-D (HITL) debe heredar. Verificar floor `mcp`.
 4. **Sampling** (#4) — medir necesidad real (SP-B) antes.
 5. **Roots** (#5) — diferido.

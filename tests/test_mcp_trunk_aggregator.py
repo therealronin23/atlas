@@ -269,3 +269,28 @@ def test_build_trunk_server_exposes_catalog_resources() -> None:
     dd = json.loads(detail)
     assert dd["name"] == e.name and dd["kind"] == e.kind
     assert dd["purpose"] == e.purpose
+
+
+def test_build_trunk_server_exposes_skills_as_prompts() -> None:
+    pytest.importorskip("mcp")
+    import asyncio
+    from pathlib import Path
+
+    from atlas.mcp.skills_store import SkillStore
+    from atlas.mcp.trunk_server import build_trunk_server
+
+    store = SkillStore(Path(__file__).resolve().parent.parent / "docs" / "skills")
+    server = build_trunk_server(_agg(), skill_store=store)
+
+    skills = set(store.list_skills())
+    assert skills  # sanity: hay skills servidos
+
+    # Cada skill aparece como PROMPT nativo (no solo como tool get_skill).
+    prompts = {p.name for p in asyncio.run(server.list_prompts())}
+    assert skills <= prompts
+
+    # Y el cuerpo del prompt coincide con el contenido del skill (carga perezosa).
+    sample = sorted(skills)[0]
+    got = asyncio.run(server.get_prompt(sample, {}))
+    body = got.messages[0].content.text
+    assert body == store.get(sample)
