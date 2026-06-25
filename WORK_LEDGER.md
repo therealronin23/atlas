@@ -347,7 +347,24 @@ NADA implementado esta sesión salvo honestidad-docs (tech-9 done + AGENTS.md:22
     `FastEmbedEmbedder` (fastembed/ONNX, SIN torch; extra opcional `[embeddings]`; modelo multilingüe
     paraphrase-MiniLM-L12-v2 dim 384). `default_embedder()` por env `ATLAS_EMBEDDER=fastembed` (opt-in;
     default stub; fail-closed). Cableado en memory_server + MemoryTrunk. Verificado EN VIVO (test semántico
-    español verde). Siguientes ladrillos SP-C: FTS/híbrido, trust-scoring, verbatim-no-resumen.
+    español verde).
+    ✅ **Ladrillos 2-3 HECHOS (autobuild 4 fases, commit b688721, auditor PASS):** retrieval **híbrido**
+    (FTS5 léxico OPT-IN default-OFF + recall_lexical bm25 + rrf_fuse; crypto-shred del plaintext FTS
+    verificado en vivo) y **temporal** (recall_temporal as_of + recencia, determinista/auditable) + andamio
+    de ablación en `eval_memory_benchmark` (modos cosine/hybrid/temporal). 46 tests, mypy strict, 0 deps.
+    **Hallazgo empírico:** el corpus sintético NO discrimina (3 modos idénticos → confirma que hace falta
+    LongMemEval); demo dirigida: TEMPORAL gana claro (as_of reconstruye el pasado), HÍBRIDO marginal sobre
+    fastembed → medir en LongMemEval, no asumir. Ver [[memory-program-conclave-verdict]].
+    **Programa de memoria SENTENCIADO por el Cónclave** (enjambre 6 agentes + trío, 2026-06-25): MEDIR
+    primero (LongMemEval_S) = go/no-go · decay NO (rompe auditabilidad+GDPR) · invención reencuadrada (sin
+    PBFT-sobre-borrado) · derivar-usuario solo si auditable. Atlas adelante en verificable+borrado-auditable,
+    detrás en temporal/híbrido/medición. NOTA: la sesión paralela añadió `kuzu>=0.11` (graph DB) → infra para
+    el grafo temporal tipado cuando se aborde. Siguientes: LongMemEval (el harness ya está listo), trust-scoring.
+  - SP-D — ✅ **slice 1 SPEC'd** (`docs/superpowers/specs/2026-06-25-recording-decider-design.md`):
+    `RecordingDecider` (graba decisiones para el corpus de la copia digital), con las 4 correcciones del
+    Cónclave (split features/rationale, schema+versión-decider, shadow-medible, firewall-sensibilidad) y el
+    principio de SUSTRATO UNIFICADO. NO construido aún. Ver [[conclave-recordingdecider-blindspots]],
+    [[atlas-unified-substrate-principle]].
   - SP-D **copia-digital / reducir HITL** (con investigación de por medio, prioridad seguridad; Elicitation MCP
     es el hook nativo). Manía: `no-deepen-hitl-coupling` mientras no haya mecanismo seguro.
   - SP-E **workflow por-Gate** (Dynamic Workflows): el primitivo NATIVO para el loop autónomo autobuild +
