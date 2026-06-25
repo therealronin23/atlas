@@ -107,7 +107,7 @@ items:
       de expiración diferenciada (personal: TTL corto; factual: TTL largo o sin expiración);
       test demuestra que contaminación sintética no afecta recall factual.
     priority: 3
-    status: pending
+    status: done  # 2026-06-25: mitad tratable hecha (memory_class explícito + recall no-mezcla (default factual) + recall_split + TTL por-ítem con default por clase + expire_stale, 13 tests). Muro registrado: clasificador automático NO construido (1c).
 
   # --- Reposición 2026-06-24: wire-before-claim. Las capacidades f2-1/f2-2/f2-5 existen en
   # SqliteMemoryIndex pero NINGÚN caller (MCP/trunk/manager) las usa todavía. Son gaps reales,
@@ -350,6 +350,39 @@ items:
       `test_corrupt_patch_worktree_left_behind` se actualiza para afirmar limpieza); suite verde.
     priority: 2
     status: done  # 2026-06-25 autobuild: propose() envuelve _apply_patch en try/except que limpia el worktree via _remove_worktree (mismo mecanismo que apply/rollback/reject) antes de re-propagar; happy path intacto. Test renombrado test_corrupt_patch_worktree_cleaned_up (rojo->verde).
+
+  - id: f2-6a-caller-wiring-personal-factual
+    title: "f2-6 follow-up: cablear memory_class en caller-side (knowledge-src/preferencias)"
+    why: >
+      f2-6 cerró el sustrato (memory_class explícito, recall no-mezcla, TTL). Pero ningún caller aún
+      deriva la clasificación: ¿una lección viene de knowledge-src (factual) o de interacción del usuario (personal)?
+      Sin cablear, la capacidad f2-6 es teórica: todo sigue entrando como "factual" por defecto.
+    targets:
+      - "src/atlas/knowledge/"
+      - "src/atlas/mcp/memory_trunk.py"
+    acceptance: >
+      add_memory/upsert rutas derivadoras de origen: `add_from_knowledge_src(mem, class="factual")`,
+      `add_from_user_preference(mem, class="personal")`; test de integración demuestra que lecciones vivas
+      etiquetan correctamente; suite verde.
+    priority: 2
+    status: pending
+
+  - id: f2-6b-llm-judge-vs-explicit-tagging
+    title: "f2-6 investigación: ¿LLM-juez bate al etiquetado explícito? (muro 1c)"
+    why: >
+      El muro 1c de f2-6 es el clasificador automático (¿es una lección factual o personal?). Hoy f2-6
+      requiere etiquetado explícito en el caller. Una investigación controlada: ¿un LLM-juez puede
+      clasificar mejor que etiquetas manuales? Requiere benchmark + generación sintética.
+    targets:
+      - "src/atlas/core/"
+      - "tests/benchmarks/"
+    acceptance: >
+      Script que genera N pares (lección, etiqueta humana) de verdad-fundamental, entrena/evalúa un
+      LLM-juez simple, y reporta accuracy vs baseline (etiquetado explicit random/determinista); si el
+      juez mejora >10% sobre baseline, registrar como "viable"; de lo contrario, "no costo-eficaz".
+      Doc con hallazgos; suite sin cambios (investig. no cableada).
+    priority: 3
+    status: pending
 
   - id: tech-8-snapshot-integrity
     title: "Snapshot integrity: verificar integridad de snapshots de estado (backlog técnico del ledger)"

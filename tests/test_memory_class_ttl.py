@@ -129,3 +129,12 @@ def test_expire_stale_retires_expired_and_counts(tmp_path: Path) -> None:
     assert live[0] is None
     # idempotente: 2ª pasada no retira nada.
     assert idx.expire_stale() == 0
+
+
+def test_personal_isolated_by_tenant(tmp_path: Path) -> None:
+    db = tmp_path / "m.db"
+    a = SqliteMemoryIndex(db, tenant="A")
+    b = SqliteMemoryIndex(db, tenant="B")
+    a.upsert(GenericRecord(record_id="pa", text="secreto de A"), memory_class="personal")
+    ids_b = {r.lesson_id for r in b.recall_all("secreto", k=10, memory_class="personal")}
+    assert "pa" not in ids_b  # B no ve lo personal de A
