@@ -89,6 +89,10 @@ from atlas.security.ssrf_bridge import SSRFBridge
 from atlas import __version__
 
 
+class KuzuInitError(RuntimeError):
+    """Gate-D: fallo al inicializar KuzuVectorStore. Ver mensaje para diagnóstico."""
+
+
 @dataclass
 class AtlasStatus:
     version: str
@@ -987,6 +991,11 @@ class Orchestrator:
     def gate_d_pipeline_enabled(self) -> bool:
         return self._gate_d_enabled
 
+    def _ensure_gate_d(self) -> None:
+        """Inicializa Gate-D en el primer uso. Fail-closed: lanza si falla."""
+        if not self._gate_d_enabled and self._gate_d_requested:
+            self.enable_gate_d_pipeline()
+
     @property
     def distiller(self) -> Any:
         return self._distiller
@@ -1057,10 +1066,18 @@ class Orchestrator:
         if self._memory_vector_enabled():
             kuzu_dir = self._workspace / "memory" / "kuzu"
             kuzu_dir.mkdir(parents=True, exist_ok=True)
-            vector_store = KuzuVectorStore(
-                db_path=kuzu_dir / "atlas.kuzu",
-                embedder=emb,
-            )
+            try:
+                vector_store = KuzuVectorStore(
+                    db_path=kuzu_dir / "atlas.kuzu",
+                    embedder=emb,
+                )
+            except Exception as exc:
+                raise KuzuInitError(
+                    f"Gate-D: no se pudo abrir KuzuVectorStore en {kuzu_dir / 'atlas.kuzu'}. "
+                    f"Para deshabilitar Kuzu: ATLAS_MEMORY_VECTOR=0. "
+                    f"Para reiniciar la DB: rm -rf {kuzu_dir}. "
+                    f"Error original: {exc}"
+                ) from exc
         self._vector_store = vector_store
         self._distiller = MemoryDistiller(embedder=emb, vector_store=vector_store)
         self._error_registry = ErrorRegistry(
@@ -1891,8 +1908,7 @@ class Orchestrator:
         self._pii_surrogate = PIISurrogate()
         self._vector_store = None
         self._gate_d_enabled = False
-        if os.environ.get("ATLAS_PIPELINE_GATE_D", "") == "1":
-            self.enable_gate_d_pipeline()
+        self._gate_d_requested = os.environ.get("ATLAS_PIPELINE_GATE_D", "") == "1"
 
     @property
     def _hermes_mock(self) -> HermesMockAdapter:

@@ -54,6 +54,7 @@ class PipelineRunner:
     # ------------------------------------------------------------------
 
     def _run_pipeline(self, task: Task) -> None:
+        self._orch._ensure_gate_d()
         if self._orch._gate_d_enabled:
             self._orch._run_pipeline_gate_d(task)
             return
