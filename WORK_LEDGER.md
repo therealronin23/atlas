@@ -25,6 +25,22 @@ Design doc: `docs/design/design_verifiable_memory.md` · rama: trabajo mergeado 
   - ✅ 2.3 evaluación honesta (autobuild 2026-06-24: benchmark anti-leak + 10 tests; **LongMemEval_S n=500 k=5: cosine=0.294, hybrid=0.356, temporal=0.294** — hybrid +21%, knowledge-update +100%; baseline en `docs/reference/reports/longmemeval_s_baseline_2026-06-26.json`) · ⬜ 2.4 envenenamiento (parcial)
   - ⬜ 2.5 fuga entre usuarios/tenancy · ✅ 2.6 (mitad tratable; clasificador automático = muro 1c registrado) · ✅ 2.7 cold-start (conceptual)
 
+## Línea activa: copia digital (RecordingDecider → TwinDecider → reducción HITL)
+
+Design doc: `docs/superpowers/specs/2026-06-25-recording-decider-design.md`
+
+- ✅ **Slice 1 — RecordingDecider** (2026-06-26): wrapper transparente del Decider Protocol.
+  `decision_record.py` (DecisionRecord + DecisionSink + JsonlDecisionSink + InMemoryDecisionSink) +
+  `recording_decider.py` (best-effort, firewall D por construcción, decider_version=code-hash) +
+  cableado opt-in `ATLAS_DECISION_LOG=<path>` en `make_decider`. 15 tests, mypy strict, 2355 verdes.
+  Invariantes verificados: transparencia (3 tipos), record_id==action_hash, best-effort, firewall D,
+  sin API de lectura, decider_version estable, opt-in/out.
+- ⬜ **Slice 1b — MemoryDecisionSink** (producción): escribe al SqliteMemoryIndex con Fernet+shred+merkle+
+  ProvenanceWriteGate. Mismo sustrato que SynthesisRecorder del Cónclave. ATLAS_DECISION_LOG=memory:<db>.
+- ⬜ **Slice 2 — Shadow eval**: capturar veredicto humano real al resolver RequiresHuman; métrica de
+  divergencia (twin predice vs humano decide). Requiere slice 1b.
+- ⬜ **Slice 3 — TwinDecider**: aprende del corpus slice 1b. Primero en shadow (predice, no decide).
+
 ## Línea activa: capacidades usables (catálogo → routing) — NUEVA 2026-06-26
 
 Design: `docs/design/design_catalog_enrichment.md`. Memoria: [[capability-routing-structural]] · [[adopt-real-not-shell]].
