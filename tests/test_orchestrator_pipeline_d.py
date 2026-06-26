@@ -133,13 +133,16 @@ class TestOptIn:
         assert orch.slm_classifier is not None
         assert orch.timetravel is not None
 
-    def test_env_var_activates_on_init(
+    def test_env_var_marks_gate_d_requested_on_init(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # Gate-D lazy-init: el constructor NO activa, solo marca como solicitado.
+        # La inicialización real ocurre en el primer _run_pipeline (G0.0).
         monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
         monkeypatch.setenv("ATLAS_PIPELINE_GATE_D", "1")
         o = Orchestrator(workspace=tmp_path / "atlas")
-        assert o.gate_d_pipeline_enabled is True
+        assert o._gate_d_requested is True
+        assert o.gate_d_pipeline_enabled is False  # todavía no inicializado
 
 
 # ===========================================================================
