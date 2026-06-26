@@ -47,17 +47,27 @@ from atlas.memory.record import GenericRecord
 
 
 # ---------------------------------------------------------------------------
-# Retriever types (same interface as eval_memory_benchmark.py)
+# Retriever types
+# SampleCtx: optional per-sample metadata (question_date_ns, etc.) for
+# retrievers that can exploit it (temporal-as_of, multihop).
 # ---------------------------------------------------------------------------
 
-Retriever = Callable[[SqliteMemoryIndex, str, int], list[RecallResult]]
+import dataclasses
 
 
-def _cosine(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
+@dataclasses.dataclass
+class SampleCtx:
+    question_date_ns: int | None = None  # parsed from sample["question_date"]
+
+
+Retriever = Callable[[SqliteMemoryIndex, str, int, SampleCtx], list[RecallResult]]
+
+
+def _cosine(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
     return idx.recall_all(query, k=k)
 
 
-def _hybrid(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
+def _hybrid(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
     n = max(k * 2, 10)
     cosine = idx.recall_all(query, k=n)
     try:
@@ -69,14 +79,56 @@ def _hybrid(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
     return [RecallResult(lesson_id=rid, score=cmap.get(rid, 0.0), matched=True) for rid in fused]
 
 
-def _temporal(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
+def _temporal(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
+    """Cosine + valid_from filter. No as_of: all sessions valid → same as cosine."""
     return idx.recall_temporal(query, k=k)
+
+
+def _temporal_aof(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
+    """Temporal with as_of=question_date: only sessions BEFORE the question date.
+
+    This tests whether knowing the question timestamp helps temporal-reasoning
+    questions: "What was my job in 2023?" should exclude sessions after 2023.
+    """
+    return idx.recall_temporal(query, k=k, as_of_ns=ctx.question_date_ns)
+
+
+def _multihop(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
+    """Multi-hop recall: expand seed results via co-citation / link following.
+
+    Designed for multi-session questions that span multiple conversations.
+    k is ignored (recall_multihop uses hops=2 internally).
+    """
+    results = idx.recall_multihop(query, hops=2)
+    return results[:k]
+
+
+def _hybrid_multihop(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
+    """Hybrid + multihop fused: best of both for multi-session questions."""
+    n = max(k * 2, 10)
+    cosine = idx.recall_all(query, k=n)
+    try:
+        lexical = idx.recall_lexical(query, k=n)
+    except RuntimeError:
+        lexical = []
+    multihop = idx.recall_multihop(query, hops=2)
+    all_rankings = [
+        [r.lesson_id for r in cosine],
+        [r.lesson_id for r in lexical],
+        [r.lesson_id for r in multihop],
+    ]
+    fused = rrf_fuse(all_rankings)[:k]
+    cmap = {r.lesson_id: r.score for r in cosine}
+    return [RecallResult(lesson_id=rid, score=cmap.get(rid, 0.0), matched=True) for rid in fused]
 
 
 RETRIEVERS: dict[str, Retriever] = {
     "cosine": _cosine,
     "hybrid": _hybrid,
     "temporal": _temporal,
+    "temporal_aof": _temporal_aof,
+    "multihop": _multihop,
+    "hybrid_multihop": _hybrid_multihop,
 }
 
 
@@ -131,6 +183,16 @@ def recall_at_k(
     return 1.0 if relevant_ids & set(retrieved_ids) else 0.0
 
 
+def _parse_date_ns(date_str: str) -> int | None:
+    """Parse LongMemEval date string to nanoseconds, or None on failure."""
+    import datetime
+    try:
+        dt = datetime.datetime.fromisoformat(date_str.replace(" ", "T"))
+        return int(dt.timestamp() * 1_000_000_000)
+    except Exception:
+        return None
+
+
 def evaluate_sample(
     sample: dict,
     retrievers: dict[str, Retriever],
@@ -144,6 +206,8 @@ def evaluate_sample(
     answer_session_ids = set(sample["answer_session_ids"])
     question = sample["question"]
 
+    ctx = SampleCtx(question_date_ns=_parse_date_ns(sample.get("question_date", "")))
+
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "lme.db"
         idx = SqliteMemoryIndex(str(db_path), lexical_index=use_hybrid)
@@ -151,7 +215,7 @@ def evaluate_sample(
 
         results = {}
         for mode, retriever in retrievers.items():
-            retrieved = retriever(idx, question, k)
+            retrieved = retriever(idx, question, k, ctx)
             retrieved_ids = [r.lesson_id for r in retrieved]
             results[mode] = recall_at_k(retrieved_ids, answer_session_ids)
         return results
@@ -171,7 +235,7 @@ def run_evaluation(
     random.seed(seed)
     subset = random.sample(data, n) if n and n < len(data) else data
 
-    use_hybrid = "hybrid" in modes
+    use_hybrid = any(m in modes for m in ("hybrid", "hybrid_multihop"))
     active_retrievers = {m: RETRIEVERS[m] for m in modes}
 
     # Per-type accumulators
@@ -219,18 +283,20 @@ def print_report(result: dict) -> None:
     print("=" * 60)
 
     modes = list(result["overall"].keys())
-    hdr = f"{'Type':<30}" + "".join(f"{m:>10}" for m in modes)
+    col = 12
+    hdr = f"{'Type':<32}" + "".join(f"{m:>{col}}" for m in modes)
     print(hdr)
     print("-" * len(hdr))
 
     for qtype, scores in result["per_type"].items():
         n = result["counts_per_type"][qtype]
-        row = f"{qtype + f' (n={n})':<30}" + "".join(f"{scores.get(m, 0):>10.4f}" for m in modes)
+        label = f"{qtype} (n={n})"
+        row = f"{label:<32}" + "".join(f"{scores.get(m, 0):>{col}.4f}" for m in modes)
         print(row)
 
     print("-" * len(hdr))
     overall = result["overall"]
-    row = f"{'OVERALL':<30}" + "".join(f"{overall.get(m, 0):>10.4f}" for m in modes)
+    row = f"{'OVERALL':<32}" + "".join(f"{overall.get(m, 0):>{col}.4f}" for m in modes)
     print(row)
     print()
 
@@ -253,7 +319,9 @@ def main() -> None:
         data = json.load(f)
 
     if args.mode == "all":
-        modes = list(RETRIEVERS.keys())
+        modes = ["cosine", "hybrid", "temporal", "temporal_aof", "multihop", "hybrid_multihop"]
+    elif args.mode == "baseline":
+        modes = ["cosine", "hybrid", "temporal"]
     else:
         modes = [m.strip() for m in args.mode.split(",")]
         for m in modes:
