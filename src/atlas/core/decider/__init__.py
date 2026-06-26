@@ -37,6 +37,7 @@ from atlas.core.decider.decision_record import (
     JsonlDecisionSink,
 )
 from atlas.core.decider.recording_decider import RecordingDecider
+from atlas.core.decider.memory_decision_sink import MemoryDecisionSink
 
 
 def make_decider(name: str | None) -> Decider:
@@ -45,8 +46,10 @@ def make_decider(name: str | None) -> Decider:
     ``human`` (default) | ``autonomous`` | ``hybrid``. Un valor desconocido cae a
     ``human`` (fail-safe a la conducta actual).
 
-    Con ``ATLAS_DECISION_LOG=<path>`` envuelve el resultado en RecordingDecider
-    (slice 1 copia-digital). Sin la variable, cero cambio de comportamiento.
+    Opt-in de grabación (slice 1 copia-digital):
+      ATLAS_DECISION_LOG=<path>           → JsonlDecisionSink (dev/test, sin cifrado)
+      ATLAS_DECISION_LOG=memory:<db_path> → MemoryDecisionSink (producción, Fernet+merkle)
+    Sin la variable → cero cambio de comportamiento.
     """
     key = (name or "human").strip().lower()
     if key == "autonomous":
@@ -58,7 +61,11 @@ def make_decider(name: str | None) -> Decider:
 
     log_path = os.environ.get("ATLAS_DECISION_LOG", "").strip()
     if log_path:
-        sink = JsonlDecisionSink(log_path)
+        if log_path.startswith("memory:"):
+            db_path = log_path[len("memory:"):]
+            sink: DecisionSink = MemoryDecisionSink(db_path)
+        else:
+            sink = JsonlDecisionSink(log_path)
         return RecordingDecider(base, sink)
 
     return base
@@ -78,6 +85,7 @@ __all__ = [
     "JsonlDecisionSink",
     "COLD_PATCH",
     "MCP_SERVER",
+    "MemoryDecisionSink",
     "RecordingDecider",
     "RequiresHuman",
     "RevertRegistry",

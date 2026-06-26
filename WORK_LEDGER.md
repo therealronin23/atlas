@@ -35,8 +35,9 @@ Design doc: `docs/superpowers/specs/2026-06-25-recording-decider-design.md`
   cableado opt-in `ATLAS_DECISION_LOG=<path>` en `make_decider`. 15 tests, mypy strict, 2355 verdes.
   Invariantes verificados: transparencia (3 tipos), record_id==action_hash, best-effort, firewall D,
   sin API de lectura, decider_version estable, opt-in/out.
-- ⬜ **Slice 1b — MemoryDecisionSink** (producción): escribe al SqliteMemoryIndex con Fernet+shred+merkle+
-  ProvenanceWriteGate. Mismo sustrato que SynthesisRecorder del Cónclave. ATLAS_DECISION_LOG=memory:<db>.
+- ✅ **Slice 1b — MemoryDecisionSink** (2026-06-26): sink de producción. Fernet+shred+merkle+ProvenanceWriteGate.
+  Split A verificado en test: shred del rationale deja features intactas (merkle sobrevive).
+  ATLAS_DECISION_LOG=memory:<db>. 9 tests, mypy strict, 2364 suite verdes.
 - ⬜ **Slice 2 — Shadow eval**: capturar veredicto humano real al resolver RequiresHuman; métrica de
   divergencia (twin predice vs humano decide). Requiere slice 1b.
 - ⬜ **Slice 3 — TwinDecider**: aprende del corpus slice 1b. Primero en shadow (predice, no decide).
