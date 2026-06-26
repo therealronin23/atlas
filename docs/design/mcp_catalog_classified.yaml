@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-25T07:33:15.069331+00:00'
+  at: '2026-06-26T06:25:58.343226+00:00'
   note: Clasificación automática; todo candidato.
 sectors:
   ciberseguridad:
@@ -673,6 +673,15 @@ sectors:
       subsector: ''
       mode: connected
       source: ai.artidrop/artidrop
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+    - name: ai.augmentev/paseo
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: ai.augmentev/paseo
       install: ''
       status: candidato
       tags:
@@ -5988,12 +5997,30 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: agent_skill_compositional_risk_auditor
+      kind: prompt
+      subsector: ''
+      mode: served
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_skill_compositional_risk_auditor.txt
+      status: candidato
+      tags:
+      - uncategorized
     - name: agent_skill_designer
       kind: prompt
       subsector: ''
       mode: served
       source: ai-boost/awesome-prompts
       install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_skill_designer.txt
+      status: candidato
+      tags:
+      - uncategorized
+    - name: agent_skill_effectiveness_auditor
+      kind: prompt
+      subsector: ''
+      mode: served
+      source: ai-boost/awesome-prompts
+      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/agent_skill_effectiveness_auditor.txt
       status: candidato
       tags:
       - uncategorized
@@ -6156,24 +6183,6 @@ sectors:
       mode: served
       source: ai-boost/awesome-prompts
       install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/ai_governance_legal_agent.txt
-      status: candidato
-      tags:
-      - uncategorized
-    - name: ai_native_product_architect
-      kind: prompt
-      subsector: ''
-      mode: served
-      source: ai-boost/awesome-prompts
-      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/ai_native_product_architect.txt
-      status: candidato
-      tags:
-      - uncategorized
-    - name: analytics_engineer
-      kind: prompt
-      subsector: ''
-      mode: served
-      source: ai-boost/awesome-prompts
-      install: curl -O https://raw.githubusercontent.com/ai-boost/awesome-prompts/main/prompts/analytics_engineer.txt
       status: candidato
       tags:
       - uncategorized
