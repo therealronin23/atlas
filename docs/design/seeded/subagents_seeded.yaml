@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-25T07:33:13.037138+00:00'
+  at: '2026-06-26T06:25:56.572482+00:00'
   source: github.com/VoltAgent/awesome-claude-code-subagents
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -18,7 +18,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: backend-developer
       sector: uncategorized
       kind: subagent
@@ -30,7 +30,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: design-bridge
       sector: uncategorized
       kind: subagent
@@ -42,7 +42,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: electron-pro
       sector: uncategorized
       kind: subagent
@@ -54,7 +54,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: frontend-developer
       sector: uncategorized
       kind: subagent
@@ -66,7 +66,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: fullstack-developer
       sector: uncategorized
       kind: subagent
@@ -78,7 +78,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: graphql-architect
       sector: uncategorized
       kind: subagent
@@ -90,7 +90,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: microservices-architect
       sector: uncategorized
       kind: subagent
@@ -102,7 +102,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: mobile-developer
       sector: uncategorized
       kind: subagent
@@ -114,7 +114,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: ui-designer
       sector: uncategorized
       kind: subagent
@@ -126,7 +126,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: websocket-engineer
       sector: uncategorized
       kind: subagent
@@ -138,7 +138,7 @@ sectors:
       - 01-core-development
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:09.653897+00:00'
+        fetched_at: '2026-06-26T06:25:53.502924+00:00'
     - name: angular-architect
       sector: uncategorized
       kind: subagent
@@ -150,7 +150,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: cpp-pro
       sector: uncategorized
       kind: subagent
@@ -162,7 +162,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: csharp-developer
       sector: uncategorized
       kind: subagent
@@ -174,7 +174,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: django-developer
       sector: uncategorized
       kind: subagent
@@ -186,7 +186,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: dotnet-core-expert
       sector: uncategorized
       kind: subagent
@@ -198,7 +198,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: dotnet-framework-4.8-expert
       sector: uncategorized
       kind: subagent
@@ -210,7 +210,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: elixir-expert
       sector: uncategorized
       kind: subagent
@@ -222,7 +222,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: expo-react-native-expert
       sector: uncategorized
       kind: subagent
@@ -234,7 +234,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: fastapi-developer
       sector: uncategorized
       kind: subagent
@@ -246,7 +246,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: flutter-expert
       sector: uncategorized
       kind: subagent
@@ -258,7 +258,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: golang-pro
       sector: uncategorized
       kind: subagent
@@ -270,7 +270,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: java-architect
       sector: uncategorized
       kind: subagent
@@ -282,7 +282,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: javascript-pro
       sector: uncategorized
       kind: subagent
@@ -294,7 +294,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: kotlin-specialist
       sector: uncategorized
       kind: subagent
@@ -306,7 +306,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: laravel-specialist
       sector: uncategorized
       kind: subagent
@@ -318,7 +318,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: nextjs-developer
       sector: uncategorized
       kind: subagent
@@ -330,7 +330,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: node-specialist
       sector: uncategorized
       kind: subagent
@@ -342,7 +342,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: php-pro
       sector: uncategorized
       kind: subagent
@@ -354,7 +354,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: powershell-5.1-expert
       sector: uncategorized
       kind: subagent
@@ -366,7 +366,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: powershell-7-expert
       sector: uncategorized
       kind: subagent
@@ -378,7 +378,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: python-pro
       sector: uncategorized
       kind: subagent
@@ -390,7 +390,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: rails-expert
       sector: uncategorized
       kind: subagent
@@ -402,7 +402,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: react-specialist
       sector: uncategorized
       kind: subagent
@@ -414,7 +414,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: rust-engineer
       sector: uncategorized
       kind: subagent
@@ -426,7 +426,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: spring-boot-engineer
       sector: uncategorized
       kind: subagent
@@ -438,7 +438,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: sql-pro
       sector: uncategorized
       kind: subagent
@@ -450,7 +450,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: swift-expert
       sector: uncategorized
       kind: subagent
@@ -462,7 +462,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: symfony-specialist
       sector: uncategorized
       kind: subagent
@@ -474,7 +474,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: typescript-pro
       sector: uncategorized
       kind: subagent
@@ -486,7 +486,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: vue-expert
       sector: uncategorized
       kind: subagent
@@ -498,7 +498,7 @@ sectors:
       - 02-language-specialists
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.023262+00:00'
+        fetched_at: '2026-06-26T06:25:53.845408+00:00'
     - name: azure-infra-engineer
       sector: uncategorized
       kind: subagent
@@ -510,7 +510,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: cloud-architect
       sector: uncategorized
       kind: subagent
@@ -522,7 +522,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: database-administrator
       sector: uncategorized
       kind: subagent
@@ -534,7 +534,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: deployment-engineer
       sector: uncategorized
       kind: subagent
@@ -546,7 +546,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: devops-engineer
       sector: uncategorized
       kind: subagent
@@ -558,7 +558,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: devops-incident-responder
       sector: uncategorized
       kind: subagent
@@ -570,7 +570,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: docker-expert
       sector: uncategorized
       kind: subagent
@@ -582,7 +582,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: incident-responder
       sector: uncategorized
       kind: subagent
@@ -594,7 +594,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: kubernetes-specialist
       sector: uncategorized
       kind: subagent
@@ -606,7 +606,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: network-engineer
       sector: uncategorized
       kind: subagent
@@ -618,7 +618,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: platform-engineer
       sector: uncategorized
       kind: subagent
@@ -630,7 +630,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: security-engineer
       sector: uncategorized
       kind: subagent
@@ -642,7 +642,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: sre-engineer
       sector: uncategorized
       kind: subagent
@@ -654,7 +654,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: terraform-engineer
       sector: uncategorized
       kind: subagent
@@ -666,7 +666,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: terragrunt-expert
       sector: uncategorized
       kind: subagent
@@ -678,7 +678,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: windows-infra-admin
       sector: uncategorized
       kind: subagent
@@ -690,7 +690,7 @@ sectors:
       - 03-infrastructure
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.402188+00:00'
+        fetched_at: '2026-06-26T06:25:54.209282+00:00'
     - name: accessibility-tester
       sector: uncategorized
       kind: subagent
@@ -702,7 +702,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: ad-security-reviewer
       sector: uncategorized
       kind: subagent
@@ -714,7 +714,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: ai-writing-auditor
       sector: uncategorized
       kind: subagent
@@ -726,7 +726,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: architect-reviewer
       sector: uncategorized
       kind: subagent
@@ -738,7 +738,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: chaos-engineer
       sector: uncategorized
       kind: subagent
@@ -750,7 +750,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: code-reviewer
       sector: uncategorized
       kind: subagent
@@ -762,7 +762,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: compliance-auditor
       sector: uncategorized
       kind: subagent
@@ -774,7 +774,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: debugger
       sector: uncategorized
       kind: subagent
@@ -786,7 +786,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: error-detective
       sector: uncategorized
       kind: subagent
@@ -798,7 +798,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: gdpr-ccpa-compliance
       sector: uncategorized
       kind: subagent
@@ -810,7 +810,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: penetration-tester
       sector: uncategorized
       kind: subagent
@@ -822,7 +822,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: performance-engineer
       sector: uncategorized
       kind: subagent
@@ -834,7 +834,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: powershell-security-hardening
       sector: uncategorized
       kind: subagent
@@ -846,7 +846,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: qa-expert
       sector: uncategorized
       kind: subagent
@@ -858,7 +858,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: security-auditor
       sector: uncategorized
       kind: subagent
@@ -870,7 +870,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: test-automator
       sector: uncategorized
       kind: subagent
@@ -882,7 +882,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: ui-ux-tester
       sector: uncategorized
       kind: subagent
@@ -894,7 +894,7 @@ sectors:
       - 04-quality-security
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:10.767035+00:00'
+        fetched_at: '2026-06-26T06:25:54.541242+00:00'
     - name: ai-engineer
       sector: uncategorized
       kind: subagent
@@ -906,7 +906,7 @@ sectors:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:11.133654+00:00'
+        fetched_at: '2026-06-26T06:25:54.904752+00:00'
     - name: data-analyst
       sector: uncategorized
       kind: subagent
@@ -918,7 +918,7 @@ sectors:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:11.133654+00:00'
+        fetched_at: '2026-06-26T06:25:54.904752+00:00'
     - name: data-engineer
       sector: uncategorized
       kind: subagent
@@ -930,7 +930,7 @@ sectors:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:11.133654+00:00'
+        fetched_at: '2026-06-26T06:25:54.904752+00:00'
     - name: data-scientist
       sector: uncategorized
       kind: subagent
@@ -942,7 +942,7 @@ sectors:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:11.133654+00:00'
+        fetched_at: '2026-06-26T06:25:54.904752+00:00'
     - name: database-optimizer
       sector: uncategorized
       kind: subagent
@@ -954,7 +954,7 @@ sectors:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:11.133654+00:00'
+        fetched_at: '2026-06-26T06:25:54.904752+00:00'
     - name: llm-architect
       sector: uncategorized
       kind: subagent
@@ -966,4 +966,4 @@ sectors:
       - 05-data-ai
       provenance:
         source: https://github.com/VoltAgent/awesome-claude-code-subagents
-        fetched_at: '2026-06-25T07:33:11.133654+00:00'
+        fetched_at: '2026-06-26T06:25:54.904752+00:00'
