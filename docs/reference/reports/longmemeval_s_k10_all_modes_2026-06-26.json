@@ -1,0 +1,71 @@
+{
+  "n": 500,
+  "k": 10,
+  "elapsed_s": 84.4,
+  "overall": {
+    "cosine": 0.482,
+    "hybrid": 0.534,
+    "temporal": 0.482,
+    "temporal_aof": 0.482,
+    "multihop": 0.026,
+    "hybrid_multihop": 0.532
+  },
+  "per_type": {
+    "knowledge-update": {
+      "cosine": 0.4872,
+      "hybrid": 0.7051,
+      "temporal": 0.4872,
+      "temporal_aof": 0.4872,
+      "multihop": 0.0,
+      "hybrid_multihop": 0.7051
+    },
+    "multi-session": {
+      "cosine": 0.4812,
+      "hybrid": 0.4812,
+      "temporal": 0.4812,
+      "temporal_aof": 0.4812,
+      "multihop": 0.0,
+      "hybrid_multihop": 0.4812
+    },
+    "single-session-assistant": {
+      "cosine": 0.6607,
+      "hybrid": 0.6607,
+      "temporal": 0.6607,
+      "temporal_aof": 0.6607,
+      "multihop": 0.1964,
+      "hybrid_multihop": 0.6429
+    },
+    "single-session-preference": {
+      "cosine": 0.1333,
+      "hybrid": 0.2333,
+      "temporal": 0.1333,
+      "temporal_aof": 0.1333,
+      "multihop": 0.0,
+      "hybrid_multihop": 0.2333
+    },
+    "single-session-user": {
+      "cosine": 0.4286,
+      "hybrid": 0.5143,
+      "temporal": 0.4286,
+      "temporal_aof": 0.4286,
+      "multihop": 0.0,
+      "hybrid_multihop": 0.5143
+    },
+    "temporal-reasoning": {
+      "cosine": 0.5113,
+      "hybrid": 0.5113,
+      "temporal": 0.5113,
+      "temporal_aof": 0.5113,
+      "multihop": 0.015,
+      "hybrid_multihop": 0.5113
+    }
+  },
+  "counts_per_type": {
+    "single-session-user": 70,
+    "multi-session": 133,
+    "single-session-preference": 30,
+    "temporal-reasoning": 133,
+    "knowledge-update": 78,
+    "single-session-assistant": 56
+  }
+}
