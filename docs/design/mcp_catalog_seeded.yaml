@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-26T06:33:54.522022+00:00'
+  at: '2026-07-02T06:08:48.792019+00:00'
   source: registry.modelcontextprotocol.io
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -21,7 +21,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ac.inference.sh/mcp
       sector: uncategorized
       kind: mcp
@@ -36,7 +36,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ac.tandem/docs-mcp
       sector: uncategorized
       kind: mcp
@@ -51,7 +51,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ac.tandem/docs-mcp
       sector: uncategorized
       kind: mcp
@@ -66,7 +66,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ac.tandem/docs-mcp
       sector: uncategorized
       kind: mcp
@@ -81,7 +81,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: agency.lona/trading
       sector: uncategorized
       kind: mcp
@@ -96,7 +96,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.aarna/atars-mcp
       sector: uncategorized
       kind: mcp
@@ -111,7 +111,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.abmeter/abmeter
       sector: uncategorized
       kind: mcp
@@ -126,7 +126,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adadvisor/mcp-server
       sector: uncategorized
       kind: mcp
@@ -141,7 +141,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adadvisor/mcp-server
       sector: uncategorized
       kind: mcp
@@ -156,7 +156,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adeu/adeu
       sector: uncategorized
       kind: mcp
@@ -170,7 +170,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adeu/adeu
       sector: uncategorized
       kind: mcp
@@ -184,7 +184,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adramp/google-ads
       sector: uncategorized
       kind: mcp
@@ -198,7 +198,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adramp/google-ads
       sector: uncategorized
       kind: mcp
@@ -212,7 +212,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adramp/google-ads
       sector: uncategorized
       kind: mcp
@@ -226,7 +226,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adramp/google-ads
       sector: uncategorized
       kind: mcp
@@ -240,7 +240,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.adweave/meta-ads-mcp
       sector: uncategorized
       kind: mcp
@@ -255,7 +255,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agentberg/agentberg
       sector: uncategorized
       kind: mcp
@@ -270,7 +270,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agentdm/agentdm
       sector: uncategorized
       kind: mcp
@@ -284,7 +284,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agentdm/agentdm
       sector: uncategorized
       kind: mcp
@@ -299,7 +299,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agentic-news/mcp
       sector: uncategorized
       kind: mcp
@@ -314,7 +314,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agenticshelf/graffeo
       sector: uncategorized
       kind: mcp
@@ -329,7 +329,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agenticshelf/graffeo
       sector: uncategorized
       kind: mcp
@@ -344,7 +344,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agenticshelf/graffeo
       sector: uncategorized
       kind: mcp
@@ -359,7 +359,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agenticshelf/mcp
       sector: uncategorized
       kind: mcp
@@ -374,7 +374,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agenticterminal/directory
       sector: uncategorized
       kind: mcp
@@ -389,7 +389,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agentrapay/agentra
       sector: uncategorized
       kind: mcp
@@ -404,7 +404,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.agenttrust/mcp-server
       sector: uncategorized
       kind: mcp
@@ -419,7 +419,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.aient/mcp
       sector: uncategorized
       kind: mcp
@@ -434,7 +434,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.airshelf/catalog
       sector: uncategorized
       kind: mcp
@@ -449,7 +449,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.aliengiraffe/spotdb
       sector: uncategorized
       kind: mcp
@@ -463,7 +463,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.alphacreek/alphacreek-mcp
       sector: uncategorized
       kind: mcp
@@ -478,7 +478,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.alphacreek/alphacreek-mcp
       sector: uncategorized
       kind: mcp
@@ -493,7 +493,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.alpic.mcp/alpic-mcp
       sector: uncategorized
       kind: mcp
@@ -508,7 +508,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.alpic.test/test-mcp-server
       sector: uncategorized
       kind: mcp
@@ -522,7 +522,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ambix/ambix
       sector: uncategorized
       kind: mcp
@@ -537,7 +537,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -552,7 +552,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -567,7 +567,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -582,7 +582,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -597,7 +597,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -612,7 +612,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -627,7 +627,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -642,7 +642,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -657,7 +657,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server
       sector: uncategorized
       kind: mcp
@@ -672,7 +672,37 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.22.0
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.ankimcp/anki-mcp-server
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'MCP server for Anki flashcards: adaptive review, notes, media, and
+        deck management via AnkiConnect.'
+      version: 0.22.1
+      transport: stdio
+      source: ai.ankimcp/anki-mcp-server
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server-addon
       sector: uncategorized
       kind: mcp
@@ -687,7 +717,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server-addon
       sector: uncategorized
       kind: mcp
@@ -702,7 +732,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server-addon
       sector: uncategorized
       kind: mcp
@@ -717,7 +747,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server-addon
       sector: uncategorized
       kind: mcp
@@ -732,7 +762,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.ankimcp/anki-mcp-server-addon
       sector: uncategorized
       kind: mcp
@@ -747,7 +777,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.anomalyarmor/armor-mcp
       sector: uncategorized
       kind: mcp
@@ -762,7 +792,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.anzenna/anzenna
       sector: uncategorized
       kind: mcp
@@ -776,7 +806,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.appdeploy/deploy-app
       sector: uncategorized
       kind: mcp
@@ -791,7 +821,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.arclan/registry
       sector: uncategorized
       kind: mcp
@@ -806,7 +836,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.artidrop/artidrop
       sector: uncategorized
       kind: mcp
@@ -821,7 +851,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.artidrop/artidrop
       sector: uncategorized
       kind: mcp
@@ -836,7 +866,21 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.atdev/supershopping
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 나만을 위한 AI 쇼핑 MCP — 상품을 자연어로 검색·비교·추천해 사용자의 효과적인 쇼핑을 돕습니다.
+      version: 1.0.0
+      transport: http
+      source: ai.atdev/supershopping
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.augmentev/paseo
       sector: uncategorized
       kind: mcp
@@ -851,7 +895,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auralogs/auralogs
       sector: uncategorized
       kind: mcp
@@ -866,7 +910,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auteng/docs
       sector: uncategorized
       kind: mcp
@@ -881,7 +925,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auteng/mcp
       sector: uncategorized
       kind: mcp
@@ -895,7 +939,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auteng/mcp
       sector: uncategorized
       kind: mcp
@@ -910,7 +954,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autoblocks/contextlayer-mcp
       sector: uncategorized
       kind: mcp
@@ -924,7 +968,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autoblocks/ctxl
       sector: uncategorized
       kind: mcp
@@ -938,7 +982,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autoblocks/ctxl-mcp
       sector: uncategorized
       kind: mcp
@@ -952,7 +996,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autonomad/computeback
       sector: uncategorized
       kind: mcp
@@ -967,7 +1011,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autonomad/computeback
       sector: uncategorized
       kind: mcp
@@ -982,7 +1026,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autonomad/travel
       sector: uncategorized
       kind: mcp
@@ -997,7 +1041,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.autorfp/mcp
       sector: uncategorized
       kind: mcp
@@ -1012,7 +1056,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auxen/auxen
       sector: uncategorized
       kind: mcp
@@ -1027,7 +1071,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auxen/auxen
       sector: uncategorized
       kind: mcp
@@ -1042,7 +1086,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.auxen/auxen
       sector: uncategorized
       kind: mcp
@@ -1057,7 +1101,82 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.aviado/health
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Supplement research, biomarker effects, drug interactions, and brand
+        quality data
+      version: 0.1.0
+      transport: http
+      source: ai.aviado/health
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.axonagentic/neuroautomata
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: 'Protein analysis: ESM-2/ESMC embeddings, mutation scoring, landscape
+        scans, ESMFold structure.'
+      version: 0.29.0
+      transport: http
+      source: ai.axonagentic/neuroautomata
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.backengine/backengine-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Surface customer & prospect context from Slack, email, transcripts
+        and tickets in any MCP client.
+      version: 1.0.0
+      transport: http
+      source: ai.backengine/backengine-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.backengine/backengine-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Surface customer & prospect context from Slack, email, transcripts
+        and tickets in any MCP client.
+      version: 8.0.3
+      transport: http
+      source: ai.backengine/backengine-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.backengine/backengine-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Surface customer & prospect context from Slack, email, transcripts
+        and tickets in any MCP client.
+      version: 8.0.4
+      transport: http
+      source: ai.backengine/backengine-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bankee/inferventis-mcp
       sector: uncategorized
       kind: mcp
@@ -1072,7 +1191,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bareun/bareun
       sector: uncategorized
       kind: mcp
@@ -1087,7 +1206,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.baselight/baselight
       sector: uncategorized
       kind: mcp
@@ -1102,7 +1221,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bezal/local-commerce
       sector: uncategorized
       kind: mcp
@@ -1117,7 +1236,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bittlebits/bittlebits
       sector: uncategorized
       kind: mcp
@@ -1132,7 +1251,36 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.blast-radius/blast-radius
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Blast Radius tools for AI strategy, diligence, and market updates.
+      version: 0.1.0
+      transport: http
+      source: ai.blast-radius/blast-radius
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
+    - name: ai.bluenexus/universal-mcp
+      sector: uncategorized
+      kind: mcp
+      mode: connected
+      purpose: Connect your AI to all your data - 200+ sources, intelligently filtered,
+        compliance-ready.
+      version: .1.7.3
+      transport: http
+      source: ai.bluenexus/universal-mcp
+      install: ''
+      status: candidato
+      tags: []
+      provenance:
+        source: https://registry.modelcontextprotocol.io/v0/servers
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1147,7 +1295,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1162,7 +1310,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1177,7 +1325,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1192,7 +1340,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1207,7 +1355,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1222,7 +1370,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1237,7 +1385,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1252,7 +1400,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1267,7 +1415,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bluenexus/universal-mcp
       sector: uncategorized
       kind: mcp
@@ -1282,7 +1430,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bolthub/registry
       sector: uncategorized
       kind: mcp
@@ -1297,7 +1445,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.bolthub/registry
       sector: uncategorized
       kind: mcp
@@ -1312,7 +1460,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.boolsai/directory
       sector: uncategorized
       kind: mcp
@@ -1327,7 +1475,7 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
     - name: ai.boolsai/grep
       sector: uncategorized
       kind: mcp
@@ -1342,150 +1490,4 @@ sectors:
       tags: []
       provenance:
         source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.boolsai/scan
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Live tech-stack scan of any public site — vendors, account IDs, scripts,
-        JSON-LD. 2 tools.
-      version: 1.0.0
-      transport: http
-      source: ai.boolsai/scan
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.boolsai/signals
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Quant-research MCP — tradeable signals from public-company website
-        stack changes. 7 tools.
-      version: 1.0.0
-      transport: http
-      source: ai.boolsai/signals
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.borealhost/mcp
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
-        scale infrastructure
-      version: 0.1.1
-      transport: http
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.borealhost/mcp
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
-        scale infrastructure
-      version: 0.1.2
-      transport: http
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.borealhost/mcp
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
-        scale infrastructure
-      version: 0.1.3
-      transport: http
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.borealhost/mcp
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Agent-native web hosting — deploy sites, manage DNS, register domains,
-        scale infrastructure
-      version: 0.1.4
-      transport: http
-      source: ai.borealhost/mcp
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.bowmark/bowmark
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
-      version: 1.0.0
-      transport: http
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.bowmark/bowmark
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
-      version: 1.1.0
-      transport: http
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.bowmark/bowmark
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
-      version: 1.2.0
-      transport: http
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
-    - name: ai.bowmark/bowmark
-      sector: uncategorized
-      kind: mcp
-      mode: connected
-      purpose: Pre-computed navigation recipes for public websites — skip explore-and-discover.
-      version: 3.12.0
-      transport: http
-      source: ai.bowmark/bowmark
-      install: ''
-      status: candidato
-      tags: []
-      provenance:
-        source: https://registry.modelcontextprotocol.io/v0/servers
-        fetched_at: '2026-06-26T06:33:54.521393+00:00'
+        fetched_at: '2026-07-02T06:08:48.791092+00:00'
