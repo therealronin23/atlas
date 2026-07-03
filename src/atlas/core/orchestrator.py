@@ -638,6 +638,10 @@ class Orchestrator:
         """ADR-039 slice 6 — Materializa bump como patch de ColdUpdate. Delegado al facade."""
         return self._maintenance_facade.maintenance_dep_proposer()
 
+    def maintenance_cold_update_batcher(self) -> Any:
+        """Lote de self_audit probado en worktree efímero. Delegado al facade."""
+        return self._maintenance_facade.maintenance_cold_update_batcher()
+
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
         if self._knowledge_cve_proposer is None:
@@ -706,6 +710,14 @@ class Orchestrator:
     @_maintenance_dep_proposer.setter
     def _maintenance_dep_proposer(self, value: Any) -> None:
         self._maintenance_facade._maintenance_dep_proposer = value
+
+    @property
+    def _maintenance_cold_update_batcher(self) -> Any:
+        return self._maintenance_facade._maintenance_cold_update_batcher
+
+    @_maintenance_cold_update_batcher.setter
+    def _maintenance_cold_update_batcher(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_cold_update_batcher = value
 
     @property
     def _maintenance_codegen_proposer(self) -> Any:
@@ -1287,6 +1299,7 @@ class Orchestrator:
         self._bus.subscribe(EventType.THERMAL_ALERT, bot.on_thermal_alert)
         self._bus.subscribe(EventType.SHADOW_ALERT, bot.on_shadow_alert)
         self._bus.subscribe(EventType.SESSION_STARTED, bot.on_session_started)
+        self._bus.subscribe(EventType.COLD_UPDATE_BATCH_READY, bot.on_cold_update_batch_ready)
         # ADR-033 #4: progreso del loop agéntico (el handler decide opt-in).
         if hasattr(bot, "on_agentic_progress"):
             self._bus.subscribe(EventType.AGENTIC_PROGRESS, bot.on_agentic_progress)

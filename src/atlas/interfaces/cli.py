@@ -433,6 +433,59 @@ def update_status(proposal_id: str | None) -> None:
         console.print(f"  {p.id}  {p.status:10}  {p.intent[:60]}")
 
 
+@update.command("batch-review")
+@click.option("--id", "batch_id", default=None, help="Ver un lote concreto (default: el último)")
+def update_batch_review(batch_id: str | None) -> None:
+    """Muestra el último lote de autoauditoría probado, listo para revisión episódica."""
+    orch = get_orchestrator()
+    batcher = orch.maintenance_cold_update_batcher()
+    result = batcher.get_batch(batch_id) if batch_id else batcher.latest_batch()
+    if result is None:
+        console.print("[yellow]No hay ningún lote todavía.[/yellow]")
+        return
+    color = "green" if result.passed else "red"
+    console.print(f"[{color}]Lote {result.id}[/{color}] passed={result.passed}")
+    console.print(f"Incluidos: {len(result.included)}")
+    for pid in result.included:
+        console.print(f"  + {pid}")
+    console.print(f"Excluidos: {len(result.excluded)}")
+    for exc in result.excluded:
+        console.print(f"  - {exc.get('proposal_id')}: {exc.get('reason')}")
+    console.print("\n[bold]Resumen tests:[/bold]")
+    console.print(result.pytest_summary[-1000:] if result.pytest_summary else "(sin salida)")
+
+
+@update.command("batch-approve")
+@click.argument("batch_id")
+def update_batch_approve(batch_id: str) -> None:
+    """Aprueba+aplica TODO un lote de una vez (única decisión humana del flujo batch).
+
+    Sigue pasando por el seam del decisor existente (NO bypass de HITL): por cada
+    proposal incluida en el lote, llama a orch.advance_cold_update(proposal_id) en
+    el orden en que aparecen. Si alguna falla a mitad, reporta cuáles se aplicaron
+    y cuáles no, y PARA (no sigue aplicando tras un fallo, para no dejar un estado
+    parcialmente inconsistente sin que el humano lo sepa).
+    """
+    orch = get_orchestrator()
+    batcher = orch.maintenance_cold_update_batcher()
+    result = batcher.get_batch(batch_id)
+    if result is None:
+        console.print(f"[red]Lote {batch_id} no existe.[/red]")
+        raise SystemExit(1)
+    if not result.passed:
+        console.print(f"[red]Lote {batch_id} no pasó validación — no se puede aprobar.[/red]")
+        raise SystemExit(1)
+    applied: list[str] = []
+    for pid in result.included:
+        outcome = orch.advance_cold_update(pid)
+        if outcome.startswith("error") or outcome.startswith("denegado") or outcome.startswith("validation_failed"):
+            console.print(f"[red]Fallo aplicando {pid}: {outcome}[/red]")
+            console.print(f"Aplicados antes del fallo: {applied}")
+            raise SystemExit(1)
+        applied.append(pid)
+    console.print(f"[green]Lote {batch_id} aplicado completo[/green] — {len(applied)} cambios.")
+
+
 @cli.group("self-audit")
 def self_audit() -> None:
     """Atlas 24h self-audit loop — cold, auditable, no hot self-patch."""
