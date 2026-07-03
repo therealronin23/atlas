@@ -40,6 +40,17 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "api.open-meteo.com",                     # clima sin auth (knowledge-src, mcp trunk C)
     "api.frankfurter.app",                    # tipos de cambio sin auth (knowledge-src)
     "integrate.api.nvidia.com",               # NVIDIA NIM frontier, inference_hub
+    # 2026-07-02: allowlist ampliada para scraping/browsing de propósito general
+    # (CrawlerTool/web_crawl, BrowserTool) — sitios de referencia técnica de uso
+    # habitual, curados uno a uno (decisión del usuario: "allowlist curada más
+    # amplia" sobre aprobación por dominio caso a caso).
+    "github.com",
+    "huggingface.co",
+    "en.wikipedia.org",
+    "stackoverflow.com",
+    "arxiv.org",
+    "docs.python.org",
+    "readthedocs.io",
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)

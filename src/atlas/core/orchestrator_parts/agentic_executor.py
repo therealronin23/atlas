@@ -261,6 +261,10 @@ class AgenticExecutor:
             if name == "append_memory_block":
                 block = host._block_memory.append(args["label"], args["text"])
                 return f"ok: bloque '{block.label}' ampliado ({block.chars} chars)"
+            if name == "web_crawl":
+                return host._stringify_tool_result(host._run_web_crawl(args["url"]))
+            if name == "read_external_file":
+                return host._stringify_tool_result(host._run_read_external_file(args["path"]))
             # ADR-035: tools de servers MCP.
             if name.startswith("mcp__") and host._mcp.knows(name):
                 return host._mcp.dispatch(name, args)
@@ -492,6 +496,17 @@ class AgenticExecutor:
             # aprobada nunca correría (partition('_') la mandaría a 'mcp').
             if name.startswith("mcp__") and host._mcp.knows(name):
                 return host._mcp.dispatch(name, args)
+            if name == "invoke_claude_code":
+                result = host._run_invoke_claude_code(
+                    args["task"], args["cwd"], args.get("permission_mode", "plan"),
+                )
+                return host._stringify_tool_result(result)
+            if name == "manipulate_pdf":
+                result = host._run_manipulate_pdf(
+                    args["operation"], args["input_path"], args["output_path"],
+                    **(args.get("params") or {}),
+                )
+                return host._stringify_tool_result(result)
             if tool == "editor":
                 result = host._execute_editor_command(action, args, task=task)
             elif tool == "browser":
