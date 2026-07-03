@@ -214,6 +214,105 @@ def test_forensics_populated_on_failed_validate(tmp_path: Path) -> None:
     assert fetched_pass.forensics == {}
 
 
+def test_root_cause_classifier_invoked_on_failure_and_stored(tmp_path: Path) -> None:
+    """Paso 3 del roadmap: RootCauseClassifier se llama en fallos, su
+    veredicto queda en forensics['root_cause'] — señal, nunca gate."""
+    from atlas.core.validation_runner import ValidationReport
+
+    ws = tmp_path / "atlas"
+    ws.mkdir()
+    merkle = MerkleLogger(ws / "memory" / "audit")
+
+    root = tmp_path / "project_rc"
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "tests").mkdir()
+
+    fail_report = ValidationReport(
+        passed=False, pytest_exit=1, mypy_exit=0,
+        pytest_summary="FAILED tests/test_x.py::test_foo", mypy_summary="",
+    )
+
+    def fake_factory(p: Path):
+        class _Runner:
+            def run(self):
+                return fail_report
+        return _Runner()
+
+    class _FakeVerdict:
+        def to_dict(self):
+            return {"classification": "ambiental", "reason": "r", "evidence_paths": [], "used_llm": False}
+
+    class _FakeClassifier:
+        def __init__(self):
+            self.calls: list[dict] = []
+
+        def classify(self, *, pytest_summary, mypy_summary, base_ref):
+            self.calls.append({"pytest_summary": pytest_summary, "mypy_summary": mypy_summary, "base_ref": base_ref})
+            return _FakeVerdict()
+
+    classifier = _FakeClassifier()
+    store = tmp_path / "cold-store-rc"
+    mgr_rc = ColdUpdateManager(
+        root, merkle, store_dir=store, runner_factory=fake_factory,
+        root_cause_classifier=classifier,
+    )
+
+    patch_fail = tmp_path / "fail_rc.patch"
+    patch_fail.write_text("--- /dev/null\n+++ b/src/atlas/f.txt\n@@ -0,0 +1 @@\n+f\n", encoding="utf-8")
+    p_fail = mgr_rc.propose("fail case rc", patch_fail)
+    mgr_rc.validate(p_fail.id)
+
+    assert classifier.calls
+    fetched = mgr_rc.get(p_fail.id)
+    assert fetched.forensics["root_cause"] == {
+        "classification": "ambiental", "reason": "r", "evidence_paths": [], "used_llm": False,
+    }
+
+
+def test_root_cause_classifier_failure_does_not_block_validate(tmp_path: Path) -> None:
+    """Si el clasificador lanza excepción, validate() sigue funcionando
+    normal (señal, no gate)."""
+    from atlas.core.validation_runner import ValidationReport
+
+    ws = tmp_path / "atlas"
+    ws.mkdir()
+    merkle = MerkleLogger(ws / "memory" / "audit")
+
+    root = tmp_path / "project_rc_fail"
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "tests").mkdir()
+
+    fail_report = ValidationReport(
+        passed=False, pytest_exit=1, mypy_exit=0, pytest_summary="FAILED", mypy_summary="",
+    )
+
+    def fake_factory(p: Path):
+        class _Runner:
+            def run(self):
+                return fail_report
+        return _Runner()
+
+    class _BrokenClassifier:
+        def classify(self, **kwargs):
+            raise RuntimeError("boom")
+
+    store = tmp_path / "cold-store-rc-fail"
+    mgr_rc = ColdUpdateManager(
+        root, merkle, store_dir=store, runner_factory=fake_factory,
+        root_cause_classifier=_BrokenClassifier(),
+    )
+
+    patch_fail = tmp_path / "fail_rc2.patch"
+    patch_fail.write_text("--- /dev/null\n+++ b/src/atlas/f2.txt\n@@ -0,0 +1 @@\n+f\n", encoding="utf-8")
+    p_fail = mgr_rc.propose("fail case rc2", patch_fail)
+    report = mgr_rc.validate(p_fail.id)
+
+    assert report.passed is False
+    fetched = mgr_rc.get(p_fail.id)
+    assert fetched.status == "failed"
+    assert "root_cause" not in fetched.forensics
+
+
 def test_forensics_retrocompat_missing_field(tmp_path: Path) -> None:
     """proposals.json sin 'forensics' debe cargarse sin error."""
     import json

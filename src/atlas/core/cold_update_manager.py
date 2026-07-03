@@ -109,6 +109,7 @@ class ColdUpdateManager:
         store_dir: Path | None = None,
         runner_factory: Callable[[Path], ValidationRunner] | None = None,
         decider: "Decider | None" = None,
+        root_cause_classifier: Any | None = None,
     ) -> None:
         self._root = project_root.resolve()
         self._merkle = merkle
@@ -118,6 +119,9 @@ class ColdUpdateManager:
         self._proposals: dict[str, ColdUpdateProposal] = {}
         self._runner_factory = runner_factory or (lambda p: ValidationRunner(p))
         self._decider = decider
+        # Opcional (paso 3 del roadmap "juicio real"): RootCauseClassifier.
+        # Sin inyectar, validate() se comporta exactamente igual que antes.
+        self._root_cause_classifier = root_cause_classifier
         self._load()
 
     def _load(self) -> None:
@@ -278,6 +282,22 @@ class ColdUpdateManager:
                     self._route_anomaly(proposal)
             else:
                 proposal.forensics = first_forensics
+
+            # Razonar el PORQUÉ del fallo final (paso 3): antes solo se
+            # guardaba el texto crudo, nadie clasificaba si era ambiental o
+            # causado de verdad por el diff — así se quedaron 38 propuestas
+            # legítimas atascadas una semana por un motivo ajeno (YAML sin
+            # commit). Señal, nunca gate: si falla, no afecta report.passed.
+            if self._root_cause_classifier is not None:
+                try:
+                    verdict = self._root_cause_classifier.classify(
+                        pytest_summary=report.pytest_summary,
+                        mypy_summary=report.mypy_summary,
+                        base_ref=proposal.base_ref,
+                    )
+                    proposal.forensics["root_cause"] = verdict.to_dict()
+                except Exception:  # noqa: BLE001 — señal, no gate; nunca bloquea validate()
+                    pass
 
         proposal.validation = report.to_dict()
         proposal.status = "validated" if report.passed else "failed"
