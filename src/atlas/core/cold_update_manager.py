@@ -22,6 +22,57 @@ if TYPE_CHECKING:
     from atlas.core.decider.decider import Decider
 
 
+TIPO1_TRANSFORMS: frozenset[str] = frozenset({
+    "strip_trailing_whitespace",
+    "ensure_final_newline",
+    "collapse_eof_blank_lines",
+})
+
+
+def _is_tipo1_diff(diff_text: str) -> bool:
+    """True si TODOS los cambios del diff son whitespace-only (tipo-1 mecánico).
+
+    Por cada hunk, empareja líneas '-' con '+' por posición. Una pareja es tipo-1
+    si `old.rstrip() == new.rstrip()`. Líneas sin pareja (hunk desbalanceado) deben
+    ser whitespace-only (blank line changes). Un diff vacío o sin hunks → False
+    (fail-closed: no-ops no auto-aplican).
+    """
+    def _check_hunk(minus: list[str], plus: list[str]) -> bool:
+        n = min(len(minus), len(plus))
+        for i in range(n):
+            if minus[i].rstrip() != plus[i].rstrip():
+                return False
+        for line in minus[n:] + plus[n:]:
+            if line.rstrip():  # contenido no-whitespace sin pareja → no tipo-1
+                return False
+        return True
+
+    in_hunk = False
+    has_hunk = False
+    minus_lines: list[str] = []
+    plus_lines: list[str] = []
+
+    for line in diff_text.splitlines():
+        if line.startswith("@@"):
+            if in_hunk and not _check_hunk(minus_lines, plus_lines):
+                return False
+            minus_lines = []
+            plus_lines = []
+            in_hunk = True
+            has_hunk = True
+            continue
+        if not in_hunk:
+            continue
+        if line.startswith("-"):
+            minus_lines.append(line[1:])
+        elif line.startswith("+"):
+            plus_lines.append(line[1:])
+
+    if in_hunk and not _check_hunk(minus_lines, plus_lines):
+        return False
+    return has_hunk
+
+
 @dataclass
 class ColdUpdateProposal:
     id: str
@@ -325,6 +376,56 @@ class ColdUpdateManager:
         )
         self._remove_worktree(proposal)
         return True
+
+    def tier1_auto_apply(self, proposal_id: str) -> dict[str, Any]:
+        """Auto-aplica un patch tipo-1 (MECHANICAL) sin HITL.
+
+        Invariantes G0.6 — todo falla-cerrado:
+        1. proposal.origin == "swarm"
+        2. Diff contiene SOLO cambios whitespace (_is_tipo1_diff)
+        3. BwrapJail disponible en el sistema (sin jail → Deny)
+        Pipeline: validate() → approve() → apply() sin intervención humana.
+        """
+        proposal = self._require(proposal_id)
+
+        if proposal.origin != "swarm":
+            raise ValueError(
+                f"tier1_auto_apply solo para origin='swarm', recibido '{proposal.origin}'"
+            )
+
+        diff_text = Path(proposal.patch_path).read_text(encoding="utf-8")
+        if not _is_tipo1_diff(diff_text):
+            raise ValueError(
+                "Diff contiene cambios no-whitespace — no es tipo-1. Requiere HITL."
+            )
+
+        # Invariante: BwrapJail disponible (fail-closed: sin jail → Deny)
+        try:
+            from atlas.security.bwrap_jail import BwrapJail
+            BwrapJail()
+        except Exception as exc:
+            raise RuntimeError(
+                f"BwrapJail no disponible; tipo-1 auto-apply denegado: {exc}"
+            ) from exc
+
+        # Pipeline sin HITL
+        report = self.validate(proposal_id)
+        if not report.passed:
+            raise RuntimeError(
+                f"Validación falló en tier1_auto_apply; denegado. "
+                f"pytest={report.pytest_exit} mypy={report.mypy_exit}"
+            )
+        self.approve(proposal_id)
+        result = self.apply(proposal_id)
+
+        self._merkle.log(
+            action="cold_update.tier1_auto_applied",
+            agent="cold_update_manager",
+            result="success",
+            risk_level="low",
+            payload={"proposal_id": proposal_id, "origin": proposal.origin},
+        )
+        return result
 
     def reject(self, proposal_id: str, reason: str = "") -> ColdUpdateProposal:
         proposal = self._require(proposal_id)

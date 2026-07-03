@@ -465,22 +465,22 @@ class TestNvidiaNimProvider:
         assert nvidia.model_id == "meta/llama-3.3-70b-instruct"
         assert nvidia.base_url == "https://integrate.api.nvidia.com/v1"
         assert nvidia.api_key_env == "NVIDIA_API_KEY"
-        assert nvidia.account_pool == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
-        assert len(nvidia.account_pool) == 2
+        assert nvidia.account_pool[:2] == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
+        assert len(nvidia.account_pool) >= 2
 
     def test_nvidia_extra_frontier_models_present(self) -> None:
-        """Kimi, Mistral-Large-3 y GLM deben estar como L2 NVIDIA NIM con el mismo pool.
+        """Kimi y Mistral-Large-3 deben estar como L2 NVIDIA NIM con el mismo pool.
 
         Prove-it 2026-06-22 contra integrate.api.nvidia.com: responden
-        moonshotai/kimi-k2.6, mistralai/mistral-large-3-675b-instruct-2512 y
-        z-ai/glm-5.1 (mistral-large-2-instruct da 404 en este tier).
+        moonshotai/kimi-k2.6 y mistralai/mistral-large-3-675b-instruct-2512
+        (mistral-large-2-instruct da 404 en este tier). nvidia_glm retirado
+        2026-06-28: prove-it en vivo confirma HTTP 410 Gone.
         """
         expected = {
             "nvidia_kimi": "nvidia_nim/moonshotai/kimi-k2.6",
             "nvidia_mistral_large": (
                 "nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512"
             ),
-            "nvidia_glm": "nvidia_nim/z-ai/glm-5.1",
         }
         for name, litellm_model in expected.items():
             prov = next((p for p in DEFAULT_PROVIDERS if p.name == name), None)
@@ -489,7 +489,8 @@ class TestNvidiaNimProvider:
             assert prov.litellm_model == litellm_model
             assert prov.base_url == "https://integrate.api.nvidia.com/v1"
             assert prov.api_key_env == "NVIDIA_API_KEY"
-            assert prov.account_pool == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
+            assert prov.account_pool[:2] == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
+            assert len(prov.account_pool) >= 2
 
     def test_nvidia_resolve_live_with_primary_key(
         self, monkeypatch: pytest.MonkeyPatch
@@ -649,3 +650,131 @@ class TestRetry:
 
         assert resp.success is False
         assert calls["n"] == 3          # 1 inicial + INFER_MAX_RETRIES (2)
+
+
+class TestInferForRole:
+    """Lazo 4 — routing por rol de tarea (edit/apply/chat), soft-preference."""
+
+    def test_prefers_role_tagged_provider_over_untagged(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+        no_role = Provider(
+            name="no_role", level=InferenceLevel.L1, base_url="https://api.groq.com",
+            model_id="m1", litellm_model="groq/m1", api_key_env="GROQ_API_KEY",
+        )
+        has_role = Provider(
+            name="has_role", level=InferenceLevel.L1, base_url="https://openrouter.ai/api/v1",
+            model_id="m2", litellm_model="openrouter/m2", api_key_env="OPENROUTER_API_KEY",
+            roles=("edit",),
+        )
+        called_models: list[str] = []
+
+        def fake_completion(**kwargs: Any) -> Any:
+            called_models.append(kwargs["model"])
+            return _ok_completion(text="ok")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        # no_role declarado PRIMERO en la lista; has_role tiene el rol pedido.
+        hub = InferenceHub(providers=[no_role, has_role], mode="live")
+        resp = hub.infer_for_role(
+            "edit", InferenceRequest(prompt="hola", level=InferenceLevel.L1)
+        )
+
+        assert resp.success is True
+        assert called_models[0] == "openrouter/m2"  # el etiquetado se prueba primero
+
+    def test_falls_back_to_untagged_if_role_provider_fails(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test-or")
+        no_role = Provider(
+            name="no_role", level=InferenceLevel.L1, base_url="https://api.groq.com",
+            model_id="m1", litellm_model="groq/m1", api_key_env="GROQ_API_KEY",
+        )
+        has_role = Provider(
+            name="has_role", level=InferenceLevel.L1, base_url="https://openrouter.ai/api/v1",
+            model_id="m2", litellm_model="openrouter/m2", api_key_env="OPENROUTER_API_KEY",
+            roles=("edit",),
+        )
+
+        def fake_completion(**kwargs: Any) -> Any:
+            if kwargs["model"] == "openrouter/m2":
+                raise RuntimeError("kaboom")
+            return _ok_completion(text="ok desde el fallback")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=[no_role, has_role], mode="live")
+        resp = hub.infer_for_role(
+            "edit", InferenceRequest(prompt="hola", level=InferenceLevel.L1)
+        )
+
+        assert resp.success is True
+        assert resp.text == "ok desde el fallback"
+
+    def test_no_role_match_falls_back_to_normal_infer(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)  # ninguno tiene roles=
+
+        def fake_completion(**kwargs: Any) -> Any:
+            return _ok_completion(text="respuesta normal")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=providers, mode="live")
+        resp = hub.infer_for_role(
+            "edit", InferenceRequest(prompt="hola", level=InferenceLevel.L1)
+        )
+
+        assert resp.success is True
+        assert resp.text == "respuesta normal"
+
+    def test_role_preference_does_not_break_l0_fallback(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Si TODOS los L1 (con o sin rol) fallan, debe seguir cayendo a L0."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+        l1_tagged = Provider(
+            name="l1_tagged", level=InferenceLevel.L1, base_url="https://api.groq.com",
+            model_id="m1", litellm_model="groq/m1", api_key_env="GROQ_API_KEY",
+            roles=("edit",),
+        )
+        l0_fallback = _ollama_provider()
+
+        def fake_completion(**kwargs: Any) -> Any:
+            if kwargs["model"] == "groq/m1":
+                raise RuntimeError("kaboom")
+            return _ok_completion(text="respondio ollama")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=[l1_tagged, l0_fallback], mode="live")
+        resp = hub.infer_for_role(
+            "edit", InferenceRequest(prompt="hola", level=InferenceLevel.L1)
+        )
+
+        assert resp.success is True
+        assert resp.text == "respondio ollama"
+
+
+class TestHermes4Provider:
+    """Hermes 4 (2026-07-02): prove-it en vivo confirmó SIN tier gratis en
+    ningún proveedor (OpenRouter paid-only, NIM no lo tiene en catálogo —
+    verificado contra /v1/models real, no contra blogs de terceros). Solo
+    hermes-4-70b se añade (L2, pago, funciona con la cuenta actual);
+    hermes-4-405b confirmado real pero bloqueado por falta de crédito en la
+    cuenta OpenRouter actual — decisión de financiarlo pendiente del usuario,
+    NO se añade al catálogo hasta esa decisión."""
+
+    def test_openrouter_hermes4_70b_in_catalog(self) -> None:
+        prov = next((p for p in DEFAULT_PROVIDERS if p.name == "openrouter_hermes4_70b"), None)
+        assert prov is not None, "openrouter_hermes4_70b no encontrado en DEFAULT_PROVIDERS"
+        assert prov.level == InferenceLevel.L2
+        assert prov.litellm_model == "openrouter/nousresearch/hermes-4-70b"
+        assert prov.api_key_env == "OPENROUTER_API_KEY"
+        assert "edit" in prov.roles
+
+    def test_hermes4_405b_not_in_catalog_pending_funding_decision(self) -> None:
+        prov = next((p for p in DEFAULT_PROVIDERS if p.name == "openrouter_hermes4_405b"), None)
+        assert prov is None
