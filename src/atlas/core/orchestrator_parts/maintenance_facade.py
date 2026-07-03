@@ -26,6 +26,28 @@ if TYPE_CHECKING:
 _EGRESS_MAX_BYTES = 5 * 1024 * 1024
 
 
+def _build_avoid_section(recaller: Any, store: Any, query: str) -> str:
+    """Construye la sección '## Patrones a evitar' para el prompt de codegen.
+
+    Recupera hasta 3 lecciones relevantes del store via el recaller y concatena
+    sus avoid_patterns. Devuelve cadena vacía si no hay lecciones que superen
+    el threshold del recaller o si el recaller/store son None."""
+    if recaller is None or store is None:
+        return ""
+    recaller.index()
+    results = recaller.recall_all(query, k=3)
+    if not results:
+        return ""
+    patterns = "\n".join(
+        f"- {lesson.avoid_pattern}"
+        for r in results
+        if r.matched and (lesson := store.get(r.lesson_id)) is not None
+    )
+    if not patterns:
+        return ""
+    return f"\n\n## Patrones a evitar (lecciones del sistema)\n{patterns}"
+
+
 def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
     """Descarga el cuerpo de una URL ya autorizada por el bridge (stdlib).
 
@@ -297,11 +319,46 @@ class MaintenanceFacade:
                 ],
             )
 
+            # Cargar LessonStore para inyección blanda de avoid_patterns.
+            #
+            # 2026-07-03: unificado a <repo_root>/workspace/lessons — la MISMA
+            # convención que AtlasCoder/ToolCoder (src/atlas/core/atlas_coder.py,
+            # tool_coder.py), donde YA viven las lecciones reales generadas por
+            # el propio motor de codificación. Antes apuntaba a
+            # `orch._workspace / "memory" / "lessons"` (~/atlas/memory/lessons,
+            # runtime workspace) — una ruta que ni siquiera existía, así que el
+            # self-audit del Orchestrator nunca veía las lecciones reales que el
+            # propio Atlas ya había generado (hallazgo real, verificado en vivo).
+            try:
+                from atlas.core.lesson_store import LessonStore
+                from atlas.immunity.lesson_recaller import LessonRecaller
+                from atlas.memory.embeddings import default_embedder
+
+                _repo_root = orch._repo_root() or orch._workspace
+                _lesson_store = LessonStore(_repo_root / "workspace" / "lessons")
+                # threshold: sin override — el default de LessonRecaller (0.8) ya
+                # está calibrado para embeddings SEMÁNTICOS (ver su docstring);
+                # el 0.65 anterior compensaba el hash NO-semántico de
+                # StubEmbedder(dim=64) que se acaba de dejar de usar aquí.
+                _lesson_recaller: Any = LessonRecaller(
+                    _lesson_store,
+                    embedder=default_embedder(),
+                )
+            except Exception:  # noqa: BLE001 — directorio no existe u otro error; degradado
+                _lesson_store = None
+                _lesson_recaller = None
+
             def _generate(target: CodegenTarget) -> str:
+                avoid_section = _build_avoid_section(
+                    _lesson_recaller,
+                    _lesson_store,
+                    f"{target.goal} {target.path}",
+                )
                 prompt = (
                     "Genera SOLO un diff unificado (git apply) que logre el objetivo, "
                     f"tocando únicamente el fichero {target.path}. No expliques.\n\n"
                     f"Objetivo: {target.goal}\n"
+                    f"{avoid_section}"
                 )
                 result = cascade.route(TaskSpec(
                     intent=prompt,

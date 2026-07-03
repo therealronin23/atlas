@@ -247,9 +247,17 @@ class FastEmbedEmbedder:
     """Embedder semántico LOCAL vía fastembed (ONNX, sin torch).
 
     A diferencia de `LiteLLMEmbedder` (API hospedada, lock-in + coste/llamada),
-    corre in-process y offline: ni red ni proveedor. Misma familia de modelos que
+    corre in-process, sin proveedor por-llamada. Misma familia de modelos que
     sentence-transformers (BGE/E5/MiniLM) pero servidos por ONNX, sin los GBs de
     torch. `dim` debe coincidir con el modelo (e5-small/BGE-small = 384).
+
+    HONESTIDAD (hallazgo del Cónclave, auditoría 2026-07-03): el PRIMER uso SÍ
+    requiere red — `fastembed` descarga el modelo ONNX (~100MB) desde su hub
+    remoto la primera vez que se instancia, sin pin de hash en este código (el
+    propio paquete gestiona su caché en `~/.cache/fastembed`). Usos posteriores
+    con el modelo ya cacheado son offline. Si el entorno no tiene red en el
+    primer arranque (CI aislado, sandbox sin egress), usa
+    `ATLAS_EMBEDDER=stub` para evitar la descarga.
 
     Fail-closed: si `fastembed` no está instalado, lanza RuntimeError explícito —
     NO cae a stub callado (mezclar vectores stub y reales corrompe el recall)."""
@@ -298,14 +306,20 @@ class FastEmbedEmbedder:
 def default_embedder() -> "Embedder":
     """Selector del embedder para la memoria del tronco, gobernado por env.
 
-    - `ATLAS_EMBEDDER=fastembed` → `FastEmbedEmbedder` (semántico local, dim 384).
-      Fail-closed: si la dep no está, propaga el RuntimeError (no cae a stub).
-    - cualquier otro valor / sin definir → `StubEmbedder(dim=64)` (default actual).
+    - default (sin definir) / `ATLAS_EMBEDDER=fastembed` → `FastEmbedEmbedder`
+      (semántico local, dim 384, ONNX sin torch — ya sin API hospedada de por
+      medio, cero lock-in). Fail-closed: si la dep no está, propaga el
+      RuntimeError (no cae a stub silenciosamente).
+    - `ATLAS_EMBEDDER=stub` → `StubEmbedder(dim=64)` (hash, no semántico —
+      opt-OUT explícito, para tests/CI que no quieran cargar el modelo ONNX).
 
-    Opt-in DELIBERADO: cambiar de embedder cambia el espacio vectorial; un store
-    existente con dim distinta dispara el guard de dimensión del índice (migración
-    honesta = rebuild, no mezcla silenciosa)."""
-    choice = os.environ.get("ATLAS_EMBEDDER", "stub").strip().lower()
-    if choice == "fastembed":
-        return FastEmbedEmbedder()
-    return StubEmbedder(dim=64)
+    2026-07-03: se cambió el default de stub→fastembed (verificado: el store
+    real de memoria en `~/atlas-mcp/memory.db` tenía 0 registros, sin datos que
+    migrar). Cambiar de embedder cambia el espacio vectorial; un store existente
+    con dim distinta dispara el guard de dimensión del índice (migración honesta
+    = rebuild, no mezcla silenciosa) — revisar antes de tocar un store con datos
+    reales."""
+    choice = os.environ.get("ATLAS_EMBEDDER", "fastembed").strip().lower()
+    if choice == "stub":
+        return StubEmbedder(dim=64)
+    return FastEmbedEmbedder()

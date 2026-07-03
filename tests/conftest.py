@@ -71,6 +71,14 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
     # Pending approvals HMAC (tests; no secretos reales)
     monkeypatch.setenv("ATLAS_PENDING_HMAC_KEY", "test-pending-hmac-key")
+    # 2026-07-03: default_embedder() cambió a fastembed (semántico, carga un
+    # modelo ONNX real) — sin esto, cada test que active Gate D o construya
+    # un LessonRecaller sin embedder explícito cargaría el modelo real,
+    # ralentizando la suite entera sin necesidad (estos tests verifican
+    # CABLEADO, no calidad semántica). Un test concreto que SÍ quiera probar
+    # el semántico real puede seguir haciendo su propio
+    # monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed") dentro del test.
+    monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
 
 
 @pytest.fixture(autouse=True)
