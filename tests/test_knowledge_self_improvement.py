@@ -692,3 +692,26 @@ def test_knowledge_scheduler_invalid_value(monkeypatch):
         runner._start_knowledge_scheduler_if_enabled()
 
         assert runner._knowledge_thread is None, f"ATLAS_KNOWLEDGE_SCHEDULER={invalid_val} no debe crear thread"
+
+
+def test_cve_proposal_origin_is_self_audit_not_swarm():
+    """G0.8 HITL invariante: las propuestas CVE usan origin='self_audit', no 'swarm'.
+
+    Esto garantiza que tier1_auto_apply (que solo acepta origin='swarm') no puede
+    auto-aplicar un bump de seguridad. CVE → HITL por defecto.
+    """
+    proposal_obj = MagicMock()
+    proposal_obj.id = "prop-cve-hitl"
+    propose = MagicMock(return_value=proposal_obj)
+    merkle = MagicMock()
+    pyproject = _make_pyproject(_PYPROJECT_WITH_DEP)
+    proposer = CveDepProposer(pyproject_path=pyproject, propose=propose, merkle=merkle)
+
+    proposer.propose_bump(_FINDING_VALID)
+
+    call_kwargs = propose.call_args
+    origin = call_kwargs.kwargs.get("origin")
+    assert origin == "self_audit", (
+        f"CVE proposal origin debe ser 'self_audit' para forzar HITL, got {origin!r}"
+    )
+    assert origin != "swarm", "CVE no debe usar origin='swarm' — bloquearía tier1_auto_apply"

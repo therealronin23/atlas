@@ -104,3 +104,36 @@ class RecordingDecider:
             logger.warning("RecordingDecider: sink failed (best-effort), ignoring: %s", exc)
 
         return verdict
+
+    def record_human_verdict(
+        self,
+        action_hash_val: str,
+        human_verdict: str,  # "Allow" | "Deny"
+        *,
+        reason: str = "",
+    ) -> None:
+        """Registra la resolución humana de un RequiresHuman anterior.
+
+        Se llama opcionalmente desde ApprovalManager.approve() para atar el
+        veredicto humano al record original. Best-effort: si el sink falla, se
+        loggea y continúa.
+        """
+        rec = DecisionRecord(
+            record_id=f"human:{action_hash_val}",
+            action_hash_val=action_hash_val,
+            kind="human_resolution",
+            descriptor="",
+            mutating=False,
+            reversible=True,
+            sensitivity="normal",
+            requires_approval=False,
+            verdict=human_verdict,
+            decider_name="human",
+            decider_version="v1",
+            timestamp_ns=self._clock(),
+            rationale=reason or None,
+        )
+        try:
+            self._sink.record(rec)
+        except Exception as exc:
+            logger.warning("RecordingDecider.record_human_verdict: sink failed: %s", exc)
