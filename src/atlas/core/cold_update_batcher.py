@@ -43,6 +43,8 @@ class BatchResult:
     # Señal adicional (paso 2 del roadmap "juicio real"), NUNCA un gate duro:
     # no bloquea el lote, solo se persiste para que la revisión humana la vea.
     premortem: dict[str, Any] | None = None
+    # Benchmark comparativo antes/después del lote (señal, nunca gate duro).
+    benchmark: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -61,6 +63,7 @@ class ColdUpdateBatcher:
         merkle: "MerkleLogger | None" = None,
         premortem: Any | None = None,
         failure_lesson_sink: Any | None = None,
+        benchmark_gate: Any | None = None,
     ) -> None:
         self._manager = manager
         self._root = manager._root
@@ -75,6 +78,8 @@ class ColdUpdateBatcher:
         # Opcional: sink para registrar lecciones de fallo durante la bisección.
         # Señal, nunca bloquea el flujo principal.
         self._failure_lesson_sink = failure_lesson_sink
+        # Opcional: benchmark comparativo antes/después del lote (señal, nunca gate).
+        self._benchmark_gate = benchmark_gate
 
     # ------------------------------------------------------------------
     # API publica
@@ -111,6 +116,14 @@ class ColdUpdateBatcher:
             for proposal in candidates:
                 self._apply_patch(combined_wt, Path(proposal.patch_path))
             report = self._runner_factory(combined_wt).run()
+            benchmark_findings: dict[str, Any] | None = None
+            if report.passed and self._benchmark_gate is not None:
+                try:
+                    benchmark_findings = self._benchmark_gate.compare(
+                        before_root=self._root, after_root=combined_wt
+                    ).to_dict()
+                except Exception:
+                    benchmark_findings = None
         finally:
             self._remove_worktree(combined_wt)
 
@@ -122,9 +135,10 @@ class ColdUpdateBatcher:
                 pytest_summary=report.pytest_summary,
                 mypy_summary=report.mypy_summary,
                 premortem_findings=premortem_findings,
+                benchmark_findings=benchmark_findings,
             )
 
-        return self._bisect(candidates, base_ref, premortem_findings=premortem_findings)
+        return self._bisect(candidates, base_ref, premortem_findings=premortem_findings, benchmark_findings=benchmark_findings)
 
     def get_batch(self, batch_id: str) -> BatchResult | None:
         for item in self._load()["batches"]:
@@ -149,6 +163,7 @@ class ColdUpdateBatcher:
         base_ref: str,
         *,
         premortem_findings: dict[str, Any] | None = None,
+        benchmark_findings: dict[str, Any] | None = None,
     ) -> BatchResult:
         confirmed_good: list[Any] = []
         excluded: list[dict[str, Any]] = []
@@ -188,6 +203,7 @@ class ColdUpdateBatcher:
                 pytest_summary="",
                 mypy_summary="",
                 premortem_findings=premortem_findings,
+                benchmark_findings=benchmark_findings,
             )
 
         final_wt = self._new_worktree_path()
@@ -206,6 +222,7 @@ class ColdUpdateBatcher:
             pytest_summary=final_report.pytest_summary,
             mypy_summary=final_report.mypy_summary,
             premortem_findings=premortem_findings,
+            benchmark_findings=benchmark_findings,
         )
 
     # ------------------------------------------------------------------
@@ -221,6 +238,7 @@ class ColdUpdateBatcher:
         pytest_summary: str,
         mypy_summary: str,
         premortem_findings: dict[str, Any] | None = None,
+        benchmark_findings: dict[str, Any] | None = None,
     ) -> BatchResult:
         result = BatchResult(
             id=str(uuid.uuid4())[:12],
@@ -231,6 +249,7 @@ class ColdUpdateBatcher:
             mypy_summary=mypy_summary,
             worktree_path=None,
             premortem=premortem_findings,
+            benchmark=benchmark_findings,
         )
         self._persist(result)
         self._merkle.log(
