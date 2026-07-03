@@ -250,6 +250,76 @@ def test_get_batch_and_latest_batch_persist_across_instances(tmp_path: Path) -> 
     assert batcher2.latest_batch().id == result1.id
 
 
+class _FakePremortem:
+    def __init__(self, findings: dict) -> None:
+        self._findings = findings
+        self.calls: list[list] = []
+
+    def assess(self, proposals):
+        self.calls.append(list(proposals))
+
+        class _R:
+            def to_dict(_self) -> dict:
+                return self._findings
+
+        return _R()
+
+
+def test_premortem_runs_before_tests_and_result_is_persisted(tmp_path: Path) -> None:
+    """Paso 2 del roadmap: BatchPremortemGate se llama ANTES de correr la
+    suite, y su resultado queda en BatchResult.premortem — nunca bloquea."""
+    root = _make_git_repo(tmp_path, "premortem")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="premortem")
+
+    id_a = _propose_validated(
+        mgr, tmp_path, "a",
+        "--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n",
+    )
+
+    fake_premortem = _FakePremortem({"escalated": False, "verdict": "ok", "risk_flags": [], "reason": ""})
+
+    def factory(worktree: Path):
+        return _FakeRunner(_ok_report())
+
+    batcher = ColdUpdateBatcher(mgr, runner_factory=factory, premortem=fake_premortem)
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_a]
+    assert fake_premortem.calls, "el premortem debe llamarse con las propuestas del lote"
+    assert result.premortem == {"escalated": False, "verdict": "ok", "risk_flags": [], "reason": ""}
+
+    fetched = batcher.get_batch(result.id)
+    assert fetched is not None
+    assert fetched.premortem == result.premortem
+
+
+def test_premortem_failure_does_not_block_batch(tmp_path: Path) -> None:
+    """Si el premortem lanza una excepción, el lote sigue su curso normal
+    (señal, no gate)."""
+    root = _make_git_repo(tmp_path, "premortem_fail")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="premortem_fail")
+
+    id_a = _propose_validated(
+        mgr, tmp_path, "a",
+        "--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n",
+    )
+
+    class _BrokenPremortem:
+        def assess(self, proposals):
+            raise RuntimeError("boom")
+
+    def factory(worktree: Path):
+        return _FakeRunner(_ok_report())
+
+    batcher = ColdUpdateBatcher(mgr, runner_factory=factory, premortem=_BrokenPremortem())
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_a]
+    assert result.premortem is None
+
+
 def test_batch_result_to_dict_roundtrip() -> None:
     result = BatchResult(
         id="abc",
