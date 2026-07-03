@@ -37,6 +37,8 @@ from atlas.core.decider.decision_record import (
     JsonlDecisionSink,
 )
 from atlas.core.decider.recording_decider import RecordingDecider
+from atlas.core.decider.memory_decision_sink import MemoryDecisionSink
+from atlas.core.decider.twin_decider import TwinDecider, ShadowPredictor, ShadowAccuracyLog, MIN_CORPUS_SIZE
 
 
 def make_decider(name: str | None) -> Decider:
@@ -86,4 +88,8 @@ __all__ = [
     "Verdict",
     "action_hash",
     "make_decider",
+    "MIN_CORPUS_SIZE",
+    "ShadowAccuracyLog",
+    "ShadowPredictor",
+    "TwinDecider",
 ]
