@@ -1,0 +1,30 @@
+{
+  "id": "lesson-b62374b6690c",
+  "title": "AtlasCoder (Llama-70B) falla en tareas multi-ubicación",
+  "provenance": "external_source",
+  "detection_heuristic": "AtlasCoder.code() → success=False iterations=3, files_changed parciales",
+  "avoid_pattern": "No dar a AtlasCoder tareas que exijan editar >1 archivo con bloques SEARCH/REPLACE distintos en una sola llamada — el modelo no puede mantener el contexto de múltiples archivos y los bloques no coinciden con el contenido real.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Medición directa G0.7: 3 iter → solo añadió parámetro, no clase ni test",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-06-27T07:31:17.645384+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "atlas_coder:g0.7_experiment"
+  ],
+  "tags": [],
+  "created_at": "2026-06-27T07:31:17.645430+00:00"
+}
