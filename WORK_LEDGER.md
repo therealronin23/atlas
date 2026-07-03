@@ -20,6 +20,46 @@ Formato: `[estado] nodo — próxima acción / bloqueado-por`. Estados: ✅ hech
    Métrica de acierto acumulada en `ShadowAccuracyLog`; warmup MIN_CORPUS_SIZE=30; shadow-only hasta tener números.
 🔑 **CAPA 0 CERRADA** (2026-06-27) — 2401 tests verdes. Próximo: Capa 1 / G1.0.
 **Fix ortogonal**: `InferenceHub` auto-carga `.env` via python-dotenv al importar → claves disponibles sin source.
+
+## G0.10 — Batching HITL + roadmap "juicio real" self-audit (2026-07-03/04)
+
+Motivado por hallazgo real: bucle self_audit atascado 38 veces (2026-06-26→07-01) por 9 YAMLs
+seedeados regenerados sin commit — causa raíz ajena a las dependencias propuestas, nadie razonaba
+el porqué de los fallos. Cónclave (3 rondas, FAIL 3/3 las 2 primeras, FAIL-con-correcciones la 3ra)
+estableció: mantener HITL pero por LOTE (no por cambio), y dar juicio real al pipeline antes de
+ampliar autonomía — condicionado a métricas objetivas futuras, no a promesa.
+
+✅ **ColdUpdateBatcher** (`cold_update_batcher.py`) — acumula propuestas validated+self_audit,
+   prueba juntas, bisección si falla. ✅ **BenchmarkGate** (LongMemEval antes/después, razonamiento
+   no velocidad). ✅ **EventType.COLD_UPDATE_BATCH_READY** + Telegram + CLI `atlas update
+   batch-review/batch-approve` — única decisión humana por lote, sigue pasando por el decisor.
+✅ **Roadmap "juicio real" (5/5 pasos, orden corregido por Cónclave: barato→caro):**
+   1. `PreflightGate` — CVEs (pip-audit) + conexión (`sanitation_audit.py` reusado) determinista.
+   2. `BatchPremortemGate` — riesgo de combinación, barato, ANTES de correr tests; escala al trío
+      completo si toca ruta sensible.
+   3. `RootCauseClassifier` — chequeo GRATIS contra git (HEAD vs working tree) primero; solo cae a
+      LLM barato si no hay evidencia. Habría detectado el incidente YAML sin gastar un token.
+   4. `DepAnalyst` — juicio de riesgo por bump individual (1 solo LLM, no dual: DepCandidate ya es
+      tipado/autoritativo de PyPI).
+   5. `FailureLessonSink` + `LessonStore.record_recurring()` — dedup por hash(intent+reason),
+      contador de ocurrencias en vez de un archivo nuevo por repetición.
+   Las 3 deliberaciones del Cónclave quedaron registradas retroactivamente en LessonStore (veredicto
+   + síntesis/corrección humana, no solo el texto crudo) — regla nueva: TODA convocatoria real al
+   Cónclave debe pasar `synthesis_recorder`, sin excepción.
+
+⬜ **Pendiente honesto, no a medias — declarado explícitamente:**
+   - `BenchmarkGate` no integrado aún en el ciclo automático (`ColdUpdateBatcher` limpia sus
+     worktrees antes de que pudiera correr sobre ellos — requiere exponer las rutas antes de
+     limpiar, decisión de diseño para otra sesión).
+   - `FailureLessonSink` construido pero SIN wiring real a `ColdUpdateBatcher`/`DepProposer` (la
+     pieza reutilizable existe, el punto de conexión queda para tarea futura).
+   - MCP: los 6 primitivos (Tools/Resources/Prompts/Sampling/Roots/Elicitation) SÍ están
+     implementados (mejor de lo que decía memoria vieja), pero NO hay ninguna métrica de uso real
+     por tool — `EventType.TOOL_INVOKED` existe pero desacoplado de MCP. Sin instrumentar.
+   - CVEs reales encontradas y arregladas en el entorno (`pip`, `python-multipart`) — verificado en
+     vivo, no solo test.
+   - Visión larga (Atlas investigando SOTA externo sin parar, mejora recursiva) — explícitamente
+     diferida, no construida, no fingida.
 **Lección medida**: AtlasCoder (Llama-70B) completó G0.7 parcialmente (1/3 cambios en 3 iter); 2 lecciones en LessonStore.
 
 ## Catálogo de proveedores/modelos — fixes 2026-06-27 (prove-it en vivo)
