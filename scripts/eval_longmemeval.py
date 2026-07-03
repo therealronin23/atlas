@@ -122,6 +122,45 @@ def _hybrid_multihop(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx)
     return [RecallResult(lesson_id=rid, score=cmap.get(rid, 0.0), matched=True) for rid in fused]
 
 
+def _temporal_decay(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
+    """Cosine re-rankeado con decay exponencial por antigüedad (half-life 90 días)."""
+    import math
+    import time as _time
+    n = max(k * 3, 15)
+    base = idx.recall_all(query, k=n)
+    if not base:
+        return []
+    now_ns = _time.time_ns()
+    half_life_ns = 90 * 86_400 * 1_000_000_000
+    placeholders = ",".join("?" * len(base))
+    rows = dict(idx._conn.execute(
+        f"SELECT id, COALESCE(valid_from_ns, 0) FROM records WHERE id IN ({placeholders})",
+        [r.lesson_id for r in base],
+    ).fetchall())
+    rescored = []
+    for r in base:
+        age_ns = max(0, now_ns - rows.get(r.lesson_id, 0))
+        decay = math.pow(0.5, age_ns / half_life_ns)
+        rescored.append(RecallResult(lesson_id=r.lesson_id, score=r.score * decay, matched=True))
+    rescored.sort(key=lambda r: r.score, reverse=True)
+    return rescored[:k]
+
+
+def _hybrid_temporal(idx: SqliteMemoryIndex, query: str, k: int, ctx: SampleCtx) -> list[RecallResult]:
+    """Hybrid (cosine+lexical RRF) re-rankeado con el decay de _temporal_decay."""
+    fused = _hybrid(idx, query, max(k * 2, 10), ctx)
+    if not fused:
+        return []
+    decayed = _temporal_decay(idx, query, max(k * 2, 10), ctx)
+    dmap = {r.lesson_id: r.score for r in decayed}
+    rescored = [
+        RecallResult(lesson_id=r.lesson_id, score=dmap.get(r.lesson_id, r.score * 0.5), matched=True)
+        for r in fused
+    ]
+    rescored.sort(key=lambda r: r.score, reverse=True)
+    return rescored[:k]
+
+
 RETRIEVERS: dict[str, Retriever] = {
     "cosine": _cosine,
     "hybrid": _hybrid,
@@ -129,6 +168,8 @@ RETRIEVERS: dict[str, Retriever] = {
     "temporal_aof": _temporal_aof,
     "multihop": _multihop,
     "hybrid_multihop": _hybrid_multihop,
+    "temporal_decay": _temporal_decay,
+    "hybrid_temporal": _hybrid_temporal,
 }
 
 
