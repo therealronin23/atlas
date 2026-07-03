@@ -41,8 +41,10 @@ mcp = [
     "mcp>=1.2",
 ]
 embeddings = [
-    # Memoria semántica LOCAL (ONNX, SIN torch) — embeddings in-process/offline.
-    # OPCIONAL: el default es StubEmbedder; se activa con ATLAS_EMBEDDER=fastembed.
+    # Memoria semántica LOCAL (ONNX, SIN torch) — embeddings in-process, offline
+    # tras la primera descarga del modelo. 2026-07-03: es el DEFAULT de
+    # default_embedder() (antes StubEmbedder); usa ATLAS_EMBEDDER=stub para
+    # optar por el hash barato (p.ej. CI/sandbox sin red en el primer arranque).
     # Elegido sobre sentence-transformers para EVITAR torch (~GBs), coherente con
     # la regla anti-deps-pesadas del repo (ver el extra `redteam`).
     "fastembed>=0.3",
@@ -62,6 +64,16 @@ redteam = [
     # locales de este entorno no sirven (thinking-models / crash de Ollama).
     "pyrit>=0.14",
 ]
+# NOTA — scraping (Crawl4AI, absorbido 2026-07-02): NO es un extra de pip como
+# los de arriba porque NO puede convivir en este venv. `crawl4ai` fija
+# `unclecode-litellm==1.81.13`, que se instala bajo el MISMO nombre de import
+# que nuestro `litellm` real (del que depende InferenceHub) — un
+# `pip install -e .[scraping]` normal SUSTITUIRÍA silenciosamente esa
+# dependencia crítica. Se instala en un venv totalmente aparte y se invoca por
+# subprocess (ver src/atlas/tools/crawler.py + _crawl4ai_worker.py):
+#   python3 -m venv .venv-scraping
+#   .venv-scraping/bin/pip install crawl4ai
+#   .venv-scraping/bin/python3 -m playwright install chromium
 
 [project.scripts]
 atlas = "atlas.interfaces.cli:cli"

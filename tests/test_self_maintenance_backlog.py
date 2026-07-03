@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from atlas.core.self_maintenance.backlog import BacklogItem, load_backlog, pending
+from atlas.core.self_maintenance.backlog import (
+    BacklogItem,
+    backlog_summary,
+    load_backlog,
+    pending,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -133,3 +138,51 @@ def test_real_backlog_has_enough_pending_items() -> None:
     items = load_backlog(backlog_path)
     queue = pending(items)
     assert len(queue) >= 3, f"Backlog runway agotado: {len(queue)} pendientes (<3). Reponer."
+
+
+# ---------------------------------------------------------------------------
+# backlog_summary
+# ---------------------------------------------------------------------------
+
+def _item(id: str, priority: int, status: str = "pending") -> BacklogItem:
+    return BacklogItem(
+        id=id,
+        title=f"Title {id}",
+        why="why",
+        targets=(),
+        acceptance="acc",
+        priority=priority,
+        status=status,
+    )
+
+
+def test_backlog_summary_counts_by_status() -> None:
+    items = [
+        _item("a", 1, "pending"),
+        _item("b", 2, "pending"),
+        _item("c", 3, "doing"),
+        _item("d", 4, "done"),
+    ]
+    summary = backlog_summary(items)
+    assert summary["total"] == 4
+    assert summary["by_status"] == {"pending": 2, "doing": 1, "done": 1}
+
+
+def test_backlog_summary_top_pending_capped_at_five_and_ordered() -> None:
+    items = [_item(f"p{i}", priority=i, status="pending") for i in range(7, 0, -1)]
+    summary = backlog_summary(items)
+    top = summary["top_pending"]
+    assert len(top) == 5
+    assert [t["priority"] for t in top] == [1, 2, 3, 4, 5]
+    assert [t["id"] for t in top] == ["p1", "p2", "p3", "p4", "p5"]
+    for t in top:
+        assert set(t.keys()) == {"id", "title", "priority"}
+
+
+def test_backlog_summary_top_pending_excludes_non_pending() -> None:
+    items = [
+        _item("done-item", 1, "done"),
+        _item("pending-item", 2, "pending"),
+    ]
+    summary = backlog_summary(items)
+    assert [t["id"] for t in summary["top_pending"]] == ["pending-item"]

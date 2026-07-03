@@ -194,6 +194,15 @@ class LessonStore:
     def search_by_tag(self, tag: str) -> list[Lesson]:
         return [lesson for lesson in self.all() if tag in lesson.tags]
 
+    def stats(self) -> dict[str, Any]:
+        """Conteo de lecciones: total y por procedencia."""
+        lessons = self.all()
+        by_provenance: dict[str, int] = {}
+        for lesson in lessons:
+            key = lesson.provenance.value
+            by_provenance[key] = by_provenance.get(key, 0) + 1
+        return {"total": len(lessons), "by_provenance": by_provenance}
+
 
 class LessonPromoter:
     """Puentes productores → LessonStore. Cada uno construye la Evidence con
