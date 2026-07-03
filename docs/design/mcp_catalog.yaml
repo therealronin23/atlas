@@ -26,7 +26,7 @@ sectors:
       - {name: Code Reviewer / TDD, kind: skill, subsector: code-review, purpose: "review + TDD + simplify", status: candidato}
       - {name: Karpathy Guidelines, kind: skill, subsector: code-review, purpose: "reglas de coding limpio", status: candidato}
       - {name: vercel-react-best-practices, kind: skill, subsector: frontend, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices", purpose: "patrones React/Next (instalado E2E vía npx skills 2026-06-22)", tags: [programacion, diseno], trust: vetted, status: instalado}
-      - {name: Playwright / WebApp Testing, kind: mcp, subsector: testing, purpose: "tests E2E browser", tags: [programacion, ciberseguridad], status: candidato}
+      - {name: Playwright / WebApp Testing, kind: mcp, subsector: testing, install: "npx -y @playwright/mcp@latest", transport: stdio, trust: vetted, purpose: "navegación/scraping vía árbol de accesibilidad (23 tools, prove-it OK 2026-07-02, sub-100ms, muchos menos tokens que screenshot-based)", tags: [programacion, ciberseguridad], status: verificado, read_only_tools: [browser_snapshot, browser_console_messages, browser_network_requests, browser_network_request, browser_take_screenshot]}
       - {name: WarpGrep, kind: tool, subsector: cicd, purpose: "búsqueda ultrarrápida en repos (Codex)", status: candidato}
       - {name: gh-fix-ci, kind: tool, subsector: cicd, purpose: "arregla CI fallido en background (Codex)", status: candidato}
 
@@ -149,8 +149,11 @@ sectors:
       git: {label: Git, aliases: [github, control-versiones]}
       terminal: {label: Terminal, aliases: [shell, comandos]}
       operacion: {label: Operación, aliases: [ops, ledger, disciplina, sanitation]}
+      escritorio: {label: Escritorio, aliases: [desktop, gui, computer-use, mouse, teclado]}
     entries:
       - {name: atlas-operating, kind: mcp, subsector: operacion, source: atlas.mcp.operating_server, purpose: "OPERATING LOOP + ledger + sanitation (NUESTRO)", install: "claude mcp add atlas-operating", status: instalado}
       - {name: Filesystem, kind: mcp, subsector: ficheros, source: "modelcontextprotocol/servers", purpose: "acceso a ficheros", status: candidato}
       - {name: Git / GitHub, kind: mcp, subsector: git, purpose: "git + issues/PRs", status: candidato}
       - {name: Desktop Commander, kind: mcp, subsector: terminal, purpose: "archivos + terminal", status: candidato}
+      - {name: computer-control-mcp, kind: mcp, subsector: escritorio, install: "env DISPLAY=:99 /home/ronin/proyectos/atlas-core/.venv-desktop/bin/computer-control-mcp", transport: stdio, trust: vetted, purpose: "GUI mouse/keyboard/OCR contra display VIRTUAL Xvfb :99 — nunca el real (prove-it OK 2026-07-02, 15 tools). Requiere Xvfb :99 corriendo.", tags: [programacion, infraestructura], status: verificado, read_only_tools: [take_screenshot, take_screenshot_with_ocr, get_screen_size, list_windows]}
+      - {name: computer-control-mcp-real-display, kind: mcp, subsector: escritorio, install: "env DISPLAY=:0 /home/ronin/proyectos/atlas-core/.venv-desktop/bin/computer-control-mcp", transport: stdio, trust: vetted, purpose: "GUI mouse/keyboard/OCR contra el display REAL :0 (sesión de escritorio en vivo) — NUNCA verificar/probar sin un caso de uso concreto y confirmación explícita del usuario; deliberadamente NO promovida a verificado hasta que exista esa razón. Todas las tools quedan mutate/HITL (sin read_only_tools) por diseño: incluso una lectura aquí toca la sesión real.", tags: [programacion, infraestructura], status: candidato}
