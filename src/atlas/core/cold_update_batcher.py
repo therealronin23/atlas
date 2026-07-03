@@ -60,6 +60,7 @@ class ColdUpdateBatcher:
         runner_factory: Callable[[Path], ValidationRunner] | None = None,
         merkle: "MerkleLogger | None" = None,
         premortem: Any | None = None,
+        failure_lesson_sink: Any | None = None,
     ) -> None:
         self._manager = manager
         self._root = manager._root
@@ -71,6 +72,9 @@ class ColdUpdateBatcher:
         # Opcional (paso 2 del roadmap "juicio real"): BatchPremortemGate.
         # Si no se inyecta, run_batch() se comporta exactamente igual que antes.
         self._premortem = premortem
+        # Opcional: sink para registrar lecciones de fallo durante la bisección.
+        # Señal, nunca bloquea el flujo principal.
+        self._failure_lesson_sink = failure_lesson_sink
 
     # ------------------------------------------------------------------
     # API publica
@@ -167,6 +171,14 @@ class ColdUpdateBatcher:
                     "proposal_id": candidate.id,
                     "reason": f"rompe la suite combinada (pytest_exit={report.pytest_exit})",
                 })
+                if self._failure_lesson_sink is not None:
+                    try:
+                        self._failure_lesson_sink.record(
+                            intent=candidate.intent,
+                            reason=f"rompe la suite combinada (pytest_exit={report.pytest_exit})",
+                        )
+                    except Exception:  # noqa: BLE001 — señal, nunca bloquea la bisección
+                        pass
 
         if not confirmed_good:
             return self._finalize(

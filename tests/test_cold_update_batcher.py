@@ -336,3 +336,78 @@ def test_batch_result_to_dict_roundtrip() -> None:
     assert d["included"] == ["p1"]
     assert d["excluded"] == [{"proposal_id": "p2", "reason": "x"}]
     assert d["passed"] is True
+
+
+class _FakeFailureLessonSink:
+    def __init__(self, *, raise_on_record: bool = False) -> None:
+        self.calls: list[dict] = []
+        self._raise_on_record = raise_on_record
+
+    def record(self, *, intent: str, reason: str) -> None:
+        if self._raise_on_record:
+            raise RuntimeError("sink boom")
+        self.calls.append({"intent": intent, "reason": reason})
+
+
+def test_failure_lesson_sink_called_on_bisect_exclusion(tmp_path: Path) -> None:
+    root = _make_git_repo(tmp_path, "sink_ok")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="sink_ok")
+
+    id_good = _propose_validated(
+        mgr, tmp_path, "good",
+        "--- /dev/null\n+++ b/src/atlas/good.txt\n@@ -0,0 +1 @@\n+good\n",
+    )
+    id_bad = _propose_validated(
+        mgr, tmp_path, "bad",
+        "--- /dev/null\n+++ b/src/atlas/bad_marker.py\n@@ -0,0 +1 @@\n+BAD_MARKER = 1\n",
+    )
+
+    def decide(worktree: Path) -> ValidationReport:
+        marker = worktree / "src" / "atlas" / "bad_marker.py"
+        if marker.exists():
+            return _fail_report()
+        return _ok_report()
+
+    sink = _FakeFailureLessonSink()
+    factory = _ScriptedRunnerFactory(decide)
+    batcher = ColdUpdateBatcher(mgr, runner_factory=factory, failure_lesson_sink=sink)
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_good]
+    assert len(result.excluded) == 1
+    assert result.excluded[0]["proposal_id"] == id_bad
+
+    assert len(sink.calls) == 1
+    assert sink.calls[0]["intent"] == "intent bad"
+    assert "rompe la suite combinada (pytest_exit=1)" in sink.calls[0]["reason"]
+
+
+def test_failure_lesson_sink_exception_does_not_break_bisect(tmp_path: Path) -> None:
+    root = _make_git_repo(tmp_path, "sink_exc")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="sink_exc")
+
+    id_good = _propose_validated(
+        mgr, tmp_path, "good",
+        "--- /dev/null\n+++ b/src/atlas/good.txt\n@@ -0,0 +1 @@\n+good\n",
+    )
+    id_bad = _propose_validated(
+        mgr, tmp_path, "bad",
+        "--- /dev/null\n+++ b/src/atlas/bad_marker.py\n@@ -0,0 +1 @@\n+BAD_MARKER = 1\n",
+    )
+
+    def decide(worktree: Path) -> ValidationReport:
+        marker = worktree / "src" / "atlas" / "bad_marker.py"
+        if marker.exists():
+            return _fail_report()
+        return _ok_report()
+
+    sink = _FakeFailureLessonSink(raise_on_record=True)
+    factory = _ScriptedRunnerFactory(decide)
+    batcher = ColdUpdateBatcher(mgr, runner_factory=factory, failure_lesson_sink=sink)
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_good]
+    assert len(result.excluded) == 1
+    assert result.excluded[0]["proposal_id"] == id_bad
