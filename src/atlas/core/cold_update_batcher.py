@@ -40,6 +40,9 @@ class BatchResult:
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    # Señal adicional (paso 2 del roadmap "juicio real"), NUNCA un gate duro:
+    # no bloquea el lote, solo se persiste para que la revisión humana la vea.
+    premortem: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -56,6 +59,7 @@ class ColdUpdateBatcher:
         store_dir: Path | None = None,
         runner_factory: Callable[[Path], ValidationRunner] | None = None,
         merkle: "MerkleLogger | None" = None,
+        premortem: Any | None = None,
     ) -> None:
         self._manager = manager
         self._root = manager._root
@@ -64,6 +68,9 @@ class ColdUpdateBatcher:
         self._batches_file = self._store_dir / "batches.json"
         self._runner_factory = runner_factory or (lambda p: ValidationRunner(p))
         self._merkle = merkle or manager._merkle
+        # Opcional (paso 2 del roadmap "juicio real"): BatchPremortemGate.
+        # Si no se inyecta, run_batch() se comporta exactamente igual que antes.
+        self._premortem = premortem
 
     # ------------------------------------------------------------------
     # API publica
@@ -83,6 +90,17 @@ class ColdUpdateBatcher:
                 pytest_summary="", mypy_summary="",
             )
 
+        # Paso 2 del roadmap "juicio real" (corrección del Cónclave: razonar
+        # sobre el riesgo de la COMBINACIÓN antes de pagar el coste de correr
+        # la suite completa). Señal adicional, nunca bloquea: si el premortem
+        # falla o no está inyectado, el lote sigue su camino normal igual.
+        premortem_findings: dict[str, Any] | None = None
+        if self._premortem is not None:
+            try:
+                premortem_findings = self._premortem.assess(candidates).to_dict()
+            except Exception:  # noqa: BLE001 — señal, no gate; nunca bloquea el lote
+                premortem_findings = None
+
         combined_wt = self._new_worktree_path()
         try:
             self._create_worktree(combined_wt, base_ref)
@@ -99,9 +117,10 @@ class ColdUpdateBatcher:
                 passed=True,
                 pytest_summary=report.pytest_summary,
                 mypy_summary=report.mypy_summary,
+                premortem_findings=premortem_findings,
             )
 
-        return self._bisect(candidates, base_ref)
+        return self._bisect(candidates, base_ref, premortem_findings=premortem_findings)
 
     def get_batch(self, batch_id: str) -> BatchResult | None:
         for item in self._load()["batches"]:
@@ -120,7 +139,13 @@ class ColdUpdateBatcher:
     # Bisección
     # ------------------------------------------------------------------
 
-    def _bisect(self, candidates: list[Any], base_ref: str) -> BatchResult:
+    def _bisect(
+        self,
+        candidates: list[Any],
+        base_ref: str,
+        *,
+        premortem_findings: dict[str, Any] | None = None,
+    ) -> BatchResult:
         confirmed_good: list[Any] = []
         excluded: list[dict[str, Any]] = []
 
@@ -150,6 +175,7 @@ class ColdUpdateBatcher:
                 passed=False,
                 pytest_summary="",
                 mypy_summary="",
+                premortem_findings=premortem_findings,
             )
 
         final_wt = self._new_worktree_path()
@@ -167,6 +193,7 @@ class ColdUpdateBatcher:
             passed=final_report.passed,
             pytest_summary=final_report.pytest_summary,
             mypy_summary=final_report.mypy_summary,
+            premortem_findings=premortem_findings,
         )
 
     # ------------------------------------------------------------------
@@ -181,6 +208,7 @@ class ColdUpdateBatcher:
         passed: bool,
         pytest_summary: str,
         mypy_summary: str,
+        premortem_findings: dict[str, Any] | None = None,
     ) -> BatchResult:
         result = BatchResult(
             id=str(uuid.uuid4())[:12],
@@ -190,6 +218,7 @@ class ColdUpdateBatcher:
             pytest_summary=pytest_summary,
             mypy_summary=mypy_summary,
             worktree_path=None,
+            premortem=premortem_findings,
         )
         self._persist(result)
         self._merkle.log(
