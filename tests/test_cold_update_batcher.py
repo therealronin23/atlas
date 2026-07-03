@@ -411,3 +411,65 @@ def test_failure_lesson_sink_exception_does_not_break_bisect(tmp_path: Path) -> 
     assert result.included == [id_good]
     assert len(result.excluded) == 1
     assert result.excluded[0]["proposal_id"] == id_bad
+
+
+class _FakeBenchmarkGate:
+    def __init__(self, data: dict) -> None:
+        self._data = data
+
+    def compare(self, before_root: Path, after_root: Path) -> Any:
+        class _R:
+            def to_dict(_self) -> dict:
+                return self._data
+        return _R()
+
+
+class _BrokenBenchmarkGate:
+    def compare(self, before_root: Path, after_root: Path) -> Any:
+        raise RuntimeError("benchmark boom")
+
+
+def test_benchmark_gate_persisted_when_batch_passes(tmp_path: Path) -> None:
+    root = _make_git_repo(tmp_path, "bench_ok")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="bench_ok")
+
+    id_a = _propose_validated(
+        mgr, tmp_path, "a",
+        "--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n",
+    )
+
+    fake_benchmark = _FakeBenchmarkGate({"score": 42, "delta": "+3"})
+
+    def factory(worktree: Path):
+        return _FakeRunner(_ok_report())
+
+    batcher = ColdUpdateBatcher(mgr, runner_factory=factory, benchmark_gate=fake_benchmark)
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_a]
+    assert result.benchmark == {"score": 42, "delta": "+3"}
+
+    fetched = batcher.get_batch(result.id)
+    assert fetched is not None
+    assert fetched.benchmark == result.benchmark
+
+
+def test_benchmark_gate_exception_does_not_block_batch(tmp_path: Path) -> None:
+    root = _make_git_repo(tmp_path, "bench_exc")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="bench_exc")
+
+    id_a = _propose_validated(
+        mgr, tmp_path, "a",
+        "--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n",
+    )
+
+    def factory(worktree: Path):
+        return _FakeRunner(_ok_report())
+
+    batcher = ColdUpdateBatcher(mgr, runner_factory=factory, benchmark_gate=_BrokenBenchmarkGate())
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_a]
+    assert result.benchmark is None
