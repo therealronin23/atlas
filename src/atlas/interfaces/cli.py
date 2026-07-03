@@ -937,5 +937,163 @@ def voice(mode: str, whisper_model: str) -> None:
     vm.run_loop(orchestrator=orch)
 
 
+@cli.command()
+@click.argument("task")
+@click.option("--file", "-f", "context_files", multiple=True, help="Archivos de contexto (relativos al repo).")
+@click.option("--test", "-t", "test_cmd", default="pytest -x -q", show_default=True, help="Comando de tests.")
+@click.option("--level", type=click.Choice(["L0", "L1", "L2"]), default="L1", show_default=True, help="Nivel de modelo.")
+@click.option("--parallel/--no-parallel", default=False, help="Lanzar subtareas en paralelo con todos los workers disponibles.")
+@click.option("--iterations", default=3, show_default=True, help="Máximo de iteraciones por worker.")
+@click.option(
+    "--engine", type=click.Choice(["atlas", "tool"]), default="atlas", show_default=True,
+    help="Motor de codificación: atlas=completación de texto, "
+         "tool=tool-calling ADR-031 (4/4 en enjambre fácil y difícil medido 2026-07-02 "
+         "vs 0/4 de atlas; repo_map/auto_commit disponibles a nivel de librería en "
+         "ambos motores, sin flag CLI propio; apply-model es moot en tool-calling).",
+)
+def code(
+    task: str, context_files: tuple[str, ...], test_cmd: str, level: str,
+    parallel: bool, iterations: int, engine: str,
+) -> None:
+    """Codifica una tarea usando InferenceHub (Groq/NIM/Gemini).
+
+    Ejemplos:\n
+      atlas code "añade tests para SqliteMemoryIndex.recall_all"\n
+      atlas code "refactor auth module" -f src/auth.py -t "pytest tests/test_auth.py"\n
+      atlas code "implementa ADR-X, ADR-Y" --parallel --level L2\n
+      atlas code "crea src/greet.py" --engine tool
+    """
+    from atlas.core.inference_hub import InferenceHub, InferenceLevel  # noqa: PLC0415
+    from atlas.core.atlas_coder import AtlasCoder, CodingStrategy  # noqa: PLC0415
+    from atlas.core.tool_coder import ToolCoder  # noqa: PLC0415
+    from atlas.core.parallel_coder import ParallelCoder, discover_workers  # noqa: PLC0415
+
+    inference_level = InferenceLevel[level]
+    cmd_parts = test_cmd.split()
+    files = list(context_files)
+    repo_root = Path.cwd()
+
+    console.print(f"\n[bold cyan]Atlas Code[/bold cyan] — motor=[yellow]{engine}[/yellow] nivel=[yellow]{level}[/yellow] paralelo=[yellow]{parallel}[/yellow]")
+    console.print(f"[dim]Tarea:[/dim] {task}")
+    if files:
+        console.print(f"[dim]Archivos:[/dim] {', '.join(files)}")
+    console.print(f"[dim]Tests:[/dim] {test_cmd}\n")
+
+    if parallel:
+        workers = discover_workers(level=inference_level)
+        if not workers:
+            console.print(f"[yellow]⚠ Sin workers disponibles para {level}. Configura las API keys.[/yellow]")
+            console.print("[dim]Ejemplo: export NVIDIA_API_KEY=nvapi-... GROQ_API_KEY=gsk_...[/dim]")
+            raise SystemExit(1)
+        console.print(f"[green]✓ {len(workers)} workers disponibles[/green]")
+        subtasks = [t.strip() for t in task.split(";;") if t.strip()] or [task]
+        console.print(f"[dim]Subtareas detectadas: {len(subtasks)}[/dim]\n")
+
+        coder_factory = (
+            (lambda hub, root, timeout: ToolCoder(hub, repo_root=root, timeout_s=timeout))
+            if engine == "tool" else None
+        )
+        pc = ParallelCoder(repo_root=repo_root, coder_factory=coder_factory)
+        with console.status("[bold green]Ejecutando workers en paralelo…[/bold green]"):
+            result = pc.run(subtasks, files, cmd_parts, level=inference_level, max_iterations=iterations)
+
+        table = Table(title="Resultados paralelos")
+        table.add_column("Subtarea", style="cyan", max_width=50)
+        table.add_column("Provider")
+        table.add_column("Estado")
+        table.add_column("Iteraciones")
+        for wr in result.results:
+            estado = "[green]PASS[/green]" if wr.coder_result.success else "[red]FAIL[/red]"
+            table.add_row(wr.subtask[:48], wr.provider_name, estado, str(wr.coder_result.iterations))
+        console.print(table)
+        console.print(f"\n[bold]{'✓ Todo correcto' if result.success else '✗ Hay fallos'}[/bold] — {result.subtasks_passed}/{result.subtasks_total} subtareas pasaron")
+        raise SystemExit(0 if result.success else 1)
+
+    else:
+        hub = InferenceHub(mode="auto")
+        if engine == "tool":
+            tool_coder = ToolCoder(hub, repo_root=repo_root, timeout_s=120)
+            with console.status("[bold green]Generando código…[/bold green]"):
+                result_c = tool_coder.code(task, files, cmd_parts, max_iterations=iterations, level=inference_level)
+        else:
+            atlas_coder = AtlasCoder(hub, repo_root=repo_root, timeout_s=120)
+            with console.status("[bold green]Generando código…[/bold green]"):
+                result_c = atlas_coder.code(task, files, cmd_parts, max_iterations=iterations)
+
+        if result_c.success:
+            console.print(f"[bold green]✓ Listo[/bold green] en {result_c.iterations} iteración{'es' if result_c.iterations > 1 else ''}")
+            if result_c.files_changed:
+                console.print(f"[dim]Archivos modificados:[/dim] {', '.join(result_c.files_changed)}")
+        else:
+            console.print(f"[bold red]✗ No convergió[/bold red] tras {result_c.iterations} iteraciones")
+            if result_c.error:
+                console.print(f"[red]{_markup_escape(result_c.error)}[/red]")
+            if result_c.test_output:
+                console.print("\n[dim]Output de tests:[/dim]")
+                console.print(result_c.test_output[:800])
+        raise SystemExit(0 if result_c.success else 1)
+
+
+@cli.command()
+@click.argument("task")
+@click.option("--file", "-f", "context_files", multiple=True, help="Archivos de contexto.")
+@click.option("--test", "-t", "test_cmd", default="pytest -x -q", show_default=True)
+@click.option("--level", type=click.Choice(["L1", "L2"]), default="L2", show_default=True)
+@click.option("--cycles", default=2, show_default=True, help="Máximo de ciclos Cónclave→build→audit.")
+@click.option("--iterations", default=3, show_default=True, help="Iteraciones por worker por ciclo.")
+def cycle(task: str, context_files: tuple[str, ...], test_cmd: str, level: str, cycles: int, iterations: int) -> None:
+    """Loop deliberativo: Cónclave planifica → workers paralelos → Cónclave audita → itera.
+
+    Separa subtareas con comas o deja que el Cónclave las genere automáticamente.\n
+    Ejemplos:\n
+      atlas cycle "implementa el módulo de autenticación"\n
+      atlas cycle "refactor cache, añade tests, actualiza docs" --level L2 --cycles 3
+    """
+    from atlas.core.inference_hub import InferenceHub, InferenceLevel  # noqa: PLC0415
+    from atlas.core.code_cycle import CodeCycle  # noqa: PLC0415
+    from atlas.core.parallel_coder import discover_workers  # noqa: PLC0415
+
+    inference_level = InferenceLevel[level]
+    cmd_parts = test_cmd.split()
+    files = list(context_files)
+
+    workers = discover_workers(level=inference_level)
+    console.print(f"\n[bold cyan]Atlas Cycle[/bold cyan] — nivel=[yellow]{level}[/yellow] workers=[yellow]{len(workers)}[/yellow] ciclos_max=[yellow]{cycles}[/yellow]")
+    console.print(f"[dim]Tarea:[/dim] {task}\n")
+
+    if not workers:
+        console.print(f"[yellow]⚠ Sin workers disponibles para {level}. Configura las API keys.[/yellow]")
+        raise SystemExit(1)
+
+    hub = InferenceHub(mode="auto")
+    cc = CodeCycle(hub, repo_root=Path.cwd(), timeout_s=120)
+
+    with console.status("[bold green]Ejecutando loop deliberativo…[/bold green]"):
+        result = cc.run(task, files, cmd_parts, max_cycles=cycles, level=inference_level)
+
+    console.print(f"\n[dim]Subtareas generadas:[/dim] {len(result.subtasks)}")
+    for i, st in enumerate(result.subtasks, 1):
+        console.print(f"  {i}. {st}")
+
+    if result.parallel_result:
+        console.print(f"\n[dim]Ciclos ejecutados:[/dim] {result.cycles}")
+        passed = result.parallel_result.subtasks_passed
+        total = result.parallel_result.subtasks_total
+        console.print(f"[dim]Build:[/dim] {passed}/{total} subtareas pasaron")
+
+    verdict = result.council_verdict or "—"
+    color = "green" if verdict == "pass" else "red" if verdict == "fail" else "yellow"
+    console.print(f"[dim]Veredicto Cónclave:[/dim] [{color}]{verdict}[/{color}]")
+
+    if result.success:
+        console.print(f"\n[bold green]✓ Ciclo completado con éxito[/bold green]")
+    else:
+        console.print(f"\n[bold red]✗ No convergió tras {result.cycles} ciclo{'s' if result.cycles > 1 else ''}[/bold red]")
+        if result.error:
+            console.print(f"[red]{_markup_escape(result.error)}[/red]")
+
+    raise SystemExit(0 if result.success else 1)
+
+
 if __name__ == "__main__":
     cli()
