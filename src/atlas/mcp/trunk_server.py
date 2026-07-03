@@ -58,6 +58,7 @@ from atlas.mcp.trunk_manifest import native_roots
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
+    from atlas.core.self_maintenance.backlog import BacklogItem
     from atlas.mcp.catalog import CatalogEntry
     from atlas.mcp.skills_store import SkillStore
 
@@ -118,6 +119,7 @@ def trunk_children(
             out.append(McpServerConfig(
                 name=e.name, cmd=shlex.split(e.install),
                 env_passthrough=list(e.env_passthrough),  # secretos por entorno, no en cmd
+                read_only_tools=list(e.read_only_tools),  # ADR-035 dec.5: resto = mutate/HITL
             ))
     return out
 
@@ -129,10 +131,16 @@ def build_trunk_server(
     skill_store: "SkillStore | None" = None,
     catalog: "list[CatalogEntry] | None" = None,
     taxonomy: dict[str, Any] | None = None,
+    lesson_store: Any | None = None,
+    backlog_items: "list[BacklogItem] | None" = None,
+    memory_count: int | None = None,
 ) -> "FastMCP":
     """Servidor FastMCP que expone la fachada meta lazy del tronco (navegación de 3
     niveles + buscador). Con `skill_store` sirve skills; con `catalog`+`taxonomy`
-    expone `trunk_subsectors` y `trunk_find` (salto directo, sin manual)."""
+    expone `trunk_subsectors` y `trunk_find` (salto directo, sin manual). Con
+    `catalog`+`lesson_store`+`backlog_items`+`memory_count` expone SP-A
+    (`workbench://manifest`, la mesa de trabajo compartida — ver
+    `workbench_resources.py`)."""
     from mcp.server.fastmcp import FastMCP
 
     server = FastMCP(name)
@@ -151,6 +159,13 @@ def build_trunk_server(
     def trunk_invoke(tool: str, args: dict[str, Any] | None = None) -> Any:
         """Ejecuta una tool, enrutada a su raíz dueña (con audit/seguridad detrás)."""
         return agg.invoke(tool, args or {})
+
+    @server.tool()
+    def trunk_invoke_readonly(tool: str, args: dict[str, Any] | None = None) -> Any:
+        """Ejecuta una tool de SOLO LECTURA (declarada read_only en el catálogo de su
+        raíz). Fail-closed: rechaza cualquier tool no declarada — para mutaciones usa
+        trunk_invoke (que pasa por HITL en el host)."""
+        return agg.invoke_readonly(tool, args or {})
 
     if taxonomy is not None:
         @server.tool()
@@ -237,6 +252,21 @@ def build_trunk_server(
         for _sname in skill_store.list_skills():
             server.add_prompt(_make_skill_prompt(_sname))
 
+    if (
+        catalog is not None
+        and lesson_store is not None
+        and backlog_items is not None
+        and memory_count is not None
+    ):
+        from atlas.mcp.workbench_resources import workbench_manifest_json as _workbench_manifest_json
+
+        @server.resource("workbench://manifest", mime_type="application/json")
+        def workbench_manifest() -> str:
+            """SP-A: la mesa de trabajo compartida. Un único Resource que agrega
+            catálogo+lecciones+backlog+memoria — léelo UNA vez al planificar en vez
+            de conocer cada subsistema por separado o hacer N tool-calls."""
+            return _workbench_manifest_json(catalog, lesson_store, backlog_items, memory_count)
+
     # Cierre de primitivos MCP (audit): Completion + Logging/Progress (consumidor real).
     from atlas.mcp.trunk_capabilities import (
         register_discovery_capabilities,
@@ -288,18 +318,80 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         catalog = catalog + load_catalog(classified)
     # Hijos DERIVADOS DEL CATÁLOGO (paso 2): nuestras raíces + externos verificados.
     # NO se llama start_all() — spawn perezoso, cada raíz arranca al primer dispatch.
-    registry = McpRegistry(trunk_children(catalog, save_dir=save_dir, repo_root=repo_root))
-    # Índice estático usando solo las raíces nativas (no requiere spawn).
+    children = trunk_children(catalog, save_dir=save_dir, repo_root=repo_root)
+    registry = McpRegistry(children)
+
+    def _refresh(tool: str) -> dict[str, list[str]]:
+        # Routing perezoso de externos: spawnea hijos uno a uno (ensure_started es
+        # idempotente) hasta que el tool buscado aparezca en el registry.
+        for cfg in children:
+            registry.ensure_started(cfg.name)
+            found = servers_from_registry(registry)
+            if any(tool in tools for tools in found.values()):
+                return found
+        return servers_from_registry(registry)
+
+    # Índice estático usando solo las raíces nativas (no requiere spawn); los
+    # externos entran vía _refresh al primer invoke de una de sus tools.
     agg = TrunkAggregator(
         catalog=catalog,
         roots=native_roots(),  # índice estático, sin spawnear
         dispatcher=registry.dispatch,
+        refresh=_refresh,
+        is_read_only=registry.is_read_only,
     )
     from atlas.mcp.skills_store import SkillStore
 
     store = SkillStore(Path(repo_root) / "docs" / "skills")
+
+    # SP-A: mesa de trabajo compartida — fuentes reales para workbench://manifest.
+    # Fail-soft por diseño: si algo falta (backlog.yaml ausente, DB de memoria
+    # aún no creada), el tronco arranca igual sin ese resource, nunca rompe el
+    # resto del servidor por una pieza opcional.
+    lesson_store_obj: Any | None = None
+    backlog_items_list: list[Any] | None = None
+    memory_count_val: int | None = None
+    try:
+        from atlas.core.lesson_store import LessonStore
+
+        # 2026-07-03: unificado a <repo_root>/workspace/lessons — la MISMA
+        # convención que AtlasCoder/ToolCoder (donde YA viven lecciones reales
+        # generadas por el propio motor de codificación). Antes apuntaba a
+        # `save_dir/lessons` (p.ej. ~/atlas-mcp/lessons) — una ruta vacía
+        # desconectada de donde el resto de Atlas escribe lecciones de verdad
+        # (hallazgo real, verificado en vivo).
+        lesson_store_obj = LessonStore(Path(repo_root) / "workspace" / "lessons")
+    except Exception:  # noqa: BLE001 — SP-A es aditivo, nunca bloquea el arranque
+        lesson_store_obj = None
+    try:
+        from atlas.core.self_maintenance.backlog import load_backlog
+
+        backlog_path = Path(repo_root) / "docs" / "backlog.yaml"
+        if backlog_path.is_file():
+            backlog_items_list = load_backlog(backlog_path)
+    except Exception:  # noqa: BLE001
+        backlog_items_list = None
+    try:
+        memory_db = Path(save_dir) / "memory.db"
+        if memory_db.is_file():
+            import sqlite3
+
+            conn = sqlite3.connect(str(memory_db))
+            try:
+                memory_count_val = int(
+                    conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
+                )
+            finally:
+                conn.close()
+        else:
+            memory_count_val = 0
+    except Exception:  # noqa: BLE001
+        memory_count_val = None
+
     server = build_trunk_server(
-        agg, name=name, skill_store=store, catalog=catalog, taxonomy=taxonomy
+        agg, name=name, skill_store=store, catalog=catalog, taxonomy=taxonomy,
+        lesson_store=lesson_store_obj, backlog_items=backlog_items_list,
+        memory_count=memory_count_val,
     )
     try:
         server.run()
