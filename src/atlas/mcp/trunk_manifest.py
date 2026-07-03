@@ -94,6 +94,9 @@ _TRUNK_READ_ONLY_TOOLS = [
     "trunk_find",
     "list_skills",
     "get_skill",
+    # Fail-closed en el propio trunk: solo despacha tools declaradas read_only
+    # en el catálogo de su raíz — por eso el host puede marcarla 'read'.
+    "trunk_invoke_readonly",
 ]
 
 
