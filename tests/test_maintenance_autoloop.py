@@ -204,6 +204,89 @@ class TestDepCycleWiring:
 # ---------------------------------------------------------------------------
 
 
+class TestBatchCycleWiring:
+    """`_batch_cycle` — notificación proactiva de lote de self_audit listo (ver
+    ADR de auto-auditoría). Usa un batcher FAKE inyectado, no el real."""
+
+    def test_batch_ready_publishes_event_with_included(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.cold_update_batcher import BatchResult
+        from atlas.core.contracts import EventType
+
+        result = BatchResult(
+            id="batch-1",
+            included=["cu-1", "cu-2"],
+            excluded=[{"proposal_id": "cu-3", "reason": "rompe algo"}],
+            passed=True,
+            pytest_summary="1 passed" * 400,  # más largo que 500 chars
+            mypy_summary="",
+            worktree_path=None,
+        )
+        fake_batcher = SimpleNamespace(run_batch=lambda: result)
+        orch.maintenance_cold_update_batcher = lambda: fake_batcher  # type: ignore[method-assign]
+
+        intents = {"cu-1": SimpleNamespace(intent="bump uvicorn"),
+                   "cu-2": SimpleNamespace(intent="fix lint")}
+        orch.cold_update = lambda: SimpleNamespace(get=lambda pid: intents.get(pid))  # type: ignore[method-assign]
+
+        events: list[Any] = []
+        orch.bus.subscribe(
+            EventType.COLD_UPDATE_BATCH_READY,
+            lambda e: events.append(e.payload),
+        )
+
+        # No MCP candidates — aislar el _batch_cycle
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert len(events) == 1
+        payload = events[0]
+        assert payload["batch_id"] == "batch-1"
+        assert payload["included"] == ["cu-1", "cu-2"]
+        assert payload["included_intents"] == ["bump uvicorn", "fix lint"]
+        assert payload["excluded"] == [{"proposal_id": "cu-3", "reason": "rompe algo"}]
+        assert payload["tests_passed"] is True
+        assert len(payload["pytest_summary"]) <= 500
+
+    def test_batch_empty_included_no_event(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.cold_update_batcher import BatchResult
+        from atlas.core.contracts import EventType
+
+        result = BatchResult(
+            id="batch-2",
+            included=[],
+            excluded=[],
+            passed=True,
+            pytest_summary="",
+            mypy_summary="",
+            worktree_path=None,
+        )
+        fake_batcher = SimpleNamespace(run_batch=lambda: result)
+        orch.maintenance_cold_update_batcher = lambda: fake_batcher  # type: ignore[method-assign]
+
+        events: list[Any] = []
+        orch.bus.subscribe(
+            EventType.COLD_UPDATE_BATCH_READY,
+            lambda e: events.append(e.payload),
+        )
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert events == []
+
+
 class TestServiceRunnerSchedulerGate:
     def _base_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Desactiva todos los subsistemas opcionales para aislar el scheduler."""

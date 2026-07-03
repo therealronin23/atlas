@@ -83,6 +83,7 @@ class MaintenanceFacade:
         self._maintenance_dep_proposer: Any = None
         self._maintenance_codegen_proposer: Any = None
         self._maintenance_community_scout: Any = None
+        self._maintenance_cold_update_batcher: Any = None
 
     # ------------------------------------------------------------------
     # Helpers internos
@@ -205,14 +206,53 @@ class MaintenanceFacade:
                     if proposal is not None:
                         orch.advance_cold_update(proposal.id)
 
+            def _batch_cycle() -> None:
+                # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
+                # Se enruta por self._orch por el mismo motivo que _dep_cycle:
+                # respetar monkeypatches de tests sobre el Orchestrator.
+                #
+                # TODO(batch+benchmark): ColdUpdateBatcher no expone las rutas del
+                # worktree final antes de limpiar; integrar BenchmarkGate.compare()
+                # requeriría ese hook — ver backlog. Fuera de alcance de este slice.
+                batcher = self._orch.maintenance_cold_update_batcher()
+                result = batcher.run_batch()
+                if not result.included:
+                    return  # nada real que revisar, evitar ruido
+                manager = self._orch.cold_update()
+                included_intents = [
+                    p.intent for pid in result.included
+                    if (p := manager.get(pid)) is not None
+                ]
+                orch._bus.publish_type(EventType.COLD_UPDATE_BATCH_READY, {
+                    "batch_id": result.id,
+                    "included": result.included,
+                    "included_intents": included_intents,
+                    "excluded": result.excluded,
+                    "tests_passed": result.passed,
+                    "pytest_summary": result.pytest_summary[:500],
+                })
+
             self._maintenance_scheduler = MaintenanceScheduler(
                 merkle=orch._merkle,
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
-                extra_cycles=(_dep_cycle,),
+                extra_cycles=(_dep_cycle, _batch_cycle),
             )
         return self._maintenance_scheduler
+
+    def maintenance_cold_update_batcher(self) -> Any:
+        """Lote de self_audit — combina propuestas `validated` del mismo origen
+        y las prueba conjuntamente en un worktree efímero (ver
+        ``ColdUpdateBatcher``). Reusa el ``ColdUpdateManager`` ya existente del
+        orquestador; no aplica nada por sí mismo."""
+        if self._maintenance_cold_update_batcher is None:
+            from atlas.core.cold_update_batcher import ColdUpdateBatcher
+
+            self._maintenance_cold_update_batcher = ColdUpdateBatcher(
+                manager=self._orch.cold_update(),
+            )
+        return self._maintenance_cold_update_batcher
 
     def maintenance_dep_scout(self) -> Any:
         """ADR-039 slice 6 — Scout de bumps de dependencias PyPI (read-only).

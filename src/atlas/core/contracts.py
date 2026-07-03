@@ -179,6 +179,7 @@ class EventType(str, Enum):
     HERMES_ONLINE_CONFIRMED = "hermes_online.confirmed"
     DECIDER_VERDICT         = "decider.verdict"   # ADR-040: canal on-the-loop
     MAINTENANCE_PROPOSED    = "maintenance.proposed"  # ADR-039: cron propone, no aplica
+    COLD_UPDATE_BATCH_READY = "cold_update.batch_ready"  # lote de self_audit probado, esperando revisión episódica
 
 
 @dataclass
