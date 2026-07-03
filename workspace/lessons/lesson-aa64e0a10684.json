@@ -1,0 +1,38 @@
+{
+  "id": "lesson-aa64e0a10684",
+  "title": "Cónclave FAIL con correcciones: roadmap de juicio real para self-audit",
+  "provenance": "external_source",
+  "detection_heuristic": "Al diseñar el orden de un pipeline con pasos LLM (caros) y pasos deterministas (baratos: CVE scan, lint, conexión), poner SIEMPRE los baratos primero — mismo principio que el tiering Bash>Haiku>Sonnet>Opus de /autobuild.",
+  "avoid_pattern": "Trío FAIL 3/3 sobre el roadmap de 5 piezas (razonamiento causa raíz, revisión por propuesta, lecciones, premortem, CVE/conexión) — pero esta vez NO rechazó la idea, corrigió el diseño: (1) orden mal: los pasos deterministas y baratos (CVE/sanitation_audit) deben ir PRIMERO, no al final — descartan gratis lo obviamente malo antes de gastar LLM; (2) el clasificador de causa raíz necesita el estado real de git (HEAD vs worktree), no solo el texto de pytest — el caso real de los YAML solo es detectable así; (3) LessonStore hoy no está diseñado para fallos recurrentes con frecuencia/contexto, solo para éxitos puntuales — verificar esquema antes de conectar; (4) exigir métricas OBJETIVAS antes de ampliar autonomía (ej. <5% falsos positivos del clasificador sostenido 3 meses), no una promesa vaga. CORRECCIÓN humana (Opus) AL TRÍO: discrepo en que el premortem de lote sea 'redundante' con la revisión por propuesta individual — la revisión por propuesta mira un cambio aislado, el premortem del lote mira riesgo emergente de la COMBINACIÓN de varios cambios ya válidos por separado (el mismo tipo de caso que la bisección de ColdUpdateBatcher ya detecta mecánicamente, pero con tests caros — un premortem con juicio podría advertirlo antes, más barato). Se mantiene como paso propio, movido antes de la ejecución cara de tests, no eliminado.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Veredicto trío FAIL 3/3 con correcciones constructivas + 1 discrepancia humana explícita",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-03T16:55:38.951391+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "conclave:deliberation",
+    "opus:synthesis",
+    "session:2026-07-03"
+  ],
+  "tags": [
+    "conclave",
+    "roadmap",
+    "self-audit",
+    "juicio-real",
+    "challenge-the-trio"
+  ],
+  "created_at": "2026-07-03T16:55:38.951414+00:00"
+}

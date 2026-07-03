@@ -1,0 +1,37 @@
+{
+  "id": "lesson-be3dbd6bf16a",
+  "title": "Cónclave FAIL: autonomía total sin HITL para self_audit",
+  "provenance": "external_source",
+  "detection_heuristic": "Antes de eliminar/relajar el gate humano en tier1_auto_apply para origin='self_audit', convocar al trío — históricamente FAIL 3/3.",
+  "avoid_pattern": "Trío (gemini/kimi/mistral) votó FAIL 3/3 contra autonomía total: 'pasar tests' no predice que un cambio sea seguro; el harness de validación puede tener bugs ajenos al contenido del diff (demostrado el mismo día: 9 YAMLs sin commit hicieron fallar 38 propuestas legítimas por razón ambiental). Kimi: sin auto-apply, un bug del propio auto-apply no tendría 'testigo externo' que lo detecte. SÍNTESIS/CORRECCIÓN humana (Opus): veredicto aceptado sin reservas — alternativa adoptada: HITL episódico por LOTE (ColdUpdateBatcher), no por cambio individual. Construido y auditado PASS la misma sesión.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Veredicto trío FAIL 3/3 + síntesis humana aceptada sin corrección",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-03T16:55:38.950735+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "conclave:deliberation",
+    "opus:synthesis",
+    "session:2026-07-03"
+  ],
+  "tags": [
+    "conclave",
+    "hitl",
+    "cold-update",
+    "autonomia"
+  ],
+  "created_at": "2026-07-03T16:55:38.950775+00:00"
+}

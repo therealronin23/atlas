@@ -181,6 +181,24 @@ def test_read_file_tool_returns_content(tmp_path: Path):
     assert any("contenido_secreto" in str(m.get("content", "")) for m in tool_msgs)
 
 
+def test_read_file_tool_on_directory_returns_error_not_crash(tmp_path: Path):
+    """IsADirectoryError (2026-07-03): el modelo puede pedir leer un directorio
+    por error — antes reventaba toda la sesión con una excepción sin capturar."""
+    (tmp_path / "a_dir").mkdir()
+    hub = _ScriptedHub([
+        [_tc("read_file", path="a_dir")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    coder.code(task="lee a_dir", context_files=[], test_cmd=["true"])
+
+    tool_msgs = [
+        m for req in hub.requests if req.messages
+        for m in req.messages if m.get("role") == "tool"
+    ]
+    assert any("es un directorio" in str(m.get("content", "")) for m in tool_msgs)
+
+
 def test_test_failure_feeds_back_and_retries(tmp_path: Path):
     """Tests fallan tras el primer turno → el error vuelve al modelo, que
     corrige en el segundo intento."""

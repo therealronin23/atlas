@@ -171,6 +171,8 @@ class ToolCoder:
             return f"error: {path} no existe."
         except UnicodeDecodeError:
             return f"error: {path} no es texto legible."
+        except IsADirectoryError:
+            return f"error: {path} es un directorio, no un archivo."
 
     def _tool_str_replace(
         self, path: str, old_str: str, new_str: str, changed: list[str]
