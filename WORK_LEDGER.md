@@ -47,19 +47,26 @@ ampliar autonomía — condicionado a métricas objetivas futuras, no a promesa.
    + síntesis/corrección humana, no solo el texto crudo) — regla nueva: TODA convocatoria real al
    Cónclave debe pasar `synthesis_recorder`, sin excepción.
 
-⬜ **Pendiente honesto, no a medias — declarado explícitamente:**
-   - `BenchmarkGate` no integrado aún en el ciclo automático (`ColdUpdateBatcher` limpia sus
-     worktrees antes de que pudiera correr sobre ellos — requiere exponer las rutas antes de
-     limpiar, decisión de diseño para otra sesión).
-   - `FailureLessonSink` construido pero SIN wiring real a `ColdUpdateBatcher`/`DepProposer` (la
-     pieza reutilizable existe, el punto de conexión queda para tarea futura).
-   - MCP: los 6 primitivos (Tools/Resources/Prompts/Sampling/Roots/Elicitation) SÍ están
-     implementados (mejor de lo que decía memoria vieja), pero NO hay ninguna métrica de uso real
-     por tool — `EventType.TOOL_INVOKED` existe pero desacoplado de MCP. Sin instrumentar.
-   - CVEs reales encontradas y arregladas en el entorno (`pip`, `python-multipart`) — verificado en
-     vivo, no solo test.
-   - Visión larga (Atlas investigando SOTA externo sin parar, mejora recursiva) — explícitamente
-     diferida, no construida, no fingida.
+✅ **4 pendientes cerrados (2026-07-04), usando ToolCoder como motor principal:**
+   - `FailureLessonSink` cableado en `ColdUpdateBatcher._bisect()` (señal, nunca bloquea).
+   - `BenchmarkGate` integrado en `run_batch()` (dentro del try, antes de limpiar el worktree;
+     solo si el lote ya pasó los tests) — ToolCoder convergió LIMPIO en 1 iteración, 12/12 tests.
+   - `ToolUsageCounter` — métricas reales de uso por tool, cableadas en el punto central de
+     despacho `TrunkAggregator.invoke()/invoke_readonly()`. Alcance honesto: cubre tools
+     enrutadas por el tronco, NO los ~32 tools "meta" registrados directo vía `@server.tool()`.
+   - `SotaSnapshotRecorder` — primer paso ACOTADO hacia medirse vs SOTA externo (captura fechada,
+     no comparación automática); reutiliza `CrawlerTool`, probado en vivo contra github.com.
+   **Medición de ToolCoder (4 intentos, `--engine tool`)**: 1 convergencia limpia (0 arreglos),
+   3 con 1 bug pequeño y localizable cada una (typo en patch de test, cast de mypy, función no
+   definida en vez de `field(default_factory=)`) — nunca "cero output" como en intentos
+   anteriores de la sesión. Patrón: specs de una sola pieza de comportamiento (no 5+ ramas a la
+   vez) convergen con alta fiabilidad, con errores pequeños y baratos de corregir a mano.
+
+⬜ **Pendiente honesto, aún no resuelto:**
+   - MCP: sigue sin instrumentar el uso de los tools "meta" del propio tronco (fuera del scope
+     de `invoke()`/`invoke_readonly()`).
+   - Visión larga (Atlas investigando SOTA externo sin parar, mejora recursiva, comparación
+     automática contra `SotaSnapshotRecorder`) — explícitamente diferida, no construida.
 **Lección medida**: AtlasCoder (Llama-70B) completó G0.7 parcialmente (1/3 cambios en 3 iter); 2 lecciones en LessonStore.
 
 ## Catálogo de proveedores/modelos — fixes 2026-06-27 (prove-it en vivo)
