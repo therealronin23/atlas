@@ -69,6 +69,47 @@ ampliar autonomía — condicionado a métricas objetivas futuras, no a promesa.
      automática contra `SotaSnapshotRecorder`) — explícitamente diferida, no construida.
 **Lección medida**: AtlasCoder (Llama-70B) completó G0.7 parcialmente (1/3 cambios en 3 iter); 2 lecciones en LessonStore.
 
+## G0.11 — panorama externo + selección evolutiva real + durabilidad MCP (2026-07-04)
+
+Motivado por la auditoría honesta del historial completo de self-audit (110 intentos MCP/25
+"adoptados" nunca durables, 111 ciclos swarm/1 propuesta jamás real) — ver
+[[self-audit-real-judgment-roadmap-2026-07-04]] y [[atlas-vision-universal-capability]].
+
+✅ **Panorama externo abierto (no lista acotada)**: `PanoramaScout` (GitHub + HN Algolia,
+   descubre por TOPIC) + `TopicExpander` (1 LLM genera queries variadas desde un seed) +
+   `SSRFBridge` con 13 dominios nuevos (arxiv, HN, Reddit, npm/crates/pkg.go.dev, etc.).
+✅ **`ToolUsageCounter` con procedencia**: `record(origin=)`, `external_counts()` — distingue uso
+   real externo de auto-invocación del propio bucle de auditoría (objeción unánime del Cónclave
+   sobre el diseño anterior). 2 bucles muertos (swarm, sample-scheduler) apagados vía `.env`
+   (comentados, no borrados — reversible).
+✅ **`EvolutionGate`** (envuelve `codelion/openevolve`, adoptado tras comparar contra
+   FunSearch/AlphaEvolve/CodeEvolve/RoboPhD/InfiAgent/Gödel Agent) — variantes reales
+   compitiendo (islas+mutación), no "categorías" sin mecanismo causal (objeción que tumbó 3/3
+   el diseño anterior). Cableado a `SelfBuildRunner.run_item_with_evolution()` — commit `77352ec`.
+   **Bug real encontrado y arreglado en vivo (no solo en tests con fakes)**: `openevolve` extrae
+   el CÓDIGO FUENTE del evaluador (`inspect.getsource`) y lo re-ejecuta aislado, sin closures ni
+   imports externos — un evaluador-método (`self`, `target_rel`...) es incompatible por diseño.
+   Fix: `_write_worktree_evaluator_file()` escribe un `.py` autocontenido a disco (valores
+   baked-in, imports propios) y se pasa la RUTA, no un callable — verificado end-to-end contra
+   Groq real (propuesta real generada, sin worktrees huérfanos).
+✅ **Durabilidad de la adopción MCP** — commit `562500b`. Corrección de un diagnóstico previo: el
+   problema NUNCA fue "adoptar salta el HITL" (`adopter.adopt()` siempre pasaba por el seam del
+   decisor, ADR-040); era que `McpRegistry.add_server()`/`remove_server()` solo mutaban la config
+   EN MEMORIA — una adopción aprobada por el decisor se evaporaba en cada reinicio. Con
+   `persist_path` cableado (reescribe `mcp_servers.json` en cada mutación), se restauró la
+   llamada automática en `_notify()` — el cribado real (SSRFBridge + `MaintenanceAnalyst`
+   dual-LLM + decisor anclado) ya existía, ahora por fin tiene un efecto durable que gatear.
+
+⬜ **Pendiente honesto, aún no resuelto:**
+   - `MaintenanceScheduler` solo hace tick al arrancar y luego no vuelve a correr
+     `_self_build_cycle`/`_dep_cycle`/`_batch_cycle` hasta pasadas 24h (intervalo por defecto) —
+     no es "24/7" de verdad como se planteó originalmente. Sin fix.
+   - Worktree huérfano `worktree-34dddff7-74f` (propuesta `[swarm:maint-0]`) sin rechazar en
+     `atlas-cold-updates` desde que se apagó el swarm scheduler — no se resuelve solo.
+   - Condición objetiva de desbloqueo de autonomía para actualizaciones de dependencias (N
+     lotes/M semanas/cero rollbacks, verificable por Merkle) — discutida con el usuario, aún sin
+     dejar escrita como criterio concreto.
+
 ## Catálogo de proveedores/modelos — fixes 2026-06-27 (prove-it en vivo)
 
 Origen: investigación de 9 harnesses (memoria `harness-engineering-survey-2026-06-27`) reveló que Aider
