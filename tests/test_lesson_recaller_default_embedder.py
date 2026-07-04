@@ -32,6 +32,7 @@ def _lesson(lid: str, pattern: str) -> Lesson:
 def test_default_embedder_without_env_var_is_fastembed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Sin ATLAS_EMBEDDER, el default ahora es el semántico (fastembed,
     2026-07-03) — cierra el hueco real de threshold=0.8 vs stub."""
+    pytest.importorskip("fastembed")
     monkeypatch.delenv("ATLAS_EMBEDDER", raising=False)
     store = LessonStore(tmp_path / "lessons")
     recaller = LessonRecaller(store)
@@ -53,6 +54,7 @@ def test_fastembed_default_finds_paraphrase_stub_misses(tmp_path: Path, monkeypa
     mejora el recall semántico: una lección y una consulta que dicen lo MISMO
     con palabras DISTINTAS (parafraseo, sin solapamiento léxico) — el hash de
     StubEmbedder no puede verlo, fastembed sí."""
+    pytest.importorskip("fastembed")
     monkeypatch.delenv("ATLAS_EMBEDDER", raising=False)  # default real: fastembed
     store = LessonStore(tmp_path / "lessons")
     store.add(_lesson(

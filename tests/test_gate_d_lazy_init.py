@@ -48,17 +48,22 @@ def test_ensure_gate_d_raises_kuzu_init_error_on_broken_db(tmp_path):
     """_ensure_gate_d() falla ruidoso con KuzuInitError cuando Kuzu está roto."""
     from atlas.core.orchestrator import Orchestrator, KuzuInitError
 
-    orch = make_orchestrator(ATLAS_PIPELINE_GATE_D="1", ATLAS_MEMORY_VECTOR="1")
-    orch._gate_d_requested = True
-
-    # Inyectar un workspace con DB corrupta
     kuzu_dir = tmp_path / "memory" / "kuzu"
     kuzu_dir.mkdir(parents=True)
     (kuzu_dir / "atlas.kuzu").write_text("corrupto")
-    orch._workspace = tmp_path
 
-    with pytest.raises(KuzuInitError, match="rm -rf"):
-        orch._ensure_gate_d()
+    # El env debe seguir activo durante _ensure_gate_d (lee ATLAS_MEMORY_VECTOR al usar).
+    with patch.dict(
+        os.environ,
+        {"ATLAS_PIPELINE_GATE_D": "1", "ATLAS_MEMORY_VECTOR": "1", "ATLAS_EMBEDDER": "stub"},
+        clear=False,
+    ):
+        orch = Orchestrator()
+        orch._gate_d_requested = True
+        orch._workspace = tmp_path
+
+        with pytest.raises(KuzuInitError, match="rm -rf"):
+            orch._ensure_gate_d()
 
 
 def test_ensure_gate_d_noop_when_not_requested():
