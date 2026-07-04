@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 from pathlib import Path
-from tool_usage import ToolUsageCounter
+from atlas.mcp.tool_usage import ToolUsageCounter
 
 @pytest.fixture
 def tmp_path_fixture(tmp_path):
