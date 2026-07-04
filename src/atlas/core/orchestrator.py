@@ -642,6 +642,10 @@ class Orchestrator:
         """Lote de self_audit probado en worktree efímero. Delegado al facade."""
         return self._maintenance_facade.maintenance_cold_update_batcher()
 
+    def maintenance_self_build_runner(self) -> Any:
+        """Autoconstrucción — backlog → ToolCoder → ColdUpdate. Delegado al facade."""
+        return self._maintenance_facade.maintenance_self_build_runner()
+
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
         if self._knowledge_cve_proposer is None:
@@ -718,6 +722,14 @@ class Orchestrator:
     @_maintenance_cold_update_batcher.setter
     def _maintenance_cold_update_batcher(self, value: Any) -> None:
         self._maintenance_facade._maintenance_cold_update_batcher = value
+
+    @property
+    def _maintenance_self_build_runner(self) -> Any:
+        return self._maintenance_facade._maintenance_self_build_runner
+
+    @_maintenance_self_build_runner.setter
+    def _maintenance_self_build_runner(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_self_build_runner = value
 
     @property
     def _maintenance_codegen_proposer(self) -> Any:

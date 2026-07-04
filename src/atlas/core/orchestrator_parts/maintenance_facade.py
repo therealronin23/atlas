@@ -84,6 +84,7 @@ class MaintenanceFacade:
         self._maintenance_codegen_proposer: Any = None
         self._maintenance_community_scout: Any = None
         self._maintenance_cold_update_batcher: Any = None
+        self._maintenance_self_build_runner: Any = None
 
     # ------------------------------------------------------------------
     # Helpers internos
@@ -206,6 +207,26 @@ class MaintenanceFacade:
                     if proposal is not None:
                         orch.advance_cold_update(proposal.id)
 
+            def _self_build_cycle() -> None:
+                # Autoconstrucción: muele UN item pending del backlog por ciclo.
+                # Opt-in explícito (gasta LLM): el operador activa ATLAS_SELF_BUILD=1.
+                # Un item por tick acota el gasto; el resultado queda auditado en
+                # Merkle por el runner y las propuestas van a ColdUpdate (HITL intacto).
+                import os
+
+                if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
+                    return
+                from atlas.core.self_maintenance.backlog import load_backlog, pending
+
+                try:
+                    items = pending(load_backlog(self._project_root() / "docs" / "backlog.yaml"))
+                    if not items:
+                        return
+                    runner = self._orch.maintenance_self_build_runner()
+                    runner.run_item(items[0])
+                except Exception:  # noqa: BLE001 — un item malo no tumba el tick del scheduler
+                    pass
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -237,9 +258,29 @@ class MaintenanceFacade:
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
-                extra_cycles=(_dep_cycle, _batch_cycle),
+                extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle),
             )
         return self._maintenance_scheduler
+
+    def maintenance_self_build_runner(self) -> Any:
+        """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
+
+        Reusa el ``ColdUpdateManager`` ya existente del orquestador; toda
+        propuesta generada por este runner requiere aprobación humana
+        explícita (invariante CVE-HITL, G0.8) — el runner solo PROPONE."""
+        if self._maintenance_self_build_runner is None:
+            from atlas.core.inference_hub import InferenceHub
+            from atlas.core.self_maintenance.self_build_runner import SelfBuildRunner
+
+            orch = self._orch
+            hub = orch._inference_hub or InferenceHub(mode="auto")
+            self._maintenance_self_build_runner = SelfBuildRunner(
+                self._project_root(),
+                hub,
+                self._orch.cold_update(),
+                backlog_path=self._project_root() / "docs" / "backlog.yaml",
+            )
+        return self._maintenance_self_build_runner
 
     def maintenance_cold_update_batcher(self) -> Any:
         """Lote de self_audit — combina propuestas `validated` del mismo origen
