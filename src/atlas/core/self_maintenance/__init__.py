@@ -25,6 +25,7 @@ from atlas.core.self_maintenance.candidate import (
 )
 from atlas.core.self_maintenance.codegen_proposer import CodegenProposer
 from atlas.core.self_maintenance.community_scout import CommunityScout
+from atlas.core.self_maintenance.dep_analyst import DepAnalyst, DepReviewVerdict
 from atlas.core.self_maintenance.dep_proposer import DepProposer
 from atlas.core.self_maintenance.dep_scout import PYPI_JSON_URL, DepScout
 from atlas.core.self_maintenance.presentation import format_proposal
@@ -47,8 +48,10 @@ __all__ = [
     "CodegenProposer",
     "CodegenTarget",
     "CommunityScout",
+    "DepAnalyst",
     "DepCandidate",
     "DepProposer",
+    "DepReviewVerdict",
     "DepScout",
     "RegistryScout",
     "SEVERITY_ALERT",

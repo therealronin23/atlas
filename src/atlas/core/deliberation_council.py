@@ -13,7 +13,7 @@ vivos → UNKNOWN, no se miente) y gating (lo trivial no quema modelos). El juez
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
 
 from atlas.core.adversarial_panel import (
     AdversarialPanel,
@@ -101,23 +101,72 @@ class LlmReviewer:
 # La distancia entre linajes maximiza la señal de desacuerdo útil.
 _TRIO_NAMES = ("gemini_free", "nvidia_kimi", "nvidia_mistral_large")
 
+# v2.0.5 — fallback por-linaje: cada slot acepta una lista ORDENADA de
+# proveedores del MISMO linaje (mapa investigado en vivo, no re-verificar
+# aquí). Si el primario no está en el pool (ej. sin su API key), se usa el
+# primer fallback de esa MISMA lista que sí esté disponible — nunca se cruza
+# de linaje (cruzar linajes rompe la ortogonalidad que hace útil el desacuerdo).
+# 🇺🇸 US: gemini_free (primary) -> groq_llama_70b (fallback, confirmado vivo).
+# 🇨🇳 CN: nvidia_kimi (primary) -> groq_qwen3 (fallback, confirmado vivo).
+# 🇪🇺 EU: nvidia_mistral_large SIN fallback no-NIM vivo confirmado — MISTRAL_API_KEY
+#         no está configurada y no hay un ID de OpenRouter verificado para Mistral
+#         Large; hueco real, documentado aquí a propósito (no se fabrica uno falso).
+_TRIO_LINEAGE_FALLBACKS: dict[str, tuple[str, ...]] = {
+    "gemini_free": ("gemini_free", "groq_llama_70b"),
+    "nvidia_kimi": ("nvidia_kimi", "groq_qwen3"),
+    "nvidia_mistral_large": ("nvidia_mistral_large",),
+}
+
 
 def build_trio_reviewers(providers: list[Provider] | None = None) -> list[Reviewer]:
-    """Ensambla el trío de revisores, uno por proveedor de linaje distinto.
+    """Ensambla el trío de revisores, uno por linaje distinto.
 
     Cada reviewer recibe un `InferenceHub` de UN solo proveedor (así `infer`
-    llama solo a ese, sin fallback cruzado). Si falta un proveedor del trío en
-    el pool, queda fuera — el panel detectará la falta de diversidad y emitirá
-    UNKNOWN aguas abajo (no se finge un trío incompleto).
+    llama solo a ese, sin fallback cruzado). Por cada slot del trío se prueba
+    primero el proveedor primario del linaje; si no está en el pool, se usa el
+    primer fallback DEL MISMO linaje que sí esté disponible (v2.0.5). Si
+    ninguno de la lista está disponible, el slot queda vacío — el panel
+    detectará la falta de diversidad y emitirá UNKNOWN aguas abajo (no se
+    finge un trío incompleto).
     """
     pool = {p.name: p for p in (providers or DEFAULT_PROVIDERS)}
     out: list[Reviewer] = []
     for name in _TRIO_NAMES:
-        p = pool.get(name)
+        lineage = _TRIO_LINEAGE_FALLBACKS.get(name, (name,))
+        p = None
+        for candidate in lineage:
+            p = pool.get(candidate)
+            if p is not None:
+                break
         if p is None:
             continue
-        out.append(LlmReviewer(name, name, InferenceHub(providers=[p]), p.level))
+        out.append(LlmReviewer(p.name, p.name, InferenceHub(providers=[p]), p.level))
     return out
+
+
+def _has_real_disagreement(evidence: Evidence) -> bool:
+    """Hay desacuerdo sustantivo si el veredicto no es ya UNKNOWN y los checks
+    de los reviewers NO son unánimes (algunos pasan, otros no) — eso indica
+    que el trío no comparte lectura, señal real de que vale la pena otra
+    ronda de debate. Consenso (todos pasan o todos fallan) no amerita otra
+    ronda: ya está claro."""
+    from atlas.core.verify import Verdict
+    if evidence.verdict == Verdict.UNKNOWN:
+        return False
+    passed_count = sum(1 for c in evidence.checks if c.passed)
+    failing_count = len(evidence.checks) - passed_count
+    return passed_count > 0 and failing_count > 0
+
+
+def _objections_summary(evidence: Evidence) -> str:
+    """Resumen legible de los `detail` de los checks fallidos, para pasar como
+    contexto adicional a la siguiente ronda. Prefijado con el marcador que
+    reviewers/tests usan para detectar 'esto ya es una ronda de seguimiento'."""
+    details = [c.detail for c in evidence.checks if not c.passed and c.detail]
+    if not details:
+        return ""
+    joined = "\n".join(f"- {d}" for d in details)
+    return f"[ronda-anterior] Objeciones de la ronda previa:\n{joined}"
 
 
 def convene_for_decision(
@@ -128,17 +177,56 @@ def convene_for_decision(
     risk: str,
     irreversible: bool = False,
     reviewers: list[Reviewer] | None = None,
+    synthesis_recorder: SynthesisRecorder | None = None,
+    rounds: int = 1,
 ) -> Evidence | None:
     """Convoca el trío sobre una decisión, con gating y diversidad obligatoria.
 
     Devuelve `None` si el gating dice que NO escale (lo trivial-reversible no
     quema modelos). Si escala, corre el panel exigiendo 3 proveedores distintos;
     sin esa diversidad el panel devuelve `Verdict.UNKNOWN` (unknown > mentir).
+
+    `rounds` (v2.1, opt-in): con `rounds=1` (default) es EXACTAMENTE el
+    comportamiento anterior, una sola pasada. Con `rounds > 1`, si la primera
+    pasada muestra desacuerdo real (`_has_real_disagreement`), se relanza el
+    panel con el contexto original + un resumen de las objeciones previas,
+    hasta agotar `rounds` o hasta que ya no haya objeciones nuevas (converge).
+
+    Nunca cuelga: si CUALQUIER reviewer falla/lanza en una ronda intermedia,
+    se corta ahí mismo y se sintetiza con la ÚLTIMA evidencia completa
+    obtenida — jamás se espera indefinidamente ni se relanza la ronda fallida
+    (preocupación señalada por Mistral en una deliberación en vivo sobre este
+    mismo diseño).
     """
     if not should_convene(difficulty, risk, irreversible=irreversible):
         return None
-    panel = AdversarialPanel(reviewers or build_trio_reviewers(), min_providers=3)
-    return panel.verify(decision, context)
+    panel_reviewers = reviewers or build_trio_reviewers()
+    panel = AdversarialPanel(panel_reviewers, min_providers=3)
+
+    evidence = panel.verify(decision, context)
+    round_context = context
+    for _ in range(max(rounds, 1) - 1):
+        if not _has_real_disagreement(evidence):
+            break
+        summary = _objections_summary(evidence)
+        if not summary:
+            break
+        round_context = f"{context}\n\n{summary}"
+        try:
+            next_evidence = panel.verify(decision, round_context)
+        except Exception:  # noqa: BLE001 — nunca cuelga: corta y sintetiza con lo que hay
+            break
+        if not _has_real_disagreement(next_evidence) or _objections_summary(next_evidence) == summary:
+            # Converge (sin más objeciones nuevas) o ya no hay desacuerdo: esta
+            # última pasada ya refleja el estado final, se conserva.
+            evidence = next_evidence
+            break
+        evidence = next_evidence
+
+    from atlas.core.verify import Verdict
+    if synthesis_recorder is not None and evidence is not None and evidence.verdict != Verdict.UNKNOWN:
+        record_synthesis(synthesis_recorder, decision, evidence)
+    return evidence
 
 
 class SynthesisRecorder(Protocol):
@@ -150,6 +238,24 @@ class SynthesisRecorder(Protocol):
     """
 
     def record(self, text: str) -> None: ...
+
+
+class LessonSynthesisRecorder:
+    """SynthesisRecorder que persiste en LessonStore via LessonPromoter."""
+
+    def __init__(self, store: Any) -> None:
+        self._store = store
+
+    def record(self, text: str) -> None:
+        from atlas.core.lesson_store import LessonPromoter
+        LessonPromoter(self._store).ingest_external(
+            title=text[:80],
+            detection_heuristic="Síntesis Cónclave",
+            avoid_pattern=text,
+            source_refs=("conclave:deliberation",),
+            corroborated=True,
+            reason="Veredicto trío",
+        )
 
 
 def record_synthesis(

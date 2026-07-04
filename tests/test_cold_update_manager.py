@@ -214,6 +214,105 @@ def test_forensics_populated_on_failed_validate(tmp_path: Path) -> None:
     assert fetched_pass.forensics == {}
 
 
+def test_root_cause_classifier_invoked_on_failure_and_stored(tmp_path: Path) -> None:
+    """Paso 3 del roadmap: RootCauseClassifier se llama en fallos, su
+    veredicto queda en forensics['root_cause'] — señal, nunca gate."""
+    from atlas.core.validation_runner import ValidationReport
+
+    ws = tmp_path / "atlas"
+    ws.mkdir()
+    merkle = MerkleLogger(ws / "memory" / "audit")
+
+    root = tmp_path / "project_rc"
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "tests").mkdir()
+
+    fail_report = ValidationReport(
+        passed=False, pytest_exit=1, mypy_exit=0,
+        pytest_summary="FAILED tests/test_x.py::test_foo", mypy_summary="",
+    )
+
+    def fake_factory(p: Path):
+        class _Runner:
+            def run(self):
+                return fail_report
+        return _Runner()
+
+    class _FakeVerdict:
+        def to_dict(self):
+            return {"classification": "ambiental", "reason": "r", "evidence_paths": [], "used_llm": False}
+
+    class _FakeClassifier:
+        def __init__(self):
+            self.calls: list[dict] = []
+
+        def classify(self, *, pytest_summary, mypy_summary, base_ref):
+            self.calls.append({"pytest_summary": pytest_summary, "mypy_summary": mypy_summary, "base_ref": base_ref})
+            return _FakeVerdict()
+
+    classifier = _FakeClassifier()
+    store = tmp_path / "cold-store-rc"
+    mgr_rc = ColdUpdateManager(
+        root, merkle, store_dir=store, runner_factory=fake_factory,
+        root_cause_classifier=classifier,
+    )
+
+    patch_fail = tmp_path / "fail_rc.patch"
+    patch_fail.write_text("--- /dev/null\n+++ b/src/atlas/f.txt\n@@ -0,0 +1 @@\n+f\n", encoding="utf-8")
+    p_fail = mgr_rc.propose("fail case rc", patch_fail)
+    mgr_rc.validate(p_fail.id)
+
+    assert classifier.calls
+    fetched = mgr_rc.get(p_fail.id)
+    assert fetched.forensics["root_cause"] == {
+        "classification": "ambiental", "reason": "r", "evidence_paths": [], "used_llm": False,
+    }
+
+
+def test_root_cause_classifier_failure_does_not_block_validate(tmp_path: Path) -> None:
+    """Si el clasificador lanza excepción, validate() sigue funcionando
+    normal (señal, no gate)."""
+    from atlas.core.validation_runner import ValidationReport
+
+    ws = tmp_path / "atlas"
+    ws.mkdir()
+    merkle = MerkleLogger(ws / "memory" / "audit")
+
+    root = tmp_path / "project_rc_fail"
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "tests").mkdir()
+
+    fail_report = ValidationReport(
+        passed=False, pytest_exit=1, mypy_exit=0, pytest_summary="FAILED", mypy_summary="",
+    )
+
+    def fake_factory(p: Path):
+        class _Runner:
+            def run(self):
+                return fail_report
+        return _Runner()
+
+    class _BrokenClassifier:
+        def classify(self, **kwargs):
+            raise RuntimeError("boom")
+
+    store = tmp_path / "cold-store-rc-fail"
+    mgr_rc = ColdUpdateManager(
+        root, merkle, store_dir=store, runner_factory=fake_factory,
+        root_cause_classifier=_BrokenClassifier(),
+    )
+
+    patch_fail = tmp_path / "fail_rc2.patch"
+    patch_fail.write_text("--- /dev/null\n+++ b/src/atlas/f2.txt\n@@ -0,0 +1 @@\n+f\n", encoding="utf-8")
+    p_fail = mgr_rc.propose("fail case rc2", patch_fail)
+    report = mgr_rc.validate(p_fail.id)
+
+    assert report.passed is False
+    fetched = mgr_rc.get(p_fail.id)
+    assert fetched.status == "failed"
+    assert "root_cause" not in fetched.forensics
+
+
 def test_forensics_retrocompat_missing_field(tmp_path: Path) -> None:
     """proposals.json sin 'forensics' debe cargarse sin error."""
     import json
@@ -806,3 +905,207 @@ class TestAnomalyRouting:
         p = mgr.get(proposal.id)
         assert p.status == "validated"
         assert called == []  # decisor de anomalías NO fue llamado
+
+
+# ---------------------------------------------------------------------------
+# G0.6 — Auto-apply tipo-1 sin HITL
+# ---------------------------------------------------------------------------
+
+def _make_git_repo_tier1(tmp_path: Path, name: str = "tier1proj"):
+    """Repo git mínimo con commit inicial para tests tipo-1."""
+    import subprocess
+    from atlas.core.git_env import clean_git_env
+
+    root = tmp_path / name
+    root.mkdir()
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "src" / "atlas" / "__init__.py").write_text("")
+    (root / "tests").mkdir()
+    (root / "tests" / "test_dummy.py").write_text("def test_ok():\n    assert True\n")
+    (root / "pyproject.toml").write_text("[project]\nname='x'\n")
+    # Archivo con una línea de solo espacios al final — objetivo del patch tipo-1.
+    (root / "hello.py").write_text("x = 1\ny = 2\n   \n")
+
+    env = clean_git_env()
+    subprocess.run(["git", "init", "-b", "main"], cwd=root, env=env,
+                   capture_output=True, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t.com"], cwd=root, env=env,
+                   capture_output=True, check=True)
+    subprocess.run(["git", "config", "user.name", "T"], cwd=root, env=env,
+                   capture_output=True, check=True)
+    subprocess.run(["git", "add", "."], cwd=root, env=env,
+                   capture_output=True, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=root, env=env,
+                   capture_output=True, check=True)
+    return root
+
+
+def _ok_runner_factory():
+    """Runner factory que siempre devuelve passed=True."""
+    from atlas.core.validation_runner import ValidationReport
+
+    ok = ValidationReport(passed=True, pytest_exit=0, mypy_exit=0,
+                          pytest_summary="1 passed", mypy_summary="Success")
+
+    def factory(p: Path):
+        class _R:
+            def run(self):
+                return ok
+        return _R()
+
+    return factory
+
+
+def _whitespace_only_patch() -> str:
+    """Diff que elimina una línea de solo espacios de hello.py (tipo-1 whitespace)."""
+    return (
+        "--- a/hello.py\n"
+        "+++ b/hello.py\n"
+        "@@ -1,3 +1,2 @@\n"
+        " x = 1\n"
+        " y = 2\n"
+        "-   \n"
+    )
+
+
+def _code_change_patch() -> str:
+    """Diff con cambio de código real (no tipo-1)."""
+    return (
+        "--- a/hello.py\n"
+        "+++ b/hello.py\n"
+        "@@ -1,3 +1,3 @@\n"
+        "-x = 1\n"
+        "+x = 42\n"
+        " y = 2\n"
+        "    \n"
+    )
+
+
+class TestTier1AutoApply:
+    """G0.6 — auto-apply tipo-1 reversible sin HITL."""
+
+    def _build_mgr(self, tmp_path: Path, name: str = "t1"):
+        from atlas.logging.merkle_logger import MerkleLogger
+
+        root = _make_git_repo_tier1(tmp_path, name)
+        ws = tmp_path / f"atlas_{name}"
+        ws.mkdir(exist_ok=True)
+        merkle = MerkleLogger(ws / "memory" / "audit")
+        store = tmp_path / f"store_{name}"
+        mgr = ColdUpdateManager(
+            root, merkle, store_dir=store,
+            runner_factory=_ok_runner_factory(),
+        )
+        return root, mgr, merkle
+
+    def _propose_ws_patch(self, mgr: ColdUpdateManager, tmp_path: Path, name: str = "ws"):
+        """Propone un patch whitespace-only con origin=swarm."""
+        patch_file = tmp_path / f"{name}.patch"
+        patch_file.write_text(_whitespace_only_patch(), encoding="utf-8")
+        return mgr.propose(f"strip trailing ws {name}", patch_file, origin="swarm", risk="low")
+
+    def test_tier1_auto_apply_whitespace_patch_passes(self, tmp_path: Path) -> None:
+        """Patch whitespace-only + origin=swarm → apply + Merkle log."""
+        from unittest.mock import patch as mock_patch
+
+        root, mgr, merkle = self._build_mgr(tmp_path, "ws1")
+        proposal = self._propose_ws_patch(mgr, tmp_path, "ws1")
+
+        with mock_patch("atlas.security.bwrap_jail.BwrapJail"):
+            result = mgr.tier1_auto_apply(proposal.id)
+
+        assert result["status"] == "applied"
+        assert mgr.get(proposal.id).status == "applied"
+
+        # Merkle contiene entrada tier1_auto_applied
+        import json as _json
+        actions: list[str] = []
+        for log_file in merkle._log_dir.glob("merkle*.jsonl"):
+            for line in log_file.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    actions.append(_json.loads(line).get("action", ""))
+        assert "cold_update.tier1_auto_applied" in actions
+
+        # rollback_applied sigue funcionando
+        assert mgr.rollback_applied(proposal.id) is True
+        assert mgr.get(proposal.id).status == "rolled_back"
+
+    def test_tier1_auto_apply_rejects_non_swarm_origin(self, tmp_path: Path) -> None:
+        """origin='manual' → ValueError."""
+        from unittest.mock import patch as mock_patch
+
+        _, mgr, _ = self._build_mgr(tmp_path, "ns1")
+        patch_file = tmp_path / "manual.patch"
+        patch_file.write_text(_whitespace_only_patch(), encoding="utf-8")
+        proposal = mgr.propose("manual patch", patch_file, origin="manual", risk="low")
+
+        with mock_patch("atlas.security.bwrap_jail.BwrapJail"):
+            with pytest.raises(ValueError, match="origin='swarm'"):
+                mgr.tier1_auto_apply(proposal.id)
+
+    def test_tier1_auto_apply_rejects_self_audit_origin(self, tmp_path: Path) -> None:
+        """Invariante CVE-HITL (G0.8), verificado explícitamente para el origin
+        que usa SelfBuildRunner: origin='self_audit' NUNCA auto-aplica, ni
+        siquiera con un diff trivial de whitespace. Cierra un hallazgo real del
+        Cónclave (auditoría 2026-07-03): el guard era correcto en código pero
+        solo tenía cobertura de test para origin='manual', no para
+        'self_audit' específicamente — ahora es invariante con red de
+        seguridad, no solo lectura de código."""
+        from unittest.mock import patch as mock_patch
+
+        _, mgr, _ = self._build_mgr(tmp_path, "ns1")
+        patch_file = tmp_path / "self_audit.patch"
+        patch_file.write_text(_whitespace_only_patch(), encoding="utf-8")
+        proposal = mgr.propose("self-build patch", patch_file, origin="self_audit", risk="low")
+
+        with mock_patch("atlas.security.bwrap_jail.BwrapJail"):
+            with pytest.raises(ValueError, match="origin='swarm'"):
+                mgr.tier1_auto_apply(proposal.id)
+
+    def test_tier1_auto_apply_rejects_non_whitespace_diff(self, tmp_path: Path) -> None:
+        """Diff con cambios de código → ValueError (no tipo-1)."""
+        from unittest.mock import patch as mock_patch
+
+        _, mgr, _ = self._build_mgr(tmp_path, "nws1")
+        patch_file = tmp_path / "code.patch"
+        patch_file.write_text(_code_change_patch(), encoding="utf-8")
+        proposal = mgr.propose("code change", patch_file, origin="swarm", risk="low")
+
+        with mock_patch("atlas.security.bwrap_jail.BwrapJail"):
+            with pytest.raises(ValueError, match="no es tipo-1"):
+                mgr.tier1_auto_apply(proposal.id)
+
+    def test_tier1_auto_apply_rejects_if_bwrap_unavailable(self, tmp_path: Path) -> None:
+        """BwrapJail lanza → RuntimeError (fail-closed)."""
+        from unittest.mock import patch as mock_patch
+        from atlas.security.bwrap_jail import BwrapUnavailableError
+
+        _, mgr, _ = self._build_mgr(tmp_path, "bwrap1")
+        proposal = self._propose_ws_patch(mgr, tmp_path, "bwrap1")
+
+        def _raise_unavailable():
+            raise BwrapUnavailableError("bwrap no encontrado en PATH")
+
+        with mock_patch(
+            "atlas.security.bwrap_jail.BwrapJail",
+            side_effect=_raise_unavailable,
+        ):
+            with pytest.raises(RuntimeError, match="BwrapJail no disponible"):
+                mgr.tier1_auto_apply(proposal.id)
+
+
+def test_is_tipo1_diff_rejects_evil_plusplus_prefix():
+    """'+++codigo()' dentro de un hunk es código, no whitespace — debe rechazarse."""
+    from atlas.core.cold_update_manager import _is_tipo1_diff
+
+    evil_add = "--- a/x\n+++ b/x\n@@ -1,0 +1,1 @@\n+++codigo_real()\n"
+    evil_rem = "--- a/x\n+++ b/x\n@@ -1,1 +1,0 @@\n---codigo_real ---\n"
+    ws_good  = "--- a/x\n+++ b/x\n@@ -1,1 +1,1 @@\n-x = 1   \n+x = 1\n"
+    empty    = ""
+    code_chg = "--- a/x\n+++ b/x\n@@ -1,1 +1,1 @@\n-old = 1\n+new = 2\n"
+
+    assert _is_tipo1_diff(evil_add) is False, "línea '+++...' en hunk es código, no whitespace"
+    assert _is_tipo1_diff(evil_rem) is False, "línea '---...' en hunk es código, no whitespace"
+    assert _is_tipo1_diff(ws_good)  is True,  "trailing whitespace → tipo-1"
+    assert _is_tipo1_diff(empty)    is False,  "diff vacío → fail-closed"
+    assert _is_tipo1_diff(code_chg) is False,  "cambio de código → no tipo-1"

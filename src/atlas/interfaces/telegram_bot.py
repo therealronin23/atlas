@@ -437,6 +437,21 @@ class TelegramBot:
             return True
         return bool(self._telegram_cfg.get("progress_updates"))
 
+    def on_cold_update_batch_ready(self, event: Any) -> None:
+        p = getattr(event, "payload", {}) or {}
+        n = len(p.get("included", []))
+        excluded_n = len(p.get("excluded", []))
+        tests = "OK" if p.get("tests_passed") else "FALLÓ"
+        intents = ", ".join(p.get("included_intents", [])[:5])
+        text = (
+            f"[ColdUpdate] Lote listo para revisión: {n} cambios incluidos, "
+            f"{excluded_n} excluidos. Tests: {tests}.\n"
+            f"Cambios: {intents}\n"
+            f"ID lote: {p.get('batch_id', '?')}\n"
+            f"Revisa con: atlas update batch-review"
+        )
+        self.notify_all(text)
+
     def on_session_started(self, event: Any) -> None:
         p = getattr(event, "payload", {}) or {}
         version = p.get("version", "?")

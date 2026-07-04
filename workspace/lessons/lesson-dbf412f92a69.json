@@ -1,0 +1,30 @@
+{
+  "id": "lesson-dbf412f92a69",
+  "title": "Stuck detector + fail-closed match protegieron el archivo real durante el fallo",
+  "provenance": "external_source",
+  "detection_heuristic": "AtlasCoder aborta tras N iteraciones sin progreso o bloque ambiguo repetido",
+  "avoid_pattern": "Confirmado en vivo: cuando el modelo se confundió repetidamente con el mismo bloque SEARCH ambiguo ('código nuevo', tomado del texto de ejemplo del propio prompt), el guard de match único (técnica #3) lo rechazó las 2 veces sin aplicar nada, y el stuck detector (técnica #2) abortó la ejecución tras 2 iteraciones sin progreso en vez de agotar las 4 permitidas. El archivo real quedó con 0 cambios (verificado: grep sandbox devuelve 0 coincidencias, 30 tests preexistentes intactos). Las guardrails funcionan incluso cuando el modelo no logra la tarea — el fallo fue contenido, no destructivo.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Validación positiva de las técnicas #2 y #3 implementadas en esta misma sesión",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-02T01:18:12.583680+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "atlas_coder:sandbox_experiment_2026-06-27"
+  ],
+  "tags": [],
+  "created_at": "2026-07-02T01:18:12.583705+00:00"
+}

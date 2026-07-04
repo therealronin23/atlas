@@ -185,6 +185,67 @@ class TestLessonPromoter:
         assert len(store.all()) == 1  # solo la corroborada
 
 
+class TestRecordRecurring:
+    """record_recurring: fallos que se repiten suben occurrence_count en la
+    MISMA lección (buscada por tag dedup:<key>) en vez de crear un archivo
+    nuevo por cada repetición — el gap que señaló el Cónclave (38 archivos
+    casi idénticos para el mismo bug de YAML)."""
+
+    def _record_via_store(self, store: LessonStore, *, dedup_key: str) -> Lesson:
+        return store.record_recurring(
+            dedup_key=dedup_key,
+            title="Fallo recurrente: rompe suite combinada",
+            detection_heuristic="mismo intent+motivo ya visto",
+            avoid_pattern="proposal X — motivo: rompe la suite combinada",
+            evidence={},
+            tags=(),
+        )
+
+    def test_first_occurrence_creates_lesson_with_count_1(self, store: LessonStore) -> None:
+        lesson = self._record_via_store(store, dedup_key="k1")
+        assert lesson.occurrence_count == 1
+        assert f"dedup:k1" in lesson.tags
+        assert len(store.all()) == 1
+
+    def test_second_occurrence_reuses_same_file_and_bumps_count(self, store: LessonStore) -> None:
+        first = self._record_via_store(store, dedup_key="k1")
+        second = self._record_via_store(store, dedup_key="k1")
+        assert second.id == first.id
+        assert second.occurrence_count == 2
+        assert second.last_seen_at != ""
+        # Sigue habiendo solo UNA lección con este dedup tag, no un archivo nuevo
+        matches = store.search_by_tag("dedup:k1")
+        assert len(matches) == 1
+        assert matches[0].occurrence_count == 2
+
+    def test_third_occurrence_bumps_count_to_3(self, store: LessonStore) -> None:
+        self._record_via_store(store, dedup_key="k1")
+        self._record_via_store(store, dedup_key="k1")
+        third = self._record_via_store(store, dedup_key="k1")
+        assert third.occurrence_count == 3
+        assert len(store.search_by_tag("dedup:k1")) == 1
+
+    def test_distinct_dedup_key_creates_separate_lesson(self, store: LessonStore) -> None:
+        self._record_via_store(store, dedup_key="k1")
+        other = self._record_via_store(store, dedup_key="k2")
+        assert other.occurrence_count == 1
+        assert len(store.all()) == 2
+
+    def test_from_dict_defaults_for_lessons_saved_before_this_change(self) -> None:
+        old_json = {
+            "id": "lesson-old",
+            "title": "t",
+            "provenance": "internal_failure",
+            "detection_heuristic": "h",
+            "avoid_pattern": "p",
+            "evidence": {"verdict": "pass"},
+            # sin occurrence_count ni last_seen_at — lección pre-existente
+        }
+        lesson = Lesson.from_dict(old_json)
+        assert lesson.occurrence_count == 1
+        assert lesson.last_seen_at == ""
+
+
 class TestMerkleLogging:
     def test_add_logs_to_merkle(self, tmp_path: Path) -> None:
         merkle = MerkleLogger(tmp_path / "merkle")

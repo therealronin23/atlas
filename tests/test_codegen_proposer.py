@@ -142,3 +142,98 @@ class TestAudit:
         )
         assert rec["result"] == "patch_out_of_scope"
         assert rec["payload"]["applied"] is False
+
+
+# ---------------------------------------------------------------------------
+# G0.3 — _build_avoid_section: inyección blanda de avoid_patterns
+# ---------------------------------------------------------------------------
+
+
+class TestBuildAvoidSection:
+    """Verifica que _build_avoid_section inyecta el avoid_pattern de lecciones
+    sembradas en el store. Testea la función helper directamente, sin montar
+    el Orchestrator completo."""
+
+    def test_build_avoid_section_returns_pattern(self, tmp_path: Path) -> None:
+        """Una lección sembrada aparece en la sección generada."""
+        from atlas.core.lesson_store import LessonPromoter, LessonStore
+        from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
+        from atlas.immunity.lesson_recaller import LessonRecaller
+        from atlas.memory.embeddings import StubEmbedder
+
+        # 1. Crear store con una lección relevante.
+        store = LessonStore(tmp_path / "lessons")
+        promoter = LessonPromoter(store)
+        lesson = promoter.ingest_external(
+            title="No usar eval() con input del usuario",
+            detection_heuristic="presencia de eval(user_input) en el código",
+            avoid_pattern="nunca pasar input sin sanitizar a eval()",
+            source_refs=("https://owasp.org/rce",),
+            corroborated=True,
+            reason="OWASP Top 10 A03:2021",
+            tags=("security", "injection"),
+        )
+        assert lesson is not None, "LessonPromoter.ingest_external debería crear la lección"
+
+        # 2. Construir recaller con threshold de producción (0.65 crudo).
+        recaller = LessonRecaller(store, embedder=StubEmbedder(dim=64), threshold=0.65)
+
+        # 3. Query = avoid_pattern exacto → score ~0.75 con StubEmbedder, > 0.65.
+        query = "nunca pasar input sin sanitizar a eval()"
+        section = _build_avoid_section(recaller, store, query)
+
+        # 4. Verificar que el avoid_pattern aparece en la sección.
+        assert "Patrones a evitar" in section
+        assert "nunca pasar input sin sanitizar a eval()" in section
+
+    def test_build_avoid_section_returns_empty_when_store_empty(self, tmp_path: Path) -> None:
+        """Sin lecciones en el store, la sección es vacía (no falla)."""
+        from atlas.core.lesson_store import LessonStore
+        from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
+        from atlas.immunity.lesson_recaller import LessonRecaller
+        from atlas.memory.embeddings import StubEmbedder
+
+        store = LessonStore(tmp_path / "lessons")
+        recaller = LessonRecaller(store, embedder=StubEmbedder(dim=64), threshold=0.65)
+        section = _build_avoid_section(recaller, store, "cualquier query")
+        assert section == ""
+
+    def test_build_avoid_section_returns_empty_when_recaller_none(self, tmp_path: Path) -> None:
+        """Si el recaller es None (fallo de inicialización), la sección es vacía."""
+        from atlas.core.lesson_store import LessonStore
+        from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
+
+        store = LessonStore(tmp_path / "lessons")
+        section = _build_avoid_section(None, store, "query")
+        assert section == ""
+
+    def test_build_avoid_section_empty_for_irrelevant_query(self, tmp_path: Path) -> None:
+        """Query totalmente irrelevante → sección vacía (matched=False, threshold no se inyecta)."""
+        from atlas.core.lesson_store import LessonPromoter, LessonStore
+        from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
+        from atlas.immunity.lesson_recaller import LessonRecaller
+        from atlas.memory.embeddings import StubEmbedder
+
+        # 1. Crear store con una lección relevante a "eval".
+        store = LessonStore(tmp_path / "lessons")
+        promoter = LessonPromoter(store)
+        lesson = promoter.ingest_external(
+            title="No usar eval() con input del usuario",
+            detection_heuristic="presencia de eval(user_input) en el código",
+            avoid_pattern="nunca pasar input sin sanitizar a eval()",
+            source_refs=("https://owasp.org/rce",),
+            corroborated=True,
+            reason="OWASP Top 10 A03:2021",
+            tags=("security", "injection"),
+        )
+        assert lesson is not None
+
+        # 2. Construir recaller con threshold que requiera coincidencia real.
+        recaller = LessonRecaller(store, embedder=StubEmbedder(dim=64), threshold=0.65)
+
+        # 3. Query totalmente irrelevante (ningún token en común con "eval").
+        query = "zzz quantum banana xylophone src/atlas/demo.py"
+        section = _build_avoid_section(recaller, store, query)
+
+        # 4. Sin coincidencia (matched=False), la sección debe ser vacía.
+        assert section == ""

@@ -363,6 +363,7 @@ def test_wire_bus_to_bot_subscribes_all_events(orch):
         def on_shadow_alert(self, e): self.calls.append("shadow")
         def on_approval_required(self, e): self.calls.append("approval")
         def on_session_started(self, e): self.calls.append("session")
+        def on_cold_update_batch_ready(self, e): self.calls.append("batch_ready")
 
     bot = FakeBot()
     orch._wire_bus_to_bot(bot)
@@ -373,3 +374,21 @@ def test_wire_bus_to_bot_subscribes_all_events(orch):
     orch.bus.publish_type(EventType.SESSION_STARTED, {})
 
     assert bot.calls == ["thermal", "shadow", "approval", "session"]
+
+
+def test_wire_bus_to_bot_subscribes_cold_update_batch_ready(orch):
+    class FakeBot:
+        def __init__(self):
+            self.calls: list[str] = []
+        def on_thermal_alert(self, e): pass
+        def on_shadow_alert(self, e): pass
+        def on_approval_required(self, e): pass
+        def on_session_started(self, e): pass
+        def on_cold_update_batch_ready(self, e): self.calls.append("batch_ready")
+
+    bot = FakeBot()
+    orch._wire_bus_to_bot(bot)
+
+    orch.bus.publish_type(EventType.COLD_UPDATE_BATCH_READY, {})
+
+    assert bot.calls == ["batch_ready"]

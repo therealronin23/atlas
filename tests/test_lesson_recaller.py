@@ -94,7 +94,8 @@ class TestExactRecall:
         # Con StubEmbedder el vector de un texto vs sí mismo es 1.0, pero el
         # texto de la lección combina avoid_pattern + detection_heuristic, así
         # que hacemos el mismo match contra ese texto compuesto.
-        assert result.score > 0.9
+        assert result.score > 0.7  # escala cruda [0,1]; texto no idéntico (compuesto avoid+heuristic vs solo avoid)
+        assert result.matched is True
 
     def test_exact_match_on_full_lesson_text(self, tmp_path: Path) -> None:
         """Recall con el texto exacto que usa el recaller internamente."""
@@ -358,11 +359,11 @@ class TestCosineSimilarityWrapper:
         a = [1.0, 0.0, 0.0]
         assert _cosine_similarity(a, a) == pytest.approx(1.0)
 
-    def test_orthogonal_vectors_returns_half(self) -> None:
-        # Vectores ortogonales: raw=0 → (0+1)/2 = 0.5
+    def test_orthogonal_vectors_returns_zero(self) -> None:
+        # Vectores ortogonales: raw=0 → max(0, 0) = 0.0
         a = [1.0, 0.0]
         b = [0.0, 1.0]
-        assert _cosine_similarity(a, b) == pytest.approx(0.5)
+        assert _cosine_similarity(a, b) == pytest.approx(0.0)
 
     def test_opposite_vectors_returns_zero(self) -> None:
         # Vectores opuestos: raw=-1 → (−1+1)/2 = 0

@@ -6,21 +6,34 @@ import importlib.util
 
 import pytest
 
-from atlas.memory.embeddings import StubEmbedder, default_embedder
+from atlas.memory.embeddings import FastEmbedEmbedder, StubEmbedder, default_embedder
 
 _HAS_FASTEMBED = importlib.util.find_spec("fastembed") is not None
 
 
-def test_default_embedder_is_stub_without_env(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.skipif(not _HAS_FASTEMBED, reason="requiere el extra [embeddings]")
+def test_default_embedder_is_fastembed_without_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """2026-07-03: el default cambió de stub->fastembed (store real sin datos
+    que migrar, verificado antes del cambio)."""
     monkeypatch.delenv("ATLAS_EMBEDDER", raising=False)
     emb = default_embedder()
-    assert isinstance(emb, StubEmbedder)
-    assert emb.dim == 64
+    assert isinstance(emb, FastEmbedEmbedder)
+    assert emb.dim == 384
 
 
-def test_default_embedder_stub_on_unknown_value(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ATLAS_EMBEDDER", "nope")
+def test_default_embedder_stub_on_explicit_opt_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ATLAS_EMBEDDER=stub sigue siendo el opt-out explícito (tests/CI que no
+    quieran cargar el modelo ONNX)."""
+    monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
     assert isinstance(default_embedder(), StubEmbedder)
+
+
+@pytest.mark.skipif(not _HAS_FASTEMBED, reason="requiere el extra [embeddings]")
+def test_default_embedder_unknown_value_falls_back_to_fastembed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cualquier valor que no sea literalmente 'stub' cae al default actual
+    (fastembed) — solo 'stub' es el opt-out reconocido."""
+    monkeypatch.setenv("ATLAS_EMBEDDER", "nope")
+    assert isinstance(default_embedder(), FastEmbedEmbedder)
 
 
 def test_fastembed_fail_closed_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:

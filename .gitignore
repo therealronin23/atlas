@@ -13,6 +13,13 @@ dist/
 venv/
 # ADR-056: venv aislado de red-team (garak); nunca en deps de runtime
 .venv-redteam/
+# 2026-07-02: venv aislado de Crawl4AI — fija unclecode-litellm==1.81.13, que se
+# instala bajo el mismo nombre de import que nuestro litellm real (InferenceHub).
+# Ver docstring de src/atlas/tools/crawler.py.
+.venv-scraping/
+# 2026-07-02: venv aislado de computer-control-mcp — fija mcp[cli]==1.13.0,
+# downgrade del SDK mcp real (1.28.0) que usa el tronco.
+.venv-desktop/
 env/
 
 # Test / cache
@@ -62,6 +69,10 @@ docs/self_audit_latest.json
 docs/self_audit_*.md
 .atlas_self_audit_stop
 patches/
+# Artefactos de sesión de Playwright MCP (logs de consola, capturas, snapshots)
+.playwright-mcp/
+# Datasets de evaluación grandes (LongMemEval etc.) — no versionar, se descargan aparte
+data/
 
 # Scratch / brainstorm dumps (raw editor captures, preserved on disk only).
 # Their distilled value already lives in docs/membrana/OSM-* and the ADRs.
@@ -101,3 +112,4 @@ docs/*.log
 .claude/skills/
 .agents/skills/
 skills-lock.json
+.autobuild/
