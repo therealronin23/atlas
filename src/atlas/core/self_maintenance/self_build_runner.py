@@ -13,14 +13,17 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
 import subprocess
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any, Callable
 
 import yaml
 
 from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
+from atlas.core.git_env import clean_git_env
 from atlas.core.inference_hub import InferenceHub
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.core.tool_coder import ToolCoder
@@ -28,6 +31,105 @@ from atlas.core.tool_coder import ToolCoder
 __all__ = ["SelfBuildRunner"]
 
 logger = logging.getLogger(__name__)
+
+# openevolve._prepare_evaluator() extrae el CÓDIGO FUENTE de un evaluator
+# callable (inspect.getsource) y lo re-ejecuta en un módulo aislado sin
+# closures ni imports externos — un método/closure de SelfBuildRunner (que
+# captura self/target_rel/test_cmd/base_ref) es incompatible con ese
+# mecanismo (confirmado en vivo: "name 'Any' is not defined" al extraer una
+# anotación de tipo sin su import). openevolve SÍ soporta pasar una ruta de
+# fichero .py autocontenida directamente (mismo módulo, rama
+# isinstance(evaluator, (str, Path))) — por eso este evaluador se escribe a
+# disco como texto plano con los valores baked-in, no como función Python.
+_WORKTREE_EVALUATOR_TEMPLATE = '''\
+import os
+import shutil
+import subprocess
+import uuid
+from pathlib import Path
+
+_REPO_ROOT = Path({repo_root!r})
+_TARGET_REL = {target_rel!r}
+_TEST_CMD = {test_cmd!r}
+_BASE_REF = {base_ref!r}
+_GIT_HOOK_ENV_VARS = ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "GIT_PREFIX", "GIT_COMMON_DIR")
+
+
+def _clean_git_env():
+    env = os.environ.copy()
+    for var in _GIT_HOOK_ENV_VARS:
+        env.pop(var, None)
+    return env
+
+
+def _remove_worktree_path(path):
+    if not path.exists():
+        return
+    try:
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", str(path)],
+            cwd=_REPO_ROOT, env=_clean_git_env(), capture_output=True, text=True, check=False,
+        )
+        if path.exists() and path.resolve() != _REPO_ROOT.resolve():
+            shutil.rmtree(path, ignore_errors=True)
+        subprocess.run(
+            ["git", "worktree", "prune"],
+            cwd=_REPO_ROOT, env=_clean_git_env(), capture_output=True, text=True, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def evaluate(program_path):
+    with open(program_path, encoding="utf-8") as f:
+        candidate_code = f.read()
+
+    worktree_path = _REPO_ROOT.parent / f"self-build-evo-{{uuid.uuid4().hex[:12]}}"
+    try:
+        try:
+            create_result = subprocess.run(
+                ["git", "worktree", "add", "--detach", str(worktree_path), _BASE_REF],
+                cwd=_REPO_ROOT, env=_clean_git_env(), capture_output=True, text=True, check=False,
+            )
+            if create_result.returncode != 0:
+                return {{"score": 0.0}}
+
+            candidate_target = worktree_path / _TARGET_REL
+            candidate_target.parent.mkdir(parents=True, exist_ok=True)
+            candidate_target.write_text(candidate_code, encoding="utf-8")
+
+            test_result = subprocess.run(
+                _TEST_CMD, cwd=worktree_path, env=_clean_git_env(),
+                capture_output=True, text=True, check=False,
+            )
+            if test_result.returncode == 0:
+                return {{"score": 1.0}}
+            return {{"score": 0.0}}
+        except (OSError, subprocess.SubprocessError):
+            return {{"score": 0.0}}
+    finally:
+        _remove_worktree_path(worktree_path)
+'''
+
+
+def _write_worktree_evaluator_file(
+    repo_root: Path, target_rel: str, test_cmd: list[str], base_ref: str,
+) -> Path:
+    """Escribe a un fichero temporal un evaluador openevolve autocontenido
+    (sin closures, con sus propios imports) que evalúa un candidato en un
+    worktree git efímero — ver nota de ``_WORKTREE_EVALUATOR_TEMPLATE``
+    sobre por qué no puede ser un callable/closure."""
+    source = _WORKTREE_EVALUATOR_TEMPLATE.format(
+        repo_root=str(repo_root),
+        target_rel=target_rel,
+        test_cmd=list(test_cmd),
+        base_ref=base_ref,
+    )
+    fd, raw_path = tempfile.mkstemp(prefix="self_build_evaluator_", suffix=".py")
+    path = Path(raw_path)
+    with open(fd, "w", encoding="utf-8") as f:
+        f.write(source)
+    return path
 
 
 class SelfBuildRunner:
@@ -139,6 +241,161 @@ class SelfBuildRunner:
             "status": "proposed",
             "detail": cycle_summary,
         }
+
+    # ------------------------------------------------------------------
+    # run_item_with_evolution
+    # ------------------------------------------------------------------
+
+    def run_item_with_evolution(
+        self,
+        item: BacklogItem,
+        *,
+        evolution_gate: Any,
+        max_iterations: int = 3,
+        base_ref: str = "HEAD",
+    ) -> dict[str, Any]:
+        """Variante de run_item() para items donde vale la pena generar y
+        puntuar VARIAS variantes reales (selección evolutiva vía openevolve,
+        EvolutionGate) en vez de un solo intento de ToolCoder. Evoluciona el
+        PRIMER target del item, evaluando cada candidato en un worktree git
+        efímero real (aplica el candidato, corre el test_cmd real del item,
+        puntúa 1.0/0.0 según pase o no). Si la evolución no produce una
+        variante mejor que la actual (best_score <= 0 o no succeeded), o el
+        item no tiene un target de fichero válido, cae al camino normal de
+        run_item() (mismo comportamiento de siempre, ToolCoder). Nunca aplica
+        nada a la rama real: solo prueba en worktrees efímeros, igual que
+        ColdUpdateBatcher. El resultado final, si la evolución SÍ mejora algo,
+        se propone a ColdUpdateManager exactamente igual que run_item()
+        (origin='self_audit', HITL intacto)."""
+        targets = self._expand_targets(item.targets)
+        if not targets:
+            return self.run_item(item, max_iterations=max_iterations)
+
+        target_rel = targets[0]
+        target_path = self._repo_root / target_rel
+        if not target_path.is_file():
+            return self.run_item(item, max_iterations=max_iterations)
+
+        test_cmd = self.derive_test_cmd(item)
+        initial_code = target_path.read_text(encoding="utf-8")
+
+        evaluator_path = _write_worktree_evaluator_file(
+            self._repo_root, target_rel, test_cmd, base_ref,
+        )
+        try:
+            outcome = evolution_gate.evolve(
+                initial_code=initial_code, evaluator=str(evaluator_path),
+            )
+        finally:
+            evaluator_path.unlink(missing_ok=True)
+
+        if not outcome.succeeded or outcome.best_score <= 0.0:
+            return self.run_item(item, max_iterations=max_iterations)
+
+        baseline = self._git_status_lines()
+        target_path.write_text(outcome.best_code, encoding="utf-8")
+
+        patch_path = self._write_patch()
+        if patch_path is None:
+            self._revert_new_changes(baseline)
+            return {
+                "item_id": item.id,
+                "proposal_id": None,
+                "status": "failed",
+                "detail": "evolución mejoró la puntuación pero no se pudo generar diff",
+            }
+
+        proposal: ColdUpdateProposal = self._cold_update.propose(
+            intent=item.title,
+            patch_path=patch_path,
+            origin="self_audit",
+            risk="medium",
+            evidence={
+                "backlog_item_id": item.id,
+                "evolution_score": outcome.best_score,
+                "method": "evolution_gate",
+            },
+        )
+        return {
+            "item_id": item.id,
+            "proposal_id": proposal.id,
+            "status": "proposed",
+            "detail": {"evolution_score": outcome.best_score, "method": "evolution_gate"},
+        }
+
+    def _evaluate_candidate_in_worktree(
+        self,
+        target_rel: str,
+        candidate_code: str,
+        test_cmd: list[str],
+        base_ref: str,
+    ) -> dict[str, Any]:
+        """Crea un worktree git efímero desde base_ref, sobreescribe target_rel
+        con candidate_code, corre test_cmd en ese worktree (subprocess,
+        check=False), puntúa {'score': 1.0} si returncode==0 y {'score': 0.0}
+        en cualquier otro caso (incluida excepción del propio subprocess —
+        fail-closed, nunca puntúa alto por error). SIEMPRE limpia el worktree
+        (try/finally), incluso si algo falla a mitad."""
+        worktree_path = self._repo_root.parent / f"self-build-evo-{uuid.uuid4().hex[:12]}"
+        try:
+            try:
+                create_result = subprocess.run(
+                    ["git", "worktree", "add", "--detach", str(worktree_path), base_ref],
+                    cwd=self._repo_root,
+                    env=clean_git_env(),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if create_result.returncode != 0:
+                    return {"score": 0.0}
+
+                candidate_target = worktree_path / target_rel
+                candidate_target.parent.mkdir(parents=True, exist_ok=True)
+                candidate_target.write_text(candidate_code, encoding="utf-8")
+
+                test_result = subprocess.run(
+                    test_cmd,
+                    cwd=worktree_path,
+                    env=clean_git_env(),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if test_result.returncode == 0:
+                    return {"score": 1.0}
+                return {"score": 0.0}
+            except (OSError, subprocess.SubprocessError):
+                return {"score": 0.0}
+        finally:
+            self._remove_worktree_path(worktree_path)
+
+    def _remove_worktree_path(self, path: Path) -> None:
+        """Elimina un worktree efímero creado por _evaluate_candidate_in_worktree.
+        Nunca lanza — es limpieza de mejor esfuerzo tras evaluar un candidato."""
+        if not path.exists():
+            return
+        try:
+            subprocess.run(
+                ["git", "worktree", "remove", "--force", str(path)],
+                cwd=self._repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if path.exists() and path.resolve() != self._repo_root.resolve():
+                shutil.rmtree(path, ignore_errors=True)
+            subprocess.run(
+                ["git", "worktree", "prune"],
+                cwd=self._repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            pass
 
     def _expand_targets(self, targets: tuple[str, ...] | list[str]) -> list[str]:
         """Expande targets que son directorios (terminan en '/') a los .py
