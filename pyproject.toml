@@ -53,6 +53,16 @@ embeddings = [
     # la regla anti-deps-pesadas del repo (ver el extra `redteam`).
     "fastembed>=0.3",
 ]
+evolution = [
+    # 2026-07-04: envuelve openevolve (codelion/openevolve, 6.6k stars,
+    # Apache-2.0, activo) para EvolutionGate — selección de variantes reales
+    # (islas + mutación) sobre ítems de backlog difíciles, en la escala de
+    # UN ítem, no de un linaje completo de agente (corrección del Cónclave:
+    # "aprendizaje evolutivo por categorías" sin variantes reales era
+    # estadística sin mecanismo causal). Compatible con Groq/NVIDIA NIM vía
+    # api_base OpenAI-compatible — probado en vivo, sin conflictos de deps.
+    "openevolve>=0.2.27",
+]
 redteam = [
     # ADR-056: tooling de red-team SOLO dev/CI — NUNCA importado por el runtime.
     # Instalar en venv aislado y FIJAR torch al índice CPU para quedarse en ~1.8GB
