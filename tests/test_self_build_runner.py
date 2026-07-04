@@ -1,6 +1,7 @@
 """Tests for src/atlas/core/self_maintenance/self_build_runner.py."""
 from __future__ import annotations
 
+import subprocess
 import textwrap
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -9,7 +10,10 @@ import pytest
 import yaml
 
 from atlas.core.self_maintenance.backlog import BacklogItem
-from atlas.core.self_maintenance.self_build_runner import SelfBuildRunner
+from atlas.core.self_maintenance.self_build_runner import (
+    SelfBuildRunner,
+    _write_worktree_evaluator_file,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -277,3 +281,315 @@ def test_update_backlog_status_changes_only_target_item(tmp_path: Path) -> None:
     original_b = dict(before["items"][1])
     del original_b["status"]
     assert changed_b == original_b
+
+
+# ---------------------------------------------------------------------------
+# run_item_with_evolution / _evaluate_candidate_in_worktree
+# ---------------------------------------------------------------------------
+
+
+def _init_repo_with_target(tmp_path: Path, target_rel: str, target_code: str) -> None:
+    """Repo git real minimo con un fichero objetivo commiteado en HEAD."""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=tmp_path, check=True)
+    target_path = tmp_path / target_rel
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(target_code, encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=tmp_path, check=True)
+
+
+_GOOD_CODE = "def add(a, b):\n    return a + b\n"
+_BAD_CODE = "def add(a, b):\n    return a - b\n"
+
+# test_cmd barato y real: importa el modulo objetivo (via sys.path) y
+# verifica el contrato. Se ejecuta de verdad dentro del worktree efimero.
+_TEST_CMD = [
+    "python3",
+    "-c",
+    (
+        "import sys; sys.path.insert(0, '.'); "
+        "import target_mod as m; "
+        "assert m.add(2, 3) == 5, 'add() incorrecto'"
+    ),
+]
+
+
+def test_evaluate_candidate_in_worktree_scores_passing_candidate(tmp_path: Path) -> None:
+    """Candidato que hace pasar el test real -> {'score': 1.0}."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _BAD_CODE)
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+
+    result = runner._evaluate_candidate_in_worktree(
+        "target_mod.py", _GOOD_CODE, _TEST_CMD, "HEAD",
+    )
+
+    assert result == {"score": 1.0}
+
+
+def test_evaluate_candidate_in_worktree_scores_failing_candidate(tmp_path: Path) -> None:
+    """Candidato que rompe el test real -> {'score': 0.0}."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _GOOD_CODE)
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+
+    result = runner._evaluate_candidate_in_worktree(
+        "target_mod.py", _BAD_CODE, _TEST_CMD, "HEAD",
+    )
+
+    assert result == {"score": 0.0}
+
+
+def test_evaluate_candidate_in_worktree_always_cleans_worktree(tmp_path: Path) -> None:
+    """Tras evaluar un candidato, no debe quedar ningun worktree huerfano."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _GOOD_CODE)
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+
+    runner._evaluate_candidate_in_worktree("target_mod.py", _GOOD_CODE, _TEST_CMD, "HEAD")
+    runner._evaluate_candidate_in_worktree("target_mod.py", _BAD_CODE, _TEST_CMD, "HEAD")
+
+    listing = subprocess.run(
+        ["git", "worktree", "list"], cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+    lines = [ln for ln in listing.stdout.splitlines() if ln.strip()]
+    assert len(lines) == 1  # solo el worktree principal, ninguno efimero sobrevive
+
+
+def test_run_item_with_evolution_no_targets_falls_back_without_calling_gate(tmp_path: Path) -> None:
+    """Item sin targets -> cae a run_item() sin llamar a evolution_gate.evolve()."""
+    (tmp_path / "tests").mkdir()
+
+    fake_coder_result = MagicMock()
+    fake_coder_result.success = False
+    fake_coder_result.iterations = 1
+    fake_coder_result.files_changed = []
+    fake_coder_result.test_output = "FAILED"
+    fake_coder_result.error = "no paso"
+
+    tool_coder_cls = MagicMock()
+    tool_coder_cls.return_value.code.return_value = fake_coder_result
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+        tool_coder_factory=tool_coder_cls,
+    )
+    item = _item(targets=())
+
+    gate = MagicMock()
+
+    result = runner.run_item_with_evolution(item, evolution_gate=gate)
+
+    gate.evolve.assert_not_called()
+    assert result["status"] == "failed"
+
+
+def test_run_item_with_evolution_gate_not_succeeded_falls_back_to_run_item(tmp_path: Path) -> None:
+    """evolve() devuelve succeeded=False -> cae al camino normal (ToolCoder)."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _BAD_CODE)
+    (tmp_path / "tests").mkdir()
+
+    def _side_effect(*args: object, **kwargs: object) -> MagicMock:
+        # Simula lo que haria ToolCoder de verdad: dejar un cambio real en
+        # el arbol de trabajo para que git diff tenga algo que proponer.
+        (tmp_path / "target_mod.py").write_text(_GOOD_CODE, encoding="utf-8")
+        fake = MagicMock()
+        fake.success = True
+        fake.iterations = 1
+        fake.files_changed = ["target_mod.py"]
+        fake.test_output = "1 passed"
+        fake.error = None
+        return fake
+
+    tool_coder_cls = MagicMock()
+    tool_coder_cls.return_value.code.side_effect = _side_effect
+
+    cold_update_manager = MagicMock()
+    proposal = MagicMock()
+    proposal.id = "proposal-fallback"
+    cold_update_manager.propose.return_value = proposal
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=cold_update_manager,
+        tool_coder_factory=tool_coder_cls,
+    )
+    item = _item(targets=("target_mod.py",))
+
+    gate = MagicMock()
+    gate.evolve.return_value = MagicMock(succeeded=False, best_score=0.0, best_code="")
+
+    result = runner.run_item_with_evolution(item, evolution_gate=gate)
+
+    gate.evolve.assert_called_once()
+    tool_coder_cls.return_value.code.assert_called_once()
+    assert result["status"] == "proposed"
+    assert result["proposal_id"] == "proposal-fallback"
+
+
+def test_run_item_with_evolution_zero_score_falls_back_to_run_item(tmp_path: Path) -> None:
+    """evolve() succeeded=True pero best_score=0.0 -> tampoco hay mejora real, cae a run_item()."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _BAD_CODE)
+    (tmp_path / "tests").mkdir()
+
+    fake_coder_result = MagicMock()
+    fake_coder_result.success = False
+    fake_coder_result.iterations = 1
+    fake_coder_result.files_changed = []
+    fake_coder_result.test_output = "FAILED"
+    fake_coder_result.error = "no mejoro"
+
+    tool_coder_cls = MagicMock()
+    tool_coder_cls.return_value.code.return_value = fake_coder_result
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+        tool_coder_factory=tool_coder_cls,
+    )
+    item = _item(targets=("target_mod.py",))
+
+    gate = MagicMock()
+    gate.evolve.return_value = MagicMock(succeeded=True, best_score=0.0, best_code=_GOOD_CODE)
+
+    result = runner.run_item_with_evolution(item, evolution_gate=gate)
+
+    tool_coder_cls.return_value.code.assert_called_once()
+    assert result["status"] == "failed"
+
+
+def test_run_item_with_evolution_success_proposes_with_evolution_metadata(tmp_path: Path) -> None:
+    """evolve() succeeded=True con best_score>0 -> escribe codigo, genera patch,
+    propone a ColdUpdate con origin=self_audit y evidence con evolution_score."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _BAD_CODE)
+    (tmp_path / "tests").mkdir()
+
+    cold_update_manager = MagicMock()
+    proposal = MagicMock()
+    proposal.id = "proposal-evo"
+    cold_update_manager.propose.return_value = proposal
+
+    tool_coder_cls = MagicMock()  # no debe usarse en el camino exitoso
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=cold_update_manager,
+        tool_coder_factory=tool_coder_cls,
+    )
+    item = _item(targets=("target_mod.py",))
+
+    gate = MagicMock()
+    gate.evolve.return_value = MagicMock(succeeded=True, best_score=1.0, best_code=_GOOD_CODE)
+
+    result = runner.run_item_with_evolution(item, evolution_gate=gate)
+
+    assert result["status"] == "proposed"
+    assert result["item_id"] == item.id
+    assert result["proposal_id"] == "proposal-evo"
+    tool_coder_cls.return_value.code.assert_not_called()
+
+    cold_update_manager.propose.assert_called_once()
+    _, kwargs = cold_update_manager.propose.call_args
+    assert kwargs["origin"] == "self_audit"
+    assert kwargs["evidence"]["backlog_item_id"] == item.id
+    assert kwargs["evidence"]["evolution_score"] == 1.0
+    assert kwargs["evidence"]["method"] == "evolution_gate"
+
+    # No queda ningun worktree efimero huerfano tras el ciclo completo.
+    listing = subprocess.run(
+        ["git", "worktree", "list"], cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+    lines = [ln for ln in listing.stdout.splitlines() if ln.strip()]
+    assert len(lines) == 1
+
+
+# ---------------------------------------------------------------------------
+# _write_worktree_evaluator_file — regresion del bug real de openevolve
+# (inspect.getsource() sobre un closure/metodo revienta: sin closure vars,
+# sin imports externos. Ver EvolutionGate.evolve() / self_build_runner.py).
+# ---------------------------------------------------------------------------
+
+
+def test_write_worktree_evaluator_file_has_module_level_evaluate(tmp_path: Path) -> None:
+    """El fichero generado no es un closure: es texto plano autocontenido
+    con un 'evaluate(program_path)' a nivel de modulo y sin 'self'."""
+    path = _write_worktree_evaluator_file(tmp_path, "target_mod.py", ["true"], "HEAD")
+    try:
+        source = path.read_text(encoding="utf-8")
+        assert "def evaluate(program_path):" in source
+        assert "self." not in source
+        assert "self,\n" not in source
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def test_write_worktree_evaluator_file_runs_isolated_and_scores_like_the_original(
+    tmp_path: Path,
+) -> None:
+    """Regresion directa del bug: cargar el fichero generado en un modulo
+    FRESCO (import_module, sin closures ni globals de este test) y llamar a
+    su evaluate() debe dar la MISMA puntuacion que _evaluate_candidate_in_worktree
+    para el mismo candidato — asi es exactamente como lo invoca openevolve."""
+    import importlib.util
+
+    _init_repo_with_target(tmp_path, "target_mod.py", _BAD_CODE)
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+
+    evaluator_path = _write_worktree_evaluator_file(tmp_path, "target_mod.py", _TEST_CMD, "HEAD")
+    candidate_path = tmp_path / "candidate.py"
+    candidate_path.write_text(_GOOD_CODE, encoding="utf-8")
+    try:
+        spec = importlib.util.spec_from_file_location("generated_evaluator", evaluator_path)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)  # falla aqui si hubiera closures/imports rotos
+
+        isolated_result = module.evaluate(str(candidate_path))
+        direct_result = runner._evaluate_candidate_in_worktree(
+            "target_mod.py", _GOOD_CODE, _TEST_CMD, "HEAD",
+        )
+
+        assert isolated_result == {"score": 1.0}
+        assert isolated_result == direct_result
+    finally:
+        evaluator_path.unlink(missing_ok=True)
+
+
+def test_run_item_with_evolution_evaluator_file_is_a_path_and_is_cleaned_up(
+    tmp_path: Path,
+) -> None:
+    """evolution_gate.evolve() recibe una ruta de fichero (str), NO un
+    callable/closure — y ese fichero temporal desaparece tras la corrida,
+    tanto si evolve() tuvo exito como si no."""
+    _init_repo_with_target(tmp_path, "target_mod.py", _BAD_CODE)
+    (tmp_path / "tests").mkdir()
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    item = _item(targets=("target_mod.py",))
+
+    seen_path_during_call: dict[str, str] = {}
+
+    def _fake_evolve(*, initial_code: str, evaluator: object) -> MagicMock:
+        assert isinstance(evaluator, str)
+        seen_path_during_call["path"] = evaluator
+        assert Path(evaluator).exists()
+        assert "def evaluate(program_path):" in Path(evaluator).read_text(encoding="utf-8")
+        return MagicMock(succeeded=False, best_score=0.0, best_code="")
+
+    gate = MagicMock()
+    gate.evolve.side_effect = _fake_evolve
+
+    runner.run_item_with_evolution(item, evolution_gate=gate)
+
+    gate.evolve.assert_called_once()
+    assert not Path(seen_path_during_call["path"]).exists()  # limpiado tras la corrida

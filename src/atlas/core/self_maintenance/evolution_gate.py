@@ -17,7 +17,8 @@ función evaluadora → mejor variante.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any, Callable, Union
 
 
 @dataclass
@@ -70,11 +71,17 @@ class EvolutionGate:
         self,
         *,
         initial_code: str,
-        evaluator: Callable[[str], dict[str, Any]],
+        evaluator: Union[Callable[[str], dict[str, Any]], str, Path],
     ) -> EvolutionOutcome:
-        """Evoluciona ``initial_code`` usando el ``evaluator`` dado (recibe
-        la ruta de un fichero con el candidato, devuelve un dict de métricas
-        — misma interfaz que espera ``openevolve.run_evolution``). Fail-open:
+        """Evoluciona ``initial_code`` usando el ``evaluator`` dado — un
+        callable (recibe la ruta de un fichero con el candidato, devuelve un
+        dict de métricas) O una ruta a un fichero .py autocontenido con una
+        función ``evaluate(program_path)`` a nivel de módulo (necesario
+        cuando el llamador no puede darnos un callable sin closures, ver
+        ``self_build_runner._write_worktree_evaluator_file`` — openevolve
+        extrae el CÓDIGO FUENTE de los callables vía ``inspect.getsource`` y
+        lo re-ejecuta aislado, así que un closure no sobrevive el viaje).
+        Misma interfaz que espera ``openevolve.run_evolution``. Fail-open:
         CUALQUIER excepción (config inválida, API caída, timeout, etc.)
         devuelve ``EvolutionOutcome(succeeded=False, reason=...)`` — nunca
         propaga, esto es una optimización opcional, nunca debe tumbar el
