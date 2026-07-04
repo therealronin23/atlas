@@ -742,17 +742,15 @@ status(verificación) — nunca confundir.
   `scripts/mcp_enrich.py` + 16 tests. Reusa HttpApiSource+SSRFBridge (0 deps). Suite 2340 verde, auditor
   Opus PASS (SSRF probado con inyección). 554 entradas enriquecibles (--offline). Gap declarado: sub-ítems
   de awesome-lists y caracterización de prompts FUERA de Pieza 1.
-- 🔄 **Pieza 2 — trial-en-jaula per-kind + escáneres adoptados** ← EN CURSO (2026-07-04).
-  **Slice 2a:** estado `probado-en-jaula`; `trial_gate.py` + `scripts/mcp_trial.py` (reporte).
-  **Slice 2b (2026-07-05):** vetado adoptado de argv `install` (SentinelGate vía `vet_install_command`);
-  resolución skill en `docs/skills` + `.agents/skills/*/SKILL.md`; promoción YAML con `--apply`
-  (`apply_status_promotions` en `catalog.py`).
-  **Slice 2c (2026-07-05):** `spawn_trial.py` — probe initialize+tools/list; jaula bwrap sin red para
-  `atlas.mcp.*`; npx/uvx omitidos (bootstrap de red); saneamiento graduado (QUARANTINE vs retry);
-  `scripts/mcp_trial.py --spawn`. Pendiente: escáneres externos adoptados (Invariant/Snyk).
-  Graduación: candidato → probado-en-jaula (contenido/argv/spawn OK) → verificado (escáner+humano).
-- ⬜ **Pieza 3 — routing hook** `UserPromptSubmit` que consume el catálogo ya enriquecido/verificado
-  (consumo determinista). El más fácil, el último (necesita 1 y 2).
+- ✅ **Pieza 2 — trial-en-jaula per-kind + escáneres adoptados** — CERRADA (2026-07-05).
+  2a escaneo estático · 2b argv vet + `--apply` · 2c spawn probe + jaula bwrap + saneamiento
+  graduado. **Diferido honesto:** escáneres externos adoptados (Invariant/Snyk), cuarentena YAML
+  automática (hoy solo sugerencia en stdout).
+- ✅ **Pieza 3 — routing hook** — CONSTRUIDO (2026-07-05).
+  `capability_router.py` (score determinista, solo instalado/verificado/probado-en-jaula) +
+  `scripts/capability_route_hook.sh` cableado en `.claude/settings.json` (UserPromptSubmit) y
+  `.cursor/hooks.json` (beforeSubmitPrompt). 6 tests. **Siguiente línea:** autoconstrucción
+  sobre backlog (generate+adopt con consent).
 
 ## Línea activa: Cónclave (`deliberation_council`) — deliberación verificable multi-voz
 

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "bash scripts/capability_route_hook.sh --cursor-json"
+      }
+    ]
+  }
+}
