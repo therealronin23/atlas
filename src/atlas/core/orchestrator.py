@@ -1911,6 +1911,7 @@ class Orchestrator:
             load_servers(mcp_config_path),
             merkle_log=self._merkle.log,
             sentinel=self._sentinel,
+            persist_path=mcp_config_path,
         )
         self._mcp_started = False
 

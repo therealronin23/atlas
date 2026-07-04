@@ -190,15 +190,24 @@ class MaintenanceFacade:
                         "count": len(proposals),
                     },
                 )
-                # 2026-07-04: retirada la adopción autónoma ciega. Auditoría del
-                # historial completo del daemon: 110 intentos en toda su vida,
-                # solo 2 candidatos distintos jamás intentados, 36 reintentos
-                # del MISMO error no arreglable (API key ausente), y las
-                # "adopciones exitosas" nunca sobrevivían a un reinicio (no
-                # dejaban rastro en el código real) — a diferencia de ColdUpdate,
-                # esto NUNCA pasaba por ningún decisor humano. El descubrimiento
-                # (arriba) sigue intacto y se notifica; adoptar ahora requiere
-                # una acción explícita (CLI/futuro batch), no autopiloto.
+                # 2026-07-04: la llamada al adopter SÍ se restaura (había sido
+                # retirada antes por error de diagnóstico). El hallazgo real de
+                # la auditoría del historial (110 intentos, 25 "adoptados") no
+                # era "esto salta el HITL" — `adopter.adopt()` YA pasaba
+                # siempre por `adopt_mcp_server` → el seam del decisor
+                # (ADR-040): bajo HumanDecider no hace nada, bajo
+                # autónomo/híbrido adopta con la intención anclada. El bug de
+                # verdad era que `McpRegistry.add_server()` solo mutaba la
+                # config EN MEMORIA — una adopción aprobada por el decisor
+                # nunca sobrevivía a un reinicio. Con `persist_path` cableado
+                # (McpRegistry ahora reescribe mcp_servers.json en cada
+                # add/remove), la adopción por fin es una acción durable, así
+                # que el cribado ya construido (SSRFBridge + MaintenanceAnalyst
+                # dual-LLM + decisor anclado) vuelve a tener un efecto real que
+                # gatear, en vez de evaporarse solo.
+                adopter = self._orch.maintenance_adopter()
+                for proposal in proposals:
+                    adopter.adopt(proposal)
 
             def _dep_cycle() -> None:
                 # Rama de auto-actualización de deps.
