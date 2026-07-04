@@ -190,10 +190,15 @@ class MaintenanceFacade:
                         "count": len(proposals),
                     },
                 )
-                # Cierre del lazo: cada propuesta pasa por el seam del decisor.
-                adopter = self._orch.maintenance_adopter()
-                for proposal in proposals:
-                    adopter.adopt(proposal)
+                # 2026-07-04: retirada la adopción autónoma ciega. Auditoría del
+                # historial completo del daemon: 110 intentos en toda su vida,
+                # solo 2 candidatos distintos jamás intentados, 36 reintentos
+                # del MISMO error no arreglable (API key ausente), y las
+                # "adopciones exitosas" nunca sobrevivían a un reinicio (no
+                # dejaban rastro en el código real) — a diferencia de ColdUpdate,
+                # esto NUNCA pasaba por ningún decisor humano. El descubrimiento
+                # (arriba) sigue intacto y se notifica; adoptar ahora requiere
+                # una acción explícita (CLI/futuro batch), no autopiloto.
 
             def _dep_cycle() -> None:
                 # Rama de auto-actualización de deps.
