@@ -87,6 +87,48 @@ def test_invoke_unknown_tool_raises() -> None:
         _agg().invoke("nope", {})
 
 
+class _FakeUsageCounter:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def record(self, tool_name: str) -> None:
+        self.calls.append(tool_name)
+
+
+def test_invoke_records_usage_when_counter_injected() -> None:
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_aggregator import TrunkAggregator
+    from atlas.mcp.trunk_manifest import native_roots
+
+    counter = _FakeUsageCounter()
+    agg = TrunkAggregator(
+        catalog=load_catalog(_CATALOG),
+        roots=native_roots(),
+        dispatcher=lambda full_name, args: "ok",
+        usage_counter=counter,
+    )
+    agg.invoke("recall", {"query": "x"})
+    assert counter.calls == ["mcp__atlas-memory__recall"]
+
+
+def test_invoke_usage_counter_failure_does_not_block_dispatch() -> None:
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_aggregator import TrunkAggregator
+    from atlas.mcp.trunk_manifest import native_roots
+
+    class _BrokenCounter:
+        def record(self, tool_name: str) -> None:
+            raise RuntimeError("boom")
+
+    agg = TrunkAggregator(
+        catalog=load_catalog(_CATALOG),
+        roots=native_roots(),
+        dispatcher=lambda full_name, args: "ok",
+        usage_counter=_BrokenCounter(),
+    )
+    assert agg.invoke("recall", {"query": "x"}) == "ok"
+
+
 # ---------------------------------------------------------------------------
 # Shell FastMCP del tronco: superficie PEQUEÑA (3 tools meta), no las N raíz
 # ---------------------------------------------------------------------------

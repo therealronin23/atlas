@@ -331,6 +331,8 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
                 return found
         return servers_from_registry(registry)
 
+    from atlas.mcp.tool_usage import ToolUsageCounter
+
     # Índice estático usando solo las raíces nativas (no requiere spawn); los
     # externos entran vía _refresh al primer invoke de una de sus tools.
     agg = TrunkAggregator(
@@ -339,6 +341,8 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         dispatcher=registry.dispatch,
         refresh=_refresh,
         is_read_only=registry.is_read_only,
+        # Antes ausente por completo: ninguna métrica de uso real por tool.
+        usage_counter=ToolUsageCounter(Path(save_dir) / "tool_usage.json"),
     )
     from atlas.mcp.skills_store import SkillStore
 

@@ -34,6 +34,7 @@ class TrunkAggregator:
         roots: list[RootSpec] | None = None,
         refresh: Callable[[str], dict[str, list[str]]] | None = None,
         is_read_only: Callable[[str], bool] | None = None,
+        usage_counter: Any | None = None,
     ) -> None:
         # `servers` = lo realmente conectado (server → tools), incl. externos. Si no
         # se da, se deriva de `roots` (native_roots) por conveniencia/tests.
@@ -47,6 +48,9 @@ class TrunkAggregator:
         # `is_read_only(full_name)` = predicado ESTÁTICO (catálogo/config, nunca
         # juicio LLM — invariante D2) para `invoke_readonly`.
         self._is_read_only = is_read_only
+        # Opcional: contador de uso real por tool (para medir eficacia del MCP,
+        # antes ausente por completo). Nunca bloquea el dispatch si falla.
+        self._usage_counter = usage_counter
         # Mapa server → entrada de catálogo (sector/label/purpose = la clasificación).
         self._meta: dict[str, CatalogEntry] = {e.name: e for e in catalog}
         # Mapa tool → server (para el routing del dispatch).
@@ -88,7 +92,9 @@ class TrunkAggregator:
 
     def invoke(self, tool: str, args: dict[str, Any]) -> Any:
         root = self._resolve_owner(tool)
-        return self._dispatcher(f"mcp__{root}__{tool}", args)
+        full = f"mcp__{root}__{tool}"
+        self._record_usage(full)
+        return self._dispatcher(full, args)
 
     def invoke_readonly(self, tool: str, args: dict[str, Any]) -> Any:
         """Como `invoke`, pero SOLO despacha tools declaradas de lectura en el
@@ -101,7 +107,16 @@ class TrunkAggregator:
             raise PermissionError(
                 f"trunk: {tool!r} no está declarada de solo lectura — usa trunk_invoke"
             )
+        self._record_usage(full)
         return self._dispatcher(full, args)
+
+    def _record_usage(self, full_name: str) -> None:
+        if self._usage_counter is None:
+            return
+        try:
+            self._usage_counter.record(full_name)
+        except Exception:  # noqa: BLE001 — métrica, nunca bloquea el dispatch
+            pass
 
     def _resolve_owner(self, tool: str) -> str:
         root = self._owner.get(tool)
