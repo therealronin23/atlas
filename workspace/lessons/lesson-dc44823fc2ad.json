@@ -1,0 +1,33 @@
+{
+  "id": "lesson-dc44823fc2ad",
+  "title": "matcher",
+  "provenance": "external_source",
+  "detection_heuristic": "código usa re.match() donde debería ser re.search() o re.fullmatch()",
+  "avoid_pattern": "usar re.match en lugar de re.search cuando el patrón debe anclarse al inicio",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "lección real del repo",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-03T13:11:15.815763+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "repo:atlas-core"
+  ],
+  "tags": [
+    "regex",
+    "matcher"
+  ],
+  "created_at": "2026-07-03T13:11:15.815831+00:00"
+}

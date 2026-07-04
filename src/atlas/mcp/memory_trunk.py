@@ -145,9 +145,11 @@ class MemoryTrunkRouter:
         # Si no se provee embedder, crea uno compartido para que todos los tenants
         # usen la misma dimensión (distinta dim rompería el guard del índice).
         if embedder is None:
-            from atlas.memory.embeddings import StubEmbedder
+            from atlas.memory.embeddings import default_embedder
 
-            embedder = StubEmbedder(dim=64)
+            # Gobernado por env (ATLAS_EMBEDDER=fastembed → semántico local; default stub).
+            # Compartido entre tenants → misma dimensión (el guard del índice la exige).
+            embedder = default_embedder()
         self._embedder = embedder
         self._threshold = threshold
         self._merkle = merkle

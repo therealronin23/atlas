@@ -68,6 +68,9 @@ def maintenance_produce_diff(
 
     def _produce_diff(task: MaintenanceTask, path: Path) -> str:
         outcome = producer.produce(task.to_spec())
+        # Invariante G0.4: UNKNOWN nunca auto-aplica — siempre HITL.
+        # FAIL y UNKNOWN devuelven "" → el coordinador no propone el diff.
+        # Solo PASS con artifact llega a ColdUpdate.
         if not outcome.verified or outcome.artifact is None:
             return ""
         return str(outcome.artifact.payload.get("diff", ""))

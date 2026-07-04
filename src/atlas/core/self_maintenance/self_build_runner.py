@@ -1,0 +1,508 @@
+"""
+Atlas Core — SelfBuildRunner: pegamento entre backlog, ToolCoder y ColdUpdateManager.
+
+Toma un BacklogItem pendiente, deriva un test_cmd razonable, delega la
+codificación real a ToolCoder (bucle agéntico de tool-calling ya existente),
+y si los tests pasan genera un patch real y lo PROPONE a ColdUpdateManager
+con origin="self_audit". Por invariante CVE-HITL (G0.8), origin="self_audit"
+NUNCA dispara tier1_auto_apply — toda propuesta de self-build requiere
+aprobación humana explícita (approve_pending()/approve() aparte de este
+runner). Este módulo solo PROPONE, nunca aplica ni marca items como "done".
+"""
+from __future__ import annotations
+
+import logging
+import re
+import shutil
+import subprocess
+import tempfile
+import uuid
+from pathlib import Path
+from typing import Any, Callable
+
+import yaml
+
+from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
+from atlas.core.git_env import clean_git_env
+from atlas.core.inference_hub import InferenceHub
+from atlas.core.self_maintenance.backlog import BacklogItem
+from atlas.core.tool_coder import ToolCoder
+
+__all__ = ["SelfBuildRunner"]
+
+logger = logging.getLogger(__name__)
+
+# openevolve._prepare_evaluator() extrae el CÓDIGO FUENTE de un evaluator
+# callable (inspect.getsource) y lo re-ejecuta en un módulo aislado sin
+# closures ni imports externos — un método/closure de SelfBuildRunner (que
+# captura self/target_rel/test_cmd/base_ref) es incompatible con ese
+# mecanismo (confirmado en vivo: "name 'Any' is not defined" al extraer una
+# anotación de tipo sin su import). openevolve SÍ soporta pasar una ruta de
+# fichero .py autocontenida directamente (mismo módulo, rama
+# isinstance(evaluator, (str, Path))) — por eso este evaluador se escribe a
+# disco como texto plano con los valores baked-in, no como función Python.
+_WORKTREE_EVALUATOR_TEMPLATE = '''\
+import os
+import shutil
+import subprocess
+import uuid
+from pathlib import Path
+
+_REPO_ROOT = Path({repo_root!r})
+_TARGET_REL = {target_rel!r}
+_TEST_CMD = {test_cmd!r}
+_BASE_REF = {base_ref!r}
+_GIT_HOOK_ENV_VARS = ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "GIT_PREFIX", "GIT_COMMON_DIR")
+
+
+def _clean_git_env():
+    env = os.environ.copy()
+    for var in _GIT_HOOK_ENV_VARS:
+        env.pop(var, None)
+    return env
+
+
+def _remove_worktree_path(path):
+    if not path.exists():
+        return
+    try:
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", str(path)],
+            cwd=_REPO_ROOT, env=_clean_git_env(), capture_output=True, text=True, check=False,
+        )
+        if path.exists() and path.resolve() != _REPO_ROOT.resolve():
+            shutil.rmtree(path, ignore_errors=True)
+        subprocess.run(
+            ["git", "worktree", "prune"],
+            cwd=_REPO_ROOT, env=_clean_git_env(), capture_output=True, text=True, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def evaluate(program_path):
+    with open(program_path, encoding="utf-8") as f:
+        candidate_code = f.read()
+
+    worktree_path = _REPO_ROOT.parent / f"self-build-evo-{{uuid.uuid4().hex[:12]}}"
+    try:
+        try:
+            create_result = subprocess.run(
+                ["git", "worktree", "add", "--detach", str(worktree_path), _BASE_REF],
+                cwd=_REPO_ROOT, env=_clean_git_env(), capture_output=True, text=True, check=False,
+            )
+            if create_result.returncode != 0:
+                return {{"score": 0.0}}
+
+            candidate_target = worktree_path / _TARGET_REL
+            candidate_target.parent.mkdir(parents=True, exist_ok=True)
+            candidate_target.write_text(candidate_code, encoding="utf-8")
+
+            test_result = subprocess.run(
+                _TEST_CMD, cwd=worktree_path, env=_clean_git_env(),
+                capture_output=True, text=True, check=False,
+            )
+            if test_result.returncode == 0:
+                return {{"score": 1.0}}
+            return {{"score": 0.0}}
+        except (OSError, subprocess.SubprocessError):
+            return {{"score": 0.0}}
+    finally:
+        _remove_worktree_path(worktree_path)
+'''
+
+
+def _write_worktree_evaluator_file(
+    repo_root: Path, target_rel: str, test_cmd: list[str], base_ref: str,
+) -> Path:
+    """Escribe a un fichero temporal un evaluador openevolve autocontenido
+    (sin closures, con sus propios imports) que evalúa un candidato en un
+    worktree git efímero — ver nota de ``_WORKTREE_EVALUATOR_TEMPLATE``
+    sobre por qué no puede ser un callable/closure."""
+    source = _WORKTREE_EVALUATOR_TEMPLATE.format(
+        repo_root=str(repo_root),
+        target_rel=target_rel,
+        test_cmd=list(test_cmd),
+        base_ref=base_ref,
+    )
+    fd, raw_path = tempfile.mkstemp(prefix="self_build_evaluator_", suffix=".py")
+    path = Path(raw_path)
+    with open(fd, "w", encoding="utf-8") as f:
+        f.write(source)
+    return path
+
+
+class SelfBuildRunner:
+    """Conecta backlog -> ToolCoder -> ColdUpdateManager (self_audit, siempre HITL)."""
+
+    def __init__(
+        self,
+        repo_root: Path,
+        hub: InferenceHub,
+        cold_update_manager: ColdUpdateManager,
+        backlog_path: Path = Path("docs/backlog.yaml"),
+        *,
+        tool_coder_factory: Callable[..., ToolCoder] = ToolCoder,
+    ) -> None:
+        self._repo_root = repo_root
+        self._hub = hub
+        self._cold_update = cold_update_manager
+        self._backlog_path = backlog_path
+        self._tool_coder_factory = tool_coder_factory
+
+    # ------------------------------------------------------------------
+    # derive_test_cmd
+    # ------------------------------------------------------------------
+
+    def derive_test_cmd(self, item: BacklogItem) -> list[str]:
+        """Deriva el comando de test para un BacklogItem.
+
+        Prioridad: 1) campo test_cmd explícito del item; 2) heurística simple
+        de nombre de archivo (NO es NLP, solo un glob por convención de
+        nombres: tests/test_{id con '-' -> '_'}*.py); 3) fallback a la suite
+        completa (`pytest -q`).
+        """
+        if item.test_cmd:
+            return list(item.test_cmd)
+
+        slug = item.id.replace("-", "_")
+        tests_dir = self._repo_root / "tests"
+        if tests_dir.is_dir():
+            matches = sorted(tests_dir.glob(f"test_{slug}*.py"))
+            if matches:
+                rel = matches[0].relative_to(self._repo_root)
+                return ["pytest", str(rel), "-q"]
+
+        return ["pytest", "-q"]
+
+    # ------------------------------------------------------------------
+    # run_item
+    # ------------------------------------------------------------------
+
+    def run_item(self, item: BacklogItem, *, max_iterations: int = 3) -> dict[str, Any]:
+        """Ejecuta ToolCoder sobre el item y, si los tests pasan, PROPONE el
+        patch a ColdUpdateManager (origin="self_audit" -> requiere HITL).
+
+        Nunca marca el item como "done": eso requiere aprobación humana del
+        proposal, fuera del alcance de este método.
+        """
+        test_cmd = self.derive_test_cmd(item)
+        task = f"{item.title}\n\n{item.why}\n\nCriterio de aceptación:\n{item.acceptance}"
+
+        baseline = self._git_status_lines()
+        coder = self._tool_coder_factory(self._hub, repo_root=self._repo_root)
+        coder_result = coder.code(
+            task,
+            context_files=self._expand_targets(item.targets),
+            test_cmd=test_cmd,
+            max_iterations=max_iterations,
+        )
+
+        if not coder_result.success:
+            self._revert_new_changes(baseline)
+            return {
+                "item_id": item.id,
+                "proposal_id": None,
+                "status": "failed",
+                "detail": coder_result.error or coder_result.test_output or "sin detalle",
+            }
+
+        patch_path = self._write_patch()
+        if patch_path is None:
+            self._revert_new_changes(baseline)
+            return {
+                "item_id": item.id,
+                "proposal_id": None,
+                "status": "failed",
+                "detail": "tests pasaron pero no se pudo generar diff (sin cambios detectables en git)",
+            }
+
+        cycle_summary = {
+            "success": coder_result.success,
+            "iterations": coder_result.iterations,
+            "files_changed": list(coder_result.files_changed),
+            "suspicious_no_op": getattr(coder_result, "suspicious_no_op", False),
+        }
+
+        proposal: ColdUpdateProposal = self._cold_update.propose(
+            intent=item.title,
+            patch_path=patch_path,
+            origin="self_audit",
+            risk="medium",
+            evidence={
+                "backlog_item_id": item.id,
+                "cycle_result": cycle_summary,
+            },
+        )
+
+        return {
+            "item_id": item.id,
+            "proposal_id": proposal.id,
+            "status": "proposed",
+            "detail": cycle_summary,
+        }
+
+    # ------------------------------------------------------------------
+    # run_item_with_evolution
+    # ------------------------------------------------------------------
+
+    def run_item_with_evolution(
+        self,
+        item: BacklogItem,
+        *,
+        evolution_gate: Any,
+        max_iterations: int = 3,
+        base_ref: str = "HEAD",
+    ) -> dict[str, Any]:
+        """Variante de run_item() para items donde vale la pena generar y
+        puntuar VARIAS variantes reales (selección evolutiva vía openevolve,
+        EvolutionGate) en vez de un solo intento de ToolCoder. Evoluciona el
+        PRIMER target del item, evaluando cada candidato en un worktree git
+        efímero real (aplica el candidato, corre el test_cmd real del item,
+        puntúa 1.0/0.0 según pase o no). Si la evolución no produce una
+        variante mejor que la actual (best_score <= 0 o no succeeded), o el
+        item no tiene un target de fichero válido, cae al camino normal de
+        run_item() (mismo comportamiento de siempre, ToolCoder). Nunca aplica
+        nada a la rama real: solo prueba en worktrees efímeros, igual que
+        ColdUpdateBatcher. El resultado final, si la evolución SÍ mejora algo,
+        se propone a ColdUpdateManager exactamente igual que run_item()
+        (origin='self_audit', HITL intacto)."""
+        targets = self._expand_targets(item.targets)
+        if not targets:
+            return self.run_item(item, max_iterations=max_iterations)
+
+        target_rel = targets[0]
+        target_path = self._repo_root / target_rel
+        if not target_path.is_file():
+            return self.run_item(item, max_iterations=max_iterations)
+
+        test_cmd = self.derive_test_cmd(item)
+        initial_code = target_path.read_text(encoding="utf-8")
+
+        evaluator_path = _write_worktree_evaluator_file(
+            self._repo_root, target_rel, test_cmd, base_ref,
+        )
+        try:
+            outcome = evolution_gate.evolve(
+                initial_code=initial_code, evaluator=str(evaluator_path),
+            )
+        finally:
+            evaluator_path.unlink(missing_ok=True)
+
+        if not outcome.succeeded or outcome.best_score <= 0.0:
+            return self.run_item(item, max_iterations=max_iterations)
+
+        baseline = self._git_status_lines()
+        target_path.write_text(outcome.best_code, encoding="utf-8")
+
+        patch_path = self._write_patch()
+        if patch_path is None:
+            self._revert_new_changes(baseline)
+            return {
+                "item_id": item.id,
+                "proposal_id": None,
+                "status": "failed",
+                "detail": "evolución mejoró la puntuación pero no se pudo generar diff",
+            }
+
+        proposal: ColdUpdateProposal = self._cold_update.propose(
+            intent=item.title,
+            patch_path=patch_path,
+            origin="self_audit",
+            risk="medium",
+            evidence={
+                "backlog_item_id": item.id,
+                "evolution_score": outcome.best_score,
+                "method": "evolution_gate",
+            },
+        )
+        return {
+            "item_id": item.id,
+            "proposal_id": proposal.id,
+            "status": "proposed",
+            "detail": {"evolution_score": outcome.best_score, "method": "evolution_gate"},
+        }
+
+    def _evaluate_candidate_in_worktree(
+        self,
+        target_rel: str,
+        candidate_code: str,
+        test_cmd: list[str],
+        base_ref: str,
+    ) -> dict[str, Any]:
+        """Crea un worktree git efímero desde base_ref, sobreescribe target_rel
+        con candidate_code, corre test_cmd en ese worktree (subprocess,
+        check=False), puntúa {'score': 1.0} si returncode==0 y {'score': 0.0}
+        en cualquier otro caso (incluida excepción del propio subprocess —
+        fail-closed, nunca puntúa alto por error). SIEMPRE limpia el worktree
+        (try/finally), incluso si algo falla a mitad."""
+        worktree_path = self._repo_root.parent / f"self-build-evo-{uuid.uuid4().hex[:12]}"
+        try:
+            try:
+                create_result = subprocess.run(
+                    ["git", "worktree", "add", "--detach", str(worktree_path), base_ref],
+                    cwd=self._repo_root,
+                    env=clean_git_env(),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if create_result.returncode != 0:
+                    return {"score": 0.0}
+
+                candidate_target = worktree_path / target_rel
+                candidate_target.parent.mkdir(parents=True, exist_ok=True)
+                candidate_target.write_text(candidate_code, encoding="utf-8")
+
+                test_result = subprocess.run(
+                    test_cmd,
+                    cwd=worktree_path,
+                    env=clean_git_env(),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if test_result.returncode == 0:
+                    return {"score": 1.0}
+                return {"score": 0.0}
+            except (OSError, subprocess.SubprocessError):
+                return {"score": 0.0}
+        finally:
+            self._remove_worktree_path(worktree_path)
+
+    def _remove_worktree_path(self, path: Path) -> None:
+        """Elimina un worktree efímero creado por _evaluate_candidate_in_worktree.
+        Nunca lanza — es limpieza de mejor esfuerzo tras evaluar un candidato."""
+        if not path.exists():
+            return
+        try:
+            subprocess.run(
+                ["git", "worktree", "remove", "--force", str(path)],
+                cwd=self._repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if path.exists() and path.resolve() != self._repo_root.resolve():
+                shutil.rmtree(path, ignore_errors=True)
+            subprocess.run(
+                ["git", "worktree", "prune"],
+                cwd=self._repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+    def _expand_targets(self, targets: tuple[str, ...] | list[str]) -> list[str]:
+        """Expande targets que son directorios (terminan en '/') a los .py
+        que contienen (no recursivo — un target de directorio en el backlog
+        describe un módulo plano, no un árbol completo). Los targets que ya
+        son ficheros pasan intactos."""
+        out: list[str] = []
+        for target in targets:
+            if target.endswith("/"):
+                abs_dir = self._repo_root / target
+                if abs_dir.is_dir():
+                    out.extend(
+                        str(p.relative_to(self._repo_root))
+                        for p in sorted(abs_dir.glob("*.py"))
+                    )
+                continue
+            out.append(target)
+        return out
+
+    def _git_status_lines(self) -> set[str]:
+        """Snapshot de `git status --porcelain` (líneas crudas) para poder
+        detectar y revertir SOLO lo que ToolCoder ensucie en un intento
+        fallido — nunca dejar el árbol de trabajo sucio tras un fracaso."""
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=self._repo_root, capture_output=True, text=True, check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return set()
+        return set(result.stdout.splitlines())
+
+    def _revert_new_changes(self, baseline: set[str]) -> None:
+        """Tras un intento fallido de ToolCoder: revierte ficheros trackeados
+        recién modificados y borra ficheros nuevos sin trackear que NO
+        estaban en el `baseline` — deja el árbol de trabajo exactamente como
+        antes del intento, nunca a medias."""
+        current = self._git_status_lines()
+        for line in current - baseline:
+            if len(line) < 4:
+                continue
+            status, rel_path = line[:2], line[3:]
+            abs_path = self._repo_root / rel_path
+            if status == "??":
+                if abs_path.is_file():
+                    abs_path.unlink()
+                continue
+            subprocess.run(
+                ["git", "checkout", "--", rel_path],
+                cwd=self._repo_root, capture_output=True, text=True, check=False,
+            )
+
+    def _write_patch(self) -> Path | None:
+        """Genera un .patch con `git diff` del estado actual del repo_root.
+
+        Devuelve None si no hay diff (nada que proponer) o si git falla.
+        """
+        try:
+            result = subprocess.run(
+                ["git", "diff", "HEAD"],
+                cwd=self._repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.warning("SelfBuildRunner: git diff falló (%s)", exc)
+            return None
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+
+        tmp_dir = Path(tempfile.mkdtemp(prefix="self_build_patch_"))
+        patch_path = tmp_dir / "change.patch"
+        patch_path.write_text(result.stdout, encoding="utf-8")
+        return patch_path
+
+    # ------------------------------------------------------------------
+    # update_backlog_status
+    # ------------------------------------------------------------------
+
+    def update_backlog_status(self, item_id: str, new_status: str) -> None:
+        """Reescribe SOLO el campo `status` del item `item_id` en el YAML.
+
+        Manipulación de texto línea a línea (no ruamel: el proyecto ya usa
+        yaml.safe_load/safe_dump en otros sitios, p.ej. backlog.py) para NO
+        reordenar ni reformatear el resto del archivo — solo se toca la
+        línea `status: <valor>` dentro del bloque del item indicado.
+        """
+        text = self._backlog_path.read_text(encoding="utf-8")
+        lines = text.splitlines(keepends=True)
+
+        id_re = re.compile(r'^\s*-?\s*id:\s*["\']?' + re.escape(item_id) + r'["\']?\s*$')
+        status_re = re.compile(r"^(\s*status:\s*)(\S+)(.*)$")
+
+        in_target_item = False
+        out_lines: list[str] = []
+        for line in lines:
+            if re.match(r"^\s*-\s*id:\s*", line):
+                in_target_item = bool(id_re.match(line.rstrip("\n")))
+            if in_target_item:
+                m = status_re.match(line.rstrip("\n"))
+                if m:
+                    newline = "\n" if line.endswith("\n") else ""
+                    out_lines.append(f"{m.group(1)}{new_status}{m.group(3)}{newline}")
+                    in_target_item = False
+                    continue
+            out_lines.append(line)
+
+        self._backlog_path.write_text("".join(out_lines), encoding="utf-8")

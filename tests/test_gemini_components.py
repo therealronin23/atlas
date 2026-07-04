@@ -344,7 +344,9 @@ class TestInferenceHub:
         hub = InferenceHub()
         l0 = [p for p in hub._providers if p.level == InferenceLevel.L0]
         assert len(l0) >= 1
-        assert l0[0].base_url.startswith("http://localhost")
+        # Al menos un proveedor L0 debe ser local (Ollama/localhost)
+        local = [p for p in l0 if p.base_url.startswith("http://localhost")]
+        assert len(local) >= 1, f"No hay provider L0 local; L0 providers: {[p.name for p in l0]}"
 
 
 # ===========================================================================

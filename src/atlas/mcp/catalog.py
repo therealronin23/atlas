@@ -66,6 +66,11 @@ class CatalogEntry:
     # Nombres de env vars (secretos) a copiar del entorno al subproceso. NUNCA el
     # valor — solo el nombre. El secreto vive en el entorno, jamás en el catálogo.
     env_passthrough: tuple[str, ...] = ()
+    # ADR-035 dec.5: nombres de tool (sin prefijo mcp__server__) que son de SOLO
+    # LECTURA — se ejecutan directo, sin HITL. Todo lo no listado aquí es mutate
+    # por defecto (fail-safe): el catálogo declara explícitamente lo seguro, no
+    # lo peligroso.
+    read_only_tools: tuple[str, ...] = ()
 
 
 def load_catalog(path: Path) -> list[CatalogEntry]:
@@ -104,6 +109,7 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
                     trust=str(raw.get("trust", "")),
                     transport=str(raw.get("transport", "")),
                     env_passthrough=tuple(str(v) for v in (raw.get("env_passthrough") or [])),
+                    read_only_tools=tuple(str(v) for v in (raw.get("read_only_tools") or [])),
                 )
             )
     return out

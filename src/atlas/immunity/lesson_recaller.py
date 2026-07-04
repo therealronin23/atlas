@@ -30,7 +30,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.memory.embeddings import Embedder, StubEmbedder, default_embedder
 from atlas.memory.vector_store import cosine_similarity as _cosine_similarity_raw
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ class Recaller(Protocol):
 
 # ---------------------------------------------------------------------------
 # Similitud coseno — delegada a vector_store.cosine_similarity (canónica).
-# Devuelve [0, 1]: aplica (raw + 1) / 2 sobre el coseno en [-1, 1].
+# Devuelve [0, 1]: clamp(raw, 0, 1) — cosenos negativos (textos opuestos) valen 0.
 # ---------------------------------------------------------------------------
 
 
@@ -86,8 +86,7 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
     if not any(a) or not any(b):
         return 0.0
     raw = _cosine_similarity_raw(a, b)
-    # Mapear [-1, 1] → [0, 1] con clamp numérico
-    return max(0.0, min(1.0, (raw + 1.0) / 2.0))
+    return max(0.0, raw)
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +116,12 @@ class LessonRecaller:
         threshold: float = 0.8,
     ) -> None:
         self._store = store
-        self._embedder: Embedder = embedder if embedder is not None else StubEmbedder(dim=64)
+        # Sin embedder explícito, respeta ATLAS_EMBEDDER (default_embedder()):
+        # sin la env var, StubEmbedder(dim=64) idéntico a antes — cero cambio
+        # de comportamiento. Con ATLAS_EMBEDDER=fastembed, semántico real —
+        # el threshold=0.8 por defecto es razonable para embeddings reales,
+        # era demasiado estricto solo para el hash no-semántico de StubEmbedder.
+        self._embedder: Embedder = embedder if embedder is not None else default_embedder()
         self._threshold = threshold
         # lesson_id -> vector normalizado
         self._index: dict[str, list[float]] = {}

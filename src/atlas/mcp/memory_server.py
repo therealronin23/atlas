@@ -160,11 +160,12 @@ def build_gated_index(
 ) -> "SqliteMemoryIndex":
     """Construye un SqliteMemoryIndex con el gate correcto según `require_provenance`.
     Extraído para poder testearlo sin arrancar transporte real."""
-    from atlas.memory.embeddings import StubEmbedder
+    from atlas.memory.embeddings import default_embedder
     from atlas.memory.memory_index import ProvenanceWriteGate, SqliteMemoryIndex
 
     gate = ProvenanceWriteGate() if require_provenance else None
-    return SqliteMemoryIndex(db_path, embedder=StubEmbedder(dim=64), write_gate=gate)
+    # Embedder gobernado por env (ATLAS_EMBEDDER=fastembed → semántico local; default stub).
+    return SqliteMemoryIndex(db_path, embedder=default_embedder(), write_gate=gate)
 
 
 def serve(db_path: Path, *, name: str = "atlas-memory", require_provenance: bool = False) -> None:

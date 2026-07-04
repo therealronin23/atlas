@@ -22,9 +22,12 @@ import pytest
 
 from scripts.eval_memory_benchmark import (
     CORPUS,
+    Metrics,
     QUERIES,
     QueryResult,
     compute_metrics,
+    macro_metrics,
+    run_ablation,
     run_benchmark,
 )
 
@@ -157,3 +160,147 @@ class TestAntiLeakStructural:
             "CORPUS y QUERIES contienen textos idénticos — esto introduce fuga "
             "(un texto de query no debe estar en el corpus indexado tal cual)."
         )
+
+
+# ---------------------------------------------------------------------------
+# Pruebas del andamio de ablación (Fase F1)
+# ---------------------------------------------------------------------------
+
+class TestMacroMetrics:
+    def test_known_values(self) -> None:
+        """macro_metrics promedia correctamente sobre resultados conocidos."""
+        from scripts.eval_memory_benchmark import QueryCase
+        cases = [
+            QueryResult(
+                case=QueryCase("q1", "dummy", frozenset({"a"})),
+                retrieved_ids={"a"},
+                metrics=Metrics(1.0, 1.0, 1.0),
+            ),
+            QueryResult(
+                case=QueryCase("q2", "dummy", frozenset({"b"})),
+                retrieved_ids={"x"},
+                metrics=Metrics(0.0, 0.0, 0.0),
+            ),
+        ]
+        m = macro_metrics(cases)
+        assert m.precision == pytest.approx(0.5)
+        assert m.recall == pytest.approx(0.5)
+        assert m.f1 == pytest.approx(0.5)
+
+    def test_empty_list(self) -> None:
+        m = macro_metrics([])
+        assert m == Metrics(0.0, 0.0, 0.0)
+
+
+class TestRetrievalModes:
+    def test_cosine_mode_same_as_default(self, tmp_path: Path) -> None:
+        """mode='cosine' produce las mismas métricas macro que run_benchmark sin mode."""
+        db_default = tmp_path / "default.db"
+        db_cosine  = tmp_path / "cosine.db"
+        results_default = run_benchmark(db_default, k=len(CORPUS), threshold=0.0)
+        results_cosine  = run_benchmark(db_cosine, k=len(CORPUS), threshold=0.0, mode="cosine")
+        assert macro_metrics(results_default) == macro_metrics(results_cosine)
+
+    def test_unknown_mode_raises_value_error(self, tmp_path: Path) -> None:
+        db = tmp_path / "bad.db"
+        with pytest.raises(ValueError, match="modo desconocido"):
+            run_benchmark(db, mode="nonexistent_mode_xyz")
+
+
+class TestRunAblation:
+    def test_single_cosine_mode_matches_run_benchmark(self, tmp_path: Path) -> None:
+        """run_ablation(modes=['cosine']) devuelve Metrics == macro de run_benchmark cosine."""
+        db_bench    = tmp_path / "bench.db"
+        db_ablation = tmp_path / "ablation"
+        results     = run_benchmark(db_bench, k=3, threshold=0.0, mode="cosine")
+        expected    = macro_metrics(results)
+
+        ablation = run_ablation(db_ablation, modes=["cosine"], k=3, threshold=0.0)
+
+        assert "cosine" in ablation
+        assert ablation["cosine"].precision == pytest.approx(expected.precision)
+        assert ablation["cosine"].recall    == pytest.approx(expected.recall)
+        assert ablation["cosine"].f1        == pytest.approx(expected.f1)
+
+    def test_ablation_returns_all_requested_modes(self, tmp_path: Path) -> None:
+        db = tmp_path / "abl"
+        result = run_ablation(db, modes=["cosine"])
+        assert set(result.keys()) == {"cosine"}
+
+
+# ---------------------------------------------------------------------------
+# Modo hybrid (Fase F2)
+# ---------------------------------------------------------------------------
+
+class TestHybridMode:
+    def test_hybrid_mode_registered(self) -> None:
+        """El modo 'hybrid' debe estar en RETRIEVAL_MODES."""
+        from scripts.eval_memory_benchmark import RETRIEVAL_MODES
+        assert "hybrid" in RETRIEVAL_MODES
+
+    def test_hybrid_runs_and_returns_metrics(self, tmp_path: Path) -> None:
+        """run_benchmark con mode='hybrid' completa sin excepciones y devuelve métricas válidas."""
+        db = tmp_path / "hybrid.db"
+        results = run_benchmark(db, k=len(CORPUS), threshold=0.0, mode="hybrid")
+        assert len(results) == len(QUERIES)
+        for qr in results:
+            m = qr.metrics
+            assert 0.0 <= m.precision <= 1.0
+            assert 0.0 <= m.recall <= 1.0
+            assert 0.0 <= m.f1 <= 1.0
+
+    def test_cosine_mode_unaffected_by_hybrid(self, tmp_path: Path) -> None:
+        """mode='cosine' produce los mismos resultados antes y después de añadir hybrid."""
+        db1 = tmp_path / "cosine1.db"
+        db2 = tmp_path / "cosine2.db"
+        r1 = run_benchmark(db1, k=len(CORPUS), threshold=0.0, mode="cosine")
+        r2 = run_benchmark(db2, k=len(CORPUS), threshold=0.0, mode="cosine")
+        assert macro_metrics(r1) == macro_metrics(r2)
+
+    def test_hybrid_in_ablation(self, tmp_path: Path) -> None:
+        """run_ablation con modes=['cosine', 'hybrid'] devuelve ambas claves."""
+        db = tmp_path / "abl"
+        result = run_ablation(db, modes=["cosine", "hybrid"], k=3, threshold=0.0)
+        assert set(result.keys()) == {"cosine", "hybrid"}
+        for m in result.values():
+            assert 0.0 <= m.precision <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# Modo temporal (Fase F3)
+# ---------------------------------------------------------------------------
+
+class TestTemporalMode:
+    def test_temporal_mode_registered(self) -> None:
+        """El modo 'temporal' debe estar en RETRIEVAL_MODES."""
+        from scripts.eval_memory_benchmark import RETRIEVAL_MODES
+        assert "temporal" in RETRIEVAL_MODES
+
+    def test_temporal_runs_and_returns_metrics(self, tmp_path: Path) -> None:
+        """run_benchmark con mode='temporal' completa sin excepciones y devuelve métricas válidas."""
+        db = tmp_path / "temporal.db"
+        results = run_benchmark(db, k=len(CORPUS), threshold=0.0, mode="temporal")
+        assert len(results) == len(QUERIES)
+        for qr in results:
+            m = qr.metrics
+            assert 0.0 <= m.precision <= 1.0
+            assert 0.0 <= m.recall <= 1.0
+            assert 0.0 <= m.f1 <= 1.0
+
+    def test_cosine_mode_unaffected_by_temporal(self, tmp_path: Path) -> None:
+        """Añadir modo temporal no cambia los resultados de cosine (no-regresión)."""
+        db1 = tmp_path / "cosine_nr1.db"
+        db2 = tmp_path / "cosine_nr2.db"
+        r1 = run_benchmark(db1, k=len(CORPUS), threshold=0.0, mode="cosine")
+        r2 = run_benchmark(db2, k=len(CORPUS), threshold=0.0, mode="cosine")
+        assert macro_metrics(r1) == macro_metrics(r2)
+
+    def test_temporal_in_ablation(self, tmp_path: Path) -> None:
+        """run_ablation con modes=['cosine', 'temporal'] devuelve ambas claves con métricas válidas."""
+        db = tmp_path / "abl_temporal"
+        result = run_ablation(db, modes=["cosine", "temporal"], k=3, threshold=0.0)
+        assert set(result.keys()) == {"cosine", "temporal"}
+        for m in result.values():
+            assert 0.0 <= m.precision <= 1.0
+            assert 0.0 <= m.recall <= 1.0
+            assert 0.0 <= m.f1 <= 1.0

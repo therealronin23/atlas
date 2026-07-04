@@ -91,3 +91,26 @@ def load_servers(path: Path | str) -> list[McpServerConfig]:
             )
         )
     return servers
+
+
+def save_servers(path: Path | str, configs: list[McpServerConfig]) -> None:
+    """Persiste ``configs`` como JSON en el mismo formato que ``load_servers``
+    lee. Nunca escribe secretos: ``env_passthrough`` guarda solo NOMBRES de
+    env vars, ``env_extra`` es explícitamente no-secreta (ver docstring del
+    dataclass) — igual que el fichero que ya se edita a mano hoy."""
+    raw = [
+        {
+            "name": cfg.name,
+            "cmd": cfg.cmd,
+            "cwd": cfg.cwd,
+            "env_passthrough": cfg.env_passthrough,
+            "env_extra": cfg.env_extra,
+            "read_only_tools": cfg.read_only_tools,
+            "enabled": cfg.enabled,
+            "timeout_seconds": cfg.timeout_seconds,
+        }
+        for cfg in configs
+    ]
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(raw, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

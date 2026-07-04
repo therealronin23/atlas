@@ -540,3 +540,100 @@ def test_gateway_without_shadow_router_unchanged():
     doc = _json.loads(api_resp.leaf_bytes)
 
     assert doc["decision"] == "allow"
+
+
+# ---------------------------------------------------------------------------
+# Persistencia durable (G0.5)
+# ---------------------------------------------------------------------------
+
+
+def test_log_persists_sthl_across_restart(tmp_path):
+    """TransparencyLog con path= recuerda entradas tras crear nueva instancia."""
+    from atlas.transparency.log import TransparencyLog
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from atlas.security.authorization import Ed25519Signer
+
+    signer = Ed25519Signer(Ed25519PrivateKey.generate().private_bytes_raw())
+    log_path = tmp_path / "tlog.bin"
+
+    # Instancia 1: escribe una entrada
+    log1 = TransparencyLog(signer, path=log_path)
+    log1.append(b"entry1")
+    sth1 = log1.signed_tree_head()
+
+    # Instancia 2: nueva instancia (simula reinicio)
+    log2 = TransparencyLog(signer, path=log_path)
+    assert log2.tree_size == 1
+    sth2 = log2.signed_tree_head()
+    assert sth2.tree_size == sth1.tree_size
+
+
+def test_anti_replay_persists_across_restart(tmp_path):
+    """ReplayError se lanza aunque sea una nueva instancia de TransparencyGateway."""
+    from atlas.transparency.gateway import TransparencyGateway, ReplayError
+    from atlas.transparency.log import TransparencyLog
+    from atlas.transparency.client_cosign import ClientCosigner
+    from atlas.security.authorization import Ed25519Signer
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    def _signer():
+        return Ed25519Signer(Ed25519PrivateKey.generate().private_bytes_raw())
+
+    replay_path = tmp_path / "anti_replay.jsonl"
+    log_path = tmp_path / "tlog.bin"
+
+    subj_signer = _signer()
+    op_signer = _signer()
+
+    # Gateway 1: hace una llamada
+    log1 = TransparencyLog(op_signer, path=log_path)
+    gw1 = TransparencyGateway(
+        ClientCosigner(subj_signer), op_signer, log1, replay_path=replay_path
+    )
+    gw1.call(b"payload", lambda p: b"resp")
+
+    # Gateway 2: nueva instancia (simula reinicio), misma replay_path
+    log2 = TransparencyLog(op_signer, path=log_path)
+    gw2 = TransparencyGateway(
+        ClientCosigner(subj_signer), op_signer, log2, replay_path=replay_path
+    )
+
+    # _committed cargado desde disco — exactamente 1 entrada
+    assert replay_path.exists()
+    assert len(gw2._committed) == 1
+
+    # La nueva instancia lanza ReplayError ante el mismo (seq=0, payload_hash):
+    # ClientCosigner(subj_signer) arranca en seq=0, payload idéntico → mismo par.
+    import pytest as _pytest
+    with _pytest.raises(ReplayError):
+        gw2.call(b"payload", lambda p: b"resp")
+
+
+def test_anti_replay_load_ignores_malformed_lines(tmp_path):
+    """Líneas malformadas en anti_replay.jsonl se saltan sin romper el init."""
+    from atlas.transparency.gateway import TransparencyGateway
+    from atlas.transparency.log import TransparencyLog
+    from atlas.transparency.client_cosign import ClientCosigner
+    from atlas.security.authorization import Ed25519Signer
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    import json
+
+    def _signer():
+        return Ed25519Signer(Ed25519PrivateKey.generate().private_bytes_raw())
+
+    replay_path = tmp_path / "anti_replay.jsonl"
+    op_signer = _signer()
+    subj_signer = _signer()
+
+    # Escribir 1 entrada válida + 1 basura en el archivo
+    valid_pair = [0, "abc123"]
+    with replay_path.open("w", encoding="utf-8") as fh:
+        fh.write(json.dumps(valid_pair) + "\n")
+        fh.write("not-valid-json!!!\n")
+
+    log = TransparencyLog(op_signer, path=tmp_path / "tlog.bin")
+    gw = TransparencyGateway(ClientCosigner(subj_signer), op_signer, log, replay_path=replay_path)
+
+    # La entrada válida se cargó; la malformada se ignoró sin excepción
+    assert len(gw._committed) == 1
+    assert (0, "abc123") in gw._committed

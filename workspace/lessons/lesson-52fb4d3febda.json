@@ -1,0 +1,33 @@
+{
+  "id": "lesson-52fb4d3febda",
+  "title": "recursive-suite",
+  "provenance": "external_source",
+  "detection_heuristic": "pytest corriendo desde raíz recoge archivos test_*.py dentro de src/",
+  "avoid_pattern": "pytest descubre tests recursivamente desde src/ incluyendo archivos de fixtures — pasar --ignore=src a pytest o configurar testpaths en pyproject.toml",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "lección real del repo",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-03T13:11:15.830430+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "repo:atlas-core"
+  ],
+  "tags": [
+    "pytest",
+    "discovery"
+  ],
+  "created_at": "2026-07-03T13:11:15.830502+00:00"
+}

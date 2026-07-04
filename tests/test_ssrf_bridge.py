@@ -37,6 +37,15 @@ class TestBasicAllowlist:
         result = bridge.check("https://pypi.org/simple/")
         assert result.allowed
 
+    @pytest.mark.parametrize("domain", [
+        "github.com", "huggingface.co", "en.wikipedia.org", "stackoverflow.com",
+        "arxiv.org", "docs.python.org", "readthedocs.io",
+    ])
+    def test_general_scraping_domains_allowed(self, bridge: SSRFBridge, domain: str) -> None:
+        """2026-07-02: allowlist ampliada para web_crawl/BrowserTool de propósito general."""
+        result = bridge.check(f"https://{domain}/")
+        assert result.allowed, result.reason
+
 
 # ---------------------------------------------------------------------------
 # SEC-1: blocklist ANTES de allowlist

@@ -1,0 +1,30 @@
+{
+  "id": "lesson-accc5eeb347c",
+  "title": "Receta que rebasó el límite de AtlasCoder: incremental+sandbox+apply_patch+L2+recuperación",
+  "provenance": "external_source",
+  "detection_heuristic": "Feature nueva implementada por Atlas end-to-end con tests de verificación reales pasando",
+  "avoid_pattern": "La combinación que FUNCIONA para que Atlas implemente features nuevas él solo (medido 2026-06-27, 5 intentos hasta el éxito): (1) IncrementalCoder — una pieza por incremento, nunca multi-pieza; (2) sandbox=True — el repo real jamás se toca hasta que los tests pasan; (3) edit_format=apply_patch — los modelos corrompen los delimitadores de SEARCH/REPLACE (medido: Llama-70B usó '>>>>>>> REPLACE' como separador central); (4) strategy=COUNCIL para escalar a L2 — los L1 no reproducen líneas exactas del archivo; (5) test de verificación escrito ANTES, confirmado fallando — sin esto hay falsos positivos; (6) recuperación prefix-less en el parser — Kimi K2.6 emite hunks sin marcadores +/-, interpretables como ancla+inserción. Fallos de infraestructura corregidos por el camino: PYTHONPATH del sandbox debe preceder a la instalación editable o los tests importan el código real sin las ediciones; las líneas en blanco dentro de hunks no traen prefijo.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Feature real (LessonStore.stats) implementada por Atlas en 2 iter, sincronizada del sandbox, 2453 tests verdes",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-02T05:43:55.036501+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "atlas_coder:lesson_store_stats_2026-06-27"
+  ],
+  "tags": [],
+  "created_at": "2026-07-02T05:43:55.036537+00:00"
+}
