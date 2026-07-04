@@ -22,7 +22,7 @@ from typing import Any
 
 import yaml
 
-_STATES = {"candidato", "verificado", "instalado"}
+_STATES = {"candidato", "probado-en-jaula", "verificado", "instalado"}
 # Taxonomía completa de "líneas" del ecosistema de extensión (2026): cada kind es
 # una línea propia del catálogo (StormMCP por línea).
 _KINDS = {
@@ -137,7 +137,7 @@ def load_taxonomy(path: Path) -> dict[str, Any]:
     return out
 
 
-_MATURITY = {"instalado": 0, "verificado": 1, "candidato": 2}
+_MATURITY = {"instalado": 0, "verificado": 1, "probado-en-jaula": 2, "candidato": 3}
 
 
 def find(
@@ -283,3 +283,41 @@ def dedupe_by_kind_name(entries: list[CatalogEntry]) -> list[CatalogEntry]:
             seen.add(key)
             out.append(e)
     return out
+
+
+@dataclass(frozen=True)
+class StatusPromotion:
+    """Promoción de estado tras trial-en-jaula (Pieza 2)."""
+
+    name: str
+    kind: str
+    to_status: str
+    from_status: str = "candidato"
+
+
+def apply_status_promotions(path: Path, promotions: list[StatusPromotion]) -> int:
+    """Aplica promociones al YAML del catálogo. Solo muta entradas cuyo estado actual
+    coincide con ``from_status``. Devuelve cuántas filas se actualizaron."""
+    if not promotions:
+        return 0
+    wanted: dict[tuple[str, str], StatusPromotion] = {
+        (p.kind, p.name): p for p in promotions
+    }
+    data: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    updated = 0
+    for block in (data.get("sectors") or {}).values():
+        for raw in (block or {}).get("entries", []) or []:
+            key = (str(raw.get("kind", "")), str(raw.get("name", "")))
+            promo = wanted.get(key)
+            if promo is None:
+                continue
+            if str(raw.get("status", "candidato")) != promo.from_status:
+                continue
+            raw["status"] = promo.to_status
+            updated += 1
+    if updated:
+        path.write_text(
+            yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+    return updated

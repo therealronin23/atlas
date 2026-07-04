@@ -742,12 +742,13 @@ status(verificación) — nunca confundir.
   `scripts/mcp_enrich.py` + 16 tests. Reusa HttpApiSource+SSRFBridge (0 deps). Suite 2340 verde, auditor
   Opus PASS (SSRF probado con inyección). 554 entradas enriquecibles (--offline). Gap declarado: sub-ítems
   de awesome-lists y caracterización de prompts FUERA de Pieza 1.
-- ⬜ **Pieza 2 — trial-en-jaula per-kind + escáneres adoptados** ← SIGUIENTE. Rompe la serpiente-cola
-  (candidato→verificado). Estado graduado: candidato → probado-en-jaula (funciona+CONTENIDO, sin red) →
-  verificado-confiado (escáner + uso/humano). Escáneres por-primitivo ADOPTADOS (envolver, no forkear:
-  `adopt-real-not-shell`; candidatos: Invariant mcp-scan, Snyk agent-scan). Barrido por saneamiento
-  graduado (candidato rancio → cuarentena → delete, NUNCA de una pasada). Defensa = CONTENCIÓN (jaula) +
-  detección (escáner adoptado), no un antivirus propio (no-existe).
+- 🔄 **Pieza 2 — trial-en-jaula per-kind + escáneres adoptados** ← EN CURSO (2026-07-04).
+  **Slice 2a:** estado `probado-en-jaula`; `trial_gate.py` + `scripts/mcp_trial.py` (reporte).
+  **Slice 2b (2026-07-05):** vetado adoptado de argv `install` (SentinelGate vía `vet_install_command`);
+  resolución skill en `docs/skills` + `.agents/skills/*/SKILL.md`; promoción YAML con `--apply`
+  (`apply_status_promotions` en `catalog.py`). Pendiente 2c: spawn MCP en jaula, escáneres
+  externos (Invariant/Snyk), saneamiento graduado candidato→cuarentena.
+  Graduación: candidato → probado-en-jaula (contenido/argv OK) → verificado (escáner+humano).
 - ⬜ **Pieza 3 — routing hook** `UserPromptSubmit` que consume el catálogo ya enriquecido/verificado
   (consumo determinista). El más fácil, el último (necesita 1 y 2).
 
