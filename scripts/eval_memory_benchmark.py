@@ -28,9 +28,10 @@ import argparse
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 
-from atlas.memory.memory_index import SqliteMemoryIndex
+from atlas.immunity.lesson_recaller import RecallResult
+from atlas.memory.memory_index import SqliteMemoryIndex, rrf_fuse
 from atlas.memory.record import GenericRecord
 
 
@@ -102,6 +103,68 @@ def compute_metrics(retrieved: set[str], relevant: frozenset[str]) -> Metrics:
 
 
 # ---------------------------------------------------------------------------
+# Tipos y registro de modos de retrieval
+# ---------------------------------------------------------------------------
+
+# Retriever: función que dado (índice, query, k) devuelve lista de RecallResult.
+Retriever = Callable[[SqliteMemoryIndex, str, int], list[RecallResult]]
+
+
+def _cosine_retriever(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
+    """Modo cosine: delega directamente en recall_all del índice."""
+    return idx.recall_all(query, k=k)
+
+
+def _hybrid_retriever(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
+    """Modo hybrid: fusiona coseno + BM25 con Reciprocal Rank Fusion.
+
+    Requiere que el índice haya sido creado con ``lexical_index=True``.
+    Obtiene top-N coseno y top-N léxico, fusiona con rrf_fuse y devuelve
+    los top-k como RecallResult (score = posición RRF, matched=True).
+    """
+    n = max(k * 2, 10)  # sobresolicitamos para que RRF tenga material suficiente
+    cosine_results = idx.recall_all(query, k=n)
+    try:
+        lexical_results = idx.recall_lexical(query, k=n)
+    except RuntimeError:
+        # Fallback seguro si el índice no tiene FTS activo.
+        lexical_results = []
+    cosine_ids = [r.lesson_id for r in cosine_results]
+    lexical_ids = [r.lesson_id for r in lexical_results]
+    fused = rrf_fuse([cosine_ids, lexical_ids])[:k]
+    # Mapear a RecallResult preservando matched=True para todos los fusionados.
+    cosine_map = {r.lesson_id: r.score for r in cosine_results}
+    return [
+        RecallResult(
+            lesson_id=rid,
+            score=cosine_map.get(rid, 0.0),
+            matched=True,
+        )
+        for rid in fused
+    ]
+
+
+def _temporal_retriever(idx: SqliteMemoryIndex, query: str, k: int) -> list[RecallResult]:
+    """Modo temporal: recall_temporal con as_of=ahora y half_life_ns=None.
+
+    half_life_ns=None significa coseno puro con desempate por recencia (valid_from_ns desc).
+    En un corpus real con datos temporales variados se recomendaría fijar half_life_ns al
+    rango temporal del corpus (p.ej. 30 días en ns). Aquí el corpus sintético no tiene
+    variación temporal real (todos los registros comparten el mismo valid_from_ns del
+    momento de indexación), por lo que el comportamiento es equivalente a cosine con
+    desempate determinista — lo cual es correcto y honesto.
+    """
+    return idx.recall_temporal(query, k=k)
+
+
+RETRIEVAL_MODES: dict[str, Retriever] = {
+    "cosine": _cosine_retriever,
+    "hybrid": _hybrid_retriever,
+    "temporal": _temporal_retriever,
+}
+
+
+# ---------------------------------------------------------------------------
 # Lógica principal del benchmark
 # ---------------------------------------------------------------------------
 
@@ -112,19 +175,36 @@ class QueryResult:
     metrics: Metrics
 
 
-def run_benchmark(db_path: Path, *, k: int = 3, threshold: float = 0.0) -> list[QueryResult]:
+def run_benchmark(
+    db_path: Path,
+    *,
+    k: int = 3,
+    threshold: float = 0.0,
+    mode: str = "cosine",
+    lexical_index: bool = False,
+) -> list[QueryResult]:
     """
     Ejecuta el benchmark completo sobre un índice en db_path.
 
     Pasos:
       1. INDEXACIÓN: se insertan todos los registros del corpus.
          Las queries NO intervienen en este paso (anti-leak real).
-      2. EVALUACIÓN: se ejecutan las queries y se miden métricas.
+      2. EVALUACIÓN: se ejecutan las queries usando el retriever del modo indicado.
 
     threshold=0.0 porque StubEmbedder usa embeddings aleatorios — en producción
     con un embedder real se usaría un umbral más alto (e.g. 0.7).
+
+    Raises:
+        ValueError: si mode no está registrado en RETRIEVAL_MODES.
     """
-    idx = SqliteMemoryIndex(db_path, threshold=threshold)
+    if mode not in RETRIEVAL_MODES:
+        raise ValueError(f"modo desconocido: {mode}")
+
+    retriever = RETRIEVAL_MODES[mode]
+    # El modo hybrid requiere lexical_index=True; se activa automáticamente si no
+    # se indicó explícitamente, para que el retriever pueda usar recall_lexical.
+    eff_lexical = lexical_index or (mode == "hybrid")
+    idx = SqliteMemoryIndex(db_path, threshold=threshold, lexical_index=eff_lexical)
 
     # FASE 1 — Indexación (el índice no conoce las queries)
     for record_id, text in CORPUS:
@@ -134,7 +214,7 @@ def run_benchmark(db_path: Path, *, k: int = 3, threshold: float = 0.0) -> list[
     # FASE 2 — Evaluación (las queries se presentan al índice ya construido)
     results: list[QueryResult] = []
     for case in QUERIES:
-        top_k = idx.recall_all(case.query_text, k=k)
+        top_k = retriever(idx, case.query_text, k)
         # Con threshold=0.0 todos los resultados top-k cuentan como "recuperados"
         # (sin umbral de corte — honesto para StubEmbedder); con threshold>0, solo los matched.
         retrieved = {r.lesson_id for r in top_k if r.matched or threshold == 0.0}
@@ -142,6 +222,42 @@ def run_benchmark(db_path: Path, *, k: int = 3, threshold: float = 0.0) -> list[
         results.append(QueryResult(case=case, retrieved_ids=retrieved, metrics=metrics))
 
     return results
+
+
+def macro_metrics(results: list[QueryResult]) -> Metrics:
+    """Calcula las métricas macro (promedio simple) sobre una lista de QueryResult."""
+    n = len(results)
+    if n == 0:
+        return Metrics(0.0, 0.0, 0.0)
+    precisions = [qr.metrics.precision for qr in results]
+    recalls    = [qr.metrics.recall    for qr in results]
+    f1s        = [qr.metrics.f1        for qr in results]
+    return Metrics(
+        precision=sum(precisions) / n,
+        recall=sum(recalls) / n,
+        f1=sum(f1s) / n,
+    )
+
+
+def run_ablation(
+    db_path: Path,
+    *,
+    modes: list[str],
+    k: int = 3,
+    threshold: float = 0.0,
+) -> dict[str, Metrics]:
+    """
+    Corre run_benchmark para cada modo y devuelve {modo: Metrics macro}.
+
+    Cada modo crea su propio índice efímero (db_path se usa como prefijo base;
+    se añade el nombre del modo como sufijo para aislar los índices).
+    """
+    out: dict[str, Metrics] = {}
+    for m in modes:
+        mode_db = db_path.with_suffix(f".{m}.db")
+        results = run_benchmark(mode_db, k=k, threshold=threshold, mode=m)
+        out[m] = macro_metrics(results)
+    return out
 
 
 def print_report(results: list[QueryResult]) -> None:
@@ -159,31 +275,60 @@ def print_report(results: list[QueryResult]) -> None:
         print(f"       P={m.precision:.3f}  R={m.recall:.3f}  F1={m.f1:.3f}")
         print()
 
-    # Agregados macro
-    precisions = [qr.metrics.precision for qr in results]
-    recalls    = [qr.metrics.recall    for qr in results]
-    f1s        = [qr.metrics.f1        for qr in results]
+    macro = macro_metrics(results)
     print("-" * 60)
-    print(f"MACRO  P={sum(precisions)/len(precisions):.3f}  "
-          f"R={sum(recalls)/len(recalls):.3f}  "
-          f"F1={sum(f1s)/len(f1s):.3f}")
+    print(f"MACRO  P={macro.precision:.3f}  R={macro.recall:.3f}  F1={macro.f1:.3f}")
     print("=" * 60)
+
+
+def _print_ablation_table(ablation: dict[str, Metrics]) -> None:
+    """Imprime tabla de ablación con deltas respecto al modo cosine."""
+    baseline = ablation.get("cosine")
+    header = f"{'MODO':<12}  {'P':>6}  {'R':>6}  {'F1':>6}  {'ΔP':>7}  {'ΔR':>7}  {'ΔF1':>7}"
+    print("=" * len(header))
+    print("ABLACIÓN DE MODOS DE RETRIEVAL")
+    print(header)
+    print("-" * len(header))
+    for mode_name, m in ablation.items():
+        if baseline is not None and mode_name != "cosine":
+            dp = m.precision - baseline.precision
+            dr = m.recall - baseline.recall
+            df = m.f1 - baseline.f1
+            delta = f"  {dp:+.3f}  {dr:+.3f}  {df:+.3f}"
+        else:
+            delta = "  {:>7}  {:>7}  {:>7}".format("(base)", "(base)", "(base)")
+        print(f"{mode_name:<12}  {m.precision:>6.3f}  {m.recall:>6.3f}  {m.f1:>6.3f}{delta}")
+    print("=" * len(header))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Benchmark de evaluación del SqliteMemoryIndex")
     parser.add_argument("--db", default=None, help="Ruta al archivo SQLite (temporal si no se indica)")
+    parser.add_argument(
+        "--mode",
+        default="cosine",
+        help=f"Modo de retrieval a usar (disponibles: {', '.join(RETRIEVAL_MODES)}). Default: cosine",
+    )
+    parser.add_argument(
+        "--ablation",
+        action="store_true",
+        help="Corre ablación sobre todos los modos registrados e imprime tabla de deltas vs cosine.",
+    )
     args = parser.parse_args()
 
     if args.db:
         db_path = Path(args.db)
-        results = run_benchmark(db_path)
     else:
-        with tempfile.NamedTemporaryFile(suffix=".db", delete=True) as f:
-            db_path = Path(f.name)
-        results = run_benchmark(db_path)
+        tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tmp.close()
+        db_path = Path(tmp.name)
 
-    print_report(results)
+    if args.ablation:
+        ablation = run_ablation(db_path, modes=list(RETRIEVAL_MODES))
+        _print_ablation_table(ablation)
+    else:
+        results = run_benchmark(db_path, mode=args.mode)
+        print_report(results)
 
 
 if __name__ == "__main__":

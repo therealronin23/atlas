@@ -1,0 +1,33 @@
+{
+  "id": "lesson-11c787fb8c01",
+  "title": "merkle-double-writer",
+  "provenance": "external_source",
+  "detection_heuristic": "dos objetos MerkleLogger con el mismo path en el mismo proceso",
+  "avoid_pattern": "abrir dos instancias de MerkleLogger sobre el mismo path simultáneamente",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "lección real del repo",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-03T13:11:15.829601+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "repo:atlas-core"
+  ],
+  "tags": [
+    "merkle",
+    "concurrency"
+  ],
+  "created_at": "2026-07-03T13:11:15.829718+00:00"
+}

@@ -1,7 +1,7 @@
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "printf '### OPERATING LOOP active (AGENTS.md): run the 5 pre-flight questions before acting; update WORK_LEDGER.md in the same commit.\\n\\n=== WORK_LEDGER.md (live state) ===\\n'; cat \"$CLAUDE_PROJECT_DIR/WORK_LEDGER.md\" 2>/dev/null || echo '(not found)'" } ] }
+      { "hooks": [ { "type": "command", "command": "printf '### OPERATING LOOP active (AGENTS.md): run the 5 pre-flight questions before acting; update WORK_LEDGER.md in the same commit.\\n\\n### DEEP ONBOARDING (read BEFORE acting — SCOPED to the active node, NOT the whole docs/ tree):\\n  1. Read AGENTS.md fully (HOW: operating loop + manias).\\n  2. Open ONLY the MEMORY.md memories relevant to the active node (WHY/lessons of THAT topic).\\n  3. Read the FULL design doc named on the active WORK_LEDGER node (that Gate/ADR/phase).\\n  Depth, not breadth: do not stop at one ADR (too shallow) and do not read the whole folder (too much). The ledger below is only WHERE; context lives across 3 axes.\\n\\n=== WORK_LEDGER.md (live state) ===\\n'; cat \"$CLAUDE_PROJECT_DIR/WORK_LEDGER.md\" 2>/dev/null || echo '(not found)'" } ] }
     ]
   }
 }

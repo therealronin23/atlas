@@ -420,4 +420,135 @@ items:
       binds ya NO incluye '/' sino el conjunto acotado. Si el riesgo de romper ejecuciones reales es alto,
       entregar como flag opt-in con default actual y anotar el trade-off. No instalar deps nuevas.
     priority: 3
+    status: done  # 2026-06-25: VERIFICADO ya hecho en código. bwrap_jail.py:159-185 usa rootfs mínimo
+      # (--ro-bind /usr + symlinks usr-merged + /etc/ssl + tmpfs/tmp + --proc/--dev mínimos), NO bind de '/'.
+      # Acceptance cumplida (binds NO incluyen '/'); tests/test_bwrap_jail.py:89 ya afirma "/" not in sources.
+      # Doc-honestidad: AGENTS.md:220 corregida (decía '/ bind read-only', ahora refleja rootfs mínimo).
+
+  - id: mcp-audit-six-primitives
+    title: "Auditoría MCP del tronco: mapear a los 6 primitivos (Tools/Resources/Prompts/Sampling/Roots/Elicitation)"
+    why: >
+      Sesión 2026-06-25 (investigación, no implementado): el spec MCP define 6 primitivos de servidor y el
+      tronco usa ~2-3 (Tools + Prompts/skills). NO usa Resources (la idea del usuario de "un JSON índice para
+      todo el MCP" = exactamente el primitivo Resources; hoy el catálogo se sirve como tool-calls que queman un
+      turno por consulta), ni Sampling (servidor pide completion al cliente → offload de razonamiento sin pagar
+      modelo), ni Roots, ni Elicitation (servidor pide input ESTRUCTURADO al humano a mitad de llamada = el hook
+      nativo para la visión de reducción de HITL / copia-digital). Fuentes: modelcontextprotocol.io,
+      workos.com/blog/mcp-features-guide.
+    targets:
+      - "src/atlas/mcp/"
+      - "docs/design/mcp_trunk_portable.md"
+    acceptance: >
+      Documento de auditoría que (1) mapea cada superficie del tronco a los 6 primitivos, (2) identifica los
+      huecos reales con su valor/coste (Resources para el catálogo/manifest = candidato claro; Sampling = ahorro;
+      Elicitation = HITL), (3) propone diseño priorizado. NO implementa: alimenta una sesión de brainstorming.
+      decide-with-facts + internal-prior-art-first (ver qué ya hay en TrunkAggregator/FastMCP antes de proponer).
+    priority: 2
+    status: done  # 2026-06-25: docs/design/mcp_six_primitives_audit.md. Recuento honesto 2/6 (Tools a fondo +
+      # Resources 2 docs; Prompts/Sampling/Roots/Elicitation = 0; skills van por Tools no Prompts; RootSpec es
+      # nombre interno no el primitivo). Huecos priorizados: #1 Resources del catálogo (= "JSON índice" del
+      # usuario, mesa de trabajo SP-A, internal-prior-art) ← EMPEZAR; #2 Prompts para skills; #3 Elicitation
+      # (marco de HITL/SP-D, no construir aún); #4 Sampling (medir, SP-B); #5 Roots diferido. Próxima:
+      # brainstorming de Resources del catálogo.
+
+  - id: memory-mcp-local-embedder
+    title: "Memoria MCP: reemplazar StubEmbedder por embedder LOCAL universal (sin lock-in de API)"
+    why: >
+      Sesión 2026-06-25: memory_server.py:163-167 y memory_trunk.py:148-150 corren sobre StubEmbedder(dim=64)
+      (hash bag-of-words, no semántico). LiteLLMEmbedder ya existe (embeddings.py, no Gemini-locked: litellm
+      enruta cualquier proveedor). PERO el usuario rechaza (con razón) cualquier API hospedada: lock-in +
+      coste/llamada + el vector space es propio del proveedor (cambiar = re-embeber todo). La respuesta universal
+      = modelo LOCAL in-process (BGE-M3 1024 / Qwen3-Embedding-0.6B / EmbeddingGemma-300M / all-MiniLM-L6-v2 384).
+      Trade-off real: dependencia (sentence-transformers+torch pesado, o ONNX ligero) + descarga de modelo, frente
+      al stub de cero-deps. Decisión pendiente: modelo + dim + dependencia + migración del vector space (cambiar
+      embedder invalida vectores stub; el store está casi vacío hoy → opt-in + rebuild documentado). Fuentes:
+      bentoml.com/blog/a-guide-to-open-source-embedding-models, huggingface TEI.
+    targets:
+      - "src/atlas/memory/embeddings.py"
+      - "src/atlas/mcp/memory_server.py"
+      - "src/atlas/mcp/memory_trunk.py"
+    acceptance: >
+      DEPENDE de mcp-audit-six-primitives (embeddings deben aterrizar en el MCP con forma correcta). Tras el
+      audit: brainstorming → spec → plan que elige modelo local + dim, añade un Embedder local (o ruta litellm a
+      endpoint local TEI/Ollama), lo cablea como default del memory MCP con opt-in + migración honesta del vector
+      space, fail-closed (NO mezclar vectores stub y reales en el mismo store). wire-before-claim: no se declara
+      "memoria semántica" sin tests de recall real verdes.
+    priority: 2
+    status: done  # 2026-06-25: FastEmbedEmbedder (fastembed, ONNX SIN torch — extra opcional [embeddings];
+      # modelo paraphrase-multilingual-MiniLM-L12-v2 dim 384, multilingüe). default_embedder() gobernado por
+      # env ATLAS_EMBEDDER=fastembed (opt-in; default stub), fail-closed si la dep falta (no mezcla stub/real).
+      # Cableado en build_gated_index (memory_server) y MemoryTrunk. Verificado EN VIVO: test semántico español
+      # (perro~can > perro~banco) verde con fastembed instalado. mypy strict. Migración honesta: store stub dim
+      # 64 → fastembed dim 384 dispara el guard del índice (rebuild, no mezcla). Follow-up posible: backend torch
+      # (otro Embedder del Protocol) si se quiere; prefijos query/passage si se cambia a un modelo e5.
+
+  - id: catalog-resources-mcp
+    title: "Catálogo del tronco como Resources MCP (índice + detalle) — hueco #1 del audit"
+    why: >
+      El audit (mcp-audit-six-primitives) priorizó #1: exponer el catálogo como Resources (el "JSON índice"
+      del usuario) en vez de solo tool-calls que queman turno. Spec:
+      docs/superpowers/specs/2026-06-25-catalog-resources-design.md.
+    targets:
+      - "src/atlas/mcp/catalog_resources.py"
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Builder puro (manifest_json con 4 ejes + summary + fresh-hash; item_detail por kind/name) + cableado
+      aditivo en build_trunk_server (catalog://manifest + catalog://item/{kind}/{name}). Tests builder +
+      in-process FastMCP verdes; mypy strict.
+    priority: 2
+    status: done  # 2026-06-25: catalog_resources.py (manifest_json/item_detail/manifest_hash, 8 tests) +
+      # 2 resources en trunk_server (catalog://manifest + catalog://item/{kind}/{name}), test in-process FastMCP
+      # (mcp 1.28 en .venv). mypy strict limpio. Aditivo: trunk_catalog/find/kinds tools intactos. Push de
+      # subscriptions NO incluido (FastMCP high-level no lo expone) → follow-up catalog-resources-live-subscriptions.
+
+  - id: catalog-resources-live-subscriptions
+    title: "Catálogo Resources: push de subscriptions (resources/updated) cuando el sync cambia el catálogo"
+    why: >
+      El usuario pidió el índice VIVO con subscriptions. El slice 1 (catalog-resources-mcp) entrega índice +
+      detalle + `fresh` hash para change-detection, pero NO el push: FastMCP high-level no expone emisión de
+      `resources/updated` (verificado mcp 1.28: existe en el Server low-level `subscribe_resource` +
+      `ResourceUpdatedNotification`, no en FastMCP). wire-before-claim: no se fingió subscriptions sobre una API
+      que no las soporta.
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Bajar al Server low-level (o el mecanismo que FastMCP ofrezca al madurar) + watcher de mtime de
+      mcp_catalog*.yaml que emita `resources/updated` de catalog://manifest a los clientes subscritos; test que
+      demuestre la notificación al cambiar el catálogo. Alternativa más simple si basta: recarga-desde-disco en
+      cada lectura del resource (hoy serializa la lista en memoria cargada en serve()). Medir cuál aporta antes.
+    priority: 3
+    status: done  # 2026-06-25: register_subscription_capabilities — handlers subscribe/unsubscribe (low-level)
+      # + seam de publish trunk_notify_catalog_changed; el cliente se subscribe a catalog://manifest y recibe
+      # resources/updated (test vía harness in-memory). DIFERIDO (honesto): el watcher AUTOMÁTICO de fondo
+      # (push out-of-band al cambiar el mtime) exige reescribir el server a low-level (loop síncrono de FastMCP)
+      # → follow-up mcp-subscriptions-auto-watcher cuando haya consumidor.
+
+  - id: mcp-subscriptions-auto-watcher
+    title: "Subscriptions: watcher automático que publica al cambiar el catálogo (low-level run loop)"
+    why: >
+      catalog-resources-live-subscriptions entregó la capacidad (subscribe + seam de publish), pero el disparo
+      AUTOMÁTICO (background, al cambiar mcp_catalog*.yaml) necesita el Server low-level con run loop propio
+      (FastMCP corre síncrono). Sin consumidor todavía → diferido (wire-before-claim).
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Watcher de mtime en serve() (o reescritura a low-level) que invoque el seam de publish al detectar cambio;
+      test que demuestre el push automático. Reabrir cuando el catálogo cambie en caliente con cliente conectado.
+    priority: 3
+    status: pending
+
+  - id: mcp-tasks-extension
+    title: "Extensión Tasks (async/largo) — construir CON el workflow (SP-E)"
+    why: >
+      El usuario pidió cerrar el MCP con Tasks. Hecho 2026-06-25: VERIFICADO que el SDK (mcp 1.28) tiene los
+      TIPOS de Task (CreateTaskResult/GetTaskRequest/…) pero NO handlers ni soporte high-level/low-level — habría
+      que hand-rollear el ciclo entero sobre JSON-RPC crudo. Sin consumidor (el workflow async no existe aún),
+      eso es vapor → DIFERIDO. Tasks ES el motor del loop autónomo: se construye DENTRO de SP-E, donde tiene
+      consumidor real (decide-with-facts + wire-before-claim).
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Junto a SP-E (workflow Dynamic): declarar la experimental_capability de Tasks + handlers create/get/cancel
+      sobre el trabajo async del loop; test del ciclo de vida. No antes de que exista el consumidor.
+    priority: 3
     status: pending

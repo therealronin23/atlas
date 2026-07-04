@@ -77,3 +77,39 @@ def test_llm_escalation_when_deterministic_cannot_help() -> None:
     out = vp.produce(spec)
     assert out.verified
     assert out.attempts[-1].producer_id == "llm:inference:l1"
+
+
+def test_e2e_maintenance_task_to_verified_diff() -> None:
+    """E2E G0.4: MaintenanceTask → VerifiedProducer → Evidence.PASS + diff no vacío."""
+    from atlas.core.maintenance_scout import MaintenanceTask
+    from atlas.core.verify import Verdict
+
+    task = MaintenanceTask("src/foo.py", "strip_trailing_whitespace", "x = 1   \ny = 2\n")
+    vp = build_maintenance_producer()
+    outcome = vp.produce(task.to_spec())
+
+    assert outcome.verified is True
+    assert outcome.evidence.verdict == Verdict.PASS
+    assert outcome.artifact is not None
+    diff = outcome.artifact.payload.get("diff", "")
+    assert diff != ""
+    assert "x = 1\n" in diff
+
+
+def test_unknown_verdict_returns_empty_diff() -> None:
+    """G0.4 invariante: UNKNOWN nunca auto-aplica — produce_diff devuelve ''."""
+    from atlas.core.maintenance_scout import MaintenanceTask
+    from atlas.core.verified_producer import VerifiedProducer
+    from atlas.core.verify import Evidence, UniversalVerifier, Verdict
+
+    class _AlwaysUnknownVerifier(UniversalVerifier):
+        def verify(self, artifact: Artifact) -> Evidence:  # type: ignore[override]
+            return Evidence(verdict=Verdict.UNKNOWN, reason="mock: siempre UNKNOWN")
+
+    vp = VerifiedProducer(
+        producers=[],  # sin productores: evidence inicial = UNKNOWN
+        verifier=_AlwaysUnknownVerifier(),
+    )
+    task = MaintenanceTask("src/foo.py", "strip_trailing_whitespace", "x = 1   \n")
+    result = maintenance_produce_diff(vp)(task, Path("/tmp/x"))
+    assert result == ""

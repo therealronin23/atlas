@@ -1,0 +1,30 @@
+{
+  "id": "lesson-73de6fb5ba70",
+  "title": "AtlasCoder (incluso con Cónclave/COUNCIL) falla en features multi-parte nuevas",
+  "provenance": "external_source",
+  "detection_heuristic": "Task pide una feature nueva de varias piezas (parámetro + 2 métodos + wiring + docstring) en un solo archivo",
+  "avoid_pattern": "No confiar en 'tests pasan' como criterio de éxito de una feature NUEVA sin un test que verifique específicamente que la feature existe — el primer intento reportó success=True sin implementar NADA de lo pedido (solo corrompió texto de ejemplo no relacionado), porque la suite existente no comprobaba la funcionalidad nueva. Con un test que sí verificaba la feature, el segundo intento falló honestamente (stuck detector, 2 iteraciones sin progreso) en vez de reportar un falso éxito — el modelo se confundió repetidamente intentando usar el texto de ejemplo 'código nuevo' del propio prompt de instrucciones como ancla SEARCH literal.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Medición directa: 2 intentos con strategy=COUNCIL, ambos fallaron a implementar una feature de ~4 piezas en 1 archivo",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-02T01:18:12.583332+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "atlas_coder:sandbox_experiment_2026-06-27"
+  ],
+  "tags": [],
+  "created_at": "2026-07-02T01:18:12.583386+00:00"
+}

@@ -230,3 +230,96 @@ PRESET_TOGETHER_M2_BERT = LiteLLMEmbedderConfig(
     dim=768,
     api_key_env="TOGETHERAI_API_KEY",
 )
+
+
+# ---------------------------------------------------------------------------
+# Local: fastembed (ONNX, SIN torch) — embeddings semánticos in-process, offline
+# ---------------------------------------------------------------------------
+
+# Modelo por defecto: multilingüe (la memoria de Atlas puede ser en español) y
+# ligero (dim 384, cuantizado ONNX). fastembed descarga+cachea el modelo en el
+# primer uso. Extra opcional `[embeddings]`; el núcleo sigue usable sin la dep.
+FASTEMBED_DEFAULT_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+FASTEMBED_DEFAULT_DIM = 384
+
+
+class FastEmbedEmbedder:
+    """Embedder semántico LOCAL vía fastembed (ONNX, sin torch).
+
+    A diferencia de `LiteLLMEmbedder` (API hospedada, lock-in + coste/llamada),
+    corre in-process, sin proveedor por-llamada. Misma familia de modelos que
+    sentence-transformers (BGE/E5/MiniLM) pero servidos por ONNX, sin los GBs de
+    torch. `dim` debe coincidir con el modelo (e5-small/BGE-small = 384).
+
+    HONESTIDAD (hallazgo del Cónclave, auditoría 2026-07-03): el PRIMER uso SÍ
+    requiere red — `fastembed` descarga el modelo ONNX (~100MB) desde su hub
+    remoto la primera vez que se instancia, sin pin de hash en este código (el
+    propio paquete gestiona su caché en `~/.cache/fastembed`). Usos posteriores
+    con el modelo ya cacheado son offline. Si el entorno no tiene red en el
+    primer arranque (CI aislado, sandbox sin egress), usa
+    `ATLAS_EMBEDDER=stub` para evitar la descarga.
+
+    Fail-closed: si `fastembed` no está instalado, lanza RuntimeError explícito —
+    NO cae a stub callado (mezclar vectores stub y reales corrompe el recall)."""
+
+    def __init__(
+        self, model_name: str = FASTEMBED_DEFAULT_MODEL, dim: int = FASTEMBED_DEFAULT_DIM
+    ) -> None:
+        try:
+            from fastembed import TextEmbedding
+        except ImportError as exc:  # pragma: no cover - depende de extra opcional
+            raise RuntimeError(
+                "fastembed no instalado: pip install 'atlas-core[embeddings]' "
+                "(o quita ATLAS_EMBEDDER=fastembed para usar el stub)"
+            ) from exc
+        self._model = TextEmbedding(model_name=model_name)
+        self._dim = dim
+        self._model_name = model_name
+
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+    @property
+    def model(self) -> str:
+        return self._model_name
+
+    def embed(self, text: str) -> list[float]:
+        return self.embed_batch([text])[0]
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        out = [[float(x) for x in vec] for vec in self._model.embed(texts)]
+        if len(out) != len(texts):
+            raise RuntimeError(
+                f"fastembed devolvió {len(out)} vectores para {len(texts)} inputs"
+            )
+        for v in out:
+            if len(v) != self._dim:
+                raise RuntimeError(
+                    f"dim inesperada: {len(v)} vs {self._dim} (modelo {self._model_name})"
+                )
+        return out
+
+
+def default_embedder() -> "Embedder":
+    """Selector del embedder para la memoria del tronco, gobernado por env.
+
+    - default (sin definir) / `ATLAS_EMBEDDER=fastembed` → `FastEmbedEmbedder`
+      (semántico local, dim 384, ONNX sin torch — ya sin API hospedada de por
+      medio, cero lock-in). Fail-closed: si la dep no está, propaga el
+      RuntimeError (no cae a stub silenciosamente).
+    - `ATLAS_EMBEDDER=stub` → `StubEmbedder(dim=64)` (hash, no semántico —
+      opt-OUT explícito, para tests/CI que no quieran cargar el modelo ONNX).
+
+    2026-07-03: se cambió el default de stub→fastembed (verificado: el store
+    real de memoria en `~/atlas-mcp/memory.db` tenía 0 registros, sin datos que
+    migrar). Cambiar de embedder cambia el espacio vectorial; un store existente
+    con dim distinta dispara el guard de dimensión del índice (migración honesta
+    = rebuild, no mezcla silenciosa) — revisar antes de tocar un store con datos
+    reales."""
+    choice = os.environ.get("ATLAS_EMBEDDER", "fastembed").strip().lower()
+    if choice == "stub":
+        return StubEmbedder(dim=64)
+    return FastEmbedEmbedder()

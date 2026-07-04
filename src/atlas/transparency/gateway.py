@@ -24,9 +24,11 @@ Capa 2 (TPM/Secure Enclave via OSM-025) enchufará aquí sin cambiar la interfaz
 from __future__ import annotations
 
 import hashlib
+import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from typing import TYPE_CHECKING
 
@@ -99,6 +101,7 @@ class TransparencyGateway:
         salt_store: "SaltStore | None" = None,
         appealer: "FalsePositiveApealer | None" = None,
         scoped_inspector: "ScopedInspector | None" = None,
+        replay_path: Path | None = None,
     ) -> None:
         self._cosigner = subject_cosigner
         self._op_signer = operator_signer
@@ -109,10 +112,22 @@ class TransparencyGateway:
         self._salt_store = salt_store
         self._appealer = appealer
         self._scoped_inspector = scoped_inspector
+        self._replay_path = replay_path
         # last_tree_size para consistency proof (0 = log vacío antes de esta sesión)
         self._last_tree_size: int = log.tree_size
         # OSM-010: anti-replay set — (seq, payload_hash) pairs already committed.
         self._committed: set[tuple[int, str]] = set()
+        if replay_path is not None and replay_path.exists():
+            with replay_path.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        pair = json.loads(line)
+                        self._committed.add((pair[0], pair[1]))
+                    except (json.JSONDecodeError, ValueError, IndexError, TypeError):
+                        pass
 
     # ------------------------------------------------------------------
     # Punto de entrada principal
@@ -263,6 +278,11 @@ class TransparencyGateway:
         leaf_index_in = self._log.append(record.to_bytes())
         # OSM-010: mark committed after successful log write.
         self._committed.add(_replay_key)
+        if self._replay_path is not None:
+            with self._replay_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(list(_replay_key)) + "\n")
+                fh.flush()
+                fh.flush()
 
         t1 = time.perf_counter()
 

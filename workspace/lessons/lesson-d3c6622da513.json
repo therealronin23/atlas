@@ -1,0 +1,30 @@
+{
+  "id": "lesson-d3c6622da513",
+  "title": "InferenceHub sin .env → cae a ollama silenciosamente",
+  "provenance": "external_source",
+  "detection_heuristic": "hub.infer() → success=False error=OllamaException en 2 segundos",
+  "avoid_pattern": "No asumir que GROQ_API_KEY está en el entorno: el hub ahora auto-carga .env via python-dotenv al importarse. Sin eso, todos los providers L1 fallan silenciosamente y el hub cae a L0 (ollama local, que no tiene modelos instalados).",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Bug confirmado: 3 intentos AtlasCoder fallaron por este motivo antes de detectar",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-06-27T07:31:17.645741+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "inference_hub:dotenv_fix"
+  ],
+  "tags": [],
+  "created_at": "2026-06-27T07:31:17.645773+00:00"
+}

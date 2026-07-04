@@ -1,0 +1,30 @@
+{
+  "id": "lesson-d7168c88c313",
+  "title": "TOOL-CALLING > completación de texto: la corrección del usuario que cambió todo",
+  "provenance": "external_source",
+  "detection_heuristic": "Tareas de código delegadas fallando en masa por corrupción de formato pese a guardrails",
+  "avoid_pattern": "NUNCA pedir a un modelo que EMITA texto formateado (SEARCH/REPLACE, diffs) cuando puede LLAMAR HERRAMIENTAS con argumentos JSON validados por la API. Medido el mismo día con los mismos modelos L2: completación de texto = 0/4 tareas (incluso transcribiendo código exacto); tool-calling (ToolCoder, patrón ACI de SWE-agent/Claude Code) = 2/2 tareas en 1 iteración cada una, incluida una MULTI-PIEZA (crear módulo + modificar registro) que la arquitectura de texto falló el 100% de las veces en toda la sesión. La infraestructura existía desde ADR-031 (InferenceHub.tools/tool_calls, AgenticExecutor) pero el bucle de código no la usaba — el error fue implementar la mitad textual/defensiva de la investigación de harnesses y posponer el motor agéntico que era el corazón. Los guardrails (rutas protegidas, match único, linter) se reutilizan igual, pero como RESULTADOS ESTRUCTURADOS de tool que el modelo ve y corrige, no warnings de log que nadie lee. Crédito: la corrección vino del usuario ('si no se usa un arnés de verdad, ningún modelo hará nunca nada bien'), no de la telemetría.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Prueba en vivo A/B mismo día, mismos modelos: 0/4 texto vs 2/2 tool-calling (una multi-pieza)",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-02T11:54:20.165294+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "tool_coder:live_validation_2026-06-28"
+  ],
+  "tags": [],
+  "created_at": "2026-07-02T11:54:20.165370+00:00"
+}

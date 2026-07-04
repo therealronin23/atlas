@@ -42,6 +42,12 @@ _logging.getLogger("LiteLLM").setLevel(_logging.ERROR)
 _logging.getLogger("litellm").setLevel(_logging.ERROR)
 
 try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv()
+except ImportError:
+    pass
+
+try:
     import litellm
     _HAS_LITELLM = True
     try:
@@ -97,9 +103,18 @@ class Provider:
     rpm_limit: int = 30
     context_tokens: int = 8192
     account_pool: list[str] = field(default_factory=list)
+    extra_body: dict[str, Any] = field(default_factory=dict)  # params extra para litellm (ej. thinking:False)
     status: ProviderStatus = ProviderStatus.OK
     last_used: str | None = None
     error_count: int = 0
+    # Roles explícitos (lazo 4, patrón validado 4x independientemente: Continue.dev
+    # config.yaml roles=chat/edit/apply/embed, Cline Plan/Act con modelo distinto por
+    # modo, Cursor apply-model separado, Aider --architect). "edit" = genera diffs/
+    # SEARCH-REPLACE (razonamiento fuerte); "apply" = aplica un cambio ya decidido
+    # (mecánico, barato/rápido); "chat" = conversación/planificación general.
+    # Soft-preference: infer_for_role() cae a candidatos por nivel si ningún
+    # provider del nivel pedido tiene el rol — nunca falla por falta de tag.
+    roles: tuple[str, ...] = ()
 
 
 @dataclass
@@ -138,25 +153,52 @@ class InferenceResponse:
 
 
 DEFAULT_PROVIDERS: list[Provider] = [
+    # L1 — Groq (rate-limit gratis para siempre; verificar IDs en console.groq.com/docs/models)
+    # 2026-06-27: gpt-oss-120b devuelve contenido vacío → revertido a llama-3.3-70b-versatile
     Provider(
-        name="groq_llama",
+        name="groq_llama_70b",
         level=InferenceLevel.L1,
         base_url="https://api.groq.com",
         model_id="llama-3.3-70b-versatile",
         litellm_model="groq/llama-3.3-70b-versatile",
         api_key_env="GROQ_API_KEY",
         rpm_limit=30,
-        context_tokens=32768,
+        context_tokens=128000,
+        roles=("chat", "apply"),  # rápido/gratis; débil en multi-archivo (lección G0.7)
     ),
+    # 2026-06-27: "compound-beta" fue renombrado por Groq a "compound" (la API
+    # nombra el modelo literalmente "groq/compound", de ahí el prefijo doble).
+    # Prove-it en vivo: compound-beta da 404, groq/groq/compound responde.
     Provider(
-        name="groq_qwen",
-        level=InferenceLevel.L1,
+        name="groq_compound",
+        level=InferenceLevel.L0,  # modelo de búsqueda, no sigue SEARCH/REPLACE; excluido de workers L1
         base_url="https://api.groq.com",
-        model_id="qwen/qwen3-32b",
-        litellm_model="groq/qwen/qwen3-32b",
+        model_id="groq/compound",
+        litellm_model="groq/groq/compound",
+        api_key_env="GROQ_API_KEY",
+        rpm_limit=30,
+        context_tokens=131072,
+    ),
+    # 2026-06-27: qwen3-32b → qwen3.6-27b (más reciente, prove-it en vivo OK).
+    Provider(
+        name="groq_qwen3",
+        level=InferenceLevel.L0,  # thinking no deshabilitrable en Groq; excluido de workers L1
+        base_url="https://api.groq.com",
+        model_id="qwen/qwen3.6-27b",
+        litellm_model="groq/qwen/qwen3.6-27b",
         api_key_env="GROQ_API_KEY",
         rpm_limit=30,
         context_tokens=32768,
+    ),
+    Provider(
+        name="groq_deepseek_r1",
+        level=InferenceLevel.L0,  # modelo decommissioned en Groq (jun 2026)
+        base_url="https://api.groq.com",
+        model_id="deepseek-r1-distill-llama-70b",
+        litellm_model="groq/deepseek-r1-distill-llama-70b",
+        api_key_env="GROQ_API_KEY",
+        rpm_limit=30,
+        context_tokens=131072,
     ),
     Provider(
         name="openrouter_nemotron",
@@ -165,8 +207,10 @@ DEFAULT_PROVIDERS: list[Provider] = [
         model_id="nvidia/nemotron-nano-12b-v2-vl:free",
         litellm_model="openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
         rpm_limit=20,
         context_tokens=128000,
+        roles=("chat",),
     ),
     Provider(
         name="openrouter_liquid",
@@ -175,8 +219,74 @@ DEFAULT_PROVIDERS: list[Provider] = [
         model_id="liquid/lfm-2.5-1.2b-instruct:free",
         litellm_model="openrouter/liquid/lfm-2.5-1.2b-instruct:free",
         api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
         rpm_limit=20,
         context_tokens=32768,
+    ),
+    # 2026-06-27: Qwen3-Coder-480B, el mismo modelo que solo teníamos vía NIM de
+    # pago (nvidia_qwen3_coder), disponible GRATIS en OpenRouter. Prove-it en vivo:
+    # OK, pero rate-limited upstream con frecuencia ("temporarily rate-limited
+    # upstream") — modelo muy demandado. Se mantiene nvidia_qwen3_coder como
+    # fallback de pago si este falla.
+    Provider(
+        name="openrouter_qwen3_coder_free",
+        level=InferenceLevel.L1,
+        base_url="https://openrouter.ai/api/v1",
+        model_id="qwen/qwen3-coder:free",
+        litellm_model="openrouter/qwen/qwen3-coder:free",
+        api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        rpm_limit=20,
+        context_tokens=262144,
+        roles=("edit",),  # coding-específico, agéntico, purpose-built
+    ),
+    # 2026-06-27: Nemotron-3-Ultra 550B gratis en OpenRouter. Prove-it en vivo: OK.
+    Provider(
+        name="openrouter_nemotron_ultra",
+        level=InferenceLevel.L1,
+        base_url="https://openrouter.ai/api/v1",
+        model_id="nvidia/nemotron-3-ultra-550b-a55b:free",
+        litellm_model="openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+        api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        rpm_limit=20,
+        context_tokens=128000,
+        roles=("chat",),
+    ),
+    # 2026-06-27: Hermes-3-405B gratis en OpenRouter (Nous Research). Prove-it en
+    # vivo: OK, pero también rate-limited upstream con frecuencia (modelo popular).
+    # roles=edit: antecedente Hermes 2 Pro ~90% precisión function-calling —
+    # buena señal para seguir formato estructurado (investigación harness survey).
+    Provider(
+        name="openrouter_hermes_405b",
+        level=InferenceLevel.L1,
+        base_url="https://openrouter.ai/api/v1",
+        model_id="nousresearch/hermes-3-llama-3.1-405b:free",
+        litellm_model="openrouter/nousresearch/hermes-3-llama-3.1-405b:free",
+        api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        rpm_limit=20,
+        context_tokens=128000,
+        roles=("chat", "edit"),
+    ),
+    # 2026-07-02: Hermes 4 (70B/405B) prove-it en vivo — SIN tier gratis en
+    # ningún proveedor confirmado (OpenRouter solo tiene paid; nuestro tier
+    # NIM no lo lista en /v1/models real). hermes-4-70b funciona en vivo con
+    # la cuenta actual ($0.13/$0.40 por M tokens) — L2 pago, mismo patrón que
+    # el resto del catálogo NIM pago. hermes-4-405b es real pero la cuenta
+    # OpenRouter actual no tiene crédito suficiente para el max_tokens por
+    # defecto (65536) — NO se añade hasta decisión explícita de financiarlo.
+    Provider(
+        name="openrouter_hermes4_70b",
+        level=InferenceLevel.L2,
+        base_url="https://openrouter.ai/api/v1",
+        model_id="nousresearch/hermes-4-70b",
+        litellm_model="openrouter/nousresearch/hermes-4-70b",
+        api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        rpm_limit=20,
+        context_tokens=131072,
+        roles=("chat", "edit"),
     ),
     Provider(
         name="together_free",
@@ -190,7 +300,7 @@ DEFAULT_PROVIDERS: list[Provider] = [
     ),
     Provider(
         name="gemini_free",
-        level=InferenceLevel.L1,
+        level=InferenceLevel.L0,  # no sigue formato SEARCH/REPLACE; excluido de workers de código
         base_url="https://generativelanguage.googleapis.com",
         model_id="gemini-2.5-flash",
         litellm_model="gemini/gemini-2.5-flash",
@@ -198,6 +308,13 @@ DEFAULT_PROVIDERS: list[Provider] = [
         rpm_limit=15,
         context_tokens=1000000,
     ),
+    # 2026-06-28: nvidia_qwen3_coder RETIRADO — prove-it en vivo confirma
+    # HTTP 410 Gone: "The model 'qwen/qwen3-coder-480b-a35b-instruct' has
+    # reached its end of life on 2026-06-11T00:00:00Z". Estaba MUERTO desde
+    # antes de que lo "verificáramos" el 2026-06-26 (esa verificación no hizo
+    # una llamada real, o el modelo murió justo después). openrouter_qwen3_coder_free
+    # sigue siendo el único acceso vivo a este modelo (vía OpenRouter, no NIM).
+    #
     # L2 — NVIDIA NIM (meta/llama-3.3-70b-instruct, pool 2 cuentas). Prove-it 2026-06-22:
     # en este tier responden modelos 70B; 405b/deepseek/nemotron dan 404/410. Aporta
     # 2º proveedor + account_pool/fallback, no un modelo mayor que groq-70b.
@@ -211,7 +328,8 @@ DEFAULT_PROVIDERS: list[Provider] = [
         free_tier=False,
         rpm_limit=30,
         context_tokens=128000,
-        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+        account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
+        roles=("apply",),  # mecánico, contraparte de pago de groq_llama_70b
     ),
     # L2 — NVIDIA NIM modelos frontier extra. Prove-it 2026-06-22 contra
     # integrate.api.nvidia.com (chat/completions): responden Kimi K2.6, Mistral
@@ -227,7 +345,8 @@ DEFAULT_PROVIDERS: list[Provider] = [
         free_tier=False,
         rpm_limit=30,
         context_tokens=128000,
-        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+        account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
+        roles=("edit",),  # 59.1% pass_rate2 medido (Aider polyglot), buen formato
     ),
     Provider(
         name="nvidia_mistral_large",
@@ -239,19 +358,32 @@ DEFAULT_PROVIDERS: list[Provider] = [
         free_tier=False,
         rpm_limit=30,
         context_tokens=128000,
-        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+        account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
+        roles=("chat",),  # LiveCodeBench débil (0.465) vs Mistral Medium 3.5 — no "edit"
     ),
+    # 2026-06-28: nvidia_glm RETIRADO — prove-it en vivo confirma HTTP 410 Gone
+    # (mismo patrón que qwen3_coder). Reintentar si aparece GLM-5.2 en este tier.
+    #
+    # 2026-06-27: DeepSeek V4 (preview abr-2026) confirmado vivo en NIM en su
+    # momento. 2026-06-28: prove-it en vivo AMBAS variantes CUELGAN (timeout
+    # >45s, dos intentos, no es rate-limit transitorio de un segundo) —
+    # comentadas hasta reverificar. codestral-22b-instruct-v0.1 (Mistral)
+    # probado y descartado: 404 en este tier.
+    #
+    # 2026-06-27: Mistral Medium 3.5 (denso, 128B) — benchmark reportado mejor que
+    # Mistral Large 3 (675B MoE) pese a ser mucho más pequeño. Prove-it en vivo: OK.
     Provider(
-        name="nvidia_glm",
+        name="nvidia_mistral_medium",
         level=InferenceLevel.L2,
         base_url="https://integrate.api.nvidia.com/v1",
-        model_id="z-ai/glm-5.1",
-        litellm_model="nvidia_nim/z-ai/glm-5.1",
+        model_id="mistralai/mistral-medium-3.5-128b",
+        litellm_model="nvidia_nim/mistralai/mistral-medium-3.5-128b",
         api_key_env="NVIDIA_API_KEY",
         free_tier=False,
         rpm_limit=30,
         context_tokens=128000,
-        account_pool=["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"],
+        account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
+        roles=("edit", "chat"),  # 77.6% SWE-bench Verified — mejor que Large 3 pese a ser más chico
     ),
     Provider(
         name="ollama_local",
@@ -327,6 +459,33 @@ class InferenceHub:
         if self._transparency is not None:
             return self._infer_transparent(request)
         return self._infer_raw(request)
+
+    def infer_for_role(self, role: str, request: InferenceRequest) -> InferenceResponse:
+        """Lazo 4 — enruta por rol de tarea (edit/apply/chat), no solo por nivel.
+
+        Soft-preference (patrón validado en Continue.dev/Cline/Cursor/Aider): los
+        providers del nivel pedido etiquetados con *role* se REORDENAN al frente
+        (no se descartan los demás) — así se prueban primero pero el fallback a
+        L0 y al resto de providers del nivel sigue intacto si todos fallan. El
+        rol es una preferencia de calidad, nunca un requisito duro que pueda
+        hacer fallar la inferencia por falta de tag.
+        """
+        preferred = [
+            p for p in self._providers
+            if p.level == request.level and role in p.roles
+        ]
+        if not preferred:
+            return self.infer(request)
+
+        preferred_names = {p.name for p in preferred}
+        rest = [p for p in self._providers if p.name not in preferred_names]
+
+        saved = self._providers
+        self._providers = preferred + rest
+        try:
+            return self.infer(request)
+        finally:
+            self._providers = saved
 
     def _infer_transparent(self, request: InferenceRequest) -> InferenceResponse:
         """Envuelve _infer_raw() con el protocolo de completitud (ADR-053).
@@ -541,6 +700,8 @@ class InferenceHub:
         if request.tools:
             extra_kwargs["tools"] = request.tools
             extra_kwargs["tool_choice"] = request.tool_choice
+        if provider.extra_body:
+            extra_kwargs["extra_body"] = provider.extra_body
 
         completion: Any = None
         last_exc: BaseException | None = None

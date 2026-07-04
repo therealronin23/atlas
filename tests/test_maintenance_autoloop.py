@@ -70,8 +70,14 @@ def _proposal(cap: str = "mcp-test") -> McpProposal:
 
 
 class TestNotifyRoutesToAdopter:
-    def test_notify_calls_adopter_adopt(self, orch: Orchestrator) -> None:
-        """El closure de notify del scheduler pasa cada propuesta al adopter."""
+    def test_notify_routes_corroborated_proposals_to_adopter(self, orch: Orchestrator) -> None:
+        """notify() enruta cada propuesta corroborada al MaintenanceAdopter.
+        2026-07-04: esto SÍ es seguro por defecto — adopter.adopt() siempre
+        pasa por el seam del decisor (ADR-040); bajo HumanDecider no hace
+        nada, bajo autónomo/híbrido adopta con la intención anclada. Lo que
+        de verdad estaba roto (arreglado en este mismo cambio) era que
+        add_server() no persistía a disco, así que ni siquiera una adopción
+        aprobada por el decisor sobrevivía a un reinicio."""
         adopted: list[str] = []
 
         class _FakeAdopter:
@@ -150,6 +156,47 @@ class TestNotifyRoutesToAdopter:
         assert adopted == []
 
 
+class TestMaintenancePollInterval:
+    def test_default_poll_interval_is_24h_when_env_unset(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Sin ATLAS_MAINTENANCE_POLL_S, la cadencia sigue siendo la
+        conservadora de siempre (24h) — el env var es opt-in, no cambia el
+        comportamiento por defecto."""
+        monkeypatch.delenv("ATLAS_MAINTENANCE_POLL_S", raising=False)
+        scheduler = orch.maintenance_scheduler()
+        assert scheduler._poll_interval == 24 * 60 * 60
+
+    def test_env_var_overrides_poll_interval(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """2026-07-04: sin esta env var no había forma de que
+        _self_build_cycle/_dep_cycle/_batch_cycle corrieran más de una vez
+        por arranque del daemon (default 24h, sin override posible)."""
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
+        monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+        monkeypatch.setenv("ATLAS_MAINTENANCE_POLL_S", "3600")
+        fresh_orch = Orchestrator(workspace=tmp_path / "atlas")
+
+        scheduler = fresh_orch.maintenance_scheduler()
+
+        assert scheduler._poll_interval == 3600
+
+    def test_env_var_garbage_falls_back_to_default(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Valor no numérico -> fail-safe al default, nunca un crash del
+        arranque del daemon por un typo en .env."""
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
+        monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+        monkeypatch.setenv("ATLAS_MAINTENANCE_POLL_S", "no-es-un-numero")
+        fresh_orch = Orchestrator(workspace=tmp_path / "atlas")
+
+        scheduler = fresh_orch.maintenance_scheduler()
+
+        assert scheduler._poll_interval == 24 * 60 * 60
+
+
 class TestDepCycleWiring:
     def test_dep_cycle_chains_scout_proposer_advance(self, orch: Orchestrator) -> None:
         """El extra-cycle de deps encadena discover → propose_bump →
@@ -202,6 +249,196 @@ class TestDepCycleWiring:
 # ---------------------------------------------------------------------------
 # Tests del arranque del scheduler en el service runner
 # ---------------------------------------------------------------------------
+
+
+class TestBatchCycleWiring:
+    """`_batch_cycle` — notificación proactiva de lote de self_audit listo (ver
+    ADR de auto-auditoría). Usa un batcher FAKE inyectado, no el real."""
+
+    def test_batch_ready_publishes_event_with_included(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.cold_update_batcher import BatchResult
+        from atlas.core.contracts import EventType
+
+        result = BatchResult(
+            id="batch-1",
+            included=["cu-1", "cu-2"],
+            excluded=[{"proposal_id": "cu-3", "reason": "rompe algo"}],
+            passed=True,
+            pytest_summary="1 passed" * 400,  # más largo que 500 chars
+            mypy_summary="",
+            worktree_path=None,
+        )
+        fake_batcher = SimpleNamespace(run_batch=lambda: result)
+        orch.maintenance_cold_update_batcher = lambda: fake_batcher  # type: ignore[method-assign]
+
+        intents = {"cu-1": SimpleNamespace(intent="bump uvicorn"),
+                   "cu-2": SimpleNamespace(intent="fix lint")}
+        orch.cold_update = lambda: SimpleNamespace(get=lambda pid: intents.get(pid))  # type: ignore[method-assign]
+
+        events: list[Any] = []
+        orch.bus.subscribe(
+            EventType.COLD_UPDATE_BATCH_READY,
+            lambda e: events.append(e.payload),
+        )
+
+        # No MCP candidates — aislar el _batch_cycle
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert len(events) == 1
+        payload = events[0]
+        assert payload["batch_id"] == "batch-1"
+        assert payload["included"] == ["cu-1", "cu-2"]
+        assert payload["included_intents"] == ["bump uvicorn", "fix lint"]
+        assert payload["excluded"] == [{"proposal_id": "cu-3", "reason": "rompe algo"}]
+        assert payload["tests_passed"] is True
+        assert len(payload["pytest_summary"]) <= 500
+
+    def test_batch_empty_included_no_event(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.cold_update_batcher import BatchResult
+        from atlas.core.contracts import EventType
+
+        result = BatchResult(
+            id="batch-2",
+            included=[],
+            excluded=[],
+            passed=True,
+            pytest_summary="",
+            mypy_summary="",
+            worktree_path=None,
+        )
+        fake_batcher = SimpleNamespace(run_batch=lambda: result)
+        orch.maintenance_cold_update_batcher = lambda: fake_batcher  # type: ignore[method-assign]
+
+        events: list[Any] = []
+        orch.bus.subscribe(
+            EventType.COLD_UPDATE_BATCH_READY,
+            lambda e: events.append(e.payload),
+        )
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert events == []
+
+
+class TestSelfBuildCycleWiring:
+    """`_self_build_cycle` — autoconstrucción: muele UN item pending del backlog
+    por ciclo, opt-in vía ``ATLAS_SELF_BUILD=1``. Un item por tick acota el
+    gasto (LLM real); el runner es FAKE inyectado, cero red/LLM real."""
+
+    def _pending_item(self, id_: str = "item-1") -> Any:
+        from atlas.core.self_maintenance.backlog import BacklogItem
+
+        return BacklogItem(
+            id=id_,
+            title=f"title-{id_}",
+            why="why",
+            targets=(),
+            acceptance="acceptance",
+            priority=1,
+            status="pending",
+        )
+
+    def test_without_env_runner_not_called(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Sin ATLAS_SELF_BUILD en el entorno, el ciclo no toca el runner ni
+        el backlog (return temprano, antes de tocar nada)."""
+        from types import SimpleNamespace
+
+        monkeypatch.delenv("ATLAS_SELF_BUILD", raising=False)
+
+        calls: list[Any] = []
+        fake_runner = SimpleNamespace(run_item=lambda item: calls.append(item))
+        orch._maintenance_self_build_runner = fake_runner  # type: ignore[assignment]
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert calls == []
+
+    def test_with_env_and_one_pending_item_runs_once(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.self_maintenance import backlog as backlog_mod
+
+        monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        item = self._pending_item("item-1")
+        monkeypatch.setattr(backlog_mod, "load_backlog", lambda path: [item])
+
+        calls: list[Any] = []
+        fake_runner = SimpleNamespace(run_item=lambda item: calls.append(item))
+        orch._maintenance_self_build_runner = fake_runner  # type: ignore[assignment]
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert calls == [item]
+
+    def test_two_pending_items_only_first_processed(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.self_maintenance import backlog as backlog_mod
+
+        monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        item1 = self._pending_item("item-1")
+        item2 = self._pending_item("item-2")
+        monkeypatch.setattr(backlog_mod, "load_backlog", lambda path: [item1, item2])
+
+        calls: list[Any] = []
+        fake_runner = SimpleNamespace(run_item=lambda item: calls.append(item))
+        orch._maintenance_self_build_runner = fake_runner  # type: ignore[assignment]
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+        scheduler.tick()
+
+        assert calls == [item1]
+
+    def test_run_item_exception_does_not_propagate(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.self_maintenance import backlog as backlog_mod
+
+        monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        item = self._pending_item("item-1")
+        monkeypatch.setattr(backlog_mod, "load_backlog", lambda path: [item])
+
+        def _boom(item: Any) -> None:
+            raise RuntimeError("boom")
+
+        fake_runner = SimpleNamespace(run_item=_boom)
+        orch._maintenance_self_build_runner = fake_runner  # type: ignore[assignment]
+
+        scheduler = orch.maintenance_scheduler()
+        scheduler._discover = lambda: []
+        orch._maintenance_dep_scout = SimpleNamespace(discover=lambda: [])  # type: ignore[assignment]
+
+        scheduler.tick()  # no debe propagar la excepción
 
 
 class TestServiceRunnerSchedulerGate:
