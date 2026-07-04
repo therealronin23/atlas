@@ -94,6 +94,7 @@ def test_trial_gate_mcp_vets_install_argv() -> None:
     )
     assert result.passed is True
     assert result.suggested_status == "probado-en-jaula"
+    assert "argv OK" in result.reason
 
 
 def test_trial_gate_rejects_install_with_shell_metachar() -> None:
