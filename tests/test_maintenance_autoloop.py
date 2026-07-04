@@ -70,14 +70,14 @@ def _proposal(cap: str = "mcp-test") -> McpProposal:
 
 
 class TestNotifyRoutesToAdopter:
-    def test_notify_never_auto_adopts(self, orch: Orchestrator) -> None:
-        """2026-07-04: retirada la adopción autónoma ciega (auditoría del
-        historial completo: 110 intentos en toda su vida, solo 2 candidatos
-        distintos, 36 reintentos del mismo error irreparable, y ninguna
-        adopción sobrevivía a un reinicio — a diferencia de ColdUpdate, esto
-        nunca pasaba por ningún decisor humano). notify() ya NO llama a
-        adopter.adopt() automáticamente; el descubrimiento se sigue
-        publicando, la adopción exige una acción explícita."""
+    def test_notify_routes_corroborated_proposals_to_adopter(self, orch: Orchestrator) -> None:
+        """notify() enruta cada propuesta corroborada al MaintenanceAdopter.
+        2026-07-04: esto SÍ es seguro por defecto — adopter.adopt() siempre
+        pasa por el seam del decisor (ADR-040); bajo HumanDecider no hace
+        nada, bajo autónomo/híbrido adopta con la intención anclada. Lo que
+        de verdad estaba roto (arreglado en este mismo cambio) era que
+        add_server() no persistía a disco, así que ni siquiera una adopción
+        aprobada por el decisor sobrevivía a un reinicio."""
         adopted: list[str] = []
 
         class _FakeAdopter:
@@ -97,7 +97,7 @@ class TestNotifyRoutesToAdopter:
 
         scheduler.tick()
 
-        assert adopted == []
+        assert adopted == ["mcp-test"]
 
     def test_notify_still_publishes_event(self, orch: Orchestrator) -> None:
         """La notify publica MAINTENANCE_PROPOSED además de enrutar al adopter."""
