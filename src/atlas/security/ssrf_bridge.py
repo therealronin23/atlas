@@ -51,6 +51,23 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "arxiv.org",
     "docs.python.org",
     "readthedocs.io",
+    # 2026-07-04: ampliación para PanoramaScout (descubrimiento por tema del
+    # ecosistema entero, no de una lista fija de fuentes conocidas — el
+    # usuario: "puede ser un paper, un lenguaje nuevo, un SaaS sin nombre
+    # todavía"). Curados uno a uno, mismo criterio que la ampliación anterior.
+    "export.arxiv.org",          # API real de arXiv (arxiv.org es solo la web)
+    "paperswithcode.com",        # papers de ML con código asociado
+    "lobste.rs",                 # foro tech tipo HN, comunidad distinta
+    "news.ycombinator.com",      # HN directo (complementa hn.algolia.com, que es solo la API)
+    "dev.to",                    # blog/comunidad de desarrolladores, API pública
+    "www.reddit.com",            # subreddits técnicos (solo lectura JSON público)
+    "producthunt.com",           # lanzamientos de producto/SaaS nuevos, sin nombre aún
+    "registry.npmjs.org",        # ecosistema JS/TS
+    "crates.io",                 # ecosistema Rust
+    "pkg.go.dev",                # ecosistema Go
+    "gitlab.com",                # host de código alternativo a GitHub
+    "medium.com",                # posts técnicos largos (harnesses, arquitecturas)
+    "techcrunch.com",            # noticias de producto/startups
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)
