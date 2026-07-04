@@ -1,6 +1,6 @@
 _generated:
   by: scripts/mcp_sync.py
-  at: '2026-06-26T06:25:51.029229+00:00'
+  at: '2026-07-02T06:08:51.284079+00:00'
   source: github.com/PatrickJS/awesome-cursorrules
   note: MÁQUINA-GENERADO. candidato/uncategorized.
 sectors:
@@ -17,7 +17,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: alpha-skills-quant-factor-research
       sector: uncategorized
       kind: rule
@@ -28,7 +28,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: android-jetpack-compose-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -39,7 +39,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: angular-novo-elements-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -50,7 +50,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: angular-typescript-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -61,7 +61,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: ankra-cli
       sector: uncategorized
       kind: rule
@@ -72,7 +72,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: anti-overengineering
       sector: uncategorized
       kind: rule
@@ -83,7 +83,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: anti-sycophancy-code-discipline-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -94,7 +94,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: ascii-simulation-game-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -105,7 +105,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: aspnet-abp-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -116,7 +116,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: astro-typescript-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -127,7 +127,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: automl-hyperparameter-optimization
       sector: uncategorized
       kind: rule
@@ -138,7 +138,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: beefreeSDK-nocode-content-editor-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -149,7 +149,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: beefreeSDK
       sector: uncategorized
       kind: rule
@@ -160,7 +160,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: blender-python-addon
       sector: uncategorized
       kind: rule
@@ -171,7 +171,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: chrome-extension-dev-js-typescript-cursorrules-pro
       sector: uncategorized
       kind: rule
@@ -182,7 +182,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: clean-code
       sector: uncategorized
       kind: rule
@@ -193,7 +193,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cloudflare-email-telegram-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -204,7 +204,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cloudflare-workers-hono-angular-saas-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -215,7 +215,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: code-guidelines-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -226,7 +226,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: code-pair-interviews
       sector: uncategorized
       kind: rule
@@ -237,7 +237,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: code-style-consistency-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -248,7 +248,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: codequality
       sector: uncategorized
       kind: rule
@@ -259,7 +259,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: convex-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -270,7 +270,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cpp-programming-guidelines-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -281,7 +281,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cpp
       sector: uncategorized
       kind: rule
@@ -292,7 +292,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cursor-ai-react-typescript-shadcn-ui-cursorrules-p
       sector: uncategorized
       kind: rule
@@ -303,7 +303,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cursor-rules-pack-v2-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -314,7 +314,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cursorrules-cursor-ai-nextjs-14-tailwind-seo-setup
       sector: uncategorized
       kind: rule
@@ -325,7 +325,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cursorrules-cursor-ai-wordpress-draft-macos-prompt
       sector: uncategorized
       kind: rule
@@ -336,7 +336,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cypress-accessibility-testing-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -347,7 +347,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cypress-api-testing-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -358,7 +358,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cypress-defect-tracking-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -369,7 +369,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cypress-e2e-testing-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -380,7 +380,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: cypress-integration-testing-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -391,7 +391,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: database
       sector: uncategorized
       kind: rule
@@ -402,7 +402,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: deno-integration-techniques-cursorrules-prompt-fil
       sector: uncategorized
       kind: rule
@@ -413,7 +413,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: docker
       sector: uncategorized
       kind: rule
@@ -424,7 +424,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: dragonruby-best-practices-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -435,7 +435,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: drupal-11-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -446,7 +446,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: elixir-engineer-guidelines-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -457,7 +457,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: elixir-phoenix-docker-setup-cursorrules-prompt-fil
       sector: uncategorized
       kind: rule
@@ -468,7 +468,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: embedded-stm32-hal
       sector: uncategorized
       kind: rule
@@ -479,7 +479,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: engineering-ticket-template-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -490,7 +490,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: es-module-nodejs-guidelines-cursorrules-prompt-fil
       sector: uncategorized
       kind: rule
@@ -501,7 +501,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: fastapi-production-architecture-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -512,7 +512,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: fastapi
       sector: uncategorized
       kind: rule
@@ -523,7 +523,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: flutter-app-expert-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -534,7 +534,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: flutter-development-guidelines-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -545,7 +545,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: flutter-riverpod-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -556,7 +556,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: fortran
       sector: uncategorized
       kind: rule
@@ -567,7 +567,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: gamemaker-gml
       sector: uncategorized
       kind: rule
@@ -578,7 +578,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: gherkin-style-testing-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -589,7 +589,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: git-conventional-commit-messages
       sector: uncategorized
       kind: rule
@@ -600,7 +600,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: gitflow
       sector: uncategorized
       kind: rule
@@ -611,7 +611,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: github-code-quality-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -622,7 +622,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: github-cursorrules-prompt-file-instructions
       sector: uncategorized
       kind: rule
@@ -633,7 +633,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: go-backend-scalability-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -644,7 +644,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: go-servemux-rest-api-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -655,7 +655,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: go-temporal-dsl-prompt-file
       sector: uncategorized
       kind: rule
@@ -666,7 +666,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: go
       sector: uncategorized
       kind: rule
@@ -677,7 +677,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: google-adk
       sector: uncategorized
       kind: rule
@@ -688,7 +688,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: graphical-apps-development-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -699,7 +699,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: harmony-arkts
       sector: uncategorized
       kind: rule
@@ -710,7 +710,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: helium-mcp-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -721,7 +721,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: hol-hedera-typescript-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -732,7 +732,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: how-to-documentation-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -743,7 +743,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: html-tailwind-css-javascript-cursorrules-prompt-fi
       sector: uncategorized
       kind: rule
@@ -754,7 +754,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: htmx-basic-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -765,7 +765,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: htmx-django-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -776,7 +776,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: htmx-flask-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -787,7 +787,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: htmx-go-basic-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -798,7 +798,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: htmx-go-fiber-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -809,7 +809,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: java-general-purpose-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -820,7 +820,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: java-springboot-jpa-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -831,7 +831,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: javascript-astro-tailwind-css-cursorrules-prompt-f
       sector: uncategorized
       kind: rule
@@ -842,7 +842,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: javascript-chrome-apis-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -853,7 +853,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: javascript-typescript-code-quality-cursorrules-pro
       sector: uncategorized
       kind: rule
@@ -864,7 +864,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: jest-unit-testing-cursorrules-prompt-file
       sector: uncategorized
       kind: rule
@@ -875,7 +875,7 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'
     - name: knative-istio-typesense-gpu-cursorrules-prompt-fil
       sector: uncategorized
       kind: rule
@@ -886,4 +886,4 @@ sectors:
       tags: []
       provenance:
         source: https://github.com/PatrickJS/awesome-cursorrules
-        fetched_at: '2026-06-26T06:25:51.028425+00:00'
+        fetched_at: '2026-07-02T06:08:51.283526+00:00'

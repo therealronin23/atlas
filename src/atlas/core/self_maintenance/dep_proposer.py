@@ -49,11 +49,13 @@ class DepProposer:
         propose: Callable[..., Any],
         pyproject_path: Path,
         installed_version: Callable[[str], str | None] | None = None,
+        analyst: Any | None = None,
     ) -> None:
         self._merkle = merkle
         self._propose = propose
         self._pyproject = pyproject_path
         self._installed_version = installed_version or _installed_version
+        self._analyst = analyst
 
     def propose_bump(self, candidate: DepCandidate) -> Any:
         """Materializa el bump y lo entrega a ColdUpdate. ``None`` si no hay diana.
@@ -88,18 +90,28 @@ class DepProposer:
             fh.write(patch)
             patch_path = Path(fh.name)
 
+        evidence: dict[str, Any] = {
+            "dependency": candidate.name,
+            "from": candidate.current,
+            "to": floor,
+            "latest": candidate.latest,
+            "source": candidate.source.url,
+        }
+        # Juicio de DepAnalyst (señal, no gate): opcional y retrocompatible —
+        # sin analyst inyectado el comportamiento es idéntico a antes.
+        if self._analyst is not None:
+            try:
+                verdict = self._analyst.review(candidate)
+                evidence["judgment"] = verdict.to_dict()
+            except Exception:  # noqa: BLE001 — nunca bloquea la propuesta
+                pass
+
         proposal = self._propose(
             intent,
             patch_path,
             origin="self_audit",
             risk="low",
-            evidence={
-                "dependency": candidate.name,
-                "from": candidate.current,
-                "to": floor,
-                "latest": candidate.latest,
-                "source": candidate.source.url,
-            },
+            evidence=evidence,
         )
         self._audit(candidate, result="proposed", proposal=proposal)
         return proposal

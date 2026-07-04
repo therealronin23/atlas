@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
@@ -69,6 +69,12 @@ class Lesson:
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    # Fallos recurrentes (no éxitos puntuales): cuántas veces se ha visto el
+    # MISMO fallo (ver LessonStore.record_recurring) y cuándo fue la última.
+    # Defaults retrocompatibles: lecciones guardadas antes de este campo se
+    # leen como occurrence_count=1, last_seen_at="" (mismo patrón que created_at).
+    occurrence_count: int = 1
+    last_seen_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -90,6 +96,8 @@ class Lesson:
             source_refs=tuple(data.get("source_refs", ())),
             tags=tuple(data.get("tags", ())),
             created_at=data.get("created_at", ""),
+            occurrence_count=data.get("occurrence_count", 1),
+            last_seen_at=data.get("last_seen_at", ""),
         )
 
 
@@ -193,6 +201,66 @@ class LessonStore:
 
     def search_by_tag(self, tag: str) -> list[Lesson]:
         return [lesson for lesson in self.all() if tag in lesson.tags]
+
+    def record_recurring(
+        self,
+        *,
+        dedup_key: str,
+        title: str,
+        detection_heuristic: str,
+        avoid_pattern: str,
+        evidence: dict[str, Any],
+        source_refs: tuple[str, ...] = (),
+        tags: tuple[str, ...] = (),
+    ) -> Lesson | None:
+        """Fallos recurrentes: si ya existe una lección con el tag
+        'dedup:<dedup_key>', incrementa su occurrence_count y actualiza
+        last_seen_at en el MISMO archivo (no crea uno nuevo). Si no existe,
+        la crea vía LessonPromoter.ingest_external con corroborated=True —
+        el dedup_key viene de un evento real detectado por el propio sistema
+        (no de una fuente externa sin verificar), así que el gate fail-closed
+        de ingest_external siempre se satisface aquí.
+
+        `evidence` se acepta por firma/documentación del caso de uso (qué
+        disparó este fallo recurrente) pero NO se reenvía a ingest_external:
+        esa función no toma un dict de evidencia externo, construye su propio
+        Evidence vía LessonVerifier.verify_external(corroborated=...). El
+        detalle bruto de `evidence` queda fuera del objeto Lesson persistido;
+        si en el futuro hace falta conservarlo, debe ir dentro de
+        `avoid_pattern`/`detection_heuristic` o como source_ref adicional."""
+        dedup_tag = f"dedup:{dedup_key}"
+        existing = self.search_by_tag(dedup_tag)
+        if existing:
+            latest = max(existing, key=lambda lesson: lesson.created_at)
+            updated = replace(
+                latest,
+                occurrence_count=latest.occurrence_count + 1,
+                last_seen_at=datetime.now(timezone.utc).isoformat(),
+            )
+            file = self._path / f"{updated.id}.json"
+            file.write_text(
+                json.dumps(updated.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
+            )
+            return updated
+
+        promoter = LessonPromoter(self)
+        return promoter.ingest_external(
+            title=title,
+            detection_heuristic=detection_heuristic,
+            avoid_pattern=avoid_pattern,
+            source_refs=source_refs,
+            corroborated=True,
+            tags=(*tags, dedup_tag),
+        )
+
+    def stats(self) -> dict[str, Any]:
+        """Conteo de lecciones: total y por procedencia."""
+        lessons = self.all()
+        by_provenance: dict[str, int] = {}
+        for lesson in lessons:
+            key = lesson.provenance.value
+            by_provenance[key] = by_provenance.get(key, 0) + 1
+        return {"total": len(lessons), "by_provenance": by_provenance}
 
 
 class LessonPromoter:

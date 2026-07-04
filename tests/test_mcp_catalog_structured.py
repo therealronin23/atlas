@@ -52,6 +52,26 @@ sectors:
 # ---------------------------------------------------------------------------
 
 
+def test_load_catalog_parses_read_only_tools(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+
+    p = tmp_path / "c.yaml"
+    p.write_text(
+        """
+sectors:
+  coding:
+    label: Coding
+    entries:
+      - {name: pw, kind: mcp, status: verificado, read_only_tools: [browser_snapshot, browser_console_messages]}
+      - {name: everything, kind: mcp, status: verificado}
+""",
+        encoding="utf-8",
+    )
+    by_name = {e.name: e for e in load_catalog(p)}
+    assert by_name["pw"].read_only_tools == ("browser_snapshot", "browser_console_messages")
+    assert by_name["everything"].read_only_tools == ()
+
+
 def test_load_catalog_parses_sector_kind_and_status(tmp_path: Path) -> None:
     from atlas.mcp.catalog import load_catalog
 

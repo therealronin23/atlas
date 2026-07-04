@@ -22,6 +22,7 @@ class BacklogItem:
     acceptance: str
     priority: int
     status: str
+    test_cmd: tuple[str, ...] | None = None
 
 
 def load_backlog(path: Path) -> list[BacklogItem]:
@@ -38,6 +39,9 @@ def load_backlog(path: Path) -> list[BacklogItem]:
                 f"Item '{entry['id']}' has invalid status '{status}'. "
                 f"Allowed: {sorted(VALID_STATUSES)}"
             )
+        # test_cmd es opcional (backward-compat): items existentes sin el
+        # campo siguen cargando igual, con test_cmd=None.
+        raw_test_cmd = entry.get("test_cmd")
         items.append(
             BacklogItem(
                 id=entry["id"],
@@ -47,6 +51,7 @@ def load_backlog(path: Path) -> list[BacklogItem]:
                 acceptance=str(entry["acceptance"]).strip(),
                 priority=int(entry["priority"]),
                 status=status,
+                test_cmd=tuple(raw_test_cmd) if raw_test_cmd else None,
             )
         )
     return items
@@ -58,3 +63,16 @@ def pending(items: list[BacklogItem]) -> list[BacklogItem]:
         (item for item in items if item.status == "pending"),
         key=lambda i: i.priority,
     )
+
+
+def backlog_summary(items: list[BacklogItem]) -> dict[str, Any]:
+    """Índice ligero del backlog: conteo por status + los 5 pendientes de mayor
+    prioridad (id/title/priority, sin why/acceptance — eso es el detalle)."""
+    by_status: dict[str, int] = {}
+    for item in items:
+        by_status[item.status] = by_status.get(item.status, 0) + 1
+    top_pending = [
+        {"id": item.id, "title": item.title, "priority": item.priority}
+        for item in pending(items)[:5]
+    ]
+    return {"total": len(items), "by_status": by_status, "top_pending": top_pending}

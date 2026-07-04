@@ -75,7 +75,7 @@ from atlas.memory.block_memory import (
     BlockNotFound,
 )
 from atlas.memory.distiller import ChunkSource, MemoryDistiller
-from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.memory.embeddings import Embedder
 from atlas.memory.vector_store import KuzuVectorStore
 from atlas.router.classifier import Classifier, ClassificationResult
 from atlas.router.slm_classifier import SLMClassifier
@@ -642,6 +642,14 @@ class Orchestrator:
         """ADR-039 slice 6 — Materializa bump como patch de ColdUpdate. Delegado al facade."""
         return self._maintenance_facade.maintenance_dep_proposer()
 
+    def maintenance_cold_update_batcher(self) -> Any:
+        """Lote de self_audit probado en worktree efímero. Delegado al facade."""
+        return self._maintenance_facade.maintenance_cold_update_batcher()
+
+    def maintenance_self_build_runner(self) -> Any:
+        """Autoconstrucción — backlog → ToolCoder → ColdUpdate. Delegado al facade."""
+        return self._maintenance_facade.maintenance_self_build_runner()
+
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
         if self._knowledge_cve_proposer is None:
@@ -710,6 +718,22 @@ class Orchestrator:
     @_maintenance_dep_proposer.setter
     def _maintenance_dep_proposer(self, value: Any) -> None:
         self._maintenance_facade._maintenance_dep_proposer = value
+
+    @property
+    def _maintenance_cold_update_batcher(self) -> Any:
+        return self._maintenance_facade._maintenance_cold_update_batcher
+
+    @_maintenance_cold_update_batcher.setter
+    def _maintenance_cold_update_batcher(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_cold_update_batcher = value
+
+    @property
+    def _maintenance_self_build_runner(self) -> Any:
+        return self._maintenance_facade._maintenance_self_build_runner
+
+    @_maintenance_self_build_runner.setter
+    def _maintenance_self_build_runner(self, value: Any) -> None:
+        self._maintenance_facade._maintenance_self_build_runner = value
 
     @property
     def _maintenance_codegen_proposer(self) -> Any:
@@ -1061,7 +1085,22 @@ class Orchestrator:
         if self._gate_d_enabled:
             return
 
-        emb = embedder or StubEmbedder()
+        # 2026-07-03: default cambiado de StubEmbedder() a default_embedder()
+        # (gobernado por ATLAS_EMBEDDER, hoy fastembed semántico) — hallazgo
+        # real: este pipeline (activo en producción vía ATLAS_PIPELINE_GATE_D=1)
+        # ignoraba por completo el cambio de default hecho antes en
+        # `atlas.memory.embeddings.default_embedder()`, porque hardcodeaba
+        # StubEmbedder() aquí en vez de llamar al selector compartido. Riesgo
+        # de migración verificado como bajo: `approved_patterns`/
+        # `error_registry` (los únicos consumidores reales del vector store)
+        # estaban vacíos en el momento del cambio — no hay vectores dim=64
+        # reales que perder. Requiere reiniciar el daemon vivo para tomar
+        # efecto (KuzuVectorStore._verify_dim lanza error claro si detecta
+        # un mismatch de dimensión contra un DB existente — fail-closed, no
+        # corrompe silenciosamente).
+        from atlas.memory.embeddings import default_embedder as _default_embedder
+
+        emb = embedder or _default_embedder()
         vector_store: KuzuVectorStore | None = None
         if self._memory_vector_enabled():
             kuzu_dir = self._workspace / "memory" / "kuzu"
@@ -1104,9 +1143,12 @@ class Orchestrator:
 
             subj_signer, _, _ = load_or_create_subject()
             op_signer, _, _   = load_or_create_operator()
-            _tlog = TransparencyLog(signer=op_signer)
+            _tlog_path = self._workspace / "transparency" / "tlog.bin"
+            _tlog_path.parent.mkdir(parents=True, exist_ok=True)
+            _tlog = TransparencyLog(signer=op_signer, path=_tlog_path)
             _cosigner = ClientCosigner(subj_signer)
-            _gw = TransparencyGateway(_cosigner, op_signer, _tlog)
+            _replay_path = self._workspace / "transparency" / "anti_replay.jsonl"
+            _gw = TransparencyGateway(_cosigner, op_signer, _tlog, replay_path=_replay_path)
             hub = _InferenceHub(mode="auto", transparency=_gw)
         self._inference_hub = hub
         self._slm_classifier = SLMClassifier(
@@ -1286,6 +1328,7 @@ class Orchestrator:
         self._bus.subscribe(EventType.THERMAL_ALERT, bot.on_thermal_alert)
         self._bus.subscribe(EventType.SHADOW_ALERT, bot.on_shadow_alert)
         self._bus.subscribe(EventType.SESSION_STARTED, bot.on_session_started)
+        self._bus.subscribe(EventType.COLD_UPDATE_BATCH_READY, bot.on_cold_update_batch_ready)
         # ADR-033 #4: progreso del loop agéntico (el handler decide opt-in).
         if hasattr(bot, "on_agentic_progress"):
             self._bus.subscribe(EventType.AGENTIC_PROGRESS, bot.on_agentic_progress)
@@ -1413,6 +1456,22 @@ class Orchestrator:
 
     def _get_browser_tool(self) -> Any:
         return self._gate_f_exec.get_browser_tool()
+
+    def _run_web_crawl(self, url: str) -> dict[str, Any]:
+        return self._gate_f_exec.run_web_crawl(url)
+
+    def _run_read_external_file(self, path: str) -> dict[str, Any]:
+        return self._gate_f_exec.run_read_external_file(path)
+
+    def _run_invoke_claude_code(
+        self, task: str, cwd: str, permission_mode: str = "plan",
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_invoke_claude_code(task, cwd, permission_mode)
+
+    def _run_manipulate_pdf(
+        self, operation: str, input_path: str, output_path: str, **params: str,
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_manipulate_pdf(operation, input_path, output_path, **params)
 
     def _get_editor_tool(self) -> Any:
         return self._gate_f_exec.get_editor_tool()
@@ -1869,6 +1928,7 @@ class Orchestrator:
             load_servers(mcp_config_path),
             merkle_log=self._merkle.log,
             sentinel=self._sentinel,
+            persist_path=mcp_config_path,
         )
         self._mcp_started = False
 

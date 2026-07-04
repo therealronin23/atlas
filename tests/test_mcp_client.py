@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from atlas.mcp.config import McpServerConfig, load_servers
+from atlas.mcp.config import McpServerConfig, load_servers, save_servers
 from atlas.mcp.registry import McpRegistry
 from atlas.mcp.transport import McpProtocolError, StdioTransport
 
@@ -177,6 +177,32 @@ def test_load_servers_parses_json(tmp_path: Path) -> None:
     assert servers[0].read_only_tools == ["look"]
 
 
+def test_save_servers_roundtrips_through_load_servers(tmp_path: Path) -> None:
+    p = tmp_path / "servers.json"
+    cfgs = [
+        McpServerConfig(
+            name="demo",
+            cmd=["echo", "hi"],
+            read_only_tools=["look"],
+            env_passthrough=["SOME_API_KEY"],
+            enabled=False,
+        ),
+    ]
+    save_servers(p, cfgs)
+    reloaded = load_servers(p)
+    assert len(reloaded) == 1
+    assert reloaded[0].name == "demo"
+    assert reloaded[0].env_passthrough == ["SOME_API_KEY"]
+    assert reloaded[0].enabled is False
+
+
+def test_save_servers_creates_parent_directory(tmp_path: Path) -> None:
+    p = tmp_path / "nested" / "servers.json"
+    save_servers(p, [_echo_cfg()])
+    assert p.exists()
+    assert load_servers(p)[0].name == "echo"
+
+
 # ===========================================================================
 # Registry E2E
 # ===========================================================================
@@ -305,6 +331,52 @@ def test_remove_server_hot() -> None:
         assert reg.tool_specs() == []
         # idempotente: quitar lo ya quitado no rompe
         assert reg.remove_server("echo") is False
+    finally:
+        reg.close_all()
+
+
+def test_add_server_persists_to_disk_and_survives_reload(tmp_path: Path) -> None:
+    """2026-07-04: add_server() sin persist_path solo mutaba en memoria — una
+    adopción aprobada por el decisor se evaporaba al reiniciar el daemon
+    (load_servers() releía el mismo fichero de siempre y no veía nada nuevo).
+    Con persist_path cableado, la config recién adoptada debe sobrevivir a un
+    load_servers() fresco, como si fuera un reinicio real."""
+    config_path = tmp_path / "mcp_servers.json"
+    reg = McpRegistry([], persist_path=config_path)
+    try:
+        reg.start_all()
+        status = reg.add_server(_echo_cfg())
+        assert status.startswith("ok")
+    finally:
+        reg.close_all()
+
+    reloaded = load_servers(config_path)
+    assert [c.name for c in reloaded] == ["echo"]
+
+
+def test_remove_server_persists_removal_to_disk(tmp_path: Path) -> None:
+    """Simétrico al add: quitar un server (p.ej. undo de una adopción) debe
+    quitarlo también del fichero, o reaparecería tras un reinicio pese a
+    haberse deshecho en caliente."""
+    config_path = tmp_path / "mcp_servers.json"
+    reg = McpRegistry([_echo_cfg()], persist_path=config_path)
+    try:
+        reg.start_all()
+        assert reg.remove_server("echo") is True
+    finally:
+        reg.close_all()
+
+    assert load_servers(config_path) == []
+
+
+def test_persist_path_none_keeps_old_in_memory_only_behavior() -> None:
+    """Sin persist_path (default), add_server sigue funcionando exactamente
+    como antes — no debe fallar por falta de un fichero de destino."""
+    reg = McpRegistry([])
+    try:
+        reg.start_all()
+        status = reg.add_server(_echo_cfg())
+        assert status.startswith("ok")
     finally:
         reg.close_all()
 

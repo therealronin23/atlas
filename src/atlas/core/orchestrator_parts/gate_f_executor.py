@@ -50,6 +50,10 @@ class GateFExecutor:
         self._browser_tool: Any | None = None
         self._editor_tool: Any | None = None
         self._vision_loop: Any | None = None
+        self._crawler_tool: Any | None = None
+        self._fs_bridge: Any | None = None
+        self._claude_code_tool: Any | None = None
+        self._stirling_pdf_tool: Any | None = None
 
     # ------------------------------------------------------------------ tools
     def attach(
@@ -295,6 +299,99 @@ class GateFExecutor:
                 allow_private_network=False,
             )
         return self._browser_tool
+
+    def get_crawler_tool(self) -> Any:
+        if self._crawler_tool is None:
+            from atlas.tools.crawler import CrawlerTool  # noqa: PLC0415
+
+            self._crawler_tool = CrawlerTool(
+                workspace=self._workspace,
+                bridge=self._ssrf_bridge,
+                merkle=self._merkle,
+                allow_private_network=False,
+            )
+        return self._crawler_tool
+
+    def run_web_crawl(self, url: str) -> dict[str, Any]:
+        result = self.get_crawler_tool().crawl(url)
+        return {
+            "url": result.url, "success": result.success,
+            "status_code": result.status_code, "markdown": result.markdown,
+            "error": result.error,
+        }
+
+    def get_fs_bridge_tool(self) -> Any:
+        if self._fs_bridge is None:
+            from atlas.security.external_fs_bridge import ExternalFsBridge  # noqa: PLC0415
+
+            self._fs_bridge = ExternalFsBridge()
+        return self._fs_bridge
+
+    def get_claude_code_tool(self) -> Any:
+        if self._claude_code_tool is None:
+            from atlas.tools.claude_code_tool import ClaudeCodeTool  # noqa: PLC0415
+
+            self._claude_code_tool = ClaudeCodeTool(
+                workspace=self._workspace,
+                fs_bridge=self.get_fs_bridge_tool(),
+                merkle=self._merkle,
+            )
+        return self._claude_code_tool
+
+    def run_invoke_claude_code(
+        self, task: str, cwd: str, permission_mode: str = "plan",
+    ) -> dict[str, Any]:
+        result = self.get_claude_code_tool().delegate(task, cwd, permission_mode=permission_mode)
+        return {
+            "task": result.task, "cwd": result.cwd, "success": result.success,
+            "result_text": result.result_text, "cost_usd": result.cost_usd,
+            "session_id": result.session_id, "error": result.error,
+        }
+
+    def get_stirling_pdf_tool(self) -> Any:
+        if self._stirling_pdf_tool is None:
+            from atlas.tools.stirling_pdf_tool import StirlingPdfTool  # noqa: PLC0415
+
+            self._stirling_pdf_tool = StirlingPdfTool(
+                fs_bridge=self.get_fs_bridge_tool(), merkle=self._merkle,
+            )
+        return self._stirling_pdf_tool
+
+    def run_manipulate_pdf(
+        self, operation: str, input_path: str, output_path: str, **params: str,
+    ) -> dict[str, Any]:
+        result = self.get_stirling_pdf_tool().run_operation(
+            operation, input_path, output_path, **params,
+        )
+        return {
+            "operation": result.operation, "input_path": result.input_path,
+            "output_path": result.output_path, "success": result.success,
+            "bytes_written": result.bytes_written, "error": result.error,
+        }
+
+    def run_read_external_file(self, path: str) -> dict[str, Any]:
+        decision = self.get_fs_bridge_tool().check(path)
+        if not decision.allowed:
+            return {
+                "path": path, "allowed": False,
+                "resolved_path": decision.resolved_path, "content": "",
+                "error": decision.reason,
+            }
+        try:
+            content = Path(decision.resolved_path).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            return {
+                "path": path, "allowed": True,
+                "resolved_path": decision.resolved_path, "content": "",
+                "error": str(exc),
+            }
+        if len(content) > 20000:
+            content = content[:20000] + "... [truncado]"
+        return {
+            "path": path, "allowed": True,
+            "resolved_path": decision.resolved_path, "content": content,
+            "error": None,
+        }
 
     def get_editor_tool(self) -> Any:
         if self._editor_tool is None:

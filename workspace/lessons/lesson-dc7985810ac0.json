@@ -1,0 +1,30 @@
+{
+  "id": "lesson-dc7985810ac0",
+  "title": "Enjambre paralelo: 0/4 incluso con código exacto en la tarea; 2 modelos NIM muertos descubiertos",
+  "provenance": "external_source",
+  "detection_heuristic": "ParallelCoder con múltiples workers L2 simultáneos, cada uno con tarea de crear 1 archivo nuevo con contenido literal dado",
+  "avoid_pattern": "El modo enjambre (ParallelCoder, N workers en paralelo vía git worktree) NO mejoró la eficacia respecto al modo secuencial (IncrementalCoder) — 0/4 técnicas completadas en 2 intentos de enjambre, pese a que las tareas daban el código EXACTO a transcribir (caso más fácil posible: Add File sin necesidad de anclar nada). 2 de 4 workers ni siquiera aplicaron el bloque (stuck detector); 2 aplicaron algo pero no pasó los tests, y el contenido real se perdió al descartarse el worktree (el sync-back solo ocurre en éxito final, así que auditar un fallo del enjambre requiere capturar test_output ANTES de que el worktree se borre, no después). Efecto colateral positivo del enjambre: reveló que 2 modelos NIM (qwen3-coder-480b, glm-5.1) estaban MUERTOS (HTTP 410 Gone, EOL 2026-06-11) desde antes de que se 'verificaran' en la sesión, y 2 más (deepseek-v4-flash/pro) cuelgan de forma consistente — catálogo real recortado de 8 a 4 proveedores L2 vivos confirmados el mismo día.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Medición directa: 2 intentos de enjambre (8 workers-tarea en total), 0 éxitos, catálogo L2 corregido de 8→4 vivos",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-02T11:32:55.646583+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "atlas_coder:swarm_experiment_2026-06-28"
+  ],
+  "tags": [],
+  "created_at": "2026-07-02T11:32:55.646621+00:00"
+}

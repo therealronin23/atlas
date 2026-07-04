@@ -46,9 +46,9 @@ def _construir_lazo(
     """Ensambla el lazo completo con Merkle anclado al store."""
     merkle = MerkleLogger(tmp / "merkle")
     store = LessonStore(tmp / "lessons", merkle=merkle)
-    recaller = LessonRecaller(store, threshold=0.8)
+    recaller = LessonRecaller(store, threshold=0.65)  # umbral crudo; (raw+1)/2 ya no infla
     recaller.index()
-    debate = TeacherDebate(store, recaller, sim_threshold=0.8)
+    debate = TeacherDebate(store, recaller, sim_threshold=0.65)
     recorder = GatedLessonRecorder(debate)
     return recorder, store, merkle
 

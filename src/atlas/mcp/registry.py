@@ -18,7 +18,9 @@ import json
 import logging
 from typing import Any, Callable
 
-from atlas.mcp.config import McpServerConfig
+from pathlib import Path
+
+from atlas.mcp.config import McpServerConfig, save_servers
 from atlas.mcp.transport import McpProtocolError, McpTransport, StdioTransport
 from atlas.security.sentinel_gate import SentinelGate
 from atlas import __version__
@@ -42,6 +44,7 @@ class McpRegistry:
         transport_factory: Callable[[McpServerConfig], McpTransport] | None = None,
         merkle_log: Callable[..., None] | None = None,
         sentinel: SentinelGate | None = None,
+        persist_path: Path | str | None = None,
     ) -> None:
         self._configs = list(configs)
         self._transports: dict[str, McpTransport] = {}
@@ -51,6 +54,13 @@ class McpRegistry:
         self._merkle_log = merkle_log
         self._sentinel = sentinel
         self._factory = transport_factory or self._default_factory
+        # 2026-07-04: add_server()/remove_server() solo mutaban self._configs
+        # EN MEMORIA — una adopción "ok:" nunca sobrevivía a un reinicio
+        # (load_servers() vuelve a leer este mismo fichero al arrancar y no
+        # veía nada nuevo). persist_path cierra ese hueco: cada mutación
+        # exitosa reescribe el fichero real, así una adopción aprobada por el
+        # decisor (o un undo) persiste de verdad.
+        self._persist_path = Path(persist_path) if persist_path else None
 
     @staticmethod
     def _default_factory(cfg: McpServerConfig) -> McpTransport:
@@ -192,6 +202,7 @@ class McpRegistry:
             return f"vetoed: server '{cfg.name}' rechazado por el gate de adopción"
         if cfg.name not in {c.name for c in self._configs}:
             self._configs.append(cfg)
+        self._persist()
         return f"ok: server '{cfg.name}' adoptado"
 
     def remove_server(self, name: str) -> bool:
@@ -213,8 +224,21 @@ class McpRegistry:
             if s.get("function", {}).get("name") not in fulls
         ]
         self._configs = [c for c in self._configs if c.name != name]
+        self._persist()
         self._audit("mcp.server_removed", name, f"tools={len(fulls)}", "success")
         return True
+
+    def _persist(self) -> None:
+        """Reescribe ``persist_path`` con el estado actual de ``_configs``.
+        Best-effort: un fallo de disco no debe tumbar una adopción/retirada
+        ya aplicada en caliente — solo se pierde la durabilidad, no el
+        efecto inmediato de esta sesión."""
+        if self._persist_path is None:
+            return
+        try:
+            save_servers(self._persist_path, self._configs)
+        except OSError as exc:
+            _log.warning("no se pudo persistir mcp_servers en %s: %s", self._persist_path, exc)
 
     # ------------------------------------------------------------------ surface
 

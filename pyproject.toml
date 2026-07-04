@@ -11,7 +11,7 @@ dependencies = [
     "click>=8.4.1",
     "rich>=15.0.0",
     "fastapi>=0.136.3",
-    "uvicorn[standard]>=0.29",
+    "uvicorn[standard]>=0.49.0",
     "pydantic>=2.6",
     "pyyaml>=6.0",
     "cryptography>=42.0",
@@ -25,6 +25,10 @@ dev = [
     "pytest-asyncio>=0.23",
     "httpx>=0.27",
     "mypy>=1.9",
+    # 2026-07-03: escáner de CVEs para el gate barato del pipeline self-audit
+    # (roadmap "juicio real", corrección del Cónclave: lo determinista/barato
+    # primero). Herramienta madura envuelta, no reinventada (adopt-real-not-shell).
+    "pip-audit>=2.7",
 ]
 voice = [
     "faster-whisper>=1.0",   # STT CPU — ADR-003
@@ -41,11 +45,23 @@ mcp = [
     "mcp>=1.2",
 ]
 embeddings = [
-    # Memoria semántica LOCAL (ONNX, SIN torch) — embeddings in-process/offline.
-    # OPCIONAL: el default es StubEmbedder; se activa con ATLAS_EMBEDDER=fastembed.
+    # Memoria semántica LOCAL (ONNX, SIN torch) — embeddings in-process, offline
+    # tras la primera descarga del modelo. 2026-07-03: es el DEFAULT de
+    # default_embedder() (antes StubEmbedder); usa ATLAS_EMBEDDER=stub para
+    # optar por el hash barato (p.ej. CI/sandbox sin red en el primer arranque).
     # Elegido sobre sentence-transformers para EVITAR torch (~GBs), coherente con
     # la regla anti-deps-pesadas del repo (ver el extra `redteam`).
     "fastembed>=0.3",
+]
+evolution = [
+    # 2026-07-04: envuelve openevolve (codelion/openevolve, 6.6k stars,
+    # Apache-2.0, activo) para EvolutionGate — selección de variantes reales
+    # (islas + mutación) sobre ítems de backlog difíciles, en la escala de
+    # UN ítem, no de un linaje completo de agente (corrección del Cónclave:
+    # "aprendizaje evolutivo por categorías" sin variantes reales era
+    # estadística sin mecanismo causal). Compatible con Groq/NVIDIA NIM vía
+    # api_base OpenAI-compatible — probado en vivo, sin conflictos de deps.
+    "openevolve>=0.2.27",
 ]
 redteam = [
     # ADR-056: tooling de red-team SOLO dev/CI — NUNCA importado por el runtime.
@@ -62,6 +78,16 @@ redteam = [
     # locales de este entorno no sirven (thinking-models / crash de Ollama).
     "pyrit>=0.14",
 ]
+# NOTA — scraping (Crawl4AI, absorbido 2026-07-02): NO es un extra de pip como
+# los de arriba porque NO puede convivir en este venv. `crawl4ai` fija
+# `unclecode-litellm==1.81.13`, que se instala bajo el MISMO nombre de import
+# que nuestro `litellm` real (del que depende InferenceHub) — un
+# `pip install -e .[scraping]` normal SUSTITUIRÍA silenciosamente esa
+# dependencia crítica. Se instala en un venv totalmente aparte y se invoca por
+# subprocess (ver src/atlas/tools/crawler.py + _crawl4ai_worker.py):
+#   python3 -m venv .venv-scraping
+#   .venv-scraping/bin/pip install crawl4ai
+#   .venv-scraping/bin/python3 -m playwright install chromium
 
 [project.scripts]
 atlas = "atlas.interfaces.cli:cli"

@@ -26,6 +26,28 @@ if TYPE_CHECKING:
 _EGRESS_MAX_BYTES = 5 * 1024 * 1024
 
 
+def _build_avoid_section(recaller: Any, store: Any, query: str) -> str:
+    """Construye la sección '## Patrones a evitar' para el prompt de codegen.
+
+    Recupera hasta 3 lecciones relevantes del store via el recaller y concatena
+    sus avoid_patterns. Devuelve cadena vacía si no hay lecciones que superen
+    el threshold del recaller o si el recaller/store son None."""
+    if recaller is None or store is None:
+        return ""
+    recaller.index()
+    results = recaller.recall_all(query, k=3)
+    if not results:
+        return ""
+    patterns = "\n".join(
+        f"- {lesson.avoid_pattern}"
+        for r in results
+        if r.matched and (lesson := store.get(r.lesson_id)) is not None
+    )
+    if not patterns:
+        return ""
+    return f"\n\n## Patrones a evitar (lecciones del sistema)\n{patterns}"
+
+
 def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
     """Descarga el cuerpo de una URL ya autorizada por el bridge (stdlib).
 
@@ -61,6 +83,8 @@ class MaintenanceFacade:
         self._maintenance_dep_proposer: Any = None
         self._maintenance_codegen_proposer: Any = None
         self._maintenance_community_scout: Any = None
+        self._maintenance_cold_update_batcher: Any = None
+        self._maintenance_self_build_runner: Any = None
 
     # ------------------------------------------------------------------
     # Helpers internos
@@ -144,7 +168,12 @@ class MaintenanceFacade:
         — paridad exacta con el HITL de hoy, surfado por el evento. Bajo
         autónomo/híbrido con la intención anclada, adopta en caliente y registra
         el undo reversible. Esto es human-ON-the-loop: el punto de decisión es el
-        decisor intercambiable, no un botón hardcodeado."""
+        decisor intercambiable, no un botón hardcodeado.
+
+        Cadencia: 24h por defecto (conservador en coste LLM/red), configurable
+        vía ``ATLAS_MAINTENANCE_POLL_S`` (segundos) — sin esto,
+        ``_self_build_cycle``/``_dep_cycle``/``_batch_cycle`` solo corren UNA
+        vez al arrancar el daemon."""
         if self._maintenance_scheduler is None:
             from atlas.core.inference_hub import InferenceHub
             from atlas.core.self_maintenance import (
@@ -166,7 +195,21 @@ class MaintenanceFacade:
                         "count": len(proposals),
                     },
                 )
-                # Cierre del lazo: cada propuesta pasa por el seam del decisor.
+                # 2026-07-04: la llamada al adopter SÍ se restaura (había sido
+                # retirada antes por error de diagnóstico). El hallazgo real de
+                # la auditoría del historial (110 intentos, 25 "adoptados") no
+                # era "esto salta el HITL" — `adopter.adopt()` YA pasaba
+                # siempre por `adopt_mcp_server` → el seam del decisor
+                # (ADR-040): bajo HumanDecider no hace nada, bajo
+                # autónomo/híbrido adopta con la intención anclada. El bug de
+                # verdad era que `McpRegistry.add_server()` solo mutaba la
+                # config EN MEMORIA — una adopción aprobada por el decisor
+                # nunca sobrevivía a un reinicio. Con `persist_path` cableado
+                # (McpRegistry ahora reescribe mcp_servers.json en cada
+                # add/remove), la adopción por fin es una acción durable, así
+                # que el cribado ya construido (SSRFBridge + MaintenanceAnalyst
+                # dual-LLM + decisor anclado) vuelve a tener un efecto real que
+                # gatear, en vez de evaporarse solo.
                 adopter = self._orch.maintenance_adopter()
                 for proposal in proposals:
                     adopter.adopt(proposal)
@@ -183,14 +226,109 @@ class MaintenanceFacade:
                     if proposal is not None:
                         orch.advance_cold_update(proposal.id)
 
+            def _self_build_cycle() -> None:
+                # Autoconstrucción: muele UN item pending del backlog por ciclo.
+                # Opt-in explícito (gasta LLM): el operador activa ATLAS_SELF_BUILD=1.
+                # Un item por tick acota el gasto; el resultado queda auditado en
+                # Merkle por el runner y las propuestas van a ColdUpdate (HITL intacto).
+                import os
+
+                if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
+                    return
+                from atlas.core.self_maintenance.backlog import load_backlog, pending
+
+                try:
+                    items = pending(load_backlog(self._project_root() / "docs" / "backlog.yaml"))
+                    if not items:
+                        return
+                    runner = self._orch.maintenance_self_build_runner()
+                    runner.run_item(items[0])
+                except Exception:  # noqa: BLE001 — un item malo no tumba el tick del scheduler
+                    pass
+
+            def _batch_cycle() -> None:
+                # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
+                # Se enruta por self._orch por el mismo motivo que _dep_cycle:
+                # respetar monkeypatches de tests sobre el Orchestrator.
+                #
+                # TODO(batch+benchmark): ColdUpdateBatcher no expone las rutas del
+                # worktree final antes de limpiar; integrar BenchmarkGate.compare()
+                # requeriría ese hook — ver backlog. Fuera de alcance de este slice.
+                batcher = self._orch.maintenance_cold_update_batcher()
+                result = batcher.run_batch()
+                if not result.included:
+                    return  # nada real que revisar, evitar ruido
+                manager = self._orch.cold_update()
+                included_intents = [
+                    p.intent for pid in result.included
+                    if (p := manager.get(pid)) is not None
+                ]
+                orch._bus.publish_type(EventType.COLD_UPDATE_BATCH_READY, {
+                    "batch_id": result.id,
+                    "included": result.included,
+                    "included_intents": included_intents,
+                    "excluded": result.excluded,
+                    "tests_passed": result.passed,
+                    "pytest_summary": result.pytest_summary[:500],
+                })
+
+            scheduler_kwargs: dict[str, Any] = {}
+            poll_raw = os.environ.get("ATLAS_MAINTENANCE_POLL_S", "").strip()
+            if poll_raw:
+                # 2026-07-04: antes no existía forma de configurar la cadencia
+                # sin tocar código — el default (24h) hacía que
+                # _self_build_cycle/_dep_cycle/_batch_cycle corrieran UNA vez
+                # al arrancar el daemon y no de nuevo hasta el día siguiente,
+                # muy lejos del "24/7" con el que se planteó la pieza. Sigue
+                # siendo opt-in (por defecto 24h, conservador en coste de
+                # LLM/red) — el operador decide la cadencia real.
+                try:
+                    scheduler_kwargs["poll_interval_seconds"] = int(float(poll_raw))
+                except ValueError:
+                    pass
+
             self._maintenance_scheduler = MaintenanceScheduler(
                 merkle=orch._merkle,
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
-                extra_cycles=(_dep_cycle,),
+                extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle),
+                **scheduler_kwargs,
             )
         return self._maintenance_scheduler
+
+    def maintenance_self_build_runner(self) -> Any:
+        """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
+
+        Reusa el ``ColdUpdateManager`` ya existente del orquestador; toda
+        propuesta generada por este runner requiere aprobación humana
+        explícita (invariante CVE-HITL, G0.8) — el runner solo PROPONE."""
+        if self._maintenance_self_build_runner is None:
+            from atlas.core.inference_hub import InferenceHub
+            from atlas.core.self_maintenance.self_build_runner import SelfBuildRunner
+
+            orch = self._orch
+            hub = orch._inference_hub or InferenceHub(mode="auto")
+            self._maintenance_self_build_runner = SelfBuildRunner(
+                self._project_root(),
+                hub,
+                self._orch.cold_update(),
+                backlog_path=self._project_root() / "docs" / "backlog.yaml",
+            )
+        return self._maintenance_self_build_runner
+
+    def maintenance_cold_update_batcher(self) -> Any:
+        """Lote de self_audit — combina propuestas `validated` del mismo origen
+        y las prueba conjuntamente en un worktree efímero (ver
+        ``ColdUpdateBatcher``). Reusa el ``ColdUpdateManager`` ya existente del
+        orquestador; no aplica nada por sí mismo."""
+        if self._maintenance_cold_update_batcher is None:
+            from atlas.core.cold_update_batcher import ColdUpdateBatcher
+
+            self._maintenance_cold_update_batcher = ColdUpdateBatcher(
+                manager=self._orch.cold_update(),
+            )
+        return self._maintenance_cold_update_batcher
 
     def maintenance_dep_scout(self) -> Any:
         """ADR-039 slice 6 — Scout de bumps de dependencias PyPI (read-only).
@@ -297,11 +435,46 @@ class MaintenanceFacade:
                 ],
             )
 
+            # Cargar LessonStore para inyección blanda de avoid_patterns.
+            #
+            # 2026-07-03: unificado a <repo_root>/workspace/lessons — la MISMA
+            # convención que AtlasCoder/ToolCoder (src/atlas/core/atlas_coder.py,
+            # tool_coder.py), donde YA viven las lecciones reales generadas por
+            # el propio motor de codificación. Antes apuntaba a
+            # `orch._workspace / "memory" / "lessons"` (~/atlas/memory/lessons,
+            # runtime workspace) — una ruta que ni siquiera existía, así que el
+            # self-audit del Orchestrator nunca veía las lecciones reales que el
+            # propio Atlas ya había generado (hallazgo real, verificado en vivo).
+            try:
+                from atlas.core.lesson_store import LessonStore
+                from atlas.immunity.lesson_recaller import LessonRecaller
+                from atlas.memory.embeddings import default_embedder
+
+                _repo_root = orch._repo_root() or orch._workspace
+                _lesson_store = LessonStore(_repo_root / "workspace" / "lessons")
+                # threshold: sin override — el default de LessonRecaller (0.8) ya
+                # está calibrado para embeddings SEMÁNTICOS (ver su docstring);
+                # el 0.65 anterior compensaba el hash NO-semántico de
+                # StubEmbedder(dim=64) que se acaba de dejar de usar aquí.
+                _lesson_recaller: Any = LessonRecaller(
+                    _lesson_store,
+                    embedder=default_embedder(),
+                )
+            except Exception:  # noqa: BLE001 — directorio no existe u otro error; degradado
+                _lesson_store = None
+                _lesson_recaller = None
+
             def _generate(target: CodegenTarget) -> str:
+                avoid_section = _build_avoid_section(
+                    _lesson_recaller,
+                    _lesson_store,
+                    f"{target.goal} {target.path}",
+                )
                 prompt = (
                     "Genera SOLO un diff unificado (git apply) que logre el objetivo, "
                     f"tocando únicamente el fichero {target.path}. No expliques.\n\n"
                     f"Objetivo: {target.goal}\n"
+                    f"{avoid_section}"
                 )
                 result = cascade.route(TaskSpec(
                     intent=prompt,

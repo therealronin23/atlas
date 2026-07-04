@@ -1,0 +1,30 @@
+{
+  "id": "lesson-6ff73b7a80c0",
+  "title": "Lote A-D delegado a Atlas: 1 tarea completa de 4; falso positivo por test de incremento mal diseñado",
+  "provenance": "external_source",
+  "detection_heuristic": "IncrementalCoder reporta success=True con files_changed=[] — el test del incremento no ejercita SU pieza",
+  "avoid_pattern": "Al diseñar incrementos para IncrementalCoder, el test_cmd de CADA incremento debe verificar LA PIEZA de ese incremento, nunca una suite genérica que ya pasa — se repitió el falso positivo del experimento sandbox (C inc1: success=True, files=[], la feature no existía). Señal de alarma automática: success=True con files_changed vacío = el test no ejercita nada nuevo. Marcador del lote (2026-06-28): B (métricas parsed/applied, 3/3 incrementos en atlas_coder.py con anclas simples) = Atlas SOLO la completó, 48 min; A (archivo 340 líneas, funciones nuevas a nivel de módulo), C-2 (wiring multi-sitio) y D (cambio de firma + lógica) fallaron por stuck detector — el patrón: Atlas cierra incrementos con anclas cortas y únicas en archivos ya conocidos; falla cuando el ancla es larga, el archivo grande, o el cambio toca varios sitios.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Medición directa del lote: 4 tareas, 9 incrementos, Atlas cerró 3/9 solo (los 3 de B) más el stats() previo",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-02T07:05:10.486641+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "atlas_coder:batch_abcd_2026-06-28"
+  ],
+  "tags": [],
+  "created_at": "2026-07-02T07:05:10.486678+00:00"
+}

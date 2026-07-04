@@ -1,0 +1,37 @@
+{
+  "id": "lesson-f6f1f97b8bb5",
+  "title": "Cónclave FAIL: benchmark de rendimiento como gate suficiente para auto-apply",
+  "provenance": "external_source",
+  "detection_heuristic": "Antes de asumir que un benchmark de velocidad/capacidad basta como gate de seguridad para auto-aplicar cambios, convocar al trío.",
+  "avoid_pattern": "Trío FAIL 3/3: un benchmark mide velocidad/volumen, no corrección de razonamiento — un cambio puede mejorar el benchmark y aun así hacer que el sistema invente datos o ignore errores silenciosamente. Punto ciego irreducible identificado independientemente por los 3: la intencionalidad/corrección del cambio no es medible por benchmark automatizado. Punto mínimo de revisión humana propuesto por Kimi: gobernar el DISEÑO del benchmark (qué mide y por qué) de forma episódica, no revisar cada cambio. SÍNTESIS humana (Opus): aceptado, es la base del diseño de BenchmarkGate (LongMemEval antes/después, no benchmark de velocidad) construido esta sesión.",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "Veredicto trío FAIL 3/3, 2 rondas, convergencia en punto ciego irreducible",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-03T16:55:38.951079+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "conclave:deliberation",
+    "opus:synthesis",
+    "session:2026-07-03"
+  ],
+  "tags": [
+    "conclave",
+    "benchmark",
+    "autonomia",
+    "razonamiento"
+  ],
+  "created_at": "2026-07-03T16:55:38.951108+00:00"
+}

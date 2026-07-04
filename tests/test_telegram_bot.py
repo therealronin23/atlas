@@ -359,3 +359,45 @@ def test_cmd_approve_with_passphrase():
     }
     bot.handle_update(_msg(42, "/approve t-approve gate-g"))
     assert ("approve", ("t-approve", True)) in ops.calls
+
+
+# ---------------------------------------------------------------------------
+# on_cold_update_batch_ready — notificación proactiva de lote de self_audit
+# ---------------------------------------------------------------------------
+
+class _FakeEvent:
+    def __init__(self, payload: dict) -> None:
+        self.payload = payload
+
+
+def test_on_cold_update_batch_ready_notifies_with_key_data():
+    bot, client, ops = _make_bot()
+    event = _FakeEvent({
+        "batch_id": "batch-1",
+        "included": ["cu-1", "cu-2"],
+        "included_intents": ["bump uvicorn", "fix lint"],
+        "excluded": [{"proposal_id": "cu-3", "reason": "rompe algo"}],
+        "tests_passed": True,
+        "pytest_summary": "1 passed",
+    })
+
+    bot.on_cold_update_batch_ready(event)
+
+    assert len(client.sent) == 1
+    _, text = client.sent[0]
+    assert "batch-1" in text
+    assert "2" in text  # incluidos
+    assert "1" in text  # excluidos
+    assert "bump uvicorn" in text
+    assert "fix lint" in text
+
+
+def test_on_cold_update_batch_ready_handles_missing_fields():
+    bot, client, ops = _make_bot()
+    event = _FakeEvent({})
+
+    bot.on_cold_update_batch_ready(event)
+
+    assert len(client.sent) == 1
+    _, text = client.sent[0]
+    assert "?" in text
