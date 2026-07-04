@@ -121,7 +121,7 @@ def test_real_catalog_loads_and_is_classified() -> None:
         assert required in tax, f"falta sector {required}"
     # Toda entrada tiene un sector y un estado válido.
     for e in entries:
-        assert e.sector and e.status in {"candidato", "verificado", "instalado"}
+        assert e.sector and e.status in {"candidato", "probado-en-jaula", "verificado", "instalado"}
 
 
 def test_real_catalog_verified_are_vetted_and_installable() -> None:

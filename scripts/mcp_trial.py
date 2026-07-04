@@ -16,6 +16,7 @@ import argparse
 from pathlib import Path
 
 from atlas.mcp.catalog import StatusPromotion, apply_status_promotions, load_catalog
+from atlas.mcp.spawn_trial import SpawnTrial, graduated_quarantine
 from atlas.mcp.trial_gate import TrialGate
 
 
@@ -35,7 +36,23 @@ def main() -> int:
         action="store_true",
         help="Promover candidato→probado-en-jaula en el YAML (consent explícito)",
     )
+    parser.add_argument(
+        "--spawn",
+        action="store_true",
+        help="Probe MCP spawn (initialize+tools/list); jaula bwrap para atlas.mcp.*",
+    )
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path("."),
+        help="Raíz del repo (PYTHONPATH src para spawn jaula)",
+    )
     args = parser.parse_args()
+
+    spawn: SpawnTrial | None = None
+    if args.spawn:
+        work = args.repo_root / ".atlas-trial-work"
+        spawn = SpawnTrial(repo_root=args.repo_root.resolve(), work_dir=work, use_jail=True)
 
     entries = load_catalog(args.catalog)
     if args.kind:
@@ -44,9 +61,11 @@ def main() -> int:
     gate = TrialGate(
         skill_root=args.skills_dir,
         agents_skill_root=args.agents_skills_dir if args.agents_skills_dir.is_dir() else None,
+        spawn_trial=spawn,
     )
     passed = skipped = failed = 0
     promotions: list[StatusPromotion] = []
+    quarantine: list[str] = []
 
     for entry in entries:
         if entry.status not in {"candidato", "probado-en-jaula"}:
@@ -69,13 +88,21 @@ def main() -> int:
         else:
             failed += 1
             print(f"FAIL  {entry.kind}/{entry.name}: {result.reason}")
+            qc = graduated_quarantine(
+                name=entry.name, kind=entry.kind, reason=result.reason
+            )
+            if qc and qc.action == "quarantine":
+                quarantine.append(f"{entry.kind}/{entry.name}")
+                print(f"      ↳ saneamiento graduado: QUARANTINE ({qc.reason[:80]})")
 
     updated = 0
     if args.apply and promotions:
         updated = apply_status_promotions(args.catalog, promotions)
         print(f"\nPromovidas {updated} entradas en {args.catalog}")
 
-    print(f"\nResumen: pass={passed} fail={failed} skip={skipped} apply={args.apply}")
+    print(f"\nResumen: pass={passed} fail={failed} skip={skipped} apply={args.apply} spawn={args.spawn}")
+    if quarantine:
+        print(f"Cuarentena sugerida ({len(quarantine)}): " + ", ".join(quarantine[:10]))
     return 0 if failed == 0 else 1
 
 

@@ -18,6 +18,7 @@ from typing import Callable
 
 from atlas.mcp.catalog import CatalogEntry
 from atlas.mcp.installer import InstallAction, vet_action
+from atlas.mcp.spawn_trial import SpawnTrial, graduated_quarantine
 
 # Metacaracteres de argv smuggling — NO incluir newline (normal en markdown).
 _SHELL_METACHARS: tuple[str, ...] = (";", "|", "$(", "`", "&&", "||", ">", "<")
@@ -135,10 +136,12 @@ class TrialGate:
         skill_root: Path | None = None,
         agents_skill_root: Path | None = None,
         content_resolver: Callable[[CatalogEntry], str | None] | None = None,
+        spawn_trial: SpawnTrial | None = None,
     ) -> None:
         self._skill_root = skill_root
         self._agents_skill_root = agents_skill_root
         self._content_resolver = content_resolver
+        self._spawn_trial = spawn_trial
 
     def trial(self, entry: CatalogEntry) -> TrialResult:
         if entry.status not in {"candidato", "probado-en-jaula"}:
@@ -167,6 +170,8 @@ class TrialGate:
             return trial_static_content(entry, content)
 
         if entry.kind in _INSTALL_TRIALABLE_KINDS and entry.install.strip():
+            if entry.kind == "mcp":
+                return self._trial_mcp_install(entry)
             return self._trial_install_argv(entry)
 
         if entry.kind == "mcp" and entry.mode == "connected":
@@ -198,8 +203,46 @@ class TrialGate:
             kind=entry.kind,
             passed=passed,
             skipped=False,
-            reason=(veto or f"install argv OK{suffix}; spawn trial pendiente"),
+            reason=(veto or f"install argv OK{suffix}"),
             suggested_status=suggested,
+        )
+
+    def _trial_mcp_install(self, entry: CatalogEntry) -> TrialResult:
+        argv_result = self._trial_install_argv(entry)
+        if not argv_result.passed:
+            return argv_result
+        if self._spawn_trial is None:
+            return argv_result
+        spawn = self._spawn_trial.probe_entry(entry)
+        if spawn.skipped:
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=True,
+                skipped=False,
+                reason=f"install argv OK; {spawn.reason}",
+                suggested_status=argv_result.suggested_status,
+            )
+        if not spawn.ok:
+            quarantine = graduated_quarantine(
+                name=entry.name, kind=entry.kind, reason=spawn.reason
+            )
+            suffix = f" → {quarantine.action}" if quarantine else ""
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=False,
+                skipped=False,
+                reason=f"{spawn.reason}{suffix}",
+                suggested_status=None,
+            )
+        return TrialResult(
+            name=entry.name,
+            kind=entry.kind,
+            passed=True,
+            skipped=False,
+            reason=spawn.reason,
+            suggested_status=argv_result.suggested_status,
         )
 
     def _resolve_content(self, entry: CatalogEntry) -> str | None:

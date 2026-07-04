@@ -746,9 +746,11 @@ status(verificación) — nunca confundir.
   **Slice 2a:** estado `probado-en-jaula`; `trial_gate.py` + `scripts/mcp_trial.py` (reporte).
   **Slice 2b (2026-07-05):** vetado adoptado de argv `install` (SentinelGate vía `vet_install_command`);
   resolución skill en `docs/skills` + `.agents/skills/*/SKILL.md`; promoción YAML con `--apply`
-  (`apply_status_promotions` en `catalog.py`). Pendiente 2c: spawn MCP en jaula, escáneres
-  externos (Invariant/Snyk), saneamiento graduado candidato→cuarentena.
-  Graduación: candidato → probado-en-jaula (contenido/argv OK) → verificado (escáner+humano).
+  (`apply_status_promotions` en `catalog.py`).
+  **Slice 2c (2026-07-05):** `spawn_trial.py` — probe initialize+tools/list; jaula bwrap sin red para
+  `atlas.mcp.*`; npx/uvx omitidos (bootstrap de red); saneamiento graduado (QUARANTINE vs retry);
+  `scripts/mcp_trial.py --spawn`. Pendiente: escáneres externos adoptados (Invariant/Snyk).
+  Graduación: candidato → probado-en-jaula (contenido/argv/spawn OK) → verificado (escáner+humano).
 - ⬜ **Pieza 3 — routing hook** `UserPromptSubmit` que consume el catálogo ya enriquecido/verificado
   (consumo determinista). El más fácil, el último (necesita 1 y 2).
 
