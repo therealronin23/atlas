@@ -90,13 +90,13 @@ class TrunkAggregator:
 
     # -- Dispatch: enruta a la raíz dueña vía namespacing -----------------
 
-    def invoke(self, tool: str, args: dict[str, Any]) -> Any:
+    def invoke(self, tool: str, args: dict[str, Any], *, origin: str = "external") -> Any:
         root = self._resolve_owner(tool)
         full = f"mcp__{root}__{tool}"
-        self._record_usage(full)
+        self._record_usage(full, origin=origin)
         return self._dispatcher(full, args)
 
-    def invoke_readonly(self, tool: str, args: dict[str, Any]) -> Any:
+    def invoke_readonly(self, tool: str, args: dict[str, Any], *, origin: str = "external") -> Any:
         """Como `invoke`, pero SOLO despacha tools declaradas de lectura en el
         config de su raíz (read_only_tools — ADR-035 dec.5). Fail-closed: sin
         predicado, o tool no declarada, se rechaza. Permite al host marcar esta
@@ -107,14 +107,19 @@ class TrunkAggregator:
             raise PermissionError(
                 f"trunk: {tool!r} no está declarada de solo lectura — usa trunk_invoke"
             )
-        self._record_usage(full)
+        self._record_usage(full, origin=origin)
         return self._dispatcher(full, args)
 
-    def _record_usage(self, full_name: str) -> None:
+    def _record_usage(self, full_name: str, *, origin: str = "external") -> None:
+        # origin distingue uso real (un cliente externo pidió esto) de
+        # auto-invocación del propio pipeline de autoauditoría — sin esto,
+        # un ciclo interno podría inflar su propio contador y aparentar
+        # "uso real" sin que nadie lo pidiera de verdad (corrección del
+        # Cónclave: ToolUsageCounter era falseable por auto-invocación).
         if self._usage_counter is None:
             return
         try:
-            self._usage_counter.record(full_name)
+            self._usage_counter.record(full_name, origin=origin)
         except Exception:  # noqa: BLE001 — métrica, nunca bloquea el dispatch
             pass
 

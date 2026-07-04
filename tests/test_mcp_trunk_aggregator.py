@@ -90,9 +90,11 @@ def test_invoke_unknown_tool_raises() -> None:
 class _FakeUsageCounter:
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.origins: list[str] = []
 
-    def record(self, tool_name: str) -> None:
+    def record(self, tool_name: str, *, origin: str = "external") -> None:
         self.calls.append(tool_name)
+        self.origins.append(origin)
 
 
 def test_invoke_records_usage_when_counter_injected() -> None:
@@ -109,6 +111,26 @@ def test_invoke_records_usage_when_counter_injected() -> None:
     )
     agg.invoke("recall", {"query": "x"})
     assert counter.calls == ["mcp__atlas-memory__recall"]
+    assert counter.origins == ["external"]  # default: nadie pidió origin explícito
+
+
+def test_invoke_propagates_explicit_origin_for_self_audit_calls() -> None:
+    """Un ciclo interno (self_audit) debe poder marcar su propia invocación
+    como tal, para que NUNCA cuente como 'uso externo real' — corrección del
+    Cónclave: sin esto, el propio ciclo podía inflar su contador de uso."""
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_aggregator import TrunkAggregator
+    from atlas.mcp.trunk_manifest import native_roots
+
+    counter = _FakeUsageCounter()
+    agg = TrunkAggregator(
+        catalog=load_catalog(_CATALOG),
+        roots=native_roots(),
+        dispatcher=lambda full_name, args: "ok",
+        usage_counter=counter,
+    )
+    agg.invoke("recall", {"query": "x"}, origin="self_audit")
+    assert counter.origins == ["self_audit"]
 
 
 def test_invoke_usage_counter_failure_does_not_block_dispatch() -> None:

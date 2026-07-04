@@ -70,8 +70,14 @@ def _proposal(cap: str = "mcp-test") -> McpProposal:
 
 
 class TestNotifyRoutesToAdopter:
-    def test_notify_calls_adopter_adopt(self, orch: Orchestrator) -> None:
-        """El closure de notify del scheduler pasa cada propuesta al adopter."""
+    def test_notify_never_auto_adopts(self, orch: Orchestrator) -> None:
+        """2026-07-04: retirada la adopción autónoma ciega (auditoría del
+        historial completo: 110 intentos en toda su vida, solo 2 candidatos
+        distintos, 36 reintentos del mismo error irreparable, y ninguna
+        adopción sobrevivía a un reinicio — a diferencia de ColdUpdate, esto
+        nunca pasaba por ningún decisor humano). notify() ya NO llama a
+        adopter.adopt() automáticamente; el descubrimiento se sigue
+        publicando, la adopción exige una acción explícita."""
         adopted: list[str] = []
 
         class _FakeAdopter:
@@ -91,7 +97,7 @@ class TestNotifyRoutesToAdopter:
 
         scheduler.tick()
 
-        assert adopted == ["mcp-test"]
+        assert adopted == []
 
     def test_notify_still_publishes_event(self, orch: Orchestrator) -> None:
         """La notify publica MAINTENANCE_PROPOSED además de enrutar al adopter."""
