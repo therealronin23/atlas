@@ -168,7 +168,12 @@ class MaintenanceFacade:
         — paridad exacta con el HITL de hoy, surfado por el evento. Bajo
         autónomo/híbrido con la intención anclada, adopta en caliente y registra
         el undo reversible. Esto es human-ON-the-loop: el punto de decisión es el
-        decisor intercambiable, no un botón hardcodeado."""
+        decisor intercambiable, no un botón hardcodeado.
+
+        Cadencia: 24h por defecto (conservador en coste LLM/red), configurable
+        vía ``ATLAS_MAINTENANCE_POLL_S`` (segundos) — sin esto,
+        ``_self_build_cycle``/``_dep_cycle``/``_batch_cycle`` solo corren UNA
+        vez al arrancar el daemon."""
         if self._maintenance_scheduler is None:
             from atlas.core.inference_hub import InferenceHub
             from atlas.core.self_maintenance import (
@@ -267,12 +272,28 @@ class MaintenanceFacade:
                     "pytest_summary": result.pytest_summary[:500],
                 })
 
+            scheduler_kwargs: dict[str, Any] = {}
+            poll_raw = os.environ.get("ATLAS_MAINTENANCE_POLL_S", "").strip()
+            if poll_raw:
+                # 2026-07-04: antes no existía forma de configurar la cadencia
+                # sin tocar código — el default (24h) hacía que
+                # _self_build_cycle/_dep_cycle/_batch_cycle corrieran UNA vez
+                # al arrancar el daemon y no de nuevo hasta el día siguiente,
+                # muy lejos del "24/7" con el que se planteó la pieza. Sigue
+                # siendo opt-in (por defecto 24h, conservador en coste de
+                # LLM/red) — el operador decide la cadencia real.
+                try:
+                    scheduler_kwargs["poll_interval_seconds"] = int(float(poll_raw))
+                except ValueError:
+                    pass
+
             self._maintenance_scheduler = MaintenanceScheduler(
                 merkle=orch._merkle,
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
                 extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle),
+                **scheduler_kwargs,
             )
         return self._maintenance_scheduler
 

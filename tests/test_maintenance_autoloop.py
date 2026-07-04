@@ -156,6 +156,47 @@ class TestNotifyRoutesToAdopter:
         assert adopted == []
 
 
+class TestMaintenancePollInterval:
+    def test_default_poll_interval_is_24h_when_env_unset(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Sin ATLAS_MAINTENANCE_POLL_S, la cadencia sigue siendo la
+        conservadora de siempre (24h) — el env var es opt-in, no cambia el
+        comportamiento por defecto."""
+        monkeypatch.delenv("ATLAS_MAINTENANCE_POLL_S", raising=False)
+        scheduler = orch.maintenance_scheduler()
+        assert scheduler._poll_interval == 24 * 60 * 60
+
+    def test_env_var_overrides_poll_interval(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """2026-07-04: sin esta env var no había forma de que
+        _self_build_cycle/_dep_cycle/_batch_cycle corrieran más de una vez
+        por arranque del daemon (default 24h, sin override posible)."""
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
+        monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+        monkeypatch.setenv("ATLAS_MAINTENANCE_POLL_S", "3600")
+        fresh_orch = Orchestrator(workspace=tmp_path / "atlas")
+
+        scheduler = fresh_orch.maintenance_scheduler()
+
+        assert scheduler._poll_interval == 3600
+
+    def test_env_var_garbage_falls_back_to_default(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Valor no numérico -> fail-safe al default, nunca un crash del
+        arranque del daemon por un typo en .env."""
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
+        monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+        monkeypatch.setenv("ATLAS_MAINTENANCE_POLL_S", "no-es-un-numero")
+        fresh_orch = Orchestrator(workspace=tmp_path / "atlas")
+
+        scheduler = fresh_orch.maintenance_scheduler()
+
+        assert scheduler._poll_interval == 24 * 60 * 60
+
+
 class TestDepCycleWiring:
     def test_dep_cycle_chains_scout_proposer_advance(self, orch: Orchestrator) -> None:
         """El extra-cycle de deps encadena discover → propose_bump →
