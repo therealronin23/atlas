@@ -152,14 +152,46 @@ def _browser_state() -> dict[str, Any]:
             for p in cache.glob("chromium*/**/*chrome*")
             if p.is_file() and os.access(p, os.X_OK)
         ]
-    status = "ready" if installed and executables else "degraded"
-    reason = "playwright+browser executable present" if status == "ready" else "missing playwright package or browser executable"
+    expected_executable, expected_error = _playwright_chromium_executable()
+    expected_present = (
+        expected_executable is not None
+        and expected_executable.is_file()
+        and os.access(expected_executable, os.X_OK)
+    )
+    status = "ready" if installed and expected_present else "degraded"
+    if not installed:
+        reason = "missing playwright package"
+    elif expected_error:
+        reason = f"could not resolve playwright chromium executable: {expected_error}"
+    elif not expected_executable:
+        reason = "could not resolve playwright chromium executable"
+    elif not expected_present:
+        reason = f"missing playwright chromium executable: {expected_executable}"
+    else:
+        reason = f"playwright chromium executable present: {expected_executable}"
     return {
         "status": status,
         "playwright_installed": installed,
         "browser_executable_count": len(executables),
+        "expected_chromium_executable": str(expected_executable) if expected_executable else "",
+        "expected_chromium_present": expected_present,
         "reason": reason,
     }
+
+
+def _playwright_chromium_executable() -> tuple[Path | None, str]:
+    if find_spec("playwright") is None:
+        return None, ""
+    try:
+        from playwright.sync_api import sync_playwright  # noqa: PLC0415
+
+        manager = sync_playwright().start()
+        try:
+            return Path(str(manager.chromium.executable_path)), ""
+        finally:
+            manager.stop()
+    except Exception as exc:  # noqa: BLE001
+        return None, type(exc).__name__
 
 
 def _hermes_state() -> dict[str, Any]:

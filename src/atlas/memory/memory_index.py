@@ -574,7 +574,7 @@ class SqliteMemoryIndex:
         """La memoria `new_record` reemplaza a `old_id`: la vieja caduca (sigue en la
         tabla, auditable) y la nueva entra vigente con lineage `supersedes=old_id`."""
         old = self._conn.execute(
-            "SELECT valid_until_ns FROM records WHERE id=? AND tenant=?",
+            "SELECT valid_until_ns, memory_class, expires_at FROM records WHERE id=? AND tenant=?",
             (old_id, self._tenant),
         ).fetchone()
         if old is None:
@@ -587,7 +587,14 @@ class SqliteMemoryIndex:
                 f"distinto para preservar el lineage"
             )
         ts = now_ns if now_ns is not None else time.time_ns()
-        self.upsert(new_record, merkle_leaf_hash=merkle_leaf_hash, valid_from_ns=ts, supersedes=old_id)
+        self.upsert(
+            new_record,
+            merkle_leaf_hash=merkle_leaf_hash,
+            valid_from_ns=ts,
+            supersedes=old_id,
+            memory_class=str(old[1]),
+            expires_at=old[2],
+        )
         self._conn.execute(
             "UPDATE records SET valid_until_ns=? WHERE id=? AND valid_until_ns IS NULL "
             "AND tenant=?",

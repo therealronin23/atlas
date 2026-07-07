@@ -44,14 +44,35 @@ class MemoryTrunk:
         self._index = index
 
     def add(
-        self, text: str, *, record_id: str | None = None, record_type: str | None = None
+        self,
+        text: str,
+        *,
+        record_id: str | None = None,
+        record_type: str | None = None,
+        memory_class: str = "factual",
     ) -> str:
         """Recuerda `text`. Devuelve el id (generado si no se da)."""
         rid = record_id if record_id is not None else uuid.uuid4().hex
         created_at = str(time.time_ns())
         provenance = hashlib.sha256(f"{text}{created_at}".encode()).hexdigest()
-        self._index.upsert(GenericRecord(rid, text, created_at, record_type), merkle_leaf_hash=provenance)
+        self._index.upsert(
+            GenericRecord(rid, text, created_at, record_type),
+            merkle_leaf_hash=provenance,
+            memory_class=memory_class,
+        )
         return rid
+
+    def add_from_knowledge_src(
+        self, text: str, *, record_id: str | None = None, record_type: str | None = None
+    ) -> str:
+        """Recuerda conocimiento de `knowledge-src` como factual."""
+        return self.add(text, record_id=record_id, record_type=record_type, memory_class="factual")
+
+    def add_from_user_preference(
+        self, text: str, *, record_id: str | None = None, record_type: str | None = None
+    ) -> str:
+        """Recuerda una preferencia declarada por el usuario como personal."""
+        return self.add(text, record_id=record_id, record_type=record_type, memory_class="personal")
 
     def recall(self, query: str, k: int = 5) -> list[RecallHit]:
         """Devuelve hasta `k` candidatos VIGENTES ordenados por relevancia, con

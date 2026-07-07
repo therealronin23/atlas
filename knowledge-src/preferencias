@@ -1,0 +1,19 @@
+# Preferencias de conocimiento
+
+Estado: policy/design seed, no dataset factual.
+Autoridad de implementación: `src/atlas/mcp/memory_trunk.py`.
+
+## Clases de memoria
+
+- `factual`: conocimiento procedente de `knowledge-src` o de una fuente con
+  procedencia verificable.
+- `personal`: preferencia declarada por el usuario o derivada de interacción con
+  el usuario.
+
+## Rutas implementadas
+
+- `MemoryTrunk.add_from_knowledge_src(...)` escribe con `memory_class="factual"`.
+- `MemoryTrunk.add_from_user_preference(...)` escribe con `memory_class="personal"`.
+
+Regla: esta nota no debe ingerirse como hecho externo. Sirve para documentar el
+cableado de origen -> clase de memoria.

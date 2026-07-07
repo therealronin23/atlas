@@ -369,7 +369,7 @@ items:
       mientras nadie escribe 'personal'; se activa con este cableado. Test: rebuild/supersede de un ítem
       personal conserva su clase y expiry.
     priority: 2
-    status: pending
+    status: done  # 2026-07-07 recovery: MemoryTrunk exposes add_from_knowledge_src/add_from_user_preference; MemoryServer exports both tools; supersede preserves memory_class+expires_at. Targeted tests + mypy green.
 
   - id: f2-6b-llm-judge-vs-explicit-tagging
     title: "f2-6 investigación: ¿LLM-juez bate al etiquetado explícito? (muro 1c)"
