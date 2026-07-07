@@ -13,7 +13,8 @@ manifest memory drift (`recall_multihop`/`shred`), catálogo skills, read_only t
 desde Codex OK; `trunk_recommend_stack` y `trunk_health` exponen shortlist/diagnóstico
 2026 sin instalar terceros; Cursor config preserva `src` + venv `site-packages`.
 Runtime: `pytest` green, mypy clean, browser ready, Merkle OK. LLM: groq smoke OK;
-openrouter rate-limited; Hermes sin `HERMES_BASE_URL` → local/mock.
+openrouter rate-limited; Hermes sin `HERMES_BASE_URL` → local/mock. Dependency
+floors accepted: `pyyaml>=6.0.3`, `cryptography>=49.0.0`, `litellm>=1.89.0`.
 
 🔄 **Canonical Atlas ecosystem** —
 `docs/design/atlas_ecosystem_map.md` es el mapa de estado. Next: clasificar trabajo

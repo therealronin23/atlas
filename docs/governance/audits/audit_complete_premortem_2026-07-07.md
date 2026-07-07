@@ -67,12 +67,12 @@ change before new feature work continues.
 ### Closed: dependency floor decision
 
 `pyproject.toml` records existing dependency floors, currently including
-`pyyaml>=6.0.3` and `cryptography>=49.0.0`. These are accepted as floor bumps,
-not new dependencies. Targeted memory/MCP tests, browser tests, mypy, and the
-final verification pass provide compatibility evidence. Caveat: `uv.lock`
-already resolves `cryptography` to 49.0.0, but `uv lock --check` cannot currently
-validate the lock because the `redteam` extra has an unrelated `garak`/`pyrit`
-resolver conflict for future Python splits.
+`pyyaml>=6.0.3`, `cryptography>=49.0.0`, and `litellm>=1.89.0`. These are
+accepted as floor bumps, not new dependencies. Targeted memory/MCP tests,
+browser tests, mypy, and the final verification pass provide compatibility
+evidence. Caveat: `uv.lock` already resolves `cryptography` to 49.0.0, but
+`uv lock --check` cannot currently validate the lock because the `redteam` extra
+has an unrelated `garak`/`pyrit` resolver conflict for future Python splits.
 
 ### Closed: `knowledge-src/preferencias` classification
 
