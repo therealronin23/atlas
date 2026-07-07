@@ -36,7 +36,13 @@ def native_roots() -> list[RootSpec]:
             "atlas-memory",
             "atlas.mcp.memory_server",
             "db",
-            tools=("recall", "add", "supersede"),
+            tools=(
+                "recall",
+                "add",
+                "add_from_knowledge_src",
+                "add_from_user_preference",
+                "supersede",
+            ),
         ),
         RootSpec(
             "atlas-operating",

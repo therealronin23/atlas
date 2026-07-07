@@ -10,10 +10,12 @@ un Gate, o mensual):
 Comprueba:
   1. VAPOR DE SISTEMA — módulos src/atlas con 0 importadores no-test (excluye
      entrypoints). Candidatos a "cablear o cuarentena" (regla wire-before-claim).
-  2. CUARENTENA VENCIDA — carpetas en docs/archive/_graveyard/ más viejas que el
+  2. MÓDULOS CLASIFICADOS — módulos con 0 importadores estáticos pero dueño
+     explícito: subprocess, componente inyectable, utilidad standalone o PARK.
+  3. CUARENTENA VENCIDA — carpetas en docs/archive/_graveyard/ más viejas que el
      grace; candidatas a `git rm` si nadie las rescató.
-  3. CARPETAS VACÍAS.
-  4. REFERENCIAS STALE — rutas docs/...md citadas en ficheros clave que ya no existen.
+  4. CARPETAS VACÍAS.
+  5. REFERENCIAS STALE — rutas docs/...md citadas en ficheros clave que ya no existen.
 
 Salida = informe; código de salida 0 siempre (es un radar, no una puerta).
 """
@@ -34,6 +36,24 @@ GRACE_DAYS = 30  # una cuarentena sobrevive >=1 ciclo; pasado el grace, candidat
 
 # Entrypoints: 0 importadores estáticos es ESPERADO (se invocan por CLI/ASGI/etc.).
 _ENTRYPOINT_HINTS = ("cli", "__main__", "__init__", "conftest", "app", "server", "asgi", "run")
+
+_CLASSIFIED_ZERO_IMPORTERS = {
+    "src/atlas/tools/_crawl4ai_worker.py": "KEEP subprocess entrypoint used by CrawlerTool in isolated venv",
+    "src/atlas/core/lesson_runner.py": "PARK tested lesson workflow; no runtime owner in current slice",
+    "src/atlas/core/incremental_coder.py": "PARK tested coding workflow; no runtime owner in current slice",
+    "src/atlas/core/history_compactor.py": "PARK standalone context utility; caller-owned",
+    "src/atlas/core/token_budget.py": "PARK standalone context utility; caller-owned",
+    "src/atlas/immunity/live_loop.py": "PARK gated hook adapter; no hot-path owner enabled",
+    "src/atlas/core/self_maintenance/root_cause_classifier.py": "KEEP injectable component used by ColdUpdateManager when configured",
+    "src/atlas/core/self_maintenance/benchmark_gate.py": "KEEP injectable component used by ColdUpdateBatcher when configured",
+    "src/atlas/core/self_maintenance/topic_expander.py": "PARK discovery helper; service-runner wiring not enabled",
+    "src/atlas/core/self_maintenance/preflight_gate.py": "PARK preflight component; self-build service wiring not enabled",
+    "src/atlas/core/self_maintenance/batch_premortem.py": "PARK batch gate; service-runner wiring not enabled",
+    "src/atlas/core/self_maintenance/sota_snapshot.py": "PARK benchmark context recorder; no scheduler owner enabled",
+    "src/atlas/core/self_maintenance/panorama_scout.py": "PARK discovery scout; no scheduler owner enabled",
+    "src/atlas/core/self_maintenance/failure_lesson_sink.py": "KEEP injectable component used by ColdUpdateBatcher when configured",
+    "src/atlas/core/self_maintenance/evolution_gate.py": "KEEP optional component used by SelfBuildRunner evolution path when configured",
+}
 
 
 def _modules() -> list[Path]:
@@ -61,11 +81,23 @@ def vapor_audit() -> list[str]:
         mod = f.stem
         if mod in _ENTRYPOINT_HINTS:
             continue
+        rel = str(f.relative_to(ROOT))
+        if rel in _CLASSIFIED_ZERO_IMPORTERS:
+            continue
         pat = rf"import .*\b{re.escape(mod)}\b|from .*\b{re.escape(mod)}\b import|\.{re.escape(mod)}\b"
         rx = re.compile(pat)
         if not any(g != f and rx.search(text) for g, text in corpus.items()):
-            out.append(str(f.relative_to(ROOT)))
+            out.append(rel)
     return out
+
+
+def classified_zero_importers() -> list[str]:
+    """Módulos sin importador estático pero con estado/owner explícito."""
+    return [
+        f"{path} — {reason}"
+        for path, reason in sorted(_CLASSIFIED_ZERO_IMPORTERS.items())
+        if (ROOT / path).is_file()
+    ]
 
 
 def graveyard_overdue() -> list[str]:
@@ -126,6 +158,8 @@ def main() -> int:
         pass
     _section("Vapor de sistema (0 importadores no-test → cablear o cuarentena)",
              vapor_audit(), "ningún módulo huérfano")
+    _section("Módulos 0-importer clasificados", classified_zero_importers(),
+             "ningún módulo clasificado")
     _section(f"Cuarentena (grace {GRACE_DAYS}d)", graveyard_overdue(), "graveyard vacío")
     _section("Carpetas vacías", empty_dirs(), "ninguna")
     _section("Referencias docs/ stale en ficheros clave", stale_refs(), "ninguna")

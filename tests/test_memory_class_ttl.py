@@ -138,3 +138,19 @@ def test_personal_isolated_by_tenant(tmp_path: Path) -> None:
     a.upsert(GenericRecord(record_id="pa", text="secreto de A"), memory_class="personal")
     ids_b = {r.lesson_id for r in b.recall_all("secreto", k=10, memory_class="personal")}
     assert "pa" not in ids_b  # B no ve lo personal de A
+
+
+def test_supersede_preserves_memory_class_and_expiry(tmp_path: Path) -> None:
+    idx = SqliteMemoryIndex(tmp_path / "m.db")
+    idx.upsert(
+        GenericRecord(record_id="old", text="prefiero respuestas cortas"),
+        memory_class="personal",
+        expires_at=123.0,
+    )
+
+    idx.supersede("old", GenericRecord(record_id="new", text="prefiero respuestas directas"))
+
+    row = idx._conn.execute(
+        "SELECT memory_class, expires_at, supersedes FROM records WHERE id='new'"
+    ).fetchone()
+    assert row == ("personal", 123.0, "old")

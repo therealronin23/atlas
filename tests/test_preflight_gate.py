@@ -102,7 +102,7 @@ def test_pip_audit_non_json_stdout_fails_closed(monkeypatch):
     assert "no-JSON" in result.cve_findings[0] or "pip-audit no pudo ejecutarse" in result.cve_findings[0]
 
 
-def test_sanitation_findings_has_four_keys(monkeypatch):
+def test_sanitation_findings_has_expected_keys(monkeypatch):
     payload = {"dependencies": [{"name": "requests", "version": "2.31.0", "vulns": []}], "fixes": []}
     monkeypatch.setattr(
         "atlas.core.self_maintenance.preflight_gate.subprocess.run",
@@ -112,6 +112,7 @@ def test_sanitation_findings_has_four_keys(monkeypatch):
     result = gate.check()
     assert set(result.sanitation_findings.keys()) == {
         "vapor",
+        "classified_zero_importers",
         "graveyard_overdue",
         "empty_dirs",
         "stale_refs",

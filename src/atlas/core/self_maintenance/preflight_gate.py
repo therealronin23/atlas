@@ -86,6 +86,7 @@ class PreflightGate:
             spec.loader.exec_module(module)
             return {
                 "vapor": module.vapor_audit(),
+                "classified_zero_importers": module.classified_zero_importers(),
                 "graveyard_overdue": module.graveyard_overdue(),
                 "empty_dirs": module.empty_dirs(),
                 "stale_refs": module.stale_refs(),

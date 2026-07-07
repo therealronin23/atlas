@@ -53,6 +53,20 @@ def build_memory_server(trunk: MemoryTrunk, *, name: str = "atlas-memory") -> "F
         return trunk.add(text, record_id=record_id, record_type=record_type)
 
     @server.tool()
+    def add_from_knowledge_src(
+        text: str, record_id: str | None = None, record_type: str | None = None
+    ) -> str:
+        """Recuerda conocimiento de `knowledge-src` como factual."""
+        return trunk.add_from_knowledge_src(text, record_id=record_id, record_type=record_type)
+
+    @server.tool()
+    def add_from_user_preference(
+        text: str, record_id: str | None = None, record_type: str | None = None
+    ) -> str:
+        """Recuerda una preferencia declarada por el usuario como personal."""
+        return trunk.add_from_user_preference(text, record_id=record_id, record_type=record_type)
+
+    @server.tool()
     def supersede(old_id: str, new_text: str, record_id: str | None = None) -> str:
         """Reemplaza un recuerdo: el viejo caduca (auditable), el nuevo entra
         vigente con lineage. Devuelve el id nuevo."""
@@ -121,6 +135,22 @@ def build_tenant_memory_server(
         """Recuerda un hecho nuevo para el tenant activo. Devuelve su id."""
         trunk = router.for_tenant(tenant_resolver())
         return trunk.add(text, record_id=record_id, record_type=record_type)
+
+    @server.tool()
+    def add_from_knowledge_src(
+        text: str, record_id: str | None = None, record_type: str | None = None
+    ) -> str:
+        """Recuerda conocimiento de `knowledge-src` como factual para el tenant activo."""
+        trunk = router.for_tenant(tenant_resolver())
+        return trunk.add_from_knowledge_src(text, record_id=record_id, record_type=record_type)
+
+    @server.tool()
+    def add_from_user_preference(
+        text: str, record_id: str | None = None, record_type: str | None = None
+    ) -> str:
+        """Recuerda una preferencia declarada por el usuario como personal para el tenant activo."""
+        trunk = router.for_tenant(tenant_resolver())
+        return trunk.add_from_user_preference(text, record_id=record_id, record_type=record_type)
 
     @server.tool()
     def supersede(old_id: str, new_text: str, record_id: str | None = None) -> str:

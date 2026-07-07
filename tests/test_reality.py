@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 from click.testing import CliRunner
 
@@ -50,6 +51,42 @@ def test_collect_reality_reports_static_facts(tmp_path: Path, monkeypatch) -> No
     assert report["hermes"]["mode"] == "mock"
     assert report["docs"]["status"] == "ok"
     assert any(c["name"] == "self_improvement.cold_update" for c in report["capabilities"])
+
+
+def test_browser_state_degrades_when_expected_playwright_executable_is_missing(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from atlas.core import reality
+
+    expected = tmp_path / "chromium_headless_shell-999" / "chrome-headless-shell"
+    monkeypatch.setattr(reality, "find_spec", lambda name: object() if name == "playwright" else None)
+    monkeypatch.setattr(reality, "_playwright_chromium_executable", lambda: (expected, ""))
+
+    state = reality._browser_state()
+
+    assert state["status"] == "degraded"
+    assert state["expected_chromium_executable"] == str(expected)
+    assert state["expected_chromium_present"] is False
+    assert "missing playwright chromium executable" in state["reason"]
+
+
+def test_browser_state_ready_only_for_expected_playwright_executable(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from atlas.core import reality
+
+    expected = tmp_path / "chrome-headless-shell"
+    expected.write_text("#!/bin/sh\n", encoding="utf-8")
+    expected.chmod(0o755)
+    monkeypatch.setattr(reality, "find_spec", lambda name: object() if name == "playwright" else None)
+    monkeypatch.setattr(reality, "_playwright_chromium_executable", lambda: (expected, ""))
+
+    state = reality._browser_state()
+
+    assert state["status"] == "ready"
+    assert state["expected_chromium_present"] is True
 
 
 def test_collect_reality_flags_contradictory_doc_counts(
@@ -121,3 +158,30 @@ def test_capabilities_cli_json(monkeypatch, tmp_path: Path) -> None:
     names = {item["name"] for item in payload}
     assert "audit.merkle" in names
     assert "browser.computer_use" in names
+
+
+def test_playwright_chromium_executable_stops_manager(monkeypatch, tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    stopped: list[bool] = []
+    expected = tmp_path / "chrome"
+
+    class _Starter:
+        def start(self) -> SimpleNamespace:
+            return SimpleNamespace(
+                chromium=SimpleNamespace(executable_path=str(expected)),
+                stop=lambda: stopped.append(True),
+            )
+
+    monkeypatch.setattr(reality, "find_spec", lambda name: object() if name == "playwright" else None)
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "playwright.sync_api",
+        SimpleNamespace(sync_playwright=lambda: _Starter()),
+    )
+
+    path, error = reality._playwright_chromium_executable()
+
+    assert path == expected
+    assert error == ""
+    assert stopped == [True]

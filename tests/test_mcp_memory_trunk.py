@@ -73,6 +73,17 @@ def test_add_with_explicit_id_is_honored(tmp_path: Path) -> None:
     assert trunk.recall("azul cielo")[0].record_id == "sky-1"
 
 
+def test_origin_helpers_classify_factual_and_personal(tmp_path: Path) -> None:
+    trunk = _trunk(tmp_path)
+    fact = trunk.add_from_knowledge_src("la wikipedia tiene procedencia factual", record_id="fact-1")
+    pref = trunk.add_from_user_preference("prefiero respuestas concisas", record_id="pref-1")
+
+    assert fact == "fact-1"
+    assert pref == "pref-1"
+    assert [h.record_id for h in trunk.recall("wikipedia factual", k=5)] == ["fact-1"]
+    assert all(h.record_id != "pref-1" for h in trunk.recall("respuestas concisas", k=5))
+
+
 def test_supersede_retires_old_and_surfaces_new(tmp_path: Path) -> None:
     trunk = _trunk(tmp_path)
     old = trunk.add("el servidor escucha en el puerto 8080", record_id="cfg-1")
@@ -104,7 +115,7 @@ def test_build_server_registers_memory_tools(tmp_path: Path) -> None:
     server = build_memory_server(_trunk(tmp_path))
     tools = asyncio.run(server.list_tools())
     names = {t.name for t in tools}
-    assert {"recall", "add", "supersede"} <= names
+    assert {"recall", "add", "add_from_knowledge_src", "add_from_user_preference", "supersede"} <= names
 
 
 def test_cross_play_roundtrip_from_another_cwd(tmp_path: Path) -> None:
