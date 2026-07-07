@@ -7,5 +7,9 @@ if [ -f .venv/bin/activate ]; then
   # shellcheck disable=SC1091
   source .venv/bin/activate
 fi
-export PYTHONPATH=src
+if [ -n "${PYTHONPATH:-}" ]; then
+  export PYTHONPATH="$ROOT/src:$PYTHONPATH"
+else
+  export PYTHONPATH="$ROOT/src"
+fi
 exec python scripts/capability_route_hook.py "$@"

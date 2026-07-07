@@ -48,8 +48,10 @@ class TestAtlasMcpConfig:
         rot = result[0]["read_only_tools"]
         for expected in [
             "trunk_sectors", "trunk_subsectors", "trunk_tools",
-            "trunk_kinds", "trunk_catalog", "trunk_find",
+            "trunk_kinds", "trunk_health", "trunk_catalog", "trunk_find",
+            "trunk_recommend_stack",
             "list_skills", "get_skill",
+            "trunk_list_roots", "trunk_selfcheck",
         ]:
             assert expected in rot, f"missing read_only_tool: {expected}"
 
@@ -85,3 +87,17 @@ class TestLoadServersCompatibility:
             assert server.name == "atlas-trunk"
         finally:
             tmp_path.unlink(missing_ok=True)
+
+
+class TestCursorMcpConfig:
+    """Cursor config should be launchable even when the MCP client sanitizes env."""
+
+    def test_cursor_trunk_pythonpath_includes_src_and_venv_site_packages(self) -> None:
+        config_path = Path(__file__).resolve().parent.parent / ".cursor" / "mcp.json"
+        raw = json.loads(config_path.read_text(encoding="utf-8"))
+        server = raw["mcpServers"]["atlas-trunk"]
+        pythonpath = server["env"]["PYTHONPATH"]
+
+        assert "${workspaceFolder}/src" in pythonpath
+        assert "${workspaceFolder}/.venv/lib/python3.12/site-packages" in pythonpath
+        assert server["command"] == "${workspaceFolder}/.venv/bin/python"

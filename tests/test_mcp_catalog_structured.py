@@ -133,6 +133,35 @@ def test_real_catalog_verified_are_vetted_and_installable() -> None:
         assert e.trust == "vetted", f"{e.name}: verificado pero trust={e.trust!r}, se esperaba 'vetted'"
 
 
+def test_real_catalog_has_2026_shortlist_as_non_installable_candidates() -> None:
+    """La shortlist 2026 entra como descubrimiento, no como install automático."""
+    from atlas.mcp.catalog import installable, load_catalog
+
+    entries = load_catalog(_CATALOG)
+    by_name = {e.name: e for e in entries}
+    required = {
+        "GitHub MCP",
+        "Context7",
+        "Fetch",
+        "Figma (MCP / Implement Design)",
+        "Postgres / Supabase",
+        "Notion MCP",
+        "Sentry MCP",
+        "Cloudflare MCP",
+        "Stripe MCP",
+        "Docker MCP",
+        "Kubernetes MCP",
+        "Tavily Search",
+        "Perplexity MCP",
+        "Time",
+    }
+    assert required <= set(by_name)
+    installable_names = {e.name for e in installable(entries)}
+    for name in required:
+        assert by_name[name].status == "candidato", f"{name} no debe sobreclamarse"
+        assert name not in installable_names
+
+
 # ---------------------------------------------------------------------------
 # Catálogo v2: tags multi-sector + mode operativo + metadatos
 # ---------------------------------------------------------------------------
@@ -349,6 +378,18 @@ def test_find_orders_mature_first(tmp_path: Path) -> None:
     # "test" casa con atlas-trunk-f (instalado, subsector testing) y nada más maduro
     hits = find(entries, tax, "test")
     assert hits[0]["status"] == "instalado"
+
+
+def test_recommended_stack_prefers_mature_and_marks_candidates() -> None:
+    from atlas.mcp.catalog import load_catalog, load_taxonomy, recommended_stack
+
+    out = recommended_stack(load_catalog(_CATALOG), load_taxonomy(_CATALOG), "frontend figma docs")
+    assert out["policy"].startswith("installed/verified first")
+    assert out["items"], "debe devolver una shortlist"
+    statuses = [item["status"] for item in out["items"]]
+    assert statuses == sorted(statuses, key={"instalado": 0, "verificado": 1, "probado-en-jaula": 2, "candidato": 3}.get)
+    candidates = [item for item in out["items"] if item["status"] == "candidato"]
+    assert all("trial" in item["next_action"] for item in candidates)
 
 
 def test_in_sector_matches_any_tag(tmp_path: Path) -> None:

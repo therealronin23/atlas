@@ -27,6 +27,7 @@ sectors:
       - {name: Karpathy Guidelines, kind: skill, subsector: code-review, purpose: "reglas de coding limpio", status: candidato}
       - {name: vercel-react-best-practices, kind: skill, subsector: frontend, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices", purpose: "patrones React/Next (instalado E2E vía npx skills 2026-06-22)", tags: [programacion, diseno], trust: vetted, status: instalado}
       - {name: Playwright / WebApp Testing, kind: mcp, subsector: testing, install: "npx -y @playwright/mcp@latest", transport: stdio, trust: vetted, purpose: "navegación/scraping vía árbol de accesibilidad (23 tools, prove-it OK 2026-07-02, sub-100ms, muchos menos tokens que screenshot-based)", tags: [programacion, ciberseguridad], status: verificado, read_only_tools: [browser_snapshot, browser_console_messages, browser_network_requests, browser_network_request, browser_take_screenshot]}
+      - {name: GitHub MCP, kind: mcp, subsector: cicd, source: "github/github-mcp-server", install: "docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server", transport: stdio, env_passthrough: [GITHUB_PERSONAL_ACCESS_TOKEN], purpose: "repos, issues, PRs y code search; vendor-maintained, candidato prioritario 2026", tags: [programacion, infraestructura], trust: research-2026, status: candidato}
       - {name: WarpGrep, kind: tool, subsector: cicd, purpose: "búsqueda ultrarrápida en repos (Codex)", status: candidato}
       - {name: gh-fix-ci, kind: tool, subsector: cicd, purpose: "arregla CI fallido en background (Codex)", status: candidato}
 
@@ -41,7 +42,7 @@ sectors:
     entries:
       - {name: Frontend Design / Senior Frontend, kind: skill, subsector: ui, purpose: "UI production-grade", tags: [diseno, programacion], status: candidato}
       - {name: UI UX Pro Max, kind: skill, subsector: ui, purpose: "paletas/tipografía/componentes", status: candidato}
-      - {name: Figma (MCP / Implement Design), kind: mcp, subsector: grafico, purpose: "Figma → código", status: candidato}
+      - {name: Figma (MCP / Implement Design), kind: mcp, subsector: grafico, source: "developers.figma.com/docs/figma-mcp-server", purpose: "Figma → código/design context; vendor-maintained, candidato prioritario 2026", tags: [diseno, programacion], trust: research-2026, status: candidato}
       - {name: web-design-guidelines, kind: skill, subsector: ux, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill web-design-guidelines", purpose: "auditoría UX/accesibilidad (instalado E2E)", trust: vetted, status: instalado}
 
   ciberseguridad:
@@ -65,7 +66,8 @@ sectors:
       analisis: {label: Análisis, aliases: [analytics, insights]}
       scraping: {label: Scraping/ETL, aliases: [etl, ingesta]}
     entries:
-      - {name: Postgres / Supabase, kind: mcp, subsector: bases-de-datos, purpose: "queries DB", status: candidato}
+      - {name: Postgres / Supabase, kind: mcp, subsector: bases-de-datos, source: "supabase/mcp", purpose: "queries DB y gestión Supabase; vendor-maintained, requiere tokens/scopes estrictos", tags: [datos, infraestructura], trust: research-2026, status: candidato}
+      - {name: Stripe MCP, kind: mcp, subsector: analisis, source: "stripe", purpose: "pagos, clientes y reporting financiero; vendor-maintained, alto riesgo mutating/HITL", tags: [datos, productividad], trust: research-2026, status: candidato}
 
   investigacion:
     label: Investigación
@@ -78,8 +80,11 @@ sectors:
     entries:
       - {name: Firecrawl, kind: mcp, subsector: web, purpose: "búsqueda/scraping/contexto vivo", status: candidato}
       - {name: Valyu, kind: tool, subsector: web, purpose: "research", status: candidato}
-      - {name: Context7, kind: mcp, subsector: documentacion, purpose: "documentación en vivo", status: candidato}
+      - {name: Context7, kind: mcp, subsector: documentacion, source: "upstash/context7", install: "npx -y @upstash/context7-mcp", transport: stdio, purpose: "documentación viva/versionada para código; candidato prioritario 2026", tags: [investigacion, programacion], trust: research-2026, status: candidato}
+      - {name: Fetch, kind: mcp, subsector: web, source: "modelcontextprotocol/servers", purpose: "fetch web básico de referencia MCP; alternativa ligera a browser/scraper", tags: [investigacion, programacion], trust: research-2026, status: candidato}
       - {name: Brave Search, kind: mcp, subsector: web, purpose: "búsqueda web", status: candidato}
+      - {name: Tavily Search, kind: mcp, subsector: web, source: "tavily", purpose: "web search/research API con scoring; requiere token", tags: [investigacion], trust: research-2026, status: candidato}
+      - {name: Perplexity MCP, kind: mcp, subsector: web, source: "perplexity", purpose: "research web con respuestas citadas; requiere token", tags: [investigacion], trust: research-2026, status: candidato}
       - {name: Zotero MCP, kind: mcp, subsector: academico, purpose: "papers/citas", status: candidato}
       - {name: Scientific Skills (LaTeX/papers), kind: skill, subsector: academico, purpose: "papers/visualizaciones", status: candidato}
 
@@ -113,7 +118,9 @@ sectors:
     entries:
       - {name: google-workspace, kind: mcp, subsector: gestion, install: "uvx workspace-mcp --tool-tier core", transport: stdio, env_passthrough: [GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET], source: "taylorwilsdon/google_workspace_mcp", purpose: "Gmail/Calendar/Drive/Docs/Sheets con tu cuenta Google (OAuth). 45 tools, ✔ Connected. OAuth de navegador al primer uso", tags: [productividad, conocimiento-memoria], trust: vetted, status: instalado}
       - {name: Linear, kind: mcp, subsector: gestion, purpose: "tickets", status: candidato}
+      - {name: Notion MCP, kind: mcp, subsector: gestion, source: "notion", purpose: "workspace/docs/tareas; vendor-hosted suele requerir OAuth MCP, candidato 2026", tags: [productividad, conocimiento-memoria], trust: research-2026, status: candidato}
       - {name: Slack, kind: mcp, subsector: comunicacion, purpose: "comunicación", status: candidato}
+      - {name: Sentry MCP, kind: mcp, subsector: gestion, source: "sentry", purpose: "errores, issues y observabilidad de producto; candidato 2026 para debugging", tags: [productividad, programacion, infraestructura], trust: research-2026, status: candidato}
       - {name: Document Skills (PDF/DOCX/XLSX/PPTX), kind: skill, subsector: ofimatica, purpose: "ofimática", tags: [productividad, datos], status: candidato}
       - {name: writing-guidelines, kind: skill, subsector: ofimatica, mode: installed, source: "vercel-labs/agent-skills", install: "npx skills add vercel-labs/agent-skills --skill writing-guidelines", purpose: "guías de escritura/contenido (instalado E2E)", trust: vetted, status: instalado}
 
@@ -127,9 +134,10 @@ sectors:
       prompting: {label: Prompting, aliases: [prompts, system-prompt]}
       planning: {label: Planificación, aliases: [plan, reasoning, grill]}
     entries:
-      - {name: Superpowers, kind: skill, subsector: orquestacion, source: "plugin", purpose: "orquestación multi-agente", status: instalado}
+      - {name: Superpowers, kind: plugin, subsector: orquestacion, source: "plugin", purpose: "orquestación multi-agente (plugin Claude, no skill markdown)", status: instalado}
       - {name: MCP Builder, kind: skill, subsector: builders, purpose: "construir servers MCP", status: candidato}
       - {name: sequential-thinking, kind: mcp, subsector: planning, install: "npx -y @modelcontextprotocol/server-sequential-thinking", transport: stdio, trust: vetted, purpose: "razonamiento por pasos (oficial, prove-it OK)", status: verificado}
+      - {name: Time, kind: mcp, subsector: planning, source: "modelcontextprotocol/servers", purpose: "time/timezone reference server; útil para automatizaciones y fechas absolutas", tags: [ia-agentes, productividad], trust: research-2026, status: candidato}
       - {name: Grill-Me, kind: skill, subsector: planning, purpose: "stress-test socrático de planes", status: candidato}
       - {name: Create-Plan / Write-Plan, kind: skill, subsector: planning, purpose: "planificar antes de ejecutar", status: candidato}
       - {name: Skill-Creator, kind: skill, subsector: builders, purpose: "crear skills (meta)", status: candidato}
@@ -138,6 +146,7 @@ sectors:
       - {name: 1mcp/agent, kind: tool, subsector: orquestacion, purpose: "agrega múltiples servers en uno", status: candidato}
       - {name: mcgravity, kind: tool, subsector: orquestacion, purpose: "proxy/load-balancer de servers", status: candidato}
       - {name: deliberation_council, kind: skill, subsector: planning, mode: served, source: "docs/skills/deliberation_council.md", purpose: "Cónclave: deliberación multi-voz + veredicto honesto (NUESTRO)", tags: [ia-agentes, productividad], status: instalado}
+      - {name: deliberation_council_portable, kind: skill, subsector: planning, mode: served, source: "docs/skills/deliberation_council_portable.md", purpose: "Cónclave portable sin runtime Python (NUESTRO)", tags: [ia-agentes, productividad], status: instalado}
       - {name: StormMCP, kind: tool, subsector: orquestacion, purpose: "compone varios en endpoint unificado", status: candidato}
 
   infraestructura:
@@ -154,6 +163,9 @@ sectors:
       - {name: atlas-operating, kind: mcp, subsector: operacion, source: atlas.mcp.operating_server, purpose: "OPERATING LOOP + ledger + sanitation (NUESTRO)", install: "claude mcp add atlas-operating", status: instalado}
       - {name: Filesystem, kind: mcp, subsector: ficheros, source: "modelcontextprotocol/servers", purpose: "acceso a ficheros", status: candidato}
       - {name: Git / GitHub, kind: mcp, subsector: git, purpose: "git + issues/PRs", status: candidato}
+      - {name: Docker MCP, kind: mcp, subsector: operacion, source: "docker", purpose: "containers/images/local dev; alto impacto, candidato con allowlist estricta", tags: [infraestructura, programacion], trust: research-2026, status: candidato}
+      - {name: Kubernetes MCP, kind: mcp, subsector: operacion, source: "kubernetes/cloud-native", purpose: "cluster inspection/ops; alto riesgo, solo lectura y contexto concreto antes de conectar", tags: [infraestructura], trust: research-2026, status: candidato}
+      - {name: Cloudflare MCP, kind: mcp, subsector: operacion, source: "cloudflare", purpose: "edge, DNS, workers y observabilidad; vendor-maintained, requiere token scoped", tags: [infraestructura], trust: research-2026, status: candidato}
       - {name: Desktop Commander, kind: mcp, subsector: terminal, purpose: "archivos + terminal", status: candidato}
       - {name: computer-control-mcp, kind: mcp, subsector: escritorio, install: "env DISPLAY=:99 /home/ronin/proyectos/atlas-core/.venv-desktop/bin/computer-control-mcp", transport: stdio, trust: vetted, purpose: "GUI mouse/keyboard/OCR contra display VIRTUAL Xvfb :99 — nunca el real (prove-it OK 2026-07-02, 15 tools). Requiere Xvfb :99 corriendo.", tags: [programacion, infraestructura], status: verificado, read_only_tools: [take_screenshot, take_screenshot_with_ocr, get_screen_size, list_windows]}
       - {name: computer-control-mcp-real-display, kind: mcp, subsector: escritorio, install: "env DISPLAY=:0 /home/ronin/proyectos/atlas-core/.venv-desktop/bin/computer-control-mcp", transport: stdio, trust: vetted, purpose: "GUI mouse/keyboard/OCR contra el display REAL :0 (sesión de escritorio en vivo) — NUNCA verificar/probar sin un caso de uso concreto y confirmación explícita del usuario; deliberadamente NO promovida a verificado hasta que exista esa razón. Todas las tools quedan mutate/HITL (sin read_only_tools) por diseño: incluso una lectura aquí toca la sesión real.", tags: [programacion, infraestructura], status: candidato}

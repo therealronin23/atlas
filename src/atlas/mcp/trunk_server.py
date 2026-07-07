@@ -124,6 +124,72 @@ def trunk_children(
     return out
 
 
+def trunk_health_snapshot(
+    catalog: list["CatalogEntry"],
+    configs: list[McpServerConfig],
+) -> dict[str, Any]:
+    """Diagnóstico barato del trunk, sin spawnear servidores ni ejecutar terceros."""
+    by_status: dict[str, int] = {}
+    by_kind: dict[str, int] = {}
+    for entry in catalog:
+        by_status[entry.status] = by_status.get(entry.status, 0) + 1
+        by_kind[entry.kind] = by_kind.get(entry.kind, 0) + 1
+
+    configured: list[dict[str, Any]] = []
+    missing_env_total: dict[str, list[str]] = {}
+    for cfg in configs:
+        _env, missing = cfg.resolve_env()
+        if missing:
+            missing_env_total[cfg.name] = missing
+        configured.append(
+            {
+                "name": cfg.name,
+                "enabled": cfg.enabled and not missing,
+                "cmd0": cfg.cmd[0] if cfg.cmd else "",
+                "read_only_tools": list(cfg.read_only_tools),
+                "missing_env": missing,
+                "timeout_seconds": cfg.timeout_seconds,
+            }
+        )
+
+    trial_ready: list[dict[str, str]] = []
+    for entry in catalog:
+        if entry.kind != "mcp" or entry.status != "candidato":
+            continue
+        if not entry.install and not entry.source:
+            continue
+        trial_ready.append(
+            {
+                "name": entry.name,
+                "sector": entry.sector,
+                "subsector": entry.subsector,
+                "source": entry.source,
+                "install": entry.install,
+                "trust": entry.trust,
+            }
+        )
+    trial_ready.sort(
+        key=lambda r: (
+            0 if r["trust"] == "research-2026" else 1,
+            r["sector"],
+            r["name"].lower(),
+        )
+    )
+
+    return {
+        "status": "ok" if not missing_env_total else "degraded",
+        "catalog": {
+            "total": len(catalog),
+            "by_status": by_status,
+            "by_kind": by_kind,
+        },
+        "configured_servers": configured,
+        "missing_env_by_server": missing_env_total,
+        "trial_ready_candidates": trial_ready[:20],
+        "policy": "health does not spawn or install; candidates require trial + review + explicit consent",
+    }
+
+
 def build_trunk_server(
     agg: TrunkAggregator,
     *,
@@ -134,6 +200,7 @@ def build_trunk_server(
     lesson_store: Any | None = None,
     backlog_items: "list[BacklogItem] | None" = None,
     memory_count: int | None = None,
+    health_configs: list[McpServerConfig] | None = None,
 ) -> "FastMCP":
     """Servidor FastMCP que expone la fachada meta lazy del tronco (navegación de 3
     niveles + buscador). Con `skill_store` sirve skills; con `catalog`+`taxonomy`
@@ -201,6 +268,12 @@ def build_trunk_server(
             return _by_kind(catalog)
 
         @server.tool()
+        def trunk_health() -> dict[str, Any]:
+            """Diagnóstico sin efectos: catálogo, servers configurados, read-only y
+            secretos faltantes por nombre. No spawnea ni instala terceros."""
+            return trunk_health_snapshot(catalog, health_configs or [])
+
+        @server.tool()
         def trunk_catalog(kind: str | None = None, sector: str | None = None) -> list[dict[str, Any]]:
             """Explora una LÍNEA (kind) y/o un dominio (sector): nombre, sector,
             estado, mode. Madurez-first. Incluye candidatos (descubrimiento)."""
@@ -216,12 +289,19 @@ def build_trunk_server(
 
     if catalog is not None and taxonomy is not None:
         from atlas.mcp.catalog import find as _find
+        from atlas.mcp.catalog import recommended_stack as _recommended_stack
 
         @server.tool()
         def trunk_find(query: str) -> list[dict[str, Any]]:
             """Salto directo: busca por nombre/alias (p.ej. 'seguridad', 'figma') y
             devuelve el camino sector/subsector, madurez-first. No hace falta navegar."""
             return _find(catalog, taxonomy, query)
+
+        @server.tool()
+        def trunk_recommend_stack(goal: str, limit: int = 8) -> dict[str, Any]:
+            """Shortlist 2026 por objetivo: instalado/verificado primero; candidatos
+            solo como descubrimiento. No instala ni ejecuta terceros."""
+            return _recommended_stack(catalog, taxonomy, goal, limit=limit)
 
     if skill_store is not None:
         @server.tool()
@@ -395,7 +475,7 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     server = build_trunk_server(
         agg, name=name, skill_store=store, catalog=catalog, taxonomy=taxonomy,
         lesson_store=lesson_store_obj, backlog_items=backlog_items_list,
-        memory_count=memory_count_val,
+        memory_count=memory_count_val, health_configs=children,
     )
     try:
         server.run()
