@@ -1,5 +1,10 @@
 # Auditoría MCP del tronco — los 6 primitivos (2026-06-25)
 
+> **SUPERSEDED (2026-07-07):** Los 6 primitivos y utilidades (Completion, Subscriptions)
+> están implementados en `src/atlas/mcp/trunk_capabilities.py` y `trunk_server.py`.
+> Diseño de cierre: [`docs/superpowers/specs/2026-06-25-mcp-close-primitives-design.md`](../superpowers/specs/2026-06-25-mcp-close-primitives-design.md).
+> Este documento se conserva como historial del audit inicial; no usar como estado vivo.
+
 Disparador: el usuario sospecha que infrautilizamos el MCP ("lo hemos usado solo para skills/prompts").
 Objetivo: mapear lo que el tronco realmente expone a los **6 primitivos de servidor** del spec MCP, hallar
 los huecos reales con su valor/coste, y proponer un diseño priorizado. **NO implementa** — alimenta un

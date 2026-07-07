@@ -39,6 +39,11 @@ Construir sobre lo NUESTRO (`McpRegistry` ADR-035, vivo: agrega + namespacing + 
 - **Descubrimiento lazy/jerárquico** (1mcp, MarimerLLC, metamcp): índice de sectores → drill a tools.
   El anti-kitchen-sink. ✅ construido en `TrunkAggregator`.
 - **purpose/skill-doc por server** para guiar routing (MarimerLLC): ✅ del catálogo YAML.
+- **Shortlist por objetivo** (2026): ✅ `trunk_recommend_stack(goal)` devuelve un stack
+  pequeño, madurez-first. No instala terceros; candidatos requieren trial + revisión +
+  consentimiento explícito antes de promoción.
+- **Health sin efectos** (2026): ✅ `trunk_health()` resume catálogo, servers configurados,
+  allowlists read-only y secretos faltantes por nombre. No spawnea ni instala.
 - **Filtro/middleware de tools** (metamcp): 🔸 ligero, pendiente.
 - Descartado por YAGNI local: rate-limit, OAuth, multi-tenant, REST dual, OpenAPI, inspector, AI-summaries.
 Catálogo se siembra de registros ABIERTOS (registry.modelcontextprotocol.io —ya en allowlist SSRF—,

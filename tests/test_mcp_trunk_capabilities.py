@@ -25,12 +25,17 @@ def _agg():
 
 
 def _server():
-    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.catalog import load_catalog, load_taxonomy
     from atlas.mcp.skills_store import SkillStore
     from atlas.mcp.trunk_server import build_trunk_server
 
     store = SkillStore(Path(__file__).resolve().parent.parent / "docs" / "skills")
-    return build_trunk_server(_agg(), skill_store=store, catalog=load_catalog(_CATALOG))
+    return build_trunk_server(
+        _agg(),
+        skill_store=store,
+        catalog=load_catalog(_CATALOG),
+        taxonomy=load_taxonomy(_CATALOG),
+    )
 
 
 def test_completion_on_catalog_template_kind() -> None:
@@ -97,6 +102,44 @@ def test_selfcheck_emits_logs_and_returns_counts() -> None:
     assert "by_status" in out and "usable" in out
     # Logging primitive: al menos un mensaje estructurado llegó al cliente.
     assert any("selfcheck" in m for m in logs)
+
+
+def test_health_reports_catalog_and_does_not_spawn() -> None:
+    pytest.importorskip("mcp")
+    import asyncio
+
+    from mcp.shared.memory import create_connected_server_and_client_session as connect
+
+    async def run() -> dict:
+        async with connect(_server()) as client:
+            res = await client.call_tool("trunk_health", {})
+            return res.structuredContent or {}
+
+    out = asyncio.run(run())
+    assert out["policy"].startswith("health does not spawn")
+    assert out["catalog"]["total"] > 0
+    assert "trial_ready_candidates" in out
+    names = [c["name"] for c in out["trial_ready_candidates"][:8]]
+    assert "Context7" in names
+
+
+def test_recommend_stack_tool_returns_small_shortlist() -> None:
+    pytest.importorskip("mcp")
+    import asyncio
+
+    from mcp.shared.memory import create_connected_server_and_client_session as connect
+
+    async def run() -> dict:
+        async with connect(_server()) as client:
+            res = await client.call_tool(
+                "trunk_recommend_stack", {"goal": "frontend figma docs", "limit": 5}
+            )
+            return res.structuredContent or {}
+
+    out = asyncio.run(run())
+    assert out["policy"].startswith("installed/verified first")
+    assert 1 <= len(out["items"]) <= 5
+    assert all("next_action" in item for item in out["items"])
 
 
 def test_elicitation_confirm() -> None:

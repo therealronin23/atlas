@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "atlas-trunk": {
+      "command": "${workspaceFolder}/.venv/bin/python",
+      "args": [
+        "-m",
+        "atlas.mcp.trunk_server",
+        "${userHome}/atlas-mcp",
+        "${workspaceFolder}"
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src:${workspaceFolder}/.venv/lib/python3.12/site-packages"
+      }
+    }
+  }
+}

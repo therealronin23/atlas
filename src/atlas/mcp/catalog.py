@@ -178,6 +178,77 @@ def find(
     return hits[:limit]
 
 
+def recommended_stack(
+    entries: list[CatalogEntry],
+    taxonomy: dict[str, Any],
+    goal: str,
+    *,
+    limit: int = 8,
+) -> dict[str, Any]:
+    """Devuelve una shortlist pequeña para un objetivo humano.
+
+    Esto no instala nada. Es deliberadamente conservador: prioriza instalado y
+    verificado, incluye candidatos solo como descubrimiento, y deja claro que
+    terceros no probados requieren trial/consent antes de entrar al trunk.
+    """
+    query = goal.strip()
+    if not query:
+        query = "general"
+    hits = find(entries, taxonomy, query, limit=max(limit * 3, 10))
+    by_id = {(h["kind"], h["name"]) for h in hits}
+
+    selected: list[CatalogEntry] = [
+        e for e in entries if (e.kind, e.name) in by_id
+    ]
+    if not selected:
+        # Fallback general: un kit pequeño y maduro para la próxima sesión.
+        preferred = {
+            "atlas-operating",
+            "atlas-memory",
+            "atlas-knowledge",
+            "Playwright / WebApp Testing",
+            "Context7",
+            "GitHub MCP",
+            "sequential-thinking",
+        }
+        selected = [e for e in entries if e.name in preferred]
+
+    selected.sort(
+        key=lambda e: (
+            _MATURITY.get(e.status, 3),
+            0 if e.name.startswith("atlas-") else 1,
+            e.kind,
+            e.name.lower(),
+        )
+    )
+    rows: list[dict[str, Any]] = []
+    for e in selected[:limit]:
+        rows.append(
+            {
+                "name": e.name,
+                "kind": e.kind,
+                "status": e.status,
+                "mode": e.mode,
+                "sector": e.sector,
+                "subsector": e.subsector,
+                "purpose": e.purpose,
+                "install": e.install,
+                "trust": e.trust,
+                "read_only_tools": list(e.read_only_tools),
+                "next_action": (
+                    "usable now"
+                    if e.status in {"instalado", "verificado"}
+                    else "candidate: run trial + security review + explicit consent before install"
+                ),
+            }
+        )
+    return {
+        "goal": query,
+        "policy": "installed/verified first; candidates are discovery only",
+        "items": rows,
+    }
+
+
 def in_sector(entries: list[CatalogEntry], sector: str) -> list[CatalogEntry]:
     """Entradas cuyo sector primario o TAGS incluyen `sector` (sector = vista,
     no carpeta exclusiva: un item puede vivir en varios sectores)."""

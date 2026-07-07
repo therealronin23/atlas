@@ -27,7 +27,7 @@ def main() -> int:
     parser.add_argument(
         "--agents-skills-dir",
         type=Path,
-        default=Path(".agents/skills"),
+        default=Path(".claude/skills"),
         help="Skills instalados vía npx skills (SKILL.md por carpeta)",
     )
     parser.add_argument("--kind", default="", help="Filtrar por kind (skill, prompt, …)")

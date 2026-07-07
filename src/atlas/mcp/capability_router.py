@@ -55,7 +55,7 @@ def invoke_hint(entry: CatalogEntry) -> str:
     if entry.kind == "skill":
         if entry.mode == "served":
             return f"get_skill({entry.name!r}) vía tronco MCP"
-        return f".agents/skills/{entry.name}/SKILL.md"
+        return f".claude/skills/{entry.name}/SKILL.md"
     if entry.kind == "mcp":
         return f"trunk_invoke (sector={entry.sector}, server={entry.name})"
     if entry.kind == "api":

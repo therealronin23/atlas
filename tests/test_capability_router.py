@@ -89,4 +89,4 @@ def test_format_routing_block_nonempty() -> None:
 
 def test_invoke_hint_skill_installed() -> None:
     hint = invoke_hint(_entry(name="foo", status="instalado", mode="installed"))
-    assert ".agents/skills/foo" in hint
+    assert ".claude/skills/foo" in hint
