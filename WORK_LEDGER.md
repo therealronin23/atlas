@@ -6,6 +6,17 @@ Authority for WHERE/status only. Detail lives in design docs; why/lessons live i
 Format: `[estado] node — next action / blocked-by`. Estados: ✅ done · 🔄 active ·
 ⬜ pending · 🧱 wall · ⏸ parked.
 
+✅ **SelfBuildRunner fuera del árbol vivo (2026-07-08)** —
+`run_item` y `run_item_with_evolution` ejecutan ToolCoder y generan el patch en
+worktrees git efímeros (mismo patrón que `_evaluate_candidate_in_worktree` /
+ColdUpdateBatcher); `_revert_new_changes`/`_git_status_lines` eliminados — el
+revert sobre el árbol vivo podía destruir trabajo concurrente sin commitear
+(misma clase que el incidente "9 YAML regenerados"). El patch ahora incluye
+ficheros NUEVOS (`git add -A` dentro del worktree efímero). Invariante intacto:
+origin="self_audit" → HITL siempre. `tests/test_self_build_runner.py` green
+(incl. regresión: fichero sucio del operador durante el run sobrevive a un
+run_item fallido); mypy `src/atlas/` clean.
+
 ✅ **Dual audit MCP + Atlas runtime (2026-07-07)** —
 `docs/governance/audits/audit_complete_premortem_2026-07-07.md` sección B+C cerrada:
 manifest memory drift (`recall_multihop`/`shred`), catálogo skills, read_only trunk,
