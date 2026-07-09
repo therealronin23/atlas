@@ -34,6 +34,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote_plus
 
 from atlas.logging.merkle_logger import MerkleLogger
 from atlas.security.ssrf_bridge import SSRFBridge
@@ -116,7 +117,7 @@ class PanoramaScout:
         Fail-closed: egress denegado o fetch/parseo roto -> [] (auditado),
         sin propagar la excepcion."""
         url = (
-            f"{_GITHUB_SEARCH_URL}?q={topic.replace(' ', '+')}"
+            f"{_GITHUB_SEARCH_URL}?q={quote_plus(topic)}"
             f"&sort=updated&order=desc&per_page={self._max_results}"
         )
         decision = self._bridge.check(url)
@@ -151,7 +152,7 @@ class PanoramaScout:
         esta fuente en este tema (auditado), sin romper GitHub ni otros
         temas."""
         url = (
-            f"{_HACKERNEWS_SEARCH_URL}?query={topic.replace(' ', '+')}"
+            f"{_HACKERNEWS_SEARCH_URL}?query={quote_plus(topic)}"
             f"&tags=story&hitsPerPage={self._max_results}"
         )
         decision = self._bridge.check(url)
