@@ -52,6 +52,16 @@ def test_parse_vault_recursively(tmp_path: Path):
     assert result["subdir/note2.md"]["tags"] == ["tag"]
 
 
+def test_wikilinks_do_not_span_lines(tmp_path: Path):
+    """Un [[ ... ]] accidental multilínea en el body no es un wikilink
+    (caso real: vaults generados por Graphify, 2026-07-09)."""
+    note = tmp_path / "n.md"
+    note.write_text("Bien: [[b]]. Mal: [[texto que\ncruza líneas]] y [[c|al\nias]].")
+
+    result = parse_note(note)
+    assert result["wikilinks"] == ["b"]
+
+
 def test_parse_vault_ignores_obsidian_directory(tmp_path: Path):
     """Ignora notas dentro de .obsidian/."""
     (tmp_path / "public.md").write_text("visible")
