@@ -133,11 +133,27 @@ class CheckpointStore:
     # ------------------------------------------------------------------
 
     def load(self, task_id: str, step_id: str) -> Checkpoint:
+        """Carga un checkpoint y verifica su propio hash antes de devolverlo.
+
+        tech-8-snapshot-integrity: ``verify_chain()`` ya detectaba manipulación
+        a nivel de cadena, pero ``load()`` reconstruía el ``Checkpoint`` desde
+        el JSON en disco sin comprobar nada — un fichero corrupto (a mano, por
+        disco dañado, o por un fork/checkout a medias) se restauraba en
+        silencio. Recomputa ``hash_self`` con la MISMA función canónica que
+        ``save()``/``verify_chain()`` y rechaza con error explícito si no
+        encaja, antes de que el estado corrupto llegue al llamador."""
         path = self._base / task_id / f"{step_id}.json"
         if not path.exists():
             raise CheckpointError(f"checkpoint no existe: {task_id}/{step_id}")
         data = json.loads(path.read_text(encoding="utf-8"))
-        return Checkpoint(**data)
+        cp = Checkpoint(**data)
+        recomputed = self._compute_hash(cp)
+        if recomputed != cp.hash_self:
+            raise CheckpointError(
+                f"checkpoint corrupto ({task_id}/{step_id}): hash_self "
+                f"invalido (esperado {recomputed[:8]}, almacenado {cp.hash_self[:8]})"
+            )
+        return cp
 
     def list_steps(self, task_id: str) -> list[Checkpoint]:
         """Lista todos los checkpoints de un task_id en orden temporal."""
