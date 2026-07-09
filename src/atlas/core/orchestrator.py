@@ -701,6 +701,10 @@ class Orchestrator:
         """Triage de informes de investigación + ingesta al sustrato. Delegado al facade."""
         return self._maintenance_facade.maintenance_knowledge_ingest_tick()
 
+    def maintenance_project_graph_tick(self) -> dict[str, Any]:
+        """Regeneración del grafo vivo del proyecto (gating por HEAD). Delegado al facade."""
+        return self._maintenance_facade.maintenance_project_graph_tick()
+
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
         if self._knowledge_cve_proposer is None:
