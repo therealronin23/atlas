@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 import textwrap
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -72,11 +73,15 @@ def test_derive_test_cmd_finds_convention_named_test(tmp_path: Path) -> None:
 
     cmd = runner.derive_test_cmd(item)
 
-    assert cmd == ["pytest", f"tests/{expected_name}", "-q"]
+    # sys.executable -m pytest, no "pytest" a pelo: la colección de la suite
+    # depende de cwd en sys.path (2026-07-09, tests/benchmarks importa scripts)
+    assert cmd == [sys.executable, "-m", "pytest", f"tests/{expected_name}", "-q"]
 
 
 def test_derive_test_cmd_falls_back_to_full_suite(tmp_path: Path) -> None:
-    """Sin test_cmd explícito y sin test específico por convención: suite completa."""
+    """Sin test_cmd explícito y sin test específico por convención: suite
+    completa con la MISMA invocación que el pre-commit (python -m pytest
+    tests/), no `pytest -q` a pelo — esa colecciona benchmarks rotos."""
     (tmp_path / "tests").mkdir()
 
     runner = SelfBuildRunner(
@@ -86,7 +91,7 @@ def test_derive_test_cmd_falls_back_to_full_suite(tmp_path: Path) -> None:
 
     cmd = runner.derive_test_cmd(item)
 
-    assert cmd == ["pytest", "-q"]
+    assert cmd == [sys.executable, "-m", "pytest", "tests/", "-q"]
 
 
 # ---------------------------------------------------------------------------
