@@ -286,6 +286,13 @@ class MaintenanceFacade:
                 except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
                     pass
 
+            def _project_graph_cycle() -> None:
+                # Grafo vivo automático: ver maintenance_project_graph_tick.
+                try:
+                    self.maintenance_project_graph_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -335,7 +342,7 @@ class MaintenanceFacade:
                 extra_cycles=(
                     _dep_cycle, _batch_cycle, _self_build_cycle,
                     _research_cycle, _provider_smoke_cycle,
-                    _knowledge_ingest_cycle,
+                    _knowledge_ingest_cycle, _project_graph_cycle,
                 ),
                 **scheduler_kwargs,
             )
@@ -698,6 +705,99 @@ class MaintenanceFacade:
             payload=payload,
         )
         return {"status": "ran", **payload}
+
+    def maintenance_project_graph_tick(self) -> dict[str, Any]:
+        """Regeneración automática del grafo vivo del proyecto (Fase 3bis).
+
+        "El grafo ES el presente": las tools graph_* del tronco responden desde
+        la BD Kuzu, y esta se quedaba atrás en cuanto había commits nuevos (la
+        query de importers de inference_hub daba 19 vs 20 de grep por un módulo
+        posterior a la última ingesta). Sin LLM y sin red: git log + parse de
+        imports + MERGE idempotente en Kuzu (``build_project_graph``).
+
+        Gating por HEAD, no por reloj: el grafo solo puede cambiar si hay
+        commits nuevos, así que se salta mientras HEAD no se mueva — más
+        fresco que una cadencia diaria (regenera al primer poll tras un
+        commit) y más barato (cero trabajo en reposo).
+
+        Regenera sobre una COPIA y hace swap al final: el write-lock de Kuzu
+        es de proceso entero y excluye hasta las conexiones read-only de otros
+        procesos (verificado en vivo 2026-07-10: ~9 min de "Could not set
+        lock" en las tools graph_* durante un build directo). Con el swap la
+        ventana de indisponibilidad pasa de minutos a microsegundos.
+
+        Opt-in explícito: requiere ``ATLAS_PROJECT_GRAPH=1``. BD override:
+        ``ATLAS_PROJECT_GRAPH_DB`` (default DEFAULT_GRAPH_DB)."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_PROJECT_GRAPH", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        import subprocess
+        from datetime import datetime, timezone
+
+        root = self._project_root()
+        try:
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root, capture_output=True, text=True, check=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            return {"status": "no_git"}
+
+        state_path = root / "workspace" / "knowledge" / "project_graph_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_head") == head:
+            return {"status": "up_to_date", "head": head}
+
+        import shutil
+
+        from atlas.memory.project_graph import DEFAULT_GRAPH_DB, build_project_graph
+
+        db_env = os.environ.get("ATLAS_PROJECT_GRAPH_DB", "").strip()
+        db = Path(db_env).expanduser() if db_env else DEFAULT_GRAPH_DB
+        wal = db.with_name(db.name + ".wal")
+        rebuild = db.with_name(db.name + ".rebuild")
+        rebuild_wal = rebuild.with_name(rebuild.name + ".wal")
+        rebuild.unlink(missing_ok=True)
+        rebuild_wal.unlink(missing_ok=True)
+        if db.exists():
+            # Copia = el histórico bitemporal se conserva (MERGE incremental);
+            # el write-lock cae sobre la copia, no sobre la BD servida.
+            db.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(db, rebuild)
+            if wal.exists():
+                shutil.copy2(wal, rebuild_wal)
+
+        metrics = build_project_graph(root, rebuild)
+
+        # Swap: primero el fichero principal, luego el wal (el close de la
+        # ingesta hace checkpoint, así que el wal del rebuild suele estar
+        # vacío/ausente). Ventana de inconsistencia: microsegundos.
+        os.replace(rebuild, db)
+        if rebuild_wal.exists():
+            os.replace(rebuild_wal, wal)
+        else:
+            wal.unlink(missing_ok=True)
+
+        state["last_head"] = head
+        state["last_run"] = datetime.now(timezone.utc).isoformat()
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        self._orch._merkle.log(
+            action="self_maintenance.project_graph_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={"head": head, "commits": len(metrics.get("commits", []))},
+        )
+        return {"status": "ran", "head": head, "metrics": metrics}
 
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).

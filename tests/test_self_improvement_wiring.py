@@ -44,6 +44,7 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.delenv("ATLAS_PROVIDER_SMOKE", raising=False)
     monkeypatch.delenv("ATLAS_KNOWLEDGE_INGEST", raising=False)
     monkeypatch.delenv("ATLAS_MEMORY_DB", raising=False)
+    monkeypatch.delenv("ATLAS_PROJECT_GRAPH", raising=False)
     # La marca anti-recursión viene puesta cuando ESTA suite corre dentro del
     # propio lazo (ToolCoder/ValidationRunner la inyectan); estos tests
     # ejercitan los ticks con fakes y deben ver el comportamiento normal.
@@ -109,6 +110,8 @@ class TestSelfBuildTickPreflight:
         assert orch.maintenance_provider_smoke_tick() == {"status": "nested_run_guard"}
         monkeypatch.setenv("ATLAS_KNOWLEDGE_INGEST", "1")
         assert orch.maintenance_knowledge_ingest_tick() == {"status": "nested_run_guard"}
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH", "1")
+        assert orch.maintenance_project_graph_tick() == {"status": "nested_run_guard"}
 
     def test_preflight_blocks_and_leaves_merkle_evidence(
         self,
@@ -412,3 +415,82 @@ class TestKnowledgeIngestTick:
         assert rerun["status"] == "ran"
         assert rerun["research_records"] == 0
         assert rerun["repo_records"] == 0
+
+
+class TestProjectGraphTick:
+    """Fase 3bis: el grafo vivo se quedaba atrás en cuanto había commits
+    nuevos (19 vs 20 importers vs grep). Gating por HEAD, no por reloj: cero
+    trabajo en reposo, regeneración al primer poll tras un commit. CERO Kuzu
+    real: build_project_graph se monkeypatchea."""
+
+    @staticmethod
+    def _git_repo(repo: Path) -> None:
+        import subprocess
+
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        (repo / "x.txt").write_text("x", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(
+            ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"],
+            cwd=repo, check=True,
+        )
+
+    def test_disabled_without_env_flag(self, orch: Orchestrator) -> None:
+        assert orch.maintenance_project_graph_tick() == {"status": "disabled"}
+
+    def test_no_git_is_a_clean_noop(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH", "1")
+        # tmp repo sin .git (y GIT_DIR aislado para no resolver el repo real
+        # por el árbol de directorios padre).
+        monkeypatch.setenv("GIT_DIR", str(Path("/nonexistent")))
+        assert orch.maintenance_project_graph_tick() == {"status": "no_git"}
+
+    def test_regenerates_on_new_head_and_skips_when_unchanged(
+        self, orch: Orchestrator, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH", "1")
+        db = tmp_path / "graphdb" / "project_graph.kuzu"
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH_DB", str(db))
+        repo = tmp_path / "repo"
+        self._git_repo(repo)
+
+        builds: list[Path] = []
+
+        def _fake_build(root: Path, db_path: Path, **kw: Any) -> dict[str, Any]:
+            # El tick construye sobre la COPIA .rebuild y hace swap después.
+            assert db_path.name.endswith(".rebuild")
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            db_path.write_text("kuzu-fake", encoding="utf-8")
+            builds.append(root)
+            return {"commits": ["abc"]}
+
+        monkeypatch.setattr(
+            "atlas.memory.project_graph.build_project_graph", _fake_build,
+        )
+
+        first = orch.maintenance_project_graph_tick()
+        assert first["status"] == "ran"
+        assert builds == [repo.resolve()]
+        # Swap hecho: la BD servida existe y la copia .rebuild ya no.
+        assert db.read_text(encoding="utf-8") == "kuzu-fake"
+        assert not db.with_name(db.name + ".rebuild").exists()
+
+        # Mismo HEAD → ni toca Kuzu.
+        second = orch.maintenance_project_graph_tick()
+        assert second["status"] == "up_to_date"
+        assert len(builds) == 1
+
+        # Commit nuevo → regenera.
+        import subprocess
+
+        (repo / "y.txt").write_text("y", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(
+            ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "dos"],
+            cwd=repo, check=True,
+        )
+        third = orch.maintenance_project_graph_tick()
+        assert third["status"] == "ran"
+        assert len(builds) == 2
