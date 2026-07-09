@@ -14,6 +14,11 @@ from atlas.runtime.service_runner import AtlasServiceRunner
 def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
     monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+    # ATLAS_CORE_ROOT: sin esto, cualquier extra_cycle real del scheduler
+    # (self-build/research/provider-smoke) que se dispare en un test opera
+    # sobre el REPO REAL, no tmp_path (incidente 2026-07-09: 13 worktrees
+    # git reales + cascada de subprocess pytest — ver test_maintenance_autoloop.py).
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(tmp_path))
     return Orchestrator(workspace=tmp_path / "atlas")
 
 
