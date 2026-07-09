@@ -186,3 +186,57 @@ def test_backlog_summary_top_pending_excludes_non_pending() -> None:
     ]
     summary = backlog_summary(items)
     assert [t["id"] for t in summary["top_pending"]] == ["pending-item"]
+
+
+# ---------------------------------------------------------------------------
+# Cola con backoff (2026-07-09): un item que falla N ticks cede el turno.
+# ---------------------------------------------------------------------------
+
+def test_next_runnable_skips_exhausted_item() -> None:
+    from atlas.core.self_maintenance.backlog import (
+        MAX_CONSECUTIVE_FAILURES,
+        next_runnable,
+    )
+
+    items = [_item("a", 1), _item("b", 2)]
+    state = {"a": MAX_CONSECUTIVE_FAILURES}
+    chosen = next_runnable(items, state)
+    assert chosen is not None and chosen.id == "b"
+
+
+def test_next_runnable_all_exhausted_degrades_to_least_failed() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2)]
+    state = {"a": 5, "b": 3}
+    chosen = next_runnable(items, state)
+    assert chosen is not None and chosen.id == "b"
+
+
+def test_next_runnable_empty_queue_returns_none() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    assert next_runnable([_item("a", 1, status="done")], {}) is None
+
+
+def test_record_outcome_resets_on_success_and_accumulates_on_failure() -> None:
+    from atlas.core.self_maintenance.backlog import record_outcome
+
+    state: dict[str, int] = {}
+    state = record_outcome(state, "a", success=False)
+    state = record_outcome(state, "a", success=False)
+    assert state == {"a": 2}
+    state = record_outcome(state, "a", success=True)
+    assert state == {}
+
+
+def test_queue_state_roundtrip_and_corrupt_file_fail_open(tmp_path: Path) -> None:
+    from atlas.core.self_maintenance.backlog import load_queue_state, save_queue_state
+
+    p = tmp_path / "sub" / "queue_state.json"
+    save_queue_state(p, {"a": 2})
+    assert load_queue_state(p) == {"a": 2}
+
+    p.write_text("{corrupto", encoding="utf-8")
+    assert load_queue_state(p) == {}
+    assert load_queue_state(tmp_path / "no-existe.json") == {}

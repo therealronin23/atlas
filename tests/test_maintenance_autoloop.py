@@ -39,6 +39,15 @@ from atlas.runtime.service_runner import AtlasServiceRunner
 def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
     monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+    # ATLAS_CORE_ROOT: _project_root() (maintenance_facade.py) cae a Path.cwd()
+    # si esto no está seteado — sin esto, cualquier extra_cycle del scheduler
+    # (self-build, batch) que se dispare de verdad en un test opera sobre el
+    # REPO REAL (docs/backlog.yaml real), no sobre tmp_path. Encontrado
+    # 2026-07-09: test_scheduler_started_when_env_set disparó un tick
+    # inmediato real (MaintenanceScheduler._loop llama tick() antes del primer
+    # sleep) que creó worktrees git reales y una cascada de subprocess pytest
+    # contra el repo vivo — 13 worktrees huérfanos antes de detectarlo.
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(tmp_path))
     return Orchestrator(workspace=tmp_path / "atlas")
 
 

@@ -4,6 +4,7 @@ Parses docs/backlog.yaml and exposes BacklogItem dataclass + helpers.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,12 @@ from typing import Any
 import yaml
 
 VALID_STATUSES = {"pending", "doing", "done"}
+
+# Backoff de cola: tras N fallos consecutivos, un item deja de acaparar el
+# tick y se prueba el siguiente. Sin esto, `items[0]` fallando en bucle
+# bloqueaba el lazo entero indefinidamente (absorb_harness_patterns consumió
+# TODOS los ticks de la noche del 2026-07-08/09 mientras el resto esperaba).
+MAX_CONSECUTIVE_FAILURES = 3
 
 
 @dataclass(frozen=True)
@@ -63,6 +70,50 @@ def pending(items: list[BacklogItem]) -> list[BacklogItem]:
         (item for item in items if item.status == "pending"),
         key=lambda i: i.priority,
     )
+
+
+def load_queue_state(path: Path) -> dict[str, int]:
+    """Contador de fallos consecutivos por item ({item_id: n}). Fichero
+    ausente o corrupto = estado vacío (fail-open: nunca bloquea el tick)."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return {str(k): int(v) for k, v in raw.items()}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def save_queue_state(path: Path, state: dict[str, int]) -> None:
+    """Persiste el contador. Mejor esfuerzo: un fallo de disco no rompe el tick."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def next_runnable(
+    items: list[BacklogItem], state: dict[str, int]
+) -> BacklogItem | None:
+    """El primer pendiente (por prioridad) con menos de MAX_CONSECUTIVE_FAILURES
+    fallos seguidos. Si TODOS están agotados, devuelve el de menos fallos —
+    la cola degrada a round-robin lento en vez de pararse en seco."""
+    queue = pending(items)
+    if not queue:
+        return None
+    runnable = [i for i in queue if state.get(i.id, 0) < MAX_CONSECUTIVE_FAILURES]
+    if runnable:
+        return runnable[0]
+    return min(queue, key=lambda i: (state.get(i.id, 0), i.priority))
+
+
+def record_outcome(state: dict[str, int], item_id: str, *, success: bool) -> dict[str, int]:
+    """Actualiza el contador: éxito (o propuesta generada) lo resetea; fallo suma."""
+    new = dict(state)
+    if success:
+        new.pop(item_id, None)
+    else:
+        new[item_id] = new.get(item_id, 0) + 1
+    return new
 
 
 def backlog_summary(items: list[BacklogItem]) -> dict[str, Any]:

@@ -20,18 +20,22 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from atlas.core.atlas_coder import AtlasCoder, CoderResult
+from atlas.core.atlas_coder import CoderResult
 from atlas.core.inference_hub import DEFAULT_PROVIDERS, InferenceHub, InferenceLevel, Provider
 
 # Fábrica del motor de codificación por worker: (hub, repo_root, timeout_s) ->
 # objeto con .code(task, context_files, test_cmd, max_iterations, **kwargs).
-# Default = AtlasCoder (comportamiento sin cambios). Pasar ToolCoder para usar
-# el motor de tool-calling (ADR-031) en cada worker del enjambre.
+# Default = ToolCoder (2026-07-09): el motor de tool-calling ADR-031. AtlasCoder
+# (texto SEARCH/REPLACE) mató 8/9 tareas por corrupción de delimitadores en la
+# generación anterior — el enjambre corría todavía sobre él. Pasar una factory
+# de AtlasCoder si algún caller necesita el motor de texto explícitamente.
 CoderFactory = Callable[[InferenceHub, Path, int], Any]
 
 
 def _default_coder_factory(hub: InferenceHub, repo_root: Path, timeout_s: int) -> Any:
-    return AtlasCoder(hub, repo_root=repo_root, timeout_s=timeout_s)
+    from atlas.core.tool_coder import ToolCoder
+
+    return ToolCoder(hub, repo_root=repo_root, timeout_s=timeout_s)
 
 __all__ = [
     "ParallelCoder", "ParallelCoderResult", "WorkerResult", "EnsembleResult",

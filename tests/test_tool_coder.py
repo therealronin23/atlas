@@ -314,3 +314,51 @@ def test_repair_json_arguments_strips_trailing_garbage():
 def test_repair_json_arguments_unparseable_returns_empty_object():
     assert ToolCoder._repair_json_arguments("no es json") == "{}"
     assert ToolCoder._repair_json_arguments("") == "{}"
+
+
+def test_sandbox_tests_import_sandbox_tree_not_real_repo(tmp_path: Path):
+    """2026-07-09: con sandbox, el install editable del venv hacía que los tests
+    importaran el paquete del repo REAL — median el código equivocado. El
+    subprocess de tests debe ver el src del sandbox en PYTHONPATH."""
+    import sys as _sys
+
+    pkg = tmp_path / "src" / "mypkg"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("X = 1\n")
+
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="src/mypkg/__init__.py", old_str="X = 1", new_str="X = 2")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    # El test SOLO pasa si `import mypkg` resuelve dentro del árbol donde el
+    # coder editó (el sandbox) — mypkg no está instalado en el venv.
+    result = coder.code(
+        task="sube X a 2",
+        context_files=["src/mypkg/__init__.py"],
+        test_cmd=[_sys.executable, "-c", "import mypkg, sys; sys.exit(0 if mypkg.X == 2 else 1)"],
+        sandbox=True,
+    )
+
+    assert result.success is True
+    # El árbol real recibe el sync-back del fichero verificado…
+    assert (pkg / "__init__.py").read_text() == "X = 2\n"
+
+
+def test_sandbox_failure_leaves_real_tree_untouched(tmp_path: Path):
+    """Al fallo en sandbox, el árbol real no se toca (riesgo task_078a59b1)."""
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 99")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="cambia x", context_files=["foo.py"], test_cmd=["false"],
+        max_iterations=1, sandbox=True,
+    )
+
+    assert result.success is False
+    assert f.read_text() == "x = 1\n"
