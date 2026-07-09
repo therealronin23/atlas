@@ -92,8 +92,7 @@ entries:
   type: historia
   status: historico
   verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria
-    de Atlas.md
+- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria de Atlas.md
   type: historia
   status: historico
   verified: null
@@ -855,3 +854,8 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/knowledge/research_2026-07-09.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'

@@ -42,6 +42,8 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     # los tests decide si el flag está puesto (verificado 2026-07-09).
     monkeypatch.delenv("ATLAS_RESEARCH", raising=False)
     monkeypatch.delenv("ATLAS_PROVIDER_SMOKE", raising=False)
+    monkeypatch.delenv("ATLAS_KNOWLEDGE_INGEST", raising=False)
+    monkeypatch.delenv("ATLAS_MEMORY_DB", raising=False)
     # La marca anti-recursión viene puesta cuando ESTA suite corre dentro del
     # propio lazo (ToolCoder/ValidationRunner la inyectan); estos tests
     # ejercitan los ticks con fakes y deben ver el comportamiento normal.
@@ -105,6 +107,8 @@ class TestSelfBuildTickPreflight:
         assert orch.maintenance_research_tick() == {"status": "nested_run_guard"}
         monkeypatch.setenv("ATLAS_PROVIDER_SMOKE", "1")
         assert orch.maintenance_provider_smoke_tick() == {"status": "nested_run_guard"}
+        monkeypatch.setenv("ATLAS_KNOWLEDGE_INGEST", "1")
+        assert orch.maintenance_knowledge_ingest_tick() == {"status": "nested_run_guard"}
 
     def test_preflight_blocks_and_leaves_merkle_evidence(
         self,
@@ -319,3 +323,92 @@ class TestProviderSmokeTick:
 
         assert first["status"] == "ran"
         assert second == {"status": "already_ran_today"}
+
+
+class TestKnowledgeIngestTick:
+    """Cierre investigación→acción (2026-07-09): los informes de research
+    morían en docs/inbox/. El tick los triage-a (regla determinista, sin LLM)
+    a docs/knowledge como 'propuesto' y los ingiere al sustrato de memoria.
+    CERO LLM/red real: todo es determinista por diseño."""
+
+    @staticmethod
+    def _seed_repo(repo: Path) -> None:
+        # Scripts reales del repo (el tick los carga por importlib): triage +
+        # su dependencia docs_index_audit.
+        import shutil
+
+        real_repo = Path(__file__).resolve().parent.parent
+        (repo / "scripts").mkdir(parents=True, exist_ok=True)
+        for name in ("docs_triage.py", "docs_index_audit.py"):
+            shutil.copy(real_repo / "scripts" / name, repo / "scripts" / name)
+        inbox = repo / "docs" / "inbox"
+        inbox.mkdir(parents=True, exist_ok=True)
+        (inbox / "research_2026-07-09.md").write_text(
+            "# Informe de investigación 2026-07-09\n\n"
+            "## Hallazgos\n\n- repo estrella: org/ejemplo — patrón de memoria episódica\n",
+            encoding="utf-8",
+        )
+        (repo / "docs" / "INDEX.yaml").write_text("entries: []\n", encoding="utf-8")
+
+    def test_disabled_without_env_flag(self, orch: Orchestrator) -> None:
+        assert orch.maintenance_knowledge_ingest_tick() == {"status": "disabled"}
+
+    def test_triages_and_ingests_research_report(
+        self, orch: Orchestrator, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        repo = tmp_path / "repo"
+        self._seed_repo(repo)
+        monkeypatch.setenv("ATLAS_KNOWLEDGE_INGEST", "1")
+        monkeypatch.setenv("ATLAS_MEMORY_DB", str(tmp_path / "memoria" / "memory.db"))
+        (tmp_path / "memoria").mkdir()
+
+        result = orch.maintenance_knowledge_ingest_tick()
+
+        assert result["status"] == "ran"
+        # Triage: movido del inbox a docs/knowledge con alta 'propuesto'.
+        assert result["triaged"] == 1
+        moved = repo / "docs" / "knowledge" / "research_2026-07-09.md"
+        assert moved.is_file()
+        assert not (repo / "docs" / "inbox" / "research_2026-07-09.md").exists()
+        import yaml
+
+        idx = yaml.safe_load((repo / "docs" / "INDEX.yaml").read_text(encoding="utf-8"))
+        entry = next(e for e in idx["entries"] if "research_2026-07-09" in e["path"])
+        assert entry["status"] == "propuesto"
+        # Ingesta: el informe entró al sustrato y el recall lo devuelve.
+        assert result["research_records"] >= 1
+        from atlas.mcp.memory_server import build_gated_index
+        from atlas.mcp.memory_trunk import MemoryTrunk
+
+        index = build_gated_index(tmp_path / "memoria" / "memory.db")
+        try:
+            hits = MemoryTrunk(index).recall("memoria episódica org/ejemplo", k=5)
+        finally:
+            index.close()
+        assert any("org/ejemplo" in h.text for h in hits)
+
+    def test_second_call_same_day_is_a_noop_and_unchanged_files_skip(
+        self, orch: Orchestrator, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        repo = tmp_path / "repo"
+        self._seed_repo(repo)
+        monkeypatch.setenv("ATLAS_KNOWLEDGE_INGEST", "1")
+        monkeypatch.setenv("ATLAS_MEMORY_DB", str(tmp_path / "memory.db"))
+
+        first = orch.maintenance_knowledge_ingest_tick()
+        assert first["status"] == "ran"
+        assert orch.maintenance_knowledge_ingest_tick() == {"status": "already_ran_today"}
+
+        # Al día siguiente (estado con fecha vieja), los ficheros sin cambios
+        # NO se re-embeben: la pasada diaria es ~gratis en reposo.
+        import json
+
+        state_path = repo / "workspace" / "knowledge" / "ingest_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["last_run_date"] = "2000-01-01"
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+
+        rerun = orch.maintenance_knowledge_ingest_tick()
+        assert rerun["status"] == "ran"
+        assert rerun["research_records"] == 0
+        assert rerun["repo_records"] == 0

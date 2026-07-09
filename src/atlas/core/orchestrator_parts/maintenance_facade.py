@@ -279,6 +279,13 @@ class MaintenanceFacade:
                 except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
                     pass
 
+            def _knowledge_ingest_cycle() -> None:
+                # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
+                try:
+                    self.maintenance_knowledge_ingest_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -328,6 +335,7 @@ class MaintenanceFacade:
                 extra_cycles=(
                     _dep_cycle, _batch_cycle, _self_build_cycle,
                     _research_cycle, _provider_smoke_cycle,
+                    _knowledge_ingest_cycle,
                 ),
                 **scheduler_kwargs,
             )
@@ -574,6 +582,122 @@ class MaintenanceFacade:
             payload={"ok": ok, "dead": dead, "skipped": skipped},
         )
         return {"status": "ran", "ok": ok, "dead": dead, "skipped": skipped}
+
+    def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
+        """Cierre del ciclo investigación→acción (2026-07-09): los informes que
+        ``maintenance_research_tick`` deja en docs/inbox/ morían allí.
+
+        Tres pasos, todos deterministas (CERO LLM):
+        1. Triage acotado: ``scripts/docs_triage.py`` clasifica los
+           ``research_*.md`` del inbox por regla determinista → docs/knowledge
+           con alta 'propuesto' en INDEX.yaml (flujo sancionado; 'vigente'
+           sigue siendo del revisor humano).
+        2. Ingesta al sustrato: la carga estándar del repo (docs vigentes +
+           lecciones) y los informes triados entran al ``SqliteMemoryIndex``
+           del tronco vía ``knowledge_ingest`` — antes era un one-shot manual
+           sin dueño runtime. Solo ficheros CAMBIADOS (sha256 en el estado):
+           la pasada diaria no re-embebe el corpus entero.
+        3. Evidencia en Merkle.
+
+        La BD es la del tronco MCP (~/atlas-mcp/memory.db) salvo override
+        ``ATLAS_MEMORY_DB`` — mismo sustrato que sirve ``recall`` a cualquier
+        agente conectado. Opt-in: ``ATLAS_KNOWLEDGE_INGEST=1``. Cadencia
+        propia de 24h (fichero de estado, independiente del poll)."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_KNOWLEDGE_INGEST", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import hashlib
+        import json
+        from datetime import datetime, timezone
+
+        root = self._project_root()
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = root / "workspace" / "knowledge" / "ingest_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        # 1. Triage determinista acotado a research_*.md (sin LLM: la regla
+        # por nombre basta y el tick no debe gastar inferencia en clasificar).
+        triaged = 0
+        triage_script = root / "scripts" / "docs_triage.py"
+        if triage_script.is_file():
+            import importlib.util
+
+            spec = importlib.util.spec_from_file_location("docs_triage", triage_script)
+            assert spec and spec.loader
+            triage = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(triage)
+            plan = [
+                step for step in triage.build_plan(root / "docs", llm_classify=None)
+                if step["file"].startswith("research_") and step["action"] == "move"
+            ]
+            if plan:
+                triaged = triage.apply_plan(plan, root / "docs")
+
+        # 2. Ingesta incremental al sustrato del tronco.
+        from atlas.mcp.memory_server import build_gated_index
+        from atlas.mcp.memory_trunk import MemoryTrunk
+        from atlas.memory.knowledge_ingest import (
+            ingest_paths, repo_knowledge_paths, research_report_paths,
+        )
+
+        db_env = os.environ.get("ATLAS_MEMORY_DB", "").strip()
+        db_path = Path(db_env).expanduser() if db_env else Path.home() / "atlas-mcp" / "memory.db"
+        ingested_sha: dict[str, str] = state.setdefault("ingested_sha", {})
+
+        def _changed(paths: list[Path]) -> list[Path]:
+            out: list[Path] = []
+            for p in paths:
+                try:
+                    sha = hashlib.sha256(p.read_bytes()).hexdigest()
+                except OSError:
+                    continue
+                rel = str(p.relative_to(root)) if p.is_relative_to(root) else str(p)
+                if ingested_sha.get(rel) != sha:
+                    out.append(p)
+                    ingested_sha[rel] = sha
+            return out
+
+        index = build_gated_index(db_path)
+        try:
+            trunk = MemoryTrunk(index)
+            repo_res = ingest_paths(
+                trunk, _changed(repo_knowledge_paths(root)), repo_root=root,
+            )
+            research_res = ingest_paths(
+                trunk, _changed(research_report_paths(root)), repo_root=root,
+                record_type="research_report",
+            )
+        finally:
+            index.close()
+
+        state["last_run_date"] = today
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        payload = {
+            "triaged": triaged,
+            "repo_docs": repo_res["docs"],
+            "repo_records": repo_res["records"],
+            "research_docs": research_res["docs"],
+            "research_records": research_res["records"],
+            "db_path": str(db_path),
+        }
+        self._orch._merkle.log(
+            action="self_maintenance.knowledge_ingest_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=payload,
+        )
+        return {"status": "ran", **payload}
 
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
