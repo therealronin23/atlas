@@ -37,6 +37,15 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_REPO_ROOT", str(tmp_path / "repo"))
     monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
     monkeypatch.delenv("ATLAS_SELF_BUILD", raising=False)
+    # InferenceHub auto-carga .env (que en el despliegue real trae estos
+    # flags a 1) en os.environ a mitad de suite — sin delenv, el orden de
+    # los tests decide si el flag está puesto (verificado 2026-07-09).
+    monkeypatch.delenv("ATLAS_RESEARCH", raising=False)
+    monkeypatch.delenv("ATLAS_PROVIDER_SMOKE", raising=False)
+    # La marca anti-recursión viene puesta cuando ESTA suite corre dentro del
+    # propio lazo (ToolCoder/ValidationRunner la inyectan); estos tests
+    # ejercitan los ticks con fakes y deben ver el comportamiento normal.
+    monkeypatch.delenv("ATLAS_NESTED_TEST_RUN", raising=False)
     (tmp_path / "repo").mkdir()
     return Orchestrator(workspace=tmp_path / "atlas")
 
@@ -81,6 +90,21 @@ class TestColdUpdateJudgmentWiring:
 class TestSelfBuildTickPreflight:
     def test_disabled_without_env_flag(self, orch: Orchestrator) -> None:
         assert orch.maintenance_self_build_tick() == {"status": "disabled"}
+
+    def test_nested_run_guard_beats_everything(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Incidente 2026-07-09 (producción): la suite que el lazo corre en su
+        worktree hereda ATLAS_SELF_BUILD=1 del daemon; un test que arrancaba
+        el scheduler real disparaba OTRO run_item real → cascada de worktrees
+        + pytest anidados. La marca ATLAS_NESTED_TEST_RUN gana a todo."""
+        monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        monkeypatch.setenv("ATLAS_NESTED_TEST_RUN", "1")
+        assert orch.maintenance_self_build_tick() == {"status": "nested_run_guard"}
+        monkeypatch.setenv("ATLAS_RESEARCH", "1")
+        assert orch.maintenance_research_tick() == {"status": "nested_run_guard"}
+        monkeypatch.setenv("ATLAS_PROVIDER_SMOKE", "1")
+        assert orch.maintenance_provider_smoke_tick() == {"status": "nested_run_guard"}
 
     def test_preflight_blocks_and_leaves_merkle_evidence(
         self,

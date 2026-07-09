@@ -346,6 +346,16 @@ class MaintenanceFacade:
         Opt-in explícito (gasta LLM): requiere ``ATLAS_SELF_BUILD=1``. Un item
         por tick acota el gasto; el resultado queda auditado en Merkle por el
         runner y las propuestas van a ColdUpdate (HITL intacto)."""
+        # Guardia anti-recursión (incidente 2026-07-09, EN PRODUCCIÓN): la
+        # suite que el propio lazo corre en su worktree hereda el env del
+        # daemon (ATLAS_SELF_BUILD=1 vía systemd EnvironmentFile) — un test
+        # que arranque el MaintenanceScheduler real disparaba OTRO run_item
+        # real → otro worktree → otra suite → cascada hasta agotar la máquina.
+        # ToolCoder/AtlasCoder/ValidationRunner/evo marcan sus suites con
+        # ATLAS_NESTED_TEST_RUN=1; aquí el tick se niega, gaste lo que gaste
+        # el resto del env en pedirlo.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
         if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
             return {"status": "disabled"}
 
@@ -428,6 +438,9 @@ class MaintenanceFacade:
         ``ATLAS_RESEARCH=1``. Cadencia propia de 24h vía fichero de estado
         (independiente del poll del scheduler) — no tiene sentido pagar el
         ciclo completo de descubrimiento más de una vez al día."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
         if os.environ.get("ATLAS_RESEARCH", "").strip() != "1":
             return {"status": "disabled"}
 
@@ -518,6 +531,9 @@ class MaintenanceFacade:
         Opt-in explícito: requiere ``ATLAS_PROVIDER_SMOKE=1``. Cadencia
         propia de 24h (fichero de estado, independiente del poll del
         scheduler)."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
         if os.environ.get("ATLAS_PROVIDER_SMOKE", "").strip() != "1":
             return {"status": "disabled"}
 

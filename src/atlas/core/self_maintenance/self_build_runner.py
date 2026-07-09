@@ -118,8 +118,12 @@ def evaluate(program_path):
             candidate_target.parent.mkdir(parents=True, exist_ok=True)
             candidate_target.write_text(candidate_code, encoding="utf-8")
 
+            # Guardia anti-recursión (incidente 2026-07-09): la suite lanzada
+            # por el lazo no puede volver a disparar el lazo.
+            test_env = _clean_git_env()
+            test_env["ATLAS_NESTED_TEST_RUN"] = "1"
             test_result = subprocess.run(
-                _TEST_CMD, cwd=worktree_path, env=_clean_git_env(),
+                _TEST_CMD, cwd=worktree_path, env=test_env,
                 capture_output=True, text=True, check=False,
             )
             if test_result.returncode == 0:
