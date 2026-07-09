@@ -135,3 +135,19 @@ def test_ensure_started_server_disabled() -> None:
     result = registry.ensure_started("off")
     assert result is False
     assert created == []
+
+
+def test_is_read_only_es_estatico_sin_arrancar_el_server() -> None:
+    """is_read_only responde desde la config declarada ANTES del primer spawn.
+
+    Con spawn perezoso + índice estático de raíces nativas, invoke_readonly
+    consulta el predicado antes de que dispatch arranque el server; si el
+    predicado dependiera del arranque, toda tool de lectura fallaría en frío
+    (fail-closed convertido en fail-always)."""
+    cfg = McpServerConfig(name="x", cmd=["fake-cmd"], read_only_tools=["ro_tool"])
+    registry = McpRegistry([cfg], transport_factory=lambda c: _FakeTransport(c.name, ["ro_tool", "mut_tool"]))
+    assert "x" not in registry._transports
+    assert registry.is_read_only("mcp__x__ro_tool") is True
+    assert registry.is_read_only("mcp__x__mut_tool") is False
+    assert registry.is_read_only("mcp__desconocido__ro_tool") is False
+    assert registry.is_read_only("sin_prefijo") is False
