@@ -8,15 +8,13 @@ Instagram, no porque lo vigilara." Los scouts existentes de Atlas
 exactamente la limitacion senalada.
 
 ``PanoramaScout`` es el primer escalon real hacia "serendipia sistematizada":
-descubrir por TEMA DE INTERES (no por URL fija). Alcance de este slice:
-GitHub (repos search API, ``api.github.com``) + Hacker News (Algolia search
-API, ``hn.algolia.com``) -- ambos ya en ``DEFAULT_ALLOWED_DOMAINS`` de
-``SSRFBridge``, no hace falta ampliar la allowlist. Cada fuente falla de
-forma INDEPENDIENTE: un tema roto en una fuente no bloquea esa misma fuente
-para otros temas ni las demas fuentes de ese mismo tema. arXiv
-(``export.arxiv.org``) queda fuera de alcance: su API vive en un dominio que
-HOY NO esta en la allowlist -- anadirlo implica una decision explicita de
-ampliar la superficie de red, no una tarea de codigo, y no se hace aqui.
+descubrir por TEMA DE INTERES (no por URL fija). Fuentes: GitHub (repos
+search API, ``api.github.com``), Hacker News (Algolia search API,
+``hn.algolia.com``) y arXiv (``export.arxiv.org``, Atom; anadido a la
+allowlist con OK explicito del operador 2026-07-10 — era la decision de
+ampliar superficie de red que este modulo dejaba fuera de alcance). Cada
+fuente falla de forma INDEPENDIENTE: un tema roto en una fuente no bloquea
+esa misma fuente para otros temas ni las demas fuentes de ese mismo tema.
 
 A diferencia de ``McpCandidate`` (tipado especificamente para servers MCP),
 un hallazgo de PanoramaScout es generico: puede ser cualquier cosa del
@@ -45,6 +43,11 @@ _GITHUB_SEARCH_URL = "https://api.github.com/search/repositories"
 # Endpoint de busqueda de Hacker News via Algolia (ya en DEFAULT_ALLOWED_DOMAINS).
 _HACKERNEWS_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
 
+# Endpoint de la API de arXiv (Atom XML; en DEFAULT_ALLOWED_DOMAINS desde
+# 2026-07-10 con OK explicito del operador).
+_ARXIV_SEARCH_URL = "https://export.arxiv.org/api/query"
+_ATOM_NS = "{http://www.w3.org/2005/Atom}"
+
 # Cota del excerpt no confiable que se transporta (misma logica que los demas
 # scouts: dato NO confiable, solo lo digiere el processing-LLM del Analyst).
 _EXCERPT_MAX = 300
@@ -55,7 +58,7 @@ class PanoramaFinding:
     """Un hallazgo generico del ecosistema, originado por TEMA, no por URL."""
 
     topic: str  # el tema de interes que origino la busqueda (no una URL)
-    source: str  # "github" o "hackernews" en este slice; "arxiv" queda para despues
+    source: str  # "github" | "hackernews" | "arxiv"
     title: str
     url: str
     excerpt: str
@@ -77,11 +80,9 @@ class PanoramaFinding:
 class PanoramaScout:
     """Descubre por TEMA DE INTERES, no por lista de fuentes fijas -- el hueco
     que el usuario senalo: el ecosistema no es una lista conocida, puede ser
-    algo sin nombre todavia. Este slice usa GitHub (repos search API) + HN
-    Algolia (search API), ambas ya en la allowlist; cada fuente falla de
-    forma independiente por tema. arXiv queda fuera de alcance: su API
-    (``export.arxiv.org``) no esta en la allowlist hoy -- ampliarla requiere
-    decision explicita del usuario, no una tarea de codigo."""
+    algo sin nombre todavia. Fuentes: GitHub (repos search API), HN Algolia
+    (search API) y arXiv (Atom API; allowlist ampliada con OK del operador
+    2026-07-10); cada fuente falla de forma independiente por tema."""
 
     AGENT = "self_maintenance.panorama_scout"
 
@@ -110,6 +111,7 @@ class PanoramaScout:
         for topic in self._topics:
             findings.extend(self._search_github(topic))
             findings.extend(self._search_hackernews(topic))
+            findings.extend(self._search_arxiv(topic))
         return findings
 
     def _search_github(self, topic: str) -> list[PanoramaFinding]:
@@ -178,6 +180,43 @@ class PanoramaScout:
             if isinstance(hit, dict)
         ]
         self._audit(topic, "discovered", len(topic_findings), source="hackernews")
+        return topic_findings
+
+    def _search_arxiv(self, topic: str) -> list[PanoramaFinding]:
+        """Busca papers en arXiv (Atom XML, stdlib ElementTree). Ordena por
+        fecha de envio descendente — lo NUEVO del tema, coherente con el
+        sort=updated de GitHub. Fail-closed por fuente/tema como las demas."""
+        url = (
+            f"{_ARXIV_SEARCH_URL}?search_query=all:{quote_plus(topic)}"
+            f"&sortBy=submittedDate&sortOrder=descending&max_results={self._max_results}"
+        )
+        decision = self._bridge.check(url)
+        if not decision.allowed:
+            self._audit(topic, "egress_denied", 0, reason=decision.reason, source="arxiv")
+            return []
+        try:
+            import xml.etree.ElementTree as ET  # noqa: PLC0415 -- stdlib, solo esta fuente
+
+            root = ET.fromstring(self._fetch(url))
+            entries = root.findall(f"{_ATOM_NS}entry")
+        except Exception as exc:  # noqa: BLE001 -- fail-closed por fuente
+            self._audit(topic, "fetch_failed", 0, reason=type(exc).__name__, source="arxiv")
+            return []
+        topic_findings: list[PanoramaFinding] = []
+        for entry in entries[: self._max_results]:
+            title = (entry.findtext(f"{_ATOM_NS}title") or "").strip()
+            link = (entry.findtext(f"{_ATOM_NS}id") or "").strip()
+            summary = " ".join((entry.findtext(f"{_ATOM_NS}summary") or "").split())
+            topic_findings.append(
+                PanoramaFinding(
+                    topic=topic,
+                    source="arxiv",
+                    title=title,
+                    url=link,
+                    excerpt=summary[:_EXCERPT_MAX],
+                )
+            )
+        self._audit(topic, "discovered", len(topic_findings), source="arxiv")
         return topic_findings
 
     def _audit(

@@ -220,6 +220,8 @@ class TestBothSourcesTogether:
         def fake_fetch(url: str) -> str:
             if "algolia" in url:
                 return hn_body
+            if "arxiv" in url:
+                return _arxiv_body(("Paper", "https://arxiv.org/abs/1", "resumen"))
             return gh_body
 
         scout = PanoramaScout(
@@ -230,7 +232,7 @@ class TestBothSourcesTogether:
         )
         findings = scout.discover()
         sources = {f.source for f in findings}
-        assert sources == {"github", "hackernews"}
+        assert sources == {"github", "hackernews", "arxiv"}
 
 
 class TestFailClosedPerSource:
@@ -323,3 +325,55 @@ class TestAudit:
         entries = list(merkle.read_all())
         actions = [e.action for e in entries if e.agent == PanoramaScout.AGENT]
         assert len(actions) >= 2
+
+
+def _arxiv_body(*entries: tuple[str, str, str]) -> str:
+    items = "".join(
+        f"<entry><id>{link}</id><title>{title}</title><summary>{summary}</summary></entry>"
+        for title, link, summary in entries
+    )
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f'<feed xmlns="http://www.w3.org/2005/Atom">{items}</feed>'
+    )
+
+
+class TestArxivSource:
+    """arXiv añadido 2026-07-10 con OK explícito del operador (era la
+    ampliación de superficie de red que el módulo dejaba fuera de alcance)."""
+
+    def test_atom_entries_yield_findings_with_clean_excerpt(self, merkle) -> None:
+        body = _arxiv_body(
+            ("Temporal KG survey", "https://arxiv.org/abs/2501.00001", "linea uno\n   linea dos"),
+            ("Agent memory bench", "https://arxiv.org/abs/2501.00002", "otro resumen"),
+        )
+
+        def fake_fetch(url: str) -> str:
+            assert "export.arxiv.org" in url
+            return body
+
+        scout = PanoramaScout(
+            merkle=merkle, bridge=SSRFBridge(), fetch=fake_fetch,
+            topics=["temporal knowledge graph"],
+        )
+        findings = [f for f in scout.discover() if f.source == "arxiv"]
+        assert [f.title for f in findings] == ["Temporal KG survey", "Agent memory bench"]
+        assert findings[0].url == "https://arxiv.org/abs/2501.00001"
+        # El summary multilínea se aplana a una línea (excerpt transportable).
+        assert findings[0].excerpt == "linea uno linea dos"
+
+    def test_broken_xml_fails_closed_only_for_arxiv(self, merkle) -> None:
+        gh_body = _github_body(_repo("a/repo", "https://github.com/a/repo", "d"))
+
+        def fake_fetch(url: str) -> str:
+            if "arxiv" in url:
+                return "<no es xml valido"
+            if "algolia" in url:
+                return _hn_body()
+            return gh_body
+
+        scout = PanoramaScout(
+            merkle=merkle, bridge=SSRFBridge(), fetch=fake_fetch, topics=["x"],
+        )
+        findings = scout.discover()
+        assert {f.source for f in findings} == {"github"}  # arxiv cayó solo
