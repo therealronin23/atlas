@@ -535,15 +535,17 @@ class AtlasCoder:
                 # repo real → sin esto, los tests importarían el código SIN
                 # las ediciones del sandbox y siempre fallarían). PYTHONPATH
                 # precede a site-packages en sys.path.
-                test_env = None
+                import os as _os
+                test_env = dict(_os.environ)
                 if sandbox_dir is not None:
-                    import os as _os
-                    test_env = dict(_os.environ)
                     sandbox_paths = [str(sandbox_dir / "src"), str(sandbox_dir)]
                     existing = test_env.get("PYTHONPATH", "")
                     test_env["PYTHONPATH"] = _os.pathsep.join(
                         sandbox_paths + ([existing] if existing else [])
                     )
+                # Guardia anti-recursión (ver tool_coder.py, incidente 2026-07-09):
+                # la suite lanzada por el lazo no puede volver a disparar el lazo.
+                test_env["ATLAS_NESTED_TEST_RUN"] = "1"
                 result = subprocess.run(
                     test_cmd,
                     cwd=self._repo_root,

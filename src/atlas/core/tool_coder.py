@@ -613,6 +613,14 @@ class ToolCoder:
             test_env["PYTHONPATH"] = os.pathsep.join(
                 _pp_parts + ([_existing_pp] if _existing_pp else [])
             )
+            # Guardia anti-recursión (incidente 2026-07-09, EN PRODUCCIÓN):
+            # esta suite hereda el env del daemon (ATLAS_SELF_BUILD=1 vía
+            # systemd EnvironmentFile) — un test de la suite que arranque el
+            # MaintenanceScheduler real dispara OTRO run_item real, que corre
+            # OTRA suite... cascada de worktrees+pytest hasta tumbar la
+            # máquina. Con esta marca, los ticks del facade se niegan a correr
+            # dentro de una suite lanzada por el propio lazo (fail-closed).
+            test_env["ATLAS_NESTED_TEST_RUN"] = "1"
             try:
                 result = subprocess.run(
                     test_cmd, cwd=self._repo_root, capture_output=True,
