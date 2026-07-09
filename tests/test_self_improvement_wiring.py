@@ -234,3 +234,64 @@ class TestResearchTick:
 
         assert first["status"] == "ran"
         assert second == {"status": "already_ran_today"}
+
+
+class TestProviderSmokeTick:
+    """Fase 5 (2026-07-09): la cadena de proveedores se pudre en silencio
+    (modelos decomisionados/renombrados upstream) sin nada que la camine
+    proactivamente. CERO red real: probe_provider se monkeypatchea."""
+
+    def test_disabled_without_env_flag(self, orch: Orchestrator) -> None:
+        assert orch.maintenance_provider_smoke_tick() == {"status": "disabled"}
+
+    def test_runs_and_classifies_providers(
+        self,
+        orch: Orchestrator,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("ATLAS_PROVIDER_SMOKE", "1")
+
+        from atlas.core.inference_hub import DEFAULT_PROVIDERS
+
+        class _FakeHub:
+            def probe_provider(self, provider: Any, request: Any) -> Any:
+                class _Resp:
+                    pass
+                resp = _Resp()
+                resp.success = provider is DEFAULT_PROVIDERS[0]
+                resp.error = None if resp.success else "model_decommissioned"
+                resp.latency_ms = 5
+                resp.mode = "live"
+                return resp
+
+        monkeypatch.setattr(orch, "_inference_hub", _FakeHub())
+
+        result = orch.maintenance_provider_smoke_tick()
+
+        assert result["status"] == "ran"
+        assert DEFAULT_PROVIDERS[0].name in result["ok"]
+        assert len(result["dead"]) == len(DEFAULT_PROVIDERS) - 1
+
+    def test_second_call_same_day_is_a_noop(
+        self,
+        orch: Orchestrator,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("ATLAS_PROVIDER_SMOKE", "1")
+
+        class _FakeHub:
+            def probe_provider(self, provider: Any, request: Any) -> Any:
+                class _Resp:
+                    success = False
+                    error = "sin key"
+                    latency_ms = 0
+                    mode = "auto-skip"
+                return _Resp()
+
+        monkeypatch.setattr(orch, "_inference_hub", _FakeHub())
+
+        first = orch.maintenance_provider_smoke_tick()
+        second = orch.maintenance_provider_smoke_tick()
+
+        assert first["status"] == "ran"
+        assert second == {"status": "already_ran_today"}

@@ -271,6 +271,14 @@ class MaintenanceFacade:
                 except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
                     pass
 
+            def _provider_smoke_cycle() -> None:
+                # Smoke de cadena: ver maintenance_provider_smoke_tick. Aislado
+                # igual que los demás ciclos.
+                try:
+                    self.maintenance_provider_smoke_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -317,7 +325,10 @@ class MaintenanceFacade:
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
-                extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle, _research_cycle),
+                extra_cycles=(
+                    _dep_cycle, _batch_cycle, _self_build_cycle,
+                    _research_cycle, _provider_smoke_cycle,
+                ),
                 **scheduler_kwargs,
             )
         return self._maintenance_scheduler
@@ -490,6 +501,63 @@ class MaintenanceFacade:
             "findings_count": len(findings),
             "report_path": str(report_path),
         }
+
+    def maintenance_provider_smoke_tick(self) -> dict[str, Any]:
+        """Smoke diario de la cadena de proveedores (Fase 5, 2026-07-09).
+
+        Causa raíz: modelos decomisionados/renombrados upstream se
+        descubrían por accidente, quemando una llamada real fallida en
+        cada pasada del fallback hasta retirarlos a mano — "falta smoke
+        diario de cadena" (memoria provider-chain-rot). Cada proveedor de
+        ``DEFAULT_PROVIDERS`` recibe UNA llamada mínima en aislamiento
+        (``InferenceHub.probe_provider``, bypasea la cadena de fallback);
+        el resultado (ok/failed/skipped) se persiste + audita en Merkle.
+        Barato por diseño (max_tokens=8 por proveedor): no gasta el
+        presupuesto de un LLM caro.
+
+        Opt-in explícito: requiere ``ATLAS_PROVIDER_SMOKE=1``. Cadencia
+        propia de 24h (fichero de estado, independiente del poll del
+        scheduler)."""
+        if os.environ.get("ATLAS_PROVIDER_SMOKE", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "self_build" / "provider_smoke_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.inference_hub import InferenceHub
+        from atlas.core.self_maintenance.provider_smoke import ProviderChainSmoke
+
+        orch = self._orch
+        hub = orch._inference_hub or InferenceHub(mode="auto")
+        smoke = ProviderChainSmoke(hub=hub)
+        results = smoke.run()
+
+        dead = [r.provider_name for r in results if r.outcome == "failed"]
+        ok = [r.provider_name for r in results if r.outcome == "ok"]
+        skipped = [r.provider_name for r in results if r.outcome == "skipped"]
+
+        state["last_run_date"] = today
+        state["last_results"] = [r.to_dict() for r in results]
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.provider_smoke_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={"ok": ok, "dead": dead, "skipped": skipped},
+        )
+        return {"status": "ran", "ok": ok, "dead": dead, "skipped": skipped}
 
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
