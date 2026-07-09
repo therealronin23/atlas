@@ -227,22 +227,10 @@ class MaintenanceFacade:
                         orch.advance_cold_update(proposal.id)
 
             def _self_build_cycle() -> None:
-                # Autoconstrucción: muele UN item pending del backlog por ciclo.
-                # Opt-in explícito (gasta LLM): el operador activa ATLAS_SELF_BUILD=1.
-                # Un item por tick acota el gasto; el resultado queda auditado en
-                # Merkle por el runner y las propuestas van a ColdUpdate (HITL intacto).
-                import os
-
-                if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
-                    return
-                from atlas.core.self_maintenance.backlog import load_backlog, pending
-
+                # Autoconstrucción: ver maintenance_self_build_tick (extraído a
+                # método para que el preflight y el gating sean testeables).
                 try:
-                    items = pending(load_backlog(self._project_root() / "docs" / "backlog.yaml"))
-                    if not items:
-                        return
-                    runner = self._orch.maintenance_self_build_runner()
-                    runner.run_item(items[0])
+                    self.maintenance_self_build_tick()
                 except Exception:  # noqa: BLE001 — un item malo no tumba el tick del scheduler
                     pass
 
@@ -297,6 +285,61 @@ class MaintenanceFacade:
             )
         return self._maintenance_scheduler
 
+    def maintenance_self_build_tick(self) -> dict[str, Any]:
+        """Un tick de autoconstrucción: preflight barato → UN item pending del backlog.
+
+        Roadmap "juicio real" paso 1, cableado en producción (2026-07-08): antes
+        de gastar LLM en construir, ``PreflightGate`` descarta gratis lo
+        obviamente malo (CVEs de dependencias + radar de saneamiento). Si el
+        preflight no pasa, el tick se salta ESTE ciclo con evidencia en Merkle
+        (nunca silencioso) — no se construye sobre una base vulnerable; el
+        ``_dep_cycle`` propone el bump que lo desbloquea.
+
+        Opt-in explícito (gasta LLM): requiere ``ATLAS_SELF_BUILD=1``. Un item
+        por tick acota el gasto; el resultado queda auditado en Merkle por el
+        runner y las propuestas van a ColdUpdate (HITL intacto)."""
+        if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
+            return {"status": "disabled"}
+
+        from atlas.core.self_maintenance.backlog import load_backlog, pending
+        from atlas.core.self_maintenance.preflight_gate import PreflightGate
+
+        preflight = PreflightGate().check()
+        if not preflight.passed:
+            self._orch._merkle.log(
+                action="self_build.preflight_blocked",
+                agent="maintenance_facade",
+                result="skipped",
+                risk_level="moderate",
+                payload={
+                    "cve_found": preflight.cve_found,
+                    "cve_findings": preflight.cve_findings[:20],
+                },
+            )
+            return {"status": "preflight_blocked", "preflight": preflight.to_dict()}
+
+        items = pending(load_backlog(self._project_root() / "docs" / "backlog.yaml"))
+        if not items:
+            return {"status": "no_pending"}
+        runner = self._orch.maintenance_self_build_runner()
+        result: dict[str, Any] = runner.run_item(items[0])
+        # 2026-07-09: tres ticks fallidos en una noche dejaron CERO rastro —
+        # solo el preflight se auditaba. El resultado de cada run_item queda
+        # en Merkle siempre, converja o no; sin esto el lazo es ciego a sus
+        # propios fracasos y nadie puede reconstruir qué pasó.
+        self._orch._merkle.log(
+            action="self_build.run_item",
+            agent="maintenance_facade",
+            result=str(result.get("status", "unknown")),
+            risk_level="moderate",
+            payload={
+                "item_id": result.get("item_id"),
+                "proposal_id": result.get("proposal_id"),
+                "detail": str(result.get("detail") or "")[:800],
+            },
+        )
+        return {"status": "ran", "result": result}
+
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
 
@@ -321,12 +364,44 @@ class MaintenanceFacade:
         """Lote de self_audit — combina propuestas `validated` del mismo origen
         y las prueba conjuntamente en un worktree efímero (ver
         ``ColdUpdateBatcher``). Reusa el ``ColdUpdateManager`` ya existente del
-        orquestador; no aplica nada por sí mismo."""
+        orquestador; no aplica nada por sí mismo.
+
+        Roadmap "juicio real" pasos 2 y 5, cableados en producción (2026-07-08):
+        ``BatchPremortemGate`` razona sobre riesgos de la COMBINACIÓN antes de
+        pagar la suite completa (señal, nunca gate duro) y ``FailureLessonSink``
+        convierte cada exclusión de la bisección en una lección con contador de
+        ocurrencias en el LessonStore unificado (<repo>/workspace/lessons) — sin
+        esto el lazo no aprendía nada de sus propios fallos."""
         if self._maintenance_cold_update_batcher is None:
             from atlas.core.cold_update_batcher import ColdUpdateBatcher
+            from atlas.core.inference_hub import InferenceHub
+            from atlas.core.self_maintenance.batch_premortem import BatchPremortemGate
+            from atlas.core.self_maintenance.failure_lesson_sink import (
+                FailureLessonSink,
+            )
+
+            orch = self._orch
+            hub = orch._inference_hub or InferenceHub(mode="auto")
+            premortem = BatchPremortemGate(hub=hub, merkle=orch._merkle)
+
+            # Mismo patrón defensivo que el LessonStore del codegen proposer:
+            # si el store no puede abrirse, el batcher corre sin sink (señal
+            # degradada) en vez de romper el ciclo de lotes.
+            sink: Any = None
+            try:
+                from atlas.core.lesson_store import LessonStore
+
+                _repo_root = orch._repo_root() or orch._workspace
+                sink = FailureLessonSink(
+                    store=LessonStore(_repo_root / "workspace" / "lessons"),
+                )
+            except Exception:  # noqa: BLE001 — sink opcional, nunca bloquea
+                sink = None
 
             self._maintenance_cold_update_batcher = ColdUpdateBatcher(
                 manager=self._orch.cold_update(),
+                premortem=premortem,
+                failure_lesson_sink=sink,
             )
         return self._maintenance_cold_update_batcher
 
@@ -452,13 +527,17 @@ class MaintenanceFacade:
 
                 _repo_root = orch._repo_root() or orch._workspace
                 _lesson_store = LessonStore(_repo_root / "workspace" / "lessons")
-                # threshold: sin override — el default de LessonRecaller (0.8) ya
-                # está calibrado para embeddings SEMÁNTICOS (ver su docstring);
-                # el 0.65 anterior compensaba el hash NO-semántico de
-                # StubEmbedder(dim=64) que se acaba de dejar de usar aquí.
+                # threshold 0.55 MEDIDO 2026-07-08 (antes: default 0.8, que en
+                # la práctica no recuperaba NADA): con fastembed multilingüe,
+                # consultas claramente relacionadas puntúan 0.55-0.69 y las no
+                # relacionadas ≤0.47. A 0.8 el lazo "aprendía" lecciones que
+                # jamás volvían a salir. Falso positivo aquí es barato (una
+                # línea extra de avoid_pattern en el prompt de codegen); este
+                # override NO toca los umbrales del sistema inmune.
                 _lesson_recaller: Any = LessonRecaller(
                     _lesson_store,
                     embedder=default_embedder(),
+                    threshold=0.55,
                 )
             except Exception:  # noqa: BLE001 — directorio no existe u otro error; degradado
                 _lesson_store = None
