@@ -98,6 +98,7 @@ sectors:
       fuentes: {label: Fuentes/APIs, aliases: [apis, sources, ingesta]}
     entries:
       - {name: atlas-memory, kind: mcp, subsector: memoria, source: atlas.mcp.memory_server, purpose: "sustrato verificable (NUESTRO)", install: "claude mcp add atlas-memory", status: instalado}
+      - {name: atlas-graph, kind: mcp, subsector: grafos, source: atlas.mcp.graph_server, purpose: "grafo vivo del proyecto (Kuzu): quién importa X, blast radius, linaje temporal, churn — entender Atlas SIN leer docs (NUESTRO, verificado 19/19 vs grep 2026-07-09)", install: "python -m atlas.mcp.graph_server", tags: [conocimiento-memoria, programacion], status: instalado}
       - {name: atlas-knowledge, kind: mcp, subsector: fuentes, source: atlas.mcp.knowledge_server, purpose: "knowledge-src → run_mission (NUESTRO)", install: "claude mcp add atlas-knowledge", status: instalado}
       - {name: Wikipedia REST, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:WikipediaSource", purpose: "summary API (NUESTRO)", tags: [conocimiento-memoria, investigacion], status: instalado}
       - {name: World Bank, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:WorldBankSource", purpose: "indicadores abiertos (NUESTRO)", tags: [conocimiento-memoria, datos], status: instalado}
