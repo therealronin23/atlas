@@ -767,17 +767,38 @@ class AtlasCoder:
             else:
                 abs_path.write_text(content, encoding="utf-8")
 
+    def _sweep_stale_sandboxes(self, *, max_age_seconds: float = 3600.0) -> None:
+        """Barre sandboxes huérfanos de ejecuciones anteriores muertas por
+        SIGKILL/crash (finally nunca corre en ese caso — mismo patrón que el
+        fix de worktree leak: limpieza al entrar, no solo al salir). Encontrado
+        2026-07-09: 7 sandboxes huérfanos (~487M c/u) llenaron el tmpfs de 4G
+        de /tmp y contribuyeron a cierres de sesión de escritorio repetidos."""
+        import time
+
+        base = Path(tempfile.gettempdir())
+        now = time.time()
+        try:
+            for entry in base.glob("atlas_coder_sandbox_*"):
+                try:
+                    if now - entry.stat().st_mtime > max_age_seconds:
+                        shutil.rmtree(entry, ignore_errors=True)
+                except OSError:
+                    continue
+        except OSError:
+            pass
+
     def _create_sandbox(self) -> Path:
         """Técnica #6: copia repo_root a un directorio temporal aislado, sin
         directorios pesados/irrelevantes. El bucle de code() opera sobre esta
         copia hasta que el resultado final se conoce."""
+        self._sweep_stale_sandboxes()
         sandbox_dir = Path(tempfile.mkdtemp(prefix="atlas_coder_sandbox_"))
         shutil.copytree(
             self._repo_root, sandbox_dir,
             ignore=shutil.ignore_patterns(
                 ".git", ".venv", ".venv-redteam", "__pycache__",
                 ".mypy_cache", ".pytest_cache", "node_modules",
-                "data", "workspace", "*.pyc",
+                ".claude", ".cursor", "data", "workspace", "*.pyc",
             ),
             dirs_exist_ok=True,
         )

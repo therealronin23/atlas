@@ -236,6 +236,11 @@ class SelfBuildRunner:
                 test_cmd=test_cmd,
                 max_iterations=max_iterations,
                 level=_self_build_level(),
+                # Visión periférica automática (patrón Aider): sin esto el modelo
+                # solo ve los targets del item y reinventa símbolos que ya existen.
+                repo_map_files=self._tracked_py_files(),
+                # Planning antes de editar (patrón nº1 de la matriz de harnesses).
+                plan=True,
             )
 
             if not coder_result.success:
@@ -463,6 +468,21 @@ class SelfBuildRunner:
             )
         except (OSError, subprocess.SubprocessError):
             pass
+
+    def _tracked_py_files(self) -> list[str]:
+        """Todos los .py trackeados del repo — alimenta el repo-map del coder
+        (firmas AST, no contenido; barato incluso con ~200 módulos). Lista
+        vacía si git falla: el repo-map es opcional, nunca bloquea el tick."""
+        try:
+            result = subprocess.run(
+                ["git", "ls-files", "*.py"],
+                cwd=self._repo_root, capture_output=True, text=True, check=False,
+            )
+            if result.returncode != 0:
+                return []
+            return result.stdout.split()
+        except (OSError, subprocess.SubprocessError):
+            return []
 
     def _expand_targets(self, targets: tuple[str, ...] | list[str]) -> list[str]:
         """Expande targets que son directorios (terminan en '/') a los .py

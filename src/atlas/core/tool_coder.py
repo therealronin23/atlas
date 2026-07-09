@@ -305,14 +305,65 @@ class ToolCoder:
             return ""
         return "## Contexto institucional del proyecto\n\n" + "\n\n".join(parts)
 
+    def _draft_plan(
+        self,
+        task: str,
+        *,
+        repo_map_section: str,
+        files_section: str,
+        level: "InferenceLevel",
+    ) -> str:
+        """Una llamada SIN tools que bosqueja 3-6 pasos concretos. Fail-open:
+        cualquier fallo devuelve "" y la tarea procede sin plan."""
+        prompt = (
+            "Eres un ingeniero planificando una tarea de código. NO escribas "
+            "código: responde SOLO con una lista numerada de 3 a 6 pasos "
+            "concretos (qué fichero tocar y qué cambiar en cada paso).\n\n"
+            f"## Tarea\n{task}\n\n{repo_map_section}"
+            f"## Ficheros de contexto\n{files_section[:6000]}"
+        )
+        try:
+            response = self._hub.infer_for_role(
+                "chat",
+                InferenceRequest(
+                    prompt=prompt, level=level, task_id="tool_coder_plan",
+                    max_tokens=600,
+                ),
+            )
+            if response.success and response.text.strip():
+                return response.text.strip()[:2000]
+        except Exception:  # noqa: BLE001 — el plan es opcional, nunca rompe
+            pass
+        return ""
+
+    def _sweep_stale_sandboxes(self, *, max_age_seconds: float = 3600.0) -> None:
+        """Barre sandboxes huérfanos de ejecuciones anteriores muertas por
+        SIGKILL/crash (finally nunca corre en ese caso — mismo patrón que el
+        fix de worktree leak: limpieza al entrar, no solo al salir)."""
+        import time
+
+        base = Path(tempfile.gettempdir())
+        now = time.time()
+        try:
+            for entry in base.glob("tool_coder_sandbox_*"):
+                try:
+                    if now - entry.stat().st_mtime > max_age_seconds:
+                        shutil.rmtree(entry, ignore_errors=True)
+                except OSError:
+                    continue
+        except OSError:
+            pass
+
     def _create_sandbox(self) -> Path:
         """Técnica #6, mismo contrato que AtlasCoder._create_sandbox."""
+        self._sweep_stale_sandboxes()
         sandbox_dir = Path(tempfile.mkdtemp(prefix="tool_coder_sandbox_"))
         shutil.copytree(
             self._repo_root, sandbox_dir,
             ignore=shutil.ignore_patterns(
                 ".git", ".venv", ".venv-redteam", "__pycache__",
                 ".mypy_cache", ".pytest_cache", "node_modules",
+                ".claude", ".cursor",
                 "data", "workspace", "*.pyc",
             ),
             dirs_exist_ok=True,
@@ -405,6 +456,7 @@ class ToolCoder:
         repo_map_files: list[str] | None = None,
         auto_commit: bool = False,
         institutional_context_files: list[str] | None = None,
+        plan: bool = False,
     ) -> CoderResult:
         if not test_cmd:
             return CoderResult(
@@ -454,11 +506,27 @@ class ToolCoder:
             files_parts.append(f"### {rel_path}\n```\n{content}\n```")
         files_section = "\n\n".join(files_parts) if files_parts else "(ninguno)"
 
+        # Planning separado de ejecución (patrón nº1 de la matriz de harnesses,
+        # 2026-07-09): una llamada barata SIN tools bosqueja los pasos antes de
+        # entrar al bucle de edición — reduce ediciones erráticas del primer
+        # turno. Fail-open: sin plan, la tarea sigue igual que antes.
+        plan_section = ""
+        if plan:
+            plan_text = self._draft_plan(
+                task, repo_map_section=repo_map_section,
+                files_section=files_section, level=level,
+            )
+            if plan_text:
+                plan_section = (
+                    "## Plan de trabajo (bosquejo previo; ajústalo si el código "
+                    "lo contradice)\n" + plan_text + "\n\n"
+                )
+
         messages: list[dict[str, Any]] = [{
             "role": "user",
             "content": _SYSTEM_TASK.format(
                 task=task, institutional_section=institutional_section,
-                avoid_section=avoid_section,
+                avoid_section=avoid_section + plan_section,
                 repo_map_section=repo_map_section, files_section=files_section,
             ),
         }]
@@ -532,11 +600,23 @@ class ToolCoder:
                               "sin respuesta final (posible loop).",
                     )
 
-            # Correr tests
+            # Correr tests. PYTHONPATH apunta al árbol que estamos probando:
+            # con sandbox/worktree, el install editable del venv resolvería
+            # `import atlas` al repo REAL y los tests medirían el código
+            # equivocado (verificado en vivo 2026-07-09) — PYTHONPATH precede
+            # a site-packages y fuerza el árbol correcto.
+            test_env = dict(os.environ)
+            _pp_parts = [str(self._repo_root)]
+            if (self._repo_root / "src").is_dir():
+                _pp_parts.insert(0, str(self._repo_root / "src"))
+            _existing_pp = test_env.get("PYTHONPATH", "")
+            test_env["PYTHONPATH"] = os.pathsep.join(
+                _pp_parts + ([_existing_pp] if _existing_pp else [])
+            )
             try:
                 result = subprocess.run(
                     test_cmd, cwd=self._repo_root, capture_output=True,
-                    timeout=self._timeout_s, text=True,
+                    timeout=self._timeout_s, text=True, env=test_env,
                 )
                 test_output = result.stdout + result.stderr
             except subprocess.TimeoutExpired:

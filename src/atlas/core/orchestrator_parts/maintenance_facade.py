@@ -301,7 +301,13 @@ class MaintenanceFacade:
         if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
             return {"status": "disabled"}
 
-        from atlas.core.self_maintenance.backlog import load_backlog, pending
+        from atlas.core.self_maintenance.backlog import (
+            load_backlog,
+            load_queue_state,
+            next_runnable,
+            record_outcome,
+            save_queue_state,
+        )
         from atlas.core.self_maintenance.preflight_gate import PreflightGate
 
         preflight = PreflightGate().check()
@@ -318,11 +324,22 @@ class MaintenanceFacade:
             )
             return {"status": "preflight_blocked", "preflight": preflight.to_dict()}
 
-        items = pending(load_backlog(self._project_root() / "docs" / "backlog.yaml"))
-        if not items:
+        items = load_backlog(self._project_root() / "docs" / "backlog.yaml")
+        # Selección con backoff (2026-07-09): un item que falla N ticks seguidos
+        # cede el turno al siguiente pendiente en vez de acaparar el lazo — la
+        # noche del 07-08 un solo item quemó todos los ticks mientras el resto
+        # de la cola esperaba. El contador persiste entre reinicios del daemon.
+        state_path = self._project_root() / "workspace" / "self_build" / "queue_state.json"
+        state = load_queue_state(state_path)
+        item = next_runnable(items, state)
+        if item is None:
             return {"status": "no_pending"}
         runner = self._orch.maintenance_self_build_runner()
-        result: dict[str, Any] = runner.run_item(items[0])
+        result: dict[str, Any] = runner.run_item(item)
+        save_queue_state(
+            state_path,
+            record_outcome(state, item.id, success=result.get("status") == "proposed"),
+        )
         # 2026-07-09: tres ticks fallidos en una noche dejaron CERO rastro —
         # solo el preflight se auditaba. El resultado de cada run_item queda
         # en Merkle siempre, converja o no; sin esto el lazo es ciego a sus
