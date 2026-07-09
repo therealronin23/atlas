@@ -116,6 +116,8 @@ def test_sanitation_findings_has_expected_keys(monkeypatch):
         "graveyard_overdue",
         "empty_dirs",
         "stale_refs",
+        "docs_index_drift",  # 2026-07-08: el orden de docs entra al preflight
+        "docs_graph_drift",  # 2026-07-08: y el grafo de enlaces también
     }
     for key, value in result.sanitation_findings.items():
         assert isinstance(value, list)

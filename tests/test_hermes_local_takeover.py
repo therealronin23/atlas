@@ -27,6 +27,7 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
     monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
     monkeypatch.delenv("HERMES_BASE_URL", raising=False)
+    monkeypatch.delenv("HERMES_KANBAN_TRANSPORT", raising=False)
     return Orchestrator(workspace=tmp_path / "atlas")
 
 

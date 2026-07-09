@@ -33,6 +33,9 @@ from atlas.hermes.hermes import DelegationBuilder, HermesMockAdapter, OfflineQue
 @pytest.fixture
 def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
+    monkeypatch.delenv("HERMES_KANBAN_TRANSPORT", raising=False)
+    monkeypatch.delenv("HERMES_BASE_URL", raising=False)
+    monkeypatch.delenv("HERMES_API_KEY", raising=False)
     return Orchestrator(workspace=tmp_path / "atlas")
 
 

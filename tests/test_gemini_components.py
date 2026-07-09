@@ -344,8 +344,12 @@ class TestInferenceHub:
         hub = InferenceHub()
         l0 = [p for p in hub._providers if p.level == InferenceLevel.L0]
         assert len(l0) >= 1
-        # Al menos un proveedor L0 debe ser local (Ollama/localhost)
-        local = [p for p in l0 if p.base_url.startswith("http://localhost")]
+        # Al menos un proveedor L0 debe ser local (Ollama en loopback —
+        # 2026-07-08: 127.0.0.1:11435, daemon CPU; ver scripts/ollama_cpu.sh)
+        local = [
+            p for p in l0
+            if p.base_url.startswith(("http://localhost", "http://127.0.0.1"))
+        ]
         assert len(local) >= 1, f"No hay provider L0 local; L0 providers: {[p.name for p in l0]}"
 
 
