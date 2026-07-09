@@ -323,22 +323,25 @@ DEFAULT_PROVIDERS: list[Provider] = [
         account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
         roles=("apply",),  # mecánico, contraparte de pago de groq_llama_70b
     ),
-    # L2 — NVIDIA NIM modelos frontier extra. Prove-it 2026-06-22 contra
-    # integrate.api.nvidia.com (chat/completions): responden Kimi K2.6, Mistral
-    # Large 3 (675B) y GLM 5.1. Mismo account_pool → fallback entre modelos y
-    # entre cuentas. mistral-large-2-instruct da 404 en este tier (descartado).
+    # L2 — NVIDIA NIM modelos frontier extra. Mismo account_pool → fallback
+    # entre modelos y entre cuentas. mistral-large-2-instruct da 404 en este
+    # tier (descartado). nvidia_kimi (moonshotai/kimi-k2.6) RETIRADO
+    # 2026-07-10: 404 "Function not found for account" en las 2 cuentas del
+    # pool, dos días seguidos de smoke — sigue listado en /v1/models pero el
+    # tier no lo sirve. Asiento CN re-mapeado a GLM (z-ai/glm-5.2, prove-it
+    # en vivo 2026-07-10; el glm-5.1 anterior dio 410 Gone el 2026-06-28).
     Provider(
-        name="nvidia_kimi",
+        name="nvidia_glm",
         level=InferenceLevel.L2,
         base_url="https://integrate.api.nvidia.com/v1",
-        model_id="moonshotai/kimi-k2.6",
-        litellm_model="nvidia_nim/moonshotai/kimi-k2.6",
+        model_id="z-ai/glm-5.2",
+        litellm_model="nvidia_nim/z-ai/glm-5.2",
         api_key_env="NVIDIA_API_KEY",
         free_tier=False,
         rpm_limit=30,
         context_tokens=128000,
         account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
-        roles=("edit",),  # 59.1% pass_rate2 medido (Aider polyglot), buen formato
+        roles=("edit",),  # hereda el rol del asiento (métrica propia pendiente de medir)
     ),
     Provider(
         name="nvidia_mistral_large",
