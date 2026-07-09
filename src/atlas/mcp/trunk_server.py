@@ -77,9 +77,9 @@ def root_configs(
     return [
         McpServerConfig(
             name=root.name,
-            cmd=[exe, "-m", root.module, arg_for[root.arg_kind]],
-            # recall/lookup/audit son de lectura; el resto mutan (HITL).
-            read_only_tools=[t for t in root.tools if t.startswith(("recall", "wikipedia_lookup", "worldbank_lookup", "sanitation"))],
+            cmd=[exe, "-m", root.module, *([arg_for[root.arg_kind]] if root.arg_kind else [])],
+            # recall/lookup/audit/graph son de lectura; el resto mutan (HITL).
+            read_only_tools=[t for t in root.tools if t.startswith(("recall", "wikipedia_lookup", "worldbank_lookup", "sanitation", "graph_"))],
         )
         for root in native_roots()
     ]

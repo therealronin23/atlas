@@ -180,7 +180,7 @@ def test_root_configs_map_each_root_to_its_launch_command(tmp_path: Path) -> Non
     cfgs = {c.name: c for c in root_configs(
         save_dir=tmp_path / "save", repo_root=Path("/repo"), python="/py"
     )}
-    assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge"}
+    assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
 
     mem = cfgs["atlas-memory"]
     assert mem.cmd[0] == "/py"
@@ -189,6 +189,10 @@ def test_root_configs_map_each_root_to_its_launch_command(tmp_path: Path) -> Non
     # operating recibe el repo; knowledge recibe el base (kb)
     assert "/repo" in cfgs["atlas-operating"].cmd
     assert str(tmp_path / "save" / "kb") in cfgs["atlas-knowledge"].cmd
+    # graph no recibe path arg (usa DEFAULT_GRAPH_DB) y sus tools son de lectura
+    graph = cfgs["atlas-graph"]
+    assert graph.cmd == ["/py", "-m", "atlas.mcp.graph_server"]
+    assert "graph_importers" in graph.read_only_tools
 
 
 # ---------------------------------------------------------------------------

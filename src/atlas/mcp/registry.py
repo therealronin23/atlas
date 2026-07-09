@@ -248,8 +248,18 @@ class McpRegistry:
 
     def is_read_only(self, full_name: str) -> bool:
         """ADR-035 dec.5: por defecto mutate (HITL). Solo los que el config
-        marca explícitamente son lectura."""
-        return full_name in self._read_only
+        marca explícitamente son lectura. Predicado ESTÁTICO sobre la config
+        declarada: con spawn perezoso el server puede no haber arrancado aún
+        cuando invoke_readonly consulta, y el veredicto no puede depender de
+        estado de runtime (sería fail-always en frío, no fail-closed)."""
+        if full_name in self._read_only:
+            return True
+        parts = full_name.split("__", 2)
+        if len(parts) != 3 or parts[0] != "mcp":
+            return False
+        server, tool = parts[1], parts[2]
+        cfg = next((c for c in self._configs if c.name == server and c.enabled), None)
+        return cfg is not None and tool in cfg.read_only_tools
 
     def knows(self, full_name: str) -> bool:
         return full_name in self._tool_index

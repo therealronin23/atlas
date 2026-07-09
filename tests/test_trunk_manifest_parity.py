@@ -23,6 +23,7 @@ def _tool_names_from_source(module_name: str) -> set[str]:
         ("atlas-memory", "atlas.mcp.memory_server"),
         ("atlas-operating", "atlas.mcp.operating_server"),
         ("atlas-knowledge", "atlas.mcp.knowledge_server"),
+        ("atlas-graph", "atlas.mcp.graph_server"),
     ],
 )
 def test_native_roots_tools_match_server_module(root_name: str, module: str) -> None:
