@@ -314,6 +314,29 @@ class ToolCoder:
         "create_file": ("path", "content"),
     }
 
+    @staticmethod
+    def _repair_json_arguments(raw: str) -> str:
+        """Sanea argumentos de tool-call antes de guardarlos en el historial.
+
+        Algunos modelos emiten JSON válido seguido de basura ("Extra data");
+        litellm (p.ej. la plantilla de Ollama) hace json.loads sin defensa al
+        reproducir el historial en el siguiente turno y crashea. Aquí tomamos
+        el primer objeto JSON válido y descartamos el resto; si no hay nada
+        parseable, devolvemos "{}" (el modelo verá el error de _dispatch_tool).
+        """
+        if not raw:
+            return "{}"
+        try:
+            json.loads(raw)
+            return raw
+        except json.JSONDecodeError:
+            pass
+        try:
+            obj, _end = json.JSONDecoder().raw_decode(raw.strip())
+            return json.dumps(obj, ensure_ascii=False)
+        except json.JSONDecodeError:
+            return "{}"
+
     def _dispatch_tool(self, name: str, arguments: str, changed: list[str]) -> str:
         try:
             args = json.loads(arguments) if arguments else {}
@@ -429,6 +452,10 @@ class ToolCoder:
                     level=level,
                     task_id="tool_coder",
                     max_tokens=4096,
+                    # Lazo largo: esperar el cooldown de rate-limit (hasta 2
+                    # re-caminatas del hub) antes que perder toda la tarea —
+                    # 5 delegaciones muertas por all_failed el 2026-07-08.
+                    wait_for_ratelimit=True,
                 )
                 response = self._hub.infer_for_role("edit", request)
                 if not response.success:
@@ -446,7 +473,10 @@ class ToolCoder:
                         {
                             "id": tc["id"],
                             "type": "function",
-                            "function": {"name": tc["name"], "arguments": tc["arguments"]},
+                            "function": {
+                                "name": tc["name"],
+                                "arguments": self._repair_json_arguments(tc["arguments"]),
+                            },
                         }
                         for tc in response.tool_calls
                     ],
