@@ -173,3 +173,62 @@ class TestAudit:
         assert rec["payload"]["candidate_count"] == 2
         assert rec["payload"]["proposal_count"] == 1
         assert rec["payload"]["proposal_ids"] == ["mcpprop-good"]
+
+
+class TestStopCancelsPendingCycles:
+    """Riesgo residual del incidente 2026-07-09: un hilo que sobrevive al
+    join(timeout=2) de stop() seguía arrancando extra_cycles DESPUÉS de que el
+    test deshiciera sus monkeypatches → un run_item real desde una suite.
+    stop() ahora veta los ciclos aún no arrancados y despierta el sleep."""
+
+    def test_stop_mid_cycle_prevents_remaining_cycles(self, merkle) -> None:
+        import threading
+
+        entered_c1 = threading.Event()
+        release_c1 = threading.Event()
+        ran: list[str] = []
+
+        def c1() -> None:
+            ran.append("c1")
+            entered_c1.set()
+            release_c1.wait(timeout=10)
+
+        def c2() -> None:
+            ran.append("c2")
+
+        sched = MaintenanceScheduler(
+            merkle=merkle, discover=lambda: [], analyze=lambda c: None,
+            notify=lambda p: None, poll_interval_seconds=3600,
+            extra_cycles=(c1, c2),
+        )
+        sched.start()
+        assert entered_c1.wait(timeout=5)
+        sched.stop()          # c1 sigue en vuelo → join expira; c2 NO debe arrancar
+        release_c1.set()
+        assert sched._thread is not None
+        sched._thread.join(timeout=5)
+        assert ran == ["c1"]  # el ciclo pendiente quedó vetado
+
+    def test_stop_wakes_the_sleep_immediately(self, merkle) -> None:
+        import time as time_mod
+
+        sched = MaintenanceScheduler(
+            merkle=merkle, discover=lambda: [], analyze=lambda c: None,
+            notify=lambda p: None, poll_interval_seconds=3600,
+        )
+        sched.start()
+        time_mod.sleep(0.2)  # deja al loop llegar al wait()
+        t0 = time_mod.time()
+        sched.stop()
+        assert time_mod.time() - t0 < 2  # no espera el poll de 1h
+        assert sched._thread is not None and not sched._thread.is_alive()
+
+    def test_direct_tick_still_runs_all_cycles(self, merkle) -> None:
+        ran: list[str] = []
+        sched = MaintenanceScheduler(
+            merkle=merkle, discover=lambda: [], analyze=lambda c: None,
+            notify=lambda p: None,
+            extra_cycles=(lambda: ran.append("a"), lambda: ran.append("b")),
+        )
+        sched.tick()  # sin start/stop: el evento está limpio
+        assert ran == ["a", "b"]
