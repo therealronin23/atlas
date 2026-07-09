@@ -552,3 +552,83 @@ items:
       sobre el trabajo async del loop; test del ciclo de vida. No antes de que exista el consumidor.
     priority: 3
     status: pending
+
+  # 2026-07-09: Fork real — absorción de Aider/Cursor/Codex + Graphify/Obsidian/Kuzu
+  # Delegado a Atlas con presión real (3% tokens, deadline 2026-07-10 06:00)
+  - id: absorb_harness_patterns
+    title: "Investigación: Aider/Cursor/Codex patterns"
+    why: >
+      Fork real requiere entender qué hace bien CADA una en su core architecture,
+      no features cosméticas. Encuesta harness-engineering está; ahora necesitamos
+      matriz de 4 herramientas × 5 capacidades clave con patrones arquitectónicos.
+    targets:
+      - "docs/"
+    acceptance: >
+      Matriz 4×5 completa con patrones arquitectónicos (no features);
+      para cada patrón: código de referencia o paper;
+      prioridad por "presión real detectada en delegaciones 2026-07-08".
+    priority: 1
+    status: pending
+
+  - id: graphify_obsidian_kuzu_fusion_design
+    title: "Investigación: Graphify + Obsidian → Kuzu fusion architecture"
+    why: >
+      Graphify (repo libre) + Obsidian vault format + Kuzu (dependencia core).
+      Diseño de fusión que unifique: grafos bitemporales + markdown wikilinks +
+      embeddings locales (sin API). Referencias: Graphiti/Zep paper, docs_graph.py.
+    targets:
+      - "src/atlas/core/"
+    acceptance: >
+      Diagrama fusión (inputs→schema→queries);
+      schema Kuzu con aristas bitemporales;
+      código ejemplo: 1 commit→grafo en Kuzu;
+      benchmarks vs docs_graph.py slice 1.
+    priority: 1
+    status: pending
+
+  - id: graphify_download_study
+    title: "Construcción: Descargar Graphify, estudio técnico"
+    why: >
+      Entender qué hace bien Graphify: extracción de grafos, bitemporalidad,
+      embeddings. Qué usar, qué adaptar para Kuzu/local, qué descartar.
+    targets:
+      - "../graphify-study/"
+    acceptance: >
+      Repo Graphify clonado;
+      documento: arquitectura Graphify (500 palabras);
+      3 ejemplos: "usamos" / "adaptamos" / "descartamos".
+    priority: 1
+    status: pending
+
+  - id: obsidian_vault_parser
+    title: "Construcción: Obsidian vault format → Kuzu parser"
+    why: >
+      Obsidian es vault format popular (markdown + wikilinks + frontmatter).
+      Necesitamos parser que lea completamente sin perder metadata,
+      roundtrip Obsidian↔Kuzu sin pérdida.
+    targets:
+      - "src/atlas/memory/"
+      - "tests/"
+    acceptance: >
+      Parser: Obsidian vault→Kuzu schema;
+      10 docs ejemplo parseados correctamente;
+      tests: roundtrip (Obsidian→Kuzu→Obsidian) sin pérdida.
+    priority: 1
+    status: pending
+
+  - id: kuzu_bitemporal_schema
+    title: "Construcción: Schema Kuzu bitemporal (slice 2 graphs)"
+    why: >
+      Slice 1 fue grafos de imports (199 nodos, 464 aristas).
+      Slice 2: bitemporal (qué cambió entre commits).
+      Necesitamos: nodos (fichero+hash+timestamp), aristas (import+commit+added/removed/modified),
+      embeddings locales, queries de "impacto temporal".
+    targets:
+      - "src/atlas/core/graphs.py"
+      - "tests/"
+    acceptance: >
+      Schema Kuzu CREATE TABLE completo;
+      5 queries complejas (diffs, impacto, linaje temporal);
+      test: ingesta 3 commits→grafo correcto sin drift.
+    priority: 1
+    status: pending

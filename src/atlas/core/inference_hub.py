@@ -115,6 +115,12 @@ class Provider:
     # Soft-preference: infer_for_role() cae a candidatos por nivel si ningún
     # provider del nivel pedido tiene el rol — nunca falla por falta de tag.
     roles: tuple[str, ...] = ()
+    # 2026-07-08: capacidad de tool-calling. Un request con `tools` se salta
+    # los providers marcados False, y si un provider responde "tool calling is
+    # not supported" el hub lo marca False EN CALIENTE (autoaprendizaje) para
+    # no volver a quemar una llamada ahí — incidente real: groq_compound
+    # rechazaba tools en cada pasada del ToolCoder delegado.
+    supports_tools: bool = True
 
 
 @dataclass
@@ -131,6 +137,13 @@ class InferenceRequest:
     tools: list[dict[str, Any]] | None = None
     messages: list[dict[str, Any]] | None = None
     tool_choice: str = "auto"
+    # 2026-07-08 (absorción robustez Codex/Claude-harness): si True y TODA la
+    # cadena cae rate-limitada, el hub espera al cooldown más próximo (cap
+    # 120s) y re-camina la cadena hasta 2 veces más en vez de devolver
+    # all_failed. Pensado para lazos largos (ToolCoder): esperar 60s es
+    # infinitamente mejor que perder toda la tarea. Default False: las
+    # llamadas interactivas no deben colgarse.
+    wait_for_ratelimit: bool = False
 
 
 @dataclass
@@ -178,6 +191,8 @@ DEFAULT_PROVIDERS: list[Provider] = [
         api_key_env="GROQ_API_KEY",
         rpm_limit=30,
         context_tokens=131072,
+        # Verificado en vivo 2026-07-08: Groq rechaza tools con este modelo.
+        supports_tools=False,
     ),
     # 2026-06-27: qwen3-32b → qwen3.6-27b (más reciente, prove-it en vivo OK).
     Provider(
@@ -190,16 +205,10 @@ DEFAULT_PROVIDERS: list[Provider] = [
         rpm_limit=30,
         context_tokens=32768,
     ),
-    Provider(
-        name="groq_deepseek_r1",
-        level=InferenceLevel.L0,  # modelo decommissioned en Groq (jun 2026)
-        base_url="https://api.groq.com",
-        model_id="deepseek-r1-distill-llama-70b",
-        litellm_model="groq/deepseek-r1-distill-llama-70b",
-        api_key_env="GROQ_API_KEY",
-        rpm_limit=30,
-        context_tokens=131072,
-    ),
+    # 2026-07-08: groq_deepseek_r1 (deepseek-r1-distill-llama-70b) RETIRADO de
+    # la cadena — Groq lo decomisionó (jun 2026) y dejarlo garantizaba una
+    # llamada fallida real cada vez que el fallback llegaba aquí (verificado en
+    # vivo: ToolCoder delegado murió con model_decommissioned en la 1ª llamada).
     Provider(
         name="openrouter_nemotron",
         level=InferenceLevel.L1,
@@ -212,17 +221,9 @@ DEFAULT_PROVIDERS: list[Provider] = [
         context_tokens=128000,
         roles=("chat",),
     ),
-    Provider(
-        name="openrouter_liquid",
-        level=InferenceLevel.L1,
-        base_url="https://openrouter.ai/api/v1",
-        model_id="liquid/lfm-2.5-1.2b-instruct:free",
-        litellm_model="openrouter/liquid/lfm-2.5-1.2b-instruct:free",
-        api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
-        rpm_limit=20,
-        context_tokens=32768,
-    ),
+    # 2026-07-08: openrouter_liquid (liquid/lfm-2.5-1.2b-instruct:free) RETIRADO
+    # — NotFound verificado en vivo (OpenRouter eliminó el endpoint); dejarlo
+    # quemaba una llamada fallida por pasada del fallback.
     # 2026-06-27: Qwen3-Coder-480B, el mismo modelo que solo teníamos vía NIM de
     # pago (nvidia_qwen3_coder), disponible GRATIS en OpenRouter. Prove-it en vivo:
     # OK, pero rate-limited upstream con frecuencia ("temporarily rate-limited
@@ -257,18 +258,9 @@ DEFAULT_PROVIDERS: list[Provider] = [
     # vivo: OK, pero también rate-limited upstream con frecuencia (modelo popular).
     # roles=edit: antecedente Hermes 2 Pro ~90% precisión function-calling —
     # buena señal para seguir formato estructurado (investigación harness survey).
-    Provider(
-        name="openrouter_hermes_405b",
-        level=InferenceLevel.L1,
-        base_url="https://openrouter.ai/api/v1",
-        model_id="nousresearch/hermes-3-llama-3.1-405b:free",
-        litellm_model="openrouter/nousresearch/hermes-3-llama-3.1-405b:free",
-        api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
-        rpm_limit=20,
-        context_tokens=128000,
-        roles=("chat", "edit"),
-    ),
+    # 2026-07-08: openrouter_hermes_405b (hermes-3-llama-3.1-405b:free) RETIRADO
+    # — NotFound verificado en vivo (OpenRouter eliminó el tier gratis; coherente
+    # con el prove-it 2026-07-02: Hermes 4 solo paid). Ver hermes-4-70b L2 abajo.
     # 2026-07-02: Hermes 4 (70B/405B) prove-it en vivo — SIN tier gratis en
     # ningún proveedor confirmado (OpenRouter solo tiene paid; nuestro tier
     # NIM no lo lista en /v1/models real). hermes-4-70b funciona en vivo con
@@ -388,7 +380,11 @@ DEFAULT_PROVIDERS: list[Provider] = [
     Provider(
         name="ollama_local",
         level=InferenceLevel.L0,
-        base_url="http://localhost:11434",
+        # 2026-07-09: fix permanente aplicado (sudo systemctl edit ollama →
+        # [Service] Environment="CUDA_VISIBLE_DEVICES=" → restart). GTX 960M
+        # ahora corre sin CUDA. Último recurso: inagotable cuando gratis limitados.
+        base_url="http://127.0.0.1:11434",
+        # qwen2.5-coder:7b probado en vivo por Atlas; tools OK en Ollama.
         model_id="qwen2.5-coder:7b",
         litellm_model="ollama/qwen2.5-coder:7b",
         api_key_env=None,
@@ -527,14 +523,52 @@ class InferenceHub:
         resp.api_response = api_resp
         return resp
 
+    @staticmethod
+    def _mark_if_tools_unsupported(provider: Provider, error: str | None) -> None:
+        """Autoaprendizaje 2026-07-08: si el proveedor rechaza tool-calling,
+        se marca supports_tools=False en caliente — la siguiente petición con
+        tools ya no quema una llamada ahí."""
+        if error and "tool calling" in error.lower() and "not supported" in error.lower():
+            provider.supports_tools = False
+
+    def _earliest_ratelimit_wait(self) -> float | None:
+        """Segundos hasta que expire el cooldown de rate-limit más próximo,
+        o None si ningún proveedor está en cooldown."""
+        now = time.time()
+        pending = [t - now for t in self._rate_limited_until.values() if t > now]
+        return min(pending) if pending else None
+
     def _infer_raw(self, request: InferenceRequest) -> InferenceResponse:
+        """Camina la cadena; con ``wait_for_ratelimit`` re-camina tras esperar
+        el cooldown si TODO falló y hay proveedores rate-limitados (incidente
+        real 2026-07-08: 5 delegaciones de ToolCoder muertas por all_failed
+        cuando esperar ~60s las habría salvado)."""
+        walks = 3 if request.wait_for_ratelimit else 1
+        resp = self._walk_chain(request)
+        for _ in range(walks - 1):
+            if resp.success:
+                return resp
+            wait = self._earliest_ratelimit_wait()
+            if wait is None:
+                return resp
+            self._sleep(min(wait, 120.0) + 1.0)
+            resp = self._walk_chain(request)
+        return resp
+
+    def _walk_chain(self, request: InferenceRequest) -> InferenceResponse:
+        needs_tools = bool(request.tools)
         candidates = [
             p for p in self._providers
             if p.level == request.level and p.status != ProviderStatus.DOWN
+            and (not needs_tools or p.supports_tools)
         ]
 
         if not candidates and request.level == InferenceLevel.L1:
-            candidates = [p for p in self._providers if p.level == InferenceLevel.L0]
+            candidates = [
+                p for p in self._providers
+                if p.level == InferenceLevel.L0
+                and (not needs_tools or p.supports_tools)
+            ]
 
         if not candidates:
             return InferenceResponse(
@@ -564,6 +598,7 @@ class InferenceHub:
             if result.success:
                 return result
             last_error = result.error
+            self._mark_if_tools_unsupported(provider, result.error)
             if provider.status != ProviderStatus.RATELIMITED:
                 provider.error_count += 1
                 if provider.status == ProviderStatus.OK:
@@ -573,6 +608,7 @@ class InferenceHub:
             l0_candidates = [
                 p for p in self._providers
                 if p.level == InferenceLevel.L0 and p.status != ProviderStatus.DOWN
+                and (not needs_tools or p.supports_tools)
             ]
             if l0_candidates:
                 l0_candidates = [
@@ -587,6 +623,7 @@ class InferenceHub:
                     if result.success:
                         return result
                     last_error = result.error
+                    self._mark_if_tools_unsupported(provider, result.error)
                     if provider.status != ProviderStatus.RATELIMITED:
                         provider.error_count += 1
                         if provider.status == ProviderStatus.OK:
