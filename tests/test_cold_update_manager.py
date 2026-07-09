@@ -1109,3 +1109,185 @@ def test_is_tipo1_diff_rejects_evil_plusplus_prefix():
     assert _is_tipo1_diff(ws_good)  is True,  "trailing whitespace → tipo-1"
     assert _is_tipo1_diff(empty)    is False,  "diff vacío → fail-closed"
     assert _is_tipo1_diff(code_chg) is False,  "cambio de código → no tipo-1"
+
+# ---------------------------------------------------------------------------
+# Fuga de worktrees — validate() fallida es terminal y debe limpiar (tech-7b)
+# ---------------------------------------------------------------------------
+
+def _always_fail_factory():
+    from atlas.core.validation_runner import ValidationReport as _VR
+
+    def factory(p: Path):
+        class _R:
+            def run(self):
+                return _VR(passed=False, pytest_exit=1, mypy_exit=0,
+                           pytest_summary="FAILED test_x", mypy_summary="")
+        return _R()
+    return factory
+
+
+def test_failed_validate_tears_down_worktree(tmp_path: Path) -> None:
+    """validate() que acaba en status='failed' (terminal) destruye el worktree.
+
+    Este era el camino que fugó 14 worktrees self_audit el 2026-07-04 vía
+    advance_cold_update: los demás terminales (apply/rollback/reject) limpian,
+    pero la rama de fallo de validate() no llamaba a _remove_worktree."""
+    ws = tmp_path / "atlas"
+    ws.mkdir()
+    merkle = MerkleLogger(ws / "memory" / "audit")
+    root = tmp_path / "project"
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "tests").mkdir()
+
+    mgr = ColdUpdateManager(
+        root, merkle, store_dir=tmp_path / "cold-store",
+        runner_factory=_always_fail_factory(),
+    )
+    patch = tmp_path / "leak.patch"
+    patch.write_text("--- /dev/null\n+++ b/src/atlas/l.txt\n@@ -0,0 +1 @@\n+l\n", encoding="utf-8")
+    proposal = mgr.propose("leak case", patch, origin="self_audit")
+    mgr.validate(proposal.id)
+
+    p = mgr.get(proposal.id)
+    assert p.status == "failed"
+    assert p.forensics  # la forense sobrevive al teardown
+    assert not Path(p.worktree_path).exists()
+    assert Path(p.patch_path).exists()  # el patch vive fuera del worktree
+
+
+def test_propose_cleans_worktree_if_patch_copy_fails(tmp_path: Path) -> None:
+    """Si shutil.copy2 falla tras crear el worktree, propose() no fuga."""
+    from unittest.mock import patch as mock_patch
+
+    ws = tmp_path / "atlas"
+    ws.mkdir()
+    merkle = MerkleLogger(ws / "memory" / "audit")
+    root = tmp_path / "project"
+    (root / "src" / "atlas").mkdir(parents=True)
+    (root / "tests").mkdir()
+
+    store = tmp_path / "cold-store"
+    mgr = ColdUpdateManager(root, merkle, store_dir=store)
+    patch = tmp_path / "c.patch"
+    patch.write_text("--- /dev/null\n+++ b/src/atlas/c.txt\n@@ -0,0 +1 @@\n+c\n", encoding="utf-8")
+
+    with mock_patch(
+        "atlas.core.cold_update_manager.shutil.copy2",
+        side_effect=OSError("disk full"),
+    ):
+        with pytest.raises(OSError):
+            mgr.propose("copy fails", patch)
+
+    assert not list(store.glob("worktree-*")), "worktree fugado tras fallo de copy2"
+
+
+# ---------------------------------------------------------------------------
+# Barrido TTL de worktrees huérfanos
+# ---------------------------------------------------------------------------
+
+def _set_mtime_days_ago(path: Path, days: float) -> None:
+    import os
+    import time
+    old = time.time() - days * 86400
+    os.utime(path, (old, old))
+
+
+class TestSweepStaleWorktrees:
+    def _build(self, tmp_path: Path):
+        ws = tmp_path / "atlas"
+        ws.mkdir(exist_ok=True)
+        merkle = MerkleLogger(ws / "memory" / "audit")
+        root = tmp_path / "project"
+        if not root.exists():
+            (root / "src" / "atlas").mkdir(parents=True)
+            (root / "tests").mkdir()
+        store = tmp_path / "cold-store"
+        return ColdUpdateManager(root, merkle, store_dir=store), store
+
+    def test_sweep_removes_terminal_and_stale_keeps_fresh_active(self, tmp_path: Path) -> None:
+        mgr, store = self._build(tmp_path)
+
+        # Propuesta activa (proposed) fresca → se conserva.
+        patch = tmp_path / "a.patch"
+        patch.write_text("--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n", encoding="utf-8")
+        active = mgr.propose("active", patch)
+
+        # Propuesta terminal (failed) con worktree superviviente (fuga simulada).
+        leaked = mgr.propose("leaked", patch)
+        mgr.get(leaked.id).status = "failed"
+
+        # Huérfano de batch viejo y huérfano de batch en curso (fresco).
+        old_batch = store / "worktree-batch-deadbeef"
+        old_batch.mkdir()
+        _set_mtime_days_ago(old_batch, 10)
+        fresh_batch = store / "worktree-batch-cafebabe"
+        fresh_batch.mkdir()
+
+        # Propuesta activa pero abandonada hace 10 días → TTL la barre.
+        stale_active = mgr.propose("stale active", patch)
+        _set_mtime_days_ago(Path(stale_active.worktree_path), 10)
+
+        removed = mgr.sweep_stale_worktrees(ttl_days=3)
+
+        assert Path(active.worktree_path).exists()
+        assert fresh_batch.exists()  # batch en curso protegido por TTL
+        assert not Path(leaked.worktree_path).exists()  # terminal → fuera
+        assert not old_batch.exists()
+        assert not Path(stale_active.worktree_path).exists()
+        assert len(removed) == 3
+
+    def test_sweep_runs_at_init(self, tmp_path: Path) -> None:
+        """Un huérfano terminal se limpia al construir el manager (arranque)."""
+        mgr, store = self._build(tmp_path)
+        patch = tmp_path / "b.patch"
+        patch.write_text("--- /dev/null\n+++ b/src/atlas/b.txt\n@@ -0,0 +1 @@\n+b\n", encoding="utf-8")
+        leaked = mgr.propose("leaked at init", patch)
+        mgr.get(leaked.id).status = "failed"
+        mgr._save()
+        assert Path(leaked.worktree_path).exists()
+
+        from atlas.logging.merkle_logger import MerkleLogger as _ML
+        merkle2 = _ML(tmp_path / "atlas" / "memory" / "audit")
+        ColdUpdateManager(tmp_path / "project", merkle2, store_dir=store)
+        assert not Path(leaked.worktree_path).exists()
+
+    def test_sweep_never_touches_root_or_files(self, tmp_path: Path) -> None:
+        mgr, store = self._build(tmp_path)
+        # Un fichero suelto que casualmente matchea el glob no debe romper nada.
+        stray_file = store / "worktree-notadir"
+        stray_file.write_text("x")
+        _set_mtime_days_ago(stray_file, 10)
+        removed = mgr.sweep_stale_worktrees(ttl_days=3)
+        assert removed == []
+        assert stray_file.exists()
+
+    def test_remove_worktree_handles_git_timeout(self, tmp_path: Path) -> None:
+        """Si git worktree remove cuelga (timeout), fallback a shutil.rmtree."""
+        mgr, store = self._build(tmp_path)
+        # Crear un worktree real
+        wt = store / "worktree-test"
+        mgr._create_worktree(wt, "HEAD")
+        assert wt.exists()
+
+        from unittest.mock import patch, MagicMock
+        import subprocess
+
+        # Mock subprocess.run para que timeout en git worktree remove
+        original_run = subprocess.run
+        call_count = [0]
+
+        def mock_run(*args, **kwargs):
+            cmd = args[0] if args else []
+            if isinstance(cmd, list) and "worktree" in cmd and "remove" in cmd:
+                call_count[0] += 1
+                # Primera llamada: timeout
+                raise subprocess.TimeoutExpired("git worktree remove", timeout=10)
+            # Prune y otros comandos: OK
+            return original_run(*args, **kwargs)
+
+        with patch("subprocess.run", side_effect=mock_run):
+            mgr._remove_worktree_path(wt)
+
+        # Debe estar limpio a pesar del timeout: fallback a rmtree funciona
+        assert not wt.exists(), "worktree debe estar limpio después de timeout"
+        assert call_count[0] == 1  # Fue llamado una vez y hizo timeout

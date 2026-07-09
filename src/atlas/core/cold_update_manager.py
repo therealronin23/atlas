@@ -123,6 +123,12 @@ class ColdUpdateManager:
         # Sin inyectar, validate() se comporta exactamente igual que antes.
         self._root_cause_classifier = root_cause_classifier
         self._load()
+        # Barrido al arrancar: worktrees de estados terminales que sobrevivieron
+        # (fugas de procesos muertos a mitad) + huérfanos más viejos que el TTL.
+        try:
+            self.sweep_stale_worktrees()
+        except Exception:  # noqa: BLE001 — higiene, nunca bloquea la construcción
+            pass
 
     def _load(self) -> None:
         if not self._proposals_file.exists():
@@ -175,11 +181,11 @@ class ColdUpdateManager:
         # worktree se puede destruir en estado terminal sin perder el patch
         # que rollback_applied necesita.
         stored_patch = self._store_dir / f"patch-{proposal_id}.patch"
-        shutil.copy2(patch_path, stored_patch)
         try:
+            shutil.copy2(patch_path, stored_patch)
             self._apply_patch(wt_dir, stored_patch)
         except Exception:
-            # Worktree creado pero patch no aplicable: limpiar antes de propagar.
+            # Worktree creado pero patch no copiable/aplicable: limpiar antes de propagar.
             _stub = ColdUpdateProposal(
                 id=proposal_id,
                 intent="",
@@ -315,6 +321,11 @@ class ColdUpdateManager:
                 "mypy_exit": report.mypy_exit,
             },
         )
+        # 'failed' es terminal (approve exige 'validated'; nadie lo revisita) y
+        # la forense ya está persistida — sin este teardown cada validación
+        # fallida fugaba su worktree (14 huérfanos self_audit el 2026-07-04).
+        if not report.passed:
+            self._remove_worktree(proposal)
         return report
 
     def approve(self, proposal_id: str) -> ColdUpdateProposal:
@@ -705,26 +716,78 @@ class ColdUpdateManager:
     def _remove_worktree(self, proposal: ColdUpdateProposal) -> None:
         """Teardown del worktree tras estado terminal. Idempotente. El patch
         vive en el store root, así que rollback_applied sigue funcionando."""
-        wt = Path(proposal.worktree_path)
+        self._remove_worktree_path(Path(proposal.worktree_path))
+
+    def _remove_worktree_path(self, wt: Path) -> None:
         if not wt.exists():
             return
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", str(wt)],
-            cwd=self._root,
-            env=clean_git_env(),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        # Fallback para worktrees por copytree (repo no-git) o metadata divergente.
+        try:
+            subprocess.run(
+                ["git", "worktree", "remove", "--force", str(wt)],
+                cwd=self._root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,  # Evita hang indefinido si git worktree está bloqueado
+            )
+        except subprocess.TimeoutExpired:
+            # Si git worktree cuelga, forzar limpieza directo
+            pass
+        # Fallback para worktrees por copytree (repo no-git), metadata divergente, o timeout.
         # Nunca toca el root.
         if wt.exists() and wt.resolve() != self._root.resolve():
             shutil.rmtree(wt, ignore_errors=True)
-        subprocess.run(
-            ["git", "worktree", "prune"],
-            cwd=self._root,
-            env=clean_git_env(),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            subprocess.run(
+                ["git", "worktree", "prune"],
+                cwd=self._root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
+            )
+        except subprocess.TimeoutExpired:
+            pass
+
+    _TERMINAL_STATUSES = frozenset({"failed", "rejected", "applied", "rolled_back"})
+
+    def sweep_stale_worktrees(self, ttl_days: float = 3.0) -> list[str]:
+        """Barrido de higiene sobre el store: elimina worktrees huérfanos.
+
+        Reglas:
+        - Worktree de propuesta en estado terminal → fuera, sin importar edad
+          (debió destruirse en el momento del estado terminal).
+        - Resto (propuestas en vuelo, worktrees de batch, huérfanos sin
+          propuesta) → fuera solo si su mtime supera el TTL. Un batch en curso
+          tiene mtime fresco, así que queda protegido.
+
+        Se llama al construir el manager (arranque del daemon/CLI). Devuelve
+        los paths eliminados."""
+        import time
+
+        status_by_dirname = {
+            Path(p.worktree_path).name: p.status for p in self._proposals.values()
+        }
+        cutoff = time.time() - ttl_days * 86400
+        removed: list[str] = []
+        for wt in sorted(self._store_dir.glob("worktree-*")):
+            if not wt.is_dir() or wt.resolve() == self._root.resolve():
+                continue
+            status = status_by_dirname.get(wt.name)
+            terminal = status in self._TERMINAL_STATUSES
+            stale = wt.stat().st_mtime < cutoff
+            if terminal or stale:
+                self._remove_worktree_path(wt)
+                if not wt.exists():
+                    removed.append(str(wt))
+        if removed:
+            self._merkle.log(
+                action="cold_update.worktrees_swept",
+                agent="cold_update_manager",
+                result="success",
+                risk_level="low",
+                payload={"removed": [Path(r).name for r in removed], "ttl_days": ttl_days},
+            )
+        return removed
