@@ -336,6 +336,7 @@ class MaintenanceFacade:
                 "item_id": result.get("item_id"),
                 "proposal_id": result.get("proposal_id"),
                 "detail": str(result.get("detail") or "")[:800],
+                "files_changed": result.get("files_changed", []),
             },
         )
         return {"status": "ran", "result": result}
