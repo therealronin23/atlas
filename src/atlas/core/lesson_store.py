@@ -23,7 +23,7 @@ observado → lección verificada.
 NOTA (2026-06-13): esta iteración construye el núcleo store+verificador. El
 cableado de CONSUMIDORES (Analyst/codegen cargan lecciones como contexto) se
 difiere a la capa 3, donde codegen tendrá contexto de ejecución alcanzable
-(ver docs/governance/audits/audit_postmortem_2026-06-13.md).
+(ver docs/audits/audit_postmortem_2026-06-13.md).
 """
 
 from __future__ import annotations

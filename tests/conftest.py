@@ -31,7 +31,12 @@ _EXTERNAL_API_KEYS = (
 # Hermes REST: tests usan mock in-memory salvo tests explicitos de integracion.
 # ATLAS_HERMES_LOCAL (takeover local con VPS pausado) tambien se aisla: el .env
 # de produccion lo trae a 1 y cambiaria la conducta de los tests de delegacion.
-_HERMES_ENV_KEYS = ("HERMES_BASE_URL", "HERMES_API_KEY", "ATLAS_HERMES_LOCAL")
+_HERMES_ENV_KEYS = (
+    "HERMES_BASE_URL",
+    "HERMES_API_KEY",
+    "HERMES_KANBAN_TRANSPORT",
+    "ATLAS_HERMES_LOCAL",
+)
 
 # Mode overrides: si el shell del usuario tiene .env cargado con
 # ATLAS_*_MODE=auto, eso anula el `mode=...` que cada test pasa al constructor
@@ -78,7 +83,7 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     # CABLEADO, no calidad semántica). Un test concreto que SÍ quiera probar
     # el semántico real puede seguir haciendo su propio
     # monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed") dentro del test.
-    monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
+    monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed")
 
 
 @pytest.fixture(autouse=True)

@@ -1001,12 +1001,17 @@ def voice(mode: str, whisper_model: str) -> None:
     "--engine", type=click.Choice(["atlas", "tool"]), default="atlas", show_default=True,
     help="Motor de codificación: atlas=completación de texto, "
          "tool=tool-calling ADR-031 (4/4 en enjambre fácil y difícil medido 2026-07-02 "
-         "vs 0/4 de atlas; repo_map/auto_commit disponibles a nivel de librería en "
-         "ambos motores, sin flag CLI propio; apply-model es moot en tool-calling).",
+         "vs 0/4 de atlas; apply-model es moot en tool-calling).",
+)
+@click.option(
+    "--repo-map/--no-repo-map", "use_repo_map", default=True, show_default=True,
+    help="Incluir repo-map (firmas de los .py más relevantes, budget 4KB) en el "
+         "prompt — patrón Aider; estaba cableado a nivel de librería pero el CLI "
+         "nunca lo pasaba (dormido hasta 2026-07-08).",
 )
 def code(
     task: str, context_files: tuple[str, ...], test_cmd: str, level: str,
-    parallel: bool, iterations: int, engine: str,
+    parallel: bool, iterations: int, engine: str, use_repo_map: bool,
 ) -> None:
     """Codifica una tarea usando InferenceHub (Groq/NIM/Gemini).
 
@@ -1025,6 +1030,20 @@ def code(
     cmd_parts = test_cmd.split()
     files = list(context_files)
     repo_root = Path.cwd()
+
+    # Repo-map (patrón Aider): ficheros .py trackeados como candidatos; el
+    # builder recorta por relevancia respecto a los context_files y respeta
+    # su budget de 4KB, así que pasarlos todos es seguro.
+    repo_map_files: list[str] = []
+    if use_repo_map:
+        import subprocess  # noqa: PLC0415
+
+        ls = subprocess.run(
+            ["git", "ls-files", "*.py"],
+            cwd=repo_root, capture_output=True, text=True, check=False,
+        )
+        if ls.returncode == 0:
+            repo_map_files = ls.stdout.splitlines()
 
     console.print(f"\n[bold cyan]Atlas Code[/bold cyan] — motor=[yellow]{engine}[/yellow] nivel=[yellow]{level}[/yellow] paralelo=[yellow]{parallel}[/yellow]")
     console.print(f"[dim]Tarea:[/dim] {task}")
@@ -1067,11 +1086,17 @@ def code(
         if engine == "tool":
             tool_coder = ToolCoder(hub, repo_root=repo_root, timeout_s=120)
             with console.status("[bold green]Generando código…[/bold green]"):
-                result_c = tool_coder.code(task, files, cmd_parts, max_iterations=iterations, level=inference_level)
+                result_c = tool_coder.code(
+                    task, files, cmd_parts, max_iterations=iterations,
+                    level=inference_level, repo_map_files=repo_map_files or None,
+                )
         else:
             atlas_coder = AtlasCoder(hub, repo_root=repo_root, timeout_s=120)
             with console.status("[bold green]Generando código…[/bold green]"):
-                result_c = atlas_coder.code(task, files, cmd_parts, max_iterations=iterations)
+                result_c = atlas_coder.code(
+                    task, files, cmd_parts, max_iterations=iterations,
+                    repo_map_files=repo_map_files or None,
+                )
 
         if result_c.success:
             console.print(f"[bold green]✓ Listo[/bold green] en {result_c.iterations} iteración{'es' if result_c.iterations > 1 else ''}")

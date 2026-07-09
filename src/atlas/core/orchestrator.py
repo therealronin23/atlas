@@ -29,6 +29,7 @@ from atlas.governance.permission_profile import PermissionProfile
 from atlas.hermes.hermes import (
     DelegationBuilder,
     HermesAdapter,
+    HermesKanbanAdapter,
     HermesMockAdapter,
     HermesRestAdapter,
     OfflineQueue,
@@ -91,6 +92,27 @@ from atlas import __version__
 
 class KuzuInitError(RuntimeError):
     """Gate-D: fallo al inicializar KuzuVectorStore. Ver mensaje para diagnóstico."""
+
+
+class _DeferredHub:
+    """Hub de inferencia que se resuelve en tiempo de llamada, no de construcción.
+
+    El ``ColdUpdateManager`` (y su ``RootCauseClassifier``) se construyen antes
+    de que ``enable_gate_d_pipeline()`` inyecte el hub real; este proxy lee
+    ``orch._inference_hub`` en cada ``infer()`` y, si sigue sin existir, usa un
+    ``InferenceHub(mode="auto")`` transitorio. El clasificador es fail-open, así
+    que cualquier fallo aquí degrada a veredicto "unknown", nunca bloquea."""
+
+    def __init__(self, orch: "Orchestrator") -> None:
+        self._orch = orch
+
+    def infer(self, request: Any) -> Any:
+        hub = self._orch._inference_hub
+        if hub is None:
+            from atlas.core.inference_hub import InferenceHub
+
+            hub = InferenceHub(mode="auto")
+        return hub.infer(request)
 
 
 @dataclass
@@ -503,11 +525,24 @@ class Orchestrator:
         """ADR-025 ColdUpdateManager (project root via ATLAS_CORE_ROOT)."""
         if self._cold_update_manager is None:
             from atlas.core.cold_update_manager import ColdUpdateManager
+            from atlas.core.self_maintenance.root_cause_classifier import (
+                RootCauseClassifier,
+            )
 
             root = Path(
                 os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
             ).expanduser().resolve()
-            self._cold_update_manager = ColdUpdateManager(root, self._merkle)
+            # Roadmap "juicio real" paso 3, cableado en producción (2026-07-08):
+            # el chequeo determinista contra git corre gratis en cada fallo de
+            # validación; el camino LLM usa el hub del orquestador vía
+            # _DeferredHub y degrada a "unknown" si no hay proveedor.
+            self._cold_update_manager = ColdUpdateManager(
+                root,
+                self._merkle,
+                root_cause_classifier=RootCauseClassifier(
+                    hub=_DeferredHub(self), repo_root=root, merkle=self._merkle,
+                ),
+            )
         return self._cold_update_manager
 
     def advance_cold_update(self, proposal_id: str) -> str:
@@ -649,6 +684,14 @@ class Orchestrator:
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — backlog → ToolCoder → ColdUpdate. Delegado al facade."""
         return self._maintenance_facade.maintenance_self_build_runner()
+
+    def maintenance_self_build_tick(self) -> dict[str, Any]:
+        """Un tick de autoconstrucción (preflight → un item). Delegado al facade."""
+        return self._maintenance_facade.maintenance_self_build_tick()
+
+    def maintenance_research_tick(self) -> dict[str, Any]:
+        """Un tick de investigación abierta (intereses → informe en inbox). Delegado al facade."""
+        return self._maintenance_facade.maintenance_research_tick()
 
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
@@ -1653,19 +1696,26 @@ class Orchestrator:
             signed_payload = self._hermes._queue.get(payload.id, payload)
             mode_note = "Hermes mock (desarrollo)"
             merkle_action = "hermes.mock_queued"
+            entry_cls = __import__(
+                "atlas.hermes.hermes", fromlist=["QueueEntry"]
+            ).QueueEntry
+            self._offline_queue.enqueue(entry_cls(delegation=signed_payload))
+        elif isinstance(self._hermes, HermesKanbanAdapter):
+            signed_payload = payload
+            mode_note = "Hermes kanban local"
+            merkle_action = "hermes.kanban_delegated"
         elif isinstance(self._hermes, HermesRestAdapter):
             signed_payload = self._hermes._sign_payload(payload)
             mode_note = f"Hermes REST ({os.environ.get('HERMES_BASE_URL', '').rstrip('/')})"
             merkle_action = "hermes.delegated"
+            entry_cls = __import__(
+                "atlas.hermes.hermes", fromlist=["QueueEntry"]
+            ).QueueEntry
+            self._offline_queue.enqueue(entry_cls(delegation=signed_payload))
         else:
             signed_payload = payload
             mode_note = "Hermes adapter desconocido"
             merkle_action = "hermes.delegated"
-
-        entry_cls = __import__(
-            "atlas.hermes.hermes", fromlist=["QueueEntry"]
-        ).QueueEntry
-        self._offline_queue.enqueue(entry_cls(delegation=signed_payload))
 
         task.transition(TaskStatus.DELEGATED)
         task.result = {
@@ -1978,6 +2028,12 @@ class Orchestrator:
         raise TypeError("HermesMockAdapter no activo — usa HermesRestAdapter (HERMES_BASE_URL)")
 
     def _build_hermes_adapter(self) -> HermesAdapter:
+        kanban_transport = os.environ.get("HERMES_KANBAN_TRANSPORT", "").strip().lower()
+        if kanban_transport and kanban_transport != "ssh":
+            _log.info("Hermes: kanban (%s)", kanban_transport)
+            return HermesKanbanAdapter(
+                offline_queue=self._offline_queue,
+            )
         base_url = os.environ.get("HERMES_BASE_URL", "").strip()
         api_key = os.environ.get("HERMES_API_KEY", "").strip()
         if base_url and api_key:
