@@ -276,3 +276,19 @@ def test_max_tool_turns_guard(tmp_path: Path):
     assert result.success is False
     # nunca más de _MAX_TOOL_TURNS llamadas al hub por iteración
     assert len(hub.requests) <= 12
+
+
+def test_repair_json_arguments_passthrough_valid():
+    assert ToolCoder._repair_json_arguments('{"path": "a.py"}') == '{"path": "a.py"}'
+
+
+def test_repair_json_arguments_strips_trailing_garbage():
+    # Caso real 2026-07-09: JSON válido + basura pegada ("Extra data") crasheaba
+    # litellm/ollama_pt al reproducir el historial en el turno siguiente.
+    repaired = ToolCoder._repair_json_arguments('{"path": "a.py"}<|tool_end|>extra')
+    assert json.loads(repaired) == {"path": "a.py"}
+
+
+def test_repair_json_arguments_unparseable_returns_empty_object():
+    assert ToolCoder._repair_json_arguments("no es json") == "{}"
+    assert ToolCoder._repair_json_arguments("") == "{}"
