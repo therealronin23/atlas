@@ -106,3 +106,32 @@ class TestEmptySeeds:
         result = TopicExpander(hub=hub).expand([])
         assert result == []
         assert hub.calls == []
+
+
+class TestSearchabilityFilter:
+    """Curado 2026-07-09: la primera pasada real dio 0 hallazgos — consultas
+    en español, frases literales y jerga interna. El prompt pide inglés corto
+    y el filtro determinista corta lo que el L1 barato aún emita mal."""
+
+    def test_drops_long_nonenglish_and_internal_identifier_queries(self) -> None:
+        hub = FakeHub({"semilla": (
+            '["temporal knowledge graph", '
+            '"búsqueda de documentos en grafo", '
+            '"optimización de consultas en grafos de conocimiento con restricciones", '
+            '"run_item git worktree", '
+            '"agent memory benchmark"]'
+        )})
+        result = TopicExpander(hub=hub).expand(["semilla"])
+        assert result == ["temporal knowledge graph", "agent memory benchmark"]
+
+    def test_all_filtered_falls_back_to_seed(self) -> None:
+        hub = FakeHub({"semilla": '["consulta española acentuada", "otra consulta española ñ"]'})
+        result = TopicExpander(hub=hub).expand(["semilla"])
+        assert result == ["semilla"]
+
+    def test_prompt_demands_english_github_style_queries(self) -> None:
+        from atlas.core.self_maintenance.topic_expander import _EXPAND_INSTRUCTION_TEMPLATE
+
+        rendered = _EXPAND_INSTRUCTION_TEMPLATE.format(n=4)
+        assert "INGLÉS" in rendered
+        assert "GitHub" in rendered
