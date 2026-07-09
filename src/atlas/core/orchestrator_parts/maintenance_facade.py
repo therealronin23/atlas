@@ -61,6 +61,34 @@ def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
+def _render_research_report(
+    today: str, seeds: list[str], queries: list[str], findings: list[Any]
+) -> str:
+    """Informe crudo para docs/inbox/ — flujo sancionado: docs_triage.py lo
+    clasifica después (nunca 'vigente' hasta revisión humana)."""
+    lines = [
+        f"# Investigación autónoma — {today}",
+        "",
+        "status: propuesto",
+        "",
+        f"Semillas ({len(seeds)}): " + ", ".join(seeds),
+        f"Consultas expandidas ({len(queries)}): " + ", ".join(queries),
+        "",
+        f"## Hallazgos ({len(findings)})",
+        "",
+    ]
+    if not findings:
+        lines.append("Sin hallazgos esta pasada — todas las fuentes fallaron o no hubo resultados.")
+    for finding in findings:
+        lines.append(f"### [{finding.source}] {finding.title}")
+        lines.append(f"- tema: {finding.topic}")
+        lines.append(f"- url: {finding.url}")
+        if finding.excerpt:
+            lines.append(f"- extracto: {finding.excerpt}")
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 class MaintenanceFacade:
     """Factory perezosa de todas las piezas de auto-mantenimiento (ADR-039).
 
@@ -234,6 +262,15 @@ class MaintenanceFacade:
                 except Exception:  # noqa: BLE001 — un item malo no tumba el tick del scheduler
                     pass
 
+            def _research_cycle() -> None:
+                # Investigación abierta: ver maintenance_research_tick. Aislado
+                # como los demás ciclos — un fallo de red/parseo no tumba el
+                # scheduler ni bloquea self-build/dep/batch.
+                try:
+                    self.maintenance_research_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -280,7 +317,7 @@ class MaintenanceFacade:
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
-                extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle),
+                extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle, _research_cycle),
                 **scheduler_kwargs,
             )
         return self._maintenance_scheduler
@@ -357,6 +394,102 @@ class MaintenanceFacade:
             },
         )
         return {"status": "ran", "result": result}
+
+    def maintenance_research_tick(self) -> dict[str, Any]:
+        """Un tick de investigación: intereses recientes → consultas variadas →
+        descubrimiento abierto → informe en docs/inbox/ (Fase 4, 2026-07-09).
+
+        Causa raíz del hueco (barrido previo): ``PanoramaScout``,
+        ``TopicExpander`` y ``SotaSnapshotRecorder`` estaban completos y
+        probados, pero sin dueño en el scheduler — "ayer se suponía que Atlas
+        iba a investigar y no lo hizo" (corrección directa del usuario).
+
+        Descubrimiento ABIERTO, no lista fija (matiz de la visión: serendipia
+        sistematizada, no vigilancia de una lista conocida de competidores):
+        las semillas son los títulos de las lecciones más recientes del
+        ``LessonStore`` — lo que Atlas acaba de aprender/fallar decide qué
+        investiga después. Sin lecciones aún, cae a los 3 intereses de fondo
+        que ``topic_expander.py`` documenta como ejemplo (memoria de agentes,
+        orquestación local, auditoría verificable) — intereses propios de
+        Atlas, no una lista de fuentes externas fijas.
+
+        Opt-in explícito (gasta LLM + red saliente): requiere
+        ``ATLAS_RESEARCH=1``. Cadencia propia de 24h vía fichero de estado
+        (independiente del poll del scheduler) — no tiene sentido pagar el
+        ciclo completo de descubrimiento más de una vez al día."""
+        if os.environ.get("ATLAS_RESEARCH", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "research" / "state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.inference_hub import InferenceHub
+        from atlas.core.lesson_store import LessonStore
+        from atlas.core.self_maintenance.panorama_scout import PanoramaScout
+        from atlas.core.self_maintenance.topic_expander import TopicExpander
+
+        orch = self._orch
+        hub = orch._inference_hub or InferenceHub(mode="auto")
+
+        # Semillas: títulos de las lecciones más recientes (lo aprendido/
+        # fallado decide qué se investiga) — fallback a intereses de fondo
+        # de Atlas si el store está vacío (arranque en frío, sin lecciones).
+        store = LessonStore(self._project_root() / "workspace" / "lessons")
+        recent = sorted(store.all(), key=lambda item: item.created_at, reverse=True)[:3]
+        seeds = [lesson.title for lesson in recent] or [
+            "memoria de agentes de IA",
+            "orquestación local de modelos",
+            "auditoría verificable de sistemas de IA",
+        ]
+
+        expander = TopicExpander(hub=hub, merkle=orch._merkle)
+        queries = expander.expand(seeds, queries_per_seed=4)
+
+        scout = PanoramaScout(
+            merkle=orch._merkle,
+            bridge=orch._ssrf_bridge,
+            fetch=_egress_fetch_text,
+            topics=queries,
+            max_results_per_topic=4,
+        )
+        findings = scout.discover()
+
+        report_path = self._project_root() / "docs" / "inbox" / f"research_{today}.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(_render_research_report(today, seeds, queries, findings), encoding="utf-8")
+
+        state["last_run_date"] = today
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.research_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={
+                "seeds": seeds,
+                "queries_count": len(queries),
+                "findings_count": len(findings),
+                "report_path": str(report_path),
+            },
+        )
+        return {
+            "status": "ran",
+            "seeds": seeds,
+            "queries_count": len(queries),
+            "findings_count": len(findings),
+            "report_path": str(report_path),
+        }
 
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
