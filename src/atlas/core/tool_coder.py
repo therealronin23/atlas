@@ -143,13 +143,23 @@ class ToolCoder:
         hub: InferenceHub,
         *,
         repo_root: Path | None = None,
-        timeout_s: int = 120,
+        timeout_s: int | None = None,
         lesson_store: Any = None,
         lesson_recaller: Any = None,
         institutional_context_files: list[str] | None = None,
     ) -> None:
         self._hub = hub
         self._repo_root = repo_root or Path.cwd()
+        # 2026-07-09: 120s fijos mataban toda misión self-build sin test_cmd
+        # propio (el fallback es la suite completa, ~7 min) — el tick llegaba
+        # a la fase de tests y moría por construcción. Env para despliegues
+        # de lazo largo; default sigue 120s (interactivo).
+        if timeout_s is None:
+            raw = os.environ.get("ATLAS_TOOL_TEST_TIMEOUT_S", "").strip()
+            try:
+                timeout_s = max(1, int(raw)) if raw else 120
+            except ValueError:
+                timeout_s = 120
         self._timeout_s = timeout_s
         self._lesson_store = lesson_store
         self._lesson_recaller = lesson_recaller

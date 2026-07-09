@@ -12,6 +12,7 @@ runner). Este módulo solo PROPONE, nunca aplica ni marca items como "done".
 from __future__ import annotations
 
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -24,13 +25,28 @@ import yaml
 
 from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
 from atlas.core.git_env import clean_git_env
-from atlas.core.inference_hub import InferenceHub
+from atlas.core.inference_hub import InferenceHub, InferenceLevel
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.core.tool_coder import ToolCoder
 
 __all__ = ["SelfBuildRunner"]
 
 logger = logging.getLogger(__name__)
+
+
+def _self_build_level() -> InferenceLevel:
+    """Nivel de inferencia para autoconstrucción, configurable por entorno.
+
+    2026-07-09: el runner heredaba el default L1 de ToolCoder.code() — el
+    tier gratis más débil — sin forma de subirlo; las misiones densas no
+    convergían por modelo, no por lazo. ``ATLAS_SELF_BUILD_LEVEL=L2`` sube
+    el escalón por despliegue; default L1 (conservador en coste).
+    """
+    raw = os.environ.get("ATLAS_SELF_BUILD_LEVEL", "").strip().upper()
+    if raw and hasattr(InferenceLevel, raw):
+        return getattr(InferenceLevel, raw)  # type: ignore[no-any-return]
+    return InferenceLevel.L1
+
 
 # openevolve._prepare_evaluator() extrae el CÓDIGO FUENTE de un evaluator
 # callable (inspect.getsource) y lo re-ejecuta en un módulo aislado sin
@@ -196,6 +212,7 @@ class SelfBuildRunner:
             context_files=self._expand_targets(item.targets),
             test_cmd=test_cmd,
             max_iterations=max_iterations,
+            level=_self_build_level(),
         )
 
         if not coder_result.success:

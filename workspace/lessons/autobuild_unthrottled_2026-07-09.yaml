@@ -1,0 +1,24 @@
+id: autobuild_unthrottled_2026-07-09
+kind: harness
+statement: >
+  El "autobuild que no funciona" eran tres estranguladores apilados, ninguno
+  del lazo en sí: (1) atlas serve ignora ATLAS_SELF_BUILD=1 sin
+  ATLAS_MAINTENANCE_SCHEDULER=1 — el scheduler nunca arranca y no hay error
+  visible; (2) ToolCoder cortaba a 10 turnos fijos Y descartaba todo el
+  trabajo al agotar (ni corría tests con ediciones reales hechas); (3)
+  SelfBuildRunner corría siempre a L1 sin forma de subir el nivel.
+evidence: >
+  Tick invocado directo (orch._maintenance_facade.maintenance_self_build_tick())
+  2026-07-09: pipeline completo backlog→preflight→runner→ToolCoder corre y
+  coge la misión — falla solo por techo de turnos. Arreglos: default 30 +
+  ATLAS_TOOL_MAX_TURNS (commit 015ef22c), salvamento de ediciones al límite
+  (mismo commit, test test_turn_limit_with_real_edits_salvages_via_tests),
+  ATLAS_SELF_BUILD_LEVEL para el nivel del runner.
+apply: >
+  Ante "X autónomo no hizo nada de noche": (1) verificar que el scheduler
+  ARRANCÓ (grep del log / evento Merkle), no solo que la env var está; (2)
+  invocar el tick directo en foreground ANTES de tocar cadencias — 30s de
+  evidencia vale más que otra noche perdida; (3) buscar techos apilados:
+  un solo fix (turnos) no basta si hay otro estrangulador detrás (nivel).
+corroborations: 1
+source: session 2026-07-09 (fork-real)

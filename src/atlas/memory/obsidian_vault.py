@@ -31,7 +31,10 @@ def parse_note(path: Path) -> dict[str, Any]:
                 frontmatter = {}
 
     wikilinks: list[str] = []
-    for match in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", body):
+    # Un wikilink Obsidian nunca cruza líneas — sin \n en las clases, un
+    # "[[texto...\n...]]" accidental del body no produce targets fantasma
+    # (visto en vaults generados por Graphify, 2026-07-09).
+    for match in re.finditer(r"\[\[([^\]|\n]+)(?:\|[^\]\n]+)?\]\]", body):
         target = match.group(1).strip()
         if target and target not in wikilinks:
             wikilinks.append(target)

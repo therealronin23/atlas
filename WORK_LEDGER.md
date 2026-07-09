@@ -11,16 +11,41 @@ de escribir: `atlas reality --json`.
 - **Lazo de automejora v0.1 COMPLETO** (detect→judge→propose→verify→apply→learn):
   las 4 piezas del roadmap "juicio real" 2026-07-04 quedaron cableadas en
   producción el 2026-07-08 (antes: construidas+testeadas pero 0 callers).
-- Daemon `atlas serve` vivo con MAINTENANCE+SELF_AUDIT+SELF_BUILD (poll 3600s).
-- **Fork real LANZADO (2026-07-09)**: 5 tareas urgentes añadidas a backlog para
-  absorción de Aider/Cursor/Codex + Graphify/Obsidian/Kuzu fusión. Presión real:
-  3% tokens restantes (~6000), deadline 2026-07-10 06:00. Atlas trabajando hasta
-  renovación.
-- Cola de autoconstrucción: `docs/backlog.yaml` (9 pending + 5 new fork-real tasks).
-- Próxima acción (mañana): revisar resultados de fork real, integrar aprendizaje,
-  decidir sobre adopción de patrones vs depender de servicios SaaS.
+- **Autobuild DESTAPADO (2026-07-09)**: 4 estranguladores apilados encontrados
+  ejecutando el tick directo — scheduler no arranca sin
+  `ATLAS_MAINTENANCE_SCHEDULER=1`; techo 10 turnos (→30 + env); descarte de
+  trabajo al agotar turnos (→salva vía tests); timeout tests 120s vs suite 7min
+  (→env). El lazo en sí FUNCIONA (verificado en vivo 2 veces).
+- **Fusión Graphify→Obsidian→Kuzu COMPLETA de punta a punta (2026-07-09)**:
+  grafo de atlas-core/src generado (4206 nodos, 154 comunidades, 0 tokens LLM),
+  vault Obsidian (4360 notas) digerido por nuestro parser, cargado en Kuzu
+  (26.392 links, 0 unresolved, queries Cypher OK). Salida:
+  `~/proyectos/atlas-graph/graphify-out/`. Diseño: `docs/inbox/graphify_obsidian_kuzu_fusion.md`.
+- Daemon `atlas serve` requiere relanzarse con el scheduler encendido (receta
+  en la entrada 2026-07-09); cola: `docs/backlog.yaml` (obsidian_vault_parser
+  ya HECHO a mano — pendiente de marcar done por el operador).
+- Próxima acción: aprobar/rechazar propuestas ColdUpdate del tick; misión
+  bitemporal Kuzu sobre el gancho `ingested_at`; batch-insert en el cargador.
 
 ## Entradas
+
+- **2026-07-09 — Autobuild destapado + fusión Graphify/Obsidian/Kuzu completa**
+  - Tick self-build invocado DIRECTO (sin daemon): pipeline entero corre;
+    falló primero por techo de turnos, luego por timeout de tests — ambos
+    arreglados (commits 015ef22c + este). Cuarto estrangulador documentado
+    en `workspace/lessons/autobuild_unthrottled_2026-07-09.yaml`.
+  - `ToolCoder`: turnos 10→30 (`ATLAS_TOOL_MAX_TURNS`), salvamento de
+    ediciones al límite, timeout tests configurable
+    (`ATLAS_TOOL_TEST_TIMEOUT_S`). `SelfBuildRunner`: nivel configurable
+    (`ATLAS_SELF_BUILD_LEVEL`). Receta serve completa:
+    `ATLAS_SELF_BUILD=1 ATLAS_MAINTENANCE_SCHEDULER=1 ATLAS_MAINTENANCE_POLL_S=900 ATLAS_SELF_BUILD_LEVEL=L2`.
+  - Graphify corrido entero (AST local, sin API key): god-nodes = Orchestrator/
+    MerkleLogger/SSRFBridge — coincide con la arquitectura real. Parser
+    obsidian_vault con fix multilínea; `obsidian_to_kuzu.load_vault_into_kuzu`
+    nuevo (schema-first, MERGE idempotente, gancho bitemporal).
+  - Limpieza: 2 worktrees self-build efímeros + rama obsidian-parser borrados;
+    `atlas-cold-updates` se conserva (patches ColdUpdate);
+    `atlas-codegraph` (detached, procedencia desconocida) pendiente de decisión.
 
 - **2026-07-09 — Ollama local ARREGLADO: fix permanente completado**
   - Fix permanente aplicado (2026-07-09 00:XX): `sudo systemctl edit ollama`
