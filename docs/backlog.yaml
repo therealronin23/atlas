@@ -568,7 +568,10 @@ items:
       para cada patrón: código de referencia o paper;
       prioridad por "presión real detectada en delegaciones 2026-07-08".
     priority: 1
-    status: pending
+    # 2026-07-09: matriz completa en docs/design/architectural_patterns_matrix_2026-07-08.md
+    # (escrita por el propio lazo self-build; su "fallo" fue el examen amañado de pytest,
+    # no el trabajo — ver commit 9733b419).
+    status: done
 
   - id: graphify_obsidian_kuzu_fusion_design
     title: "Investigación: Graphify + Obsidian → Kuzu fusion architecture"
@@ -584,7 +587,10 @@ items:
       código ejemplo: 1 commit→grafo en Kuzu;
       benchmarks vs docs_graph.py slice 1.
     priority: 1
-    status: pending
+    # 2026-07-09: diseño+evidencia medida en docs/inbox/graphify_obsidian_kuzu_fusion.md
+    # (cadena completa probada: 4206 nodos, 4360 notas, 26392 links); schema bitemporal
+    # y queries en src/atlas/core/graphs.py (commit c8029573).
+    status: done
 
   - id: graphify_download_study
     title: "Construcción: Descargar Graphify, estudio técnico"
@@ -598,7 +604,9 @@ items:
       documento: arquitectura Graphify (500 palabras);
       3 ejemplos: "usamos" / "adaptamos" / "descartamos".
     priority: 1
-    status: pending
+    # 2026-07-09: clonado y diseccionado en ~/proyectos/graphify-study; arquitectura +
+    # usamos/adaptamos/descartamos en docs/inbox/graphify_obsidian_kuzu_fusion.md.
+    status: done
 
   - id: obsidian_vault_parser
     title: "Construcción: Obsidian vault format → Kuzu parser"
@@ -614,7 +622,11 @@ items:
       10 docs ejemplo parseados correctamente;
       tests: roundtrip (Obsidian→Kuzu→Obsidian) sin pérdida.
     priority: 1
-    status: pending
+    # 2026-07-09: src/atlas/memory/obsidian_vault.py + obsidian_to_kuzu.py, probado
+    # contra vault real de 4360 notas (26392 links, 0 sin resolver); ingesta batcheada
+    # 16x en commit e226fb4b. Roundtrip completo no implementado (Kuzu→Obsidian no
+    # tiene consumidor); la dirección con uso real está cubierta y testeada.
+    status: done
 
   - id: kuzu_bitemporal_schema
     title: "Construcción: Schema Kuzu bitemporal (slice 2 graphs)"
@@ -631,4 +643,7 @@ items:
       5 queries complejas (diffs, impacto, linaje temporal);
       test: ingesta 3 commits→grafo correcto sin drift.
     priority: 1
-    status: pending
+    # 2026-07-09: src/atlas/core/graphs.py (FileVersion + IMPORTS + EVOLVES_TO, 5 queries
+    # ejecutadas y asertadas contra repo sintético de 3 commits, reingesta sin drift
+    # verificada) — commit c8029573.
+    status: done
