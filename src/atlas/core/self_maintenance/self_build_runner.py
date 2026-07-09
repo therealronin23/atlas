@@ -217,11 +217,17 @@ class SelfBuildRunner:
 
         if not coder_result.success:
             self._revert_new_changes(baseline)
+            # error + cola del test_output: "Tests no pasaron tras N
+            # iteraciones" sin el output es indiagnosticable a posteriori
+            # (el revert ya destruyó la evidencia del árbol).
+            detail = coder_result.error or "sin detalle"
+            if coder_result.test_output:
+                detail = f"{detail}\n--- test output (cola) ---\n{coder_result.test_output[-600:]}"
             return {
                 "item_id": item.id,
                 "proposal_id": None,
                 "status": "failed",
-                "detail": coder_result.error or coder_result.test_output or "sin detalle",
+                "detail": detail,
             }
 
         patch_path = self._write_patch()
