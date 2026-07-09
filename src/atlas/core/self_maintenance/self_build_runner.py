@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -181,15 +182,21 @@ class SelfBuildRunner:
         if item.test_cmd:
             return list(item.test_cmd)
 
+        # sys.executable -m pytest, NUNCA "pytest" a pelo: la invocación
+        # descubierta 2026-07-09 — `pytest -q` desde la raíz revienta en la
+        # COLECCIÓN (tests/benchmarks importa `scripts`, que solo es
+        # importable con cwd en sys.path, cosa que hace `python -m`). El
+        # pre-commit usa `python -m pytest tests/ -q`; el runner debe medir
+        # con el MISMO gate o toda misión sin test_cmd muere por construcción.
         slug = item.id.replace("-", "_")
         tests_dir = self._repo_root / "tests"
         if tests_dir.is_dir():
             matches = sorted(tests_dir.glob(f"test_{slug}*.py"))
             if matches:
                 rel = matches[0].relative_to(self._repo_root)
-                return ["pytest", str(rel), "-q"]
+                return [sys.executable, "-m", "pytest", str(rel), "-q"]
 
-        return ["pytest", "-q"]
+        return [sys.executable, "-m", "pytest", "tests/", "-q"]
 
     # ------------------------------------------------------------------
     # run_item
