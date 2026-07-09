@@ -264,9 +264,11 @@ def test_non_string_old_str_returns_structured_error(tmp_path: Path):
     assert any("string" in str(m.get("content", "")).lower() for m in tool_msgs)
 
 
-def test_max_tool_turns_guard(tmp_path: Path):
+def test_max_tool_turns_guard(tmp_path: Path, monkeypatch):
     """Un modelo que llama tools sin parar no cicla infinito — corta en el
-    límite de turnos (stuck guard del bucle agéntico)."""
+    límite de turnos (stuck guard del bucle agéntico). El techo se pina por
+    entorno (ATLAS_TOOL_MAX_TURNS), que es a la vez el test del override."""
+    monkeypatch.setenv("ATLAS_TOOL_MAX_TURNS", "10")
     hub = _ScriptedHub([
         [_tc("read_file", path="no_existe.py")],  # siempre la misma llamada
     ] * 50)
@@ -274,8 +276,28 @@ def test_max_tool_turns_guard(tmp_path: Path):
     result = coder.code(task="loop", context_files=[], test_cmd=["false"], max_iterations=1)
 
     assert result.success is False
-    # nunca más de _MAX_TOOL_TURNS llamadas al hub por iteración
+    # nunca más del techo pinado de llamadas al hub por iteración
     assert len(hub.requests) <= 12
+
+
+def test_turn_limit_with_real_edits_salvages_via_tests(tmp_path: Path, monkeypatch):
+    """2026-07-09: el corte por techo de turnos era terminal y descartaba
+    ediciones reales sin correr los tests. Ahora, si hubo cambios, se prueban:
+    modelo que edita bien pero nunca da respuesta final → success si tests OK."""
+    monkeypatch.setenv("ATLAS_TOOL_MAX_TURNS", "3")
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 2")],
+        [_tc("read_file", path="foo.py")],  # sigue llamando tools…
+        [_tc("read_file", path="foo.py")],  # …hasta agotar el techo
+    ] * 2)
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(task="cambia x", context_files=["foo.py"], test_cmd=["true"], max_iterations=1)
+
+    assert result.success is True
+    assert f.read_text() == "x = 2\n"
+    assert "foo.py" in result.files_changed
 
 
 def test_repair_json_arguments_passthrough_valid():

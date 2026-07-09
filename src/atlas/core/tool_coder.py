@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 import tempfile
@@ -41,7 +42,25 @@ __all__ = ["ToolCoder"]
 
 logger = logging.getLogger(__name__)
 
-_MAX_TOOL_TURNS = 10  # por iteración — guard anti-loop del bucle agéntico
+_MAX_TOOL_TURNS_DEFAULT = 30  # por iteración — guard anti-loop del bucle agéntico
+
+
+def _max_tool_turns() -> int:
+    """Techo de turnos de tools por iteración, configurable por entorno.
+
+    2026-07-09: el techo fijo de 10 mató 4 delegaciones sobre specs densas —
+    el modelo trabajaba bien pero no cabía. Los harnesses de referencia
+    (encuesta 2026-06-27: SWE-agent/OpenHands/Aider) operan en 40-100+ turnos;
+    30 es el nuevo default conservador y ``ATLAS_TOOL_MAX_TURNS`` permite
+    ajustarlo por despliegue sin tocar código.
+    """
+    raw = os.environ.get("ATLAS_TOOL_MAX_TURNS", "").strip()
+    if raw:
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            pass
+    return _MAX_TOOL_TURNS_DEFAULT
 
 _TOOLS: list[dict[str, Any]] = [
     {
@@ -442,9 +461,10 @@ class ToolCoder:
                 self._repo_root = original_repo_root
                 self._cleanup_sandbox(sandbox_dir)
 
+        max_turns = _max_tool_turns()
         for iteration in range(1, max_iterations + 1):
             # Bucle de tools dentro de la iteración
-            for _turn in range(_MAX_TOOL_TURNS):
+            for _turn in range(max_turns):
                 request = InferenceRequest(
                     prompt="",  # con messages, el prompt no se usa
                     messages=messages,
@@ -489,13 +509,18 @@ class ToolCoder:
                         "content": result_str,
                     })
             else:
-                _cleanup_on_exit()
-                return CoderResult(
-                    success=False, iterations=iteration, files_changed=changed,
-                    test_output=test_output,
-                    error=f"Límite de {_MAX_TOOL_TURNS} turnos de tools alcanzado "
-                          "sin respuesta final (posible loop).",
-                )
+                # Techo de turnos alcanzado. Si hubo ediciones reales, correr
+                # los tests con lo que hay en vez de descartar el trabajo
+                # (2026-07-09: el corte terminal tiró progreso real 3 veces);
+                # sin cambios no hay nada que probar — cortar como antes.
+                if not changed:
+                    _cleanup_on_exit()
+                    return CoderResult(
+                        success=False, iterations=iteration, files_changed=changed,
+                        test_output=test_output,
+                        error=f"Límite de {max_turns} turnos de tools alcanzado "
+                              "sin respuesta final (posible loop).",
+                    )
 
             # Correr tests
             try:
