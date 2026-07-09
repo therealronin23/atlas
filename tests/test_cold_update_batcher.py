@@ -473,3 +473,38 @@ def test_benchmark_gate_exception_does_not_block_batch(tmp_path: Path) -> None:
     assert result.passed is True
     assert result.included == [id_a]
     assert result.benchmark is None
+
+
+def test_batcher_remove_worktree_handles_timeout(tmp_path: Path) -> None:
+    """Si git worktree remove cuelga (timeout), fallback a shutil.rmtree."""
+    root = _make_git_repo(tmp_path, "timeout_test")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="timeout_test")
+    batcher = ColdUpdateBatcher(mgr)
+
+    # Crear un worktree real
+    wt = batcher._new_worktree_path()
+    batcher._create_worktree(wt, "HEAD")
+    assert wt.exists()
+
+    from unittest.mock import patch
+    import subprocess
+
+    # Mock subprocess.run para que timeout en git worktree remove
+    original_run = subprocess.run
+    call_count = [0]
+
+    def mock_run(*args, **kwargs):
+        cmd = args[0] if args else []
+        if isinstance(cmd, list) and "worktree" in cmd and "remove" in cmd:
+            call_count[0] += 1
+            # Primera llamada: timeout
+            raise subprocess.TimeoutExpired("git worktree remove", timeout=10)
+        # Prune y otros comandos: OK
+        return original_run(*args, **kwargs)
+
+    with patch("subprocess.run", side_effect=mock_run):
+        batcher._remove_worktree(wt)
+
+    # Debe estar limpio a pesar del timeout: fallback a rmtree funciona
+    assert not wt.exists(), "worktree debe estar limpio después de timeout"
+    assert call_count[0] == 1  # Fue llamado una vez y hizo timeout

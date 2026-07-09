@@ -334,21 +334,30 @@ class ColdUpdateBatcher:
     def _remove_worktree(self, path: Path) -> None:
         if not path.exists():
             return
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", str(path)],
-            cwd=self._root,
-            env=clean_git_env(),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            subprocess.run(
+                ["git", "worktree", "remove", "--force", str(path)],
+                cwd=self._root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,  # Evita hang indefinido si git worktree está bloqueado
+            )
+        except subprocess.TimeoutExpired:
+            # Si git worktree cuelga, forzar limpieza directo
+            pass
         if path.exists() and path.resolve() != self._root.resolve():
             shutil.rmtree(path, ignore_errors=True)
-        subprocess.run(
-            ["git", "worktree", "prune"],
-            cwd=self._root,
-            env=clean_git_env(),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            subprocess.run(
+                ["git", "worktree", "prune"],
+                cwd=self._root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
+            )
+        except subprocess.TimeoutExpired:
+            pass
