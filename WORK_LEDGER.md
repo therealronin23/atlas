@@ -8,6 +8,54 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **Ciclo investigación→acción CERRADO + grafo vivo automático + asesino
+  SIGTERM identificado (2026-07-09/10, sesión curious-cuddling-forest
+  fases 3bis.3/3bis.4/4)** —
+  - atlas-graph promovido a raíz nativa del tronco (467ad720): el catálogo lo
+    declaraba externo con `install: python -m ...` y `python` no existe en el
+    sistema — el spawn perezoso moría en silencio; `is_read_only` ahora es
+    estático sobre config (spawn perezoso + índice estático hacían fail-always
+    en frío). Verificado vía trunk: graph_importers = grep (20/20).
+  - Investigación→acción (e72c0edd): regla determinista research_*.md →
+    docs/knowledge en docs_triage (que además ya no destruye la cabecera de
+    INDEX.yaml) + `maintenance_knowledge_ingest_tick` (ATLAS_KNOWLEDGE_INGEST=1,
+    diario, ingesta incremental por sha256 al sustrato ~/atlas-mcp/memory.db)
+    + recall MCP e2e devolviendo el informe ingerido como primer hit.
+  - TopicExpander curado (7399a6e3): consultas en inglés técnico corto +
+    filtro determinista post-parse; con las MISMAS semillas 0 → 45 hallazgos
+    reales (Graphiti/Zep etc.). arXiv en allowlist PENDIENTE de decisión del
+    operador.
+  - Grafo vivo automático (4533dd2d): `maintenance_project_graph_tick`
+    (ATLAS_PROJECT_GRAPH=1) gateado por HEAD, sin LLM; regenera sobre COPIA +
+    swap atómico porque el write-lock de Kuzu excluye lecturas de otros
+    procesos (~9 min de apagón medido con build directo); build completo 530s,
+    2017 nodos. Hook SessionStart: grafo primero para estructura.
+  - scheduler.stop() cancela extra_cycles pendientes y despierta el sleep
+    (Event; riesgo residual de la bomba recursiva cerrado).
+  - nvidia_kimi RETIRADO con 2ª señal (404 'Function not found for account'
+    en las 2 cuentas, curl por cuenta): asiento CN del trío re-mapeado a
+    z-ai/glm-5.2 (prove-it en vivo, responde).
+  - f2-6b: sus 3 strikes de backoff son de la era ciega (cero rastro en
+    Merkle — no hay NI UN run_item suyo registrado); contador reseteado para
+    un intento limpio ya auditado. tech-8 mantiene sus 3 (documentados:
+    2× test_cmd >900s, 1× tests rojos).
+  - **Asesino SIGTERM del pre-commit IDENTIFICADO con strace + journal:
+    `earlyoom` (PID 1147)**. La suite completa pica ~7.5GB RSS; earlyoom
+    manda SIGTERM al proceso más gordo al cruzar mem/swap 10% —
+    `sending SIGTERM to process 598179 "python": badness 882, VmRSS 7577 MiB`.
+    Explica el patrón 47-50% y por qué '10GB libres' no salvaba. Pendiente
+    (decisión operador): hook con suite dirigida en vez de completa, y atacar
+    el RSS acumulado de la suite.
+- **Tronco como preflight por tarea (2026-07-09)** — `trunk_prepare(goal)`
+  añadido al atlas-trunk: paquete compacto con recomendaciones de catálogo,
+  resources, candidatos no conectados, env faltante, read-only tools y uso real
+  externo cuando existe `ToolUsageCounter`. `AtlasCoder`/`ToolCoder` inyectan una
+  sección fail-open de Trunk preflight antes del loop de código, sin Redis,
+  LangGraph ni nuevas dependencias. Catálogo vivo curado en raíces Atlas
+  (`atlas-memory`, `atlas-graph`, `atlas-knowledge`, `atlas-operating`) y regla
+  de absorción temporal explicitada: clonar en `/tmp`/worktree, extraer patrón,
+  borrar repo. Pendiente: medir si el preflight aumenta uso real del MCP y
+  decidir si `trunk_exec_readonly` merece fase 2.
 - **CAMPAÑA "construir directo, darle el conocimiento a Atlas" COMPLETA
   (2026-07-09, plan curious-cuddling-forest)** — inversión de método dictada
   por el operador: Claude construye directo lo que falta, Atlas recibe el
