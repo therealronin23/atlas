@@ -469,15 +469,16 @@ class TestNvidiaNimProvider:
         assert len(nvidia.account_pool) >= 2
 
     def test_nvidia_extra_frontier_models_present(self) -> None:
-        """Kimi y Mistral-Large-3 deben estar como L2 NVIDIA NIM con el mismo pool.
+        """GLM y Mistral-Large-3 deben estar como L2 NVIDIA NIM con el mismo pool.
 
-        Prove-it 2026-06-22 contra integrate.api.nvidia.com: responden
-        moonshotai/kimi-k2.6 y mistralai/mistral-large-3-675b-instruct-2512
-        (mistral-large-2-instruct da 404 en este tier). nvidia_glm retirado
-        2026-06-28: prove-it en vivo confirma HTTP 410 Gone.
+        Historia del asiento CN: nvidia_glm (glm-5.1) retirado 2026-06-28
+        (410 Gone); nvidia_kimi (kimi-k2.6) retirado 2026-07-10 — 404
+        "Function not found for account" en las 2 cuentas del pool dos días
+        seguidos de smoke, aunque siga listado en /v1/models. Re-mapeado a
+        z-ai/glm-5.2 (prove-it en vivo 2026-07-10, responde chat/completions).
         """
         expected = {
-            "nvidia_kimi": "nvidia_nim/moonshotai/kimi-k2.6",
+            "nvidia_glm": "nvidia_nim/z-ai/glm-5.2",
             "nvidia_mistral_large": (
                 "nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512"
             ),

@@ -115,7 +115,7 @@ def test_build_trio_has_three_distinct_providers() -> None:
     trio = build_trio_reviewers()
     assert len(trio) == 3
     provs = {r.provider for r in trio}
-    assert provs == {"gemini_free", "nvidia_kimi", "nvidia_mistral_large"}
+    assert provs == {"gemini_free", "nvidia_glm", "nvidia_mistral_large"}
 
 
 # ---------------------------------------------------------------------------
@@ -230,13 +230,13 @@ def test_build_trio_uses_lineage_fallback_when_primary_missing():
 
     pool = [
         p for p in DEFAULT_PROVIDERS
-        if p.name in {"groq_llama_70b", "nvidia_kimi", "nvidia_mistral_large"}
+        if p.name in {"groq_llama_70b", "nvidia_glm", "nvidia_mistral_large"}
     ]
     trio = build_trio_reviewers(providers=pool)
     provs = {r.provider for r in trio}
     assert "groq_llama_70b" in provs
     assert "gemini_free" not in provs
-    assert "nvidia_kimi" in provs
+    assert "nvidia_glm" in provs
     assert "nvidia_mistral_large" in provs
     assert len(trio) == 3
 
@@ -249,7 +249,7 @@ def test_build_trio_slot_empty_when_no_fallback_available():
 
     pool = [
         p for p in DEFAULT_PROVIDERS
-        if p.name in {"gemini_free", "nvidia_kimi"}
+        if p.name in {"gemini_free", "nvidia_glm"}
     ]
     trio = build_trio_reviewers(providers=pool)
     provs = {r.provider for r in trio}
@@ -263,7 +263,7 @@ def test_build_trio_prefers_primary_over_fallback_when_both_available():
 
     trio = build_trio_reviewers()  # pool completo por defecto
     provs = {r.provider for r in trio}
-    assert provs == {"gemini_free", "nvidia_kimi", "nvidia_mistral_large"}
+    assert provs == {"gemini_free", "nvidia_glm", "nvidia_mistral_large"}
 
 
 # ---------------------------------------------------------------------------

@@ -97,9 +97,11 @@ class LlmReviewer:
         return Objection(self._id, self._provider, sev, detail)
 
 
-# El trío: tres linajes ortogonales (🇺🇸 Gemini · 🇨🇳 Kimi · 🇪🇺 Mistral).
+# El trío: tres linajes ortogonales (🇺🇸 Gemini · 🇨🇳 GLM · 🇪🇺 Mistral).
 # La distancia entre linajes maximiza la señal de desacuerdo útil.
-_TRIO_NAMES = ("gemini_free", "nvidia_kimi", "nvidia_mistral_large")
+# 2026-07-10: asiento CN re-mapeado nvidia_kimi → nvidia_glm (kimi-k2.6 404
+# por-cuenta en todo el pool dos días seguidos; glm-5.2 prove-it en vivo).
+_TRIO_NAMES = ("gemini_free", "nvidia_glm", "nvidia_mistral_large")
 
 # v2.0.5 — fallback por-linaje: cada slot acepta una lista ORDENADA de
 # proveedores del MISMO linaje (mapa investigado en vivo, no re-verificar
@@ -107,13 +109,13 @@ _TRIO_NAMES = ("gemini_free", "nvidia_kimi", "nvidia_mistral_large")
 # primer fallback de esa MISMA lista que sí esté disponible — nunca se cruza
 # de linaje (cruzar linajes rompe la ortogonalidad que hace útil el desacuerdo).
 # 🇺🇸 US: gemini_free (primary) -> groq_llama_70b (fallback, confirmado vivo).
-# 🇨🇳 CN: nvidia_kimi (primary) -> groq_qwen3 (fallback, confirmado vivo).
+# 🇨🇳 CN: nvidia_glm (primary) -> groq_qwen3 (fallback, confirmado vivo).
 # 🇪🇺 EU: nvidia_mistral_large SIN fallback no-NIM vivo confirmado — MISTRAL_API_KEY
 #         no está configurada y no hay un ID de OpenRouter verificado para Mistral
 #         Large; hueco real, documentado aquí a propósito (no se fabrica uno falso).
 _TRIO_LINEAGE_FALLBACKS: dict[str, tuple[str, ...]] = {
     "gemini_free": ("gemini_free", "groq_llama_70b"),
-    "nvidia_kimi": ("nvidia_kimi", "groq_qwen3"),
+    "nvidia_glm": ("nvidia_glm", "groq_qwen3"),
     "nvidia_mistral_large": ("nvidia_mistral_large",),
 }
 
