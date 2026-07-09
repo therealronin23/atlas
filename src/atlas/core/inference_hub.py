@@ -456,6 +456,13 @@ class InferenceHub:
             return self._infer_transparent(request)
         return self._infer_raw(request)
 
+    def probe_provider(self, provider: Provider, request: InferenceRequest) -> InferenceResponse:
+        """Llama a UN provider concreto, sin caminar la cadena de fallback ni
+        tocar `_rate_limited_until` (uso: smoke de cadena — Fase 5, 2026-07-09).
+        Wrapper público de `_call_provider` para no reencuadrar internals
+        privados desde fuera del módulo."""
+        return self._call_provider(provider, request)
+
     def infer_for_role(self, role: str, request: InferenceRequest) -> InferenceResponse:
         """Lazo 4 — enruta por rol de tarea (edit/apply/chat), no solo por nivel.
 

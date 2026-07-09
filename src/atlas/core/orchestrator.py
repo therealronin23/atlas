@@ -693,6 +693,10 @@ class Orchestrator:
         """Un tick de investigación abierta (intereses → informe en inbox). Delegado al facade."""
         return self._maintenance_facade.maintenance_research_tick()
 
+    def maintenance_provider_smoke_tick(self) -> dict[str, Any]:
+        """Smoke diario de la cadena de proveedores (1 llamada mínima c/u). Delegado al facade."""
+        return self._maintenance_facade.maintenance_provider_smoke_tick()
+
     def _knowledge_cve_proposer_instance(self) -> Any:
         """CveDepProposer instanciado lazily para bumps CVE-driven."""
         if self._knowledge_cve_proposer is None:
