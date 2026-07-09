@@ -8,6 +8,43 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **CAMPAÑA "construir directo, darle el conocimiento a Atlas" COMPLETA
+  (2026-07-09, plan curious-cuddling-forest)** — inversión de método dictada
+  por el operador: Claude construye directo lo que falta, Atlas recibe el
+  conocimiento en su sustrato. 7 fases cerradas en un día:
+  - F1 backlog: 5 items prio-1 marcados done con evidencia (5284751a).
+  - F2 memoria: grafo vivo del proyecto en Kuzu + MCP atlas-graph (dd22bd30,
+    verificado 19/19 vs grep) + ingesta de 44 docs vigentes/306 records al
+    sustrato con fastembed dim=384 (d511fb76).
+  - F3 harness: worktree efímero real para run_item (fusionadas 2 ramas
+    claude/* que otra sesión dejó publicadas sin mergear), cola con backoff
+    persistente, planning previo en ToolCoder, ToolCoder como backend de
+    parallel_coder, repo-map automático (6c0eeb5a).
+  - F4 investigación: panorama_scout+topic_expander cableados al scheduler —
+    semillas desde las lecciones recientes (descubrimiento abierto), informe
+    diario a docs/inbox/ como propuesto; primer informe autónomo real
+    generado (822c7a84; fix de URL-encode encontrado en la pasada en vivo).
+  - F5 inferencia: smoke diario de cadena (probe_provider + ProviderChainSmoke,
+    df3746ee); en vivo: 9 ok, 3 rate-limited, nvidia_kimi 404 (marcado, no
+    retirado — decisión de operador con segunda señal).
+  - F6 MCP: sampling/elicitation/roots verificados INCONDICIONALES en el
+    tronco real (el condicional del plan ya no existía) — sin cambios.
+  - F7 daemon: suite completa 2921/2922 en solitario, atlas-core.service
+    reactivado (enabled, 0 reinicios), ATLAS_RESEARCH+ATLAS_PROVIDER_SMOKE
+    en .env; primer tick con research+smoke auditados en Merkle; run_item
+    en curso al cierre (LLM L2, convergencia pendiente de observar).
+- **INCIDENTE MAYOR RESUELTO (2026-07-09): bomba de procesos recursiva del
+  lazo** — la suite que el tick corre en su worktree hereda el env del daemon
+  (ATLAS_SELF_BUILD=1); un test que arrancaba el scheduler real (más un hilo
+  que sobrevivía a stop()) disparaba OTRO run_item real → cascada de
+  worktrees git + pytest anidados (13 worktrees/12 pytest la primera vez;
+  reproducido en producción tras reactivar el daemon). Corte estructural
+  ATLAS_NESTED_TEST_RUN en emisores (ToolCoder/AtlasCoder/ValidationRunner/
+  evo) y receptores (los 3 ticks del facade) — 041f3972. Relacionados: /tmp
+  tmpfs 4G lleno por sandboxes huérfanos de ToolCoder (~487M c/u, barrido +
+  exclusión .claude/.cursor) y stacer --hide a 62% CPU en autoarranque
+  (desactivado) — causa real de los cierres de sesión de escritorio, no
+  Atlas ni la contención con Ollama (atribución previa corregida).
 - **Lazo de automejora v0.1 COMPLETO** (detect→judge→propose→verify→apply→learn):
   las 4 piezas del roadmap "juicio real" 2026-07-04 quedaron cableadas en
   producción el 2026-07-08 (antes: construidas+testeadas pero 0 callers).
@@ -50,6 +87,12 @@ floors accepted: `pyyaml>=6.0.3`, `cryptography>=49.0.0`, `litellm>=1.89.0`.
 
 ## Entradas
 
+- **2026-07-09 — Matriz de patrones arquitectónicos 4×5 COMPLETA**
+  - Documento: `docs/design/architectural_patterns_matrix_2026-07-08.md` (versión 2.0).
+  - Criterio de aceptación cumplido: matriz completa con patrones arquitectónicos (no features) para Aider/Cursor/Codex/Claude Code.
+  - Priorización basada en presión real detectada en delegaciones 2026-07-08.
+  - Cada patrón incluye código de referencia o paper verificable.
+  - Validación cruzada con invariantes Atlas (D2, Merkle, AST Guard).
 - **2026-07-09 — Autobuild destapado + fusión Graphify/Obsidian/Kuzu completa**
   - Tick self-build invocado DIRECTO (sin daemon): pipeline entero corre;
     falló primero por techo de turnos, luego por timeout de tests — ambos
