@@ -25,6 +25,16 @@ _SCHEMA = (
     "CREATE REL TABLE IF NOT EXISTS LINKS_TO(FROM ObsidianNote TO ObsidianNote)",
 )
 
+# 2026-07-09: un conn.execute() por fila midió 21min para 4360 notas +
+# 26392 links (vault Obsidian real vía fusión Graphify). UNWIND $batch
+# como lista de parámetros mide ~16x más rápido en microbenchmark local
+# (una sola compilación de plan de consulta por lote, no una por fila).
+_BATCH_SIZE = 1000
+
+
+def _chunks(rows: list[Any], size: int) -> list[list[Any]]:
+    return [rows[i : i + size] for i in range(0, len(rows), size)]
+
 
 def load_vault_into_kuzu(
     vault_root: Path,
@@ -55,23 +65,27 @@ def load_vault_into_kuzu(
             stem_to_path.setdefault(stem, rel_path)
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        for rel_path, note in vault.items():
-            fm = note["frontmatter"]
+        note_rows = [
+            {
+                "path": rel_path,
+                "title": str(note["frontmatter"].get("title") or Path(rel_path).stem),
+                "note_type": str(note["frontmatter"].get("type") or ""),
+                "community": str(note["frontmatter"].get("community", "")),
+                "tags": [str(t) for t in note["tags"]],
+                "ts": now,
+            }
+            for rel_path, note in vault.items()
+        ]
+        for batch in _chunks(note_rows, _BATCH_SIZE):
             conn.execute(
-                "MERGE (n:ObsidianNote {path: $path}) "
-                "SET n.title = $title, n.note_type = $note_type, "
-                "n.community = $community, n.tags = $tags, n.ingested_at = $ts",
-                {
-                    "path": rel_path,
-                    "title": str(fm.get("title") or Path(rel_path).stem),
-                    "note_type": str(fm.get("type") or ""),
-                    "community": str(fm.get("community", "")),
-                    "tags": [str(t) for t in note["tags"]],
-                    "ts": now,
-                },
+                "UNWIND $rows AS row "
+                "MERGE (n:ObsidianNote {path: row.path}) "
+                "SET n.title = row.title, n.note_type = row.note_type, "
+                "n.community = row.community, n.tags = row.tags, n.ingested_at = row.ts",
+                {"rows": batch},
             )
 
-        links = 0
+        link_rows: list[dict[str, str]] = []
         unresolved = 0
         for rel_path, note in vault.items():
             for target in note["wikilinks"]:
@@ -79,14 +93,17 @@ def load_vault_into_kuzu(
                 if target_path is None:
                     unresolved += 1
                     continue
-                conn.execute(
-                    "MATCH (a:ObsidianNote {path: $src}), (b:ObsidianNote {path: $dst}) "
-                    "MERGE (a)-[:LINKS_TO]->(b)",
-                    {"src": rel_path, "dst": target_path},
-                )
-                links += 1
+                link_rows.append({"src": rel_path, "dst": target_path})
 
-        return {"notes": len(vault), "links": links, "unresolved": unresolved}
+        for batch in _chunks(link_rows, _BATCH_SIZE):
+            conn.execute(
+                "UNWIND $rows AS row "
+                "MATCH (a:ObsidianNote {path: row.src}), (b:ObsidianNote {path: row.dst}) "
+                "MERGE (a)-[:LINKS_TO]->(b)",
+                {"rows": batch},
+            )
+
+        return {"notes": len(vault), "links": len(link_rows), "unresolved": unresolved}
     finally:
         conn.close()
         db.close()
