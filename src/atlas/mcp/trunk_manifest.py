@@ -118,6 +118,7 @@ _TRUNK_READ_ONLY_TOOLS = [
     "trunk_catalog",
     "trunk_find",
     "trunk_recommend_stack",
+    "trunk_prepare",
     "list_skills",
     "get_skill",
     "trunk_list_roots",
