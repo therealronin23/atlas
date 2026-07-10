@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# Pre-commit hook: ejecuta tests antes de cada commit.
-# Si los tests fallan, el commit se aborta.
+# Pre-commit hook: gate RÁPIDO (mypy + tests mapeados) antes de cada commit.
+# Si el gate falla, el commit se aborta.
+#
+# 2026-07-10: la suite completa (`pytest tests/ -q`) acumula ~7.5GB RSS y el
+# daemon earlyoom del sistema la mata con SIGTERM SIEMPRE — el hook viejo
+# nunca terminaba de correr. Por eso este hook mide SOLO lo staged: mypy de
+# los .py bajo src/ y pytest de los tests que esos ficheros tocan por
+# convención de nombres. La suite completa sigue existiendo (ColdUpdateBatcher
+# / CI) o corre aquí a mano con ATLAS_PRECOMMIT_FULL=1.
 #
 # Instalacion: git config core.hooksPath .githooks
 
@@ -16,12 +23,76 @@ fi
 
 export PYTHONPATH=src
 
-echo "→ Ejecutando tests pre-commit..."
-if ! python -m pytest tests/ -q 2>&1; then
-    echo ""
-    echo "✗ TESTS FALLIDOS. Commit cancelado."
-    echo "  Corrige los tests antes de hacer commit."
-    exit 1
+# Escape explícito: suite completa a la antigua, uso manual consciente.
+if [ "${ATLAS_PRECOMMIT_FULL:-0}" = "1" ]; then
+    echo "→ ATLAS_PRECOMMIT_FULL=1: ejecutando suite completa (puede tardar / consumir mucha RAM)..."
+    if ! python -m pytest tests/ -q 2>&1; then
+        echo ""
+        echo "✗ TESTS FALLIDOS. Commit cancelado."
+        exit 1
+    fi
+    echo "✓ Suite completa OK. Procediendo con el commit."
+    exit 0
 fi
 
-echo "✓ Tests OK. Procediendo con el commit."
+staged_files="$(git diff --cached --name-only --diff-filter=ACM)"
+
+staged_src_py="$(printf '%s\n' "$staged_files" | grep -E '^src/.*\.py$' || true)"
+staged_test_py="$(printf '%s\n' "$staged_files" | grep -E '^tests/test_.*\.py$' || true)"
+
+# --- (a) mypy: solo los .py staged bajo src/ ---
+if [ -n "$staged_src_py" ]; then
+    echo "→ mypy (solo .py staged bajo src/)..."
+    # shellcheck disable=SC2086
+    if ! MYPYPATH=src python -m mypy $staged_src_py 2>&1; then
+        echo ""
+        echo "✗ MYPY FALLÓ. Commit cancelado."
+        exit 1
+    fi
+    echo "✓ mypy OK."
+else
+    echo "→ mypy: sin .py staged bajo src/, se salta."
+fi
+
+# --- (b) pytest: solo los tests mapeados desde los staged ---
+mapped_tests=""
+
+if [ -n "$staged_src_py" ]; then
+    while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        stem="$(basename "$f" .py)"
+        for t in tests/test_"${stem}"*.py; do
+            [ -e "$t" ] || continue
+            mapped_tests="$mapped_tests
+$t"
+        done
+    done <<< "$staged_src_py"
+fi
+
+if [ -n "$staged_test_py" ]; then
+    while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        [ -e "$f" ] || continue
+        mapped_tests="$mapped_tests
+$f"
+    done <<< "$staged_test_py"
+fi
+
+# Deduplicar preservando orden.
+mapped_tests="$(printf '%s\n' "$mapped_tests" | awk 'NF && !seen[$0]++')"
+
+if [ -n "$mapped_tests" ]; then
+    echo "→ pytest (solo tests mapeados desde lo staged)..."
+    # shellcheck disable=SC2086
+    if ! python -m pytest $mapped_tests -q 2>&1; then
+        echo ""
+        echo "✗ TESTS FALLIDOS. Commit cancelado."
+        exit 1
+    fi
+    echo "✓ pytest OK."
+else
+    echo "→ pytest: sin tests mapeados desde lo staged, se salta (NO se corre la suite completa)."
+fi
+
+echo "✓ Gate rápido OK. Procediendo con el commit."
+echo "  (suite completa: ColdUpdateBatcher/CI, o a mano con ATLAS_PRECOMMIT_FULL=1)"
