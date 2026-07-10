@@ -139,3 +139,50 @@ def test_batch_approve_stops_on_failure_mid_batch(monkeypatch) -> None:
     assert fake.advance_calls == ["p1", "p2"]
     assert "p1" in result.output
     assert "Fallo aplicando p2" in result.output
+
+
+class _FakeProposal:
+    def __init__(self, pid: str, status: str, intent: str = "intent x") -> None:
+        self.id = pid
+        self.status = status
+        self.intent = intent
+
+
+class _FakeColdUpdate:
+    def __init__(self, proposals: list[_FakeProposal]) -> None:
+        self._proposals = proposals
+
+    def list_proposals(self) -> list[_FakeProposal]:
+        return self._proposals
+
+
+def test_update_status_prints_next_step_recipe(monkeypatch) -> None:
+    """2026-07-10: el operador señaló que 'no hay un mecanismo fácil y claro'
+    para aprobar/rechazar — lo había, pero status no enseñaba el siguiente
+    paso. Cada propuesta accionable imprime su comando copy-pasteable."""
+    class _Orch:
+        def cold_update(self) -> _FakeColdUpdate:
+            return _FakeColdUpdate([
+                _FakeProposal("p-1", "proposed"),
+                _FakeProposal("p-2", "validated"),
+                _FakeProposal("p-3", "rejected"),
+            ])
+
+    monkeypatch.setattr(cli_mod, "get_orchestrator", lambda: _Orch())
+    result = CliRunner().invoke(cli_mod.cli, ["update", "status"])
+    assert result.exit_code == 0
+    assert "atlas update validate p-1" in result.output
+    assert "atlas update approve p-2" in result.output
+    assert "atlas update reject" in result.output
+    assert "apply p-3" not in result.output  # rechazada: sin siguiente paso
+
+
+def test_update_status_empty_says_so(monkeypatch) -> None:
+    class _Orch:
+        def cold_update(self) -> _FakeColdUpdate:
+            return _FakeColdUpdate([])
+
+    monkeypatch.setattr(cli_mod, "get_orchestrator", lambda: _Orch())
+    result = CliRunner().invoke(cli_mod.cli, ["update", "status"])
+    assert result.exit_code == 0
+    assert "Sin propuestas" in result.output

@@ -429,8 +429,26 @@ def update_status(proposal_id: str | None) -> None:
         summary = mgr.review_summary(proposal_id)
         console.print_json(json.dumps(summary, ensure_ascii=False, default=str))
         return
-    for p in mgr.list_proposals():
+    proposals = mgr.list_proposals()
+    if not proposals:
+        console.print("[green]Sin propuestas.[/green]")
+        return
+    for p in proposals:
         console.print(f"  {p.id}  {p.status:10}  {p.intent[:60]}")
+    # Receta HITL explícita (2026-07-10): el operador señaló que "no hay un
+    # mecanismo fácil y claro" — lo había, pero nada lo enseñaba en el momento
+    # de decidir. Cada estado imprime su siguiente paso copy-pasteable.
+    next_step = {
+        "proposed": "atlas update validate {id}   # pytest+mypy en worktree aislado",
+        "validated": "atlas update approve {id}    # y después: atlas update apply {id}",
+        "approved": "atlas update apply {id}",
+    }
+    actionable = [p for p in proposals if p.status in next_step]
+    if actionable:
+        console.print("\n[bold]Siguiente paso por propuesta:[/bold]")
+        for p in actionable:
+            console.print(f"  {next_step[p.status].format(id=p.id)}")
+        console.print("  (rechazar: atlas update reject <id> --reason '...')")
 
 
 @update.command("batch-review")
