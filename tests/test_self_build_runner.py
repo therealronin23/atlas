@@ -111,6 +111,24 @@ def test_derive_test_cmd_uses_explicit_field(tmp_path: Path) -> None:
     assert cmd == ["pytest", "tests/test_explicit.py", "-q"]
 
 
+def test_derive_test_cmd_resolves_bare_python_to_sys_executable(tmp_path: Path) -> None:
+    """`python` a pelo NO existe en este sistema (solo python3/venv) — tercera
+    aparición del mismo bug (install del catálogo del tronco, y el test_cmd
+    que otra sesión escribió en backlog.yaml la noche del 2026-07-10, con dos
+    fallos reales 'test_cmd no encontrado'). Un test_cmd explícito que empiece
+    por python/python3 se resuelve a sys.executable; el resto se respeta."""
+    import sys
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    item = _item(test_cmd=("python", "-m", "mypy", "src/atlas/"))
+
+    cmd = runner.derive_test_cmd(item)
+
+    assert cmd == [sys.executable, "-m", "mypy", "src/atlas/"]
+
+
 def test_derive_test_cmd_finds_convention_named_test(tmp_path: Path) -> None:
     """Sin test_cmd explícito: busca tests/test_{id con guiones->guion_bajo}*.py."""
     tests_dir = tmp_path / "tests"
