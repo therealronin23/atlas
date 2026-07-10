@@ -51,7 +51,7 @@ def test_tool_overhead_is_small_anti_kitchen_sink() -> None:
     from atlas.mcp.trunk_manifest import tool_overhead
 
     # Superficie PEQUEÑA: las 4 raíces juntas exponen pocas tools (no 200).
-    assert tool_overhead() <= 21
+    assert tool_overhead() <= 23
 
 
 # ---------------------------------------------------------------------------

@@ -2,8 +2,9 @@
 
 Sirve las queries del grafo vivo (``atlas.memory.project_graph``) por MCP:
 quién importa un módulo, radio de impacto transitivo, linaje temporal de un
-fichero, churn, y vecindario de notas Obsidian. El objetivo es que cualquier
-IA conectada al tronco entienda la estructura REAL de Atlas con una query
+fichero, churn, vecindario de notas Obsidian, y quién llama/a quién llama un
+símbolo del call-graph (``atlas.memory.callgraph_to_kuzu``). El objetivo es
+que cualquier IA conectada al tronco entienda la estructura REAL de Atlas con una query
 barata en vez de quemar tokens leyendo .md (que son pasado/futuro, no presente).
 
 Mismo patrón de capa-transporte que ``memory_server``/``knowledge_server``:
@@ -134,6 +135,48 @@ def build_graph_server(db_path: Path, *, name: str = "atlas-graph") -> "FastMCP"
             {"f": f"{note_stem}.md"},
         )
         return {"links_to": [r[0] for r in out], "linked_from": [r[0] for r in inc]}
+
+    @server.tool()
+    def graph_callers(symbol: str) -> dict[str, Any]:
+        """Quién llama a `symbol` (match por sufijo de nombre, hasta 25).
+        `symbol` es el nombre tal como lo emite graphify (ej. ".start()" o
+        "ThermalWatchdog") — no hace falta el nombre completo cualificado."""
+        try:
+            rows = _query(
+                "MATCH (a:Symbol)-[c:CALLS]->(b:Symbol) WHERE b.name ENDS WITH $s "
+                "RETURN a.name, a.source_file, a.source_location, c.confidence LIMIT 25",
+                {"s": symbol},
+            )
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"error": "call-graph no ingerido aún"}
+            raise
+        return {
+            "callers": [
+                {"name": r[0], "source_file": r[1], "source_location": r[2], "confidence": r[3]}
+                for r in rows
+            ]
+        }
+
+    @server.tool()
+    def graph_callees(symbol: str) -> dict[str, Any]:
+        """A quién llama `symbol` (match por sufijo de nombre, hasta 25)."""
+        try:
+            rows = _query(
+                "MATCH (a:Symbol)-[c:CALLS]->(b:Symbol) WHERE a.name ENDS WITH $s "
+                "RETURN b.name, b.source_file, b.source_location, c.confidence LIMIT 25",
+                {"s": symbol},
+            )
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"error": "call-graph no ingerido aún"}
+            raise
+        return {
+            "callees": [
+                {"name": r[0], "source_file": r[1], "source_location": r[2], "confidence": r[3]}
+                for r in rows
+            ]
+        }
 
     def _latest_sha() -> str:
         rows = _query(
