@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-08'
+generated: '2026-07-10'
 entries:
 - path: docs/archive/2026-05-snapshots/AUDIT_COMPLETO_2026-05-25.md
   type: historia
@@ -92,7 +92,8 @@ entries:
   type: historia
   status: historico
   verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria de Atlas.md
+- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria
+    de Atlas.md
   type: historia
   status: historico
   verified: null
@@ -552,7 +553,7 @@ entries:
   type: design
   status: vigente
   verified: null
-- path: docs/design/atlas_ecosystem_map.md
+- path: docs/design/absorption_note_template.md
   type: design
   status: vigente
   verified: null
@@ -560,7 +561,12 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build (misión absorb_harness_patterns)
+  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build
+    (misión absorb_harness_patterns)
+- path: docs/design/atlas_ecosystem_map.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/design/atlas_max_capability_roadmap.md
   type: design
   status: vigente
@@ -601,7 +607,8 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido con OK del operador 2026-07-09
+  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido
+    con OK del operador 2026-07-09
 - path: docs/design/ideas/2026-07-02-vision-atlas-microkernel-universal.md
   type: design
   status: vigente
@@ -718,6 +725,21 @@ entries:
   type: norma
   status: vigente
   verified: null
+- path: docs/knowledge/research_2026-07-09.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-09_inbox.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-10.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
 - path: docs/membrana/OSM-000_membrana.md
   type: compliance
   status: vigente
@@ -854,18 +876,3 @@ entries:
   type: design
   status: vigente
   verified: null
-- path: docs/knowledge/research_2026-07-09.md
-  type: conocimiento
-  status: propuesto
-  verified: null
-  notes: 'triage: regla determinista (^research[_-])'
-- path: docs/knowledge/research_2026-07-09_inbox.md
-  type: conocimiento
-  status: propuesto
-  verified: null
-  notes: 'triage: regla determinista (^research[_-])'
-- path: docs/knowledge/research_2026-07-10.md
-  type: conocimiento
-  status: propuesto
-  verified: null
-  notes: 'triage: regla determinista (^research[_-])'
