@@ -15,7 +15,7 @@ Variables minimas:
 
 | Variable | Uso |
 |----------|-----|
-| `HERMES_BASE_URL` | Tailscale URL del VPS (ej. `http://100.x.x.x:8443`) |
+| `HERMES_BASE_URL` | URL Hermes REST-compatible: VPS por Tailscale o local (`http://127.0.0.1:8443`) |
 | `HERMES_API_KEY` | Secreto HMAC compartido |
 | `ATLAS_PENDING_HMAC_KEY` | Opcional; si falta, usa `HERMES_API_KEY` para firmar pending |
 | `TELEGRAM_BOT_TOKEN` | Bot API token |

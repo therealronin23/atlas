@@ -45,7 +45,7 @@ Copia `.env.example` a `.env` y rellena. Las relevantes:
 | Variable | Gate | Descripción |
 |---|---|---|
 | `ATLAS_HOME` | — | Workspace root. Default `~/atlas`. |
-| `HERMES_BASE_URL` | C | URL del Hermes-VPS (típicamente IP Tailscale `100.x:8443`). |
+| `HERMES_BASE_URL` | C | URL del Hermes REST-compatible: VPS (`100.x:8443`) o local (`127.0.0.1:8443`). |
 | `HERMES_API_KEY` | C | Shared secret para HMAC-SHA256. Lo emite `install_hermes_vps.sh`. |
 | `TELEGRAM_BOT_TOKEN` | C | Token de @BotFather para `atlas` bot. Opcional. |
 | `TELEGRAM_CHAT_ID` | C | Chat ID autorizado. Solo este chat puede mandarle órdenes. |

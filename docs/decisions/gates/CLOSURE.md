@@ -22,4 +22,4 @@ cumplimiento verificable (Osmosis) — ver `AGENTS.md §Current Direction`. Esto
 Al cerrar un nodo `Tipo→Fase→ADR→Gate`, su auditoría/nota se **condensa hacia arriba**:
 tipo→fase→ADR→Gate. El Gate cierra con UN documento de cierre (como este) que condensa la
 cadena; lo granular se archiva (git + `docs/archive/`), no se borra. Ejemplo vivo de este
-patrón aplicado a la gobernanza: `docs/governance/CLOSURE_governance_2026-06-21.md`.
+patrón aplicado a la gobernanza: `docs/decisions/gates/CLOSURE_governance_2026-06-21.md`.
