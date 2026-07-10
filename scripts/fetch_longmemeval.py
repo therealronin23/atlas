@@ -52,13 +52,18 @@ def _fetch_via_hf_hub(dest: Path) -> None:
     from huggingface_hub import hf_hub_download
 
     cached_path = hf_hub_download(repo_id=REPO_ID, filename=FILENAME, repo_type="dataset")
+    # El cache de HF entrega un SYMLINK relativo a blobs/ — hardlinkearlo tal
+    # cual duplica el symlink (roto fuera del cache). resolve() primero.
+    # Bug real 2026-07-10: dest quedó como enlace a ../../blobs/<hash> y el
+    # eval moría con FileNotFoundError.
+    real_path = Path(cached_path).resolve()
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() or dest.is_symlink():
         dest.unlink()
     try:
-        Path(dest).hardlink_to(cached_path)
+        Path(dest).hardlink_to(real_path)
     except OSError:
-        shutil.copyfile(cached_path, dest)
+        shutil.copyfile(real_path, dest)
 
 
 def _fetch_via_urllib(dest: Path) -> None:

@@ -238,3 +238,28 @@ def test_main_returns_1_and_prints_error_on_fetcher_failure(
 
     assert exit_code == 1
     assert "red caída de verdad" in capsys.readouterr().err
+
+
+def test_hf_fetcher_resolves_cache_symlinks(tmp_path, monkeypatch):
+    """Bug real 2026-07-10: hf_hub_download devuelve un SYMLINK relativo a
+    blobs/ dentro del cache; hardlinkearlo sin resolve() deja en dest un
+    enlace roto y el eval muere con FileNotFoundError."""
+    import sys
+    import types
+
+    blob = tmp_path / "cache" / "blobs" / "abc123"
+    blob.parent.mkdir(parents=True)
+    blob.write_text("contenido real", encoding="utf-8")
+    snap = tmp_path / "cache" / "snapshots" / "rev"
+    snap.mkdir(parents=True)
+    link = snap / "longmemeval_s_cleaned.json"
+    link.symlink_to(Path("..") / ".." / "blobs" / "abc123")
+
+    fake_hub = types.ModuleType("huggingface_hub")
+    fake_hub.hf_hub_download = lambda **kw: str(link)  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "huggingface_hub", fake_hub)
+
+    dest = tmp_path / "data" / "longmemeval_s_cleaned.json"
+    flm._fetch_via_hf_hub(dest)
+    assert not dest.is_symlink()
+    assert dest.read_text(encoding="utf-8") == "contenido real"
