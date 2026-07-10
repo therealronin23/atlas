@@ -15,6 +15,29 @@ def bridge() -> SSRFBridge:
     return SSRFBridge()
 
 
+@pytest.fixture(autouse=True)
+def _deterministic_dns(monkeypatch: pytest.MonkeyPatch):
+    """DNS determinista para TODO el fichero (2026-07-10): getaddrinfo real
+    hacía la suite flaky bajo carga (gaierror → fail-closed en tests de
+    dominios PERMITIDOS; 2-7 fallos variables por corrida, verificado también
+    sin cambios locales). IPs literales se resuelven a sí mismas (los tests
+    de IP privada dependen de ello); hostnames → IP pública fija. Los tests
+    que patchean socket.getaddrinfo explícitamente lo siguen ganando (su
+    `with patch` anida por encima)."""
+    import ipaddress
+    import socket as socket_mod
+
+    def fake_getaddrinfo(host, *args, **kwargs):
+        try:
+            ipaddress.ip_address(host)
+            ip = str(host)
+        except ValueError:
+            ip = "93.184.216.34"  # pública, estable (example.com)
+        return [(socket_mod.AF_INET, socket_mod.SOCK_STREAM, 6, "", (ip, 0))]
+
+    monkeypatch.setattr("socket.getaddrinfo", fake_getaddrinfo)
+
+
 # ---------------------------------------------------------------------------
 # Tests basicos (regresion)
 # ---------------------------------------------------------------------------
