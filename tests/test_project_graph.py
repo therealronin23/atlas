@@ -5,9 +5,14 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import kuzu
 import pytest
 
-from atlas.memory.project_graph import build_project_graph, recent_commits
+from atlas.memory.project_graph import (
+    build_project_graph,
+    recent_commits,
+    resolve_graph_embedder,
+)
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -75,3 +80,79 @@ def test_build_is_idempotent(tiny_repo: Path, tmp_path: Path) -> None:
     m1 = build_project_graph(tiny_repo, db_path, commits=10)
     m2 = build_project_graph(tiny_repo, db_path, commits=10)
     assert m1["bitemporal"]["nodes"] == m2["bitemporal"]["nodes"]
+
+
+class _FakeEmbedder8:
+    """Embedder fake determinista, dim=8, sin red — solo para asertar propagación."""
+
+    @property
+    def dim(self) -> int:
+        return 8
+
+    def embed(self, text: str) -> list[float]:
+        return [float(len(text) % 8)] * 8
+
+
+def test_build_project_graph_propagates_embedder(tiny_repo: Path, tmp_path: Path) -> None:
+    """embedder=... llega hasta load_bitemporal_into_kuzu (no se queda en el default stub dim=64)."""
+    db_path = tmp_path / "pg.kuzu"
+    metrics = build_project_graph(tiny_repo, db_path, commits=10, embedder=_FakeEmbedder8())
+    assert metrics["bitemporal"]["nodes"] > 0
+
+    db = kuzu.Database(str(db_path))
+    conn = kuzu.Connection(db)
+    try:
+        r = conn.execute("MATCH (n:FileVersion) RETURN n.embedding LIMIT 1")
+        emb = r.get_next()[0]
+        assert len(emb) == 8
+    finally:
+        conn.close()
+        db.close()
+
+
+def test_build_project_graph_default_embedder_is_unchanged(tiny_repo: Path, tmp_path: Path) -> None:
+    """Sin `embedder=`, el comportamiento es EXACTO al de antes: stub dim=64."""
+    db_path = tmp_path / "pg.kuzu"
+    build_project_graph(tiny_repo, db_path, commits=10)
+
+    db = kuzu.Database(str(db_path))
+    conn = kuzu.Connection(db)
+    try:
+        r = conn.execute("MATCH (n:FileVersion) RETURN n.embedding LIMIT 1")
+        emb = r.get_next()[0]
+        assert len(emb) == 64
+    finally:
+        conn.close()
+        db.close()
+
+
+def test_resolve_graph_embedder_empty_or_stub_is_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ATLAS_GRAPH_EMBEDDER", raising=False)
+    assert resolve_graph_embedder() is None
+
+    monkeypatch.setenv("ATLAS_GRAPH_EMBEDDER", "")
+    assert resolve_graph_embedder() is None
+
+    monkeypatch.setenv("ATLAS_GRAPH_EMBEDDER", "stub")
+    assert resolve_graph_embedder() is None
+
+
+def test_resolve_graph_embedder_fastembed_without_loading_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """'fastembed' delega en atlas.memory.embeddings.default_embedder() — el test no debe
+    pagar la carga real del modelo ONNX, así que se monkeypatchea la fábrica."""
+    import atlas.memory.embeddings as embeddings_mod
+
+    class _FakeSemanticEmbedder:
+        @property
+        def dim(self) -> int:
+            return 384
+
+        def embed(self, text: str) -> list[float]:  # pragma: no cover - no se llama
+            raise AssertionError("no debería invocarse en este test")
+
+    monkeypatch.setattr(embeddings_mod, "default_embedder", lambda: _FakeSemanticEmbedder())
+    monkeypatch.setenv("ATLAS_GRAPH_EMBEDDER", "fastembed")
+
+    embedder = resolve_graph_embedder()
+    assert embedder is not None
+    assert embedder.dim == 384
