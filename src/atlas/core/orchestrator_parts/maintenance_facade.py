@@ -685,6 +685,36 @@ class MaintenanceFacade:
         finally:
             index.close()
 
+        # 3. Digestión (E, 2026-07-10): hallazgos de los informes → candidatos
+        # de catálogo (determinista, dedupe fail-closed, status SIEMPRE
+        # 'candidato'). El eslabón que faltaba: el ciclo consumía pero no
+        # convertía hallazgos en candidatos accionables.
+        digested = 0
+        try:
+            from atlas.core.self_maintenance.research_digest import (
+                append_candidates_to_catalog,
+                digest_findings,
+            )
+            from atlas.mcp.catalog import load_catalog, load_taxonomy
+
+            catalog_path = root / "docs" / "design" / "mcp_catalog.yaml"
+            classified_path = root / "docs" / "design" / "mcp_catalog_classified.yaml"
+            if catalog_path.is_file():
+                catalog = load_catalog(catalog_path)
+                if classified_path.is_file():
+                    catalog = catalog + load_catalog(classified_path)
+                reports = [
+                    p.read_text(encoding="utf-8", errors="replace")
+                    for p in research_report_paths(root)
+                ]
+                suggestions = digest_findings(
+                    reports, catalog, load_taxonomy(catalog_path)
+                )
+                if suggestions and classified_path.is_file():
+                    digested = append_candidates_to_catalog(suggestions, classified_path)
+        except Exception:  # noqa: BLE001 — la digestión es extra, nunca rompe la ingesta
+            pass
+
         state["last_run_date"] = today
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
@@ -695,6 +725,7 @@ class MaintenanceFacade:
             "repo_records": repo_res["records"],
             "research_docs": research_res["docs"],
             "research_records": research_res["records"],
+            "digested_candidates": digested,
             "db_path": str(db_path),
         }
         self._orch._merkle.log(
@@ -757,7 +788,11 @@ class MaintenanceFacade:
 
         import shutil
 
-        from atlas.memory.project_graph import DEFAULT_GRAPH_DB, build_project_graph
+        from atlas.memory.project_graph import (
+            DEFAULT_GRAPH_DB,
+            build_project_graph,
+            resolve_graph_embedder,
+        )
 
         db_env = os.environ.get("ATLAS_PROJECT_GRAPH_DB", "").strip()
         db = Path(db_env).expanduser() if db_env else DEFAULT_GRAPH_DB
@@ -774,7 +809,20 @@ class MaintenanceFacade:
             if wal.exists():
                 shutil.copy2(wal, rebuild_wal)
 
-        metrics = build_project_graph(root, rebuild)
+        metrics = build_project_graph(root, rebuild, embedder=resolve_graph_embedder())
+
+        # Call-graph de Graphify (D3, 2026-07-10): si el cache existe, se
+        # ingiere al MISMO rebuild antes del swap (MERGE idempotente; datos
+        # con staleness explícita por content_hash — del último run de
+        # graphify, no del working tree).
+        callgraph_cache = root / "src" / "graphify-out" / "cache" / "ast"
+        if callgraph_cache.is_dir():
+            try:
+                from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
+
+                metrics["callgraph"] = load_callgraph_into_kuzu(callgraph_cache, rebuild)
+            except Exception:  # noqa: BLE001 — el call-graph es extra, nunca rompe la regen
+                pass
 
         # Swap: primero el fichero principal, luego el wal (el close de la
         # ingesta hace checkpoint, así que el wal del rebuild suele estar
@@ -857,10 +905,16 @@ class MaintenanceFacade:
             except Exception:  # noqa: BLE001 — sink opcional, nunca bloquea
                 sink = None
 
+            # 2026-07-10: BenchmarkGate por fin CABLEADO (TODO histórico de
+            # este fichero). Señal, nunca gate bloqueante; sin dataset marca
+            # skipped con receta accionable (scripts/fetch_longmemeval.py).
+            from atlas.core.self_maintenance.benchmark_gate import BenchmarkGate
+
             self._maintenance_cold_update_batcher = ColdUpdateBatcher(
                 manager=self._orch.cold_update(),
                 premortem=premortem,
                 failure_lesson_sink=sink,
+                benchmark_gate=BenchmarkGate(repo_root=_repo_root),
             )
         return self._maintenance_cold_update_batcher
 
