@@ -19,7 +19,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 __all__ = ["BenchmarkGate", "BenchmarkResult"]
 
@@ -38,6 +38,15 @@ class BenchmarkResult:
     metric_name: str
     no_regression: bool
     reason: str
+    # Tri-estado explícito para el caso "dataset ausente": distinto de un
+    # fallo real (subprocess roto, JSON inesperado). ran/no_regression se
+    # mantienen fail-closed (False) igual — `skipped` es señal adicional
+    # para que el llamador (cold_update_batcher) sepa que no hubo intento
+    # real de correr el benchmark, no que corrió y falló.
+    skipped: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return dataclasses.asdict(self)
 
 
 class BenchmarkGate:
@@ -45,7 +54,11 @@ class BenchmarkGate:
 
     FAIL-CLOSED: cualquier fallo (dataset ausente, subprocess con
     returncode != 0, JSON inesperado) produce ran=False, no_regression=False —
-    nunca se asume que un benchmark que no pudo correr "pasa".
+    nunca se asume que un benchmark que no pudo correr "pasa". El caso
+    "dataset ausente" además marca BenchmarkResult.skipped=True (con la razón
+    apuntando a `python scripts/fetch_longmemeval.py`) para distinguirlo de
+    un fallo real de ejecución — sigue sin bloquear el lote (ver
+    cold_update_batcher.py), solo cambia qué dice la señal persistida.
     """
 
     # Nombre de la métrica principal: promedio de "overall" (uno por modo de
@@ -84,9 +97,11 @@ class BenchmarkGate:
                 after_score=None,
                 metric_name="",
                 no_regression=False,
+                skipped=True,
                 reason=(
-                    f"dataset ausente: {self._data_path} — benchmark no pudo "
-                    "correr, no se asume que pasa"
+                    f"dataset ausente: {self._data_path} — benchmark saltado (no bloquea "
+                    "el lote), pero tampoco se asume que pasa. Descárgalo con: "
+                    "python scripts/fetch_longmemeval.py"
                 ),
             )
 
