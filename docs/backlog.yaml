@@ -687,7 +687,12 @@ items:
       Los sandboxes de una corrida terminada no sobreviven al proceso (try/finally); sweeper de huérfanos
       (>24h o PID muerto) invocado al inicio de corrida; tests con tmp_path que demuestren ambos.
     priority: 2
-    status: pending
+    # 2026-07-10: YA ESTABA HECHO — _sweep_stale_sandboxes cableado en _create_sandbox
+    # + _cleanup_sandbox en finally desde 6c0eeb5a (Fase 3, 2026-07-09). Item mal
+    # curado (alta sin comprobar prior art interno); el lazo produjo un DUPLICADO
+    # razonable (propuesta ac39fe6b-702, recomendada rechazar). La mecánica del
+    # lazo convergió perfecta en 1 iteración — el error fue el input.
+    status: done
     test_cmd: ["python3", "-m", "pytest", "tests/test_tool_coder.py", "-q"]
 
   - id: graphiti-absorption-study
@@ -706,3 +711,20 @@ items:
     priority: 3
     status: pending
     test_cmd: ["python3", "-m", "mypy", "src/atlas/"]
+
+  - id: project-graph-vault-wiring
+    title: "Cablear el vault Obsidian al tick del grafo — graph_note_neighborhood sirve vacío"
+    why: >
+      Último eslabón real: build_project_graph(vault_root=...) existe y está probado (4360 notas, 26k
+      links el 2026-07-09) pero maintenance_project_graph_tick nunca pasa vault_root — la tool MCP
+      graph_note_neighborhood consulta una tabla ObsidianNote vacía en project_graph.kuzu. Patrón
+      "capacidad completa sin cablear al camino de producción".
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+    acceptance: >
+      El tick pasa vault_root desde env ATLAS_PROJECT_VAULT (opt-in; sin la var, comportamiento actual
+      intacto); test con vault sintético en tmp que demuestre que las notas entran en la misma BD del
+      tick; respetar el patrón copia+swap ya existente.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/test_self_improvement_wiring.py", "-k", "ProjectGraph", "-q"]
