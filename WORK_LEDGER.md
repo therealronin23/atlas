@@ -8,6 +8,31 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **Mañana 2026-07-10 (post-reset): suite 7.5GB→1.9GB, hook vivo, ciclo
+  autónomo completo verificado** —
+  - **RSS de la suite RESUELTO** (2262de41): cache de proceso del modelo ONNX
+    de fastembed (cada carga costaba ~500MB que el allocator no devuelve;
+    verificado con gc: 0 instancias vivas y el RSS se queda). Medido con
+    plugin RSS por test en scope de 4G: antes moría al 22% con 3.86GB; ahora
+    la suite COMPLETA pasa (2957 tests) en 3:48 con pico 1941MB. earlyoom ya
+    no tiene qué matar.
+  - Hook híbrido + derive_test_cmd por targets EN VIVO (e97c8301, subagente
+    Sonnet, verificado aquí): commits ya SIN --no-verify (gate de 6.9s).
+  - La noche validó el ciclo entero SOLO: research 128 hallazgos (48 arXiv)
+    → triage → ingesta → recall e2e; inbox amaneció vacío. Fix posterior:
+    arXiv con frase entre comillas (ce0c388d; sin comillas all: hace OR).
+  - Otra sesión (paralela) cerró tech-8 directo (c396cd2c) y dejó test_cmd
+    con `python` a pelo → runner resuelve python/python3→sys.executable
+    (b64078b3, 3ª aparición del bug).
+  - AGENTS.md grafo-primero aplicado + backlog: status 'deferred' nuevo (los
+    2 mcp-* diferidos dejan de quemar ticks) + runway repuesto con
+    tmp-sandbox-sweeper y graphiti-absorption-study (91f68e37).
+  - graphs.py: ingested_at determinista por posición (bab3f890; _latest_sha
+    era flaky por empate — 1/2960 en la medición).
+  - Pendiente observable: primer run_item convergente del daemon (cola:
+    tmp-sandbox-sweeper primero; monitor sobre Merkle activo). Nota: 2
+    worktrees self-build-item-* filtrados por restarts de la mañana en
+    ~/proyectos — barrerlos a mano o esperar al sweeper del runner.
 - **Ciclo investigación→acción CERRADO + grafo vivo automático + asesino
   SIGTERM identificado (2026-07-09/10, sesión curious-cuddling-forest
   fases 3bis.3/3bis.4/4)** —
