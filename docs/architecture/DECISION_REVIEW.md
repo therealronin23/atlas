@@ -69,11 +69,13 @@ KEEP_WITH_BOUNDARY / MODIFY / REPLACE / DEPRECATE / INVESTIGATE / REJECT.
 
 - **Conflicto**: pack (actor string, status enum, `visible` bool, flat) ≠
   prompt §13 (actor objeto, `causality`, `ui` hints, `visibility` enum).
-- **Veredicto: MODIFY (fusión).** Base = pack (prioridad 4 > 5) con lo del
-  prompt que añade capacidad real: `actor` objeto {type,id}, `causality`
-  {parent_event_id, trace_id}, `audit` {merkle_hash, previous_hash,
-  reversible}, `ui` hints opcionales. `visible: bool` se mantiene (más simple
-  que el enum de 3 valores; el enum cabe después sin romper: additive).
+- **Veredicto: MODIFY (fusión).** Base = pack (prioridad 4 > 5; y sus
+  fixtures son la evidencia ejecutable) con lo del prompt que añade capacidad
+  real como OPCIONAL: `causality` {parent_event_id, trace_id}, `audit`
+  {merkle_hash, previous_hash, reversible}, `ui` hints, `simulated` bool.
+  `actor` se queda string|null en 1.0 (los fixtures lo usan así); el actor
+  estructurado {type,id} entra en 1.1 de forma aditiva. `visible: bool` se
+  mantiene (más simple que el enum de 3 valores; additive después).
   `schema_version` = "1.0". Validación con **pydantic** (ya dep) espejando el
   JSON Schema; sin dependencia `jsonschema` nueva (invariante 6 de AGENTS.md).
 - **Registra**: schemas/event.schema.json + src/atlas/events/schemas.py + test
