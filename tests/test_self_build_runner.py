@@ -130,10 +130,75 @@ def test_derive_test_cmd_finds_convention_named_test(tmp_path: Path) -> None:
     assert cmd == [sys.executable, "-m", "pytest", f"tests/{expected_name}", "-q"]
 
 
+def test_derive_test_cmd_maps_file_target(tmp_path: Path) -> None:
+    """Sin test_cmd explícito y sin match por id: si un target es un
+    fichero .py, se mapea a tests/test_{stem}*.py (2026-07-10, entre el
+    glob por id y el fallback a suite completa)."""
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_memory_trunk.py").write_text("def test_x(): pass\n", encoding="utf-8")
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    item = _item(id="no-id-match-here", targets=("src/atlas/mcp/memory_trunk.py",))
+
+    cmd = runner.derive_test_cmd(item)
+
+    assert cmd == [sys.executable, "-m", "pytest", "tests/test_memory_trunk.py", "-q"]
+
+
+def test_derive_test_cmd_maps_directory_target(tmp_path: Path) -> None:
+    """Target-directorio (termina en '/'): mapea cada .py DIRECTO del
+    directorio (sin recursión) a su test por convención."""
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_extractor.py").write_text("def test_x(): pass\n", encoding="utf-8")
+
+    src_dir = tmp_path / "src" / "atlas" / "knowledge"
+    src_dir.mkdir(parents=True)
+    (src_dir / "extractor.py").write_text("x = 1\n", encoding="utf-8")
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    item = _item(id="no-id-match-here", targets=("src/atlas/knowledge/",))
+
+    cmd = runner.derive_test_cmd(item)
+
+    assert cmd == [sys.executable, "-m", "pytest", "tests/test_extractor.py", "-q"]
+
+
+def test_derive_test_cmd_unions_id_glob_and_targets(tmp_path: Path) -> None:
+    """El match por id (slug del item.id) y los matches por targets se
+    unen, deduplicados, en un único comando pytest con ambas rutas."""
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    id_test_name = "test_f2_6a_caller_wiring_personal_factual.py"
+    (tests_dir / id_test_name).write_text("def test_x(): pass\n", encoding="utf-8")
+    (tests_dir / "test_memory_trunk.py").write_text("def test_x(): pass\n", encoding="utf-8")
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    # id por defecto de _item() coincide con id_test_name; targets por
+    # defecto incluyen src/atlas/mcp/memory_trunk.py.
+    item = _item()
+
+    cmd = runner.derive_test_cmd(item)
+
+    assert cmd == [
+        sys.executable, "-m", "pytest",
+        f"tests/{id_test_name}", "tests/test_memory_trunk.py", "-q",
+    ]
+
+
 def test_derive_test_cmd_falls_back_to_full_suite(tmp_path: Path) -> None:
-    """Sin test_cmd explícito y sin test específico por convención: suite
-    completa con la MISMA invocación que el pre-commit (python -m pytest
-    tests/), no `pytest -q` a pelo — esa colecciona benchmarks rotos."""
+    """Sin test_cmd explícito, sin match por id Y sin targets utilizables:
+    suite completa con la MISMA invocación que el pre-commit (python -m
+    pytest tests/), no `pytest -q` a pelo — esa colecciona benchmarks
+    rotos. item() por defecto trae targets, pero ninguno resuelve a un
+    test real en este tmp_path vacío, así que el fallback sigue disparando."""
     (tmp_path / "tests").mkdir()
 
     runner = SelfBuildRunner(

@@ -183,27 +183,71 @@ class SelfBuildRunner:
 
         Prioridad: 1) campo test_cmd explícito del item; 2) heurística simple
         de nombre de archivo (NO es NLP, solo un glob por convención de
-        nombres: tests/test_{id con '-' -> '_'}*.py); 3) fallback a la suite
-        completa (`pytest -q`).
+        nombres: tests/test_{id con '-' -> '_'}*.py); 2.5) mapeo por
+        item.targets (2026-07-10: entre el glob por id y el fallback, para
+        que items sin id-match pero con targets concretos no caigan a la
+        suite completa — ver _tests_from_targets); unión ordenada y
+        deduplicada de 2 y 2.5; 3) fallback a la suite completa (`pytest -q`),
+        SOLO si ni el id ni los targets producen ningún match.
         """
         if item.test_cmd:
             return list(item.test_cmd)
 
-        # sys.executable -m pytest, NUNCA "pytest" a pelo: la invocación
-        # descubierta 2026-07-09 — `pytest -q` desde la raíz revienta en la
-        # COLECCIÓN (tests/benchmarks importa `scripts`, que solo es
-        # importable con cwd en sys.path, cosa que hace `python -m`). El
-        # pre-commit usa `python -m pytest tests/ -q`; el runner debe medir
-        # con el MISMO gate o toda misión sin test_cmd muere por construcción.
         slug = item.id.replace("-", "_")
         tests_dir = self._repo_root / "tests"
+        id_matches: list[Path] = []
         if tests_dir.is_dir():
-            matches = sorted(tests_dir.glob(f"test_{slug}*.py"))
-            if matches:
-                rel = matches[0].relative_to(self._repo_root)
-                return [sys.executable, "-m", "pytest", str(rel), "-q"]
+            id_matches = sorted(tests_dir.glob(f"test_{slug}*.py"))
+
+        target_matches = self._tests_from_targets(item.targets)
+
+        combined: list[Path] = []
+        seen: set[Path] = set()
+        for candidate in [*id_matches, *target_matches]:
+            if candidate not in seen:
+                seen.add(candidate)
+                combined.append(candidate)
+
+        if combined:
+            # sys.executable -m pytest, NUNCA "pytest" a pelo: la invocación
+            # descubierta 2026-07-09 — `pytest -q` desde la raíz revienta en
+            # la COLECCIÓN (tests/benchmarks importa `scripts`, que solo es
+            # importable con cwd en sys.path, cosa que hace `python -m`). El
+            # pre-commit usa `python -m pytest tests/ -q`; el runner debe
+            # medir con el MISMO gate o toda misión sin test_cmd muere por
+            # construcción.
+            rels = [str(p.relative_to(self._repo_root)) for p in combined]
+            return [sys.executable, "-m", "pytest", *rels, "-q"]
 
         return [sys.executable, "-m", "pytest", "tests/", "-q"]
+
+    def _tests_from_targets(self, targets: tuple[str, ...]) -> list[Path]:
+        """Mapea item.targets (rutas de código, fichero o directorio con '/'
+        final) a tests probables por convención de nombres. Reutiliza
+        _expand_targets para el mismo criterio de directorio-no-recursivo ya
+        usado en el resto del runner. Tope defensivo de 20 ficheros de test
+        (un item mal etiquetado con un target enorme no debe generar un
+        comando pytest gigante)."""
+        tests_dir = self._repo_root / "tests"
+        if not tests_dir.is_dir():
+            return []
+
+        matches: list[Path] = []
+        for rel in self._expand_targets(targets):
+            if not rel.endswith(".py"):
+                continue
+            stem = Path(rel).stem
+            matches.extend(sorted(tests_dir.glob(f"test_{stem}*.py")))
+            if len(matches) >= 20:
+                break
+
+        seen: set[Path] = set()
+        deduped: list[Path] = []
+        for candidate in matches:
+            if candidate not in seen:
+                seen.add(candidate)
+                deduped.append(candidate)
+        return deduped[:20]
 
     # ------------------------------------------------------------------
     # run_item
