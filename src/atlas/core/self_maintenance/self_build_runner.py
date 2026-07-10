@@ -191,7 +191,14 @@ class SelfBuildRunner:
         SOLO si ni el id ni los targets producen ningún match.
         """
         if item.test_cmd:
-            return list(item.test_cmd)
+            cmd = list(item.test_cmd)
+            # `python` a pelo no existe en este sistema (solo python3/venv) —
+            # tercera aparición del mismo bug (2026-07-10: dos fallos reales
+            # 'test_cmd no encontrado' con el test_cmd escrito en backlog.yaml).
+            # LLMs y humanos lo van a volver a escribir: resolverlo aquí.
+            if cmd and cmd[0] in ("python", "python3"):
+                cmd[0] = sys.executable
+            return cmd
 
         slug = item.id.replace("-", "_")
         tests_dir = self._repo_root / "tests"
