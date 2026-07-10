@@ -350,6 +350,9 @@ class TestArxivSource:
 
         def fake_fetch(url: str) -> str:
             assert "export.arxiv.org" in url
+            # Frase entre comillas (%22): sin ellas, all: hace OR y la
+            # ordenación por recencia trae papers de cualquier término.
+            assert "search_query=all:%22temporal+knowledge+graph%22" in url
             return body
 
         scout = PanoramaScout(

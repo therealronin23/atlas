@@ -186,8 +186,12 @@ class PanoramaScout:
         """Busca papers en arXiv (Atom XML, stdlib ElementTree). Ordena por
         fecha de envio descendente — lo NUEVO del tema, coherente con el
         sort=updated de GitHub. Fail-closed por fuente/tema como las demas."""
+        # Frase ENTRE COMILLAS: all: sin comillas hace OR de términos y con
+        # sortBy=submittedDate devuelve lo más nuevo de CUALQUIER término
+        # (verificado 2026-07-10: 'temporal knowledge graph' traía papers de
+        # vídeo). Con comillas, frase exacta + recencia = lo nuevo DEL tema.
         url = (
-            f"{_ARXIV_SEARCH_URL}?search_query=all:{quote_plus(topic)}"
+            f"{_ARXIV_SEARCH_URL}?search_query=all:{quote_plus(chr(34) + topic + chr(34))}"
             f"&sortBy=submittedDate&sortOrder=descending&max_results={self._max_results}"
         )
         decision = self._bridge.check(url)
