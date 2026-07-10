@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/gate.schema.json",
+  "title": "AtlasGate",
+  "description": "Gate de governance: condicion que bloquea acciones hasta aprobacion o política.",
+  "type": "object",
+  "required": [
+    "gate_id",
+    "display_name",
+    "applies_to",
+    "risk_threshold",
+    "approval_mode",
+    "default_decision"
+  ],
+  "properties": {
+    "gate_id": {
+      "type": "string",
+      "pattern": "^gate_[A-Za-z0-9_-]+$"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "applies_to": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "acciones/capacidades cubiertas, p.ej. email.send, fs.delete"
+    },
+    "risk_threshold": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "approval_mode": {
+      "type": "string",
+      "enum": [
+        "human_explicit",
+        "policy_rule",
+        "always_block"
+      ]
+    },
+    "default_decision": {
+      "type": "string",
+      "enum": [
+        "deny",
+        "require_approval"
+      ]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

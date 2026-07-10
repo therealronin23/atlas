@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/connector.schema.json",
+  "title": "AtlasConnector",
+  "description": "Integración externa (Integration Fabric). Nunca secretos planos: credential_reference apunta al almacén local.",
+  "type": "object",
+  "required": [
+    "connector_id",
+    "display_name",
+    "provider",
+    "auth_mode",
+    "credential_reference",
+    "read_capabilities",
+    "write_capabilities",
+    "risk_level",
+    "permission_scope",
+    "sync_status",
+    "health",
+    "memory_policy",
+    "automation_policy",
+    "audit_policy",
+    "mode"
+  ],
+  "properties": {
+    "connector_id": {
+      "type": "string",
+      "pattern": "^conn_[A-Za-z0-9_-]+$"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "auth_mode": {
+      "type": "string",
+      "enum": [
+        "oauth2",
+        "api_key",
+        "hmac",
+        "local",
+        "import_file",
+        "none"
+      ]
+    },
+    "credential_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "referencia opaca (p.ej. env:GMAIL_TOKEN_REF); JAMAS el secreto"
+    },
+    "read_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "write_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "permission_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sync_status": {
+      "type": "string",
+      "enum": [
+        "never",
+        "syncing",
+        "ok",
+        "error",
+        "revoked"
+      ]
+    },
+    "last_sync": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "health": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "ok",
+        "degraded",
+        "down"
+      ]
+    },
+    "memory_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "summaries_only",
+        "full_with_provenance"
+      ]
+    },
+    "automation_policy": {
+      "type": "string",
+      "enum": [
+        "manual_only",
+        "gated",
+        "rules_allowed"
+      ]
+    },
+    "audit_policy": {
+      "type": "string",
+      "enum": [
+        "full",
+        "metadata_only"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "real",
+        "mock",
+        "sandbox"
+      ],
+      "description": "real solo con credenciales presentes; mock/sandbox por defecto"
+    },
+    "revocation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fallback": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "legal_notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

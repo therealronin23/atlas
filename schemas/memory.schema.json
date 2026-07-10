@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/memory.schema.json",
+  "title": "AtlasMemoryRecord",
+  "description": "Registro de memoria para representacion OS. La verdad canonica vive en las capas de ADR-057; esto NUNCA la sustituye.",
+  "type": "object",
+  "required": [
+    "memory_id",
+    "kind",
+    "summary",
+    "provenance",
+    "trust",
+    "created_at"
+  ],
+  "properties": {
+    "memory_id": {
+      "type": "string",
+      "pattern": "^mem_[A-Za-z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "episodic",
+        "semantic",
+        "procedural",
+        "failure",
+        "decision",
+        "contradiction",
+        "identity",
+        "project",
+        "trust",
+        "external_conversation"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "object",
+      "description": "source/raw_ref obligatorios",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "raw_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "imported_from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "additionalProperties": true
+    },
+    "trust": {
+      "type": "string",
+      "enum": [
+        "unverified",
+        "user_stated",
+        "corroborated",
+        "verified"
+      ]
+    },
+    "risk": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "contradicts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
