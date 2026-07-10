@@ -1,0 +1,181 @@
+{
+  "nodes": [
+    {
+      "id": "node_user",
+      "type": "user",
+      "label": "Usuario",
+      "state": "idle",
+      "confidence": 1,
+      "activity": 0.8,
+      "risk": "none",
+      "source": "atlas.identity",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "open",
+        "inspect"
+      ]
+    },
+    {
+      "id": "node_memory",
+      "type": "memory",
+      "label": "Memory Vault",
+      "state": "idle",
+      "confidence": 0.9,
+      "activity": 0.7,
+      "risk": "low",
+      "source": "atlas.memory",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "open",
+        "inspect",
+        "audit"
+      ]
+    },
+    {
+      "id": "node_tools",
+      "type": "tool",
+      "label": "Tools & Adapters",
+      "state": "idle",
+      "confidence": 0.9,
+      "activity": 0.5,
+      "risk": "medium",
+      "source": "atlas.adapters",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "open",
+        "inspect",
+        "connect"
+      ]
+    },
+    {
+      "id": "node_processes",
+      "type": "process",
+      "label": "Processes",
+      "state": "idle",
+      "confidence": 0.9,
+      "activity": 0.3,
+      "risk": "low",
+      "source": "atlas.runtime",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "open",
+        "inspect",
+        "pause"
+      ]
+    },
+    {
+      "id": "node_artifacts",
+      "type": "artifact",
+      "label": "Artifacts",
+      "state": "idle",
+      "confidence": 0.9,
+      "activity": 0.4,
+      "risk": "low",
+      "source": "atlas.artifacts",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "open",
+        "inspect",
+        "export"
+      ]
+    },
+    {
+      "id": "node_runtime",
+      "type": "runtime",
+      "label": "Runtime / Kernel",
+      "state": "idle",
+      "confidence": 1,
+      "activity": 0.6,
+      "risk": "low",
+      "source": "atlas.core",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "open",
+        "inspect",
+        "audit"
+      ]
+    },
+    {
+      "id": "node_accounts",
+      "type": "account",
+      "label": "Connected Accounts",
+      "state": "idle",
+      "confidence": 0.7,
+      "activity": 0.2,
+      "risk": "medium",
+      "source": "atlas.imports",
+      "created_at": null,
+      "updated_at": null,
+      "metadata": {},
+      "actions": [
+        "connect",
+        "import",
+        "inspect"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_user_memory",
+      "source": "node_user",
+      "target": "node_memory",
+      "relation": "owns",
+      "weight": 0.8,
+      "confidence": 1,
+      "evidence": [],
+      "metadata": {}
+    },
+    {
+      "id": "edge_runtime_processes",
+      "source": "node_runtime",
+      "target": "node_processes",
+      "relation": "runs",
+      "weight": 0.7,
+      "confidence": 1,
+      "evidence": [],
+      "metadata": {}
+    },
+    {
+      "id": "edge_tools_processes",
+      "source": "node_tools",
+      "target": "node_processes",
+      "relation": "executes",
+      "weight": 0.6,
+      "confidence": 0.9,
+      "evidence": [],
+      "metadata": {}
+    },
+    {
+      "id": "edge_processes_artifacts",
+      "source": "node_processes",
+      "target": "node_artifacts",
+      "relation": "creates",
+      "weight": 0.5,
+      "confidence": 0.9,
+      "evidence": [],
+      "metadata": {}
+    },
+    {
+      "id": "edge_accounts_memory",
+      "source": "node_accounts",
+      "target": "node_memory",
+      "relation": "imports_into",
+      "weight": 0.4,
+      "confidence": 0.8,
+      "evidence": [],
+      "metadata": {}
+    }
+  ]
+}
