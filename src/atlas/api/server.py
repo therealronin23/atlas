@@ -117,18 +117,19 @@ def create_app(
         process_id: str | None = None,
         parent: str | None = None,
         trace: str | None = None,
+        simulated: bool = True,
     ) -> OsEvent:
         event = OsEvent(
             id=f"evt_{uuid.uuid4().hex[:12]}",
             type=type_,
             timestamp=_now(),
-            source="atlas.api.simulator",
+            source="atlas.api.simulator" if simulated else "atlas.api.bridge",
             actor=actor,
             summary=summary,
             status=status,
             risk=risk,
             visible=True,
-            simulated=True,
+            simulated=simulated,
             payload=payload or {},
             intent_id=intent_id,
             process_id=process_id,
@@ -160,6 +161,43 @@ def create_app(
     @app.get("/memory/summary")
     def memory_summary() -> dict[str, Any]:
         return _memory_summary()
+
+    @app.post("/memory/import")
+    def memory_import(raw: dict[str, Any]) -> dict[str, Any]:
+        """Import REAL (Fase 8): preserva raw, extrae por reglas, emite eventos."""
+        from atlas.api.conversation_import import import_conversation
+
+        result = import_conversation(raw)
+        if not result.already_imported:
+            # Este import SÍ ocurrió (raw preservado en disco): simulated=False.
+            emit(
+                "source.imported",
+                f"Conversación externa importada ({len(result.records)} memorias extraídas)",
+                actor="memory",
+                simulated=False,
+                payload={
+                    "raw_ref": result.source_ref,
+                    "provider": str(raw.get("provider", "unknown")),
+                    "records": len(result.records),
+                    "layer": "os_import_v1",
+                },
+            )
+            if result.records:
+                emit(
+                    "memory.updated",
+                    f"{len(result.records)} registros de memoria OS con provenance",
+                    actor="memory",
+                    simulated=False,
+                    payload={"layer": "os_import_v1", "count": len(result.records)},
+                )
+        return result.to_dict()
+
+    @app.get("/memory/imports")
+    def memory_imports(limit: int = 200) -> dict[str, Any]:
+        from atlas.api.conversation_import import list_imported_records
+
+        records = list_imported_records(limit=limit)
+        return {"count": len(records), "records": records, "layer": "os_import_v1"}
 
     # -- Eventos / timeline / grafo ----------------------------------------
 
