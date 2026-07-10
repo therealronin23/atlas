@@ -559,7 +559,7 @@ items:
       Watcher de mtime en serve() (o reescritura a low-level) que invoque el seam de publish al detectar cambio;
       test que demuestre el push automático. Reabrir cuando el catálogo cambie en caliente con cliente conectado.
     priority: 3
-    status: pending
+    status: deferred  # 2026-07-10: diferido por diseño hasta tener consumidor; el lazo quemó intentos nocturnos (30 turnos + suite 900s) — fuera de next_runnable (OK operador)
 
   - id: mcp-tasks-extension
     title: "Extensión Tasks (async/largo) — construir CON el workflow (SP-E)"
@@ -575,7 +575,7 @@ items:
       Junto a SP-E (workflow Dynamic): declarar la experimental_capability de Tasks + handlers create/get/cancel
       sobre el trabajo async del loop; test del ciclo de vida. No antes de que exista el consumidor.
     priority: 3
-    status: pending
+    status: deferred  # 2026-07-10: diferido por diseño hasta tener consumidor; el lazo quemó intentos nocturnos (30 turnos + suite 900s) — fuera de next_runnable (OK operador)
 
   # 2026-07-09: Fork real — absorción de Aider/Cursor/Codex + Graphify/Obsidian/Kuzu
   # Delegado a Atlas con presión real (3% tokens, deadline 2026-07-10 06:00)
@@ -671,3 +671,38 @@ items:
     # ejecutadas y asertadas contra repo sintético de 3 commits, reingesta sin drift
     # verificada) — commit c8029573.
     status: done
+
+  # --- Reposición 2026-07-10 (runway <3; items reales con procedencia, OK "continuar con todo") ---
+
+  - id: tmp-sandbox-sweeper
+    title: "Barredor de sandboxes ToolCoder en /tmp (tmpfs 4G se llenó y tumbó el escritorio)"
+    why: >
+      Incidente 2026-07-09 (memoria desktop-crashes-root-cause): /tmp tmpfs de 4G lleno, con ~487M de
+      sandboxes de ToolCoder sin barrer como contribuyente principal. Los sandboxes efímeros deben
+      limpiarse al terminar (éxito O fallo) y un sweeper de arranque debe barrer los huérfanos de
+      corridas muertas (mismo patrón que el cleanup de worktrees de tech-7).
+    targets:
+      - "src/atlas/core/tool_coder.py"
+    acceptance: >
+      Los sandboxes de una corrida terminada no sobreviven al proceso (try/finally); sweeper de huérfanos
+      (>24h o PID muerto) invocado al inicio de corrida; tests con tmp_path que demuestren ambos.
+    priority: 2
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/test_tool_coder.py", "-q"]
+
+  - id: graphiti-absorption-study
+    title: "Diseccionar Graphiti (Zep) vs nuestro grafo bitemporal — absorber el patrón útil"
+    why: >
+      Hallazgo nº1 del primer ciclo de investigación autónomo real (research_2026-07-10: Graphiti/Zep,
+      temporal KG para agentes, github.com/getzep/graphiti + 2 hilos de HN). Tenemos grafo bitemporal
+      propio (atlas.core.graphs + project_graph); método adopt-real: descargar→aislar→diseccionar→
+      comparar esquema/queries/invalidación temporal→absorber el patrón útil, NO reescribir el nuestro.
+    targets:
+      - "docs/design/"
+    acceptance: >
+      Doc de disección en docs/inbox/ (entra como 'propuesto' vía triage) con: esquema de Graphiti vs
+      el nuestro, 3 patrones concretos absorbibles (o veredicto honesto de que no aportan), y coste.
+      Sin código de producción en este item; la suite no cambia.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "mypy", "src/atlas/"]

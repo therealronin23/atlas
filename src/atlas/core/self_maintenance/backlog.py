@@ -11,7 +11,11 @@ from typing import Any
 
 import yaml
 
-VALID_STATUSES = {"pending", "doing", "done"}
+# deferred (2026-07-10): diferido por diseño hasta tener consumidor — vive en
+# el YAML como documentación, pero pending()/next_runnable no lo sirven (la
+# noche del 07-10 el lazo quemó intentos de 30 turnos + suite de 900s en un
+# item cuyo propio why decía "sin consumidor todavía → diferido").
+VALID_STATUSES = {"pending", "doing", "done", "deferred"}
 
 # Backoff de cola: tras N fallos consecutivos, un item deja de acaparar el
 # tick y se prueba el siguiente. Sin esto, `items[0]` fallando en bucle
