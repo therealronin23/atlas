@@ -20,7 +20,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -194,7 +194,13 @@ def load_bitemporal_into_kuzu(
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         nodes = 0
-        for sha, graph in snapshots.items():
+        for pos, (sha, graph) in enumerate(snapshots.items()):
+            # ingested_at con offset por POSICIÓN del commit (viejo→nuevo):
+            # con un único `now` para toda la pasada, max(ingested_at) de
+            # _latest_sha empataba entre commits y Kuzu devolvía un sha
+            # arbitrario — graph_importers respondía a veces sobre el commit
+            # viejo (flaky real: test_project_graph cayó así el 2026-07-10).
+            ts = now + timedelta(milliseconds=pos)
             for module, info in graph.items():
                 text = f"{module} imports: {','.join(sorted(info['imports']))}"
                 conn.execute(
@@ -206,7 +212,7 @@ def load_bitemporal_into_kuzu(
                         "path": module,
                         "hash": info["hash"],
                         "sha": sha,
-                        "ts": now,
+                        "ts": ts,
                         "emb": embedder.embed(text),
                     },
                 )
