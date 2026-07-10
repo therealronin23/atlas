@@ -1,0 +1,27 @@
+{
+  "connector_id": "conn_claude_import",
+  "display_name": "Claude conversations import",
+  "provider": "anthropic",
+  "auth_mode": "import_file",
+  "credential_reference": null,
+  "read_capabilities": [
+    "conversations.import",
+    "decisions.extract",
+    "patterns.extract"
+  ],
+  "write_capabilities": [],
+  "risk_level": "low",
+  "permission_scope": [
+    "import:file"
+  ],
+  "sync_status": "never",
+  "last_sync": null,
+  "health": "unknown",
+  "memory_policy": "full_with_provenance",
+  "automation_policy": "manual_only",
+  "audit_policy": "full",
+  "mode": "mock",
+  "revocation": "borrar credencial + revocar en proveedor",
+  "fallback": null,
+  "legal_notes": "import manual de export JSON del usuario; sin scraping (OPEN_QUESTIONS #5)"
+}

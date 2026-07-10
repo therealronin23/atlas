@@ -1,0 +1,56 @@
+[
+  {
+    "gate_id": "gate_outbound",
+    "display_name": "Acciones outbound (email/mensajes/publicar)",
+    "applies_to": [
+      "mail.send",
+      "message.send",
+      "social.publish",
+      "github.issues.create",
+      "github.prs.comment"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Invariante: nada sale de la máquina sin humano."
+  },
+  {
+    "gate_id": "gate_destructive_fs",
+    "display_name": "Borrado/escritura masiva de ficheros",
+    "applies_to": [
+      "fs.delete",
+      "fs.bulk_write"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": null
+  },
+  {
+    "gate_id": "gate_credentials",
+    "display_name": "Tocar credenciales o seguridad",
+    "applies_to": [
+      "credentials.*",
+      "security.config.*"
+    ],
+    "risk_threshold": "critical",
+    "approval_mode": "always_block",
+    "default_decision": "deny",
+    "enabled": true,
+    "notes": "config/governance.json es intocable por agentes (AGENTS.md inv.3)."
+  },
+  {
+    "gate_id": "gate_shell",
+    "display_name": "Ejecución shell fuera de sandbox",
+    "applies_to": [
+      "shell.exec"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "La ruta real ya existe: BwrapJail fail-closed."
+  }
+]
