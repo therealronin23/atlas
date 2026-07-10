@@ -99,27 +99,37 @@ def _check_cli_approval(workspace: Path) -> str:
         "ATLAS_PENDING_HMAC_KEY",
         os.environ.get("ATLAS_PENDING_HMAC_KEY") or os.environ.get("HERMES_API_KEY", ""),
     )
-    orch = Orchestrator(workspace=workspace)
-    intent = "editor write projects/operational_smoke.txt :: hello operational"
-    task = orch.handle_intent(intent)
-    if task.status != TaskStatus.AWAITING_APPROVAL:
-        print(f"ERROR: expected awaiting_approval, got {task.status.value}")
-        sys.exit(1)
-    pending_dir = workspace / "memory" / "pending_approvals"
-    files = [p for p in pending_dir.glob("*.json") if ".executing" not in p.name]
-    if not files:
-        print("ERROR: no pending approval file written")
-        sys.exit(1)
-    result = orch.approve_pending(task.id, approved=True)
-    if result.get("status") != "done":
-        print(f"ERROR approve: {result}")
-        sys.exit(1)
-    out_file = workspace / "projects" / "operational_smoke.txt"
-    if not out_file.exists() or "hello operational" not in out_file.read_text():
-        print("ERROR: editor write did not create expected file")
-        sys.exit(1)
-    print(f"[4/5] CLI approval OK: task_id={task.id}")
-    return task.id
+    previous_decider = os.environ.get("ATLAS_DECIDER")
+    try:
+        # Este smoke valida el surface de pending approvals; si el entorno normal
+        # está en modo autónomo, forzamos un decider humano solo para este subcheck.
+        os.environ["ATLAS_DECIDER"] = "human"
+        orch = Orchestrator(workspace=workspace)
+        intent = "editor write projects/operational_smoke.txt :: hello operational"
+        task = orch.handle_intent(intent)
+        if task.status != TaskStatus.AWAITING_APPROVAL:
+            print(f"ERROR: expected awaiting_approval, got {task.status.value}")
+            sys.exit(1)
+        pending_dir = workspace / "memory" / "pending_approvals"
+        files = [p for p in pending_dir.glob("*.json") if ".executing" not in p.name]
+        if not files:
+            print("ERROR: no pending approval file written")
+            sys.exit(1)
+        result = orch.approve_pending(task.id, approved=True)
+        if result.get("status") != "done":
+            print(f"ERROR approve: {result}")
+            sys.exit(1)
+        out_file = workspace / "projects" / "operational_smoke.txt"
+        if not out_file.exists() or "hello operational" not in out_file.read_text():
+            print("ERROR: editor write did not create expected file")
+            sys.exit(1)
+        print(f"[4/5] CLI approval OK: task_id={task.id}")
+        return task.id
+    finally:
+        if previous_decider is None:
+            os.environ.pop("ATLAS_DECIDER", None)
+        else:
+            os.environ["ATLAS_DECIDER"] = previous_decider
 
 
 def _check_telegram_outbound() -> None:

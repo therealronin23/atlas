@@ -1,0 +1,34 @@
+id: fork_real_vs_shell_2026_07_09
+title: "Fork real vs cascarón: absorción sin depender"
+corroborated: true
+date_created: "2026-07-09"
+verified_by: ["operator"]
+
+lesson: |
+  FORK REAL = absorber patrones internos, no features, sin depender.
+  CASCARÓN = copiar interface, dejar lógica vacía.
+  
+  EJEMPLOS REALES (2026-07-08 delegación):
+  - Aider: NO copies "$ aider file.py" CLI. SÍ absorbe "repo-map con embeddings para relevancia"
+  - Cursor: NO copies VS Code fork. SÍ absorbe "multi-file thinking + composer pattern"
+  - Claude Code: NO depende de token. SÍ absorbe "file handle abstractions + dual-mode CLI/web"
+  
+  CÓMO DIFERENCIAR:
+  - Cascarón: llamas a otra herramienta (subprocess, API, import library externa)
+  - Real: reimplementas el patrón localmente, adaptado a Atlas architecture
+  
+  CRITERIO DE ACEPTACIÓN:
+  Cuando termines absorción, deberías poder:
+  1. Deprecar la dependencia sin perder capacidad
+  2. Superar la herramienta original en benchmark propio
+  3. Adaptar a hardware diferente sin code changes
+
+related_lessons:
+  - adopt_real_not_shell
+  - atlas_unified_substrate_principle
+  - delegar_progressively_en_atlas
+  
+recommendation: |
+  Para Graphify: NO usar como servicio SaaS. Descargar, estudiar, reimplementar en Kuzu.
+  Para Obsidian: NO depender de su editor. Sí de su vault format → parser nuestro.
+  Resultado: Atlas = sustrato completo, sin servicios externos, adaptable a cualquier hardware.
