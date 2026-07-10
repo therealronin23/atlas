@@ -1,0 +1,6 @@
+{
+  "core": "circle_concentric",
+  "gate": "ring_lock",
+  "audit": "fingerprint",
+  "lockdown": "shield_alert"
+}

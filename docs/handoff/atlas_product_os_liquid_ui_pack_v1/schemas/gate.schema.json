@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gate",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "gate_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

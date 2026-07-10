@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MemoryCandidate",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "candidate_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "source_fragments": {
+      "type": "array"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "requires_review": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,6 @@
+{
+  "ceremony_id": "ceremony_martinez_demo",
+  "action": "simulate_filing",
+  "real_submit_enabled": false,
+  "requires_gate": true
+}

@@ -1,0 +1,3 @@
+{"event": "objective.created", "objective_id": "prepare_client_filing", "demo": true}
+{"event": "workflow.simulated", "workflow_id": "wf_gestoria_martinez", "demo": true}
+{"event": "submission.blocked_real_action", "reason": "demo_mode", "demo": true}

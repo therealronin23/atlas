@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConnectorPack",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "pack_id": {
+      "type": "string"
+    },
+    "sector_id": {
+      "type": "string"
+    },
+    "connectors": {
+      "type": "array"
+    },
+    "setup_order": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

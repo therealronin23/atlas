@@ -1,0 +1,10 @@
+{
+  "threads": [
+    {
+      "thread_id": "email_001",
+      "subject": "Documentos trimestre",
+      "client_id": "client_martinez_demo",
+      "demo": true
+    }
+  ]
+}

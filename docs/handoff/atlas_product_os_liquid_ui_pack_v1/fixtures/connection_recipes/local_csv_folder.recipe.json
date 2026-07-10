@@ -1,0 +1,8 @@
+{
+  "connector_id": "local_csv_folder",
+  "human_name": "CSV/XLSX Folder",
+  "category": "files",
+  "recommended_route": "file_import",
+  "difficulty": "easy",
+  "default_mode": "read_only"
+}

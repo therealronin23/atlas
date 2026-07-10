@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LockdownEvent",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

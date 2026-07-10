@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "APISpecImport",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "import_id": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

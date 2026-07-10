@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CanonicalityPolicy",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "entity_kind": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string"
+    },
+    "source_of_truth": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

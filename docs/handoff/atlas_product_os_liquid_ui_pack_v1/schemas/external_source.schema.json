@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExternalSource",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "source_id": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "privacy_class": {
+      "type": "string"
+    },
+    "raw_preserved": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

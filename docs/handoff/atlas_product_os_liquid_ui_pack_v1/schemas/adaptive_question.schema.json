@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AdaptiveQuestion",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "question_id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "options": {
+      "type": "array"
+    },
+    "why": {
+      "type": "string"
+    },
+    "affects": {
+      "type": "array"
+    },
+    "validation": {
+      "type": "object"
+    },
+    "next": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

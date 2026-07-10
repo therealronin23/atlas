@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sector",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "sector_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "domain_objects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "workbenches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "sector_id",
+    "label"
+  ]
+}

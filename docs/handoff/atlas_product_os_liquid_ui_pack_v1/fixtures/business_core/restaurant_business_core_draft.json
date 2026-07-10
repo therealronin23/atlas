@@ -1,0 +1,12 @@
+{
+  "business_core_id": "bc_rest_demo",
+  "sector_id": "restauracion_hosteleria",
+  "status": "draft",
+  "entities": [
+    "product",
+    "menu_item",
+    "supplier",
+    "stock_item",
+    "promotion"
+  ]
+}

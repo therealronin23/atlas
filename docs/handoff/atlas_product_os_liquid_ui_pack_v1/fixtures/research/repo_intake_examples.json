@@ -1,0 +1,9 @@
+{
+  "examples": [
+    {
+      "name": "n8n",
+      "intended_action": "study_assimilate",
+      "risk_class": "L5"
+    }
+  ]
+}

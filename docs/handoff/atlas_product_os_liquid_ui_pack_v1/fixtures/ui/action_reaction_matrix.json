@@ -1,0 +1,14 @@
+{
+  "actions": [
+    {
+      "action": "simulate",
+      "reaction": "dotted_lines",
+      "gate": false
+    },
+    {
+      "action": "submit",
+      "reaction": "submission_ceremony",
+      "gate": true
+    }
+  ]
+}

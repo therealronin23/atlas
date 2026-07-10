@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SourceTrust",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "source_id": {
+      "type": "string"
+    },
+    "trust": {
+      "type": "string"
+    },
+    "allowed_use": {
+      "type": "array"
+    },
+    "forbidden_use": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

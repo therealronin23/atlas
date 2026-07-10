@@ -1,0 +1,394 @@
+{
+  "sectors": [
+    {
+      "sector_id": "01_gestoria_fiscal_contable",
+      "label": "Gestoría / fiscal / contable",
+      "objects": [
+        "cliente",
+        "factura",
+        "recibo",
+        "albarán",
+        "impuesto",
+        "nómina",
+        "expediente",
+        "certificado"
+      ],
+      "workbenches": [
+        "Atlas Sheet fiscal",
+        "Case Board",
+        "Workflow Canvas",
+        "Document Review",
+        "Submission Ceremony"
+      ]
+    },
+    {
+      "sector_id": "02_legal_despacho",
+      "label": "Legal / despacho",
+      "objects": [
+        "cliente",
+        "caso",
+        "contrato",
+        "demanda",
+        "prueba",
+        "plazo",
+        "juzgado",
+        "escrito"
+      ],
+      "workbenches": [
+        "Legal Case Board",
+        "Evidence Graph",
+        "Deadline Monitor",
+        "Document Review"
+      ]
+    },
+    {
+      "sector_id": "03_sanidad_clinicas",
+      "label": "Sanidad / clínicas",
+      "objects": [
+        "paciente",
+        "cita",
+        "informe",
+        "prueba",
+        "consentimiento",
+        "receta",
+        "historial"
+      ],
+      "workbenches": [
+        "Patient Timeline",
+        "Clinical Notes",
+        "Consent Gate",
+        "Appointment Flow"
+      ]
+    },
+    {
+      "sector_id": "04_educacion",
+      "label": "Educación",
+      "objects": [
+        "alumno",
+        "curso",
+        "clase",
+        "tarea",
+        "evaluación",
+        "tutoría",
+        "material"
+      ],
+      "workbenches": [
+        "Course Builder",
+        "Student Map",
+        "Assignment Review"
+      ]
+    },
+    {
+      "sector_id": "05_construccion_arquitectura",
+      "label": "Construcción / arquitectura",
+      "objects": [
+        "obra",
+        "plano",
+        "presupuesto",
+        "proveedor",
+        "certificación",
+        "licencia",
+        "incidencia"
+      ],
+      "workbenches": [
+        "Site Board",
+        "Budget Sheet",
+        "Plan Review"
+      ]
+    },
+    {
+      "sector_id": "06_inmobiliaria",
+      "label": "Inmobiliaria",
+      "objects": [
+        "inmueble",
+        "propietario",
+        "comprador",
+        "visita",
+        "contrato",
+        "lead",
+        "documento"
+      ],
+      "workbenches": [
+        "Property Board",
+        "Lead Pipeline",
+        "Visit Scheduler"
+      ]
+    },
+    {
+      "sector_id": "07_retail_comercio",
+      "label": "Retail / comercio",
+      "objects": [
+        "producto",
+        "stock",
+        "proveedor",
+        "pedido",
+        "venta",
+        "cliente",
+        "ticket"
+      ],
+      "workbenches": [
+        "Inventory Sheet",
+        "Supplier Workflow",
+        "Sales Signals"
+      ]
+    },
+    {
+      "sector_id": "08_restauracion_hosteleria",
+      "label": "Restauración / hostelería",
+      "objects": [
+        "menú",
+        "proveedor",
+        "reserva",
+        "stock",
+        "empleado",
+        "pedido",
+        "caja",
+        "turno"
+      ],
+      "workbenches": [
+        "Menu Planner",
+        "Stock Sheet",
+        "Shift Board",
+        "Local Campaign Studio"
+      ]
+    },
+    {
+      "sector_id": "09_ecommerce",
+      "label": "E-commerce",
+      "objects": [
+        "producto",
+        "pedido",
+        "cliente",
+        "devolución",
+        "campaña",
+        "transportista"
+      ],
+      "workbenches": [
+        "Order Control",
+        "Returns Flow",
+        "Product Content Studio"
+      ]
+    },
+    {
+      "sector_id": "10_logistica",
+      "label": "Logística",
+      "objects": [
+        "envío",
+        "ruta",
+        "vehículo",
+        "almacén",
+        "incidencia",
+        "entrega",
+        "conductor"
+      ],
+      "workbenches": [
+        "Route Board",
+        "Incident Flow",
+        "Warehouse Sheet"
+      ]
+    },
+    {
+      "sector_id": "11_industria_fabricacion",
+      "label": "Industria / fabricación",
+      "objects": [
+        "orden",
+        "máquina",
+        "lote",
+        "calidad",
+        "mantenimiento",
+        "proveedor"
+      ],
+      "workbenches": [
+        "Production Board",
+        "Quality Gate",
+        "Maintenance Timeline"
+      ]
+    },
+    {
+      "sector_id": "12_servicios_tecnicos",
+      "label": "Servicios técnicos",
+      "objects": [
+        "ticket",
+        "cliente",
+        "equipo",
+        "visita",
+        "repuesto",
+        "garantía"
+      ],
+      "workbenches": [
+        "Field Service Board",
+        "Technician Mobile Flow"
+      ]
+    },
+    {
+      "sector_id": "13_ventas_crm",
+      "label": "Ventas / CRM",
+      "objects": [
+        "lead",
+        "oportunidad",
+        "cliente",
+        "reunión",
+        "propuesta",
+        "contrato"
+      ],
+      "workbenches": [
+        "Sales Pipeline",
+        "Account Memory",
+        "Proposal Builder"
+      ]
+    },
+    {
+      "sector_id": "14_marketing_redes",
+      "label": "Marketing / redes",
+      "objects": [
+        "campaña",
+        "post",
+        "audiencia",
+        "métrica",
+        "asset",
+        "calendario"
+      ],
+      "workbenches": [
+        "Campaign Studio",
+        "Social Gate",
+        "Content Memory"
+      ]
+    },
+    {
+      "sector_id": "15_rrhh",
+      "label": "RRHH",
+      "objects": [
+        "candidato",
+        "empleado",
+        "contrato",
+        "nómina",
+        "evaluación",
+        "ausencia"
+      ],
+      "workbenches": [
+        "Candidate Pipeline",
+        "Employee File",
+        "Onboarding Flow"
+      ]
+    },
+    {
+      "sector_id": "16_finanzas_seguros",
+      "label": "Finanzas / seguros",
+      "objects": [
+        "póliza",
+        "cliente",
+        "riesgo",
+        "cartera",
+        "operación",
+        "reclamación"
+      ],
+      "workbenches": [
+        "Risk Workbench",
+        "Portfolio Sheet",
+        "Claims Flow"
+      ]
+    },
+    {
+      "sector_id": "17_investigacion",
+      "label": "Investigación",
+      "objects": [
+        "paper",
+        "fuente",
+        "cita",
+        "claim",
+        "evidencia",
+        "contradicción"
+      ],
+      "workbenches": [
+        "Research Desk",
+        "Claim Graph",
+        "Citation Inspector"
+      ]
+    },
+    {
+      "sector_id": "18_software_it_seguridad",
+      "label": "Software / IT / seguridad",
+      "objects": [
+        "repo",
+        "issue",
+        "PR",
+        "commit",
+        "test",
+        "alerta",
+        "incidente"
+      ],
+      "workbenches": [
+        "Repo Map",
+        "Incident Console",
+        "Diff Review"
+      ]
+    },
+    {
+      "sector_id": "19_escritura_creativo",
+      "label": "Escritura / creatividad",
+      "objects": [
+        "manuscrito",
+        "escena",
+        "personaje",
+        "nota",
+        "estilo",
+        "versión"
+      ],
+      "workbenches": [
+        "Writing Desk",
+        "Character Map",
+        "Scene Timeline"
+      ]
+    },
+    {
+      "sector_id": "20_diseno_multimedia",
+      "label": "Diseño / multimedia",
+      "objects": [
+        "asset",
+        "briefing",
+        "versión",
+        "cliente",
+        "formato",
+        "entrega"
+      ],
+      "workbenches": [
+        "Design Board",
+        "Asset Library",
+        "Review Flow"
+      ]
+    },
+    {
+      "sector_id": "21_admin_publica_ong",
+      "label": "Administración pública / ONG",
+      "objects": [
+        "expediente",
+        "ciudadano",
+        "ayuda",
+        "documento",
+        "plazo",
+        "informe"
+      ],
+      "workbenches": [
+        "Public Case Board",
+        "Compliance Review"
+      ]
+    },
+    {
+      "sector_id": "22_vida_personal_familia",
+      "label": "Vida personal / familia",
+      "objects": [
+        "calendario",
+        "salud",
+        "compras",
+        "documentos",
+        "objetivos",
+        "rutinas"
+      ],
+      "workbenches": [
+        "Personal Command Center",
+        "Family Timeline",
+        "Document Vault"
+      ]
+    }
+  ]
+}

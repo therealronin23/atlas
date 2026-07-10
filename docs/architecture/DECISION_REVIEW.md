@@ -122,3 +122,38 @@ KEEP_WITH_BOUNDARY / MODIFY / REPLACE / DEPRECATE / INVESTIGATE / REJECT.
   útil se destila en docs/architecture/ y ADRs reales. Motivo: el propio
   operador considera que docs largos no curados contaminan (memoria
   feedback-root-docs-are-operator-curated).
+
+## D11 — Rediseño visual JARVIS del shell (petición 2026-07-10 tarde)
+
+- **Contexto**: el operador pidió acabado enterprise/JARVIS para atlas-shell;
+  horas después entregó atlas_product_os_liquid_ui_pack_v1 cuyo DO_NOT_DO
+  prohíbe "polish the web harness as final UX" y "cheap Jarvis".
+- **Veredicto: SUPERSEDED.** El pack (constitución de producto más reciente)
+  gana: el shell React queda declarado VALIDATION HARNESS (README en
+  ui/atlas-shell/). La calidad visual final pertenece a la superficie nativa
+  futura (Slint/wgpu, diferida) gobernada por UI_QUALITY_GATE. No se escribió
+  código del rediseño; nada que revertir.
+
+## D12 — Schemas laxos del pack vs patrón estricto del repo
+
+- **Veredicto: MODIFY (endurecer).** El pack trae contratos con required:[] y
+  additionalProperties:true; el repo valida contratos estrictos con espejos
+  pydantic + tests de paridad. La "improvement law" de la constitución permite
+  reforzar sin diluir: los 10 schemas núcleo de Fase 15 se escriben estrictos
+  conservando los nombres de campo del pack.
+
+## D13 — Prefijo de rutas API `/atlas/*` sugerido por el prompt
+
+- **Veredicto: MODIFY.** El bridge existente expone rutas sin prefijo
+  (/health, /events, /connectors...). Las nuevas superficies siguen el estilo
+  vigente: /connections/*, /business/*, /integrations/health. Repo real >
+  prompt.
+
+## D14 — PolicyEngine nuevo vs evaluador v1 de gates
+
+- **Veredicto: EXTEND, no duplicar.** El evaluador v1 (patrones de acción →
+  gates.json, fail-closed) se mantiene para /permissions/evaluate. El
+  PolicyEngine de Fase 15 CONSUME los mismos gates y añade capability,
+  data_class, provenance e invariantes duros en código (no relajables
+  borrando fixtures). Toda superficie nueva (connections/business) evalúa por
+  PolicyEngine. Convergencia total = candidata Fase 16.

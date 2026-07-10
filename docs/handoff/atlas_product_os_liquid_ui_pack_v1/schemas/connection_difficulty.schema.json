@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConnectionDifficulty",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "difficulty": {
+      "type": "string"
+    },
+    "human_label": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

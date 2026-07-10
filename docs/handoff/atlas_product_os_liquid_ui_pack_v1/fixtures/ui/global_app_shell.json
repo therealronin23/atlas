@@ -1,0 +1,9 @@
+{
+  "regions": [
+    "top_bar",
+    "left_rail",
+    "main_workbench",
+    "right_inspector",
+    "bottom_timeline"
+  ]
+}

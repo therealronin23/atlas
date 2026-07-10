@@ -1,0 +1,14 @@
+{
+  "app_profile_id": "legacy_accounting_app",
+  "connection_route": "desktop_accessibility",
+  "allowed_actions": [
+    "open_client",
+    "export_invoices_csv",
+    "read_case_file"
+  ],
+  "forbidden_actions": [
+    "submit_tax_form",
+    "delete_client"
+  ],
+  "requires_visible_session": true
+}

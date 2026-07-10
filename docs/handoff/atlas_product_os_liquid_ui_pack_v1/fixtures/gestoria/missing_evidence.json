@@ -1,0 +1,9 @@
+{
+  "missing": [
+    {
+      "missing_id": "miss_001",
+      "label": "Factura asociada a albarán dn_001",
+      "action": "request_client"
+    }
+  ]
+}

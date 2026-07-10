@@ -1,0 +1,10 @@
+{
+  "states": [
+    "raw",
+    "extracted",
+    "needs_review",
+    "accepted",
+    "doubtful",
+    "excluded"
+  ]
+}
