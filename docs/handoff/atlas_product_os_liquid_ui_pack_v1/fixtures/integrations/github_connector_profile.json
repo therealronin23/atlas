@@ -1,0 +1,14 @@
+{
+  "connector_id": "github",
+  "connection_methods": [
+    "oauth",
+    "api",
+    "webhooks"
+  ],
+  "default_mode": "read_only",
+  "capabilities": [
+    "repo.read",
+    "issues.read",
+    "pulls.read"
+  ]
+}

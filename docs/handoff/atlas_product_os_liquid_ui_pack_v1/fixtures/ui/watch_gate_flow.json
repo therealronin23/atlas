@@ -1,0 +1,10 @@
+{
+  "flow": [
+    "alert",
+    "approve_minor",
+    "deny",
+    "pause",
+    "lockdown",
+    "open_mobile"
+  ]
+}

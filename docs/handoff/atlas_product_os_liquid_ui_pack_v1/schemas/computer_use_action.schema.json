@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ComputerUseAction",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "action_id": {
+      "type": "string"
+    },
+    "target_app": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "requires_gate": {
+      "type": "boolean"
+    },
+    "visible": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

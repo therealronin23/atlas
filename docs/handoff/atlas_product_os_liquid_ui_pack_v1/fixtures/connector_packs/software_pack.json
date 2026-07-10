@@ -1,0 +1,19 @@
+{
+  "pack_id": "software_pack",
+  "connectors": [
+    "github",
+    "local_repo",
+    "ci_cd",
+    "claude_anthropic",
+    "openai",
+    "terminal_sandbox"
+  ],
+  "setup_order": [
+    "github",
+    "local_repo",
+    "ci_cd",
+    "claude_anthropic",
+    "openai",
+    "terminal_sandbox"
+  ]
+}

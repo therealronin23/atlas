@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UIIcon",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "icon_id": {
+      "type": "string"
+    },
+    "semantic_role": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,10 @@
+{
+  "documents": [
+    {
+      "doc_id": "doc_invoice_001",
+      "kind": "invoice_pdf",
+      "hash": "sha256:demo",
+      "demo": true
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AtlasSheet",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "sheet_id": {
+      "type": "string"
+    },
+    "objective_id": {
+      "type": "string"
+    },
+    "columns": {
+      "type": "array"
+    },
+    "rows": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

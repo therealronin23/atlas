@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkbenchMapping",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "sector_id": {
+      "type": "string"
+    },
+    "objective_id": {
+      "type": "string"
+    },
+    "workbenches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "sector_id",
+    "workbenches"
+  ]
+}

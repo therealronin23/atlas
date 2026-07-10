@@ -1,0 +1,21 @@
+{
+  "screens": [
+    "Core Home",
+    "Objective Intake",
+    "Liquid Workbench",
+    "Atlas Sheet",
+    "Workflow Canvas",
+    "Document Review",
+    "External Thought Import",
+    "Memory Vault",
+    "Connections",
+    "Device Control",
+    "Control Plane",
+    "Security Center",
+    "Submission Ceremony",
+    "Mobile Companion",
+    "Watch Gate",
+    "Connection Store",
+    "Business Setup Workbench"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "states": [
+    "simulated",
+    "waiting_approval",
+    "approved",
+    "denied",
+    "locked"
+  ]
+}

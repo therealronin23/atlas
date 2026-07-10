@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SectorLens",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "sector_id": {
+      "type": "string"
+    },
+    "vocabulary": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "iconography": {
+      "type": "object"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "sector_id"
+  ]
+}

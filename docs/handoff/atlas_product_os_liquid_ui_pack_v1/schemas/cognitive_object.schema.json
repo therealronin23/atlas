@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CognitiveObject",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "object_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "provenance": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

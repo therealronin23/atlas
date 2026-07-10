@@ -1,0 +1,22 @@
+{
+  "session_id": "rest_onboarding_demo",
+  "sector_id": "restauracion_hosteleria",
+  "answers": [
+    {
+      "q": "sales_channels",
+      "a": [
+        "local",
+        "delivery"
+      ]
+    },
+    {
+      "q": "has_menu",
+      "a": "pdf_image"
+    },
+    {
+      "q": "stock_control",
+      "a": "more_or_less"
+    }
+  ],
+  "status": "draft"
+}

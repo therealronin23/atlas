@@ -1,0 +1,13 @@
+{
+  "business_core_id": "bc_gestoria_demo",
+  "sector_id": "gestoria_fiscal_contable",
+  "status": "draft",
+  "entities": [
+    "client",
+    "case_file",
+    "invoice",
+    "receipt",
+    "document",
+    "deadline"
+  ]
+}

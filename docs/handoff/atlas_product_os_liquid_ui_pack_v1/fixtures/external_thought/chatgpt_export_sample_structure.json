@@ -1,0 +1,13 @@
+{
+  "conversations": [
+    {
+      "id": "conv_demo",
+      "messages": [
+        {
+          "author": "user",
+          "text": "Atlas no debe ser dashboard."
+        }
+      ]
+    }
+  ]
+}

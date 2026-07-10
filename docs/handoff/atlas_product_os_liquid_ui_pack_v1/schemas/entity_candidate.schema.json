@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EntityCandidate",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "candidate_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "source_refs": {
+      "type": "array"
+    },
+    "requires_review": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

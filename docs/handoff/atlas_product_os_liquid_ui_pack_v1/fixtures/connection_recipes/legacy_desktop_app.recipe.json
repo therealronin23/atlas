@@ -1,0 +1,8 @@
+{
+  "connector_id": "legacy_desktop_app",
+  "human_name": "Legacy Desktop App",
+  "category": "apps_without_api",
+  "recommended_route": "desktop_assist",
+  "difficulty": "technical",
+  "default_mode": "visible_read_export"
+}

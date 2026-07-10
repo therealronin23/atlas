@@ -1,0 +1,10 @@
+{
+  "candidates": [
+    {
+      "kind": "contact",
+      "label": "Cliente Demo",
+      "confidence": 0.82,
+      "requires_review": true
+    }
+  ]
+}

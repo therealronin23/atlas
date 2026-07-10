@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConnectionRoute",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "route_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "fallbacks": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ToolRegistryEntry",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "tool_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "array"
+    },
+    "risk_class": {
+      "type": "string"
+    },
+    "descriptor_hash": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

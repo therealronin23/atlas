@@ -1,0 +1,21 @@
+{
+  "pack_id": "restaurante_pack",
+  "connectors": [
+    "pos",
+    "stock_csv",
+    "suppliers",
+    "delivery",
+    "google_business_profile",
+    "whatsapp_business_platform",
+    "design_assets"
+  ],
+  "setup_order": [
+    "pos",
+    "stock_csv",
+    "suppliers",
+    "delivery",
+    "google_business_profile",
+    "whatsapp_business_platform",
+    "design_assets"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuthMethod",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "auth_method_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "scopes": {
+      "type": "array"
+    },
+    "requires_manual_secret": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,16 @@
+{
+  "workflow_id": "wf_gestoria_martinez",
+  "nodes": [
+    "client_lookup",
+    "invoice_fetch",
+    "document_parse",
+    "atlas_sheet_populate",
+    "validation_check",
+    "human_review",
+    "signature_filing_gate",
+    "submission_simulated",
+    "audit_result",
+    "memory_write"
+  ],
+  "simulated": true
+}

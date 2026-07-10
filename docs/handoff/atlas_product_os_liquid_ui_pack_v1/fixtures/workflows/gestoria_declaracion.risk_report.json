@@ -1,0 +1,7 @@
+{
+  "risk": "high",
+  "blocked_actions": [
+    "real_submit",
+    "certificate_use"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "connector_id": "whatsapp_personal_import",
+  "human_name": "WhatsApp Personal Import",
+  "category": "communication",
+  "recommended_route": "manual_export_import",
+  "difficulty": "restricted",
+  "default_mode": "import_only",
+  "safe_defaults": {
+    "send": false,
+    "scrape": false
+  }
+}

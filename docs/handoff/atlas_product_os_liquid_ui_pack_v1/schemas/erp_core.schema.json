@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ERPCore",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "erp_id": {
+      "type": "string"
+    },
+    "customers": {
+      "type": "array"
+    },
+    "suppliers": {
+      "type": "array"
+    },
+    "products": {
+      "type": "array"
+    },
+    "invoices": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

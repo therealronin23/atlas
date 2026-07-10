@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RepoIntake",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "intended_action": {
+      "type": "string"
+    },
+    "risk_class": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

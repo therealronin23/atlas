@@ -1,0 +1,6 @@
+{
+  "adapter": "computer_use",
+  "action": "submit",
+  "allowed": false,
+  "reason": "high_risk_fallback"
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LiquidWorkbench",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "workbench_id": {
+      "type": "string"
+    },
+    "objective_id": {
+      "type": "string"
+    },
+    "sector_id": {
+      "type": "string"
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_level": {
+      "type": "string"
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "workbench_id",
+    "objective_id"
+  ]
+}

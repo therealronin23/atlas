@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "pulse": "static_badge",
+    "flow": "progress_line",
+    "crystallize": "state_change"
+  }
+}
