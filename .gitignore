@@ -113,3 +113,10 @@ docs/*.log
 .agents/skills/
 skills-lock.json
 .autobuild/
+/1/
+# Estado runtime del lazo (contadores/cadencias) — evidencia en Merkle, no en git
+workspace/self_build/
+workspace/research/
+workspace/knowledge/
+# Salida de builds de graphify (mal ubicada bajo src/, no es código)
+src/graphify-out/
