@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/capability.schema.json",
+  "title": "AtlasCapability",
+  "description": "Capacidad declarada: unidad mínima de permiso que un conector/acción puede pedir. Toda acción peligrosa declara capacidad + riesgo + clase de dato + gate.",
+  "type": "object",
+  "required": [
+    "capability",
+    "risk",
+    "data_class",
+    "description",
+    "gate_required"
+  ],
+  "properties": {
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$"
+    },
+    "risk": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "data_class": {
+      "type": "string",
+      "enum": [
+        "public",
+        "internal",
+        "personal",
+        "sensitive",
+        "credentials"
+      ],
+      "description": "clase de dato máxima que la capacidad toca"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gate_required": {
+      "type": "boolean"
+    },
+    "gate_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^gate_[A-Za-z0-9_-]+$"
+    }
+  },
+  "additionalProperties": false
+}

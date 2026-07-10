@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/connection_recipe.schema.json",
+  "title": "AtlasConnectionRecipe",
+  "description": "Receta de conexión humana (Easy Connection Layer): cómo conectar un sistema conocido por su nombre, con ruta segura, permisos explicados y capacidades gateadas. Conectar debe ser fácil; actuar debe ser gobernado.",
+  "type": "object",
+  "required": [
+    "connector_id",
+    "human_name",
+    "category",
+    "recommended_route",
+    "fallback_routes",
+    "difficulty",
+    "default_mode",
+    "safe_defaults",
+    "capabilities",
+    "gated_capabilities",
+    "forbidden_capabilities",
+    "setup_steps",
+    "permissions_explainer",
+    "demo"
+  ],
+  "properties": {
+    "connector_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "human_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "communication",
+        "ai_provider",
+        "crm",
+        "erp_accounting",
+        "ecommerce",
+        "files_documents",
+        "databases",
+        "pos_retail_restaurant",
+        "no_api_apps"
+      ]
+    },
+    "recommended_route": {
+      "$ref": "#/$defs/route"
+    },
+    "fallback_routes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/route"
+      }
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "guided",
+        "technical",
+        "expert"
+      ]
+    },
+    "default_mode": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "read_draft",
+        "import_only",
+        "full_gated"
+      ],
+      "description": "modo con el que nace la conexión; ampliar exige gate"
+    },
+    "safe_defaults": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "description": "mapa acción→permitida-por-defecto (send/delete SIEMPRE false en recetas sanas)"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "capacidades concedidas al conectar (solo lectura/borrador)"
+    },
+    "gated_capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "capacidad → gate_id que la desbloquea con humano"
+    },
+    "forbidden_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "capacidades que esta receta JAMÁS concede (p.ej. whatsapp personal send)"
+    },
+    "setup_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "step_id",
+          "kind",
+          "description"
+        ],
+        "properties": {
+          "step_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "user_action",
+              "manual_secret",
+              "external_page",
+              "file_pick"
+            ]
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "permissions_explainer": {
+      "type": "object",
+      "required": [
+        "will",
+        "will_not"
+      ],
+      "properties": {
+        "will": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "will_not": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "en lenguaje llano: qué hará Atlas y qué NO hará"
+    },
+    "credential": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "auth_mode",
+        "storage"
+      ],
+      "properties": {
+        "auth_mode": {
+          "type": "string",
+          "enum": [
+            "oauth2",
+            "api_key",
+            "hmac",
+            "local",
+            "import_file",
+            "none"
+          ]
+        },
+        "storage": {
+          "type": "string",
+          "const": "credential_reference_only",
+          "description": "único almacenamiento permitido: referencia opaca, jamás plaintext"
+        }
+      },
+      "additionalProperties": false
+    },
+    "legal_notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "demo": {
+      "type": "boolean",
+      "description": "true = receta de demostración con datos falsos"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "route": {
+      "type": "string",
+      "enum": [
+        "native_api",
+        "managed_oauth",
+        "openapi_rest",
+        "asyncapi_events",
+        "webhooks",
+        "mcp",
+        "database_file",
+        "import_export_batch",
+        "browser_extension_bridge",
+        "desktop_automation",
+        "computer_use",
+        "human_manual"
+      ],
+      "description": "peldaño de la Connection Ladder (API-first; computer_use penúltimo recurso)"
+    }
+  }
+}

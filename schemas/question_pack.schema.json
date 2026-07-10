@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/question_pack.schema.json",
+  "title": "AtlasQuestionPack",
+  "description": "Pack de preguntas concretas por sector (Adaptive Question Engine). Prohibidas las preguntas vagas: cada una declara por qué se hace, qué hará Atlas con la respuesta y qué estructura produce.",
+  "type": "object",
+  "required": [
+    "pack_id",
+    "sector_id",
+    "display_name",
+    "questions"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "pattern": "^qp_[a-z0-9_]+$"
+    },
+    "sector_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "question": {
+      "type": "object",
+      "required": [
+        "question_id",
+        "label",
+        "why_this_is_needed",
+        "what_atlas_will_do_with_it",
+        "input_type",
+        "options",
+        "validation",
+        "followup_rules",
+        "skip_allowed",
+        "uncertainty_allowed",
+        "resulting_entities",
+        "resulting_capabilities",
+        "resulting_workbenches"
+      ],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "pregunta en lenguaje humano llano, concreta"
+        },
+        "why_this_is_needed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "what_atlas_will_do_with_it": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_type": {
+          "type": "string",
+          "enum": [
+            "single_choice",
+            "multi_choice",
+            "text",
+            "number",
+            "file_ref"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "option_id",
+              "label"
+            ],
+            "properties": {
+              "option_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9_]+$"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "obligatoriamente no vacío para *_choice (lo valida el motor)"
+        },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "min_selected": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max_selected": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "pattern": {
+              "type": "string"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "followup_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "when_option",
+              "ask"
+            ],
+            "properties": {
+              "when_option": {
+                "type": "string"
+              },
+              "ask": {
+                "type": "string",
+                "description": "question_id a encolar si se elige esa opción"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "skip_allowed": {
+          "type": "boolean"
+        },
+        "uncertainty_allowed": {
+          "type": "boolean",
+          "description": "true = la rama 'no sé' es válida y no bloquea"
+        },
+        "resulting_entities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resulting_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resulting_workbenches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

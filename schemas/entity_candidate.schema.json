@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/entity_candidate.schema.json",
+  "title": "AtlasEntityCandidate",
+  "description": "Candidato a entidad extraído de evidencia (emails, facturas, Excel). requires_review es const true: NINGÚN candidato se promociona a entidad sin humano.",
+  "type": "object",
+  "required": [
+    "candidate_id",
+    "kind",
+    "label",
+    "confidence",
+    "source_refs",
+    "proposed_data",
+    "requires_review"
+  ],
+  "properties": {
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^cand_[A-Za-z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "customer",
+        "contact",
+        "company",
+        "supplier",
+        "product",
+        "service",
+        "order",
+        "invoice",
+        "receipt",
+        "delivery_note",
+        "stock_item",
+        "task",
+        "opportunity",
+        "quote",
+        "project",
+        "case_file",
+        "document",
+        "communication",
+        "payment",
+        "event",
+        "note",
+        "risk",
+        "evidence"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "proposed_data": {
+      "type": "object"
+    },
+    "requires_review": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "additionalProperties": false
+}

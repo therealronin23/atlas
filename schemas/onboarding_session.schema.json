@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/onboarding_session.schema.json",
+  "title": "AtlasOnboardingSession",
+  "description": "Sesión de onboarding de negocio: Atlas pregunta → usuario responde → Atlas muestra qué entendió → usuario confirma/corrige. El lazo de feedback es obligatorio.",
+  "type": "object",
+  "required": [
+    "session_id",
+    "sector_id",
+    "pack_id",
+    "status",
+    "answers",
+    "pending_questions",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "pattern": "^obs_[A-Za-z0-9_-]+$"
+    },
+    "sector_id": {
+      "type": "string"
+    },
+    "pack_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "preview",
+        "confirmed",
+        "abandoned"
+      ]
+    },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "question_id",
+          "value",
+          "uncertain",
+          "interpreted",
+          "confirmed"
+        ],
+        "properties": {
+          "question_id": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "string",
+              "array",
+              "number",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "null = pregunta saltada o 'no sé'"
+          },
+          "uncertain": {
+            "type": "boolean",
+            "description": "true = respondió 'no sé' (rama válida)"
+          },
+          "interpreted": {
+            "type": "string",
+            "description": "lo que Atlas entendió, mostrado al usuario"
+          },
+          "confirmed": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "understanding_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "proposed": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "entities",
+        "capabilities",
+        "workbenches",
+        "connector_pack"
+      ],
+      "properties": {
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workbenches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "connector_pack": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "pending_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "demo": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
