@@ -39,6 +39,11 @@ class OsEventStore:
         with self._lock:
             self._listeners.append(listener)
 
+    def unsubscribe(self, listener: Listener) -> None:
+        with self._lock:
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+
     def append(self, event: OsEvent) -> OsEvent:
         line = event.model_dump_json(exclude_none=False)
         with self._lock:

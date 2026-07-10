@@ -988,6 +988,17 @@ def dashboard(host: str, port: int) -> None:
     serve(host=host, port=port)
 
 
+@cli.command("os-bridge")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address (solo localhost por seguridad).")
+@click.option("--port", default=7341, show_default=True, type=int, help="Puerto del bridge Atlas OS.")
+def os_bridge(host: str, port: int) -> None:
+    """Arranca el Atlas OS Bridge (ADR-058): API + WS de eventos en localhost:7341."""
+    from atlas.api.server import serve  # noqa: PLC0415
+    console.print(f"\n[bold cyan]Atlas OS Bridge[/bold cyan] → http://{host}:{port}")
+    console.print("[dim]Ctrl+C para detener. WS de eventos en /events.[/dim]\n")
+    serve(host=host, port=port)
+
+
 @cli.command()
 @click.option("--mode", default="auto", type=click.Choice(["auto", "real", "stub"]), show_default=True, help="Modo de voz.")
 @click.option("--whisper-model", default="small", show_default=True, help="Tamaño modelo Whisper (tiny|base|small|medium).")
