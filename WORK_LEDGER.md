@@ -29,10 +29,27 @@ de escribir: `atlas reality --json`.
     tmp-sandbox-sweeper y graphiti-absorption-study (91f68e37).
   - graphs.py: ingested_at determinista por posición (bab3f890; _latest_sha
     era flaky por empate — 1/2960 en la medición).
-  - Pendiente observable: primer run_item convergente del daemon (cola:
-    tmp-sandbox-sweeper primero; monitor sobre Merkle activo). Nota: 2
-    worktrees self-build-item-* filtrados por restarts de la mañana en
-    ~/proyectos — barrerlos a mano o esperar al sweeper del runner.
+  - **PRIMERA CONVERGENCIA AUTÓNOMA (05:25 UTC)**: run_item
+    tmp-sandbox-sweeper → success en 1 iteración → propuesta ColdUpdate
+    ac39fe6b-702 sin intervención. Criterio de cierre de la campaña CUMPLIDO
+    mecánicamente. La propuesta se RECHAZÓ con evidencia (cold_update.rejected
+    en Merkle): era un duplicado — el sweeper existe cableado desde 6c0eeb5a
+    y el item se dio de alta sin comprobar prior art interno (lección:
+    curar backlog exige grep del prior art ANTES; el lazo ejecuta fielmente
+    inputs malos). La fuga REAL de /tmp era tests CLI (120 dirs, cf481b2a).
+  - Cierre total 2026-07-10 (orden del operador): worktrees filtrados
+    retirados (trabajo huérfano del watcher archivado en
+    atlas-cold-updates/orphan-mcp-subs-watcher-2026-07-10.patch),
+    queue_state limpio, backoff persistente de adopción MCP + fail-fast
+    sin secretos (f1c156a1 — ai.agenttrust acumulaba 530 stacktraces),
+    trabajo sin commitear de la sesión paralela verificado y en main
+    (trunk_prepare/preflight 79 tests; docs_index_audit que el triage
+    carga en runtime; pin kuzu; lecciones), estado runtime del lazo a
+    .gitignore, test_ssrf_bridge con DNS determinista (flaky real bajo
+    carga). Quedan para el operador: mcpevo.md, scripts/hermes_local.sh,
+    scripts/ollama_cpu.sh (dudosos, no los toco) y la reorg de docs en
+    cuarentena. **SELLO: suite completa 2961 passed / 0 failed en 3:38
+    (scope 4G) — verde entera, sin earlyoom, sin flaky.**
 - **Ciclo investigación→acción CERRADO + grafo vivo automático + asesino
   SIGTERM identificado (2026-07-09/10, sesión curious-cuddling-forest
   fases 3bis.3/3bis.4/4)** —
@@ -79,8 +96,11 @@ de escribir: `atlas reality --json`.
   LangGraph ni nuevas dependencias. Catálogo vivo curado en raíces Atlas
   (`atlas-memory`, `atlas-graph`, `atlas-knowledge`, `atlas-operating`) y regla
   de absorción temporal explicitada: clonar en `/tmp`/worktree, extraer patrón,
-  borrar repo. Pendiente: medir si el preflight aumenta uso real del MCP y
-  decidir si `trunk_exec_readonly` merece fase 2.
+  borrar repo. 2026-07-10: el código quedó COMMITEADO (estaba solo en el
+  árbol vivo; verificado 79 tests + mypy y cerrado en main). Pendiente:
+  medir si el preflight aumenta uso real del MCP (necesita días de
+  ToolUsageCounter — no cerrable hoy) y decidir si `trunk_exec_readonly`
+  merece fase 2.
 - **CAMPAÑA "construir directo, darle el conocimiento a Atlas" COMPLETA
   (2026-07-09, plan curious-cuddling-forest)** — inversión de método dictada
   por el operador: Claude construye directo lo que falta, Atlas recibe el
