@@ -240,3 +240,32 @@ def test_queue_state_roundtrip_and_corrupt_file_fail_open(tmp_path: Path) -> Non
     p.write_text("{corrupto", encoding="utf-8")
     assert load_queue_state(p) == {}
     assert load_queue_state(tmp_path / "no-existe.json") == {}
+
+
+def test_deferred_status_loads_but_is_never_served(tmp_path: Path) -> None:
+    """'deferred' = diferido por diseño hasta tener consumidor: carga sin
+    error (documentación viva en el YAML) pero pending() no lo devuelve —
+    la noche del 2026-07-10 el lazo quemó intentos reales (30 turnos + suite
+    de 900s) en un item cuyo propio why decía 'sin consumidor → diferido'."""
+    path = tmp_path / "backlog.yaml"
+    path.write_text(
+        "items:\n"
+        "  - id: vivo\n"
+        "    title: t\n"
+        "    why: w\n"
+        "    targets: []\n"
+        "    acceptance: a\n"
+        "    priority: 1\n"
+        "    status: pending\n"
+        "  - id: dormido\n"
+        "    title: t\n"
+        "    why: w\n"
+        "    targets: []\n"
+        "    acceptance: a\n"
+        "    priority: 1\n"
+        "    status: deferred\n",
+        encoding="utf-8",
+    )
+    items = load_backlog(path)
+    assert {i.id for i in items} == {"vivo", "dormido"}
+    assert [i.id for i in pending(items)] == ["vivo"]

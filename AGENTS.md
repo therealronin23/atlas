@@ -8,18 +8,24 @@ live evidence wins.
 Pre-flight, cheap and factual:
 
 1. Run `PYTHONPATH=src atlas reality --json` before making claims about Atlas state.
-2. Locate the work in the shallowest matrioska node: `Gate -> ADR -> Fase -> Tipo`.
+2. Structure = graph first: answer "who imports X / blast radius / churn /
+   dependencies" from the live project graph (MCP trunk → `trunk_invoke_readonly`
+   with `graph_importers`, `graph_blast_radius`, `graph_imports_of`,
+   `graph_churn`, `graph_overview`) BEFORE reading files or docs. Docs are
+   past/future; the graph is the present (auto-regenerated after every commit
+   by the scheduler's project-graph cycle).
+3. Locate the work in the shallowest matrioska node: `Gate -> ADR -> Fase -> Tipo`.
    Tipo 2 correctness/foundation comes before Tipo 1 build-on-top; Tipo 3 is a real
    wall to route around or accept.
-3. Pick the fitting skill and actually use it: plan -> planning, tests -> TDD,
+4. Pick the fitting skill and actually use it: plan -> planning, tests -> TDD,
    build -> incremental implementation, bug -> debugging, review -> code review,
    cleanup -> simplification, ADR/doc -> documentation.
-4. Preserve the single authority model:
+5. Preserve the single authority model:
    - `WORK_LEDGER.md` = live WHERE/status and next action only.
    - `docs/design/atlas_ecosystem_map.md` = canonical ecosystem map.
    - Design docs = HOW/detail/checklists.
    - `MEMORY.md` and `feedback-*.md` = WHY/lessons/manias.
-5. Update ledger, design note, and memory in the same commit as the work.
+6. Update ledger, design note, and memory in the same commit as the work.
 
 Definition of done: relevant tests green, mypy strict clean when code changes,
 ledger updated, design-doc note present, and honest limits declared.
@@ -146,6 +152,8 @@ requires an explicit external dependency decision.
 
 1. Activate the venv.
 2. Run `atlas reality --json`.
-3. Read `WORK_LEDGER.md` and `docs/design/atlas_ecosystem_map.md`.
-4. Read only the design doc named by the active node.
-5. Prefer small reversible changes with tests.
+3. Query the live graph for the code area you will touch (`graph_importers` /
+   `graph_blast_radius` via the MCP trunk).
+4. Read `WORK_LEDGER.md` and `docs/design/atlas_ecosystem_map.md`.
+5. Read only the design doc named by the active node.
+6. Prefer small reversible changes with tests.
