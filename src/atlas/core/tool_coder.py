@@ -37,6 +37,7 @@ from atlas.core.git_autocommit import commit_changes
 from atlas.core.inference_hub import InferenceHub, InferenceLevel, InferenceRequest
 from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
 from atlas.core.repo_map import build_repo_map
+from atlas.core.trunk_preflight import build_trunk_preflight_section
 
 __all__ = ["ToolCoder"]
 
@@ -482,6 +483,7 @@ class ToolCoder:
         institutional_raw = self._build_institutional_section(context_files=context_files)
         self._institutional_files = _saved_institutional
         institutional_section = institutional_raw + "\n\n" if institutional_raw else ""
+        trunk_preflight_section = build_trunk_preflight_section(self._repo_root, task)
 
         avoid_raw = _build_avoid_section(self._lesson_recaller, self._lesson_store, task)
         avoid_section = avoid_raw.strip("\n") + "\n\n" if avoid_raw else ""
@@ -526,7 +528,7 @@ class ToolCoder:
             "role": "user",
             "content": _SYSTEM_TASK.format(
                 task=task, institutional_section=institutional_section,
-                avoid_section=avoid_section + plan_section,
+                avoid_section=trunk_preflight_section + avoid_section + plan_section,
                 repo_map_section=repo_map_section, files_section=files_section,
             ),
         }]

@@ -49,7 +49,7 @@ class TestAtlasMcpConfig:
         for expected in [
             "trunk_sectors", "trunk_subsectors", "trunk_tools",
             "trunk_kinds", "trunk_health", "trunk_catalog", "trunk_find",
-            "trunk_recommend_stack",
+            "trunk_recommend_stack", "trunk_prepare",
             "list_skills", "get_skill",
             "trunk_list_roots", "trunk_selfcheck",
         ]:

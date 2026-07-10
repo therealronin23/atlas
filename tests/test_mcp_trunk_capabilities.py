@@ -142,6 +142,26 @@ def test_recommend_stack_tool_returns_small_shortlist() -> None:
     assert all("next_action" in item for item in out["items"])
 
 
+def test_prepare_tool_returns_context_packet() -> None:
+    pytest.importorskip("mcp")
+    import asyncio
+
+    from mcp.shared.memory import create_connected_server_and_client_session as connect
+
+    async def run() -> dict:
+        async with connect(_server()) as client:
+            res = await client.call_tool(
+                "trunk_prepare", {"goal": "refactor atlas graph", "limit": 5}
+            )
+            return res.structuredContent or {}
+
+    out = asyncio.run(run())
+    assert out["status"] == "ready"
+    assert 1 <= len(out["recommended"]) <= 5
+    assert "catalog://manifest" in out["resources"]
+    assert all("usable_now" in item for item in out["recommended"])
+
+
 def test_elicitation_confirm() -> None:
     pytest.importorskip("mcp")
     import asyncio

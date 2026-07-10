@@ -31,6 +31,7 @@ from atlas.core.patch_format import (
 from atlas.core.conditional_rules import load_conditional_rule
 from atlas.core.git_autocommit import commit_changes
 from atlas.core.repo_map import build_repo_map
+from atlas.core.trunk_preflight import build_trunk_preflight_section
 
 VERSION = '1.0.0'
 
@@ -417,6 +418,7 @@ class AtlasCoder:
         # vacía, cero cambio de comportamiento.
         avoid_raw = _build_avoid_section(self._lesson_recaller, self._lesson_store, task)
         avoid_section_in_prompt = avoid_raw.strip("\n") + "\n\n" if avoid_raw else ""
+        trunk_preflight_section = build_trunk_preflight_section(self._repo_root, task)
 
         # Repo-map (técnica #14): se construye una sola vez, no por iteración
         # (misma economía que institutional_section — es visión periférica,
@@ -478,7 +480,7 @@ class AtlasCoder:
                 task=task,
                 files_section=files_section,
                 institutional_section=institutional_section_in_prompt,
-                avoid_section=avoid_section_in_prompt,
+                avoid_section=trunk_preflight_section + avoid_section_in_prompt,
                 repo_map_section=repo_map_section,
                 instructions_section=instructions_section,
             )
