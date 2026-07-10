@@ -8,7 +8,31 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/architecture/CAPABILITY_FABRIC.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/architecture/CONTROL_PLANE.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/architecture/DECISION_REVIEW.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/architecture/EVENT_KERNEL.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/architecture/GOVERNANCE_KERNEL.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/architecture/INTEGRATION_FABRIC.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/architecture/MEMORY_OS.md
   type: conocimiento
   status: vigente
   verified: null
@@ -349,6 +373,10 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/CONTINUATION_STATE.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/IMPLEMENTATION_LOG.md
   type: conocimiento
   status: vigente
@@ -357,11 +385,19 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/NEXT_AI_INSTRUCTIONS.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/OPEN_QUESTIONS.md
   type: conocimiento
   status: vigente
   verified: null
 - path: docs/continuation/REPO_AUDIT.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/TESTING_STATUS.md
   type: conocimiento
   status: vigente
   verified: null
@@ -984,6 +1020,10 @@ entries:
 - path: docs/handoff/atlas_fable5_handoff_v1/tickets/TICKETS_PHASE_0_TO_4.md
   type: conocimiento
   status: propuesto
+  verified: null
+- path: docs/improvement/IMPROVEMENT_DOCTRINE.md
+  type: conocimiento
+  status: vigente
   verified: null
 - path: docs/knowledge/research_2026-07-09.md
   type: conocimiento

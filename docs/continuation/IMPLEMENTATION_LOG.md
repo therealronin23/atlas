@@ -2,6 +2,27 @@
 
 Registro append-only por sesión. Entradas nuevas ARRIBA.
 
+## Sesión 2026-07-10 — cierre (mismo día, continuación de la entrada de abajo)
+
+- **Fase 2-3**: 12 schemas raíz + espejos pydantic (test de paridad cazó
+  `payload` con default indebido) + Event Kernel completo (store/player/
+  core_bridge) — 20 tests.
+- **Fase 4**: bridge 7341 read-only (guard estático anti-Orchestrator), WS
+  push, evaluador fail-closed, 15 tests + smoke curl real.
+- **Fase 5-6**: atlas-shell (Vite5/React18/TS/d3-force), verificada
+  conduciéndola con navegador (bug real: guard StrictMode mataba el WS —
+  arreglado y documentado en el código).
+- **Fase 7-9**: 5 conectores mock + 4 gates + Security Center; import de
+  conversaciones con raw preservado + provenance (4 tests).
+- **Fase 10**: continuidad completa (CONTINUATION_STATE, NEXT_AI_INSTRUCTIONS,
+  TESTING_STATUS), docs de arquitectura por kernel, IMPROVEMENT_DOCTRINE
+  apuntando al pipeline real de digestión (no duplicado).
+- Suite COMPLETA del repo al cierre: **3049 passed, 1 skipped, 4:40** con 2
+  "failed" en TestSelfBuildCycleWiring que son ARTEFACTO de correr la suite
+  bajo ATLAS_NESTED_TEST_RUN=1 (la guardia anti-recursión corta el ciclo que
+  esos tests esperan ejecutar); re-corridos sin la variable: 4/4 verdes.
+  Suites OS: 39 tests verdes; mypy strict limpio; npm build limpio.
+
 ## Sesión 2026-07-10 — Fable 5, arranque Atlas OS (master build prompt)
 
 - **Contexto**: el operador entregó `atlas_fable5_handoff_v1.zip` +
