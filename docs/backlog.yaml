@@ -779,3 +779,24 @@ items:
     priority: 3
     status: pending
     test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_verdict_report.py", "-q"]
+
+  # --- Absorción Graphiti (disección 2026-07-10, docs/inbox/graphiti_dissection_2026-07-10.md) ---
+
+  - id: mem-1-fact-time-vs-system-time
+    title: "Separar tiempo-del-hecho de tiempo-de-sistema en el índice de memoria"
+    why: >
+      Graphiti (Zep) distingue valid_at/invalid_at (cuándo el hecho fue/dejó de ser cierto EN EL
+      MUNDO) de expired_at (cuándo el SISTEMA lo invalidó). Nuestro valid_from_ns/valid_until_ns en
+      SqliteMemoryIndex es solo tiempo de sistema — perdemos la fecha real del hecho cuando una
+      memoria describe algo pasado ingerido tarde. Disección con evidencia:
+      docs/inbox/graphiti_dissection_2026-07-10.md#1 (patrón coste S).
+    targets:
+      - "src/atlas/memory/record.py"
+      - "src/atlas/memory/memory_index.py"
+    acceptance: >
+      MemoryRecord acepta fact_valid_at_ns/fact_invalid_at_ns opcionales (default None = sin cambios);
+      migración idempotente de columnas (patrón _migrate_temporal); recall_temporal razona
+      opcionalmente sobre fact_valid_at_ns; test as_of anclado al tiempo del hecho, no al de ingesta.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/test_memory_index.py", "-x", "-q"]
