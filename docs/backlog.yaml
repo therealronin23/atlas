@@ -386,7 +386,7 @@ items:
       juez mejora >10% sobre baseline, registrar como "viable"; de lo contrario, "no costo-eficaz".
       Doc con hallazgos; suite sin cambios (investig. no cableada).
     priority: 3
-    status: pending
+    status: deferred  # 2026-07-10: techo medido — el lazo produce diff vacío en investigación abierta; SUSTITUIDO por el despiece f2-6b-1/2/3 (campaña x10)
     # 2026-07-10: 3 fallos de backoff sin evidencia Merkle localizable (el
     # contador es anterior al fix de captura de evidencia, commit 3b75136d).
     # test_cmd=None hacía que CADA iteración pagara la suite completa
@@ -709,7 +709,7 @@ items:
       el nuestro, 3 patrones concretos absorbibles (o veredicto honesto de que no aportan), y coste.
       Sin código de producción en este item; la suite no cambia.
     priority: 3
-    status: pending
+    status: deferred  # 2026-07-10: reasignado a la Fase B de la campaña (disección por Sonnet con adopt-real); si B halla patrón absorbible, dará de alta el item mecánico del wrapper
     test_cmd: ["python3", "-m", "mypy", "src/atlas/"]
 
   - id: project-graph-vault-wiring
@@ -728,3 +728,54 @@ items:
     priority: 3
     status: pending
     test_cmd: ["python3", "-m", "pytest", "tests/test_self_improvement_wiring.py", "-k", "ProjectGraph", "-q"]
+
+  # --- Despiece f2-6b (2026-07-10): investigación abierta → 3 pasos mecánicos ---
+
+  - id: f2-6b-1-gen-judge-pairs
+    title: "f2-6b paso 1: generador determinista de pares (lección, etiqueta) sintéticos"
+    why: >
+      Primer paso mecánico del despiece de f2-6b (el item abierto le quedó grande al constructor:
+      diff vacío el 2026-07-10). Un script puro y determinista que genere N pares (texto de lección,
+      etiqueta factual|personal) con seed fija, variedad léxica y proporción configurable — la
+      verdad-fundamental sobre la que medirá el paso 2.
+    targets:
+      - "tests/benchmarks/"
+    acceptance: >
+      tests/benchmarks/gen_judge_pairs.py: función generate_pairs(n, seed) -> list[dict] con claves
+      text/label, determinista (misma seed = mismos pares), y CLI que escribe JSON. Test que fija
+      determinismo, formato y proporción de clases.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_gen_judge_pairs.py", "-q"]
+
+  - id: f2-6b-2-judge-vs-baseline-runner
+    title: "f2-6b paso 2: runner juez-LLM vs baseline determinista sobre los pares del paso 1"
+    why: >
+      Segundo paso mecánico: evaluar un clasificador LLM (InferenceHub L1) contra un baseline
+      determinista (regla por keywords) sobre los pares de f2-6b-1, emitiendo accuracy por clase
+      en JSON. El hub se inyecta (tests con fake, cero red).
+    targets:
+      - "tests/benchmarks/"
+    acceptance: >
+      tests/benchmarks/judge_vs_baseline.py: evaluate(pairs, judge, baseline) -> dict con accuracy
+      de ambos + por clase; CLI que lee el JSON del paso 1 y escribe resultados. Test con juez fake
+      (respuestas fijadas) y baseline real.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_vs_baseline.py", "-q"]
+
+  - id: f2-6b-3-verdict-report
+    title: "f2-6b paso 3: informe con veredicto viable/no-costo-eficaz desde el JSON del paso 2"
+    why: >
+      Cierre del despiece: render de informe markdown a docs/inbox/ (entra como 'propuesto' vía
+      triage) con el veredicto de la aceptación original de f2-6b: juez viable si mejora >10%
+      sobre baseline; si no, 'no costo-eficaz'. Sin LLM: es un render determinista.
+    targets:
+      - "tests/benchmarks/"
+    acceptance: >
+      tests/benchmarks/judge_verdict_report.py: render(results) -> str markdown con veredicto según
+      el umbral, y CLI que escribe a docs/inbox/. Test del render con resultados sintéticos en
+      ambos lados del umbral.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_verdict_report.py", "-q"]
