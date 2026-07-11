@@ -453,7 +453,15 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/phase_recovery/F15_F16_RECONCILIATION_REPORT.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/phase_recovery/GRAPH_MEMORY_DOCS_SYNC_AUDIT.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase_recovery/NEXT_AI_INSTRUCTIONS_AFTER_RECOVERY.md
   type: conocimiento
   status: vigente
   verified: null
@@ -481,11 +489,19 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/phase_recovery/PHASE_RECOVERY_FINAL_VERDICT.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/phase_recovery/PHASE_SOURCE_INDEX.md
   type: conocimiento
   status: vigente
   verified: null
 - path: docs/continuation/phase_recovery/PROMPT_TASK_ASSIMILATION_REPORT.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase_recovery/backfill/PHASE_5_6_BACKFILL_REPORT.md
   type: conocimiento
   status: vigente
   verified: null
