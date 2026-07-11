@@ -13,6 +13,7 @@ import type {
 } from "./core/types";
 import { DEFAULT_PREFERENCES } from "./core/types";
 import { EventInspector } from "./components/EventInspector";
+import { HarnessPanel } from "./components/HarnessPanel";
 import { ExecutionPipeline } from "./components/ExecutionPipeline";
 import { GraphLegend, LivingGraph } from "./components/LivingGraph";
 import { MemoryVault } from "./components/MemoryVault";
@@ -31,7 +32,8 @@ type View =
   | "fabric"
   | "permissions"
   | "security"
-  | "personalization";
+  | "personalization"
+  | "harness";
 
 const PREFS_KEY = "atlas-os-preferences";
 
@@ -150,6 +152,7 @@ export default function App() {
           {nav("permissions", "▣ Permissions")}
           {nav("security", "⛨ Security Center")}
           {nav("personalization", "✦ Personalización")}
+          {nav("harness", "⚑ Harness")}
         </nav>
         <main className="main">
           {view === "command" && (
@@ -247,6 +250,12 @@ export default function App() {
             <div className="panel" style={{ flex: 1 }}>
               <header>Personalización · efectos reales, no decorativos</header>
               <Personalization prefs={prefs} onChange={setPrefs} />
+            </div>
+          )}
+          {view === "harness" && (
+            <div className="panel" style={{ flex: 1 }}>
+              <header>Harness · conexiones + gates</header>
+              <HarnessPanel />
             </div>
           )}
         </main>
