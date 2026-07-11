@@ -93,6 +93,52 @@ def _memory_summary() -> dict[str, Any]:
         return {"real": False, "status": "UNVERIFIED", "detail": str(exc)}
 
 
+def _self_build_summary(limit: int = 50) -> dict[str, Any]:
+    """Lectura READ-ONLY del ledger de ColdUpdateManager (ADR-025). Jamás
+    instancia ColdUpdateManager aquí: su __init__ barre worktrees huérfanos
+    (efecto lateral de escritura) — solo se lee `proposals.json` del disco,
+    igual que `_memory_summary` lee sqlite sin instanciar el índice pesado."""
+    path = _REPO_ROOT.parent / "atlas-cold-updates" / "proposals.json"
+    if not path.exists():
+        return {"real": False, "status": "BLOCKED_BY_MISSING_DEPENDENCY",
+                "detail": f"no existe {path}"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"real": False, "status": "UNVERIFIED", "detail": str(exc)}
+
+    proposals: list[dict[str, Any]] = data.get("proposals", [])
+    by_status: dict[str, int] = {}
+    by_origin: dict[str, int] = {}
+    by_risk: dict[str, int] = {}
+    for p in proposals:
+        by_status[p.get("status", "unknown")] = by_status.get(p.get("status", "unknown"), 0) + 1
+        by_origin[p.get("origin", "unknown")] = by_origin.get(p.get("origin", "unknown"), 0) + 1
+        by_risk[p.get("risk", "unknown")] = by_risk.get(p.get("risk", "unknown"), 0) + 1
+
+    recent = sorted(proposals, key=lambda p: p.get("created_at", ""), reverse=True)[:limit]
+    recent_slim = [
+        {
+            "id": p.get("id"),
+            "intent": p.get("intent"),
+            "status": p.get("status"),
+            "origin": p.get("origin"),
+            "risk": p.get("risk"),
+            "created_at": p.get("created_at"),
+            "updated_at": p.get("updated_at"),
+        }
+        for p in recent
+    ]
+    return {
+        "real": True,
+        "total": len(proposals),
+        "by_status": by_status,
+        "by_origin": by_origin,
+        "by_risk": by_risk,
+        "recent": recent_slim,
+    }
+
+
 def create_app(
     store: OsEventStore | None = None,
     fixtures_dir: Path | None = None,
@@ -163,6 +209,10 @@ def create_app(
     @app.get("/memory/summary")
     def memory_summary() -> dict[str, Any]:
         return _memory_summary()
+
+    @app.get("/self-build/summary")
+    def self_build_summary(limit: int = 50) -> dict[str, Any]:
+        return _self_build_summary(limit=limit)
 
     @app.post("/memory/import")
     def memory_import(raw: dict[str, Any]) -> dict[str, Any]:

@@ -190,3 +190,23 @@ def test_memory_summary_shape(client: TestClient) -> None:
         assert body["records"] >= 0
     else:
         assert body["status"] in {"BLOCKED_BY_MISSING_DEPENDENCY", "UNVERIFIED"}
+
+
+def test_self_build_summary_shape(client: TestClient) -> None:
+    body = client.get("/self-build/summary").json()
+    assert "real" in body
+    if body["real"]:
+        assert body["total"] >= 0
+        assert isinstance(body["by_status"], dict)
+        assert isinstance(body["recent"], list)
+        if body["recent"]:
+            first = body["recent"][0]
+            assert {"id", "intent", "status", "origin", "risk"} <= first.keys()
+    else:
+        assert body["status"] in {"BLOCKED_BY_MISSING_DEPENDENCY", "UNVERIFIED"}
+
+
+def test_self_build_summary_respects_limit(client: TestClient) -> None:
+    body = client.get("/self-build/summary?limit=3").json()
+    if body["real"]:
+        assert len(body["recent"]) <= 3

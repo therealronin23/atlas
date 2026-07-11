@@ -100,6 +100,27 @@ export interface QuestionPacksResponse {
   packs: QuestionPack[];
 }
 
+export interface SelfBuildProposal {
+  id: string;
+  intent: string;
+  status: string;
+  origin: string;
+  risk: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SelfBuildSummary {
+  real: boolean;
+  status?: string;
+  detail?: string;
+  total?: number;
+  by_status?: Record<string, number>;
+  by_origin?: Record<string, number>;
+  by_risk?: Record<string, number>;
+  recent?: SelfBuildProposal[];
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
@@ -149,6 +170,8 @@ export const api = {
   gatesOpen: () => get<GatesOpen>("/gates/open"),
   sectors: () => get<SectorsResponse>("/sectors"),
   questionPacks: () => get<QuestionPacksResponse>("/business/question-packs"),
+  selfBuildSummary: (limit = 50) =>
+    get<SelfBuildSummary>(`/self-build/summary?limit=${limit}`),
 };
 
 export function connectEventsWs(onEvent: (e: OsEvent) => void, onState: (up: boolean) => void): () => void {
