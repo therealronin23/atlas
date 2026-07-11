@@ -129,6 +129,59 @@ def test_unknown_capability_is_deny_not_allow(bare_engine: PolicyEngine) -> None
     assert decision.decision == "deny"
 
 
+@pytest.mark.parametrize("corpus_file", [
+    "memory_poisoning_attempt.md",
+    "prompt_injection_indirect_email.md",
+    "prompt_injection_pdf_ocr.txt",
+    "malicious_github_issue.md",
+])
+def test_corpus_attacks_denied_when_carried_as_external_provenance(
+    corpus_file: str, bare_engine: PolicyEngine,
+) -> None:
+    """Ata cada fichero del corpus a su mitigación determinista (antes eran
+    peso muerto: copiados sin test — hallazgo de la auditoría). El contenido
+    del fichero es la ORDEN externa; la capacidad que intenta disparar
+    (memory.write para memory poisoning, email.send para 'send credentials',
+    etc.) se deniega por provenance no confiable, no por leer el texto."""
+    text = (SECURITY_DIR / corpus_file).read_text(encoding="utf-8").lower()
+    # Elegimos la capacidad que el ataque intenta provocar según su contenido.
+    if "email" in text or "send" in text or "credential" in text:
+        capability = "email.send"
+    elif "memory" in text or "from now on" in text:
+        capability = "memory.write"
+    else:
+        capability = "files.read"
+    decision = bare_engine.evaluate(PolicyRequest(
+        capability=capability, provenance="external_content",
+    ))
+    assert decision.decision == "deny"
+    assert decision.policy_id == "pol_hard_untrusted_provenance"
+
+
+def test_crm_bulk_export_requires_gate(bare_engine: PolicyEngine) -> None:
+    """Criterio de aceptación #7 del pack (MODULE 9): la exportación masiva
+    de CRM exige gate. Antes: la capacidad existía con gate pero NINGÚN test
+    lo probaba (hallazgo de la auditoría)."""
+    decision = bare_engine.evaluate(PolicyRequest(capability="crm.bulk_export"))
+    assert decision.decision == "require_gate"
+    assert decision.gate_id == "gate_data_export"
+
+
+def test_expected_policy_decisions_corpus_summary_holds(bare_engine: PolicyEngine) -> None:
+    """Ata expected_policy_decisions.json (antes huérfano) a comportamiento
+    real: sus 3 afirmaciones deben cumplirse en el motor."""
+    expected = _load("expected_policy_decisions.json")
+    # 1) contenido no confiable no puede llamar tools/capacidades:
+    untrusted = bare_engine.evaluate(PolicyRequest(
+        capability="files.read", provenance="external_content"))
+    assert (untrusted.decision != "deny") is expected["untrusted_content_can_call_tools"]
+    # 2) enviar exige gate (nunca allow directo):
+    send = bare_engine.evaluate(PolicyRequest(capability="email.send"))
+    assert (send.decision == "require_gate") is expected["send_requires_gate"]
+    # 3) el material con forma de secreto se reconoce (base de la redacción):
+    assert looks_like_secret("sk-" + "a1b2c3d4e5f6g7h8i9j0" * 2) is expected["secrets_redacted"]
+
+
 def test_every_capability_gate_id_resolves_to_a_real_gate() -> None:
     """Gap real encontrado en el cierre de Fase 15: 8 capacidades apuntaban
     a gate_ids que no existían en fixtures/governance/gates.json (el

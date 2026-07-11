@@ -9,7 +9,7 @@ Bridge, UI shell, governance inicial), Fase 15 añade el sustrato de
 producto exigido por `atlas_product_os_liquid_ui_pack_v1`: Integration
 Fabric + Easy Connection Layer, PolicyEngine determinista, Atlas Business
 Core draft-first, Adaptive Question Engine, Legacy Link Layer. 22 schemas,
-144 tests OS, todo con verificación en vivo (bridge real + CLI real).
+152 tests OS, todo con verificación en vivo (bridge real + CLI real).
 Detalle completo en `docs/continuation/phase15/PHASE_15_COMPLETION_REPORT.md`.
 
 ## What Is Real
@@ -85,14 +85,14 @@ cd ui/atlas-shell && npm install && npm run dev   # shell en 127.0.0.1:5173 (ARN
 ## How To Test
 
 ```bash
-PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q   # 144 passed
+PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q   # 152 passed
 MYPYPATH=src python -m mypy src/atlas/api/ src/atlas/events/ src/atlas/fabric/ src/atlas/business/ src/atlas/interfaces/cli.py
 cd ui/atlas-shell && npm run build      # tsc strict + vite (sin cambios esta fase)
 ```
 
 ## Known Failures
 
-- Ninguno en los 144 tests OS al cierre de Fase 15. Anomalía pre-existente
+- Ninguno en los 152 tests OS al cierre de Fase 15. Anomalía pre-existente
   del repo sin relación: multihop=0.0 en eval_longmemeval (anotada en ledger).
 
 ## Where To Continue

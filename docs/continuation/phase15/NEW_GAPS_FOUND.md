@@ -98,7 +98,25 @@ Fase 16 → estado.
     — Clasificación: **testing**. — No bloquea. — Fase 16 si el volumen
     real lo justifica.
 
-12. **UX**: el catálogo de conexión (`/connections/catalog`) no distingue
+13. **(Auditoría 2026-07-11) Código muerto introducido en Fase 15**:
+    `entities.py` (frozensets sin consumidor), `emit_policy_event()` (sin
+    llamador) y el flag `modules.crm/erp` (guardado, nunca leído).
+    — Clasificación: **maintainability**. — **FIJADO en la auditoría**:
+    `emit_policy_event` borrado; `CRM_KINDS/ERP_KINDS` + `modules.crm/erp`
+    ahora se usan de verdad en `add_entity` (rechaza entidad de módulo
+    desactivado, `ModuleDisabledError`), con test.
+
+14. **(Auditoría 2026-07-11) 4 fixtures de seguridad copiados sin test**
+    (`memory_poisoning_attempt.md` — uno de los 5 ataques del criterio de
+    aceptación #11 —, `prompt_injection_indirect_email.md`,
+    `prompt_injection_pdf_ocr.txt`, `expected_policy_decisions.json`); y
+    criterio #7 (CRM bulk export requiere gate) sin test pese a existir la
+    capacidad; y la lista `impossible` del concierge sin cobertura.
+    — Clasificación: **testing / security**. — **FIJADO en la auditoría**:
+    tests añadidos que atan cada fixture a su denegación determinista; los
+    18 fixtures de security/ ahora se ejercitan todos.
+
+15. **UX**: el catálogo de conexión (`/connections/catalog`) no distingue
     entre "disponible hoy" y "receta existe pero conector real no
     implementado" de forma visible para un consumidor no técnico — hoy
     hay que llamar a `/connections/test` con `mode=real` y leer

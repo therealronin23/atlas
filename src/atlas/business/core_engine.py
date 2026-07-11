@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from atlas.business.entities import CRM_KINDS, ERP_KINDS
 from atlas.business.models import (
     Activation,
     BusinessCore,
@@ -40,6 +41,11 @@ class ActivationError(ValueError):
 
 class ReviewRequiredError(ValueError):
     """Se intentó promocionar un candidato sin revisión humana."""
+
+
+class ModuleDisabledError(ValueError):
+    """Se intentó añadir una entidad exclusiva de un módulo (CRM/ERP) que el
+    core tiene desactivado. Hace que `modules.crm/erp` no sea decorativo."""
 
 
 def _default_state_path() -> Path:
@@ -154,6 +160,16 @@ class BusinessCoreEngine:
         requires_review: bool = False,
     ) -> BusinessEntity:
         core = self._require_core(business_core_id)
+        if kind in CRM_KINDS and kind not in ERP_KINDS and not core.modules.crm:
+            raise ModuleDisabledError(
+                f"{kind.value} es una entidad CRM y este core tiene el módulo "
+                "CRM desactivado (modules.crm=false)"
+            )
+        if kind in ERP_KINDS and kind not in CRM_KINDS and not core.modules.erp:
+            raise ModuleDisabledError(
+                f"{kind.value} es una entidad ERP y este core tiene el módulo "
+                "ERP desactivado (modules.erp=false)"
+            )
         entity = BusinessEntity(
             entity_id=f"be_{uuid.uuid4().hex[:10]}",
             business_core_id=business_core_id,

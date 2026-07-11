@@ -192,6 +192,18 @@ def test_concierge_unknown_connector_returns_none(recipes: RecipeEngine) -> None
     assert concierge.plan("does_not_exist") is None
 
 
+def test_concierge_plan_surfaces_impossible_capabilities(recipes: RecipeEngine) -> None:
+    """La lista `impossible` (forbidden_capabilities) del plan debía tener
+    cobertura (hallazgo de la auditoría): whatsapp personal muestra que
+    enviar mensajes es imposible, ni con aprobación."""
+    policy = PolicyEngine()
+    concierge = ConnectionConcierge(recipes, policy)
+    plan = concierge.plan("whatsapp_personal_import")
+    assert plan is not None
+    impossible_caps = {item["capability"] for item in plan["impossible"]}
+    assert "message.send" in impossible_caps
+
+
 def test_discovery_finds_known_recipe_without_network(recipes: RecipeEngine) -> None:
     discovery = ConnectorDiscoveryEngine(recipes)
     result = discovery.discover("Gmail")

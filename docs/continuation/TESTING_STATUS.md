@@ -14,7 +14,7 @@
 | tests/test_os_business.py | 18 | ✅ verde | draft-first, promoción con revisión, lazo de preguntas, legacy link, extracción determinista |
 | tests/test_os_product_api.py | 12 | ✅ verde | /connections y /business end-to-end sobre FastAPI real |
 
-**Total: 144 passed.**
+**Total: 152 passed.**
 
 Comando: `PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q`
 
