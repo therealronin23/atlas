@@ -505,6 +505,38 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/zip_closure/CANONICAL_WORK_ORDER_AFTER_ZIPS.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/CROSS_ZIP_CONFLICT_TABLE.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/CURRENT_CHECKPOINT.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/GRAPH_MEMORY_DOC_SYNC_CLOSURE.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/ZIP1_ATLAS_OS_BUILD_PACK_CLOSURE.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/ZIP2_FABLE5_HANDOFF_CLOSURE.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/ZIP3_PRODUCT_OS_LIQUID_UI_CLOSURE.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/ZIP_AUTHORITY_ORDER.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/decisions/adr/adr_013b_computer_use.md
   type: decision
   status: vigente
