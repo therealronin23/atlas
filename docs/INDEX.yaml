@@ -517,6 +517,10 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/zip_closure/FINAL_ZIP_CLOSURE_VERDICT.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/zip_closure/GRAPH_MEMORY_DOC_SYNC_CLOSURE.md
   type: conocimiento
   status: vigente
@@ -534,6 +538,10 @@ entries:
   status: vigente
   verified: null
 - path: docs/continuation/zip_closure/ZIP_AUTHORITY_ORDER.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/zip_closure/ZIP_BACKFILL_REPORT.md
   type: conocimiento
   status: vigente
   verified: null
@@ -710,6 +718,10 @@ entries:
   status: vigente
   verified: null
 - path: docs/decisions/adr/adr_066_visual_orchestrator_and_territories_parked.md
+  type: decision
+  status: vigente
+  verified: null
+- path: docs/decisions/adr/adr_067_atlas_constitution_authority.md
   type: decision
   status: vigente
   verified: null
