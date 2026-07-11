@@ -118,6 +118,40 @@ def test_onboarding_full_loop_via_api(client: TestClient) -> None:
     assert confirmed["status"] == "confirmed"
 
 
+def test_onboarding_session_survives_bridge_restart(tmp_path: Path) -> None:
+    business_core_path = tmp_path / "bc.json"
+
+    store1 = OsEventStore(tmp_path / "ev1.jsonl")
+    app1 = create_app(
+        store=store1, fixtures_dir=REPO / "fixtures",
+        business_core_path=business_core_path,
+    )
+    client1 = TestClient(app1)
+    started = client1.post(
+        "/business/onboarding/start", json={"pack_id": "qp_restauracion_hosteleria"},
+    ).json()
+    session_id = started["session_id"]
+    answered = client1.post("/business/onboarding/answer", json={
+        "session_id": session_id, "question_id": "sales_channels",
+        "value": ["local"], "uncertain": False,
+    }).json()
+    assert any(a["question_id"] == "sales_channels" for a in answered["answers"])
+
+    # Simula el reinicio del bridge: segunda app, mismo business_core_path.
+    store2 = OsEventStore(tmp_path / "ev2.jsonl")
+    app2 = create_app(
+        store=store2, fixtures_dir=REPO / "fixtures",
+        business_core_path=business_core_path,
+    )
+    client2 = TestClient(app2)
+    resumed = client2.post("/business/onboarding/confirm_answer",
+                           json={"session_id": session_id,
+                                 "question_id": "sales_channels"}).json()
+    assert resumed["session_id"] == session_id
+    assert any(a["question_id"] == "sales_channels" and a["confirmed"]
+               for a in resumed["answers"])
+
+
 def test_onboarding_unknown_session_404(client: TestClient) -> None:
     resp = client.post("/business/onboarding/answer", json={
         "session_id": "obs_does_not_exist", "question_id": "x", "value": "y",
