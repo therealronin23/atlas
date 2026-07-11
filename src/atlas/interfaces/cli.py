@@ -1089,6 +1089,27 @@ def business_onboarding_start(pack_id: str) -> None:
     rprint(session.model_dump(mode="json"))
 
 
+@cli.group("gates")
+def gates_group() -> None:
+    """Gate Engine (Fase 16) — cola de decisiones humanas auditables."""
+
+
+@gates_group.command("list")
+def gates_list() -> None:
+    """Lista los gate tickets abiertos (pendientes de aprobación humana)."""
+    from atlas.business.core_engine import BusinessCoreEngine  # noqa: PLC0415
+
+    tickets = BusinessCoreEngine().gates.list_open()
+    if not tickets:
+        console.print("[dim]No hay gate tickets abiertos.[/dim]")
+        return
+    for t in tickets:
+        console.print(
+            f"[bold yellow]{t.gate_ticket_id}[/bold yellow] {t.gate_id} "
+            f"[dim]{t.action} → {t.subject_ref}[/dim] (riesgo {t.risk.value})"
+        )
+
+
 @cli.command()
 @click.option("--mode", default="auto", type=click.Choice(["auto", "real", "stub"]), show_default=True, help="Modo de voz.")
 @click.option("--whisper-model", default="small", show_default=True, help="Tamaño modelo Whisper (tiny|base|small|medium).")

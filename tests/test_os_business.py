@@ -212,6 +212,51 @@ def test_cannot_reactivate_already_active_core(tmp_path: Path) -> None:
         engine.request_activation(core.business_core_id)
 
 
+def test_activation_opens_and_approves_a_real_gate_ticket(tmp_path: Path) -> None:
+    """ADR-063: request_activation abre un GateTicket real; approve_activation
+    lo aprueba por el Gate Engine antes de activar. 'gated' es un objeto."""
+    from atlas.fabric.models import GateStatus  # noqa: PLC0415
+
+    engine = BusinessCoreEngine(path=tmp_path / "bcore.json")
+    core = engine.create_draft(
+        "restauracion_hosteleria",
+        CreatedFrom(kind=CreatedFromKind.MANUAL, ref="manual"),
+    )
+    pending = engine.request_activation(core.business_core_id)
+    ticket_id = pending.activation.gate_ticket_id
+    assert ticket_id is not None
+    assert engine.gates.get(ticket_id).status is GateStatus.OPEN
+    assert engine.gates.list_open()  # aparece en la cola
+
+    active = engine.approve_activation(
+        core.business_core_id, approved_by="operador",
+        decision_note="revisado", evidence=["ref:audit"],
+    )
+    assert active.status.value == "active"
+    assert engine.gates.get(ticket_id).status is GateStatus.APPROVED
+    assert engine.gates.list_open() == []
+
+
+def test_reject_activation_returns_core_to_draft(tmp_path: Path) -> None:
+    from atlas.fabric.models import GateStatus  # noqa: PLC0415
+
+    engine = BusinessCoreEngine(path=tmp_path / "bcore.json")
+    core = engine.create_draft(
+        "restauracion_hosteleria",
+        CreatedFrom(kind=CreatedFromKind.MANUAL, ref="manual"),
+    )
+    pending = engine.request_activation(core.business_core_id)
+    ticket_id = pending.activation.gate_ticket_id
+    rejected = engine.reject_activation(
+        core.business_core_id, rejected_by="operador", decision_note="faltan datos",
+    )
+    assert rejected.status.value == "draft"
+    assert rejected.activation.gate_ticket_id is None
+    assert engine.gates.get(ticket_id).status is GateStatus.REJECTED
+    # Tras rechazo se puede volver a pedir.
+    engine.request_activation(core.business_core_id)
+
+
 def test_module_flag_is_enforced_not_decorative(tmp_path: Path) -> None:
     """modules.crm/erp dejó de ser decorativo (hallazgo de la auditoría):
     añadir una entidad exclusiva de un módulo desactivado se rechaza, y las

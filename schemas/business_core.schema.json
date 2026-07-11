@@ -138,6 +138,14 @@
             "null"
           ],
           "format": "date-time"
+        },
+        "gate_ticket_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^gt_[A-Za-z0-9_-]+$",
+          "description": "ticket del Gate Engine que gobierna esta activación"
         }
       },
       "additionalProperties": false

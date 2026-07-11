@@ -98,6 +98,16 @@ class CoreActivateRequest(BaseModel):
 
     business_core_id: str
     approved_by: str = Field(min_length=1)
+    decision_note: str | None = None
+    evidence: list[str] = Field(default_factory=list)
+
+
+class CoreRejectRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    business_core_id: str
+    rejected_by: str = Field(min_length=1)
+    decision_note: str | None = None
 
 
 def register_product_routes(
@@ -292,9 +302,40 @@ def register_product_routes(
     @app.post("/business/core/activate")
     def business_core_activate(req: CoreActivateRequest) -> dict[str, Any]:
         try:
-            core = business.approve_activation(req.business_core_id, req.approved_by)
+            core = business.approve_activation(
+                req.business_core_id, req.approved_by,
+                decision_note=req.decision_note, evidence=req.evidence,
+            )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except (ActivationError, ReviewRequiredError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return core.model_dump(mode="json")
+
+    @app.post("/business/core/reject")
+    def business_core_reject(req: CoreRejectRequest) -> dict[str, Any]:
+        try:
+            core = business.reject_activation(
+                req.business_core_id, req.rejected_by,
+                decision_note=req.decision_note,
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ActivationError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return core.model_dump(mode="json")
+
+    # -- Gate Engine: cola de decisiones humanas ------------------------------
+
+    @app.get("/gates/open")
+    def gates_open() -> dict[str, Any]:
+        tickets = business.gates.list_open()
+        return {"count": len(tickets),
+                "tickets": [t.model_dump(mode="json") for t in tickets]}
+
+    @app.get("/gates/{gate_ticket_id}")
+    def gate_get(gate_ticket_id: str) -> dict[str, Any]:
+        ticket = business.gates.get(gate_ticket_id)
+        if ticket is None:
+            raise HTTPException(status_code=404, detail="gate ticket desconocido")
+        return ticket.model_dump(mode="json")
