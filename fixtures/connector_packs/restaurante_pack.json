@@ -1,0 +1,10 @@
+{
+  "pack_id": "restaurante_pack",
+  "sector_id": "restauracion_hosteleria",
+  "display_name": "Pack Restauración/Hostelería",
+  "connectors": ["gmail", "local_csv_folder", "whatsapp_business_platform"],
+  "setup_order": ["local_csv_folder", "gmail", "whatsapp_business_platform"],
+  "optional_connectors": ["generic_erp"],
+  "rationale": "Stock/proveedores en CSV, correo de reservas/proveedores y WhatsApp Business para delivery/clientes; ERP genérico opcional si ya llevan contabilidad digital.",
+  "demo": true
+}

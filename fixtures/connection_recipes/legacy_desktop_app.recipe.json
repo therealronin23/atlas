@@ -1,0 +1,43 @@
+{
+  "connector_id": "legacy_desktop_app",
+  "human_name": "Aplicación de escritorio sin API (legacy)",
+  "category": "no_api_apps",
+  "recommended_route": "desktop_automation",
+  "fallback_routes": ["computer_use", "human_manual"],
+  "difficulty": "expert",
+  "default_mode": "read_draft",
+  "safe_defaults": {
+    "read": true,
+    "act": false
+  },
+  "capabilities": ["files.read"],
+  "gated_capabilities": {
+    "computer_use.execute": "gate_computer_use"
+  },
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "user_action",
+      "description": "Identificar la aplicación legacy y confirmar que no existe API/exportación disponible"
+    },
+    {
+      "step_id": "2",
+      "kind": "user_action",
+      "description": "Configurar la sesión de automatización en un display visible y supervisado (nunca oculto)"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer datos exportables cuando existan",
+      "Proponer acciones de automatización visual con sesión visible"
+    ],
+    "will_not": [
+      "Actuar sobre la aplicación sin tu aprobación explícita en cada gate (gate_computer_use)",
+      "Ejecutar automatización oculta o en background"
+    ]
+  },
+  "credential": null,
+  "legal_notes": "Sistemas legacy sin contrato de soporte conocido: revisar términos de uso antes de automatizar.",
+  "demo": true
+}

@@ -1,0 +1,45 @@
+{
+  "connector_id": "generic_erp",
+  "human_name": "ERP/Contabilidad genérico (Sage/Holded/A3/QuickBooks/Xero)",
+  "category": "erp_accounting",
+  "recommended_route": "openapi_rest",
+  "fallback_routes": ["database_file", "import_export_batch", "human_manual"],
+  "difficulty": "technical",
+  "default_mode": "read_only",
+  "safe_defaults": {
+    "read": true,
+    "write": false
+  },
+  "capabilities": ["erp.customers.read", "erp.invoices.read"],
+  "gated_capabilities": {
+    "erp.invoices.create_draft": "gate_business_write",
+    "erp.accounting.write": "gate_accounting"
+  },
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "external_page",
+      "description": "Elegir el ERP/software de contabilidad concreto y abrir su panel de integraciones"
+    },
+    {
+      "step_id": "2",
+      "kind": "manual_secret",
+      "description": "Generar credencial de solo lectura y exportarla como variable de entorno"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer clientes y facturas existentes"
+    ],
+    "will_not": [
+      "Escribir asientos contables reales sin tu aprobación explícita (gate_accounting)"
+    ]
+  },
+  "credential": {
+    "auth_mode": "api_key",
+    "storage": "credential_reference_only"
+  },
+  "legal_notes": null,
+  "demo": true
+}

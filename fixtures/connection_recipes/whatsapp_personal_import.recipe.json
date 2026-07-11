@@ -1,0 +1,40 @@
+{
+  "connector_id": "whatsapp_personal_import",
+  "human_name": "WhatsApp personal (importar chat)",
+  "category": "communication",
+  "recommended_route": "import_export_batch",
+  "fallback_routes": ["human_manual"],
+  "difficulty": "guided",
+  "default_mode": "import_only",
+  "safe_defaults": {
+    "send": false,
+    "delete": false,
+    "auto_reply": false
+  },
+  "capabilities": ["files.read"],
+  "gated_capabilities": {},
+  "forbidden_capabilities": ["message.send", "browser.submit"],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "user_action",
+      "description": "Exporta el chat desde WhatsApp (Chat > Exportar chat > Sin multimedia)"
+    },
+    {
+      "step_id": "2",
+      "kind": "file_pick",
+      "description": "Selecciona el fichero exportado para que Atlas lo importe como texto plano"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer e indexar el chat exportado que tú elijas manualmente"
+    ],
+    "will_not": [
+      "Enviar, responder ni automatizar mensajes de WhatsApp personal bajo ninguna circunstancia"
+    ]
+  },
+  "credential": null,
+  "legal_notes": "WhatsApp personal prohíbe la automatización de envío en sus ToS; Atlas solo importa/lee, nunca actúa como cliente automatizado.",
+  "demo": true
+}

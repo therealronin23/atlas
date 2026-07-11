@@ -1,0 +1,52 @@
+{
+  "connector_id": "odoo_erp",
+  "human_name": "Odoo (ERP/CRM)",
+  "category": "erp_accounting",
+  "recommended_route": "openapi_rest",
+  "fallback_routes": ["database_file", "import_export_batch", "human_manual"],
+  "difficulty": "technical",
+  "default_mode": "read_only",
+  "safe_defaults": {
+    "read": true,
+    "write": false
+  },
+  "capabilities": ["erp.customers.read", "erp.invoices.read", "crm.contacts.read", "crm.deals.read"],
+  "gated_capabilities": {
+    "crm.contacts.write": "gate_business_write",
+    "crm.deals.update": "gate_business_write",
+    "erp.invoices.create_draft": "gate_business_write",
+    "erp.accounting.write": "gate_accounting"
+  },
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "user_action",
+      "description": "Crea un usuario de API en Odoo con permisos de solo lectura"
+    },
+    {
+      "step_id": "2",
+      "kind": "manual_secret",
+      "description": "Exporta la API key como ODOO_API_KEY"
+    },
+    {
+      "step_id": "3",
+      "kind": "automatic",
+      "description": "Atlas prueba la conexión en modo lectura y registra solo la referencia"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer clientes, facturas, contactos y oportunidades existentes en tu Odoo"
+    ],
+    "will_not": [
+      "Escribir ni modificar datos contables o comerciales sin tu aprobación explícita"
+    ]
+  },
+  "credential": {
+    "auth_mode": "api_key",
+    "storage": "credential_reference_only"
+  },
+  "legal_notes": null,
+  "demo": true
+}
