@@ -404,7 +404,16 @@ class MaintenanceFacade:
         # de la cola esperaba. El contador persiste entre reinicios del daemon.
         state_path = self._project_root() / "workspace" / "self_build" / "queue_state.json"
         state = load_queue_state(state_path)
-        item = next_runnable(items, state)
+        # No reproponer un item que ya tiene una propuesta esperando revisión
+        # humana (incidente 2026-07-11, ver docstring de next_runnable).
+        open_statuses = {"proposed", "validated", "approved"}
+        open_proposal_item_ids = frozenset(
+            item_id
+            for p in self._orch.cold_update().list_proposals()
+            if p.status in open_statuses
+            and (item_id := p.evidence.get("backlog_item_id"))
+        )
+        item = next_runnable(items, state, open_proposal_item_ids=open_proposal_item_ids)
         if item is None:
             return {"status": "no_pending"}
         runner = self._orch.maintenance_self_build_runner()

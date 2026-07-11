@@ -96,18 +96,34 @@ def save_queue_state(path: Path, state: dict[str, int]) -> None:
 
 
 def next_runnable(
-    items: list[BacklogItem], state: dict[str, int]
+    items: list[BacklogItem],
+    state: dict[str, int],
+    *,
+    open_proposal_item_ids: frozenset[str] = frozenset(),
 ) -> BacklogItem | None:
     """El primer pendiente (por prioridad) con menos de MAX_CONSECUTIVE_FAILURES
-    fallos seguidos. Si TODOS están agotados, devuelve el de menos fallos —
-    la cola degrada a round-robin lento en vez de pararse en seco."""
+    fallos seguidos Y sin ya tener una propuesta abierta sin revisar
+    (proposed/validated/approved en ColdUpdateManager) — si ya hay una
+    esperando a un humano, gastar otro ciclo de ToolCoder solo genera un
+    duplicado casi idéntico. Incidente real 2026-07-11: `run_item()` marca
+    éxito (resetea el contador de fallos) en cuanto CREA una propuesta, no
+    cuando el problema queda resuelto; sin esta exclusión, el mismo item
+    volvía a tocarle turno al ciclo siguiente indefinidamente — 14
+    propuestas de `project-graph-vault-wiring` en el ledger, ninguna
+    revisada. Si TODOS los pendientes (tras excluir los bloqueados por
+    propuesta abierta) están agotados por fallos, la cola degrada a
+    round-robin lento como antes. Si lo único que bloquea es una propuesta
+    abierta, no hay nada seguro que hacer este tick: devuelve None."""
     queue = pending(items)
     if not queue:
         return None
-    runnable = [i for i in queue if state.get(i.id, 0) < MAX_CONSECUTIVE_FAILURES]
+    candidates = [i for i in queue if i.id not in open_proposal_item_ids]
+    if not candidates:
+        return None
+    runnable = [i for i in candidates if state.get(i.id, 0) < MAX_CONSECUTIVE_FAILURES]
     if runnable:
         return runnable[0]
-    return min(queue, key=lambda i: (state.get(i.id, 0), i.priority))
+    return min(candidates, key=lambda i: (state.get(i.id, 0), i.priority))
 
 
 def record_outcome(state: dict[str, int], item_id: str, *, success: bool) -> dict[str, int]:

@@ -219,6 +219,39 @@ def test_next_runnable_empty_queue_returns_none() -> None:
     assert next_runnable([_item("a", 1, status="done")], {}) is None
 
 
+# ---------------------------------------------------------------------------
+# Exclusión de items con propuesta abierta (incidente 2026-07-11): reproponer
+# un item que ya tiene una propuesta proposed/validated/approved sin revisar
+# generaba duplicados casi idénticos indefinidamente.
+# ---------------------------------------------------------------------------
+
+def test_next_runnable_skips_item_with_open_proposal() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2)]
+    chosen = next_runnable(items, {}, open_proposal_item_ids=frozenset({"a"}))
+    assert chosen is not None and chosen.id == "b"
+
+
+def test_next_runnable_all_blocked_by_open_proposal_returns_none() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2)]
+    chosen = next_runnable(items, {}, open_proposal_item_ids=frozenset({"a", "b"}))
+    assert chosen is None
+
+
+def test_next_runnable_open_proposal_exclusion_does_not_affect_failure_degrade() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2), _item("c", 3)]
+    state = {"b": 5, "c": 3}
+    chosen = next_runnable(items, state, open_proposal_item_ids=frozenset({"a"}))
+    # "a" bloqueado por propuesta abierta; entre "b" y "c" (ambos agotados
+    # por fallos) degrada al de menos fallos, igual que sin exclusión.
+    assert chosen is not None and chosen.id == "c"
+
+
 def test_record_outcome_resets_on_success_and_accumulates_on_failure() -> None:
     from atlas.core.self_maintenance.backlog import record_outcome
 
