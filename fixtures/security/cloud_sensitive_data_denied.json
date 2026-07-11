@@ -1,0 +1,18 @@
+{
+  "description": "Llamada a modelo cloud con datos sensibles se deniega sin aprobación humana explícita",
+  "request": {
+    "capability": "model.cloud_call",
+    "data_class": "sensitive"
+  },
+  "expected_decision": "deny",
+  "expected_hard": true,
+  "expected_policy_id": "pol_hard_cloud_sensitive",
+  "variant_with_approval": {
+    "request": {
+      "capability": "model.cloud_call",
+      "data_class": "sensitive",
+      "approvals": ["human_approved"]
+    },
+    "expected_decision": "allow"
+  }
+}
