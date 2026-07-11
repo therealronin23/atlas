@@ -14,6 +14,92 @@ import type {
 
 const BASE = "/api";
 
+// --- Tipos mínimos del arnés harness (endpoints de producto /connections, /business, /gates, /sectors) ---
+
+export interface ConnectionCatalogEntry {
+  connector_id: string;
+  human_name: string;
+  difficulty: string;
+  recommended_route: string;
+  default_mode: string;
+}
+
+export interface ConnectionCatalog {
+  categories: Record<string, ConnectionCatalogEntry[]>;
+  rejected: Record<string, unknown>;
+}
+
+export interface ConnectionPlanGate {
+  capability: string;
+  gate_id: string;
+  risk: string;
+  description: string;
+}
+
+export interface ConnectionPlanImpossible {
+  capability: string;
+  reason: string;
+}
+
+export interface ConnectionPlan {
+  connector_id: string;
+  human_name: string;
+  category: string;
+  route: {
+    recommended: string;
+    ladder_rung: string;
+    route_risk: string;
+    fallbacks: string[];
+  };
+  difficulty: string;
+  default_mode: string;
+  setup_steps: string[];
+  granted_now: string[];
+  requires_gate: ConnectionPlanGate[];
+  impossible: ConnectionPlanImpossible[];
+  will: string[];
+  will_not: string[];
+  platform_terms: string | null;
+}
+
+export interface GateTicket {
+  gate_ticket_id: string;
+  gate_id: string;
+  action: string;
+  subject_ref: string;
+  risk: string;
+  status: string;
+}
+
+export interface GatesOpen {
+  count: number;
+  tickets: GateTicket[];
+}
+
+export interface SectorInfo {
+  sector_id: string;
+  display_name: string;
+  [key: string]: unknown;
+}
+
+export interface SectorsResponse {
+  count: number;
+  sectors: SectorInfo[];
+  rejected: Record<string, unknown>;
+}
+
+export interface QuestionPack {
+  pack_id: string;
+  sector_id: string;
+  display_name: string;
+  questions: string[];
+}
+
+export interface QuestionPacksResponse {
+  count: number;
+  packs: QuestionPack[];
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
@@ -57,6 +143,12 @@ export const api = {
       "/permissions/evaluate",
       { action, resource },
     ),
+  connectionsCatalog: () => get<ConnectionCatalog>("/connections/catalog"),
+  connectionPlan: (connectorId: string) =>
+    post<ConnectionPlan>("/connections/plan", { connector_id: connectorId }),
+  gatesOpen: () => get<GatesOpen>("/gates/open"),
+  sectors: () => get<SectorsResponse>("/sectors"),
+  questionPacks: () => get<QuestionPacksResponse>("/business/question-packs"),
 };
 
 export function connectEventsWs(onEvent: (e: OsEvent) => void, onState: (up: boolean) => void): () => void {
