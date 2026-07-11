@@ -40,6 +40,18 @@ Atlas OS
 │    [EXISTENTE: MCP trunk con sectores/routing] + schemas/connector.schema.json
 │    [NUEVO]: specs de conectores con credential_reference, mock-first
 │
+├─ Easy Connection Layer + PolicyEngine    → src/atlas/fabric/  [NUEVO, ADR-060,
+│    Fase 15] Connection Ladder (12 peldaños, API-first), RecipeEngine/
+│    PackEngine fail-closed, ConnectionConcierge, AuthBroker (solo
+│    referencias), ConnectorRegistry (rug-pull), PolicyEngine (7
+│    invariantes duros en código, envuelve — no duplica — el evaluador v1
+│    de Governance Kernel arriba)
+│
+├─ Atlas Business Core + Question Engine   → src/atlas/business/  [NUEVO,
+│    ADR-061, Fase 15] CRM/ERP nativo draft-first (un solo store, vistas
+│    CRM/ERP), AdaptiveQuestionEngine (lazo pregunta→interpreta→confirma),
+│    LegacyLinkLayer (canonicidad explícita, sync off por defecto)
+│
 └─ Improvement Engine                      → lab/ + research pipeline
      [EXISTENTE: TopicExpander + research_digest → candidatos de catálogo +
      triage/ingesta] — docs/improvement/ lo documenta, no lo duplica

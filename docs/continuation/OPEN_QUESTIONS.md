@@ -20,3 +20,14 @@ cerrarse. No bloquear el trabajo por ellas: cada una tiene default declarado.
 6. **¿Exponer el bridge más allá de localhost algún día?** Default: NUNCA en
    v1 (bind 127.0.0.1). Si se quiere acceso remoto, pasa por el modelo HMAC de
    exec_api o mejor (decisión de seguridad con ADR propio).
+7. **(Fase 15) ¿Cuál es el primer conector real a implementar?**
+   Recomendación en `phase15/RECOMMENDED_PHASE_16.md`: Gmail read-only
+   (menor riesgo, receta ya completa). Decisión de producto → operador.
+8. **(Fase 15) ¿Converger PolicyEngine con `/permissions/evaluate` ahora o
+   dejarlos coexistir más tiempo?** Default: coexisten (D14). Converger
+   exige tocar tests ya verdes de Fase 4 — decisión de alcance antes de
+   tocarlo (ver IMPROVEMENT_PROPOSALS.md #1).
+9. **(Fase 15) ¿Vault de secretos propio o delegar en un gestor del SO
+   (keyring/pass)?** Default: solo referencias `env:VAR`, ningún backend.
+   Requiere digest formal antes de elegir (options: keyring del SO, HashiCorp
+   Vault local, age-encrypted file).

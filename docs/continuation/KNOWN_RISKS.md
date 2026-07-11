@@ -23,3 +23,19 @@ estado vivo en `docs/risks/RISK_REGISTER.md`.
    corre suites dirigidas (`pytest tests/test_os_*.py`) salvo cierre de fase.
 8. **Outbound = gate.** Ninguna acción hacia fuera (email/mensaje/publicar)
    sin approval.required → granted explícito. En v1 todo conector es mock.
+9. **(Fase 15) Capa `fabric`/`business` NUNCA importa `atlas.api.*` a nivel
+   de módulo.** Causa un ciclo real (`fabric.policy → api.models →
+   api.__init__ → api.server → api.product_routes → fabric.concierge →
+   fabric.policy`) que rompe cualquier entrypoint que importe fabric
+   primero (p.ej. la CLI). Si necesitas un tipo de `atlas.api.models`,
+   ponlo bajo `TYPE_CHECKING` e importa de verdad dentro de la función.
+10. **(Fase 15) `BusinessCoreEngine`/`AuthBroker`/`ConnectorRegistry` sin
+    `path`/`refs_path`/`approvals_path` explícito escriben en el
+    `$ATLAS_HOME` real.** En tests, pasa SIEMPRE esos parámetros bajo
+    `tmp_path` (o monkeypatch `ATLAS_HOME`); `register_product_routes`/
+    `create_app` aceptan `business_core_path` explícito por la misma razón.
+11. **(Fase 15) Todo `gate_id` que declares en `fabric/capabilities.py`
+    debe existir en `fixtures/governance/gates.json`.** Ya pasó una vez
+    (8 de 26 no existían); hay test de regresión
+    (`test_every_capability_gate_id_resolves_to_a_real_gate`) pero no lo
+    borres si añades capacidades nuevas.

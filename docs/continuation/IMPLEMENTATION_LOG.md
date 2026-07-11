@@ -2,6 +2,58 @@
 
 Registro append-only por sesión. Entradas nuevas ARRIBA.
 
+## Sesión 2026-07-10/11 — Fase 15: Atlas Product OS (Integration Fabric + Business Core)
+
+- **Contexto**: el operador entregó `atlas_product_os_liquid_ui_pack_v1.zip`
+  horas después de pedir un rediseño visual JARVIS del shell; el pack
+  declara el shell React arnés de validación y prohíbe pulirlo como
+  producto final (D11: rediseño SUPERSEDED antes de escribirse código).
+- **F15-0**: REPO_ALIGNMENT_REPORT + planes de ejecución/archivos/riesgos
+  en `docs/continuation/phase15/`; D11-D14 en DECISION_REVIEW.
+- **F15-1**: 10 schemas estrictos (endurecidos respecto al pack, que traía
+  `required: []`) + espejos pydantic en `fabric/models.py` y
+  `business/models.py`, 33 tests de paridad.
+- **F15-2**: Integration Fabric completo — Connection Ladder como dato,
+  RecipeEngine/PackEngine fail-closed, ConnectionConcierge, AuthBroker
+  (rechaza secretos reales, nunca los persiste), ConnectorRegistry
+  (rug-pull por hash), HealthMonitor/ConnectionTestRunner (real siempre
+  `BLOCKED_BY_MISSING_DEPENDENCY`), PolicyEngine con 7 invariantes duros en
+  código. 10 recetas + 5 packs de conectores. 21 tests.
+- **F15-3**: corpus de seguridad (12 ficheros del pack + 6 escenarios
+  propios), 21 tests — ninguno detecta por heurística de lenguaje.
+- **F15-4**: Business Core draft-first (create_draft→request_activation→
+  approve_activation, único camino), promoción de candidatos con revisión
+  humana obligatoria, AdaptiveQuestionEngine con lazo pregunta→interpreta→
+  confirma completo (uncertain/skip válidos pero sin conceder capacidades),
+  LegacyLinkLayer (sync off por defecto, canonicidad explícita),
+  EntityCandidateExtractor determinista. 5 packs de preguntas. 18 tests.
+- **F15-5**: `product_routes.py` registrado en `create_app`; CLI con
+  grupos `connections`/`business`. 12 tests de API end-to-end.
+  **Bug real encontrado y corregido**: import circular
+  `fabric.policy→api.models→api.__init__→api.server→api.product_routes→
+  fabric.concierge→fabric.policy` (no lo cazaban los tests, solo un
+  entrypoint en frío vía CLI); fix con `TYPE_CHECKING` + import perezoso.
+  **Riesgo evitado antes de ejecutar nada**: `BusinessCoreEngine` sin path
+  explícito habría escrito en `~/atlas/business_core/` real durante tests.
+- **F15-6 (cierre)**: ADR-060/061, `docs/design/UI_QUALITY_GATE.md`,
+  `ui/atlas-shell/README.md` (declarado arnés). **Gap real encontrado y
+  fijado en la misma fase**: 8 de 26 `gate_id` de capacidades no existían
+  en `fixtures/governance/gates.json` (default seguro de todas formas, pero
+  callejón sin salida) — 8 gates añadidos + test de regresión.
+  `docs/continuation/phase15/` con COMPLETION_REPORT, WHAT_WAS[_NOT]_
+  IMPLEMENTED, NEW_GAPS_FOUND (12 gaps clasificados),
+  RECOMMENDED_PHASE_16, IMPROVEMENT_PROPOSALS, TESTING_STATUS. Docs
+  globales de continuación actualizados (no reescritos: CONTINUATION_STATE,
+  NEXT_AI_INSTRUCTIONS, KNOWN_RISKS, OPEN_QUESTIONS, RISK_REGISTER).
+- **Suite OS al cierre: 144 passed** (`tests/test_os_*.py`), mypy strict
+  limpio en `api/`, `events/`, `fabric/`, `business/`, `interfaces/cli.py`.
+  Verificación en vivo: bridge real con `ATLAS_HOME` aislado + curl real;
+  CLI real (5 comandos ejecutados, no solo importados).
+- **Suite COMPLETA del repo: 3154 passed, 1 skipped** (251s) con los mismos
+  2 "failed" de siempre en `TestSelfBuildCycleWiring` (artefacto de
+  `ATLAS_NESTED_TEST_RUN=1`, re-corridos sin la variable: 4/4 verdes).
+  3049 (cierre Fase 10) + 105 tests nuevos de Fase 15 = 3154, cuadra exacto.
+
 ## Sesión 2026-07-10 — cierre (mismo día, continuación de la entrada de abajo)
 
 - **Fase 2-3**: 12 schemas raíz + espejos pydantic (test de paridad cazó

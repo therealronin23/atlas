@@ -27,7 +27,7 @@ def test_health(client: TestClient) -> None:
     assert body["status"] == "ok"
     assert body["real"] is True
     assert body["connectors"] == 5
-    assert body["gates"] == 4
+    assert body["gates"] == 12
 
 
 def test_orchestrator_never_imported() -> None:
