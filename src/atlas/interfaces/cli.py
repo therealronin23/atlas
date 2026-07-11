@@ -999,6 +999,96 @@ def os_bridge(host: str, port: int) -> None:
     serve(host=host, port=port)
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+@cli.group("connections")
+def connections_group() -> None:
+    """Integration Fabric / Easy Connection Layer (Fase 15) — solo lectura y mock/sandbox."""
+
+
+@connections_group.command("catalog")
+def connections_catalog() -> None:
+    """Catálogo de recetas de conexión agrupado por categoría humana."""
+    from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+
+    recipes = RecipeEngine(_repo_root() / "fixtures" / "connection_recipes")
+    for category, items in sorted(recipes.catalog().items()):
+        console.print(f"\n[bold cyan]{category}[/bold cyan]")
+        for item in items:
+            console.print(f"  {item['connector_id']:<28} {item['human_name']} "
+                          f"[dim]({item['difficulty']}, {item['recommended_route']})[/dim]")
+    if recipes.rejected:
+        console.print("\n[bold red]Rechazadas[/bold red]")
+        for connector_id, problems in recipes.rejected.items():
+            console.print(f"  {connector_id}: {problems}")
+
+
+@connections_group.command("plan")
+@click.argument("connector_id")
+def connections_plan(connector_id: str) -> None:
+    """Plan de conexión humano (ruta, permisos, gates) para un conector."""
+    from atlas.fabric.concierge import ConnectionConcierge  # noqa: PLC0415
+    from atlas.fabric.policy import default_policy_engine  # noqa: PLC0415
+    from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+
+    root = _repo_root()
+    recipes = RecipeEngine(root / "fixtures" / "connection_recipes")
+    concierge = ConnectionConcierge(recipes, default_policy_engine(root))
+    plan = concierge.plan(connector_id)
+    if plan is None:
+        console.print(f"[red]receta desconocida: {connector_id}[/red]")
+        raise SystemExit(1)
+    rprint(plan)
+
+
+@connections_group.command("test")
+@click.argument("connector_id")
+@click.option("--mode", default="mock", type=click.Choice(["mock", "sandbox", "real"]), show_default=True)
+def connections_test(connector_id: str, mode: str) -> None:
+    """Prueba una conexión en modo mock/sandbox (real está bloqueado en Fase 15)."""
+    from atlas.fabric.health import HealthMonitor  # noqa: PLC0415
+    from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+    from atlas.fabric.testing import ConnectionTestRunner  # noqa: PLC0415
+
+    root = _repo_root()
+    recipes = RecipeEngine(root / "fixtures" / "connection_recipes")
+    runner = ConnectionTestRunner(recipes, HealthMonitor())
+    rprint(runner.test(connector_id, mode=mode))
+
+
+@cli.group("business")
+def business_group() -> None:
+    """Adaptive Question Engine / Business Core (Fase 15) — todo draft-first."""
+
+
+@business_group.command("question-packs")
+def business_question_packs() -> None:
+    """Lista los packs de preguntas de onboarding disponibles por sector."""
+    from atlas.business.questions import load_all_packs  # noqa: PLC0415
+
+    packs = load_all_packs(_repo_root() / "fixtures" / "question_packs")
+    for pack in packs.values():
+        console.print(f"[bold cyan]{pack.pack_id}[/bold cyan] ({pack.sector_id}) "
+                      f"— {len(pack.questions)} preguntas")
+
+
+@business_group.command("onboarding-start")
+@click.argument("pack_id")
+def business_onboarding_start(pack_id: str) -> None:
+    """Arranca una sesión de onboarding para el pack indicado."""
+    from atlas.business.questions import QuestionEngine, load_all_packs  # noqa: PLC0415
+
+    packs = load_all_packs(_repo_root() / "fixtures" / "question_packs")
+    pack = packs.get(pack_id)
+    if pack is None:
+        console.print(f"[red]pack desconocido: {pack_id}[/red]")
+        raise SystemExit(1)
+    session = QuestionEngine().start_session(pack, demo=True)
+    rprint(session.model_dump(mode="json"))
+
+
 @cli.command()
 @click.option("--mode", default="auto", type=click.Choice(["auto", "real", "stub"]), show_default=True, help="Modo de voz.")
 @click.option("--whisper-model", default="small", show_default=True, help="Tamaño modelo Whisper (tiny|base|small|medium).")

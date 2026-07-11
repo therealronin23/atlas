@@ -30,6 +30,7 @@ from atlas.api.models import (
     PermissionEvaluation,
     SimulateRequest,
 )
+from atlas.api.product_routes import register_product_routes
 from atlas.events.player import EventPlayer
 from atlas.events.schemas import Causality, EventStatus, OsEvent, Risk
 from atlas.events.store import OsEventStore
@@ -95,6 +96,7 @@ def _memory_summary() -> dict[str, Any]:
 def create_app(
     store: OsEventStore | None = None,
     fixtures_dir: Path | None = None,
+    business_core_path: Path | None = None,
 ) -> FastAPI:
     fixtures = fixtures_dir or _FIXTURES
     event_store = store or OsEventStore()
@@ -386,6 +388,9 @@ def create_app(
             pass
         finally:
             event_store.unsubscribe(on_event)
+
+    # -- Product OS (Fase 15): Integration Fabric + Business Core --------------
+    register_product_routes(app, event_store, fixtures, business_core_path)
 
     return app
 

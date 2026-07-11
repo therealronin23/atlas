@@ -16,7 +16,10 @@ REPO = Path(__file__).resolve().parent.parent
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
     store = OsEventStore(tmp_path / "events.jsonl")
-    return TestClient(create_app(store=store, fixtures_dir=REPO / "fixtures"))
+    return TestClient(create_app(
+        store=store, fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "business_core.json",
+    ))
 
 
 def test_health(client: TestClient) -> None:
@@ -30,8 +33,10 @@ def test_health(client: TestClient) -> None:
 def test_orchestrator_never_imported() -> None:
     """OS-R1: el bridge no puede ni IMPORTAR el Orchestrator (doble instancia
     = corrupción Merkle). Guard estático: ningún import de orchestrator en
-    atlas/api ni atlas/events. (sys.modules no sirve: conftest lo contamina.)"""
-    for pkg in ("api", "events"):
+    atlas/api, atlas/events, atlas/fabric ni atlas/business (Fase 15 amplía
+    el mismo invariante a los motores de producto). (sys.modules no sirve:
+    conftest lo contamina.)"""
+    for pkg in ("api", "events", "fabric", "business"):
         for path in (REPO / "src" / "atlas" / pkg).rglob("*.py"):
             for lineno, line in enumerate(path.read_text().splitlines(), start=1):
                 stripped = line.strip()
