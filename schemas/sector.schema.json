@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/sector.schema.json",
+  "title": "AtlasSector",
+  "description": "Entrada del Sector Registry: catálogo cerrado de sectores conocidos por Atlas. question_packs y connector_packs referencian sector_id por convención hoy — este schema formaliza el catálogo para poder validar esa referencia (drift detectable).",
+  "type": "object",
+  "required": [
+    "sector_id",
+    "display_name"
+  ],
+  "properties": {
+    "sector_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "default_workbenches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "default_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "question_pack_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "pack_id del question_pack de este sector, si existe"
+    },
+    "connector_pack_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "pack_id del connector_pack de este sector, si existe"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,12 @@
+{
+  "sector_id": "vida_personal_familia",
+  "display_name": "Vida personal/familia",
+  "description": "Uso personal y familiar de Atlas — no es un negocio; documentación personal, correo y ficheros propios.",
+  "default_workbenches": [],
+  "default_capabilities": [
+    "files.read",
+    "email.read"
+  ],
+  "question_pack_id": "qp_vida_personal_familia",
+  "connector_pack_id": "personal_pack"
+}
