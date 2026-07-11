@@ -8,6 +8,9 @@ $ATLAS_HOME/connections/ y $ATLAS_HOME/business_core/ — no toca el core.
 
 from __future__ import annotations
 
+import json
+import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -110,6 +113,46 @@ class CoreRejectRequest(BaseModel):
     decision_note: str | None = None
 
 
+def _default_sessions_path() -> Path:
+    home = Path(os.environ.get("ATLAS_HOME", "~/atlas")).expanduser()
+    return home / "business_core" / "onboarding_sessions.json"
+
+
+class _SessionStore:
+    """Persistencia de sesiones de onboarding en un único JSON (mismo patrón
+    que `atlas.business.core_engine._Store`) — sobreviven a reinicios del
+    bridge en vez de vivir solo en un dict en memoria."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+
+    def _read(self) -> dict[str, dict[str, Any]]:
+        if not self._path.exists():
+            return {}
+        data: dict[str, dict[str, Any]] = json.loads(
+            self._path.read_text(encoding="utf-8")
+        )
+        return data
+
+    def _write(self, data: dict[str, dict[str, Any]]) -> None:
+        self._path.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def save(self, session: OnboardingSession) -> None:
+        with self._lock:
+            data = self._read()
+            data[session.session_id] = session.model_dump(mode="json")
+            self._write(data)
+
+    def get(self, session_id: str) -> OnboardingSession | None:
+        data = self._read()
+        raw = data.get(session_id)
+        return OnboardingSession.model_validate(raw) if raw else None
+
+
 def register_product_routes(
     app: FastAPI,
     store: OsEventStore,
@@ -134,10 +177,15 @@ def register_product_routes(
     questions = QuestionEngine()
     business = BusinessCoreEngine(store=store, path=business_core_path)
 
-    _sessions: dict[str, OnboardingSession] = {}
+    sessions_path = (
+        business_core_path.parent / "onboarding_sessions.json"
+        if business_core_path is not None
+        else _default_sessions_path()
+    )
+    session_store = _SessionStore(sessions_path)
 
     def _load_session(session_id: str) -> tuple[OnboardingSession, Any]:
-        session = _sessions.get(session_id)
+        session = session_store.get(session_id)
         if session is None:
             raise HTTPException(status_code=404, detail="sesión desconocida")
         pack = question_packs.get(session.pack_id)
@@ -203,7 +251,7 @@ def register_product_routes(
         if pack is None:
             raise HTTPException(status_code=404, detail="pack desconocido")
         session = questions.start_session(pack, demo=True)
-        _sessions[session.session_id] = session
+        session_store.save(session)
         return session.model_dump(mode="json")
 
     @app.post("/business/onboarding/answer")
@@ -215,7 +263,7 @@ def register_product_routes(
             )
         except OnboardingError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        _sessions[session.session_id] = session
+        session_store.save(session)
         return session.model_dump(mode="json")
 
     @app.post("/business/onboarding/confirm_answer")
@@ -225,7 +273,7 @@ def register_product_routes(
             session = questions.confirm_answer(session, req.question_id)
         except OnboardingError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        _sessions[session.session_id] = session
+        session_store.save(session)
         return session.model_dump(mode="json")
 
     @app.post("/business/onboarding/skip")
@@ -235,7 +283,7 @@ def register_product_routes(
             session = questions.skip_question(session, pack, req.question_id)
         except OnboardingError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        _sessions[session.session_id] = session
+        session_store.save(session)
         return session.model_dump(mode="json")
 
     @app.post("/business/onboarding/preview")
@@ -245,7 +293,7 @@ def register_product_routes(
             session = questions.build_preview(session, pack)
         except OnboardingError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        _sessions[session.session_id] = session
+        session_store.save(session)
         return session.model_dump(mode="json")
 
     @app.post("/business/onboarding/confirm")
@@ -255,7 +303,7 @@ def register_product_routes(
             session = questions.confirm_session(session)
         except OnboardingError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        _sessions[session.session_id] = session
+        session_store.save(session)
         return session.model_dump(mode="json")
 
     # -- Business Core ----------------------------------------------------------
