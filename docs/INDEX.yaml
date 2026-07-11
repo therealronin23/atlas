@@ -613,6 +613,10 @@ entries:
   type: decision
   status: vigente
   verified: null
+- path: docs/decisions/adr/adr_065_first_real_connector_gmail_readonly.md
+  type: decision
+  status: vigente
+  verified: null
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
