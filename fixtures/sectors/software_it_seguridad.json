@@ -1,0 +1,14 @@
+{
+  "sector_id": "software_it_seguridad",
+  "display_name": "Software/IT/Seguridad",
+  "description": "Empresas de producto SaaS, consultoría técnica y seguridad — revisión de código, incidentes y herramientas internas.",
+  "default_workbenches": [
+    "code_review_workbench"
+  ],
+  "default_capabilities": [
+    "files.read",
+    "browser.capture"
+  ],
+  "question_pack_id": "qp_software_it_seguridad",
+  "connector_pack_id": "software_pack"
+}

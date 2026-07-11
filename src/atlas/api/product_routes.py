@@ -28,6 +28,7 @@ from atlas.business.questions import (
     QuestionEngine,
     load_all_packs,
 )
+from atlas.business.registries import ObjectiveRegistry, SectorRegistry
 from atlas.events.store import OsEventStore
 from atlas.fabric.concierge import ConnectionConcierge
 from atlas.fabric.discovery import ConnectorDiscoveryEngine
@@ -176,6 +177,8 @@ def register_product_routes(
     question_packs = load_all_packs(fixtures_dir / "question_packs")
     questions = QuestionEngine()
     business = BusinessCoreEngine(store=store, path=business_core_path)
+    sectors = SectorRegistry(fixtures_dir / "sectors")
+    objectives = ObjectiveRegistry(fixtures_dir / "objectives", sectors)
 
     sessions_path = (
         business_core_path.parent / "onboarding_sessions.json"
@@ -234,6 +237,24 @@ def register_product_routes(
     def integrations_health() -> dict[str, Any]:
         return {
             "connectors": [h.model_dump(mode="json") for h in health.snapshot()],
+        }
+
+    # -- Sector Registry / Objective Registry ---------------------------------
+
+    @app.get("/sectors")
+    def sectors_list() -> dict[str, Any]:
+        return {
+            "count": len(sectors.all()),
+            "sectors": [s.model_dump(mode="json") for s in sectors.all()],
+            "rejected": sectors.rejected,
+        }
+
+    @app.get("/objectives")
+    def objectives_list() -> dict[str, Any]:
+        return {
+            "count": len(objectives.all()),
+            "objectives": [o.model_dump(mode="json") for o in objectives.all()],
+            "rejected": objectives.rejected,
         }
 
     # -- Adaptive Question Engine / Onboarding --------------------------------

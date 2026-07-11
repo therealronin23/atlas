@@ -99,7 +99,7 @@ def test_rejects_bad_status_and_risk() -> None:
 
 def test_all_root_schemas_are_valid_json() -> None:
     schemas = sorted((REPO / "schemas").glob("*.schema.json"))
-    assert len(schemas) == 23, "12 Fase 2 + 10 Fase 15 + 1 gate_ticket (Fase 16)"
+    assert len(schemas) == 26, "12 Fase 2 + 10 Fase 15 + 4 Fase 16 (gate_ticket, sector, objective, platform_terms)"
     for path in schemas:
         doc = json.loads(path.read_text())
         assert doc["type"] == "object", path.name
