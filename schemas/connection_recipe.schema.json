@@ -191,6 +191,10 @@
     "demo": {
       "type": "boolean",
       "description": "true = receta de demostración con datos falsos"
+    },
+    "personal_channel": {
+      "type": "boolean",
+      "description": "true = canal personal (p.ej. WhatsApp personal): el invariante duro del PolicyEngine bloquea siempre message.send/email.send/browser.submit para este conector, sin importar connector_id"
     }
   },
   "additionalProperties": false,

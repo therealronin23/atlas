@@ -189,6 +189,7 @@ class ConnectionRecipe(BaseModel):
     demo: bool
     credential: CredentialSpec | None = None
     legal_notes: str | None = None
+    personal_channel: bool = False
 
 
 class ConnectorPack(BaseModel):

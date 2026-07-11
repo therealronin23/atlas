@@ -28,7 +28,10 @@ class ConnectionConcierge:
         gated: list[dict[str, Any]] = []
         for cap, gate_id in sorted(recipe.gated_capabilities.items()):
             decision = self._policy.evaluate(
-                PolicyRequest(capability=cap, connector_id=recipe.connector_id)
+                PolicyRequest(
+                    capability=cap, connector_id=recipe.connector_id,
+                    personal_channel=recipe.personal_channel,
+                )
             )
             spec = get_capability(cap)
             gated.append({

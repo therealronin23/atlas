@@ -3,9 +3,10 @@
   "request": {
     "capability": "message.send",
     "connector_id": "whatsapp_personal_import",
+    "personal_channel": true,
     "approvals": ["human_approved", "gate_approved"]
   },
   "expected_decision": "deny",
   "expected_hard": true,
-  "expected_policy_id": "pol_hard_whatsapp_personal_send"
+  "expected_policy_id": "pol_hard_personal_channel_send"
 }
