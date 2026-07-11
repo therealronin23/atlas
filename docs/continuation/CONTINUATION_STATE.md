@@ -106,6 +106,20 @@ no con optimismo:
   `/memory/summary`). Muestra las 229 propuestas reales del lazo de
   autoconstrucción con su estado real. Verificado en navegador real
   contra bridge real, 192 tests OS verdes (190+2 nuevos), mypy limpio.
+- **Primer rediseño visual real del shell** (2026-07-11): `ui/atlas-shell`
+  deja de ser puro arnés sin inversión estética (D11 seguía vigente en la
+  parte "cero inversión estética" hasta ahora). Nuevo sistema de diseño en
+  `styles.css` + `index.html`: tipografía Chakra Petch (display) + JetBrains
+  Mono (datos/cuerpo, coherente con "es un panel de telemetría, no una app
+  de consumo"), paleta HUD (cian eléctrico `--accent: #2fe3ff`, violeta
+  `--accent-2`), paneles con esquinas recortadas (`clip-path`), glow real en
+  estados activos/conectados, textura de rejilla de fondo. Es solo capa
+  visual — cero cambio de lógica, cero componente nuevo, cero endpoint
+  nuevo. Verificado: `tsc --noEmit && vite build` limpio, navegador real
+  contra bridge real (fuentes/clip-path/colores confirmados vía
+  `getComputedStyle`, no solo captura visual). D11 sigue vigente en cuanto
+  a "no es la IA final" — esto es un sistema de diseño coherente, no una
+  reestructuración de información ni nuevas pantallas.
 
 ## What Is Simulated
 
