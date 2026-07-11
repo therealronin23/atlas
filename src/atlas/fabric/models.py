@@ -20,6 +20,8 @@ __all__ = [
     "DataClass",
     "DefaultMode",
     "Difficulty",
+    "GateStatus",
+    "GateTicket",
     "HealthIssue",
     "HealthStatus",
     "PermissionsExplainer",
@@ -31,6 +33,33 @@ __all__ = [
     "StepKind",
     "UnlessCondition",
 ]
+
+
+class GateStatus(str, Enum):
+    OPEN = "open"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+
+
+class GateTicket(BaseModel):
+    """schemas/gate_ticket.schema.json — ceremonia de decisión humana."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    gate_ticket_id: str = Field(pattern=r"^gt_[A-Za-z0-9_-]+$")
+    gate_id: str = Field(pattern=r"^gate_[A-Za-z0-9_-]+$")
+    action: str
+    subject_ref: str
+    risk: Risk
+    status: GateStatus
+    reason: str = Field(min_length=1)
+    requested_by: str
+    requested_at: str
+    evidence: list[str]
+    resolved_by: str | None = None
+    resolved_at: str | None = None
+    decision_note: str | None = None
 
 
 class RouteType(str, Enum):

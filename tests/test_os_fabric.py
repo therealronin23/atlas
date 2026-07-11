@@ -241,3 +241,59 @@ def test_auth_broker_manual_flow_never_sees_secret(tmp_path: Path) -> None:
     broker = AuthBroker(tmp_path / "refs.json")
     flow = broker.manual_secret_capture_flow("anthropic", "ANTHROPIC_API_KEY")
     assert flow["atlas_sees_secret"] is False
+
+
+# -- Gate Engine (Fase 16, ADR-063) ------------------------------------------
+
+def test_gate_ticket_lifecycle_open_to_approved(tmp_path: Path) -> None:
+    from atlas.events.schemas import Risk  # noqa: PLC0415
+    from atlas.fabric.gates import GateEngine  # noqa: PLC0415
+    from atlas.fabric.models import GateStatus  # noqa: PLC0415
+
+    store = OsEventStore(tmp_path / "events.jsonl")
+    engine = GateEngine(store=store, path=tmp_path / "tickets.json")
+    ticket = engine.open_ticket(
+        gate_id="gate_business_activation", action="business_core.activate",
+        subject_ref="bc_demo", risk=Risk.HIGH, reason="activar demo",
+    )
+    assert ticket.status is GateStatus.OPEN
+    assert engine.list_open() and engine.list_open()[0].gate_ticket_id == ticket.gate_ticket_id
+
+    resolved = engine.approve(ticket.gate_ticket_id, resolved_by="operador",
+                              decision_note="ok", evidence=["ref:1"])
+    assert resolved.status is GateStatus.APPROVED
+    assert resolved.resolved_by == "operador"
+    assert engine.list_open() == []  # ya no está abierto
+
+    events = {e.type for e in store.iter_events()}
+    assert "gate.opened" in events and "gate.approved" in events
+
+
+def test_gate_ticket_reject_and_no_double_resolution(tmp_path: Path) -> None:
+    from atlas.events.schemas import Risk  # noqa: PLC0415
+    from atlas.fabric.gates import GateEngine, GateTicketError  # noqa: PLC0415
+    from atlas.fabric.models import GateStatus  # noqa: PLC0415
+
+    engine = GateEngine(path=tmp_path / "tickets.json")
+    ticket = engine.open_ticket(
+        gate_id="gate_outbound", action="email.send", subject_ref="gmail",
+        risk=Risk.HIGH, reason="enviar",
+    )
+    rejected = engine.reject(ticket.gate_ticket_id, resolved_by="operador")
+    assert rejected.status is GateStatus.REJECTED
+    # Re-resolver un ticket ya resuelto es error.
+    with pytest.raises(GateTicketError):
+        engine.approve(ticket.gate_ticket_id, resolved_by="operador")
+
+
+def test_gate_ticket_requires_human_resolver(tmp_path: Path) -> None:
+    from atlas.events.schemas import Risk  # noqa: PLC0415
+    from atlas.fabric.gates import GateEngine, GateTicketError  # noqa: PLC0415
+
+    engine = GateEngine(path=tmp_path / "tickets.json")
+    ticket = engine.open_ticket(
+        gate_id="gate_outbound", action="email.send", subject_ref="gmail",
+        risk=Risk.HIGH, reason="enviar",
+    )
+    with pytest.raises(GateTicketError):
+        engine.approve(ticket.gate_ticket_id, resolved_by="")

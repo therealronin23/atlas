@@ -33,6 +33,7 @@ from atlas.business.models import (
 from atlas.events.emit import emit_event
 from atlas.events.schemas import EventStatus, Risk
 from atlas.events.store import OsEventStore
+from atlas.fabric.gates import GateEngine
 
 
 class ActivationError(ValueError):
@@ -106,10 +107,23 @@ class _Store:
 
 class BusinessCoreEngine:
     def __init__(
-        self, store: OsEventStore | None = None, path: Path | None = None,
+        self,
+        store: OsEventStore | None = None,
+        path: Path | None = None,
+        gate_engine: GateEngine | None = None,
     ) -> None:
         self._events = store
-        self._db = _Store(path or _default_state_path())
+        state_path = path or _default_state_path()
+        self._db = _Store(state_path)
+        # El Gate Engine hereda el aislamiento del path del core: en tests
+        # (tmp_path) los tickets quedan junto al estado, nunca en ~/atlas real.
+        self._gates = gate_engine or GateEngine(
+            store=store, path=state_path.parent / "gate_tickets.json"
+        )
+
+    @property
+    def gates(self) -> GateEngine:
+        return self._gates
 
     def create_draft(
         self,
@@ -229,7 +243,18 @@ class BusinessCoreEngine:
             raise ActivationError(
                 f"{business_core_id} está en {core.status.value}, no en draft"
             )
+        # Abre un ticket real en el Gate Engine: 'gated' deja de ser un flag.
+        ticket = self._gates.open_ticket(
+            gate_id=core.activation.gate_id,
+            action="business_core.activate",
+            subject_ref=business_core_id,
+            risk=Risk.HIGH,
+            reason=f"Activar Business Core con {len(core.entity_ids)} entidades",
+        )
         core.status = CoreStatus.PENDING_ACTIVATION
+        core.activation = core.activation.model_copy(update={
+            "gate_ticket_id": ticket.gate_ticket_id,
+        })
         core.updated_at = _now()
         self._db.save_core(core)
         emit_event(
@@ -239,12 +264,14 @@ class BusinessCoreEngine:
             risk=Risk.HIGH, status=EventStatus.WAITING_USER,
             payload={"business_core_id": business_core_id,
                      "gate_id": core.activation.gate_id,
+                     "gate_ticket_id": ticket.gate_ticket_id,
                      "entity_count": len(core.entity_ids)},
         )
         return core
 
     def approve_activation(
         self, business_core_id: str, approved_by: str,
+        decision_note: str | None = None, evidence: list[str] | None = None,
     ) -> BusinessCore:
         core = self._require_core(business_core_id)
         if core.status is not CoreStatus.PENDING_ACTIVATION:
@@ -252,6 +279,12 @@ class BusinessCoreEngine:
                 f"{business_core_id} no está pending_activation "
                 f"(está en {core.status.value}): no se puede activar sin pasar "
                 "por request_activation"
+            )
+        # La aprobación pasa por el Gate Engine (audita quién y cuándo).
+        if core.activation.gate_ticket_id is not None:
+            self._gates.approve(
+                core.activation.gate_ticket_id, resolved_by=approved_by,
+                decision_note=decision_note, evidence=evidence,
             )
         core.status = CoreStatus.ACTIVE
         core.activation = core.activation.model_copy(update={
@@ -264,7 +297,40 @@ class BusinessCoreEngine:
             f"Business Core {business_core_id} activado por {approved_by}",
             actor="business", source="atlas.business.core_engine",
             payload={"business_core_id": business_core_id,
-                     "approved_by": approved_by},
+                     "approved_by": approved_by,
+                     "gate_ticket_id": core.activation.gate_ticket_id},
+        )
+        return core
+
+    def reject_activation(
+        self, business_core_id: str, rejected_by: str,
+        decision_note: str | None = None,
+    ) -> BusinessCore:
+        """Rechazar la activación: el ticket queda rejected y el core vuelve
+        a draft (se puede volver a pedir más tarde)."""
+        core = self._require_core(business_core_id)
+        if core.status is not CoreStatus.PENDING_ACTIVATION:
+            raise ActivationError(
+                f"{business_core_id} no está pending_activation"
+            )
+        if core.activation.gate_ticket_id is not None:
+            self._gates.reject(
+                core.activation.gate_ticket_id, resolved_by=rejected_by,
+                decision_note=decision_note,
+            )
+        core.status = CoreStatus.DRAFT
+        core.activation = core.activation.model_copy(update={
+            "gate_ticket_id": None,
+        })
+        core.updated_at = _now()
+        self._db.save_core(core)
+        emit_event(
+            self._events, "business_core.activation.rejected",
+            f"Activación de {business_core_id} rechazada por {rejected_by}",
+            actor="business", source="atlas.business.core_engine",
+            risk=Risk.MEDIUM,
+            payload={"business_core_id": business_core_id,
+                     "rejected_by": rejected_by},
         )
         return core
 

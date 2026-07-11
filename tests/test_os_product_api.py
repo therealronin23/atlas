@@ -159,3 +159,47 @@ def test_business_core_unknown_id_404(client: TestClient) -> None:
     resp2 = client.post("/business/core/request-activation",
                         json={"business_core_id": "bc_does_not_exist"})
     assert resp2.status_code == 404
+
+
+# -- Gate Engine (Fase 16, ADR-063) ------------------------------------------
+
+def test_gates_queue_reflects_activation_request(client: TestClient) -> None:
+    draft = client.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+
+    assert client.get("/gates/open").json()["count"] == 0
+    client.post("/business/core/request-activation", json={"business_core_id": core_id})
+    queue = client.get("/gates/open").json()
+    assert queue["count"] == 1
+    ticket = queue["tickets"][0]
+    assert ticket["action"] == "business_core.activate"
+    assert ticket["subject_ref"] == core_id
+
+    fetched = client.get(f"/gates/{ticket['gate_ticket_id']}").json()
+    assert fetched["status"] == "open"
+
+    # Aprobar activa y vacía la cola.
+    client.post("/business/core/activate",
+                json={"business_core_id": core_id, "approved_by": "op"})
+    assert client.get("/gates/open").json()["count"] == 0
+
+
+def test_reject_activation_via_api_returns_to_draft(client: TestClient) -> None:
+    draft = client.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+    client.post("/business/core/request-activation", json={"business_core_id": core_id})
+    rejected = client.post("/business/core/reject", json={
+        "business_core_id": core_id, "rejected_by": "op", "decision_note": "no",
+    }).json()
+    assert rejected["status"] == "draft"
+    assert client.get("/gates/open").json()["count"] == 0
+
+
+def test_gate_unknown_ticket_404(client: TestClient) -> None:
+    assert client.get("/gates/gt_nope").status_code == 404

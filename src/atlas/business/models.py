@@ -137,6 +137,7 @@ class Activation(BaseModel):
     approved: bool
     approved_by: str | None = None
     approved_at: str | None = None
+    gate_ticket_id: str | None = Field(default=None, pattern=r"^gt_[A-Za-z0-9_-]+$")
 
 
 class LegacyLink(BaseModel):

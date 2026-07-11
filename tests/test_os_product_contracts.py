@@ -31,6 +31,8 @@ from atlas.fabric.models import (
     ConnectorHealth,
     ConnectorPack,
     DataClass,
+    GateStatus,
+    GateTicket,
     HealthStatus,
     PolicyEffect,
     PolicyRule,
@@ -45,6 +47,7 @@ PAIRS: list[tuple[type[BaseModel], str]] = [
     (ConnectorHealth, "connector_health.schema.json"),
     (CapabilitySpec, "capability.schema.json"),
     (PolicyRule, "policy_rule.schema.json"),
+    (GateTicket, "gate_ticket.schema.json"),
     (QuestionPack, "question_pack.schema.json"),
     (OnboardingSession, "onboarding_session.schema.json"),
     (BusinessCore, "business_core.schema.json"),
@@ -98,6 +101,8 @@ ENUM_CHECKS: list[tuple[type, str, list[str]]] = [
      ["properties", "status", "enum"]),
     (InputType, "question_pack.schema.json",
      ["$defs", "question", "properties", "input_type", "enum"]),
+    (GateStatus, "gate_ticket.schema.json",
+     ["properties", "status", "enum"]),
 ]
 
 
