@@ -1,5 +1,7 @@
-// Living Knowledge Graph v1: SVG + d3-force (ADR-059). Los eventos iluminan
-// la actividad de los nodos; click → inspector.
+// Living Knowledge Graph v2: SVG + d3-force (ADR-059), con presencia real —
+// respira, brilla y hace fluir energía por las aristas activas en vez de
+// congelarse en cuanto la simulación de layout se asienta. Los eventos
+// iluminan la actividad de los nodos; click → inspector.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -14,15 +16,15 @@ import {
 import type { GraphData, GraphNode } from "../core/types";
 
 const NODE_COLORS: Record<string, string> = {
-  user: "#5aa9ff",
-  memory: "#9d7bff",
-  tool: "#4ade80",
-  process: "#fbbf24",
+  user: "var(--accent)",
+  memory: "var(--accent-2)",
+  tool: "var(--ok)",
+  process: "var(--warn)",
   runtime: "#38bdf8",
   project: "#f472b6",
   artifact: "#a3e635",
   connector: "#fb923c",
-  error: "#f87171",
+  error: "var(--danger)",
 };
 
 interface SimNode extends SimulationNodeDatum {
@@ -32,6 +34,14 @@ interface SimNode extends SimulationNodeDatum {
 interface Props {
   graph: GraphData | null;
   onSelect: (node: GraphNode) => void;
+}
+
+// Retraso de animación determinista por nodo — así cada uno respira a su
+// propio ritmo en vez de pulsar todos al unísono (se sentiría mecánico).
+function delayFor(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 4200;
 }
 
 export function LivingGraph({ graph, onSelect }: Props) {
@@ -78,6 +88,8 @@ export function LivingGraph({ graph, onSelect }: Props) {
   }
 
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  const cx = size.w / 2;
+  const cy = size.h / 2;
 
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
@@ -86,34 +98,95 @@ export function LivingGraph({ graph, onSelect }: Props) {
         viewBox={`0 0 ${size.w} ${size.h}`}
         style={{ width: "100%", height: "100%" }}
       >
+        <defs>
+          <filter id="atlas-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Atmósfera: anillos de radar + barrido rotatorio — el fondo del
+            grafo nunca es un vacío estático, siempre hay una señal viva. */}
+        <g className="graph-atmosphere">
+          {[70, 140, 210].map((r) => (
+            <circle key={r} className="graph-ring" cx={cx} cy={cy} r={r} />
+          ))}
+          <g className="graph-sweep" style={{ transformOrigin: `${cx}px ${cy}px` }}>
+            <path
+              d={`M ${cx} ${cy} L ${cx + 210} ${cy} A 210 210 0 0 1 ${
+                cx + 210 * Math.cos(Math.PI / 6)
+              } ${cy - 210 * Math.sin(Math.PI / 6)} Z`}
+              fill="url(#atlas-sweep-grad)"
+            />
+          </g>
+          <defs>
+            <linearGradient id="atlas-sweep-grad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.14" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </g>
+
         {graph.edges.map((e) => {
           const s = positions.get(e.source);
           const t = positions.get(e.target);
           if (!s || !t) return null;
+          const sNode = byId.get(e.source);
+          const tNode = byId.get(e.target);
+          const active =
+            (sNode && (sNode.activity > 0.15 || sNode.state === "running")) ||
+            (tNode && (tNode.activity > 0.15 || tNode.state === "running"));
+          const flowColor = active
+            ? NODE_COLORS[(sNode ?? tNode)?.type ?? ""] ?? "var(--accent)"
+            : undefined;
           return (
-            <line key={e.id} className="graph-edge" x1={s.x} y1={s.y} x2={t.x} y2={t.y} />
+            <line
+              key={e.id}
+              className={`graph-edge${active ? " is-active" : ""}`}
+              x1={s.x}
+              y1={s.y}
+              x2={t.x}
+              y2={t.y}
+              style={active ? { stroke: flowColor, opacity: 0.75 } : undefined}
+            />
           );
         })}
         {graph.nodes.map((n) => {
           const p = positions.get(n.id);
           if (!p) return null;
           const r = 10 + n.activity * 14;
-          const color = NODE_COLORS[n.type] ?? "#8a93a8";
+          const color = NODE_COLORS[n.type] ?? "var(--text-dim)";
           const live = byId.get(n.id);
+          const running = n.state === "running";
+          const delay = delayFor(n.id);
           return (
             <g
               key={n.id}
-              className="graph-node"
+              className={`graph-node${running ? " is-running" : ""}`}
               transform={`translate(${p.x},${p.y})`}
               style={{ cursor: "pointer" }}
               onClick={() => live && onSelect(live)}
             >
+              {(running || n.activity > 0.2) && (
+                <circle
+                  className="halo"
+                  r={r + 10}
+                  fill={color}
+                  filter="url(#atlas-glow)"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              )}
               <circle
+                className="core"
                 r={r}
                 fill={color}
                 opacity={0.28 + n.activity * 0.7}
-                stroke={n.state === "running" ? color : "transparent"}
+                stroke={running ? color : "transparent"}
                 strokeWidth={2.5}
+                style={{ animationDelay: `${delay}ms` }}
               />
               <circle r={4} fill={color} />
               <text y={r + 13} textAnchor="middle">

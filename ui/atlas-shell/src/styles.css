@@ -272,7 +272,43 @@ pre.inspector {
 }
 
 .graph-node text { fill: var(--text); font-size: 11px; font-family: var(--font-mono); pointer-events: none; }
-.graph-edge { stroke: var(--border); stroke-width: 1.2; }
+.graph-edge { stroke: var(--border); stroke-width: 1.2; fill: none; }
+.graph-edge.is-active { stroke-width: 1.6; stroke-dasharray: 5 7; animation: atlas-flow 0.9s linear infinite; }
+
+@keyframes atlas-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+}
+@keyframes atlas-pulse-strong {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.22); }
+}
+@keyframes atlas-halo {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.6); }
+}
+@keyframes atlas-flow {
+  to { stroke-dashoffset: -24; }
+}
+@keyframes atlas-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.graph-node .core {
+  transform-box: fill-box; transform-origin: center;
+  animation: atlas-breathe 4200ms ease-in-out infinite;
+}
+.graph-node.is-running .core { animation: atlas-pulse-strong 1300ms ease-in-out infinite; }
+.graph-node .halo {
+  transform-box: fill-box; transform-origin: center;
+  animation: atlas-halo 2600ms ease-in-out infinite;
+  pointer-events: none;
+}
+
+.graph-atmosphere { pointer-events: none; }
+.graph-sweep { animation: atlas-sweep 10s linear infinite; }
+.graph-ring { fill: none; stroke: var(--border); opacity: 0.5; }
 .legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; font-family: var(--font-mono); }
 .legend span::before {
   content: ""; display: inline-block; width: 8px; height: 8px;

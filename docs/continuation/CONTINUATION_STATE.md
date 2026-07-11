@@ -130,6 +130,20 @@ no con optimismo:
   sin converger nunca a `validated` — self-build daemon posiblemente
   atascado en un reintento no convergente. Nombrado como candidato de
   investigación, no investigado todavía.
+- **Living Knowledge Graph con presencia real** (2026-07-11): el panel
+  central dejó de congelarse en cuanto el layout de d3-force se asienta.
+  Nodos respiran (`atlas-breathe`, ritmo distinto por nodo vía hash
+  determinista del id — no en bloque), los nodos `running`/con actividad
+  alta tienen halo con glow real (filtro SVG `feGaussianBlur`), las
+  aristas conectadas a un nodo activo hacen fluir un dash animado
+  (`atlas-flow`) con el color del nodo, y el fondo tiene atmósfera de
+  radar (3 anillos + barrido rotatorio de 10s). Colores de nodo ahora
+  referencian las mismas CSS vars del sistema de diseño HUD (`--accent`,
+  `--accent-2`, `--ok`, `--warn`, `--danger`) en vez de una paleta
+  hardcodeada desconectada del resto del shell. Verificado en navegador
+  real: `getComputedStyle` confirma las 3 animaciones activas
+  (`atlas-breathe`/`atlas-flow`/`atlas-sweep`), click-to-inspect intacto,
+  cero regresión. `tsc --noEmit && vite build` limpio.
 
 ## What Is Simulated
 
