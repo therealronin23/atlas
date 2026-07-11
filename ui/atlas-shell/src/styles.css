@@ -19,6 +19,8 @@
   --critical: #ff2b4a;
   --sim: #f0abfc;
   --real: #3ce68c;
+  --ember: #ff8a3d;
+  --ember-2: #ffce6b;
   --pad: 14px;
   --radius: 3px;
   --font: 13px;
@@ -308,7 +310,39 @@ pre.inspector {
 
 .graph-atmosphere { pointer-events: none; }
 .graph-sweep { animation: atlas-sweep 10s linear infinite; }
-.graph-ring { fill: none; stroke: var(--border); opacity: 0.5; }
+.graph-ring { fill: none; stroke: var(--border-bright); opacity: 0.4; }
+.graph-ring.spin-a { animation: atlas-sweep 46s linear infinite; }
+.graph-ring.spin-b { animation: atlas-sweep 68s linear infinite reverse; }
+.graph-ring.spin-c { animation: atlas-sweep 90s linear infinite; }
+.graph-core-bloom { animation: atlas-halo 5200ms ease-in-out infinite; pointer-events: none; }
+.graph-core-hot {
+  transform-box: fill-box; transform-origin: center;
+  animation: atlas-hot-pulse 2200ms ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes atlas-hot-pulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+.graph-orbit { animation-name: atlas-sweep; animation-timing-function: linear; animation-iteration-count: infinite; }
+
+@keyframes atlas-twinkle {
+  0%, 100% { opacity: var(--tw-min, 0.08); transform: translateY(0); }
+  50% { opacity: var(--tw-max, 0.55); transform: translateY(-3px); }
+}
+.graph-particle {
+  transform-box: fill-box; transform-origin: center;
+  animation-name: atlas-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+.graph-edge-path { fill: none; }
+.graph-label {
+  fill: var(--text); font-size: 10px; font-family: var(--font-mono);
+  opacity: 0; transition: opacity 0.15s; pointer-events: none;
+}
+.graph-node:hover .graph-label, .graph-node.is-hot .graph-label { opacity: 1; }
 .legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; font-family: var(--font-mono); }
 .legend span::before {
   content: ""; display: inline-block; width: 8px; height: 8px;
