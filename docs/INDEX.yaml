@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-10'
+generated: '2026-07-11'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
