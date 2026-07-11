@@ -315,9 +315,51 @@ def create_app(
 
     @app.post("/permissions/evaluate")
     def evaluate(req: EvaluateRequest) -> dict[str, Any]:
-        """Evaluador v1 fail-closed sobre gates fixture: si un gate cubre la
-        acción → default_decision del gate; si nada la cubre → allow solo
-        para acciones de lectura (read./get./list.), si no require_approval."""
+        """Evaluador de permisos. Convergencia incremental (ADR-062):
+        si `action` es una capability conocida del catálogo → PolicyEngine
+        (capability + data_class + invariantes duros); si no → evaluador v1
+        legacy sobre patrones de gate. Una sola verdad para el espacio de
+        capabilities, compatibilidad para acciones legacy."""
+        from atlas.fabric.capabilities import get_capability  # noqa: PLC0415
+        from atlas.fabric.policy import PolicyEngine, PolicyRequest  # noqa: PLC0415
+
+        if get_capability(req.action) is not None:
+            engine = PolicyEngine(
+                rules_path=fixtures / "security" / "policies.json",
+                gates=gates,
+            )
+            pdecision = engine.evaluate(PolicyRequest(capability=req.action))
+            # Vocabulario del contrato de representación: require_gate del
+            # PolicyEngine se muestra como require_approval en esta superficie.
+            pdecision_str: str = (
+                "require_approval"
+                if pdecision.decision == "require_gate"
+                else pdecision.decision
+            )
+            evaluation = PermissionEvaluation(
+                action=req.action,
+                resource=req.resource,
+                actor=req.actor,
+                decision=pdecision_str,
+                risk=pdecision.risk,
+                reason=pdecision.reason,
+                policy_id=pdecision.policy_id,
+                gate_id=pdecision.gate_id,
+                evaluated_at=_now(),
+            )
+            emit(
+                "permission.evaluated",
+                f"{req.action} → {pdecision_str}",
+                actor="governance",
+                risk=pdecision.risk,
+                status=EventStatus.WAITING_USER
+                if pdecision_str == "require_approval"
+                else EventStatus.COMPLETED,
+                payload={"evaluator": "policy_engine", **evaluation.model_dump()},
+            )
+            return {"simulated": True, "evaluation": evaluation.model_dump()}
+
+        # -- v1 legacy: patrones de acción sobre gates.json --------------------
         matched: GateSpec | None = None
         for gate in gates:
             if not gate.enabled:

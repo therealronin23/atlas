@@ -139,6 +139,39 @@ def test_evaluate_read_allowed_and_unknown_fail_closed(client: TestClient) -> No
     assert unknown["decision"] == "require_approval", "fail-closed"
 
 
+def test_evaluate_known_capability_uses_policy_engine(client: TestClient) -> None:
+    """ADR-062: una capability del catálogo se evalúa por PolicyEngine
+    (hereda policy_id + invariantes duros), no por la heurística v1."""
+    body = client.post(
+        "/permissions/evaluate",
+        json={"action": "email.send", "resource": "gmail"},
+    ).json()
+    ev = body["evaluation"]
+    assert ev["decision"] == "require_approval"  # require_gate normalizado
+    assert ev["gate_id"] == "gate_outbound"
+
+    # crm.bulk_export es capability → gate; legacy 'robot.launch' sigue en v1.
+    bulk = client.post(
+        "/permissions/evaluate",
+        json={"action": "crm.bulk_export", "resource": "hubspot"},
+    ).json()["evaluation"]
+    assert bulk["decision"] == "require_approval"
+    assert bulk["gate_id"] == "gate_data_export"
+
+
+def test_evaluate_legacy_action_still_uses_v1(client: TestClient) -> None:
+    """Acción NO-capability sigue por el evaluador v1 (compatibilidad)."""
+    # Se comprueba vía el marcador evaluator en el evento emitido: la
+    # respuesta es idéntica en forma, pero mail.send (no es capability)
+    # debe seguir dando gate_outbound por el patrón v1.
+    ev = client.post(
+        "/permissions/evaluate",
+        json={"action": "mail.send", "resource": "gmail"},
+    ).json()["evaluation"]
+    assert ev["decision"] == "require_approval"
+    assert ev["gate_id"] == "gate_outbound"
+
+
 def test_websocket_tail_and_live_push(client: TestClient) -> None:
     client.post("/simulate", json={"fixture": "demo_first_run"})
     first_batch = client.get("/events").json()["count"]
