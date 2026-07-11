@@ -401,6 +401,18 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/phase15/IMPROVEMENT_PROPOSALS.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase15/NEW_GAPS_FOUND.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase15/PHASE_15_COMPLETION_REPORT.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/phase15/PHASE_15_EXECUTION_PLAN.md
   type: conocimiento
   status: vigente
@@ -413,7 +425,23 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/continuation/phase15/RECOMMENDED_PHASE_16.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/phase15/REPO_ALIGNMENT_REPORT.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase15/TESTING_STATUS.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase15/WHAT_WAS_IMPLEMENTED.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/continuation/phase15/WHAT_WAS_NOT_IMPLEMENTED.md
   type: conocimiento
   status: vigente
   verified: null
@@ -569,6 +597,14 @@ entries:
   type: decision
   status: vigente
   verified: null
+- path: docs/decisions/adr/adr_060_integration_fabric_easy_connection_policy.md
+  type: decision
+  status: vigente
+  verified: null
+- path: docs/decisions/adr/adr_061_business_core_draft_first_question_engine.md
+  type: decision
+  status: vigente
+  verified: null
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
@@ -639,6 +675,10 @@ entries:
   verified: null
 - path: docs/demo/completeness_demo.py
   type: difusion
+  status: vigente
+  verified: null
+- path: docs/design/UI_QUALITY_GATE.md
+  type: design
   status: vigente
   verified: null
 - path: docs/design/absorption_master_plan.md

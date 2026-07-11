@@ -15,11 +15,10 @@ from __future__ import annotations
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from atlas.api.models import GateSpec
 from atlas.events.emit import emit_event
 from atlas.events.schemas import EventStatus, OsEvent, Risk
 from atlas.events.store import OsEventStore
@@ -32,6 +31,13 @@ from atlas.fabric.models import (
     RouteType,
     UnlessCondition,
 )
+
+if TYPE_CHECKING:
+    # fabric es capa inferior a api: importar atlas.api.models a nivel de
+    # módulo dispara atlas/api/__init__ → server → product_routes →
+    # fabric.concierge → fabric.policy (ciclo). Solo tipo; en runtime se
+    # importa perezosamente dentro de load_gates().
+    from atlas.api.models import GateSpec
 
 _DATA_SEVERITY: dict[DataClass, int] = {
     DataClass.PUBLIC: 0,
@@ -339,8 +345,10 @@ class PolicyEngine:
 
 
 def load_gates(gates_path: Path) -> list[GateSpec]:
-    """Loader local (no importa atlas.api.server: evitaría un ciclo
-    fabric→server→fabric cuando el bridge registre rutas de producto)."""
+    """Loader local. Import perezoso de GateSpec (ver nota TYPE_CHECKING
+    arriba): evita el ciclo fabric→api→fabric al cargar el módulo."""
+    from atlas.api.models import GateSpec  # noqa: PLC0415
+
     if not gates_path.exists():
         return []
     raw = json.loads(gates_path.read_text(encoding="utf-8"))

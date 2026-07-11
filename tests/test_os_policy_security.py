@@ -129,6 +129,22 @@ def test_unknown_capability_is_deny_not_allow(bare_engine: PolicyEngine) -> None
     assert decision.decision == "deny"
 
 
+def test_every_capability_gate_id_resolves_to_a_real_gate() -> None:
+    """Gap real encontrado en el cierre de Fase 15: 8 capacidades apuntaban
+    a gate_ids que no existían en fixtures/governance/gates.json (el
+    require_gate seguía siendo seguro por defecto, pero el gate_id era un
+    callejón sin salida). Regresión: todo gate_id declarado en el catálogo
+    de capacidades debe existir de verdad."""
+    gates_path = REPO_ROOT / "fixtures" / "governance" / "gates.json"
+    known_gate_ids = {g["gate_id"] for g in json.loads(gates_path.read_text())}
+    for cap in CAPABILITY_CATALOG.values():
+        if cap.gate_id is not None:
+            assert cap.gate_id in known_gate_ids, (
+                f"{cap.capability} apunta a {cap.gate_id!r}, ausente en "
+                "fixtures/governance/gates.json"
+            )
+
+
 def test_capability_catalog_covers_prompt_minimum() -> None:
     """El prompt exige al menos estas 22 capacidades (MODULE 6)."""
     required = {
