@@ -1,0 +1,23 @@
+{
+  "source_ref": "import:gmail_demo_inbox",
+  "candidates": [
+    {
+      "candidate_id": "cand_gmail_demo_001",
+      "kind": "contact",
+      "label": "Cliente Demo",
+      "confidence": 0.9,
+      "source_refs": ["import:gmail_demo_inbox"],
+      "proposed_data": {"email": "cliente.demo@example.com", "name": "Cliente Demo"},
+      "requires_review": true
+    },
+    {
+      "candidate_id": "cand_gmail_demo_002",
+      "kind": "contact",
+      "label": "contacto.sin.nombre@example.com",
+      "confidence": 0.6,
+      "source_refs": ["import:gmail_demo_inbox"],
+      "proposed_data": {"email": "contacto.sin.nombre@example.com", "name": null},
+      "requires_review": true
+    }
+  ]
+}

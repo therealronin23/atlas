@@ -1,0 +1,16 @@
+{
+  "business_core_id": "bc_restaurant_demo",
+  "sector_id": "restauracion_hosteleria",
+  "status": "draft",
+  "canonicality": {
+    "mode": "atlas_canonical",
+    "source_of_truth": "atlas"
+  },
+  "modules": {"crm": false, "erp": true},
+  "entity_ids": ["be_restaurant_demo_product_001", "be_restaurant_demo_supplier_001"],
+  "created_from": {"kind": "onboarding", "ref": "obs_restaurant_demo"},
+  "activation": {"gate_id": "gate_business_activation", "approved": false},
+  "created_at": "2026-07-10T00:06:00+00:00",
+  "updated_at": "2026-07-10T00:06:00+00:00",
+  "demo": true
+}
