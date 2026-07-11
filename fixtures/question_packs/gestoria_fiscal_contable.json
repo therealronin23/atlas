@@ -1,0 +1,83 @@
+{
+  "pack_id": "qp_gestoria_fiscal_contable",
+  "sector_id": "gestoria_fiscal_contable",
+  "display_name": "Onboarding — Gestoría fiscal/contable",
+  "questions": [
+    {
+      "question_id": "clients_type",
+      "label": "¿Trabajas con autónomos, empresas o ambos?",
+      "why_this_is_needed": "Determina qué obligaciones fiscales y qué tipo de expediente debe generar Atlas por cliente",
+      "what_atlas_will_do_with_it": "Crea la plantilla de expediente fiscal adecuada (autónomo/empresa) para cada cliente nuevo",
+      "input_type": "multi_choice",
+      "options": [
+        {"option_id": "autonomos", "label": "Autónomos"},
+        {"option_id": "companies", "label": "Empresas"}
+      ],
+      "validation": {"min_selected": 1},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["customer", "case_file"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": ["tax_filing_workbench"]
+    },
+    {
+      "question_id": "client_files_location",
+      "label": "¿Dónde guardas los documentos de tus clientes?",
+      "why_this_is_needed": "Sin saber dónde vive la evidencia documental, Atlas no puede montar la revisión de documentos",
+      "what_atlas_will_do_with_it": "Conecta esa fuente (carpeta local/Drive) como origen de lectura para el expediente",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "local_folder", "label": "Carpeta local"},
+        {"option_id": "drive_onedrive", "label": "Drive/OneDrive"},
+        {"option_id": "physical_only", "label": "Solo papel"},
+        {"option_id": "other", "label": "Otro"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": true,
+      "resulting_entities": ["document"],
+      "resulting_capabilities": ["files.read"],
+      "resulting_workbenches": ["document_review_workbench"]
+    },
+    {
+      "question_id": "accounting_software",
+      "label": "¿Qué software de contabilidad usas?",
+      "why_this_is_needed": "Define si Atlas debe conectar un ERP existente o generar un núcleo propio en borrador",
+      "what_atlas_will_do_with_it": "Prepara la receta de conexión (Odoo/genérico) o el Business Core en borrador si no hay software",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "odoo", "label": "Odoo"},
+        {"option_id": "generic_erp", "label": "Otro (Sage/A3/Contasol/Holded...)"},
+        {"option_id": "excel", "label": "Excel/hojas de cálculo"},
+        {"option_id": "none", "label": "Ninguno todavía"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": true,
+      "resulting_entities": ["invoice", "receipt"],
+      "resulting_capabilities": ["erp.customers.read", "erp.invoices.read"],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "uses_digital_certificate",
+      "label": "¿Usas certificado digital para presentaciones oficiales?",
+      "why_this_is_needed": "El uso de certificado exige siempre un gate propio; Atlas nunca lo automatiza en silencio",
+      "what_atlas_will_do_with_it": "Marca la capacidad certificate.use como gateada y prepara la ceremonia de presentación",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "yes", "label": "Sí"},
+        {"option_id": "no", "label": "No"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": true,
+      "resulting_entities": [],
+      "resulting_capabilities": ["certificate.use", "official.submit"],
+      "resulting_workbenches": ["submission_ceremony_workbench"]
+    }
+  ]
+}
