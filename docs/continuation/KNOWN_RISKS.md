@@ -54,3 +54,12 @@ estado vivo en `docs/risks/RISK_REGISTER.md`.
     `uvicorn ... --port 7341` nuevo falla a conectar por curl, comprueba
     con `ss -ltnp | grep 7341` antes de asumir que el puerto está
     ocupado — puede estar libre de verdad.
+14. **(Phase Recovery, 2026-07-11) No existe una única numeración de fases
+    F1-F16 — hay 5 fuentes distintas que no coinciden entre sí** (ver
+    `docs/continuation/phase_recovery/PHASE_SOURCE_INDEX.md`). No busques
+    "Fase 11" a "Fase 14": nadie las definió nunca, no es un hueco
+    silencioso. Lo que SÍ quedó sin ejecutar y sin cerrar formalmente
+    hasta ahora eran **Fase 5 (Visual Orchestrator Territory) y Fase 6
+    (Coding+Research Territories)** de `docs/handoff/atlas_build_pack/
+    docs/atlas-bible/17_PHASES_ROADMAP.md` — parkeadas explícitamente en
+    ADR-066, no bloquean nada de F15/F16/F17.
