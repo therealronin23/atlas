@@ -1,0 +1,10 @@
+{
+  "pack_id": "personal_pack",
+  "sector_id": "vida_personal_familia",
+  "display_name": "Pack Vida personal/familia",
+  "connectors": ["gmail", "whatsapp_personal_import", "local_csv_folder"],
+  "setup_order": ["gmail", "local_csv_folder", "whatsapp_personal_import"],
+  "optional_connectors": [],
+  "rationale": "Correo personal, ficheros locales y (opcionalmente) un chat de WhatsApp exportado para memoria personal; import-only, nunca automatización de mensajería personal.",
+  "demo": true
+}
