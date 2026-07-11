@@ -39,3 +39,18 @@ estado vivo en `docs/risks/RISK_REGISTER.md`.
     (8 de 26 no existían); hay test de regresión
     (`test_every_capability_gate_id_resolves_to_a_real_gate`) pero no lo
     borres si añades capacidades nuevas.
+12. **(Fase 16) Hay un daemon de autoconstrucción vivo contra este mismo
+    repo** (`ATLAS_SELF_BUILD=1`, verificable con
+    `ps aux | grep ATLAS_SELF_BUILD` o inspeccionando
+    `/proc/<pid>/environ`). Puede modificar ficheros (incl. UI) EN
+    PARALELO a tu sesión sin avisar — antes de escribir código nuevo en un
+    área, corre `git status` por si ya lo hizo; verifícalo (build real +
+    tests + smoke) en vez de descartar o sobrescribir a ciegas. Detectado
+    2026-07-11: implementó el arnés UI de F16-6 mientras se cerraban
+    F16-1..5/7/8, con cero colisión de ficheros.
+13. **(Fase 16) Un bridge en 7341 puede quedar zombi**: proceso vivo que
+    ya no escucha en el puerto (visto con `PID 1446025`, `ps aux` lo
+    lista pero `ss -ltnp` no muestra nada escuchando). Si un
+    `uvicorn ... --port 7341` nuevo falla a conectar por curl, comprueba
+    con `ss -ltnp | grep 7341` antes de asumir que el puerto está
+    ocupado — puede estar libre de verdad.

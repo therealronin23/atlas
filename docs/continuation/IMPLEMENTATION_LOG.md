@@ -2,6 +2,55 @@
 
 Registro append-only por sesión. Entradas nuevas ARRIBA.
 
+## Sesión 2026-07-11 — Fase 16: cierre de los 8 gaps de RECOMMENDED_PHASE_16.md
+
+Orquestación: Opus dirige, delega en `autobuild-impl-sonnet`/`-haiku` vía
+`Task`, audita cada diff agregado con `pytest`+`mypy` reales antes de
+commitear. Ledger en `.autobuild/ledger-20260711-1238.md`. Cónclave
+(`deliberation_council`) convocado una vez para la decisión de mayor riesgo.
+
+- **F16-1** (Opus): `/permissions/evaluate` converge con PolicyEngine para
+  capabilities conocidas; v1 legacy intacto para el resto (ADR-062).
+- **F16-2** (Opus, baseline limpio): Gate Engine real — `GateTicket` con
+  ciclo `open→approved|rejected`, solo humano resuelve; `request_activation`
+  abre ticket, `approve_activation` lo aprueba, nuevo `reject_activation`
+  (ADR-063). API `/gates/open`, `/gates/{id}`; CLI `atlas gates list`.
+- **F16-3** (Sonnet): sesiones de onboarding persistidas a disco
+  (`_SessionStore`, patrón `_Store`); sobreviven a reinicio del bridge
+  (probado con 2 apps sobre el mismo `business_core_path`).
+- **F16-5** (Sonnet): Sector Registry + Objective Registry formales; test de
+  drift real (todo `sector_id` de question_packs/connector_packs debe
+  existir). `GET /sectors`, `/objectives`.
+- **F16-7** (Sonnet): Legal/ToS registry por conector; `recipes_missing_terms`
+  audita que toda receta con riesgo legal declara su entrada — halló que
+  `odoo_erp` no la necesitaba pero `legacy_desktop_app` sí (dato real, no la
+  premisa inicial).
+- **F16-8** (Sonnet): `personal_channel: bool` estructural en la receta; el
+  invariante duro de canal personal deja de depender del prefijo del
+  `connector_id` (evadible) y pasa a un chequeo directo en código.
+- **F16-4** (Cónclave + Sonnet, supervisado): primer conector real —
+  `GmailReadOnlyConnector`. El Cónclave descartó la ruta MCP-del-tronco por
+  HECHO (el bridge 7341 no puede llamar MCP) y decidió cliente propio con
+  SOLO `urllib` de stdlib (cero dependencia nueva, sin ADR-de-dependencia
+  necesario). Token como `credential_reference` de entorno, nunca
+  persistido/logueado (verificado por Opus independientemente). `email.send`
+  ausente (sigue hard-gated). ADR-065.
+- **F16-6** (hallazgo): el **daemon de autoconstrucción** (`ATLAS_SELF_BUILD=1`,
+  proceso vivo detectado por `ps`/`/proc/<pid>/environ`) ya había implementado
+  `HarnessPanel.tsx` en paralelo mientras yo cerraba F16-1..5/7/8, usando los
+  endpoints reales según se iban commiteando. Verificado por Opus antes de
+  aceptar: `npm run build` limpio, bridge real con `ATLAS_HOME` aislado +
+  navegador real conduciendo la vista (clic real, banner "HARNESS — no UX
+  final" confirmado por DOM, 4 endpoints respondieron 200 real, 20 items
+  renderizados con datos reales). Efecto secundario menor: quedó un
+  directorio vacío en `~/atlas/business_core/` real durante la investigación
+  del port-conflict con un proceso zombi preexistente (`PID 1446025`,
+  no listaba nada) — limpiado (`rmdir`, sin datos que perder).
+- **Suite OS: 152→190 passed** (+38). mypy strict limpio en `api/ events/
+  fabric/ business/ interfaces/cli.py` (39 ficheros). 8 commits
+  (`51c57c77`→`847a18c2`). Un título de commit corregido con `amend`
+  (copy-paste erróneo, cuerpo era correcto).
+
 ## Sesión 2026-07-10/11 — Fase 15: Atlas Product OS (Integration Fabric + Business Core)
 
 - **Contexto**: el operador entregó `atlas_product_os_liquid_ui_pack_v1.zip`
