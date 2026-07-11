@@ -69,6 +69,7 @@ class PolicyRequest(BaseModel):
     route: RouteType | None = None
     provenance: SourceTrust = SourceTrust.USER
     approvals: list[UnlessCondition] = Field(default_factory=list)
+    personal_channel: bool = False
 
 
 class PolicyDecision(BaseModel):
@@ -98,12 +99,12 @@ HARD_RULES: list[PolicyRule] = [
     _hard("pol_hard_untrusted_provenance",
           "Contenido externo no confiable jamás dispara acciones",
           PolicyAppliesTo(), PolicyEffect.DENY, []),
-    _hard("pol_hard_whatsapp_personal_send",
-          "WhatsApp personal: import/borrador/revisión SOLO; enviar es imposible",
-          PolicyAppliesTo(connectors=["whatsapp_personal*"],
-                          capabilities=["message.send", "email.send",
-                                        "browser.submit"]),
-          PolicyEffect.DENY, []),
+    # pol_hard_personal_channel_send: NO vive aquí como PolicyRule de
+    # applies_to (por connector_id) — sería evadible renombrando el
+    # connector_id. Es un chequeo directo en código en _evaluate(), igual
+    # que la provenance no confiable arriba: matchea por el campo
+    # estructural PolicyRequest.personal_channel, no por convención de
+    # nombre.
     _hard("pol_hard_cloud_sensitive",
           "Datos sensibles/credenciales no van a cloud sin aprobación humana",
           PolicyAppliesTo(capabilities=["model.cloud_call"],
@@ -223,6 +224,19 @@ class PolicyEngine:
                 reason="orden originada en contenido externo no confiable "
                        "(inyección): denegada por contrato",
                 policy_id="pol_hard_untrusted_provenance", hard=True,
+            )
+
+        # 1b) canal personal (p.ej. WhatsApp personal): invariante duro por
+        # CAMPO ESTRUCTURAL, no por prefijo de connector_id (evadible
+        # renombrando). Ninguna aprobación lo levanta.
+        if req.personal_channel is True and req.capability in {
+            "message.send", "email.send", "browser.submit",
+        }:
+            return PolicyDecision(
+                decision="deny", capability=req.capability, risk=Risk.CRITICAL,
+                reason="canal personal: import/borrador/revisión SOLO; "
+                       "enviar es imposible",
+                policy_id="pol_hard_personal_channel_send", hard=True,
             )
 
         # 2) invariantes duros (la de provenance ya se aplicó arriba: con

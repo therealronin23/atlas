@@ -14,7 +14,7 @@ from atlas.fabric.health import HealthMonitor
 from atlas.fabric.ladder import ladder_violations, order_routes, route_risk, rung
 from atlas.fabric.models import HealthIssue, HealthStatus, RouteType
 from atlas.fabric.packs import PackEngine
-from atlas.fabric.policy import PolicyEngine
+from atlas.fabric.policy import PolicyEngine, PolicyRequest
 from atlas.fabric.recipes import RecipeEngine
 from atlas.fabric.registry import ConnectorRegistry, descriptor_hash
 from atlas.fabric.testing import ConnectionTestRunner
@@ -75,6 +75,54 @@ def test_whatsapp_personal_send_forbidden_by_recipe(recipes: RecipeEngine) -> No
     assert "message.send" in wa.forbidden_capabilities
     assert "message.send" not in wa.capabilities
     assert "message.send" not in wa.gated_capabilities
+
+
+def test_personal_channel_send_blocked_regardless_of_connector_name(
+    tmp_path: Path,
+) -> None:
+    """Gap #9: el invariante duro NO puede depender de que connector_id
+    empiece por 'whatsapp_personal*' (evadible renombrando). Un conector con
+    OTRO nombre pero personal_channel=true debe quedar igual de bloqueado
+    para message.send — la protección es por campo estructural, no por
+    convención de nombre."""
+    (tmp_path / "telegram_personal.recipe.json").write_text(
+        '{"connector_id":"telegram_personal_import","human_name":"Telegram '
+        'personal (importar chat)","category":"communication",'
+        '"recommended_route":"import_export_batch",'
+        '"fallback_routes":["human_manual"],"difficulty":"guided",'
+        '"default_mode":"import_only","safe_defaults":{"send":false},'
+        '"capabilities":["files.read"],"gated_capabilities":{},'
+        '"forbidden_capabilities":["message.send","browser.submit"],'
+        '"setup_steps":[{"step_id":"1","kind":"user_action","description":"x"}],'
+        '"permissions_explainer":{"will":[],"will_not":[]},"demo":true,'
+        '"personal_channel":true}',
+        encoding="utf-8",
+    )
+    engine = RecipeEngine(tmp_path)
+    assert engine.rejected == {}
+    recipe = engine.get("telegram_personal_import")
+    assert recipe is not None
+    assert recipe.personal_channel is True
+
+    policy = PolicyEngine()
+    decision = policy.evaluate(PolicyRequest(
+        capability="message.send", connector_id=recipe.connector_id,
+        personal_channel=recipe.personal_channel,
+        approvals=["human_approved", "gate_approved"],
+    ))
+    assert decision.decision == "deny"
+    assert decision.hard is True
+    assert decision.policy_id == "pol_hard_personal_channel_send"
+
+
+def test_personal_channel_policy_request_denies_directly() -> None:
+    """Forma mínima del mismo invariante: PolicyRequest con
+    personal_channel=True deniega message.send sin necesidad de receta."""
+    decision = PolicyEngine().evaluate(PolicyRequest(
+        capability="message.send", personal_channel=True,
+    ))
+    assert decision.decision == "deny"
+    assert decision.policy_id == "pol_hard_personal_channel_send"
 
 
 def test_computer_use_never_recommended_in_fixtures(recipes: RecipeEngine) -> None:

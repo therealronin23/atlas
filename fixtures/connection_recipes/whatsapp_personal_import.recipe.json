@@ -36,5 +36,6 @@
   },
   "credential": null,
   "legal_notes": "WhatsApp personal prohíbe la automatización de envío en sus ToS; Atlas solo importa/lee, nunca actúa como cliente automatizado.",
-  "demo": true
+  "demo": true,
+  "personal_channel": true
 }
