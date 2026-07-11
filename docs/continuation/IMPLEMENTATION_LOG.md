@@ -45,14 +45,27 @@ Registro append-only por sesión. Entradas nuevas ARRIBA.
   RECOMMENDED_PHASE_16, IMPROVEMENT_PROPOSALS, TESTING_STATUS. Docs
   globales de continuación actualizados (no reescritos: CONTINUATION_STATE,
   NEXT_AI_INSTRUCTIONS, KNOWN_RISKS, OPEN_QUESTIONS, RISK_REGISTER).
-- **Suite OS al cierre: 144 passed** (`tests/test_os_*.py`), mypy strict
+- **Suite OS al cierre: 152 passed** (`tests/test_os_*.py`), mypy strict
   limpio en `api/`, `events/`, `fabric/`, `business/`, `interfaces/cli.py`.
   Verificación en vivo: bridge real con `ATLAS_HOME` aislado + curl real;
   CLI real (5 comandos ejecutados, no solo importados).
-- **Suite COMPLETA del repo: 3154 passed, 1 skipped** (251s) con los mismos
+- **Suite COMPLETA del repo: 3162 passed, 1 skipped** (251s) con los mismos
   2 "failed" de siempre en `TestSelfBuildCycleWiring` (artefacto de
   `ATLAS_NESTED_TEST_RUN=1`, re-corridos sin la variable: 4/4 verdes).
-  3049 (cierre Fase 10) + 105 tests nuevos de Fase 15 = 3154, cuadra exacto.
+  3049 (cierre Fase 10) + 113 tests nuevos de Fase 15 = 3162, cuadra exacto (105 en el cierre + 8 de la auditoría 2026-07-11).
+- **Auditoría con Opus (2026-07-11, a petición del operador)**: 3 defectos
+  reales cazados y arreglados en la misma sesión — (1) código muerto que
+  introduje: `entities.py` huérfano + `emit_policy_event()` sin llamador +
+  flag `modules.crm/erp` decorativo → `emit_policy_event` borrado, y
+  `CRM_KINDS/ERP_KINDS`+`modules` ahora ENFORCED en `add_entity`
+  (`ModuleDisabledError`); (2) 4 fixtures de security copiados sin test
+  (incl. `memory_poisoning_attempt.md`, uno de los 5 ataques del criterio
+  #11) + criterio #7 (crm bulk export gate) sin test + `impossible` del
+  concierge sin cobertura → 8 tests añadidos, los 18 fixtures de security se
+  ejercitan todos; (3) `WHAT_WAS_NOT_IMPLEMENTED` callaba los componentes
+  nombrados del prompt no construidos (APISpecImporter, WebhookManager,
+  MCPGateway, CRMCoreEngine/ERPCoreEngine, etc.) → sección honesta añadida
+  distinguiendo "realizado como dato/receta" de "genuinamente ausente".
 
 ## Sesión 2026-07-10 — cierre (mismo día, continuación de la entrada de abajo)
 

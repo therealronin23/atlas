@@ -10,6 +10,7 @@ import pytest
 from atlas.business.core_engine import (
     ActivationError,
     BusinessCoreEngine,
+    ModuleDisabledError,
     ReviewRequiredError,
 )
 from atlas.business.extract import extract_contacts_from_gmail, extract_from_invoices
@@ -27,6 +28,7 @@ from atlas.business.models import (
     EntityCandidate,
     EntityKind,
     LegacyLinkMode,
+    Modules,
     OnboardingSession,
     SessionStatus,
 )
@@ -208,6 +210,24 @@ def test_cannot_reactivate_already_active_core(tmp_path: Path) -> None:
     engine.approve_activation(core.business_core_id, approved_by="op")
     with pytest.raises(ActivationError):
         engine.request_activation(core.business_core_id)
+
+
+def test_module_flag_is_enforced_not_decorative(tmp_path: Path) -> None:
+    """modules.crm/erp dejó de ser decorativo (hallazgo de la auditoría):
+    añadir una entidad exclusiva de un módulo desactivado se rechaza, y las
+    vistas CRM_KINDS/ERP_KINDS de entities.py se usan de verdad."""
+    engine = BusinessCoreEngine(path=tmp_path / "bcore.json")
+    erp_only = engine.create_draft(
+        "restauracion_hosteleria",
+        CreatedFrom(kind=CreatedFromKind.MANUAL, ref="m"),
+        modules=Modules(crm=False, erp=True),
+    )
+    # invoice es ERP → permitido; opportunity es CRM puro → rechazado.
+    engine.add_entity(erp_only.business_core_id, EntityKind.INVOICE, "F-1")
+    with pytest.raises(ModuleDisabledError):
+        engine.add_entity(erp_only.business_core_id, EntityKind.OPPORTUNITY, "Deal")
+    # document es SHARED (ni CRM ni ERP exclusivo) → siempre permitido.
+    engine.add_entity(erp_only.business_core_id, EntityKind.DOCUMENT, "doc")
 
 
 def test_promote_candidate_requires_human_review(tmp_path: Path) -> None:

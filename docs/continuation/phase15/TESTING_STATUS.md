@@ -2,11 +2,11 @@
 
 ## Unit tests
 
-105 tests nuevos en 5 suites: `test_os_product_contracts.py` (33),
-`test_os_fabric.py` (21), `test_os_policy_security.py` (21),
-`test_os_business.py` (18), `test_os_product_api.py` (12) — más 1 test
+113 tests nuevos en 5 suites: `test_os_product_contracts.py` (33),
+`test_os_fabric.py` (22), `test_os_policy_security.py` (27),
+`test_os_business.py` (19), `test_os_product_api.py` (12) — más 1 test
 extendido en `test_os_api.py` (guard anti-Orchestrator) y 2 aserciones
-actualizadas (schemas=22, gates=12). Total suite OS: **144 passed**.
+actualizadas (schemas=22, gates=12). Total suite OS: **152 passed**.
 
 ## Integration tests
 

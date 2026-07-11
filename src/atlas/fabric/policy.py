@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from atlas.events.emit import emit_event
-from atlas.events.schemas import EventStatus, OsEvent, Risk
+from atlas.events.schemas import EventStatus, Risk
 from atlas.events.store import OsEventStore
 from atlas.fabric.capabilities import get_capability, is_read_capability
 from atlas.fabric.models import (
@@ -363,17 +363,4 @@ def default_policy_engine(
         rules_path=repo_root / "fixtures" / "security" / "policies.json",
         gates=load_gates(repo_root / "fixtures" / "governance" / "gates.json"),
         store=store,
-    )
-
-
-def emit_policy_event(store: OsEventStore | None, decision: PolicyDecision) -> OsEvent:
-    """Compat: emisión manual cuando el motor se construyó sin store."""
-    return emit_event(
-        store,
-        "policy.evaluated",
-        f"{decision.capability} → {decision.decision}",
-        actor="governance",
-        source="atlas.fabric.policy",
-        risk=decision.risk,
-        payload=decision.model_dump(mode="json"),
     )

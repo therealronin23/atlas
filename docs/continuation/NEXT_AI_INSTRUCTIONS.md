@@ -46,7 +46,7 @@ cd ui/atlas-shell && npm run dev          # terminal 2 → http://127.0.0.1:5173
 ## Cómo testear (SIEMPRE antes y después de tocar algo)
 
 ```bash
-PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q   # 144 passed
+PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q   # 152 passed
 MYPYPATH=src python -m mypy src/atlas/api/ src/atlas/events/ src/atlas/fabric/ src/atlas/business/ src/atlas/interfaces/cli.py
 cd ui/atlas-shell && npm run build
 ```

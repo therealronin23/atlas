@@ -25,16 +25,16 @@ Fecha: 2026-07-10/11. Origen: `atlas_product_os_liquid_ui_pack_v1.zip`.
 - `fixtures/`: connection_recipes (10), connector_packs (5), question_packs
   (5), security (18, incluye corpus copiado + fixtures propios), business_core
   (9).
-- Tests: `test_os_product_contracts.py` (33), `test_os_fabric.py` (21),
-  `test_os_policy_security.py` (21), `test_os_business.py` (18),
-  `test_os_product_api.py` (12) — 105 tests nuevos.
+- Tests: `test_os_product_contracts.py` (33), `test_os_fabric.py` (22),
+  `test_os_policy_security.py` (27), `test_os_business.py` (19),
+  `test_os_product_api.py` (12) — 113 tests nuevos.
 - Docs: este directorio, `docs/decisions/adr/adr_060_*`, `adr_061_*`,
   `docs/design/UI_QUALITY_GATE.md`, `docs/architecture/DECISION_REVIEW.md`
   (D11-D14), `ui/atlas-shell/README.md`.
 
 ## What works (verificado, no asumido)
 
-- Suite OS completa: **144 passed** (`tests/test_os_*.py`), mypy strict
+- Suite OS completa: **152 passed** (`tests/test_os_*.py`), mypy strict
   limpio en `api/`, `events/`, `fabric/`, `business/`, `interfaces/cli.py`.
 - Bridge real levantado con `ATLAS_HOME` aislado en `/tmp` y probado por
   curl en vivo: `/health`, `/connections/catalog`, `/connections/plan`,
@@ -67,7 +67,7 @@ Fecha: 2026-07-10/11. Origen: `atlas_product_os_liquid_ui_pack_v1.zip`.
 
 ```
 PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 .venv/bin/python -m pytest tests/test_os_*.py -q
-# 144 passed
+# 152 passed
 MYPYPATH=src PYTHONPATH=src .venv/bin/python -m mypy src/atlas/api/ src/atlas/events/ src/atlas/fabric/ src/atlas/business/ src/atlas/interfaces/cli.py
 # Success: no issues found in 32 source files
 ```

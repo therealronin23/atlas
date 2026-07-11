@@ -3096,6 +3096,11 @@ entries:
   status: propuesto
   verified: null
   notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-11.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
 - path: docs/membrana/OSM-000_membrana.md
   type: compliance
   status: vigente
