@@ -28,6 +28,50 @@ SÍ estaban definidas y NUNCA se ejecutaron — parkeadas formalmente en
 ADR-066 (no bloqueaban F15/F16, no se implementan ahora). F15/F16
 reconciliadas: siguen sanas, sin cimientos rotos.
 
+Una cuarta sesión (misma fecha) cerró los 3 ZIPs fuente como unidades
+formales (`docs/continuation/zip_closure/FINAL_ZIP_CLOSURE_VERDICT.md`,
+ADR-067 sobre autoridad de la Constitución) y luego, ante la sospecha del
+operador de que el foco se había desviado hacia verticales de negocio
+demasiado pronto, corrigió el encuadre con **ADR-068**: F5/F6 no son
+trabajo de producto opcional, son candidatas a **núcleo de
+autoconstrucción** (Dynamic Workflow Control Surface / Coding+Research
+Workbench) — pero siguen SIN implementarse (ADR-066 sigue vigente en
+cuanto al parking en sí). No se escribieron specs de alcance de UI nuevas
+en esta sesión por escasez real de tiempo — ver "Estado real honesto"
+abajo en vez de asumir que hay más trabajo de planificación hecho del que
+realmente hay.
+
+## Estado real honesto (2026-07-11, para cuando no haya tiempo de releer todo)
+
+Preguntas que el operador hizo directamente, respondidas con evidencia,
+no con optimismo:
+
+- **¿Está completo el grafo (Kuzu)?** Real y sano en lo que cubre: 237
+  módulos, 73 commits ingeridos, hubs con sentido (`merkle_logger` fan-in
+  38, `core.contracts` 27, `inference_hub` 20 — coincide con lo que
+  realmente es central en el repo). **Pero va por detrás**: no ha
+  ingerido los últimos ~4 commits de hoy (Phase Recovery, cierre de ZIPs,
+  ADR-067/068) porque la ingesta está gateada por HEAD con swap (el
+  write-lock de Kuzu excluye lectores mientras otro proceso escribe —
+  arquitectura conocida, no un bug nuevo). No está roto. Está desfasado
+  unas horas, lo normal.
+- **¿Está bien la UI/UX?** No, y eso es correcto, no un fallo: `ui/
+  atlas-shell` es un arnés de validación (D11, ADR-059), nunca se diseñó
+  para verse bien. 13 componentes reales (no stubs, verificado línea a
+  línea en `docs/continuation/phase_recovery/PACK_MANIFEST_atlas_fable5_
+  handoff_v1.md`), pero cero inversión estética deliberada. Que "sea una
+  mierda" visualmente es la decisión tomada, no una sorpresa.
+- **¿Se construye bien Atlas a sí mismo?** El MECANISMO funciona,
+  verificado con evidencia fresca de hoy: el daemon de `ColdUpdate`/
+  self-build dejó 12 worktrees, uno modificado hoy mismo
+  (2026-07-11 18:29), y uno de ellos (`9ffbf78c`, "atlas update status")
+  ya está mergeado en `main` limpiamente (confirmado `ANCESTOR-OF-MAIN`).
+  Es decir: el lazo construye, prueba y mergea trabajo real sin
+  intervención, al menos para tareas pequeñas. Lo que NO está verificado
+  con la misma solidez es la CALIDAD de las decisiones que toma sin
+  supervisión en tareas grandes — eso requeriría auditar contenido, no
+  solo mecánica, y no hubo tiempo esta sesión.
+
 ## What Is Real
 
 - Todo lo de Fase 15 (Integration Fabric, PolicyEngine, Business Core
@@ -98,11 +142,19 @@ pero es un riesgo de coordinación a vigilar si crece el paralelismo.
 ## Next Best Tasks
 
 `docs/continuation/phase15/RECOMMENDED_PHASE_16.md` queda con sus 8 ítems
-todos cerrados. Próximos candidatos (sin backlog formal todavía):
-generalizar el Gate Engine a toda acción `require_gate` (no solo
-activación de Business Core); credencial Gmail real del operador para
-probar la llamada viva; convergencia total PolicyEngine↔v1 (hoy solo
-capabilities conocidas).
+todos cerrados. Ver `docs/continuation/zip_closure/CANONICAL_WORK_ORDER_
+AFTER_ZIPS.md` para los candidatos nombrados formalmente.
+
+**Orden de prioridad corregido (2026-07-11, ADR-068)**: antes de
+verticales de negocio (restaurante, gestoría, legal, sanidad, CRM/ERP
+completos — todos siguen sin fecha), lo que de verdad desbloquea a Atlas
+es que se autoconstruya mejor: Coding+Research Workbench y Dynamic
+Workflow Control Surface (F5/F6 reencuadradas) están por delante de
+cualquier vertical en la lista de intención — pero **ninguna de las dos
+tiene todavía un spec de alcance escrito**, y no se escribió en esta
+sesión por tiempo real. Es la tarea más honesta pendiente para la próxima
+sesión con presupuesto: escribir el spec de UNA de las dos (no ambas a la
+vez), no más documentos de reencuadre.
 
 ## How To Run
 
