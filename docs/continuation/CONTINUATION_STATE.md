@@ -130,20 +130,28 @@ no con optimismo:
   sin converger nunca a `validated` — self-build daemon posiblemente
   atascado en un reintento no convergente. Nombrado como candidato de
   investigación, no investigado todavía.
-- **Living Knowledge Graph con presencia real** (2026-07-11): el panel
-  central dejó de congelarse en cuanto el layout de d3-force se asienta.
-  Nodos respiran (`atlas-breathe`, ritmo distinto por nodo vía hash
-  determinista del id — no en bloque), los nodos `running`/con actividad
-  alta tienen halo con glow real (filtro SVG `feGaussianBlur`), las
-  aristas conectadas a un nodo activo hacen fluir un dash animado
-  (`atlas-flow`) con el color del nodo, y el fondo tiene atmósfera de
-  radar (3 anillos + barrido rotatorio de 10s). Colores de nodo ahora
-  referencian las mismas CSS vars del sistema de diseño HUD (`--accent`,
-  `--accent-2`, `--ok`, `--warn`, `--danger`) en vez de una paleta
-  hardcodeada desconectada del resto del shell. Verificado en navegador
-  real: `getComputedStyle` confirma las 3 animaciones activas
-  (`atlas-breathe`/`atlas-flow`/`atlas-sweep`), click-to-inspect intacto,
-  cero regresión. `tsc --noEmit && vite build` limpio.
+- **Living Knowledge Graph con presencia real** (2026-07-11, dos pasadas):
+  el panel central dejó de congelarse en cuanto el layout de d3-force se
+  asienta. Primera pasada: nodos que respiran, halo con glow, aristas con
+  flujo animado, un anillo de radar — el operador la juzgó insuficiente
+  ("una mierda... busca jarvis, quiero algo novedoso") con una imagen de
+  referencia (campo denso de partículas radial tipo HUD). Segunda pasada,
+  reescritura real: **layout radial con significado** — el núcleo es el
+  nodo de mayor grado REAL (no decorativo), el resto se organiza por
+  distancia BFS real en saltos desde el núcleo vía `forceRadial` de
+  d3-force (geometría = estructura del grafo, no un radar de adorno).
+  Aristas curvas (bezier cuadrática) en vez de líneas rectas. Campo de
+  ~230 partículas ambientales organizadas en 4 bandas orbitales
+  concéntricas que ROTAN a velocidades y direcciones distintas (34s/58s/
+  86s/120s), con densidad decreciente hacia el borde (como un campo de
+  gravedad real) y colores cálidos (`--ember`/`--ember-2`, nuevas vars)
+  cerca del núcleo hacia fríos en el borde. Núcleo con doble glow: bloom
+  suave + punto caliente blanco-cian pulsante. Nunca se hace pasar la
+  decoración por datos reales. Verificado en navegador real:
+  `getComputedStyle` confirma rotación activa por banda, 7 nodos/5 aristas
+  reales renderizados sobre el campo, click-to-inspect intacto, captura de
+  pantalla real confirma el resultado visual. `tsc --noEmit && vite build`
+  limpio.
 
 ## What Is Simulated
 
