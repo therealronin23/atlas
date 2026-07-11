@@ -210,3 +210,48 @@ def test_self_build_summary_respects_limit(client: TestClient) -> None:
     body = client.get("/self-build/summary?limit=3").json()
     if body["real"]:
         assert len(body["recent"]) <= 3
+
+
+def test_self_build_proposal_detail_shape(client: TestClient) -> None:
+    summary = client.get("/self-build/summary").json()
+    if not summary["real"] or not summary["recent"]:
+        return
+    proposal_id = summary["recent"][0]["id"]
+    body = client.get(f"/self-build/proposal/{proposal_id}").json()
+    assert body["real"] is True
+    assert body["id"] == proposal_id
+    assert isinstance(body["files_touched"], list)
+    assert "next_action" in body
+    assert "validation" in body
+    assert "evidence" in body
+
+
+def test_self_build_proposal_detail_not_found(client: TestClient) -> None:
+    body = client.get("/self-build/proposal/does-not-exist-id").json()
+    assert body["real"] is False
+    assert body["status"] in {"NOT_FOUND", "BLOCKED_BY_MISSING_DEPENDENCY", "UNVERIFIED"}
+
+
+def test_files_touched_from_patch_parses_diff_headers() -> None:
+    from atlas.api.server import _files_touched_from_patch
+
+    diff = (
+        "--- a/pyproject.toml\n"
+        "+++ b/pyproject.toml\n"
+        "@@ -1 +1 @@\n"
+        "-old\n"
+        "+new\n"
+        "--- /dev/null\n"
+        "+++ b/new_file.py\n"
+    )
+    assert _files_touched_from_patch(diff) == ["pyproject.toml", "new_file.py"]
+
+
+def test_next_action_hint_by_status() -> None:
+    from atlas.api.server import _next_action_hint
+
+    assert _next_action_hint("proposed", "abc") == "atlas update validate abc"
+    assert _next_action_hint("validated", "abc") == "atlas update approve abc"
+    assert _next_action_hint("approved", "abc") == "atlas update apply abc"
+    assert _next_action_hint("applied", "abc") is None
+    assert _next_action_hint("rejected", "abc") is None

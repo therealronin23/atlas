@@ -139,6 +139,86 @@ def _self_build_summary(limit: int = 50) -> dict[str, Any]:
     }
 
 
+_NEXT_ACTION_BY_STATUS: dict[str, str] = {
+    "proposed": "atlas update validate {id}",
+    "validated": "atlas update approve {id}",
+    "approved": "atlas update apply {id}",
+}
+
+
+def _next_action_hint(status: str, proposal_id: str) -> str | None:
+    """Comando CLI real que un humano correría a continuación — nunca se
+    ejecuta desde el bridge (ADR-058 es read-only), solo se muestra."""
+    template = _NEXT_ACTION_BY_STATUS.get(status)
+    return template.format(id=proposal_id) if template else None
+
+
+def _files_touched_from_patch(patch_text: str) -> list[str]:
+    """Extrae rutas tocadas de un diff unificado (cabeceras ---/+++)."""
+    files: list[str] = []
+    for line in patch_text.splitlines():
+        if line.startswith("+++ ") or line.startswith("--- "):
+            path = line[4:].strip()
+            if path == "/dev/null":
+                continue
+            if path.startswith(("a/", "b/")):
+                path = path[2:]
+            if path not in files:
+                files.append(path)
+    return files
+
+
+def _self_build_proposal_detail(proposal_id: str) -> dict[str, Any]:
+    """Lectura READ-ONLY de una propuesta concreta del ledger de
+    ColdUpdateManager, con el diff parseado a ficheros tocados — mismo
+    patrón de no-instanciar-la-clase que `_self_build_summary`."""
+    path = _REPO_ROOT.parent / "atlas-cold-updates" / "proposals.json"
+    if not path.exists():
+        return {"real": False, "status": "BLOCKED_BY_MISSING_DEPENDENCY",
+                "detail": f"no existe {path}"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"real": False, "status": "UNVERIFIED", "detail": str(exc)}
+
+    proposals: list[dict[str, Any]] = data.get("proposals", [])
+    proposal = next((p for p in proposals if p.get("id") == proposal_id), None)
+    if proposal is None:
+        return {"real": False, "status": "NOT_FOUND",
+                "detail": f"sin propuesta con id={proposal_id}"}
+
+    patch_path = proposal.get("patch_path")
+    files_touched: list[str] = []
+    patch_available = False
+    if patch_path:
+        patch_file = Path(patch_path)
+        if patch_file.exists():
+            try:
+                files_touched = _files_touched_from_patch(
+                    patch_file.read_text(encoding="utf-8", errors="replace")
+                )
+                patch_available = True
+            except OSError:
+                pass
+
+    return {
+        "real": True,
+        "id": proposal.get("id"),
+        "intent": proposal.get("intent"),
+        "status": proposal.get("status"),
+        "origin": proposal.get("origin"),
+        "risk": proposal.get("risk"),
+        "base_ref": proposal.get("base_ref"),
+        "created_at": proposal.get("created_at"),
+        "updated_at": proposal.get("updated_at"),
+        "evidence": proposal.get("evidence"),
+        "validation": proposal.get("validation"),
+        "files_touched": files_touched,
+        "patch_available": patch_available,
+        "next_action": _next_action_hint(proposal.get("status", ""), proposal.get("id", "")),
+    }
+
+
 def create_app(
     store: OsEventStore | None = None,
     fixtures_dir: Path | None = None,
@@ -213,6 +293,10 @@ def create_app(
     @app.get("/self-build/summary")
     def self_build_summary(limit: int = 50) -> dict[str, Any]:
         return _self_build_summary(limit=limit)
+
+    @app.get("/self-build/proposal/{proposal_id}")
+    def self_build_proposal(proposal_id: str) -> dict[str, Any]:
+        return _self_build_proposal_detail(proposal_id)
 
     @app.post("/memory/import")
     def memory_import(raw: dict[str, Any]) -> dict[str, Any]:

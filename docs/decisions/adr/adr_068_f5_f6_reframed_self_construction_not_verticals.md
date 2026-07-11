@@ -75,3 +75,41 @@ no la superficie completa:
   ejecutados, botón de rollback). Es un primer corte vertical real,
   suficiente para responder "¿qué ha propuesto Atlas construirse a sí
   mismo?" con datos, no con fe.
+
+## Actualización 2 — detalle de propuesta: ficheros, tests, siguiente paso (misma sesión, 2026-07-11)
+
+Segundo corte, sobre el mismo endpoint/ledger, cerrando 2 de los 4 huecos
+listados arriba:
+
+- `GET /self-build/proposal/{id}` (nuevo) — detalle de una propuesta:
+  parsea el `.patch` real en disco (`--- a/` / `+++ b/`) para listar
+  **ficheros tocados**; expone `validation` real (pytest/mypy, pass/fail,
+  duración) cuando existe; calcula `next_action` — el comando CLI real
+  (`atlas update validate|approve|apply <id>`) que un humano correría a
+  continuación, **nunca ejecutado desde el bridge** (ADR-058 es read-only;
+  ColdUpdateManager no se instancia aquí tampoco).
+- `AutobuildLedger.tsx` — cada propuesta de la lista es ahora clicable y
+  abre un panel de detalle con lo anterior. Verificado en navegador real
+  contra bridge real: ficheros tocados correctos
+  (`src/atlas/core/orchestrator_parts/maintenance_facade.py` para una
+  propuesta real), validación real de un `applied` (982 tests, mypy
+  limpio), `next_action` correcto por estado.
+- **Sigue sin existir "botón de rollback" ni "fase/subagente en vivo"** —
+  el primero se descartó deliberadamente (ejecutar mutaciones desde el
+  bridge read-only rompería ADR-058 y necesitaría PolicyEngine/Gate Engine
+  de por medio, no existe ese camino todavía); el segundo no tiene fuente
+  de datos real (el ledger es un registro de propuestas ya creadas, no un
+  stream de fases en curso).
+- **Hallazgo real al verificar en vivo**: el mismo intent ("Cablear el
+  vault Obsidian al tick del grafo — graph_note_neighborhood sirve vacío")
+  aparece repetido en la lista de "últimas 50" con timestamps de hoy
+  (11/7): 11:56, 18:29, 20:00, 21:18, 22:21 — aproximadamente cada 1-2
+  horas, siempre en estado `proposed`, siempre tocando el mismo fichero
+  (`maintenance_facade.py`), nunca avanza a `validated`. El lazo de
+  autoconstrucción está reintentando la misma propuesta sin converger.
+  Esto ya no es solo "un dato curioso" (como se anotó en la actualización
+  anterior) — es un patrón activo y visible AHORA MISMO en el ledger real,
+  candidato real a investigación (¿por qué no se valida nunca? ¿el
+  validador falla en silencio? ¿el intent se recrea porque el problema de
+  origen sigue sin resolverse?). No investigado en esta sesión por
+  alcance — queda nombrado explícitamente para la próxima.
