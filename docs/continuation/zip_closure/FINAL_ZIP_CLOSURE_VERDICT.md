@@ -142,8 +142,8 @@ central de esta auditoría.
 | Next Work Item | Reason | Dynamic Workflow? | Requires Operator? | Requires Conclave? |
 |---|---|---|---|---|
 | `ZIP_BACKFILL_01` | Cerrar el índice de docs de esta propia auditoría | Sí (ya ejecutado) | No | No |
+| ~~`GATE_A_CONSTITUTION_CLOSURE_01`~~ | **CERRADO — ADR-067** (Atlas Constitution Authority), Conflict #11 pasó a RESOLVED | Sí (ya ejecutado) | No | No |
 | `INDEX_RECLASSIFICATION_01` | ~26 entradas `propuesto` con código real | Sí, con revisión final | Sí (revisión) | No |
-| `GATE_A_CONSTITUTION_CLOSURE_01` | Cerrar Conflict #11 con ADR corto | Sí | No | No |
 | `GATE_ENGINE_GENERALIZATION_01` | Generalizar Gate Engine más allá de Business Core | Sí | No | No |
 | `POLICYENGINE_V1_CONVERGENCE_01` | Convergencia total del evaluador de permisos | Parcial (implementación sí, merge no) | Sí | **Sí** — toca el evaluador fail-closed |
 | `PIXEL_PERFECT_SCOPE_DECISION` | Decidir si se reabre D11 | No — es una decisión, no una tarea de workflow | **Sí** | Si el resultado implica nueva superficie de ejecución |

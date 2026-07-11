@@ -12,16 +12,16 @@
 | 8 | 56 ADRs propuestos de ZIP3 vs 5 ADRs reales que los sintetizan | ZIP3 `adr/*.md` (56 ficheros) | `docs/decisions/adr/adr_060..065` (repo real) | Árbol real de ADRs | Cada ADR real sintetiza 5-8 ADRs propuestos del pack (relación N:1, no 1:1) — documentado en `PACK_MANIFEST_atlas_product_os_liquid_ui_pack_v1.md` | **SUPERSEDED** |
 | 9 | Motores CRM/ERP: ZIP3 propone clases motor separadas (`CRM_CORE_ENGINE.md`, `ERP_CORE_ENGINE.md`) | ZIP3 backend specs | `src/atlas/fabric/` real: CRM/ERP realizados como vistas de datos (`CRM_KINDS`/`ERP_KINDS`), no clases separadas | Código real | Decisión arquitectónica deliberada (menos superficie de clases, mismo comportamiento funcional) — no es un bug ni una regresión, es una simplificación consciente | **RESOLVED** |
 | 10 | Nombre de fichero de continuidad: ZIP2 pide `ARCHITECTURE_DECISIONS_INDEX.md` | ZIP2 `CONTINUATION_PROTOCOL.md` | Repo real usa `DECISION_REVIEW.md` | Repo real | Variante de nombre, contenido equivalente. Sin impacto funcional | **RESOLVED** |
-| 11 | Gate A de `QUALITY_GATES.md` (ZIP2) exige una "Constitution" en `docs/atlas-master/00_CONSTITUTION.md`; esa ruta exacta no existe | ZIP2 `QUALITY_GATES.md` Gate A | Constitution-equivalente vive distribuida: `AGENTS.md` + `docs/design/atlas_ecosystem_map.md` + `docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/00_CONSTITUTION.md` (ZIP3, ruta distinta) | Ninguna fuente ha decidido formalmente cerrar esto | Ningún ADR ha registrado "la Constitución vive distribuida, no como fichero único en `atlas-master/`". Gate A, tal como está escrito literalmente en el pack, sigue fallando en sentido estricto — mitigado en la práctica (gobernanza real en PolicyEngine/ADR-062) pero no cerrado formalmente | **NEEDS_OPERATOR_DECISION** (bajo riesgo — ¿escribir un ADR corto que cierre esto formalmente, o dejarlo como mitigación de facto?) |
+| 11 | Gate A de `QUALITY_GATES.md` (ZIP2) exige una "Constitution" en `docs/atlas-master/00_CONSTITUTION.md`; esa ruta exacta no existe | ZIP2 `QUALITY_GATES.md` Gate A | Constitution-equivalente vive distribuida: `AGENTS.md` + `docs/design/atlas_ecosystem_map.md` + ADRs vigentes + `docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/00_ATLAS_PRODUCT_CONSTITUTION.md` (ZIP3, ruta distinta) | **ADR-067** (nuevo) | El operador eligió NO crear `docs/atlas-master/00_CONSTITUTION.md` — la distribución de facto queda formalizada como la decisión permanente, no como mitigación temporal. Gate A se considera cumplido en espíritu, su ruta literal queda superseded | **RESOLVED** (vía ADR-067) |
 | 12 | `docs/INDEX.yaml`: ~26+ entradas de pack cuyo contenido SÍ tiene código real (p.ej. `POLICY_ENGINE.md`) siguen en `status: propuesto` | ZIP1/ZIP3 docs indexados | Código real implementado (`src/atlas/fabric/policy.py`, etc.) | `docs/INDEX.yaml` actual | Ya evaluado y parkeado en la sesión de Phase Recovery (Gap 4 de `PHASE_1_14_BACKFILL_PLAN.md`): requiere juicio caso por caso, riesgo medio de reclasificar mal, se deja para sesión dedicada | **PARKED** (recomendación pendiente de decisión del operador sobre priorizarla) |
 | 13 | ZIPs vs F15/F16: ¿la ausencia de Fase 5/6 (Visual Orchestrator) deja algo de F15/F16 aislado? | ZIP1 Fase 5/6 (nunca ejecutada) | `src/atlas/fabric/`, `src/atlas/business/` (F15/F16 real) | Código real (grep verificado) | **No hay conflicto real** — verificado en `F15_F16_DEPENDENCY_AUDIT.md`: cero imports cruzados, cero acoplamiento. Se incluye aquí para que quede explícitamente cerrado, no por ser una contradicción real | **RESOLVED** |
 
 ## Resumen
 
-13 conflictos identificados. 8 RESOLVED (decisión técnica documentada o
-diferencia cosmética sin impacto), 2 SUPERSEDED-puros (ADRs digeridos), 1
-SUPERSEDED parcial (estatus, no contenido), 2 PARKED (con razón y ADR o
-plan explícito), 1 NEEDS_OPERATOR_DECISION (bajo riesgo, no bloqueante:
-cerrar formalmente el Gate A de QUALITY_GATES.md con un ADR corto o
-aceptar la mitigación de facto). **Cero DANGEROUS_AMBIGUITY** — ningún
-conflicto deja al sistema en un estado ambiguo o inseguro.
+13 conflictos identificados. 9 RESOLVED (decisión técnica documentada,
+diferencia cosmética sin impacto, o cerrado vía ADR-067), 2 SUPERSEDED-puros
+(ADRs digeridos), 1 SUPERSEDED parcial (estatus, no contenido), 2 PARKED
+(con razón y ADR o plan explícito). **Cero NEEDS_OPERATOR_DECISION, cero
+DANGEROUS_AMBIGUITY** — el único conflicto que esperaba decisión del
+operador (#11, Gate A) se cerró vía ADR-067; ningún conflicto restante deja
+al sistema en un estado ambiguo o inseguro.

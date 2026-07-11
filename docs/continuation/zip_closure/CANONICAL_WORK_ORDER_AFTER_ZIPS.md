@@ -10,6 +10,8 @@ Sustituye cualquier lectura informal de "seguimos con Phase 17" o
 - ZIP2 (`atlas_fable5_handoff_v1`) — CLOSED_WITH_PARKED_ITEMS
 - ZIP3 (`atlas_product_os_liquid_ui_pack_v1`) — CLOSED_WITH_PARKED_ITEMS
 - F0-F4, F7-F10, F15, F16 — IMPLEMENTED (evidencia código+test+doc)
+- Conflict Table #11 (Gate A / autoridad de la Constitución) — RESOLVED vía
+  ADR-067 (2026-07-11, esta actualización)
 
 ## 2. Cerrado con ítems parkeados
 
@@ -84,8 +86,8 @@ nombre propio):
 
 | Nombre exacto | Qué es | Depende de |
 |---|---|---|
+| ~~`GATE_A_CONSTITUTION_CLOSURE_01`~~ | **CERRADO (2026-07-11)** — ADR-067 "Atlas Constitution Authority": la Constitución vive distribuida en AGENTS.md + ecosystem_map + ADRs vigentes + `00_ATLAS_PRODUCT_CONSTITUTION.md` (ZIP3); no se crea `docs/atlas-master/`. Conflict Table #11 → RESOLVED | — |
 | `INDEX_RECLASSIFICATION_01` | Reclasificar caso-por-caso ~26 entradas `propuesto`→estatus correcto en INDEX.yaml | Nada — ejecutable ya, si el operador lo prioriza |
-| `GATE_A_CONSTITUTION_CLOSURE_01` | ADR corto cerrando Conflict Table #11 (Constitución vive distribuida, no en `atlas-master/`) | Nada |
 | `GATE_ENGINE_GENERALIZATION_01` | Generalizar `src/atlas/fabric/gates.py` más allá de Business Core activation | Nada — candidato ya identificado en F16 |
 | `POLICYENGINE_V1_CONVERGENCE_01` | Convergencia total PolicyEngine↔evaluador v1 (ADR-062 dejó capabilities conocidas sin converger del todo) | Nada |
 | `PIXEL_PERFECT_SCOPE_DECISION` | Decidir si se reabre D11 y bajo qué alcance — **es una decisión, no una implementación** | `OPERATOR_DECISION_POINT_01` |
@@ -95,10 +97,11 @@ nombre propio):
 
 ## 9. Qué trabajo es seguro para dynamic workflow
 
-`ZIP_BACKFILL_01`, `INDEX_RECLASSIFICATION_01` (con verificación humana del
+`ZIP_BACKFILL_01` (ejecutado), `GATE_A_CONSTITUTION_CLOSURE_01` (ejecutado,
+ver ADR-067), `INDEX_RECLASSIFICATION_01` (con verificación humana del
 resultado, riesgo medio de juicio pero mecánica de ejecución segura),
-`GATE_A_CONSTITUTION_CLOSURE_01`, `GATE_ENGINE_GENERALIZATION_01` (fases de
-implementación dirigidas a Sonnet, planificación a Opus).
+`GATE_ENGINE_GENERALIZATION_01` (fase de implementación dirigida a Sonnet,
+planificación a Opus).
 
 ## 10. Qué trabajo necesita revisión del operador
 
