@@ -120,6 +120,16 @@ no con optimismo:
   `getComputedStyle`, no solo captura visual). D11 sigue vigente en cuanto
   a "no es la IA final" — esto es un sistema de diseño coherente, no una
   reestructuración de información ni nuevas pantallas.
+- **Autobuild Ledger — detalle de propuesta** (2026-07-11): `GET
+  /self-build/proposal/{id}` (parsea el `.patch` real para listar ficheros
+  tocados, expone validación pytest/mypy real, calcula el siguiente
+  comando CLI real sin ejecutarlo — el bridge sigue read-only). Ver
+  ADR-068 "Actualización 2" para el detalle y para un hallazgo real
+  encontrado al verificar: hay una propuesta (`Cablear el vault Obsidian
+  al tick del grafo`) que se repite cada 1-2 horas en estado `proposed`
+  sin converger nunca a `validated` — self-build daemon posiblemente
+  atascado en un reintento no convergente. Nombrado como candidato de
+  investigación, no investigado todavía.
 
 ## What Is Simulated
 

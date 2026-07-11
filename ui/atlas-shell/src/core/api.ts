@@ -121,6 +121,34 @@ export interface SelfBuildSummary {
   recent?: SelfBuildProposal[];
 }
 
+export interface SelfBuildValidation {
+  passed: boolean;
+  pytest_exit: number;
+  mypy_exit: number;
+  pytest_summary: string;
+  mypy_summary: string;
+  duration_s: number;
+  errors: string[];
+}
+
+export interface SelfBuildProposalDetail {
+  real: boolean;
+  status?: string;
+  detail?: string;
+  id?: string;
+  intent?: string;
+  origin?: string;
+  risk?: string;
+  base_ref?: string;
+  created_at?: string;
+  updated_at?: string;
+  evidence?: Record<string, unknown> | null;
+  validation?: SelfBuildValidation | null;
+  files_touched?: string[];
+  patch_available?: boolean;
+  next_action?: string | null;
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
@@ -172,6 +200,8 @@ export const api = {
   questionPacks: () => get<QuestionPacksResponse>("/business/question-packs"),
   selfBuildSummary: (limit = 50) =>
     get<SelfBuildSummary>(`/self-build/summary?limit=${limit}`),
+  selfBuildProposal: (id: string) =>
+    get<SelfBuildProposalDetail>(`/self-build/proposal/${encodeURIComponent(id)}`),
 };
 
 export function connectEventsWs(onEvent: (e: OsEvent) => void, onState: (up: boolean) => void): () => void {
