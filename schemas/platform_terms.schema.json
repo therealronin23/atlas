@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/platform_terms.schema.json",
+  "title": "AtlasPlatformTerms",
+  "description": "Registro central de términos de plataforma (ToS) por conector. Toda receta con riesgo legal (legal_notes o personal_channel) debe tener una entrada aquí — se representa, nunca se asume.",
+  "type": "object",
+  "required": [
+    "connector_id",
+    "platform",
+    "automation_allowed"
+  ],
+  "properties": {
+    "connector_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "automation_allowed": {
+      "type": "boolean"
+    },
+    "terms_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "personal_use_only": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

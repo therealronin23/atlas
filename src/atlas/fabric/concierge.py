@@ -8,15 +8,22 @@ from typing import Any
 
 from atlas.fabric.capabilities import get_capability
 from atlas.fabric.ladder import route_risk, rung
+from atlas.fabric.legal import LegalRegistry
 from atlas.fabric.models import ConnectionRecipe
 from atlas.fabric.policy import PolicyEngine, PolicyRequest
 from atlas.fabric.recipes import RecipeEngine
 
 
 class ConnectionConcierge:
-    def __init__(self, recipes: RecipeEngine, policy: PolicyEngine) -> None:
+    def __init__(
+        self,
+        recipes: RecipeEngine,
+        policy: PolicyEngine,
+        legal: LegalRegistry | None = None,
+    ) -> None:
         self._recipes = recipes
         self._policy = policy
+        self._legal = legal
 
     def plan(self, connector_id: str) -> dict[str, Any] | None:
         recipe = self._recipes.get(connector_id)
@@ -48,6 +55,11 @@ class ConnectionConcierge:
             }
             for cap in sorted(recipe.forbidden_capabilities)
         ]
+        platform_terms = None
+        if self._legal is not None:
+            terms = self._legal.get(recipe.connector_id)
+            if terms is not None:
+                platform_terms = terms.model_dump(mode="json")
         return {
             "connector_id": recipe.connector_id,
             "human_name": recipe.human_name,
@@ -70,5 +82,6 @@ class ConnectionConcierge:
                 recipe.credential.storage if recipe.credential else "none"
             ),
             "legal_notes": recipe.legal_notes,
+            "platform_terms": platform_terms,
             "simulated": True,
         }
