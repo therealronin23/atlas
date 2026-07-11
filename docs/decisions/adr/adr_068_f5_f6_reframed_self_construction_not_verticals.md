@@ -53,3 +53,25 @@
 - Este ADR no supersede a ADR-066 (el parking en sí sigue vigente); lo
   complementa explicando CÓMO debe entenderse el trabajo el día que se
   reabra.
+
+## Actualización — primera porción real enviada (misma sesión, 2026-07-11)
+
+Tras esta decisión, el operador pidió explícitamente construir: se envió
+una primera porción REAL y acotada de `Dynamic Workflow Control Surface`,
+no la superficie completa:
+
+- `GET /self-build/summary` (nuevo, `src/atlas/api/server.py`) — lectura
+  READ-ONLY de `atlas-cold-updates/proposals.json` (el ledger real de
+  `ColdUpdateManager`, ADR-025). Nunca instancia `ColdUpdateManager` (su
+  `__init__` barre worktrees, efecto lateral de escritura) — mismo patrón
+  que `_memory_summary()`.
+- `AutobuildLedger.tsx` (nuevo, `ui/atlas-shell`) — vista real que muestra
+  229 propuestas reales del lazo de autoconstrucción: 184 rechazadas, 15
+  fallidas, 12 aplicadas, 12 propuestas, 6 validadas; 227 de `self_audit`,
+  2 de `swarm`. Verificado en navegador real contra el bridge real (no
+  build only): datos reales, cero requests fallidos.
+- Esto NO es la superficie completa descrita en el reencuadre de arriba
+  (faltan: control de fase/subagente en vivo, ficheros tocados, tests
+  ejecutados, botón de rollback). Es un primer corte vertical real,
+  suficiente para responder "¿qué ha propuesto Atlas construirse a sí
+  mismo?" con datos, no con fe.

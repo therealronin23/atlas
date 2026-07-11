@@ -98,6 +98,14 @@ no con optimismo:
 - **Arnés UI real**: vista "⚑ Harness" en `ui/atlas-shell` conduce
   `/connections`, `/business`, `/gates` reales — verificado con
   navegador real (no solo build).
+- **Autobuild Ledger real** (2026-07-11, ADR-068): vista "◎ Autobuild
+  Ledger" + `GET /self-build/summary` — primera porción real de la
+  Dynamic Workflow Control Surface reencuadrada. Lee
+  `atlas-cold-updates/proposals.json` (ledger real de ColdUpdateManager,
+  ADR-025) sin instanciar la clase (solo lectura de fichero, igual que
+  `/memory/summary`). Muestra las 229 propuestas reales del lazo de
+  autoconstrucción con su estado real. Verificado en navegador real
+  contra bridge real, 192 tests OS verdes (190+2 nuevos), mypy limpio.
 
 ## What Is Simulated
 

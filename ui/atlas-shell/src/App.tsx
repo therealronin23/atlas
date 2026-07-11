@@ -12,6 +12,7 @@ import type {
   RealityReport,
 } from "./core/types";
 import { DEFAULT_PREFERENCES } from "./core/types";
+import { AutobuildLedger } from "./components/AutobuildLedger";
 import { EventInspector } from "./components/EventInspector";
 import { HarnessPanel } from "./components/HarnessPanel";
 import { ExecutionPipeline } from "./components/ExecutionPipeline";
@@ -33,7 +34,8 @@ type View =
   | "permissions"
   | "security"
   | "personalization"
-  | "harness";
+  | "harness"
+  | "autobuild";
 
 const PREFS_KEY = "atlas-os-preferences";
 
@@ -153,6 +155,7 @@ export default function App() {
           {nav("security", "⛨ Security Center")}
           {nav("personalization", "✦ Personalización")}
           {nav("harness", "⚑ Harness")}
+          {nav("autobuild", "◎ Autobuild Ledger")}
         </nav>
         <main className="main">
           {view === "command" && (
@@ -256,6 +259,15 @@ export default function App() {
             <div className="panel" style={{ flex: 1 }}>
               <header>Harness · conexiones + gates</header>
               <HarnessPanel />
+            </div>
+          )}
+          {view === "autobuild" && (
+            <div className="panel" style={{ flex: 1 }}>
+              <header>
+                Autobuild Ledger
+                <span className="badge real">REAL — ColdUpdateManager</span>
+              </header>
+              <AutobuildLedger />
             </div>
           )}
         </main>
