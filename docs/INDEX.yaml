@@ -369,6 +369,10 @@ entries:
   type: compliance
   status: vigente
   verified: null
+- path: docs/continuation/ATLAS_WHAT_IT_IS_AND_COULD_BECOME.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/continuation/CONTEXT_LEDGER.md
   type: conocimiento
   status: vigente

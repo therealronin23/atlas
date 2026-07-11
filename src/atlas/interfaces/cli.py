@@ -52,7 +52,28 @@ def _acquire_writer_lock_or_die(orch: Orchestrator) -> "MerkleWriterLock":
     return lock
 
 
-@click.group()
+_QUICK_START_EPILOG = """\
+\b
+¿Primera vez o no sabes por dónde empezar? En este orden:
+  1. atlas status   -> que esta vivo ahora mismo (memoria, cola, Merkle)
+  2. atlas reality  -> que es real vs simulado/degradado (fuente de verdad)
+  3. atlas doctor    -> diagnostico completo (governance + Merkle + deps)
+\b
+Comandos por categoria:
+  NUCLEO / DIAGNOSTICO  status, reality, doctor, health, capabilities
+  TAREAS                task, code, cycle, approve, pending, sweep
+  MEMORIA                memory, search, audit, blocks, insights
+  AUTOCONSTRUCCION       update, self-audit
+  ATLAS OS (F15/16)      os-bridge, connections, business, gates, gate-h
+  SERVICIOS 24/7         serve, dashboard, voice
+  SEGURIDAD               security-audit
+  UTILIDADES/DEMO        tools, completeness-demo
+\b
+Cada comando tiene su propio detalle: atlas <comando> --help
+"""
+
+
+@click.group(epilog=_QUICK_START_EPILOG)
 @click.version_option(__version__, prog_name="atlas")
 def cli() -> None:
     """Atlas Core — Sistema operativo personal de inteligencia."""
