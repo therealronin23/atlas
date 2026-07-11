@@ -1,0 +1,11 @@
+{
+  "description": "WhatsApp personal jamás puede enviar mensajes, ni con aprobación humana",
+  "request": {
+    "capability": "message.send",
+    "connector_id": "whatsapp_personal_import",
+    "approvals": ["human_approved", "gate_approved"]
+  },
+  "expected_decision": "deny",
+  "expected_hard": true,
+  "expected_policy_id": "pol_hard_whatsapp_personal_send"
+}

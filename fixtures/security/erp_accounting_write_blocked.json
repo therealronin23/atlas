@@ -1,0 +1,18 @@
+{
+  "description": "Escritura contable real siempre exige gate, sin excepción de aprobación humana suelta",
+  "request": {
+    "capability": "erp.accounting.write",
+    "connector_id": "odoo_erp"
+  },
+  "expected_decision": "require_gate",
+  "expected_hard": true,
+  "expected_policy_id": "pol_hard_accounting_write",
+  "variant_with_gate_approval": {
+    "request": {
+      "capability": "erp.accounting.write",
+      "connector_id": "odoo_erp",
+      "approvals": ["gate_approved"]
+    },
+    "expected_decision": "allow"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "action": "browser.submit",
+  "allowed": false,
+  "requires_gate": true
+}
