@@ -1,0 +1,7 @@
+{
+  "connector_id": "ai_provider_registry",
+  "human_name": "AI Provider Registry",
+  "category": "ai",
+  "recommended_route": "provider_recipe",
+  "difficulty": "variable"
+}

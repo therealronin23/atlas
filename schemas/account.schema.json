@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/account.schema.json",
+  "title": "AtlasAccount",
+  "description": "Cuenta/identidad conectada a través de un connector.",
+  "type": "object",
+  "required": [
+    "account_id",
+    "connector_id",
+    "display_name",
+    "status"
+  ],
+  "properties": {
+    "account_id": {
+      "type": "string",
+      "pattern": "^acct_[A-Za-z0-9_-]+$"
+    },
+    "connector_id": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "identity_hint": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "email/handle enmascarado, nunca credencial"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "connected",
+        "disconnected",
+        "error",
+        "mock"
+      ]
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

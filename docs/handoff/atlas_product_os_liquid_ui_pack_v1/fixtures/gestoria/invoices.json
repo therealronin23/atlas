@@ -1,0 +1,17 @@
+{
+  "invoices": [
+    {
+      "invoice_id": "inv_001",
+      "client_id": "client_martinez_demo",
+      "total": 1210.0,
+      "currency": "EUR",
+      "demo": true
+    },
+    {
+      "invoice_id": "inv_002",
+      "total": 3610.35,
+      "currency": "EUR",
+      "demo": true
+    }
+  ]
+}

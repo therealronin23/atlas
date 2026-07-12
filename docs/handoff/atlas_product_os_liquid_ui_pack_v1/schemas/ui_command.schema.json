@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UICommand",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "command_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "requires_gate": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

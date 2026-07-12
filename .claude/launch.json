@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "atlas-shell",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "ui/atlas-shell", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "os-bridge",
+      "runtimeExecutable": ".venv/bin/atlas",
+      "runtimeArgs": ["os-bridge"],
+      "port": 7341
+    }
+  ]
+}

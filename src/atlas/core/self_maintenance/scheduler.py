@@ -15,7 +15,6 @@ proyecto). Cadencia configurable; por defecto diaria.
 from __future__ import annotations
 
 import threading
-import time
 from collections.abc import Callable
 from typing import Any
 
@@ -57,11 +56,18 @@ class MaintenanceScheduler:
         self._extra_cycles = tuple(extra_cycles)
         self._running = False
         self._thread: threading.Thread | None = None
+        # Señal de parada cooperativa (incidente 2026-07-09): un hilo que
+        # sobrevive al join(timeout=2) de stop() seguía arrancando extra_cycles
+        # DESPUÉS de que el test deshiciera sus monkeypatches → un run_item
+        # real desde una suite. El evento corta los ciclos aún no arrancados;
+        # el ciclo ya en vuelo es irreducible sin cancelación dentro del tick.
+        self._stop_event = threading.Event()
 
     def start(self) -> None:
         if self._running:
             return
         self._running = True
+        self._stop_event.clear()
         self._thread = threading.Thread(
             target=self._loop, daemon=True, name="atlas-maintenance-scheduler",
         )
@@ -69,6 +75,10 @@ class MaintenanceScheduler:
 
     def stop(self) -> None:
         self._running = False
+        # Despierta el sleep del loop al instante y veta los extra_cycles que
+        # aún no hayan arrancado (antes: time.sleep ciego + join 2s y el hilo
+        # seguía vivo con el tick entero por delante).
+        self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=2)
 
@@ -78,7 +88,8 @@ class MaintenanceScheduler:
                 self.tick()
             except Exception:  # noqa: BLE001 — una pasada caída no mata el hilo
                 pass
-            time.sleep(self._poll_interval)
+            if self._stop_event.wait(self._poll_interval):
+                return
 
     def tick(self) -> list[McpProposal]:
         """Una pasada: descubre, analiza, notifica lo corroborado. Nunca aplica."""
@@ -100,6 +111,10 @@ class MaintenanceScheduler:
         # Ciclos adicionales (deps/codegen): aislados, posteriores a la pasada
         # MCP. Cada uno gobierna su propia adopción tras el seam del decisor.
         for cycle in self._extra_cycles:
+            if self._stop_event.is_set():
+                # stop() en vuelo: no arrancar más ciclos. Un tick() directo
+                # (sin start/stop) tiene el evento limpio y los corre todos.
+                break
             try:
                 cycle()
             except Exception:  # noqa: BLE001 — un ciclo caído no rompe los demás

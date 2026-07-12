@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkflowNode",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "node_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk": {
+      "type": "string"
+    },
+    "requires_gate": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,17 @@
+{
+  "sector_id": "gestoria_fiscal_contable",
+  "display_name": "Gestoría fiscal/contable",
+  "description": "Despachos de gestoría, asesoría fiscal y contable — presentaciones oficiales, expedientes de cliente, documentación tributaria.",
+  "default_workbenches": [
+    "tax_filing_workbench",
+    "document_review_workbench",
+    "submission_ceremony_workbench"
+  ],
+  "default_capabilities": [
+    "erp.invoices.read",
+    "files.read",
+    "official.submit"
+  ],
+  "question_pack_id": "qp_gestoria_fiscal_contable",
+  "connector_pack_id": "gestoria_pack"
+}

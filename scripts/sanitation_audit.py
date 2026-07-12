@@ -44,14 +44,13 @@ _CLASSIFIED_ZERO_IMPORTERS = {
     "src/atlas/core/history_compactor.py": "PARK standalone context utility; caller-owned",
     "src/atlas/core/token_budget.py": "PARK standalone context utility; caller-owned",
     "src/atlas/immunity/live_loop.py": "PARK gated hook adapter; no hot-path owner enabled",
-    "src/atlas/core/self_maintenance/root_cause_classifier.py": "KEEP injectable component used by ColdUpdateManager when configured",
+    # 2026-07-08: preflight_gate, batch_premortem, root_cause_classifier y
+    # failure_lesson_sink dejaron de ser 0-importer — cableados en producción
+    # (orchestrator.cold_update / maintenance_facade). Ver WORK_LEDGER.md.
     "src/atlas/core/self_maintenance/benchmark_gate.py": "KEEP injectable component used by ColdUpdateBatcher when configured",
     "src/atlas/core/self_maintenance/topic_expander.py": "PARK discovery helper; service-runner wiring not enabled",
-    "src/atlas/core/self_maintenance/preflight_gate.py": "PARK preflight component; self-build service wiring not enabled",
-    "src/atlas/core/self_maintenance/batch_premortem.py": "PARK batch gate; service-runner wiring not enabled",
     "src/atlas/core/self_maintenance/sota_snapshot.py": "PARK benchmark context recorder; no scheduler owner enabled",
     "src/atlas/core/self_maintenance/panorama_scout.py": "PARK discovery scout; no scheduler owner enabled",
-    "src/atlas/core/self_maintenance/failure_lesson_sink.py": "KEEP injectable component used by ColdUpdateBatcher when configured",
     "src/atlas/core/self_maintenance/evolution_gate.py": "KEEP optional component used by SelfBuildRunner evolution path when configured",
 }
 
@@ -139,6 +138,50 @@ def stale_refs() -> list[str]:
     return out
 
 
+def docs_index_drift() -> list[str]:
+    """Desviaciones árbol↔INDEX.yaml (REPO_STANDARD §1). Delegado al validador
+    de scripts/docs_index_audit.py; fail-open a informe de error, nunca rompe
+    el radar."""
+    try:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "docs_index_audit", ROOT / "scripts" / "docs_index_audit.py"
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("no se pudo cargar docs_index_audit.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = module.validate()
+        out: list[str] = []
+        out += [f"SIN entrada en índice: {p}" for p in report["missing"]]
+        out += [f"entrada HUÉRFANA: {p}" for p in report["orphans"]]
+        out += [f"verificación CADUCADA: {p}" for p in report["expired"]]
+        return out
+    except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
+        return [f"docs_index_audit no pudo ejecutarse: {exc}"]
+
+
+def docs_graph_drift() -> list[str]:
+    """Enlaces rotos + huérfanos del grafo de docs (scripts/docs_graph.py).
+    Fail-open a informe de error, nunca rompe el radar."""
+    try:
+        import importlib.util
+        import sys as _sys
+
+        spec = importlib.util.spec_from_file_location(
+            "docs_graph", ROOT / "scripts" / "docs_graph.py"
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("no se pudo cargar docs_graph.py")
+        module = importlib.util.module_from_spec(spec)
+        _sys.modules["docs_graph"] = module  # dataclasses exigen registro
+        spec.loader.exec_module(module)
+        return list(module.graph_drift())
+    except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
+        return [f"docs_graph no pudo ejecutarse: {exc}"]
+
+
 def _section(title: str, items: list[str], ok: str) -> None:
     print(f"\n## {title}")
     if not items:
@@ -163,6 +206,8 @@ def main() -> int:
     _section(f"Cuarentena (grace {GRACE_DAYS}d)", graveyard_overdue(), "graveyard vacío")
     _section("Carpetas vacías", empty_dirs(), "ninguna")
     _section("Referencias docs/ stale en ficheros clave", stale_refs(), "ninguna")
+    _section("Índice de docs (árbol↔INDEX.yaml)", docs_index_drift(), "sin desviaciones")
+    _section("Grafo de docs (enlaces rotos + huérfanos)", docs_graph_drift(), "sin señales")
     print("\n(Radar read-only: decide KEEP/QUARANTINE/DELETE según REPO_STANDARD §3.)")
     return 0
 

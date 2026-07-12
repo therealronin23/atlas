@@ -24,12 +24,14 @@ def workspace(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def orch(workspace: Path):
+def orch(workspace: Path, monkeypatch: pytest.MonkeyPatch):
     """Orquestador con workspace temporal."""
     from atlas.core.orchestrator import Orchestrator
     # Reset singleton de Governance L0 entre tests
     import atlas.governance.governance_l0 as g
     g.GovernanceL0._instance = None
+    monkeypatch.delenv("HERMES_KANBAN_TRANSPORT", raising=False)
+    monkeypatch.delenv("HERMES_BASE_URL", raising=False)
 
     o = Orchestrator(workspace=workspace)
     yield o

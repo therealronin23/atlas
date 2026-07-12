@@ -16,6 +16,7 @@ aunque cambie el set de modos evaluados.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import subprocess
 from pathlib import Path
@@ -59,6 +60,83 @@ def test_dataset_ausente_falla_cerrado(tmp_path: Path) -> None:
     assert result.after_score is None
     assert result.no_regression is False
     assert "dataset ausente" in result.reason
+
+
+def test_dataset_ausente_es_skipped_explicito_con_razon_accionable(tmp_path: Path) -> None:
+    """Tri-estado: dataset ausente != fallo real de ejecución. Sigue
+    fail-closed (ran=False, no_regression=False) pero con skipped=True y una
+    razón que apunta al comando concreto que lo arregla."""
+    gate = BenchmarkGate(
+        repo_root=tmp_path,
+        data_path=tmp_path / "no_existe" / "dataset.json",
+    )
+    result = gate.compare(before_root=tmp_path, after_root=tmp_path)
+
+    assert result.ran is False
+    assert result.no_regression is False
+    assert result.skipped is True
+    assert "scripts/fetch_longmemeval.py" in result.reason
+
+
+def test_fallo_subprocess_no_es_skipped(tmp_path: Path) -> None:
+    """Un fallo real de ejecución (dataset SÍ presente, pero el subprocess
+    revienta) no debe confundirse con el caso "dataset ausente": skipped
+    debe seguir en False."""
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text("[]")
+    before_root = tmp_path / "before"
+    after_root = tmp_path / "after"
+    before_root.mkdir()
+    after_root.mkdir()
+
+    runner = _fake_runner_factory({}, returncode=1)
+    gate = BenchmarkGate(repo_root=tmp_path, data_path=data_path, runner=runner)
+    result = gate.compare(before_root=before_root, after_root=after_root)
+
+    assert result.ran is False
+    assert result.skipped is False
+
+
+def test_to_dict_roundtrip(tmp_path: Path) -> None:
+    """Bug real: cold_update_batcher.py llama result.to_dict() y hoy no
+    existe -> AttributeError tragado silenciosamente por un except Exception,
+    dejando benchmark_findings en None siempre. to_dict() debe existir y
+    reflejar exactamente los campos del dataclass (dataclasses.asdict)."""
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text("[]")
+    before_root = tmp_path / "before"
+    after_root = tmp_path / "after"
+    before_root.mkdir()
+    after_root.mkdir()
+
+    runner = _fake_runner_factory({str(before_root): 0.60, str(after_root): 0.65})
+    gate = BenchmarkGate(repo_root=tmp_path, data_path=data_path, runner=runner)
+    result = gate.compare(before_root=before_root, after_root=after_root)
+
+    d = result.to_dict()
+
+    assert d == dataclasses.asdict(result)
+    assert d["ran"] is True
+    assert d["no_regression"] is True
+    assert d["skipped"] is False
+    assert d["before_score"] == pytest.approx(0.60)
+    assert d["after_score"] == pytest.approx(0.65)
+
+
+def test_to_dict_roundtrip_skipped(tmp_path: Path) -> None:
+    gate = BenchmarkGate(
+        repo_root=tmp_path,
+        data_path=tmp_path / "no_existe" / "dataset.json",
+    )
+    result = gate.compare(before_root=tmp_path, after_root=tmp_path)
+
+    d = result.to_dict()
+
+    assert d == dataclasses.asdict(result)
+    assert d["skipped"] is True
+    assert d["ran"] is False
+    assert d["no_regression"] is False
+    assert "scripts/fetch_longmemeval.py" in d["reason"]
 
 
 def test_after_igual_o_mejor_no_regresion(tmp_path: Path) -> None:

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderPolicy",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "provider_id": {
+      "type": "string"
+    },
+    "deny_data_classes": {
+      "type": "array"
+    },
+    "requires_gate_for": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

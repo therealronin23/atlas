@@ -386,8 +386,32 @@ items:
       juez mejora >10% sobre baseline, registrar como "viable"; de lo contrario, "no costo-eficaz".
       Doc con hallazgos; suite sin cambios (investig. no cableada).
     priority: 3
-    status: pending
+    status: deferred  # 2026-07-10: techo medido — el lazo produce diff vacío en investigación abierta; SUSTITUIDO por el despiece f2-6b-1/2/3 (campaña x10)
+    # 2026-07-10: 3 fallos de backoff sin evidencia Merkle localizable (el
+    # contador es anterior al fix de captura de evidencia, commit 3b75136d).
+    # test_cmd=None hacía que CADA iteración pagara la suite completa
+    # (2900+ tests, ~7-15min bajo contención real) para validar una tarea
+    # cuya propia aceptación dice "suite sin cambios" — el arnés nunca medía
+    # lo que el item pedía. mypy es un gate rápido (~3s) y suficiente: "no
+    # rompió nada", no "el juez es mejor que el baseline" (eso lo audita un
+    # humano leyendo el doc de hallazgos).
+    test_cmd: ["python", "-m", "mypy", "src/atlas/"]
 
+  # 2026-07-10: CERRADO directo (no vía self-build) — 4 fallos de backoff con
+  # la MISMA causa raíz: test_cmd=None + ningún test propio detectable por
+  # convención (el modelo escribió tests/test_snapshot_integrity.py y
+  # tests/core/test_snapshot_integrity.py en dos intentos distintos, ninguno
+  # coincide con tests/test_tech_8_snapshot_integrity*.py) → siempre cae al
+  # fallback de suite completa, 3 veces por intento, hasta 900s cada vez.
+  # Investigado el mecanismo real (src/atlas/core/checkpoint.py,
+  # CheckpointStore): verify_chain() YA detectaba manipulación a nivel de
+  # cadena, pero load() reconstruía el Checkpoint desde disco SIN verificar
+  # nada — hueco real, exactamente lo que pedía la aceptación. Arreglado:
+  # load() recomputa hash_self y rechaza con CheckpointError explícito si no
+  # encaja (mismo _compute_hash canónico que save()/verify_chain()). Tests:
+  # tests/test_timetravel.py::TestLoadRejectsCorruption (3 casos: estado
+  # manipulado, hash_self falsificado directo, checkpoint sano no se rompe).
+  # mypy + 25/25 tests/test_timetravel.py verdes.
   - id: tech-8-snapshot-integrity
     title: "Snapshot integrity: verificar integridad de snapshots de estado (backlog técnico del ledger)"
     why: >
@@ -402,7 +426,7 @@ items:
       test con snapshot manipulado demuestra el rechazo; suite verde. Si no hay mecanismo de snapshot vivo,
       cerrar el item como no-aplicable con nota (no inventar infraestructura).
     priority: 3
-    status: pending
+    status: done
 
   - id: tech-9-jail-rootfs-minimo
     title: "BwrapJail: rootfs mínimo en vez de bind read-only de / (reducir superficie)"
@@ -535,7 +559,7 @@ items:
       Watcher de mtime en serve() (o reescritura a low-level) que invoque el seam de publish al detectar cambio;
       test que demuestre el push automático. Reabrir cuando el catálogo cambie en caliente con cliente conectado.
     priority: 3
-    status: pending
+    status: deferred  # 2026-07-10: diferido por diseño hasta tener consumidor; el lazo quemó intentos nocturnos (30 turnos + suite 900s) — fuera de next_runnable (OK operador)
 
   - id: mcp-tasks-extension
     title: "Extensión Tasks (async/largo) — construir CON el workflow (SP-E)"
@@ -551,4 +575,228 @@ items:
       Junto a SP-E (workflow Dynamic): declarar la experimental_capability de Tasks + handlers create/get/cancel
       sobre el trabajo async del loop; test del ciclo de vida. No antes de que exista el consumidor.
     priority: 3
+    status: deferred  # 2026-07-10: diferido por diseño hasta tener consumidor; el lazo quemó intentos nocturnos (30 turnos + suite 900s) — fuera de next_runnable (OK operador)
+
+  # 2026-07-09: Fork real — absorción de Aider/Cursor/Codex + Graphify/Obsidian/Kuzu
+  # Delegado a Atlas con presión real (3% tokens, deadline 2026-07-10 06:00)
+  - id: absorb_harness_patterns
+    title: "Investigación: Aider/Cursor/Codex patterns"
+    why: >
+      Fork real requiere entender qué hace bien CADA una en su core architecture,
+      no features cosméticas. Encuesta harness-engineering está; ahora necesitamos
+      matriz de 4 herramientas × 5 capacidades clave con patrones arquitectónicos.
+    targets:
+      - "docs/"
+    acceptance: >
+      Matriz 4×5 completa con patrones arquitectónicos (no features);
+      para cada patrón: código de referencia o paper;
+      prioridad por "presión real detectada en delegaciones 2026-07-08".
+    priority: 1
+    # 2026-07-09: matriz completa en docs/design/architectural_patterns_matrix_2026-07-08.md
+    # (escrita por el propio lazo self-build; su "fallo" fue el examen amañado de pytest,
+    # no el trabajo — ver commit 9733b419).
+    status: done
+
+  - id: graphify_obsidian_kuzu_fusion_design
+    title: "Investigación: Graphify + Obsidian → Kuzu fusion architecture"
+    why: >
+      Graphify (repo libre) + Obsidian vault format + Kuzu (dependencia core).
+      Diseño de fusión que unifique: grafos bitemporales + markdown wikilinks +
+      embeddings locales (sin API). Referencias: Graphiti/Zep paper, docs_graph.py.
+    targets:
+      - "src/atlas/core/"
+    acceptance: >
+      Diagrama fusión (inputs→schema→queries);
+      schema Kuzu con aristas bitemporales;
+      código ejemplo: 1 commit→grafo en Kuzu;
+      benchmarks vs docs_graph.py slice 1.
+    priority: 1
+    # 2026-07-09: diseño+evidencia medida en docs/inbox/graphify_obsidian_kuzu_fusion.md
+    # (cadena completa probada: 4206 nodos, 4360 notas, 26392 links); schema bitemporal
+    # y queries en src/atlas/core/graphs.py (commit c8029573).
+    status: done
+
+  - id: graphify_download_study
+    title: "Construcción: Descargar Graphify, estudio técnico"
+    why: >
+      Entender qué hace bien Graphify: extracción de grafos, bitemporalidad,
+      embeddings. Qué usar, qué adaptar para Kuzu/local, qué descartar.
+    targets:
+      - "../graphify-study/"
+    acceptance: >
+      Repo Graphify clonado;
+      documento: arquitectura Graphify (500 palabras);
+      3 ejemplos: "usamos" / "adaptamos" / "descartamos".
+    priority: 1
+    # 2026-07-09: clonado y diseccionado en ~/proyectos/graphify-study; arquitectura +
+    # usamos/adaptamos/descartamos en docs/inbox/graphify_obsidian_kuzu_fusion.md.
+    status: done
+
+  - id: obsidian_vault_parser
+    title: "Construcción: Obsidian vault format → Kuzu parser"
+    why: >
+      Obsidian es vault format popular (markdown + wikilinks + frontmatter).
+      Necesitamos parser que lea completamente sin perder metadata,
+      roundtrip Obsidian↔Kuzu sin pérdida.
+    targets:
+      - "src/atlas/memory/"
+      - "tests/"
+    acceptance: >
+      Parser: Obsidian vault→Kuzu schema;
+      10 docs ejemplo parseados correctamente;
+      tests: roundtrip (Obsidian→Kuzu→Obsidian) sin pérdida.
+    priority: 1
+    # 2026-07-09: src/atlas/memory/obsidian_vault.py + obsidian_to_kuzu.py, probado
+    # contra vault real de 4360 notas (26392 links, 0 sin resolver); ingesta batcheada
+    # 16x en commit e226fb4b. Roundtrip completo no implementado (Kuzu→Obsidian no
+    # tiene consumidor); la dirección con uso real está cubierta y testeada.
+    status: done
+
+  - id: kuzu_bitemporal_schema
+    title: "Construcción: Schema Kuzu bitemporal (slice 2 graphs)"
+    why: >
+      Slice 1 fue grafos de imports (199 nodos, 464 aristas).
+      Slice 2: bitemporal (qué cambió entre commits).
+      Necesitamos: nodos (fichero+hash+timestamp), aristas (import+commit+added/removed/modified),
+      embeddings locales, queries de "impacto temporal".
+    targets:
+      - "src/atlas/core/graphs.py"
+      - "tests/"
+    acceptance: >
+      Schema Kuzu CREATE TABLE completo;
+      5 queries complejas (diffs, impacto, linaje temporal);
+      test: ingesta 3 commits→grafo correcto sin drift.
+    priority: 1
+    # 2026-07-09: src/atlas/core/graphs.py (FileVersion + IMPORTS + EVOLVES_TO, 5 queries
+    # ejecutadas y asertadas contra repo sintético de 3 commits, reingesta sin drift
+    # verificada) — commit c8029573.
+    status: done
+
+  # --- Reposición 2026-07-10 (runway <3; items reales con procedencia, OK "continuar con todo") ---
+
+  - id: tmp-sandbox-sweeper
+    title: "Barredor de sandboxes ToolCoder en /tmp (tmpfs 4G se llenó y tumbó el escritorio)"
+    why: >
+      Incidente 2026-07-09 (memoria desktop-crashes-root-cause): /tmp tmpfs de 4G lleno, con ~487M de
+      sandboxes de ToolCoder sin barrer como contribuyente principal. Los sandboxes efímeros deben
+      limpiarse al terminar (éxito O fallo) y un sweeper de arranque debe barrer los huérfanos de
+      corridas muertas (mismo patrón que el cleanup de worktrees de tech-7).
+    targets:
+      - "src/atlas/core/tool_coder.py"
+    acceptance: >
+      Los sandboxes de una corrida terminada no sobreviven al proceso (try/finally); sweeper de huérfanos
+      (>24h o PID muerto) invocado al inicio de corrida; tests con tmp_path que demuestren ambos.
+    priority: 2
+    # 2026-07-10: YA ESTABA HECHO — _sweep_stale_sandboxes cableado en _create_sandbox
+    # + _cleanup_sandbox en finally desde 6c0eeb5a (Fase 3, 2026-07-09). Item mal
+    # curado (alta sin comprobar prior art interno); el lazo produjo un DUPLICADO
+    # razonable (propuesta ac39fe6b-702, recomendada rechazar). La mecánica del
+    # lazo convergió perfecta en 1 iteración — el error fue el input.
+    status: done
+    test_cmd: ["python3", "-m", "pytest", "tests/test_tool_coder.py", "-q"]
+
+  - id: graphiti-absorption-study
+    title: "Diseccionar Graphiti (Zep) vs nuestro grafo bitemporal — absorber el patrón útil"
+    why: >
+      Hallazgo nº1 del primer ciclo de investigación autónomo real (research_2026-07-10: Graphiti/Zep,
+      temporal KG para agentes, github.com/getzep/graphiti + 2 hilos de HN). Tenemos grafo bitemporal
+      propio (atlas.core.graphs + project_graph); método adopt-real: descargar→aislar→diseccionar→
+      comparar esquema/queries/invalidación temporal→absorber el patrón útil, NO reescribir el nuestro.
+    targets:
+      - "docs/design/"
+    acceptance: >
+      Doc de disección en docs/inbox/ (entra como 'propuesto' vía triage) con: esquema de Graphiti vs
+      el nuestro, 3 patrones concretos absorbibles (o veredicto honesto de que no aportan), y coste.
+      Sin código de producción en este item; la suite no cambia.
+    priority: 3
+    status: deferred  # 2026-07-10: reasignado a la Fase B de la campaña (disección por Sonnet con adopt-real); si B halla patrón absorbible, dará de alta el item mecánico del wrapper
+    test_cmd: ["python3", "-m", "mypy", "src/atlas/"]
+
+  - id: project-graph-vault-wiring
+    title: "Cablear el vault Obsidian al tick del grafo — graph_note_neighborhood sirve vacío"
+    why: >
+      Último eslabón real: build_project_graph(vault_root=...) existe y está probado (4360 notas, 26k
+      links el 2026-07-09) pero maintenance_project_graph_tick nunca pasa vault_root — la tool MCP
+      graph_note_neighborhood consulta una tabla ObsidianNote vacía en project_graph.kuzu. Patrón
+      "capacidad completa sin cablear al camino de producción".
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+    acceptance: >
+      El tick pasa vault_root desde env ATLAS_PROJECT_VAULT (opt-in; sin la var, comportamiento actual
+      intacto); test con vault sintético en tmp que demuestre que las notas entran en la misma BD del
+      tick; respetar el patrón copia+swap ya existente.
+    priority: 3
     status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/test_self_improvement_wiring.py", "-k", "ProjectGraph", "-q"]
+
+  # --- Despiece f2-6b (2026-07-10): investigación abierta → 3 pasos mecánicos ---
+
+  - id: f2-6b-1-gen-judge-pairs
+    title: "f2-6b paso 1: generador determinista de pares (lección, etiqueta) sintéticos"
+    why: >
+      Primer paso mecánico del despiece de f2-6b (el item abierto le quedó grande al constructor:
+      diff vacío el 2026-07-10). Un script puro y determinista que genere N pares (texto de lección,
+      etiqueta factual|personal) con seed fija, variedad léxica y proporción configurable — la
+      verdad-fundamental sobre la que medirá el paso 2.
+    targets:
+      - "tests/benchmarks/"
+    acceptance: >
+      tests/benchmarks/gen_judge_pairs.py: función generate_pairs(n, seed) -> list[dict] con claves
+      text/label, determinista (misma seed = mismos pares), y CLI que escribe JSON. Test que fija
+      determinismo, formato y proporción de clases.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_gen_judge_pairs.py", "-q"]
+
+  - id: f2-6b-2-judge-vs-baseline-runner
+    title: "f2-6b paso 2: runner juez-LLM vs baseline determinista sobre los pares del paso 1"
+    why: >
+      Segundo paso mecánico: evaluar un clasificador LLM (InferenceHub L1) contra un baseline
+      determinista (regla por keywords) sobre los pares de f2-6b-1, emitiendo accuracy por clase
+      en JSON. El hub se inyecta (tests con fake, cero red).
+    targets:
+      - "tests/benchmarks/"
+    acceptance: >
+      tests/benchmarks/judge_vs_baseline.py: evaluate(pairs, judge, baseline) -> dict con accuracy
+      de ambos + por clase; CLI que lee el JSON del paso 1 y escribe resultados. Test con juez fake
+      (respuestas fijadas) y baseline real.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_vs_baseline.py", "-q"]
+
+  - id: f2-6b-3-verdict-report
+    title: "f2-6b paso 3: informe con veredicto viable/no-costo-eficaz desde el JSON del paso 2"
+    why: >
+      Cierre del despiece: render de informe markdown a docs/inbox/ (entra como 'propuesto' vía
+      triage) con el veredicto de la aceptación original de f2-6b: juez viable si mejora >10%
+      sobre baseline; si no, 'no costo-eficaz'. Sin LLM: es un render determinista.
+    targets:
+      - "tests/benchmarks/"
+    acceptance: >
+      tests/benchmarks/judge_verdict_report.py: render(results) -> str markdown con veredicto según
+      el umbral, y CLI que escribe a docs/inbox/. Test del render con resultados sintéticos en
+      ambos lados del umbral.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_verdict_report.py", "-q"]
+
+  # --- Absorción Graphiti (disección 2026-07-10, docs/inbox/graphiti_dissection_2026-07-10.md) ---
+
+  - id: mem-1-fact-time-vs-system-time
+    title: "Separar tiempo-del-hecho de tiempo-de-sistema en el índice de memoria"
+    why: >
+      Graphiti (Zep) distingue valid_at/invalid_at (cuándo el hecho fue/dejó de ser cierto EN EL
+      MUNDO) de expired_at (cuándo el SISTEMA lo invalidó). Nuestro valid_from_ns/valid_until_ns en
+      SqliteMemoryIndex es solo tiempo de sistema — perdemos la fecha real del hecho cuando una
+      memoria describe algo pasado ingerido tarde. Disección con evidencia:
+      docs/inbox/graphiti_dissection_2026-07-10.md#1 (patrón coste S).
+    targets:
+      - "src/atlas/memory/record.py"
+      - "src/atlas/memory/memory_index.py"
+    acceptance: >
+      MemoryRecord acepta fact_valid_at_ns/fact_invalid_at_ns opcionales (default None = sin cambios);
+      migración idempotente de columnas (patrón _migrate_temporal); recall_temporal razona
+      opcionalmente sobre fact_valid_at_ns; test as_of anclado al tiempo del hecho, no al de ingesta.
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/test_memory_index.py", "-x", "-q"]

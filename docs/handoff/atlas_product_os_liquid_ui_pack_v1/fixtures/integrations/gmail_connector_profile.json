@@ -1,0 +1,17 @@
+{
+  "connector_id": "gmail",
+  "connection_methods": [
+    "oauth",
+    "api"
+  ],
+  "default_mode": "read_only",
+  "capabilities": [
+    "email.read",
+    "email.search",
+    "email.draft"
+  ],
+  "blocked_by_default": [
+    "email.send",
+    "email.delete"
+  ]
+}

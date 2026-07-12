@@ -1,0 +1,13 @@
+{
+  "states": [
+    "idle",
+    "listening",
+    "thinking",
+    "planning",
+    "executing",
+    "waiting_approval",
+    "memory_consolidation",
+    "error",
+    "lockdown"
+  ]
+}

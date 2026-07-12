@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UIAction",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "action_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "surface": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "requires_gate": {
+      "type": "boolean"
+    },
+    "emits": {
+      "type": "array"
+    },
+    "visual_reaction": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

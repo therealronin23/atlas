@@ -8,29 +8,49 @@ con origin="self_audit". Por invariante CVE-HITL (G0.8), origin="self_audit"
 NUNCA dispara tier1_auto_apply — toda propuesta de self-build requiere
 aprobación humana explícita (approve_pending()/approve() aparte de este
 runner). Este módulo solo PROPONE, nunca aplica ni marca items como "done".
+
+Toda ejecución (ToolCoder, evaluación evolutiva, generación de patch) ocurre
+en worktrees git efímeros: el árbol de trabajo VIVO del repo nunca se toca,
+así que trabajo concurrente sin commitear de un humano u otro agente sobrevive
+intacto a cualquier run (incidente "9 YAML regenerados", RootCauseClassifier).
 """
 from __future__ import annotations
 
 import logging
+import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Any, Callable
 
-import yaml
-
 from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
 from atlas.core.git_env import clean_git_env
-from atlas.core.inference_hub import InferenceHub
+from atlas.core.inference_hub import InferenceHub, InferenceLevel
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.core.tool_coder import ToolCoder
 
 __all__ = ["SelfBuildRunner"]
 
 logger = logging.getLogger(__name__)
+
+
+def _self_build_level() -> InferenceLevel:
+    """Nivel de inferencia para autoconstrucción, configurable por entorno.
+
+    2026-07-09: el runner heredaba el default L1 de ToolCoder.code() — el
+    tier gratis más débil — sin forma de subirlo; las misiones densas no
+    convergían por modelo, no por lazo. ``ATLAS_SELF_BUILD_LEVEL=L2`` sube
+    el escalón por despliegue; default L1 (conservador en coste).
+    """
+    raw = os.environ.get("ATLAS_SELF_BUILD_LEVEL", "").strip().upper()
+    if raw and hasattr(InferenceLevel, raw):
+        return getattr(InferenceLevel, raw)  # type: ignore[no-any-return]
+    return InferenceLevel.L1
+
 
 # openevolve._prepare_evaluator() extrae el CÓDIGO FUENTE de un evaluator
 # callable (inspect.getsource) y lo re-ejecuta en un módulo aislado sin
@@ -98,8 +118,12 @@ def evaluate(program_path):
             candidate_target.parent.mkdir(parents=True, exist_ok=True)
             candidate_target.write_text(candidate_code, encoding="utf-8")
 
+            # Guardia anti-recursión (incidente 2026-07-09): la suite lanzada
+            # por el lazo no puede volver a disparar el lazo.
+            test_env = _clean_git_env()
+            test_env["ATLAS_NESTED_TEST_RUN"] = "1"
             test_result = subprocess.run(
-                _TEST_CMD, cwd=worktree_path, env=_clean_git_env(),
+                _TEST_CMD, cwd=worktree_path, env=test_env,
                 capture_output=True, text=True, check=False,
             )
             if test_result.returncode == 0:
@@ -159,21 +183,78 @@ class SelfBuildRunner:
 
         Prioridad: 1) campo test_cmd explícito del item; 2) heurística simple
         de nombre de archivo (NO es NLP, solo un glob por convención de
-        nombres: tests/test_{id con '-' -> '_'}*.py); 3) fallback a la suite
-        completa (`pytest -q`).
+        nombres: tests/test_{id con '-' -> '_'}*.py); 2.5) mapeo por
+        item.targets (2026-07-10: entre el glob por id y el fallback, para
+        que items sin id-match pero con targets concretos no caigan a la
+        suite completa — ver _tests_from_targets); unión ordenada y
+        deduplicada de 2 y 2.5; 3) fallback a la suite completa (`pytest -q`),
+        SOLO si ni el id ni los targets producen ningún match.
         """
         if item.test_cmd:
-            return list(item.test_cmd)
+            cmd = list(item.test_cmd)
+            # `python` a pelo no existe en este sistema (solo python3/venv) —
+            # tercera aparición del mismo bug (2026-07-10: dos fallos reales
+            # 'test_cmd no encontrado' con el test_cmd escrito en backlog.yaml).
+            # LLMs y humanos lo van a volver a escribir: resolverlo aquí.
+            if cmd and cmd[0] in ("python", "python3"):
+                cmd[0] = sys.executable
+            return cmd
 
         slug = item.id.replace("-", "_")
         tests_dir = self._repo_root / "tests"
+        id_matches: list[Path] = []
         if tests_dir.is_dir():
-            matches = sorted(tests_dir.glob(f"test_{slug}*.py"))
-            if matches:
-                rel = matches[0].relative_to(self._repo_root)
-                return ["pytest", str(rel), "-q"]
+            id_matches = sorted(tests_dir.glob(f"test_{slug}*.py"))
 
-        return ["pytest", "-q"]
+        target_matches = self._tests_from_targets(item.targets)
+
+        combined: list[Path] = []
+        seen: set[Path] = set()
+        for candidate in [*id_matches, *target_matches]:
+            if candidate not in seen:
+                seen.add(candidate)
+                combined.append(candidate)
+
+        if combined:
+            # sys.executable -m pytest, NUNCA "pytest" a pelo: la invocación
+            # descubierta 2026-07-09 — `pytest -q` desde la raíz revienta en
+            # la COLECCIÓN (tests/benchmarks importa `scripts`, que solo es
+            # importable con cwd en sys.path, cosa que hace `python -m`). El
+            # pre-commit usa `python -m pytest tests/ -q`; el runner debe
+            # medir con el MISMO gate o toda misión sin test_cmd muere por
+            # construcción.
+            rels = [str(p.relative_to(self._repo_root)) for p in combined]
+            return [sys.executable, "-m", "pytest", *rels, "-q"]
+
+        return [sys.executable, "-m", "pytest", "tests/", "-q"]
+
+    def _tests_from_targets(self, targets: tuple[str, ...]) -> list[Path]:
+        """Mapea item.targets (rutas de código, fichero o directorio con '/'
+        final) a tests probables por convención de nombres. Reutiliza
+        _expand_targets para el mismo criterio de directorio-no-recursivo ya
+        usado en el resto del runner. Tope defensivo de 20 ficheros de test
+        (un item mal etiquetado con un target enorme no debe generar un
+        comando pytest gigante)."""
+        tests_dir = self._repo_root / "tests"
+        if not tests_dir.is_dir():
+            return []
+
+        matches: list[Path] = []
+        for rel in self._expand_targets(targets):
+            if not rel.endswith(".py"):
+                continue
+            stem = Path(rel).stem
+            matches.extend(sorted(tests_dir.glob(f"test_{stem}*.py")))
+            if len(matches) >= 20:
+                break
+
+        seen: set[Path] = set()
+        deduped: list[Path] = []
+        for candidate in matches:
+            if candidate not in seen:
+                seen.add(candidate)
+                deduped.append(candidate)
+        return deduped[:20]
 
     # ------------------------------------------------------------------
     # run_item
@@ -183,33 +264,65 @@ class SelfBuildRunner:
         """Ejecuta ToolCoder sobre el item y, si los tests pasan, PROPONE el
         patch a ColdUpdateManager (origin="self_audit" -> requiere HITL).
 
+        ToolCoder corre en un worktree git efímero (nunca sobre el árbol de
+        trabajo vivo) y el patch se genera desde ese worktree: trabajo
+        concurrente sin commitear de un humano u otro agente en el árbol vivo
+        es intocable, tanto en éxito como en fracaso.
+
         Nunca marca el item como "done": eso requiere aprobación humana del
         proposal, fuera del alcance de este método.
         """
         test_cmd = self.derive_test_cmd(item)
         task = f"{item.title}\n\n{item.why}\n\nCriterio de aceptación:\n{item.acceptance}"
 
-        baseline = self._git_status_lines()
-        coder = self._tool_coder_factory(self._hub, repo_root=self._repo_root)
-        coder_result = coder.code(
-            task,
-            context_files=self._expand_targets(item.targets),
-            test_cmd=test_cmd,
-            max_iterations=max_iterations,
-        )
-
-        if not coder_result.success:
-            self._revert_new_changes(baseline)
+        worktree_path = self._create_ephemeral_worktree("HEAD")
+        if worktree_path is None:
             return {
                 "item_id": item.id,
                 "proposal_id": None,
                 "status": "failed",
-                "detail": coder_result.error or coder_result.test_output or "sin detalle",
+                "detail": "no se pudo crear el worktree efímero (git worktree add falló)",
             }
+        try:
+            coder = self._tool_coder_factory(self._hub, repo_root=worktree_path)
+            coder_result = coder.code(
+                task,
+                context_files=self._expand_targets(item.targets),
+                test_cmd=test_cmd,
+                max_iterations=max_iterations,
+                level=_self_build_level(),
+                # Visión periférica automática (patrón Aider): sin esto el modelo
+                # solo ve los targets del item y reinventa símbolos que ya existen.
+                repo_map_files=self._tracked_py_files(),
+                # Planning antes de editar (patrón nº1 de la matriz de harnesses).
+                plan=True,
+            )
 
-        patch_path = self._write_patch()
+            if not coder_result.success:
+                # error + evidencia útil del test_output: "Tests no pasaron tras N
+                # iteraciones" sin las líneas FAILED ni los ficheros tocados es
+                # indiagnosticable a posteriori (el worktree ya se destruye al salir).
+                detail = coder_result.error or "sin detalle"
+                if coder_result.test_output:
+                    failed_lines = [
+                        ln for ln in coder_result.test_output.splitlines()
+                        if "FAILED" in ln or "ERROR" in ln or ln.startswith("E ")
+                    ]
+                    evidence = "\n".join(failed_lines[:12]) or coder_result.test_output[-600:]
+                    detail = f"{detail}\n--- evidencia tests ---\n{evidence[:1200]}"
+                return {
+                    "item_id": item.id,
+                    "proposal_id": None,
+                    "status": "failed",
+                    "detail": detail,
+                    "files_changed": list(coder_result.files_changed),
+                }
+
+            patch_path = self._write_patch(worktree_path)
+        finally:
+            self._remove_worktree_path(worktree_path)
+
         if patch_path is None:
-            self._revert_new_changes(baseline)
             return {
                 "item_id": item.id,
                 "proposal_id": None,
@@ -292,12 +405,26 @@ class SelfBuildRunner:
         if not outcome.succeeded or outcome.best_score <= 0.0:
             return self.run_item(item, max_iterations=max_iterations)
 
-        baseline = self._git_status_lines()
-        target_path.write_text(outcome.best_code, encoding="utf-8")
+        # El patch se genera en un worktree efímero: el árbol de trabajo vivo
+        # no se toca nunca, ni siquiera en el camino exitoso.
+        worktree_path = self._create_ephemeral_worktree(base_ref)
+        if worktree_path is None:
+            return {
+                "item_id": item.id,
+                "proposal_id": None,
+                "status": "failed",
+                "detail": "evolución mejoró la puntuación pero no se pudo crear "
+                          "el worktree efímero para generar el diff",
+            }
+        try:
+            candidate_target = worktree_path / target_rel
+            candidate_target.parent.mkdir(parents=True, exist_ok=True)
+            candidate_target.write_text(outcome.best_code, encoding="utf-8")
+            patch_path = self._write_patch(worktree_path)
+        finally:
+            self._remove_worktree_path(worktree_path)
 
-        patch_path = self._write_patch()
         if patch_path is None:
-            self._revert_new_changes(baseline)
             return {
                 "item_id": item.id,
                 "proposal_id": None,
@@ -397,6 +524,21 @@ class SelfBuildRunner:
         except (OSError, subprocess.SubprocessError):
             pass
 
+    def _tracked_py_files(self) -> list[str]:
+        """Todos los .py trackeados del repo — alimenta el repo-map del coder
+        (firmas AST, no contenido; barato incluso con ~200 módulos). Lista
+        vacía si git falla: el repo-map es opcional, nunca bloquea el tick."""
+        try:
+            result = subprocess.run(
+                ["git", "ls-files", "*.py"],
+                cwd=self._repo_root, capture_output=True, text=True, check=False,
+            )
+            if result.returncode != 0:
+                return []
+            return result.stdout.split()
+        except (OSError, subprocess.SubprocessError):
+            return []
+
     def _expand_targets(self, targets: tuple[str, ...] | list[str]) -> list[str]:
         """Expande targets que son directorios (terminan en '/') a los .py
         que contienen (no recursivo — un target de directorio en el backlog
@@ -415,48 +557,49 @@ class SelfBuildRunner:
             out.append(target)
         return out
 
-    def _git_status_lines(self) -> set[str]:
-        """Snapshot de `git status --porcelain` (líneas crudas) para poder
-        detectar y revertir SOLO lo que ToolCoder ensucie en un intento
-        fallido — nunca dejar el árbol de trabajo sucio tras un fracaso."""
+    def _create_ephemeral_worktree(self, base_ref: str) -> Path | None:
+        """Crea un worktree git efímero desde base_ref donde ToolCoder y la
+        generación del patch pueden operar libremente — el árbol de trabajo
+        VIVO (con posible trabajo concurrente sin commitear de un humano u
+        otro agente) nunca se toca. Devuelve None si git falla (fail-closed:
+        sin worktree no hay run)."""
+        worktree_path = self._repo_root.parent / f"self-build-item-{uuid.uuid4().hex[:12]}"
         try:
             result = subprocess.run(
-                ["git", "status", "--porcelain"],
-                cwd=self._repo_root, capture_output=True, text=True, check=False,
+                ["git", "worktree", "add", "--detach", str(worktree_path), base_ref],
+                cwd=self._repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
             )
         except (OSError, subprocess.SubprocessError):
-            return set()
-        return set(result.stdout.splitlines())
+            return None
+        if result.returncode != 0:
+            return None
+        return worktree_path
 
-    def _revert_new_changes(self, baseline: set[str]) -> None:
-        """Tras un intento fallido de ToolCoder: revierte ficheros trackeados
-        recién modificados y borra ficheros nuevos sin trackear que NO
-        estaban en el `baseline` — deja el árbol de trabajo exactamente como
-        antes del intento, nunca a medias."""
-        current = self._git_status_lines()
-        for line in current - baseline:
-            if len(line) < 4:
-                continue
-            status, rel_path = line[:2], line[3:]
-            abs_path = self._repo_root / rel_path
-            if status == "??":
-                if abs_path.is_file():
-                    abs_path.unlink()
-                continue
-            subprocess.run(
-                ["git", "checkout", "--", rel_path],
-                cwd=self._repo_root, capture_output=True, text=True, check=False,
-            )
+    def _write_patch(self, worktree_root: Path) -> Path | None:
+        """Genera un .patch con `git diff HEAD` desde un worktree efímero.
 
-    def _write_patch(self) -> Path | None:
-        """Genera un .patch con `git diff` del estado actual del repo_root.
-
-        Devuelve None si no hay diff (nada que proponer) o si git falla.
+        Hace `git add -A` primero — seguro SOLO porque el worktree es efímero
+        y se destruye después — para que los ficheros NUEVOS creados por
+        ToolCoder entren también en el diff. Devuelve None si no hay diff
+        (nada que proponer) o si git falla.
         """
         try:
+            subprocess.run(
+                ["git", "add", "-A"],
+                cwd=worktree_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             result = subprocess.run(
                 ["git", "diff", "HEAD"],
-                cwd=self._repo_root,
+                cwd=worktree_root,
+                env=clean_git_env(),
                 capture_output=True,
                 text=True,
                 check=False,

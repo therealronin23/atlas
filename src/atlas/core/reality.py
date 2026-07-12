@@ -197,8 +197,15 @@ def _playwright_chromium_executable() -> tuple[Path | None, str]:
 def _hermes_state() -> dict[str, Any]:
     base_url = os.environ.get("HERMES_BASE_URL", "").strip()
     api_key = os.environ.get("HERMES_API_KEY", "").strip()
+    kanban_transport = os.environ.get("HERMES_KANBAN_TRANSPORT", "").strip().lower()
     local_takeover = os.environ.get("ATLAS_HERMES_LOCAL", "").strip().lower() in {"1", "true", "yes"}
-    if base_url and api_key:
+    if kanban_transport:
+        mode = f"kanban_{kanban_transport}"
+        reason = (
+            "HERMES_KANBAN_TRANSPORT is set; Atlas delegates through Hermes kanban. "
+            "Run hermes_smoke or a live delegation for runtime evidence"
+        )
+    elif base_url and api_key:
         mode = "configured"
         reason = "HERMES_BASE_URL and HERMES_API_KEY are set; run hermes_smoke for live evidence"
     elif local_takeover:

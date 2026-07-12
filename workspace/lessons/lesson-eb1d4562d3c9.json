@@ -1,0 +1,38 @@
+{
+  "id": "lesson-eb1d4562d3c9",
+  "title": "recall_multihop NO es un grafo; Kuzu está libre para KG temporal",
+  "provenance": "external_source",
+  "detection_heuristic": "diseño que asuma relaciones explícitas en memoria: memory_index no tiene aristas (multihop = recalls encadenados por texto)",
+  "avoid_pattern": "No llamar 'grafo' al recall encadenado ni diseñar sobre relaciones que no existen. Para relaciones reales usar aristas explícitas: Kuzu ya es dependencia core (hoy solo vector store) — slice pendiente: KG temporal docs+memoria patrón Graphiti/Zep arXiv:2501.13956 (aristas bitemporales, retrieval sin LLM).",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-08T20:32:47.292351+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "src/atlas/memory/memory_index.py",
+    "src/atlas/memory/vector_store.py",
+    "scripts/docs_graph.py"
+  ],
+  "tags": [
+    "memory",
+    "knowledge-graph",
+    "design"
+  ],
+  "created_at": "2026-07-08T20:32:47.292395+00:00",
+  "occurrence_count": 1,
+  "last_seen_at": ""
+}

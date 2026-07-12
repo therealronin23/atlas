@@ -1,0 +1,2 @@
+{"connector": "gmail", "status": "connected"}
+{"connector": "odoo", "status": "degraded", "issue": "auth_expired"}

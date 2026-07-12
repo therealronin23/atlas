@@ -1,0 +1,23 @@
+{
+  "objectives": [
+    {
+      "objective_id": "prepare_client_filing",
+      "sector_id": "gestoria_fiscal_contable",
+      "label": "Preparar declaración de cliente",
+      "risk_level": "high",
+      "gates": [
+        "human_review",
+        "signature_filing"
+      ]
+    },
+    {
+      "objective_id": "create_business_core",
+      "sector_id": "restauracion_hosteleria",
+      "label": "Crear sistema inicial de negocio",
+      "risk_level": "medium",
+      "gates": [
+        "business_activation_gate"
+      ]
+    }
+  ]
+}

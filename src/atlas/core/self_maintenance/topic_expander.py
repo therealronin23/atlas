@@ -32,13 +32,27 @@ from typing import Any
 
 from atlas.core.inference_hub import InferenceLevel, InferenceRequest
 
+# Curado 2026-07-09: la primera pasada real dio 0 hallazgos — las consultas
+# salían en español y como frases literales de los títulos de lecciones
+# ("SelfBuildRunner y Git", "búsqueda de documentos en grafo"), inservibles
+# contra GitHub repo search (AND de términos) y HN Algolia.
 _EXPAND_INSTRUCTION_TEMPLATE = (
-    "Genera EXACTAMENTE {n} consultas de búsqueda cortas y variadas "
-    "relacionadas con el interés dado, explorando ángulos distintos, "
-    "técnicas adyacentes, y términos técnicos relacionados -- NO repitas el "
-    "mismo interés con sinónimos triviales. Responde SOLO un array JSON de "
-    "strings, sin prosa."
+    "Genera EXACTAMENTE {n} consultas de búsqueda para GitHub y Hacker News "
+    "a partir del interés dado. Reglas estrictas: "
+    "(1) SIEMPRE en INGLÉS técnico, aunque el interés venga en español. "
+    "(2) CORTAS: 2-4 palabras clave, como las teclearía un ingeniero "
+    "(ej. 'temporal knowledge graph', 'agent memory benchmark', "
+    "'LLM tool sandbox'). Nada de frases completas ni preposiciones. "
+    "(3) Si el interés cita nombres internos de un proyecto (clases, "
+    "funciones, jerga propia), NO los repitas: extrae el CONCEPTO general "
+    "del ecosistema que hay detrás. "
+    "(4) Ángulos distintos y términos adyacentes, no sinónimos triviales. "
+    "Responde SOLO un array JSON de strings, sin prosa."
 )
+
+# Cota dura post-LLM: aunque el modelo ignore las reglas, una consulta
+# larga/no-inglesa/con identificadores internos no llega al scout.
+_MAX_QUERY_WORDS = 5
 
 
 @dataclass
@@ -114,9 +128,24 @@ class TopicExpander:
             queries = self._parse_json_array(response.text) if response.success else None
         except Exception:  # noqa: BLE001 -- fail-open: el seed mismo sigue siendo una query valida
             queries = None
+        if queries:
+            queries = [q for q in queries if self._is_searchable(q)]
         if not queries:
             queries = [seed]
         return TopicExpansion(seed=seed, queries=queries)
+
+    @staticmethod
+    def _is_searchable(query: str) -> bool:
+        """Filtro determinista de buscabilidad: corta lo que el prompt prohíbe
+        pero un L1 barato aún emite — frases largas, texto no-inglés (heurística:
+        no-ASCII, p.ej. acentos del español) e identificadores internos
+        (snake_case). Si el filtro vacía la lista, _expand_one cae al seed."""
+        q = query.strip()
+        if not q or not q.isascii():
+            return False
+        if "_" in q:
+            return False
+        return len(q.split()) <= _MAX_QUERY_WORDS
 
     def _parse_json_array(self, text: str) -> list[str] | None:
         """Extrae el primer array JSON del texto del modelo. Tolerante a

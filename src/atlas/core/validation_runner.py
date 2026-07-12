@@ -68,6 +68,11 @@ class ValidationRunner:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(self._root / "src")
         env.setdefault("ATLAS_MEMORY_VECTOR", "0")
+        # Guardia anti-recursión (incidente 2026-07-09): la suite lanzada por
+        # el lazo (validación de ColdUpdate/batch) no puede volver a disparar
+        # los ticks del facade (self-build/research/provider-smoke) aunque
+        # herede ATLAS_SELF_BUILD=1 del env del daemon.
+        env["ATLAS_NESTED_TEST_RUN"] = "1"
         env.update(self._extra_env or {})
 
         pytest_cmd = [

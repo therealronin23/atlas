@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkbenchSurface",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "surface_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "layout_region": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

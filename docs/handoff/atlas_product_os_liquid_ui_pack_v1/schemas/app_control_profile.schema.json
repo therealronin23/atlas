@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AppControlProfile",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "app_profile_id": {
+      "type": "string"
+    },
+    "connection_route": {
+      "type": "string"
+    },
+    "allowed_actions": {
+      "type": "array"
+    },
+    "forbidden_actions": {
+      "type": "array"
+    },
+    "requires_visible_session": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

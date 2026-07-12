@@ -23,6 +23,7 @@ from atlas.core.contracts import (
     DelegationPayload, DelegationReceipt, DelegationResult,
     HermesStatus, QueueStatus,
 )
+from atlas.hermes.kanban_bridge import KanbanBridge
 
 
 # ===========================================================================
@@ -181,6 +182,116 @@ class HermesMockAdapter(HermesAdapter):
             time.sleep(self._latency_ms / 1000)
 
 
+class HermesKanbanAdapter(HermesAdapter):
+    """
+    Adaptador real sobre Hermes Agent kanban local/remoto.
+
+    Usa `hermes kanban` como superficie durable de delegación. Si el bridge no
+    es reachable, la tarea cae a OfflineQueue y se levanta HermesUnreachable,
+    igual que el adapter REST. En éxito NO duplica la tarea en OfflineQueue:
+    el board de Hermes ya es la fuente durable.
+    """
+
+    DEFAULT_ASSIGNEE = "default"
+
+    def __init__(
+        self,
+        bridge: KanbanBridge | None = None,
+        *,
+        offline_queue: "OfflineQueue | None" = None,
+        assignee: str | None = None,
+    ) -> None:
+        self._bridge = bridge or KanbanBridge()
+        self._offline_queue = offline_queue
+        self._assignee = (assignee or os.environ.get("HERMES_KANBAN_ASSIGNEE") or self.DEFAULT_ASSIGNEE).strip()
+
+    def health_check(self) -> HermesStatus:
+        reachable = self._bridge.reachable()
+        depth = 0
+        if reachable:
+            try:
+                stats = self._bridge.run("stats", "--json")
+                by_status = ((stats.parsed or {}).get("by_status") or {}) if isinstance(stats.parsed, dict) else {}
+                depth = sum(
+                    int(count) for status, count in by_status.items()
+                    if status not in {"done", "archived"}
+                )
+            except Exception:  # noqa: BLE001
+                depth = 0
+        return HermesStatus(
+            reachable=reachable,
+            mode="kanban" if reachable else "offline",
+            queue_depth=depth,
+            last_seen=datetime.now(timezone.utc).isoformat() if reachable else None,
+            version="hermes-kanban",
+        )
+
+    def enqueue_task(self, payload: DelegationPayload) -> DelegationReceipt:
+        title = _kanban_title(payload.task_intent)
+        result = self._bridge.create_task(
+            title=title,
+            body=payload.task_intent,
+            assignee=self._assignee,
+            triage=False,
+        )
+        if not result.ok:
+            if self._offline_queue is not None:
+                self._offline_queue.enqueue(QueueEntry(delegation=payload))
+            raise HermesUnreachable(result.stderr or "kanban create failed")
+        task_id = _extract_kanban_task_id(result.parsed)
+        return DelegationReceipt(
+            delegation_id=task_id or payload.id,
+            accepted=True,
+            queue_position=None,
+            estimated_eta_seconds=None,
+        )
+
+    def get_task_result(self, task_id: str) -> DelegationResult | None:
+        result = self._bridge.run("show", task_id, "--json")
+        if not result.ok:
+            return None
+        parsed = result.parsed or {}
+        task = parsed.get("task") if isinstance(parsed, dict) else None
+        if not isinstance(task, dict):
+            return None
+        latest_summary = parsed.get("latest_summary") if isinstance(parsed, dict) else None
+        return DelegationResult(
+            delegation_id=task.get("id", task_id),
+            task_id=task.get("id", task_id),
+            status=str(task.get("status", "unknown")),
+            result={"latest_summary": latest_summary, "task": task},
+            completed_at=task.get("completed_at"),
+            error=None,
+            skill_generated=False,
+        )
+
+    def get_queue_status(self) -> QueueStatus:
+        stats = self._bridge.run("stats", "--json")
+        parsed = stats.parsed if isinstance(stats.parsed, dict) else {}
+        by_status = parsed.get("by_status", {}) if isinstance(parsed, dict) else {}
+        depth = sum(
+            int(count) for status, count in by_status.items()
+            if status not in {"done", "archived"}
+        )
+        next_task_id = None
+        ready = self._bridge.run("list", "--status", "ready", "--json")
+        if ready.ok and isinstance(ready.parsed, list) and ready.parsed:
+            next_task_id = ready.parsed[0].get("id")
+        return QueueStatus(
+            depth=depth,
+            oldest_task_age_seconds=parsed.get("oldest_ready_age_seconds") if isinstance(parsed, dict) else None,
+            next_task_id=next_task_id,
+            processing=False,
+        )
+
+    def cancel_task(self, task_id: str) -> bool:
+        result = self._bridge.run("archive", task_id)
+        return result.ok
+
+    def check_offline_fallback(self) -> bool:
+        return not self._bridge.reachable()
+
+
 # ===========================================================================
 # Constructor de DelegationPayload
 # ===========================================================================
@@ -203,6 +314,21 @@ class DelegationBuilder:
             timeout_seconds=timeout_seconds,
             metadata=metadata or {},
         )
+
+
+def _kanban_title(intent: str, limit: int = 96) -> str:
+    clean = " ".join((intent or "").strip().split())
+    if not clean:
+        return "Atlas delegated task"
+    return clean[:limit]
+
+
+def _extract_kanban_task_id(parsed: Any) -> str | None:
+    if isinstance(parsed, dict):
+        task_id = parsed.get("id")
+        if isinstance(task_id, str) and task_id:
+            return task_id
+    return None
 
 
 # ===========================================================================

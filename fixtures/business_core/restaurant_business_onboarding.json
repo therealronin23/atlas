@@ -1,0 +1,47 @@
+{
+  "session_id": "obs_restaurant_demo",
+  "sector_id": "restauracion_hosteleria",
+  "pack_id": "qp_restauracion_hosteleria",
+  "status": "preview",
+  "answers": [
+    {
+      "question_id": "sales_channels",
+      "value": ["local", "delivery"],
+      "uncertain": false,
+      "interpreted": "Sala/local, Delivery",
+      "confirmed": true
+    },
+    {
+      "question_id": "has_menu",
+      "value": "pdf_image",
+      "uncertain": false,
+      "interpreted": "PDF o imagen",
+      "confirmed": true
+    },
+    {
+      "question_id": "stock_control",
+      "value": "more_or_less",
+      "uncertain": false,
+      "interpreted": "Más o menos",
+      "confirmed": true
+    },
+    {
+      "question_id": "uses_pos",
+      "value": null,
+      "uncertain": true,
+      "interpreted": "Omitida por el usuario.",
+      "confirmed": true
+    }
+  ],
+  "pending_questions": [],
+  "understanding_summary": "sales_channels → Sala/local, Delivery; has_menu → PDF o imagen; stock_control → Más o menos; uses_pos → Omitida por el usuario.",
+  "proposed": {
+    "entities": ["order", "product", "stock_item", "supplier"],
+    "capabilities": ["files.read"],
+    "workbenches": ["order_workbench"],
+    "connector_pack": "restaurante_pack"
+  },
+  "created_at": "2026-07-10T00:00:00+00:00",
+  "updated_at": "2026-07-10T00:05:00+00:00",
+  "demo": true
+}

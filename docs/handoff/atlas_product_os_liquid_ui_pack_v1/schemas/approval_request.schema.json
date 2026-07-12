@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApprovalRequest",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "approval_id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

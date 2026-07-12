@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/connector_health.schema.json",
+  "title": "AtlasConnectorHealth",
+  "description": "Estado de salud de una conexión (IntegrationHealthMonitor). El estado se representa, nunca se inventa: sin check real → never_connected/unknown.",
+  "type": "object",
+  "required": [
+    "connector_id",
+    "status",
+    "issues"
+  ],
+  "properties": {
+    "connector_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "never_connected",
+        "connected",
+        "degraded",
+        "auth_expired",
+        "error",
+        "disconnected"
+      ]
+    },
+    "last_check": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "detail"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "simulated": {
+      "type": "boolean",
+      "description": "true si el estado proviene de un test mock/sandbox"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,9 @@
+{
+  "fragments": [
+    {
+      "fragment_id": "frag_001",
+      "type": "design_constraint",
+      "text": "Atlas no dashboard"
+    }
+  ]
+}

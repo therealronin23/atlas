@@ -1,0 +1,10 @@
+{
+  "flow": [
+    "voice_intent",
+    "risk_classification",
+    "progress",
+    "approval_queue",
+    "summary",
+    "lockdown"
+  ]
+}

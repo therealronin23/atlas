@@ -1,0 +1,14 @@
+{
+  "cell_states": [
+    "manual",
+    "imported",
+    "extracted",
+    "calculated",
+    "ai_suggested",
+    "validated",
+    "without_evidence",
+    "needs_review",
+    "blocked",
+    "approved"
+  ]
+}

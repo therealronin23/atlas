@@ -186,3 +186,119 @@ def test_backlog_summary_top_pending_excludes_non_pending() -> None:
     ]
     summary = backlog_summary(items)
     assert [t["id"] for t in summary["top_pending"]] == ["pending-item"]
+
+
+# ---------------------------------------------------------------------------
+# Cola con backoff (2026-07-09): un item que falla N ticks cede el turno.
+# ---------------------------------------------------------------------------
+
+def test_next_runnable_skips_exhausted_item() -> None:
+    from atlas.core.self_maintenance.backlog import (
+        MAX_CONSECUTIVE_FAILURES,
+        next_runnable,
+    )
+
+    items = [_item("a", 1), _item("b", 2)]
+    state = {"a": MAX_CONSECUTIVE_FAILURES}
+    chosen = next_runnable(items, state)
+    assert chosen is not None and chosen.id == "b"
+
+
+def test_next_runnable_all_exhausted_degrades_to_least_failed() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2)]
+    state = {"a": 5, "b": 3}
+    chosen = next_runnable(items, state)
+    assert chosen is not None and chosen.id == "b"
+
+
+def test_next_runnable_empty_queue_returns_none() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    assert next_runnable([_item("a", 1, status="done")], {}) is None
+
+
+# ---------------------------------------------------------------------------
+# Exclusión de items con propuesta abierta (incidente 2026-07-11): reproponer
+# un item que ya tiene una propuesta proposed/validated/approved sin revisar
+# generaba duplicados casi idénticos indefinidamente.
+# ---------------------------------------------------------------------------
+
+def test_next_runnable_skips_item_with_open_proposal() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2)]
+    chosen = next_runnable(items, {}, open_proposal_item_ids=frozenset({"a"}))
+    assert chosen is not None and chosen.id == "b"
+
+
+def test_next_runnable_all_blocked_by_open_proposal_returns_none() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2)]
+    chosen = next_runnable(items, {}, open_proposal_item_ids=frozenset({"a", "b"}))
+    assert chosen is None
+
+
+def test_next_runnable_open_proposal_exclusion_does_not_affect_failure_degrade() -> None:
+    from atlas.core.self_maintenance.backlog import next_runnable
+
+    items = [_item("a", 1), _item("b", 2), _item("c", 3)]
+    state = {"b": 5, "c": 3}
+    chosen = next_runnable(items, state, open_proposal_item_ids=frozenset({"a"}))
+    # "a" bloqueado por propuesta abierta; entre "b" y "c" (ambos agotados
+    # por fallos) degrada al de menos fallos, igual que sin exclusión.
+    assert chosen is not None and chosen.id == "c"
+
+
+def test_record_outcome_resets_on_success_and_accumulates_on_failure() -> None:
+    from atlas.core.self_maintenance.backlog import record_outcome
+
+    state: dict[str, int] = {}
+    state = record_outcome(state, "a", success=False)
+    state = record_outcome(state, "a", success=False)
+    assert state == {"a": 2}
+    state = record_outcome(state, "a", success=True)
+    assert state == {}
+
+
+def test_queue_state_roundtrip_and_corrupt_file_fail_open(tmp_path: Path) -> None:
+    from atlas.core.self_maintenance.backlog import load_queue_state, save_queue_state
+
+    p = tmp_path / "sub" / "queue_state.json"
+    save_queue_state(p, {"a": 2})
+    assert load_queue_state(p) == {"a": 2}
+
+    p.write_text("{corrupto", encoding="utf-8")
+    assert load_queue_state(p) == {}
+    assert load_queue_state(tmp_path / "no-existe.json") == {}
+
+
+def test_deferred_status_loads_but_is_never_served(tmp_path: Path) -> None:
+    """'deferred' = diferido por diseño hasta tener consumidor: carga sin
+    error (documentación viva en el YAML) pero pending() no lo devuelve —
+    la noche del 2026-07-10 el lazo quemó intentos reales (30 turnos + suite
+    de 900s) en un item cuyo propio why decía 'sin consumidor → diferido'."""
+    path = tmp_path / "backlog.yaml"
+    path.write_text(
+        "items:\n"
+        "  - id: vivo\n"
+        "    title: t\n"
+        "    why: w\n"
+        "    targets: []\n"
+        "    acceptance: a\n"
+        "    priority: 1\n"
+        "    status: pending\n"
+        "  - id: dormido\n"
+        "    title: t\n"
+        "    why: w\n"
+        "    targets: []\n"
+        "    acceptance: a\n"
+        "    priority: 1\n"
+        "    status: deferred\n",
+        encoding="utf-8",
+    )
+    items = load_backlog(path)
+    assert {i.id for i in items} == {"vivo", "dormido"}
+    assert [i.id for i in pending(items)] == ["vivo"]

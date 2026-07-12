@@ -1,0 +1,61 @@
+{
+  "pack_id": "qp_ventas_crm",
+  "sector_id": "ventas_crm",
+  "display_name": "Onboarding — Ventas/CRM",
+  "questions": [
+    {
+      "question_id": "sales_model",
+      "label": "¿Vendes a empresas (B2B), a particulares (B2C) o ambos?",
+      "why_this_is_needed": "Cambia el modelo de pipeline y los campos relevantes de cada oportunidad",
+      "what_atlas_will_do_with_it": "Ajusta las entidades de cliente/oportunidad al modelo elegido",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "b2b", "label": "B2B"},
+        {"option_id": "b2c", "label": "B2C"},
+        {"option_id": "both", "label": "Ambos"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["customer", "opportunity"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": ["pipeline_workbench"]
+    },
+    {
+      "question_id": "current_crm",
+      "label": "¿Qué CRM usas actualmente?",
+      "why_this_is_needed": "Define si Atlas conecta un CRM existente o genera uno propio en borrador",
+      "what_atlas_will_do_with_it": "Prepara la receta de conexión del CRM elegido o el Business Core en borrador",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "hubspot", "label": "HubSpot"},
+        {"option_id": "salesforce", "label": "Salesforce"},
+        {"option_id": "pipedrive", "label": "Pipedrive"},
+        {"option_id": "none", "label": "Ninguno todavía"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": true,
+      "resulting_entities": [],
+      "resulting_capabilities": ["crm.contacts.read", "crm.deals.read"],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "team_size",
+      "label": "¿Cuántas personas forman el equipo comercial?",
+      "why_this_is_needed": "Ajusta si el pipeline necesita asignación por vendedor o es de una sola persona",
+      "what_atlas_will_do_with_it": "Decide si activa vistas de equipo o vista individual en el workbench de pipeline",
+      "input_type": "number",
+      "options": [],
+      "validation": {"min": 1, "max": 10000},
+      "followup_rules": [],
+      "skip_allowed": true,
+      "uncertainty_allowed": true,
+      "resulting_entities": ["task"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": []
+    }
+  ]
+}

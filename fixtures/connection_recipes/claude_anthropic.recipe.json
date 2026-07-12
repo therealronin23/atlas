@@ -1,0 +1,42 @@
+{
+  "connector_id": "claude_anthropic",
+  "human_name": "Claude (Anthropic)",
+  "category": "ai_provider",
+  "recommended_route": "native_api",
+  "fallback_routes": ["openapi_rest", "human_manual"],
+  "difficulty": "guided",
+  "default_mode": "full_gated",
+  "safe_defaults": {
+    "cloud_call": true,
+    "send_sensitive_data": false
+  },
+  "capabilities": ["model.cloud_call"],
+  "gated_capabilities": {},
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "manual_secret",
+      "description": "Genera una API key en console.anthropic.com y expórtala como ANTHROPIC_API_KEY en tu entorno"
+    },
+    {
+      "step_id": "2",
+      "kind": "automatic",
+      "description": "Atlas registra la referencia env:ANTHROPIC_API_KEY sin leer su valor"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Enviar prompts al modelo cuando tú lo pidas o lo confirmes"
+    ],
+    "will_not": [
+      "Enviar datos sensibles o credenciales a la nube sin tu aprobación explícita"
+    ]
+  },
+  "credential": {
+    "auth_mode": "api_key",
+    "storage": "credential_reference_only"
+  },
+  "legal_notes": null,
+  "demo": true
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Policy",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "policy_id": {
+      "type": "string"
+    },
+    "applies_to": {
+      "type": "object"
+    },
+    "deny": {
+      "type": "array"
+    },
+    "unless": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

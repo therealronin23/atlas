@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BusinessActivationGate",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "gate_id": {
+      "type": "string"
+    },
+    "business_core_id": {
+      "type": "string"
+    },
+    "changes": {
+      "type": "array"
+    },
+    "approved": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

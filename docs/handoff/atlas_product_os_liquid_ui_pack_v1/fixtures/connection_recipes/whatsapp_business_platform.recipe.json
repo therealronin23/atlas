@@ -1,0 +1,11 @@
+{
+  "connector_id": "whatsapp_business_platform",
+  "human_name": "WhatsApp Business Platform",
+  "category": "communication",
+  "recommended_route": "official_business_api",
+  "difficulty": "advanced",
+  "default_mode": "business_review",
+  "gates": {
+    "bulk_send": "outbound_gate"
+  }
+}

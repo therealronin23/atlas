@@ -1,0 +1,9 @@
+{
+  "references": [
+    {
+      "reference_id": "ref_n8n",
+      "decision": "assimilate_primitives_no_fork",
+      "license_risk": "L5_source_available_restricted"
+    }
+  ]
+}

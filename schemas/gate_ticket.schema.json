@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/gate_ticket.schema.json",
+  "title": "AtlasGateTicket",
+  "description": "Ceremonia de decisión humana para una acción peligrosa (Gate Engine). Un ticket nace open y solo un humano lo resuelve (approved/rejected). Es el objeto auditable detrás de un gate — 'gated' deja de ser un flag descriptivo.",
+  "type": "object",
+  "required": [
+    "gate_ticket_id",
+    "gate_id",
+    "action",
+    "subject_ref",
+    "risk",
+    "status",
+    "reason",
+    "requested_by",
+    "requested_at",
+    "evidence"
+  ],
+  "properties": {
+    "gate_ticket_id": {
+      "type": "string",
+      "pattern": "^gt_[A-Za-z0-9_-]+$"
+    },
+    "gate_id": {
+      "type": "string",
+      "pattern": "^gate_[A-Za-z0-9_-]+$",
+      "description": "gate de fixtures/governance/gates.json que exigió la ceremonia"
+    },
+    "action": {
+      "type": "string",
+      "description": "capacidad/acción gateada (p.ej. business_core.activate, email.send)"
+    },
+    "subject_ref": {
+      "type": "string",
+      "description": "recurso concreto (business_core_id, connector_id, ...)"
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["none", "low", "medium", "high", "critical"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "approved", "rejected", "expired"]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_by": {
+      "type": "string"
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_by": {
+      "type": ["string", "null"]
+    },
+    "resolved_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "decision_note": {
+      "type": ["string", "null"]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "referencias de evidencia adjuntas en la resolución"
+    }
+  },
+  "additionalProperties": false
+}

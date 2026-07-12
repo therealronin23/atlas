@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AtlasSheetCell",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "cell_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "value": {},
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "validation_status": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "privacy_class": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

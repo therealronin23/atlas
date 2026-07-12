@@ -22,7 +22,7 @@ import hashlib
 import math
 import os
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 try:
     import litellm
@@ -262,6 +262,15 @@ class FastEmbedEmbedder:
     Fail-closed: si `fastembed` no está instalado, lanza RuntimeError explícito —
     NO cae a stub callado (mezclar vectores stub y reales corrompe el recall)."""
 
+    # Cache de PROCESO del modelo ONNX por nombre (2026-07-10): cargar
+    # TextEmbedding cuesta ~450-500MB de RSS que el allocator/onnxruntime NO
+    # devuelve al SO ni tras liberar la instancia (verificado con gc: 0
+    # instancias vivas y el RSS se queda). Cada FastEmbedEmbedder nuevo sin
+    # cache sumaba ~500MB irreversibles — la suite acumulaba 7.5GB y earlyoom
+    # la mataba (y el daemon pagaba lo mismo por cada índice que abría).
+    # embed() de fastembed es stateless: compartir la instancia es seguro.
+    _MODEL_CACHE: dict[str, Any] = {}
+
     def __init__(
         self, model_name: str = FASTEMBED_DEFAULT_MODEL, dim: int = FASTEMBED_DEFAULT_DIM
     ) -> None:
@@ -272,7 +281,11 @@ class FastEmbedEmbedder:
                 "fastembed no instalado: pip install 'atlas-core[embeddings]' "
                 "(o quita ATLAS_EMBEDDER=fastembed para usar el stub)"
             ) from exc
-        self._model = TextEmbedding(model_name=model_name)
+        cached = self._MODEL_CACHE.get(model_name)
+        if cached is None:
+            cached = TextEmbedding(model_name=model_name)
+            self._MODEL_CACHE[model_name] = cached
+        self._model = cached
         self._dim = dim
         self._model_name = model_name
 

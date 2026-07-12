@@ -1,0 +1,48 @@
+{
+  "connector_id": "gmail",
+  "human_name": "Gmail",
+  "category": "communication",
+  "recommended_route": "managed_oauth",
+  "fallback_routes": ["webhooks", "import_export_batch", "human_manual"],
+  "difficulty": "easy",
+  "default_mode": "read_only",
+  "safe_defaults": {
+    "read": true,
+    "draft": true,
+    "send": false,
+    "delete": false
+  },
+  "capabilities": ["email.read", "email.draft"],
+  "gated_capabilities": {
+    "email.send": "gate_outbound"
+  },
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "external_page",
+      "description": "Abrir el flujo OAuth de Google y conceder acceso de solo lectura + borrador"
+    },
+    {
+      "step_id": "2",
+      "kind": "automatic",
+      "description": "Atlas guarda solo el token de acceso como referencia opaca, nunca en claro"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer tu bandeja de entrada",
+      "Crear borradores de respuesta para que tú los revises"
+    ],
+    "will_not": [
+      "Enviar correos sin tu aprobación explícita (gate_outbound)",
+      "Borrar mensajes"
+    ]
+  },
+  "credential": {
+    "auth_mode": "oauth2",
+    "storage": "credential_reference_only"
+  },
+  "legal_notes": null,
+  "demo": true
+}

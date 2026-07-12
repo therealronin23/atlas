@@ -24,13 +24,13 @@ from pathlib import Path
 class RootSpec:
     name: str
     module: str            # módulo ejecutable: python -m <module>
-    arg_kind: str          # "db" | "repo" | "base" — qué ruta recibe
+    arg_kind: str          # "db" | "repo" | "base" | "" (sin path arg) — qué ruta recibe
     tools: tuple[str, ...] = ()
     resources: tuple[str, ...] = ()
 
 
 def native_roots() -> list[RootSpec]:
-    """Las 3 raíces construidas (F1–F3). Fuente única de la superficie del tronco."""
+    """Las raíces construidas (F1–F3 + grafo). Fuente única de la superficie del tronco."""
     return [
         RootSpec(
             "atlas-memory",
@@ -60,6 +60,24 @@ def native_roots() -> list[RootSpec]:
             tools=("wikipedia_lookup", "ingest_wikipedia", "worldbank_lookup", "ingest_worldbank",
                    "ingest_open_meteo", "ingest_frankfurter"),
         ),
+        RootSpec(
+            # Grafo vivo del proyecto (Kuzu). Sin path arg: el server resuelve
+            # DEFAULT_GRAPH_DB él mismo (la BD vive fuera del save_dir del tronco).
+            "atlas-graph",
+            "atlas.mcp.graph_server",
+            "",
+            tools=(
+                "graph_overview",
+                "graph_importers",
+                "graph_blast_radius",
+                "graph_lineage",
+                "graph_churn",
+                "graph_imports_of",
+                "graph_note_neighborhood",
+                "graph_callers",
+                "graph_callees",
+            ),
+        ),
     ]
 
 
@@ -76,10 +94,10 @@ def client_config(
     }
     servers: dict[str, object] = {}
     for root in native_roots():
-        servers[root.name] = {
-            "command": exe,
-            "args": ["-m", root.module, arg_for[root.arg_kind]],
-        }
+        args = ["-m", root.module]
+        if root.arg_kind:
+            args.append(arg_for[root.arg_kind])
+        servers[root.name] = {"command": exe, "args": args}
     return {"mcpServers": servers}
 
 
@@ -102,6 +120,7 @@ _TRUNK_READ_ONLY_TOOLS = [
     "trunk_catalog",
     "trunk_find",
     "trunk_recommend_stack",
+    "trunk_prepare",
     "list_skills",
     "get_skill",
     "trunk_list_roots",

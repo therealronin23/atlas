@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/business_core.schema.json",
+  "title": "AtlasBusinessCore",
+  "description": "Núcleo de operaciones de negocio nativo (CRM/ERP modular). SIEMPRE nace draft; activarlo exige aprobación humana vía gate — jamás activación silenciosa. La canonicidad es explícita.",
+  "type": "object",
+  "required": [
+    "business_core_id",
+    "sector_id",
+    "status",
+    "canonicality",
+    "modules",
+    "entity_ids",
+    "created_from",
+    "activation",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "business_core_id": {
+      "type": "string",
+      "pattern": "^bc_[A-Za-z0-9_-]+$"
+    },
+    "sector_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_activation",
+        "active",
+        "archived"
+      ]
+    },
+    "canonicality": {
+      "type": "object",
+      "required": [
+        "mode",
+        "source_of_truth"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "external_canonical",
+            "atlas_canonical",
+            "hybrid_canonical"
+          ]
+        },
+        "source_of_truth": {
+          "type": "string",
+          "description": "sistema canónico (atlas | odoo | excel_legacy | ...)"
+        },
+        "per_entity": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "external_canonical",
+              "atlas_canonical",
+              "hybrid_canonical"
+            ]
+          },
+          "description": "overrides por kind de entidad"
+        }
+      },
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "object",
+      "required": [
+        "crm",
+        "erp"
+      ],
+      "properties": {
+        "crm": {
+          "type": "boolean"
+        },
+        "erp": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "entity_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_from": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "onboarding",
+            "import",
+            "legacy_link",
+            "manual"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "description": "session_id / import ref / sistema legacy"
+        }
+      },
+      "additionalProperties": false
+    },
+    "activation": {
+      "type": "object",
+      "required": [
+        "gate_id",
+        "approved"
+      ],
+      "properties": {
+        "gate_id": {
+          "type": "string",
+          "pattern": "^gate_[A-Za-z0-9_-]+$"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "approved_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approved_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "gate_ticket_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^gt_[A-Za-z0-9_-]+$",
+          "description": "ticket del Gate Engine que gobierna esta activación"
+        }
+      },
+      "additionalProperties": false
+    },
+    "legacy_link": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "system",
+        "mode",
+        "sync_enabled"
+      ],
+      "properties": {
+        "system": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "read_only_mirror",
+            "partial_sync",
+            "migration"
+          ]
+        },
+        "sync_enabled": {
+          "type": "boolean",
+          "description": "false por defecto; activarlo exige gate"
+        }
+      },
+      "additionalProperties": false
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "demo": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

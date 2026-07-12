@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RemoteCommand",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "command_id": {
+      "type": "string"
+    },
+    "source_device": {
+      "type": "string"
+    },
+    "target_device": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "risk_class": {
+      "type": "string"
+    },
+    "allowed_actions": {
+      "type": "array"
+    },
+    "forbidden_actions": {
+      "type": "array"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

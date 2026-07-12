@@ -10,6 +10,7 @@ import pytest
 from atlas.core.cold_update_batcher import BatchResult, ColdUpdateBatcher
 from atlas.core.cold_update_manager import ColdUpdateManager
 from atlas.core.git_env import clean_git_env
+from atlas.core.self_maintenance.benchmark_gate import BenchmarkResult
 from atlas.core.validation_runner import ValidationReport
 from atlas.logging.merkle_logger import MerkleLogger
 
@@ -455,6 +456,100 @@ def test_benchmark_gate_persisted_when_batch_passes(tmp_path: Path) -> None:
     assert fetched.benchmark == result.benchmark
 
 
+class _RealBenchmarkGate:
+    """Fake que envuelve un BenchmarkResult REAL (no un doble simulado con
+    to_dict() a mano), reproduciendo el bug real: cold_update_batcher.py:124
+    llama result.to_dict() sobre el retorno de compare(), y hasta que
+    BenchmarkResult gana to_dict() eso lanza AttributeError, tragado por el
+    except de la linea 125 -> benchmark_findings queda en None SIEMPRE,
+    aunque el gate haya corrido y devuelto una señal válida."""
+
+    def __init__(self, result: BenchmarkResult) -> None:
+        self._result = result
+
+    def compare(self, before_root: Path, after_root: Path) -> BenchmarkResult:
+        return self._result
+
+
+def test_benchmark_findings_no_es_none_con_gate_real(tmp_path: Path) -> None:
+    root = _make_git_repo(tmp_path, "bench_real")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="bench_real")
+
+    id_a = _propose_validated(
+        mgr, tmp_path, "a",
+        "--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n",
+    )
+
+    real_result = BenchmarkResult(
+        ran=True,
+        before_score=0.6,
+        after_score=0.65,
+        metric_name="overall_recall_mean",
+        no_regression=True,
+        reason="sin regresión: overall_recall_mean before=0.6000 after=0.6500",
+    )
+
+    def factory(worktree: Path):
+        return _FakeRunner(_ok_report())
+
+    batcher = ColdUpdateBatcher(
+        mgr, runner_factory=factory, benchmark_gate=_RealBenchmarkGate(real_result)
+    )
+    result = batcher.run_batch()
+
+    assert result.passed is True
+    assert result.included == [id_a]
+    # El bug real: esto era None porque BenchmarkResult.to_dict() no existía.
+    assert result.benchmark is not None
+    assert result.benchmark == real_result.to_dict()
+    assert result.benchmark["no_regression"] is True
+    assert result.benchmark["skipped"] is False
+
+    fetched = batcher.get_batch(result.id)
+    assert fetched is not None
+    assert fetched.benchmark == result.benchmark
+
+
+def test_benchmark_findings_skipped_sigue_siendo_senal_no_bloqueante(tmp_path: Path) -> None:
+    """Aunque el benchmark venga en estado skipped (dataset ausente), el
+    lote sigue pasando igual: es señal, nunca gate. benchmark_findings debe
+    reflejar skipped=True y la razón accionable, no quedar en None."""
+    root = _make_git_repo(tmp_path, "bench_skipped")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="bench_skipped")
+
+    id_a = _propose_validated(
+        mgr, tmp_path, "a",
+        "--- /dev/null\n+++ b/src/atlas/a.txt\n@@ -0,0 +1 @@\n+a\n",
+    )
+
+    skipped_result = BenchmarkResult(
+        ran=False,
+        before_score=None,
+        after_score=None,
+        metric_name="",
+        no_regression=False,
+        skipped=True,
+        reason=(
+            "dataset ausente: data/longmemeval/longmemeval_s_cleaned.json — "
+            "benchmark saltado (no bloquea el lote), pero tampoco se asume que "
+            "pasa. Descárgalo con: python scripts/fetch_longmemeval.py"
+        ),
+    )
+
+    def factory(worktree: Path):
+        return _FakeRunner(_ok_report())
+
+    batcher = ColdUpdateBatcher(
+        mgr, runner_factory=factory, benchmark_gate=_RealBenchmarkGate(skipped_result)
+    )
+    result = batcher.run_batch()
+
+    assert result.passed is True  # señal, nunca gate: el lote pasa igual
+    assert result.benchmark is not None
+    assert result.benchmark["skipped"] is True
+    assert "scripts/fetch_longmemeval.py" in result.benchmark["reason"]
+
+
 def test_benchmark_gate_exception_does_not_block_batch(tmp_path: Path) -> None:
     root = _make_git_repo(tmp_path, "bench_exc")
     mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="bench_exc")
@@ -473,3 +568,38 @@ def test_benchmark_gate_exception_does_not_block_batch(tmp_path: Path) -> None:
     assert result.passed is True
     assert result.included == [id_a]
     assert result.benchmark is None
+
+
+def test_batcher_remove_worktree_handles_timeout(tmp_path: Path) -> None:
+    """Si git worktree remove cuelga (timeout), fallback a shutil.rmtree."""
+    root = _make_git_repo(tmp_path, "timeout_test")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="timeout_test")
+    batcher = ColdUpdateBatcher(mgr)
+
+    # Crear un worktree real
+    wt = batcher._new_worktree_path()
+    batcher._create_worktree(wt, "HEAD")
+    assert wt.exists()
+
+    from unittest.mock import patch
+    import subprocess
+
+    # Mock subprocess.run para que timeout en git worktree remove
+    original_run = subprocess.run
+    call_count = [0]
+
+    def mock_run(*args, **kwargs):
+        cmd = args[0] if args else []
+        if isinstance(cmd, list) and "worktree" in cmd and "remove" in cmd:
+            call_count[0] += 1
+            # Primera llamada: timeout
+            raise subprocess.TimeoutExpired("git worktree remove", timeout=10)
+        # Prune y otros comandos: OK
+        return original_run(*args, **kwargs)
+
+    with patch("subprocess.run", side_effect=mock_run):
+        batcher._remove_worktree(wt)
+
+    # Debe estar limpio a pesar del timeout: fallback a rmtree funciona
+    assert not wt.exists(), "worktree debe estar limpio después de timeout"
+    assert call_count[0] == 1  # Fue llamado una vez y hizo timeout

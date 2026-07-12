@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AssimilationReference",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "reference_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "license_risk": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "primitives": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

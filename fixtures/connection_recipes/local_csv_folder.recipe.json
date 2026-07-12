@@ -1,0 +1,36 @@
+{
+  "connector_id": "local_csv_folder",
+  "human_name": "Carpeta local de CSV/Excel",
+  "category": "files_documents",
+  "recommended_route": "database_file",
+  "fallback_routes": ["import_export_batch", "human_manual"],
+  "difficulty": "easy",
+  "default_mode": "read_only",
+  "safe_defaults": {
+    "read": true,
+    "write": false
+  },
+  "capabilities": ["files.read"],
+  "gated_capabilities": {
+    "files.write": "gate_destructive_fs"
+  },
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "file_pick",
+      "description": "Selecciona la carpeta local con tus ficheros CSV/Excel"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer e indexar los ficheros CSV/Excel de la carpeta elegida"
+    ],
+    "will_not": [
+      "Escribir ni borrar ficheros sin tu aprobación explícita"
+    ]
+  },
+  "credential": null,
+  "legal_notes": null,
+  "demo": true
+}

@@ -31,6 +31,7 @@ from atlas.core.patch_format import (
 from atlas.core.conditional_rules import load_conditional_rule
 from atlas.core.git_autocommit import commit_changes
 from atlas.core.repo_map import build_repo_map
+from atlas.core.trunk_preflight import build_trunk_preflight_section
 
 VERSION = '1.0.0'
 
@@ -417,6 +418,7 @@ class AtlasCoder:
         # vacía, cero cambio de comportamiento.
         avoid_raw = _build_avoid_section(self._lesson_recaller, self._lesson_store, task)
         avoid_section_in_prompt = avoid_raw.strip("\n") + "\n\n" if avoid_raw else ""
+        trunk_preflight_section = build_trunk_preflight_section(self._repo_root, task)
 
         # Repo-map (técnica #14): se construye una sola vez, no por iteración
         # (misma economía que institutional_section — es visión periférica,
@@ -478,7 +480,7 @@ class AtlasCoder:
                 task=task,
                 files_section=files_section,
                 institutional_section=institutional_section_in_prompt,
-                avoid_section=avoid_section_in_prompt,
+                avoid_section=trunk_preflight_section + avoid_section_in_prompt,
                 repo_map_section=repo_map_section,
                 instructions_section=instructions_section,
             )
@@ -535,15 +537,17 @@ class AtlasCoder:
                 # repo real → sin esto, los tests importarían el código SIN
                 # las ediciones del sandbox y siempre fallarían). PYTHONPATH
                 # precede a site-packages en sys.path.
-                test_env = None
+                import os as _os
+                test_env = dict(_os.environ)
                 if sandbox_dir is not None:
-                    import os as _os
-                    test_env = dict(_os.environ)
                     sandbox_paths = [str(sandbox_dir / "src"), str(sandbox_dir)]
                     existing = test_env.get("PYTHONPATH", "")
                     test_env["PYTHONPATH"] = _os.pathsep.join(
                         sandbox_paths + ([existing] if existing else [])
                     )
+                # Guardia anti-recursión (ver tool_coder.py, incidente 2026-07-09):
+                # la suite lanzada por el lazo no puede volver a disparar el lazo.
+                test_env["ATLAS_NESTED_TEST_RUN"] = "1"
                 result = subprocess.run(
                     test_cmd,
                     cwd=self._repo_root,
@@ -767,17 +771,38 @@ class AtlasCoder:
             else:
                 abs_path.write_text(content, encoding="utf-8")
 
+    def _sweep_stale_sandboxes(self, *, max_age_seconds: float = 3600.0) -> None:
+        """Barre sandboxes huérfanos de ejecuciones anteriores muertas por
+        SIGKILL/crash (finally nunca corre en ese caso — mismo patrón que el
+        fix de worktree leak: limpieza al entrar, no solo al salir). Encontrado
+        2026-07-09: 7 sandboxes huérfanos (~487M c/u) llenaron el tmpfs de 4G
+        de /tmp y contribuyeron a cierres de sesión de escritorio repetidos."""
+        import time
+
+        base = Path(tempfile.gettempdir())
+        now = time.time()
+        try:
+            for entry in base.glob("atlas_coder_sandbox_*"):
+                try:
+                    if now - entry.stat().st_mtime > max_age_seconds:
+                        shutil.rmtree(entry, ignore_errors=True)
+                except OSError:
+                    continue
+        except OSError:
+            pass
+
     def _create_sandbox(self) -> Path:
         """Técnica #6: copia repo_root a un directorio temporal aislado, sin
         directorios pesados/irrelevantes. El bucle de code() opera sobre esta
         copia hasta que el resultado final se conoce."""
+        self._sweep_stale_sandboxes()
         sandbox_dir = Path(tempfile.mkdtemp(prefix="atlas_coder_sandbox_"))
         shutil.copytree(
             self._repo_root, sandbox_dir,
             ignore=shutil.ignore_patterns(
                 ".git", ".venv", ".venv-redteam", "__pycache__",
                 ".mypy_cache", ".pytest_cache", "node_modules",
-                "data", "workspace", "*.pyc",
+                ".claude", ".cursor", "data", "workspace", "*.pyc",
             ),
             dirs_exist_ok=True,
         )

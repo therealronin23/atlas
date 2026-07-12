@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConnectorHealth",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "connector_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "last_sync": {
+      "type": "string"
+    },
+    "issues": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

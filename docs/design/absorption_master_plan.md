@@ -19,6 +19,9 @@ parts that fit the existing architecture:
 - Important actions are logged through MerkleLogger.
 - New dependencies require explicit ADR or Gate-level approval.
 - No runtime dependency on Anthropic/Codex/OpenAI APIs.
+- External repositories are temporary research inputs: clone into `/tmp` or an
+  isolated worktree, inspect the concrete pattern, record the absorbed lesson,
+  then delete the clone. Do not vendor or keep full forks as dormant source.
 
 ## Categories
 
@@ -57,6 +60,8 @@ parts that fit the existing architecture:
 ## Non-Goals
 
 - No full forks copied into `src/atlas/`.
+- No long-lived local clone kept just because it was useful once; keep notes,
+  tests, and reimplemented Atlas-native code instead.
 - No self-AST patching.
 - No direct command execution outside AtlasExecutor.
 - No public network exposure of dashboards or agents by default.

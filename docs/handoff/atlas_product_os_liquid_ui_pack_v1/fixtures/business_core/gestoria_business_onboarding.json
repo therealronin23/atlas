@@ -1,0 +1,18 @@
+{
+  "session_id": "gestoria_onboarding_demo",
+  "sector_id": "gestoria_fiscal_contable",
+  "answers": [
+    {
+      "q": "clients_type",
+      "a": [
+        "autonomos",
+        "companies"
+      ]
+    },
+    {
+      "q": "accounting_software",
+      "a": "unknown"
+    }
+  ],
+  "status": "draft"
+}

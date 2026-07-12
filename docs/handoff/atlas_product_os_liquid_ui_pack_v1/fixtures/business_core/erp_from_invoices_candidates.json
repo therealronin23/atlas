@@ -1,0 +1,16 @@
+{
+  "candidates": [
+    {
+      "kind": "supplier",
+      "label": "Proveedor Demo",
+      "confidence": 0.91,
+      "requires_review": true
+    },
+    {
+      "kind": "invoice",
+      "label": "Factura Demo",
+      "confidence": 0.96,
+      "requires_review": true
+    }
+  ]
+}

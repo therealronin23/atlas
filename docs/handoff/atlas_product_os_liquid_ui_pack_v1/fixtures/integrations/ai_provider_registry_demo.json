@@ -1,0 +1,17 @@
+{
+  "providers": [
+    {
+      "provider_id": "claude",
+      "auth": "manual_api_key",
+      "allowed_data_classes": [
+        "public",
+        "work_non_sensitive"
+      ],
+      "denied_data_classes": [
+        "tax",
+        "health",
+        "credential_like"
+      ]
+    }
+  ]
+}

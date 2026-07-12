@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workflow",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "workflow_id": {
+      "type": "string"
+    },
+    "sector": {
+      "type": "string"
+    },
+    "objective_id": {
+      "type": "string"
+    },
+    "nodes": {
+      "type": "array"
+    },
+    "edges": {
+      "type": "array"
+    },
+    "capabilities_required": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gates_required": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "workflow_id"
+  ]
+}

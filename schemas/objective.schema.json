@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/objective.schema.json",
+  "title": "AtlasObjective",
+  "description": "Entrada del Objective Registry: un objetivo concreto de producto dentro de un sector (p.ej. 'presentar el modelo 303' en gestoría). Todo objetivo declara a qué sector pertenece; el Objective Registry rechaza los que apuntan a un sector desconocido.",
+  "type": "object",
+  "required": [
+    "objective_id",
+    "sector_id",
+    "label"
+  ],
+  "properties": {
+    "objective_id": {
+      "type": "string",
+      "pattern": "^obj_[a-z0-9_]+$"
+    },
+    "sector_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_entities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "workbenches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

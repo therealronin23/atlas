@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/adapter.schema.json",
+  "title": "AtlasAdapter",
+  "type": "object",
+  "required": [
+    "id",
+    "display_name",
+    "provider_type",
+    "capability_type",
+    "required_permissions",
+    "risk_profile",
+    "sandbox_required",
+    "supports_streaming",
+    "supports_diff",
+    "supports_files",
+    "supports_rollback",
+    "emits_events",
+    "memory_policy",
+    "audit_policy",
+    "failure_modes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^adapter_[A-Za-z0-9_-]+$"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "provider_type": {
+      "type": "string",
+      "enum": [
+        "local_cli",
+        "local_service",
+        "remote_api",
+        "mcp",
+        "importer",
+        "internal"
+      ]
+    },
+    "capability_type": {
+      "type": "string"
+    },
+    "input_schema": {
+      "type": "object"
+    },
+    "output_schema": {
+      "type": "object"
+    },
+    "required_permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_profile": {
+      "type": "string",
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "sandbox_required": {
+      "type": "boolean"
+    },
+    "supports_streaming": {
+      "type": "boolean"
+    },
+    "supports_diff": {
+      "type": "boolean"
+    },
+    "supports_files": {
+      "type": "boolean"
+    },
+    "supports_rollback": {
+      "type": "boolean"
+    },
+    "emits_events": {
+      "type": "boolean"
+    },
+    "memory_policy": {
+      "type": "string"
+    },
+    "audit_policy": {
+      "type": "string"
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

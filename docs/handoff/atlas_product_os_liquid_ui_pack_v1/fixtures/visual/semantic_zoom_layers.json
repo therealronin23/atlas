@@ -1,0 +1,9 @@
+{
+  "layers": [
+    "system",
+    "territories",
+    "objectives",
+    "domain_objects",
+    "evidence_events"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "connector_id": "odoo_erp",
+  "human_name": "Odoo ERP",
+  "category": "erp",
+  "recommended_route": "api_key_xmlrpc_or_rest",
+  "difficulty": "medium",
+  "default_mode": "read_only",
+  "gates": {
+    "write": "erp_write_gate"
+  }
+}

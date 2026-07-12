@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConnectorRecipe",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "connector_id": {
+      "type": "string"
+    },
+    "human_name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "recommended_route": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string"
+    },
+    "safe_defaults": {
+      "type": "object"
+    },
+    "gates": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

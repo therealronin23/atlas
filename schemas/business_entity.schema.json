@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/business_entity.schema.json",
+  "title": "AtlasBusinessEntity",
+  "description": "Entidad del Business Core (cliente, factura, producto...). Nace draft; toda entidad conserva de dónde salió (source_refs).",
+  "type": "object",
+  "required": [
+    "entity_id",
+    "business_core_id",
+    "kind",
+    "label",
+    "status",
+    "data",
+    "source_refs",
+    "requires_review"
+  ],
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "pattern": "^be_[A-Za-z0-9_-]+$"
+    },
+    "business_core_id": {
+      "type": "string",
+      "pattern": "^bc_[A-Za-z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "customer",
+        "contact",
+        "company",
+        "supplier",
+        "product",
+        "service",
+        "order",
+        "invoice",
+        "receipt",
+        "delivery_note",
+        "stock_item",
+        "task",
+        "opportunity",
+        "quote",
+        "project",
+        "case_file",
+        "document",
+        "communication",
+        "payment",
+        "event",
+        "note",
+        "risk",
+        "evidence"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "archived"
+      ]
+    },
+    "data": {
+      "type": "object",
+      "description": "atributos específicos del kind; libres en v1"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "provenance: de qué import/respuesta/sistema salió"
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "requires_review": {
+      "type": "boolean"
+    },
+    "canonical_source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "sistema canónico para ESTA entidad si difiere del core"
+    }
+  },
+  "additionalProperties": false
+}

@@ -132,6 +132,47 @@ class TestVerifyChain:
         assert "hash_self" in msg
 
 
+class TestLoadRejectsCorruption:
+    """tech-8-snapshot-integrity: load() debe rechazar un snapshot corrupto
+    con error explícito, no solo verify_chain() (que es opt-in y de cadena
+    completa) — un caller que solo hace store.load(task_id, step_id) no
+    debe poder restaurar estado manipulado en silencio."""
+
+    def test_load_raises_on_tampered_state(
+        self, store: CheckpointStore, tmp_path: Path
+    ) -> None:
+        cp = store.save("t1", "a", {"balance": 100})
+        path = tmp_path / "checkpoints" / "t1" / f"{cp.step_id}.json"
+        import json
+        data = json.loads(path.read_text())
+        data["state"]["balance"] = 999999  # manipulación silenciosa
+        path.write_text(json.dumps(data))
+
+        with pytest.raises(CheckpointError, match="corrupto"):
+            store.load("t1", cp.step_id)
+
+    def test_load_raises_on_tampered_hash_field_directly(
+        self, store: CheckpointStore, tmp_path: Path
+    ) -> None:
+        cp = store.save("t1", "a", {})
+        path = tmp_path / "checkpoints" / "t1" / f"{cp.step_id}.json"
+        import json
+        data = json.loads(path.read_text())
+        data["hash_self"] = "0" * 64  # hash falsificado directamente
+        path.write_text(json.dumps(data))
+
+        with pytest.raises(CheckpointError, match="hash_self invalido"):
+            store.load("t1", cp.step_id)
+
+    def test_load_succeeds_for_untampered_checkpoint(
+        self, store: CheckpointStore
+    ) -> None:
+        cp = store.save("t1", "a", {"x": 1})
+        loaded = store.load("t1", cp.step_id)
+        assert loaded.state == {"x": 1}
+        assert loaded.hash_self == cp.hash_self
+
+
 class TestFork:
 
     def test_fork_creates_new_task(self, store: CheckpointStore) -> None:

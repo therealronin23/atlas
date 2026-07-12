@@ -99,6 +99,17 @@ class McpRegistry:
             if cmd_reason is not None:
                 self._audit("mcp.server_vetoed", cfg.name, cmd_reason[:300], "failure")
                 return
+        # Fail-fast pre-spawn si faltan secretos declarados (2026-07-10): sin
+        # esto, un server con env_passthrough sin configurar se spawnea, muere
+        # con stacktrace y se reintenta en cada pasada — 530 apariciones de
+        # ai.agenttrust en .atlas.err por no tener AGENTTRUST_API_KEY.
+        _env, missing = cfg.resolve_env()
+        if missing:
+            self._audit(
+                "mcp.server_skipped_missing_env", cfg.name,
+                f"secretos ausentes: {','.join(missing)}", "failure",
+            )
+            return
         transport = self._factory(cfg)
         # initialize handshake
         result = transport.request("initialize", {
@@ -191,12 +202,26 @@ class McpRegistry:
             return f"skipped: server '{cfg.name}' ya está activo"
         if not cfg.enabled:
             return f"skipped: server '{cfg.name}' deshabilitado"
+        # Backoff persistente de adopción (2026-07-10): el lazo de adopción
+        # re-proponía el mismo candidato roto en CADA pasada — ai.agenttrust
+        # (muere al arrancar sin AGENTTRUST_API_KEY) acumuló 530 stacktraces
+        # en .atlas.err. Mismo patrón que la cola de self-build: N fallos de
+        # arranque seguidos → skip auditado hasta intervención manual (borrar
+        # la entrada del sidecar o configurar el secreto).
+        failures = self._load_start_failures()
+        if failures.get(cfg.name, 0) >= self._MAX_START_FAILURES:
+            return (
+                f"skipped: server '{cfg.name}' con "
+                f"{failures[cfg.name]} fallos de arranque previos (backoff persistente)"
+            )
         try:
             self._start_one(cfg)
         except Exception as exc:  # noqa: BLE001
             _log.warning("MCP server '%s' failed to start: %s", cfg.name, exc)
             self._audit("mcp.server_failed", cfg.name, str(exc)[:300], "failure")
+            self._record_start_failure(cfg.name)
             return f"error: {exc}"
+        self._clear_start_failure(cfg.name)
         if cfg.name not in self._transports:
             # _start_one volvió sin registrar ⇒ el gate lo vetó.
             return f"vetoed: server '{cfg.name}' rechazado por el gate de adopción"
@@ -228,6 +253,46 @@ class McpRegistry:
         self._audit("mcp.server_removed", name, f"tools={len(fulls)}", "success")
         return True
 
+    _MAX_START_FAILURES = 3
+
+    def _failures_path(self) -> "Path | None":
+        if self._persist_path is None:
+            return None
+        return self._persist_path.with_name(self._persist_path.stem + "_start_failures.json")
+
+    def _load_start_failures(self) -> dict[str, int]:
+        path = self._failures_path()
+        if path is None or not path.is_file():
+            return {}
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return {str(k): int(v) for k, v in data.items()} if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def _record_start_failure(self, name: str) -> None:
+        path = self._failures_path()
+        if path is None:
+            return
+        failures = self._load_start_failures()
+        failures[name] = failures.get(name, 0) + 1
+        try:
+            path.write_text(json.dumps(failures, indent=2), encoding="utf-8")
+        except OSError:
+            pass
+
+    def _clear_start_failure(self, name: str) -> None:
+        path = self._failures_path()
+        if path is None:
+            return
+        failures = self._load_start_failures()
+        if name in failures:
+            failures.pop(name)
+            try:
+                path.write_text(json.dumps(failures, indent=2), encoding="utf-8")
+            except OSError:
+                pass
+
     def _persist(self) -> None:
         """Reescribe ``persist_path`` con el estado actual de ``_configs``.
         Best-effort: un fallo de disco no debe tumbar una adopción/retirada
@@ -248,8 +313,18 @@ class McpRegistry:
 
     def is_read_only(self, full_name: str) -> bool:
         """ADR-035 dec.5: por defecto mutate (HITL). Solo los que el config
-        marca explícitamente son lectura."""
-        return full_name in self._read_only
+        marca explícitamente son lectura. Predicado ESTÁTICO sobre la config
+        declarada: con spawn perezoso el server puede no haber arrancado aún
+        cuando invoke_readonly consulta, y el veredicto no puede depender de
+        estado de runtime (sería fail-always en frío, no fail-closed)."""
+        if full_name in self._read_only:
+            return True
+        parts = full_name.split("__", 2)
+        if len(parts) != 3 or parts[0] != "mcp":
+            return False
+        server, tool = parts[1], parts[2]
+        cfg = next((c for c in self._configs if c.name == server and c.enabled), None)
+        return cfg is not None and tool in cfg.read_only_tools
 
     def knows(self, full_name: str) -> bool:
         return full_name in self._tool_index
