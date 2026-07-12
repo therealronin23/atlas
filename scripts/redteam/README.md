@@ -30,10 +30,10 @@ Todas se ejecutan con `PYTHONPATH=src .venv-redteam/bin/python ...`.
 Ejemplos:
 
 ```bash
-PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/garak_campaign.py --attacks 60 --benign 40 --out docs/reference/reports/redteam_campaign_report.md
-PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/generalization_curve.py --embedder hf --threshold 0.7 --out docs/reference/reports/immune_generalization_curve.md
-CRESCENDO_OUT=docs/reference/reports/pyrit_crescendo_report.md PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/pyrit_crescendo.py
-TEACHER_PROVIDER=nvidia DEBATE_OUT=docs/reference/reports/frontier_debate_report.md PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/frontier_debate.py
+PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/garak_campaign.py --attacks 60 --benign 40 --out docs/audits/reports/redteam_campaign_report.md
+PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/generalization_curve.py --embedder hf --threshold 0.7 --out docs/audits/reports/immune_generalization_curve.md
+CRESCENDO_OUT=docs/audits/reports/pyrit_crescendo_report.md PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/pyrit_crescendo.py
+TEACHER_PROVIDER=nvidia DEBATE_OUT=docs/audits/reports/frontier_debate_report.md PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/frontier_debate.py
 ```
 
 ## Límites honestos (válidos para todas)
@@ -41,5 +41,5 @@ TEACHER_PROVIDER=nvidia DEBATE_OUT=docs/reference/reports/frontier_debate_report
 - El "modelo objetivo" suele ser un stub: se mide el canal de seguridad, no contenido.
 - Embedder/atacante/maestro estocásticos → cifras *ilustrativas de una corrida*, no benchmark.
 - Cubren reformulación/atribución, **no** robustez frente a familias de ataque nuevas.
-- Los reportes generados (`docs/*report*.md`, `docs/reference/reports/immune_generalization_curve.md`) son
+- Los reportes generados (`docs/*report*.md`, `docs/audits/reports/immune_generalization_curve.md`) son
   artefactos reproducibles, no afirmaciones de cobertura.

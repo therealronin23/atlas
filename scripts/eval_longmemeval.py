@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Callable
 
 from atlas.immunity.lesson_recaller import RecallResult
+from atlas.memory.embeddings import default_embedder
 from atlas.memory.memory_index import SqliteMemoryIndex, rrf_fuse
 from atlas.memory.record import GenericRecord
 
@@ -251,7 +252,13 @@ def evaluate_sample(
 
     with tempfile.TemporaryDirectory() as tmp:
         db_path = Path(tmp) / "lme.db"
-        idx = SqliteMemoryIndex(str(db_path), lexical_index=use_hybrid)
+        # Embedder gobernado por env (ATLAS_EMBEDDER) — 3ª aparición del bug
+        # 'embedder ignora el env' (2026-07-10): sin esto el eval medía
+        # SIEMPRE el stub dim=64 (0.30/0.36) por el default de la clase,
+        # y el número histórico con fastembed no era reproducible.
+        idx = SqliteMemoryIndex(
+            str(db_path), embedder=default_embedder(), lexical_index=use_hybrid
+        )
         _ingest_sample(idx, session_ids, sessions, dates)  # no tenant for eval isolation
 
         results = {}

@@ -14,6 +14,7 @@ This directory contains:
 | `install_hermes_agent_vps.sh` | One-shot installer for Hermes-Agent on the VPS (apt deps, pip venv, Ollama, systemd-user unit, ~/.hermes/config.yaml + .env). Idempotent. |
 | `deploy_hermes_vps_oneshot.sh` | Operator wrapper that runs from the laptop: scps the install script to the VPS and triggers it with secrets via SSH env. |
 | `reconfigure_hermes_vps.sh` | Reconfigure Hermes-Agent without reinstalling (config.yaml only). |
+| `hermes_local.sh` | Run the REST-compatible Hermes stub on the laptop (`start|stop|status|logs`) using the same HTTP contract Atlas used against the VPS. |
 | `verify_twin_pairing.sh` | Read-only health check across Tailscale + Atlas + Hermes-VPS + Ollama + skill files. |
 | `pipeline_smoke.py` | Gate D pipeline smoke — calls real Groq/OpenRouter, verifies fallback chain. |
 | `gate_h_smoke.py` | Gate H synthesis + ResultAuditor smoke. |
