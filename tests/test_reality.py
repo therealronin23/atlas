@@ -53,6 +53,20 @@ def test_collect_reality_reports_static_facts(tmp_path: Path, monkeypatch) -> No
     assert any(c["name"] == "self_improvement.cold_update" for c in report["capabilities"])
 
 
+def test_collect_reality_prefers_kanban_transport_for_hermes(tmp_path: Path, monkeypatch) -> None:
+    root = _mini_repo(tmp_path)
+    workspace = tmp_path / "atlas"
+    monkeypatch.setenv("HERMES_KANBAN_TRANSPORT", "local")
+    monkeypatch.setenv("HERMES_BASE_URL", "https://legacy-hermes.invalid")
+    monkeypatch.setenv("HERMES_API_KEY", "legacy-key")
+
+    report = collect_reality(repo_root=root, workspace=workspace)
+
+    assert report["hermes"]["mode"] == "kanban_local"
+    assert report["hermes"]["base_url_set"] is True
+    assert report["hermes"]["api_key_set"] is True
+
+
 def test_browser_state_degrades_when_expected_playwright_executable_is_missing(
     monkeypatch,
     tmp_path: Path,

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BusinessCore",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "business_core_id": {
+      "type": "string"
+    },
+    "sector_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "entities": {
+      "type": "array"
+    },
+    "canonicality": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

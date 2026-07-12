@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ImportReview",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "review_id": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "candidates": {
+      "type": "array"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "actions": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

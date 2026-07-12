@@ -1,0 +1,23 @@
+{
+  "connector_id": "gmail",
+  "human_name": "Gmail",
+  "category": "communication",
+  "recommended_route": "managed_oauth",
+  "fallback_routes": [
+    "google_takeout",
+    "imap_readonly"
+  ],
+  "difficulty": "easy",
+  "default_mode": "read_only",
+  "safe_defaults": {
+    "read": true,
+    "draft": true,
+    "send": false,
+    "delete": false
+  },
+  "gates": {
+    "send": "outbound_gate",
+    "delete": "delete_gate",
+    "bulk_export": "data_export_gate"
+  }
+}

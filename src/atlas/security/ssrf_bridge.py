@@ -40,6 +40,7 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "api.open-meteo.com",                     # clima sin auth (knowledge-src, mcp trunk C)
     "api.frankfurter.app",                    # tipos de cambio sin auth (knowledge-src)
     "integrate.api.nvidia.com",               # NVIDIA NIM frontier, inference_hub
+    "export.arxiv.org",                       # arXiv API (PanoramaScout; OK explícito del operador 2026-07-10)
     # 2026-07-02: allowlist ampliada para scraping/browsing de propósito general
     # (CrawlerTool/web_crawl, BrowserTool) — sitios de referencia técnica de uso
     # habitual, curados uno a uno (decisión del usuario: "allowlist curada más

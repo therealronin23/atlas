@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderConnector",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "provider_id": {
+      "type": "string"
+    },
+    "auth": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

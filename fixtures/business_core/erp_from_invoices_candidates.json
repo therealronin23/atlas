@@ -1,0 +1,24 @@
+{
+  "source_ref": "import:invoices_demo_folder",
+  "candidates": [
+    {
+      "candidate_id": "cand_inv_demo_001",
+      "kind": "supplier",
+      "label": "Proveedor Demo",
+      "confidence": 0.95,
+      "source_refs": ["import:invoices_demo_folder"],
+      "proposed_data": {"name": "Proveedor Demo", "tax_id": "B12345678"},
+      "requires_review": true
+    },
+    {
+      "candidate_id": "cand_inv_demo_002",
+      "kind": "invoice",
+      "label": "Factura F-2026-001",
+      "confidence": 0.96,
+      "source_refs": ["import:invoices_demo_folder"],
+      "proposed_data": {"invoice_number": "F-2026-001", "amount": 452.10,
+                        "party": "Proveedor Demo"},
+      "requires_review": true
+    }
+  ]
+}

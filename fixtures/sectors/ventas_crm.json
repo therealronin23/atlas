@@ -1,0 +1,14 @@
+{
+  "sector_id": "ventas_crm",
+  "display_name": "Ventas/CRM",
+  "description": "Equipos comerciales y de ventas — pipeline de oportunidades, contactos y seguimiento de clientes.",
+  "default_workbenches": [
+    "pipeline_workbench"
+  ],
+  "default_capabilities": [
+    "crm.contacts.read",
+    "crm.deals.read"
+  ],
+  "question_pack_id": "qp_ventas_crm",
+  "connector_pack_id": "crm_sales_pack"
+}

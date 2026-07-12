@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SandboxExecution",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "execution_id": {
+      "type": "string"
+    },
+    "sandbox_type": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

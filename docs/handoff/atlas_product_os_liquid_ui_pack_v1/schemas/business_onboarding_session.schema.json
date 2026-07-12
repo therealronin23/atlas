@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BusinessOnboardingSession",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "session_id": {
+      "type": "string"
+    },
+    "sector_id": {
+      "type": "string"
+    },
+    "answers": {
+      "type": "array"
+    },
+    "understanding_summary": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

@@ -9,14 +9,22 @@ ANTES de mover nada (sin estándar, mover = caos).
 ```
 src/ , tests/                código + su red de seguridad (los tests NO son ruido:
                              son lo que hace seguro borrar. Viajan con su código).
-docs/governance/             matrioska SOLO de gobernanza: estándar, CAPABILITIES,
-                             gates/ADR/fase + auditorías + docs de cierre (roll-up).
-docs/reference/              durable: el paper, ADRs vigentes.
-docs/design/                 design docs vivos.
+docs/INDEX.yaml              índice MÁQUINA de todos los docs: type/status/verified.
+                             Lo valida scripts/docs_index_audit.py cada ciclo.
+docs/inbox/                  ENTRADA de docs nuevos; el triage (scripts/docs_triage.py)
+                             los deduplica, clasifica y los lleva a su sitio + índice.
+docs/decisions/              decisiones selladas: adr/ (ADRs) + gates/ (sellos de Gate).
+docs/design/                 design docs vivos + catálogos que el código LEE en runtime.
+docs/operations/             cómo operar: USAGE, runbook, prometheus, seguridad.
+docs/governance/             normas: este estándar + CAPABILITIES.
+docs/audits/                 auditorías puntuales + reports/ de experimentos (evidencia).
+docs/compliance/             EU AI Act, cartas gateway (membrana/ OSM sigue aparte).
+docs/outreach/               paper académico, posts, emails de difusión.
 docs/archive/_graveyard/     CUARENTENA: por fecha + MANIFEST.md (ruta, motivo, veredicto).
 WORK_LEDGER.md (raíz)        estado vivo (autoridad del DÓNDE).
-raíz: solo AGENTS, CLAUDE, README, CHANGELOG, ROADMAP, WORK_LEDGER, PLAN_PUBLICACION.
 ```
+(Reorg 2026-07-08: `docs/reference/` se disolvió en decisions/operations/
+compliance/outreach/audits; `governance/gates|audits` migraron a decisions/audits.)
 El **código** vive en `src/` por módulo — NUNCA dentro de la jerarquía de gobernanza
 (mezclarlos es el desorden que eliminamos). La jerarquía Gate→ADR→Fase→Tipo es para
 DOCUMENTOS de gobernanza y para no perder el hilo, no para reorganizar el código.

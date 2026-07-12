@@ -135,3 +135,82 @@ def test_ensure_started_server_disabled() -> None:
     result = registry.ensure_started("off")
     assert result is False
     assert created == []
+
+
+def test_is_read_only_es_estatico_sin_arrancar_el_server() -> None:
+    """is_read_only responde desde la config declarada ANTES del primer spawn.
+
+    Con spawn perezoso + índice estático de raíces nativas, invoke_readonly
+    consulta el predicado antes de que dispatch arranque el server; si el
+    predicado dependiera del arranque, toda tool de lectura fallaría en frío
+    (fail-closed convertido en fail-always)."""
+    cfg = McpServerConfig(name="x", cmd=["fake-cmd"], read_only_tools=["ro_tool"])
+    registry = McpRegistry([cfg], transport_factory=lambda c: _FakeTransport(c.name, ["ro_tool", "mut_tool"]))
+    assert "x" not in registry._transports
+    assert registry.is_read_only("mcp__x__ro_tool") is True
+    assert registry.is_read_only("mcp__x__mut_tool") is False
+    assert registry.is_read_only("mcp__desconocido__ro_tool") is False
+    assert registry.is_read_only("sin_prefijo") is False
+
+
+class TestAdoptionStartFailureBackoff:
+    """2026-07-10: el lazo de adopción re-spawneaba el mismo candidato roto en
+    cada pasada (ai.agenttrust sin API key: 530 stacktraces en .atlas.err).
+    N fallos de arranque → skip persistente auditado; un arranque OK limpia."""
+
+    def _registry(self, tmp_path, *, boom: bool):
+        calls: list[str] = []
+
+        def factory(cfg: McpServerConfig) -> _FakeTransport:
+            calls.append(cfg.name)
+            if boom:
+                raise ConnectionError("muere al arrancar")
+            return _FakeTransport(cfg.name, ["t"])
+
+        cfg = McpServerConfig(name="roto", cmd=["fake"])
+        reg = McpRegistry(
+            [cfg], transport_factory=factory,
+            persist_path=tmp_path / "mcp_servers.json",
+        )
+        return reg, cfg, calls
+
+    def test_three_failures_then_persistent_skip(self, tmp_path) -> None:
+        reg, cfg, calls = self._registry(tmp_path, boom=True)
+        for _ in range(3):
+            assert reg.add_server(cfg).startswith("error:")
+        status = reg.add_server(cfg)
+        assert status.startswith("skipped:")
+        assert "backoff" in status
+        assert len(calls) == 3  # el 4º intento NO spawneó
+
+        # El backoff sobrevive a un registry nuevo (persistente).
+        reg2, cfg2, calls2 = self._registry(tmp_path, boom=False)
+        assert reg2.add_server(cfg2).startswith("skipped:")
+        assert calls2 == []
+
+    def test_successful_start_clears_counter(self, tmp_path) -> None:
+        reg, cfg, calls = self._registry(tmp_path, boom=True)
+        reg.add_server(cfg)
+        reg.add_server(cfg)  # 2 fallos, aún bajo el umbral
+        reg_ok, cfg_ok, _ = self._registry(tmp_path, boom=False)
+        assert reg_ok.add_server(cfg_ok).startswith("ok:")
+        assert reg_ok._load_start_failures() == {}
+
+
+def test_start_one_skips_when_declared_env_missing(monkeypatch, tmp_path) -> None:
+    """Fail-fast pre-spawn: secretos declarados ausentes → no se spawnea
+    (antes: el hijo moría con stacktrace y se reintentaba para siempre)."""
+    monkeypatch.delenv("SECRETO_QUE_NO_EXISTE", raising=False)
+    calls: list[str] = []
+
+    def factory(cfg: McpServerConfig) -> _FakeTransport:
+        calls.append(cfg.name)
+        return _FakeTransport(cfg.name, ["t"])
+
+    cfg = McpServerConfig(
+        name="sin-secreto", cmd=["fake"], env_passthrough=["SECRETO_QUE_NO_EXISTE"],
+    )
+    registry = McpRegistry([cfg], transport_factory=factory)
+    registry.ensure_started("sin-secreto")
+    assert calls == []  # nunca llegó a spawnearse
+    assert "sin-secreto" not in registry._transports

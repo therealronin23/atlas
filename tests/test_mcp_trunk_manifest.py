@@ -21,11 +21,11 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 
-def test_native_roots_are_the_three_built() -> None:
+def test_native_roots_are_the_four_built() -> None:
     from atlas.mcp.trunk_manifest import native_roots
 
     names = {r.name for r in native_roots()}
-    assert names == {"atlas-memory", "atlas-operating", "atlas-knowledge"}
+    assert names == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
 
 
 def test_client_config_lists_every_native_root_with_a_launch_command() -> None:
@@ -37,18 +37,21 @@ def test_client_config_lists_every_native_root_with_a_launch_command() -> None:
         knowledge_base=Path("/save/kb"),
     )
     servers = cfg["mcpServers"]
-    assert set(servers) == {"atlas-memory", "atlas-operating", "atlas-knowledge"}
+    assert set(servers) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
     mem = servers["atlas-memory"]
     assert mem["command"]  # un ejecutable
     assert "atlas.mcp.memory_server" in mem["args"]
     assert "/save/memory.db" in mem["args"]
+    # atlas-graph no recibe path arg: el server usa DEFAULT_GRAPH_DB.
+    graph = servers["atlas-graph"]
+    assert graph["args"] == ["-m", "atlas.mcp.graph_server"]
 
 
 def test_tool_overhead_is_small_anti_kitchen_sink() -> None:
     from atlas.mcp.trunk_manifest import tool_overhead
 
-    # Superficie PEQUEÑA: las 3 raíces juntas exponen pocas tools (no 200).
-    assert tool_overhead() <= 14
+    # Superficie PEQUEÑA: las 4 raíces juntas exponen pocas tools (no 200).
+    assert tool_overhead() <= 23
 
 
 # ---------------------------------------------------------------------------

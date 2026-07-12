@@ -1,0 +1,34 @@
+[
+  {
+    "connector_id": "whatsapp_business_platform",
+    "platform": "WhatsApp Business Platform (Meta)",
+    "automation_allowed": true,
+    "terms_url": "https://www.whatsapp.com/legal/business-terms/",
+    "notes": "API oficial de Meta: automatización de mensajería permitida sujeta a las políticas de plantillas y ventana de 24h.",
+    "personal_use_only": false
+  },
+  {
+    "connector_id": "whatsapp_personal_import",
+    "platform": "WhatsApp (uso personal/consumidor)",
+    "automation_allowed": false,
+    "terms_url": "https://www.whatsapp.com/legal/terms-of-service",
+    "notes": "Los ToS de WhatsApp personal prohíben la automatización de envío. Atlas solo importa/lee, nunca actúa como cliente automatizado.",
+    "personal_use_only": true
+  },
+  {
+    "connector_id": "odoo_erp",
+    "platform": "Odoo",
+    "automation_allowed": true,
+    "terms_url": "https://www.odoo.com/terms",
+    "notes": "Acceso vía API con usuario de solo lectura por defecto; escritura contable requiere gate explícito.",
+    "personal_use_only": false
+  },
+  {
+    "connector_id": "legacy_desktop_app",
+    "platform": "Aplicación de escritorio legacy (proveedor no identificado)",
+    "automation_allowed": true,
+    "terms_url": null,
+    "notes": "Sin contrato de soporte conocido: automatización visual solo con sesión supervisada y gate_computer_use; revisar términos del proveedor caso a caso.",
+    "personal_use_only": false
+  }
+]

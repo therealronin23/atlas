@@ -1,0 +1,5 @@
+{
+  "untrusted_content_can_call_tools": false,
+  "secrets_redacted": true,
+  "send_requires_gate": true
+}

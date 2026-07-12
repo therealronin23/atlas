@@ -1,0 +1,10 @@
+{
+  "pack_id": "crm_sales_pack",
+  "sector_id": "ventas_crm",
+  "display_name": "Pack CRM/Ventas",
+  "connectors": ["gmail", "generic_crm"],
+  "setup_order": ["gmail", "generic_crm"],
+  "optional_connectors": ["whatsapp_business_platform"],
+  "rationale": "Correo y CRM cubren el ciclo de ventas básico; WhatsApp Business es opcional para equipos con contacto directo por mensajería.",
+  "demo": true
+}

@@ -53,7 +53,7 @@ def test_successful_worker_syncs_files_back_to_real_repo(tmp_path: Path) -> None
     )
 
     with patch.dict("os.environ", {"FAKE_KEY": "x"}), \
-         patch("atlas.core.atlas_coder.AtlasCoder.code", fake_code):
+         patch("atlas.core.tool_coder.ToolCoder.code", fake_code):
         coder = ParallelCoder(repo_root=repo, providers=[fake_provider])
         result = coder.run(
             subtasks=["cambia A_OLD a A_NEW"],
@@ -84,7 +84,7 @@ def test_failed_worker_does_not_touch_real_repo(tmp_path: Path) -> None:
     )
 
     with patch.dict("os.environ", {"FAKE_KEY": "x"}), \
-         patch("atlas.core.atlas_coder.AtlasCoder.code", fake_code):
+         patch("atlas.core.tool_coder.ToolCoder.code", fake_code):
         coder = ParallelCoder(repo_root=repo, providers=[fake_provider])
         result = coder.run(
             subtasks=["tarea que falla"],
@@ -97,7 +97,11 @@ def test_failed_worker_does_not_touch_real_repo(tmp_path: Path) -> None:
 
 
 def test_kwargs_forwarded_to_atlas_coder_code(tmp_path: Path) -> None:
-    """edit_format, use_apply_model, etc. deben llegar a AtlasCoder.code()."""
+    """edit_format, use_apply_model, etc. deben llegar a AtlasCoder.code() —
+    específico del formato SEARCH/REPLACE de AtlasCoder (ToolCoder, el
+    backend por defecto desde 2026-07-09, no tiene estos kwargs), así que
+    esta prueba fija AtlasCoder explícito vía coder_factory."""
+    from atlas.core.atlas_coder import AtlasCoder
     repo = _git_repo(tmp_path)
     captured_kwargs: list[dict] = []
 
@@ -113,7 +117,10 @@ def test_kwargs_forwarded_to_atlas_coder_code(tmp_path: Path) -> None:
 
     with patch.dict("os.environ", {"FAKE_KEY": "x"}), \
          patch("atlas.core.atlas_coder.AtlasCoder.code", fake_code):
-        coder = ParallelCoder(repo_root=repo, providers=[fake_provider])
+        coder = ParallelCoder(
+            repo_root=repo, providers=[fake_provider],
+            coder_factory=lambda hub, root, timeout: AtlasCoder(hub, repo_root=root, timeout_s=timeout),
+        )
         coder.run(
             subtasks=["t1"],
             context_files=["src/a.py"],
@@ -164,7 +171,9 @@ def test_level_forwarded_to_coder_that_accepts_it(tmp_path: Path) -> None:
 
 def test_level_not_forwarded_to_atlas_coder(tmp_path: Path) -> None:
     """AtlasCoder.code() no tiene parámetro `level` (ni **kwargs) — reenviarlo
-    a ciegas rompería la llamada. No debe forzarse."""
+    a ciegas rompería la llamada. No debe forzarse. AtlasCoder fijado
+    explícito vía coder_factory (ya no es el backend por defecto)."""
+    from atlas.core.atlas_coder import AtlasCoder
     repo = _git_repo(tmp_path)
     captured_kwargs: list[dict] = []
 
@@ -180,7 +189,10 @@ def test_level_not_forwarded_to_atlas_coder(tmp_path: Path) -> None:
 
     with patch.dict("os.environ", {"FAKE_KEY": "x"}), \
          patch("atlas.core.atlas_coder.AtlasCoder.code", fake_code):
-        coder = ParallelCoder(repo_root=repo, providers=[fake_provider])
+        coder = ParallelCoder(
+            repo_root=repo, providers=[fake_provider],
+            coder_factory=lambda hub, root, timeout: AtlasCoder(hub, repo_root=root, timeout_s=timeout),
+        )
         coder.run(
             subtasks=["t1"], context_files=["src/a.py"], test_cmd=["true"],
             level=InferenceLevel.L2,
@@ -226,7 +238,7 @@ def test_ensemble_picks_fewest_iterations_among_successes(tmp_path: Path) -> Non
         )
 
     with patch.dict("os.environ", env), \
-         patch("atlas.core.atlas_coder.AtlasCoder.code", fake_code):
+         patch("atlas.core.tool_coder.ToolCoder.code", fake_code):
         coder = ParallelCoder(repo_root=repo, providers=providers)
         result = coder.run_ensemble(
             task="cambia A_OLD", context_files=["src/a.py"], test_cmd=["true"], n=3,
@@ -252,7 +264,7 @@ def test_ensemble_no_winner_when_all_fail(tmp_path: Path) -> None:
         model_id="m", litellm_model="m", api_key_env="FAKE_KEY",
     )
     with patch.dict("os.environ", {"FAKE_KEY": "x"}), \
-         patch("atlas.core.atlas_coder.AtlasCoder.code", fake_code):
+         patch("atlas.core.tool_coder.ToolCoder.code", fake_code):
         coder = ParallelCoder(repo_root=repo, providers=[fake_provider])
         result = coder.run_ensemble(
             task="tarea que falla", context_files=["src/a.py"], test_cmd=["true"], n=2,

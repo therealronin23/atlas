@@ -672,7 +672,7 @@ docs/membrana/
   OSM-000_membrana.md           — mecanismo de ósmosis de conocimiento externo
   [OSM-024 a OSM-054]           — candidatos en distintos estados (Suspensión/Difusión/Membrana/Absorbida)
 
-docs/reference/
+docs/decisions/ + docs/compliance/ (antes docs/reference/)
   adr/adr_040_decider_*.md      — Decisor central (Implemented)
   adr/adr_051_compliance_*.md   — Compliance Gateway (Propuesto)
   adr/adr_053_gateway_trust_*.md — Confianza del gateway (Aceptado/núcleo)

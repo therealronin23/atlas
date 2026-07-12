@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ERPConnector",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "connector_id": {
+      "type": "string"
+    },
+    "objects": {
+      "type": "array"
+    },
+    "capabilities": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

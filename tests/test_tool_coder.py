@@ -264,9 +264,11 @@ def test_non_string_old_str_returns_structured_error(tmp_path: Path):
     assert any("string" in str(m.get("content", "")).lower() for m in tool_msgs)
 
 
-def test_max_tool_turns_guard(tmp_path: Path):
+def test_max_tool_turns_guard(tmp_path: Path, monkeypatch):
     """Un modelo que llama tools sin parar no cicla infinito — corta en el
-    límite de turnos (stuck guard del bucle agéntico)."""
+    límite de turnos (stuck guard del bucle agéntico). El techo se pina por
+    entorno (ATLAS_TOOL_MAX_TURNS), que es a la vez el test del override."""
+    monkeypatch.setenv("ATLAS_TOOL_MAX_TURNS", "10")
     hub = _ScriptedHub([
         [_tc("read_file", path="no_existe.py")],  # siempre la misma llamada
     ] * 50)
@@ -274,5 +276,89 @@ def test_max_tool_turns_guard(tmp_path: Path):
     result = coder.code(task="loop", context_files=[], test_cmd=["false"], max_iterations=1)
 
     assert result.success is False
-    # nunca más de _MAX_TOOL_TURNS llamadas al hub por iteración
+    # nunca más del techo pinado de llamadas al hub por iteración
     assert len(hub.requests) <= 12
+
+
+def test_turn_limit_with_real_edits_salvages_via_tests(tmp_path: Path, monkeypatch):
+    """2026-07-09: el corte por techo de turnos era terminal y descartaba
+    ediciones reales sin correr los tests. Ahora, si hubo cambios, se prueban:
+    modelo que edita bien pero nunca da respuesta final → success si tests OK."""
+    monkeypatch.setenv("ATLAS_TOOL_MAX_TURNS", "3")
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 2")],
+        [_tc("read_file", path="foo.py")],  # sigue llamando tools…
+        [_tc("read_file", path="foo.py")],  # …hasta agotar el techo
+    ] * 2)
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(task="cambia x", context_files=["foo.py"], test_cmd=["true"], max_iterations=1)
+
+    assert result.success is True
+    assert f.read_text() == "x = 2\n"
+    assert "foo.py" in result.files_changed
+
+
+def test_repair_json_arguments_passthrough_valid():
+    assert ToolCoder._repair_json_arguments('{"path": "a.py"}') == '{"path": "a.py"}'
+
+
+def test_repair_json_arguments_strips_trailing_garbage():
+    # Caso real 2026-07-09: JSON válido + basura pegada ("Extra data") crasheaba
+    # litellm/ollama_pt al reproducir el historial en el turno siguiente.
+    repaired = ToolCoder._repair_json_arguments('{"path": "a.py"}<|tool_end|>extra')
+    assert json.loads(repaired) == {"path": "a.py"}
+
+
+def test_repair_json_arguments_unparseable_returns_empty_object():
+    assert ToolCoder._repair_json_arguments("no es json") == "{}"
+    assert ToolCoder._repair_json_arguments("") == "{}"
+
+
+def test_sandbox_tests_import_sandbox_tree_not_real_repo(tmp_path: Path):
+    """2026-07-09: con sandbox, el install editable del venv hacía que los tests
+    importaran el paquete del repo REAL — median el código equivocado. El
+    subprocess de tests debe ver el src del sandbox en PYTHONPATH."""
+    import sys as _sys
+
+    pkg = tmp_path / "src" / "mypkg"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("X = 1\n")
+
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="src/mypkg/__init__.py", old_str="X = 1", new_str="X = 2")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    # El test SOLO pasa si `import mypkg` resuelve dentro del árbol donde el
+    # coder editó (el sandbox) — mypkg no está instalado en el venv.
+    result = coder.code(
+        task="sube X a 2",
+        context_files=["src/mypkg/__init__.py"],
+        test_cmd=[_sys.executable, "-c", "import mypkg, sys; sys.exit(0 if mypkg.X == 2 else 1)"],
+        sandbox=True,
+    )
+
+    assert result.success is True
+    # El árbol real recibe el sync-back del fichero verificado…
+    assert (pkg / "__init__.py").read_text() == "X = 2\n"
+
+
+def test_sandbox_failure_leaves_real_tree_untouched(tmp_path: Path):
+    """Al fallo en sandbox, el árbol real no se toca (riesgo task_078a59b1)."""
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 99")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="cambia x", context_files=["foo.py"], test_cmd=["false"],
+        max_iterations=1, sandbox=True,
+    )
+
+    assert result.success is False
+    assert f.read_text() == "x = 1\n"

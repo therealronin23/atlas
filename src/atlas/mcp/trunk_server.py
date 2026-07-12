@@ -77,9 +77,9 @@ def root_configs(
     return [
         McpServerConfig(
             name=root.name,
-            cmd=[exe, "-m", root.module, arg_for[root.arg_kind]],
-            # recall/lookup/audit son de lectura; el resto mutan (HITL).
-            read_only_tools=[t for t in root.tools if t.startswith(("recall", "wikipedia_lookup", "worldbank_lookup", "sanitation"))],
+            cmd=[exe, "-m", root.module, *([arg_for[root.arg_kind]] if root.arg_kind else [])],
+            # recall/lookup/audit/graph son de lectura; el resto mutan (HITL).
+            read_only_tools=[t for t in root.tools if t.startswith(("recall", "wikipedia_lookup", "worldbank_lookup", "sanitation", "graph_"))],
         )
         for root in native_roots()
     ]
@@ -290,6 +290,7 @@ def build_trunk_server(
     if catalog is not None and taxonomy is not None:
         from atlas.mcp.catalog import find as _find
         from atlas.mcp.catalog import recommended_stack as _recommended_stack
+        from atlas.mcp.trunk_prepare import prepare_task_context as _prepare_task_context
 
         @server.tool()
         def trunk_find(query: str) -> list[dict[str, Any]]:
@@ -302,6 +303,36 @@ def build_trunk_server(
             """Shortlist 2026 por objetivo: instalado/verificado primero; candidatos
             solo como descubrimiento. No instala ni ejecuta terceros."""
             return _recommended_stack(catalog, taxonomy, goal, limit=limit)
+
+        @server.tool()
+        def trunk_prepare(
+            goal: str,
+            constraints: dict[str, Any] | None = None,
+            limit: int = 8,
+        ) -> dict[str, Any]:
+            """Preflight compacto por tarea: recomienda tools/skills/resources ya
+            conocidos, marca candidatos como NO conectados, e incorpora uso real.
+            No spawnea, instala, descarga ni ejecuta terceros."""
+            external_counts: dict[str, int] = {}
+            usage_counter = getattr(agg, "_usage_counter", None)
+            if usage_counter is not None:
+                try:
+                    external_counts = usage_counter.external_counts()
+                except Exception:  # noqa: BLE001 — métrica, nunca bloquea preflight
+                    external_counts = {}
+            return _prepare_task_context(
+                catalog,
+                taxonomy,
+                goal,
+                limit=limit,
+                external_counts=external_counts,
+                workbench_available=(
+                    lesson_store is not None
+                    and backlog_items is not None
+                    and memory_count is not None
+                ),
+                constraints=constraints,
+            )
 
     if skill_store is not None:
         @server.tool()

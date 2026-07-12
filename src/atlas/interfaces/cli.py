@@ -52,7 +52,28 @@ def _acquire_writer_lock_or_die(orch: Orchestrator) -> "MerkleWriterLock":
     return lock
 
 
-@click.group()
+_QUICK_START_EPILOG = """\
+\b
+¿Primera vez o no sabes por dónde empezar? En este orden:
+  1. atlas status   -> que esta vivo ahora mismo (memoria, cola, Merkle)
+  2. atlas reality  -> que es real vs simulado/degradado (fuente de verdad)
+  3. atlas doctor    -> diagnostico completo (governance + Merkle + deps)
+\b
+Comandos por categoria:
+  NUCLEO / DIAGNOSTICO  status, reality, doctor, health, capabilities
+  TAREAS                task, code, cycle, approve, pending, sweep
+  MEMORIA                memory, search, audit, blocks, insights
+  AUTOCONSTRUCCION       update, self-audit
+  ATLAS OS (F15/16)      os-bridge, connections, business, gates, gate-h
+  SERVICIOS 24/7         serve, dashboard, voice
+  SEGURIDAD               security-audit
+  UTILIDADES/DEMO        tools, completeness-demo
+\b
+Cada comando tiene su propio detalle: atlas <comando> --help
+"""
+
+
+@click.group(epilog=_QUICK_START_EPILOG)
 @click.version_option(__version__, prog_name="atlas")
 def cli() -> None:
     """Atlas Core — Sistema operativo personal de inteligencia."""
@@ -429,8 +450,26 @@ def update_status(proposal_id: str | None) -> None:
         summary = mgr.review_summary(proposal_id)
         console.print_json(json.dumps(summary, ensure_ascii=False, default=str))
         return
-    for p in mgr.list_proposals():
+    proposals = mgr.list_proposals()
+    if not proposals:
+        console.print("[green]Sin propuestas.[/green]")
+        return
+    for p in proposals:
         console.print(f"  {p.id}  {p.status:10}  {p.intent[:60]}")
+    # Receta HITL explícita (2026-07-10): el operador señaló que "no hay un
+    # mecanismo fácil y claro" — lo había, pero nada lo enseñaba en el momento
+    # de decidir. Cada estado imprime su siguiente paso copy-pasteable.
+    next_step = {
+        "proposed": "atlas update validate {id}   # pytest+mypy en worktree aislado",
+        "validated": "atlas update approve {id}    # y después: atlas update apply {id}",
+        "approved": "atlas update apply {id}",
+    }
+    actionable = [p for p in proposals if p.status in next_step]
+    if actionable:
+        console.print("\n[bold]Siguiente paso por propuesta:[/bold]")
+        for p in actionable:
+            console.print(f"  {next_step[p.status].format(id=p.id)}")
+        console.print("  (rechazar: atlas update reject <id> --reason '...')")
 
 
 @update.command("batch-review")
@@ -970,6 +1009,128 @@ def dashboard(host: str, port: int) -> None:
     serve(host=host, port=port)
 
 
+@cli.command("os-bridge")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address (solo localhost por seguridad).")
+@click.option("--port", default=7341, show_default=True, type=int, help="Puerto del bridge Atlas OS.")
+def os_bridge(host: str, port: int) -> None:
+    """Arranca el Atlas OS Bridge (ADR-058): API + WS de eventos en localhost:7341."""
+    from atlas.api.server import serve  # noqa: PLC0415
+    console.print(f"\n[bold cyan]Atlas OS Bridge[/bold cyan] → http://{host}:{port}")
+    console.print("[dim]Ctrl+C para detener. WS de eventos en /events.[/dim]\n")
+    serve(host=host, port=port)
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+@cli.group("connections")
+def connections_group() -> None:
+    """Integration Fabric / Easy Connection Layer (Fase 15) — solo lectura y mock/sandbox."""
+
+
+@connections_group.command("catalog")
+def connections_catalog() -> None:
+    """Catálogo de recetas de conexión agrupado por categoría humana."""
+    from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+
+    recipes = RecipeEngine(_repo_root() / "fixtures" / "connection_recipes")
+    for category, items in sorted(recipes.catalog().items()):
+        console.print(f"\n[bold cyan]{category}[/bold cyan]")
+        for item in items:
+            console.print(f"  {item['connector_id']:<28} {item['human_name']} "
+                          f"[dim]({item['difficulty']}, {item['recommended_route']})[/dim]")
+    if recipes.rejected:
+        console.print("\n[bold red]Rechazadas[/bold red]")
+        for connector_id, problems in recipes.rejected.items():
+            console.print(f"  {connector_id}: {problems}")
+
+
+@connections_group.command("plan")
+@click.argument("connector_id")
+def connections_plan(connector_id: str) -> None:
+    """Plan de conexión humano (ruta, permisos, gates) para un conector."""
+    from atlas.fabric.concierge import ConnectionConcierge  # noqa: PLC0415
+    from atlas.fabric.policy import default_policy_engine  # noqa: PLC0415
+    from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+
+    root = _repo_root()
+    recipes = RecipeEngine(root / "fixtures" / "connection_recipes")
+    concierge = ConnectionConcierge(recipes, default_policy_engine(root))
+    plan = concierge.plan(connector_id)
+    if plan is None:
+        console.print(f"[red]receta desconocida: {connector_id}[/red]")
+        raise SystemExit(1)
+    rprint(plan)
+
+
+@connections_group.command("test")
+@click.argument("connector_id")
+@click.option("--mode", default="mock", type=click.Choice(["mock", "sandbox", "real"]), show_default=True)
+def connections_test(connector_id: str, mode: str) -> None:
+    """Prueba una conexión en modo mock/sandbox (real está bloqueado en Fase 15)."""
+    from atlas.fabric.health import HealthMonitor  # noqa: PLC0415
+    from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+    from atlas.fabric.testing import ConnectionTestRunner  # noqa: PLC0415
+
+    root = _repo_root()
+    recipes = RecipeEngine(root / "fixtures" / "connection_recipes")
+    runner = ConnectionTestRunner(recipes, HealthMonitor())
+    rprint(runner.test(connector_id, mode=mode))
+
+
+@cli.group("business")
+def business_group() -> None:
+    """Adaptive Question Engine / Business Core (Fase 15) — todo draft-first."""
+
+
+@business_group.command("question-packs")
+def business_question_packs() -> None:
+    """Lista los packs de preguntas de onboarding disponibles por sector."""
+    from atlas.business.questions import load_all_packs  # noqa: PLC0415
+
+    packs = load_all_packs(_repo_root() / "fixtures" / "question_packs")
+    for pack in packs.values():
+        console.print(f"[bold cyan]{pack.pack_id}[/bold cyan] ({pack.sector_id}) "
+                      f"— {len(pack.questions)} preguntas")
+
+
+@business_group.command("onboarding-start")
+@click.argument("pack_id")
+def business_onboarding_start(pack_id: str) -> None:
+    """Arranca una sesión de onboarding para el pack indicado."""
+    from atlas.business.questions import QuestionEngine, load_all_packs  # noqa: PLC0415
+
+    packs = load_all_packs(_repo_root() / "fixtures" / "question_packs")
+    pack = packs.get(pack_id)
+    if pack is None:
+        console.print(f"[red]pack desconocido: {pack_id}[/red]")
+        raise SystemExit(1)
+    session = QuestionEngine().start_session(pack, demo=True)
+    rprint(session.model_dump(mode="json"))
+
+
+@cli.group("gates")
+def gates_group() -> None:
+    """Gate Engine (Fase 16) — cola de decisiones humanas auditables."""
+
+
+@gates_group.command("list")
+def gates_list() -> None:
+    """Lista los gate tickets abiertos (pendientes de aprobación humana)."""
+    from atlas.business.core_engine import BusinessCoreEngine  # noqa: PLC0415
+
+    tickets = BusinessCoreEngine().gates.list_open()
+    if not tickets:
+        console.print("[dim]No hay gate tickets abiertos.[/dim]")
+        return
+    for t in tickets:
+        console.print(
+            f"[bold yellow]{t.gate_ticket_id}[/bold yellow] {t.gate_id} "
+            f"[dim]{t.action} → {t.subject_ref}[/dim] (riesgo {t.risk.value})"
+        )
+
+
 @cli.command()
 @click.option("--mode", default="auto", type=click.Choice(["auto", "real", "stub"]), show_default=True, help="Modo de voz.")
 @click.option("--whisper-model", default="small", show_default=True, help="Tamaño modelo Whisper (tiny|base|small|medium).")
@@ -1001,12 +1162,17 @@ def voice(mode: str, whisper_model: str) -> None:
     "--engine", type=click.Choice(["atlas", "tool"]), default="atlas", show_default=True,
     help="Motor de codificación: atlas=completación de texto, "
          "tool=tool-calling ADR-031 (4/4 en enjambre fácil y difícil medido 2026-07-02 "
-         "vs 0/4 de atlas; repo_map/auto_commit disponibles a nivel de librería en "
-         "ambos motores, sin flag CLI propio; apply-model es moot en tool-calling).",
+         "vs 0/4 de atlas; apply-model es moot en tool-calling).",
+)
+@click.option(
+    "--repo-map/--no-repo-map", "use_repo_map", default=True, show_default=True,
+    help="Incluir repo-map (firmas de los .py más relevantes, budget 4KB) en el "
+         "prompt — patrón Aider; estaba cableado a nivel de librería pero el CLI "
+         "nunca lo pasaba (dormido hasta 2026-07-08).",
 )
 def code(
     task: str, context_files: tuple[str, ...], test_cmd: str, level: str,
-    parallel: bool, iterations: int, engine: str,
+    parallel: bool, iterations: int, engine: str, use_repo_map: bool,
 ) -> None:
     """Codifica una tarea usando InferenceHub (Groq/NIM/Gemini).
 
@@ -1025,6 +1191,20 @@ def code(
     cmd_parts = test_cmd.split()
     files = list(context_files)
     repo_root = Path.cwd()
+
+    # Repo-map (patrón Aider): ficheros .py trackeados como candidatos; el
+    # builder recorta por relevancia respecto a los context_files y respeta
+    # su budget de 4KB, así que pasarlos todos es seguro.
+    repo_map_files: list[str] = []
+    if use_repo_map:
+        import subprocess  # noqa: PLC0415
+
+        ls = subprocess.run(
+            ["git", "ls-files", "*.py"],
+            cwd=repo_root, capture_output=True, text=True, check=False,
+        )
+        if ls.returncode == 0:
+            repo_map_files = ls.stdout.splitlines()
 
     console.print(f"\n[bold cyan]Atlas Code[/bold cyan] — motor=[yellow]{engine}[/yellow] nivel=[yellow]{level}[/yellow] paralelo=[yellow]{parallel}[/yellow]")
     console.print(f"[dim]Tarea:[/dim] {task}")
@@ -1067,11 +1247,17 @@ def code(
         if engine == "tool":
             tool_coder = ToolCoder(hub, repo_root=repo_root, timeout_s=120)
             with console.status("[bold green]Generando código…[/bold green]"):
-                result_c = tool_coder.code(task, files, cmd_parts, max_iterations=iterations, level=inference_level)
+                result_c = tool_coder.code(
+                    task, files, cmd_parts, max_iterations=iterations,
+                    level=inference_level, repo_map_files=repo_map_files or None,
+                )
         else:
             atlas_coder = AtlasCoder(hub, repo_root=repo_root, timeout_s=120)
             with console.status("[bold green]Generando código…[/bold green]"):
-                result_c = atlas_coder.code(task, files, cmd_parts, max_iterations=iterations)
+                result_c = atlas_coder.code(
+                    task, files, cmd_parts, max_iterations=iterations,
+                    repo_map_files=repo_map_files or None,
+                )
 
         if result_c.success:
             console.print(f"[bold green]✓ Listo[/bold green] en {result_c.iterations} iteración{'es' if result_c.iterations > 1 else ''}")

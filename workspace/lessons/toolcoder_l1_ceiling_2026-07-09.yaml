@@ -1,0 +1,23 @@
+id: toolcoder_l1_ceiling_2026_07_09
+title: "Techo L1 en specs densas + JSON malformado en historial"
+corroborated: true
+date_created: "2026-07-09"
+verified_by: ["operator_session"]
+
+lesson: |
+  Dos datos medidos en vivo (2026-07-09, delegación obsidian_vault_parser):
+
+  1. JSON MALFORMADO EN HISTORIAL: un modelo emitió tool-call con JSON válido
+     + basura pegada. litellm/ollama_pt crashea al reproducir ese historial
+     (json.loads sin defensa). Fix permanente: ToolCoder._repair_json_arguments
+     sanea antes de guardar. Si ves "Extra data" en JSONDecodeError dentro de
+     litellm: es este patrón.
+
+  2. TECHO L1 EN SPECS DENSAS: con tarea de ~8 requisitos (parser con 4 claves,
+     recursión, filtros, 4 tests), L1 gratis quemó 10 turnos de tools en
+     explorar y escribió un parser incorrecto sin tests. Para specs densas:
+     usar --level L2, o partir la tarea en sub-specs de ≤3 requisitos.
+
+recommendation: |
+  Delegaciones con >4 requisitos verificables → L2 directo o descomponer.
+  L1 rinde bien en tareas de 1-3 requisitos con test claro.

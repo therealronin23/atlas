@@ -1,0 +1,9 @@
+{
+  "memory_writes": [
+    {
+      "type": "decision_memory",
+      "label": "Martínez filing demo completed with missing evidence",
+      "requires_review": true
+    }
+  ]
+}

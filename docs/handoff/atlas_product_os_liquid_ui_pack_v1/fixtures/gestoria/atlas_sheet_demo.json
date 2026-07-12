@@ -1,0 +1,22 @@
+{
+  "sheet_id": "sheet_martinez_filing",
+  "columns": [
+    "Campo",
+    "Valor",
+    "Fuente",
+    "Evidencia",
+    "Confianza",
+    "Validación",
+    "Riesgo",
+    "Revisado",
+    "Acción"
+  ],
+  "rows": [
+    {
+      "Campo": "Total facturas Q1",
+      "Valor": 4820.35,
+      "Validación": "needs_review",
+      "Riesgo": "medium"
+    }
+  ]
+}

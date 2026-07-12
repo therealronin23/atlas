@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VisualState",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "visual_state_id": {
+      "type": "string"
+    },
+    "cognitive_state": {
+      "type": "string"
+    },
+    "dominant_risk": {
+      "type": "string"
+    },
+    "motion_mode": {
+      "type": "string"
+    },
+    "visible_layers": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

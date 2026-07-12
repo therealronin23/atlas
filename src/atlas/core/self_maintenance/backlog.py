@@ -4,13 +4,24 @@ Parses docs/backlog.yaml and exposes BacklogItem dataclass + helpers.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-VALID_STATUSES = {"pending", "doing", "done"}
+# deferred (2026-07-10): diferido por diseño hasta tener consumidor — vive en
+# el YAML como documentación, pero pending()/next_runnable no lo sirven (la
+# noche del 07-10 el lazo quemó intentos de 30 turnos + suite de 900s en un
+# item cuyo propio why decía "sin consumidor todavía → diferido").
+VALID_STATUSES = {"pending", "doing", "done", "deferred"}
+
+# Backoff de cola: tras N fallos consecutivos, un item deja de acaparar el
+# tick y se prueba el siguiente. Sin esto, `items[0]` fallando en bucle
+# bloqueaba el lazo entero indefinidamente (absorb_harness_patterns consumió
+# TODOS los ticks de la noche del 2026-07-08/09 mientras el resto esperaba).
+MAX_CONSECUTIVE_FAILURES = 3
 
 
 @dataclass(frozen=True)
@@ -63,6 +74,66 @@ def pending(items: list[BacklogItem]) -> list[BacklogItem]:
         (item for item in items if item.status == "pending"),
         key=lambda i: i.priority,
     )
+
+
+def load_queue_state(path: Path) -> dict[str, int]:
+    """Contador de fallos consecutivos por item ({item_id: n}). Fichero
+    ausente o corrupto = estado vacío (fail-open: nunca bloquea el tick)."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return {str(k): int(v) for k, v in raw.items()}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def save_queue_state(path: Path, state: dict[str, int]) -> None:
+    """Persiste el contador. Mejor esfuerzo: un fallo de disco no rompe el tick."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def next_runnable(
+    items: list[BacklogItem],
+    state: dict[str, int],
+    *,
+    open_proposal_item_ids: frozenset[str] = frozenset(),
+) -> BacklogItem | None:
+    """El primer pendiente (por prioridad) con menos de MAX_CONSECUTIVE_FAILURES
+    fallos seguidos Y sin ya tener una propuesta abierta sin revisar
+    (proposed/validated/approved en ColdUpdateManager) — si ya hay una
+    esperando a un humano, gastar otro ciclo de ToolCoder solo genera un
+    duplicado casi idéntico. Incidente real 2026-07-11: `run_item()` marca
+    éxito (resetea el contador de fallos) en cuanto CREA una propuesta, no
+    cuando el problema queda resuelto; sin esta exclusión, el mismo item
+    volvía a tocarle turno al ciclo siguiente indefinidamente — 14
+    propuestas de `project-graph-vault-wiring` en el ledger, ninguna
+    revisada. Si TODOS los pendientes (tras excluir los bloqueados por
+    propuesta abierta) están agotados por fallos, la cola degrada a
+    round-robin lento como antes. Si lo único que bloquea es una propuesta
+    abierta, no hay nada seguro que hacer este tick: devuelve None."""
+    queue = pending(items)
+    if not queue:
+        return None
+    candidates = [i for i in queue if i.id not in open_proposal_item_ids]
+    if not candidates:
+        return None
+    runnable = [i for i in candidates if state.get(i.id, 0) < MAX_CONSECUTIVE_FAILURES]
+    if runnable:
+        return runnable[0]
+    return min(candidates, key=lambda i: (state.get(i.id, 0), i.priority))
+
+
+def record_outcome(state: dict[str, int], item_id: str, *, success: bool) -> dict[str, int]:
+    """Actualiza el contador: éxito (o propuesta generada) lo resetea; fallo suma."""
+    new = dict(state)
+    if success:
+        new.pop(item_id, None)
+    else:
+        new[item_id] = new.get(item_id, 0) + 1
+    return new
 
 
 def backlog_summary(items: list[BacklogItem]) -> dict[str, Any]:

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CognitivePhysics",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "mass": {
+      "type": "number"
+    },
+    "energy": {
+      "type": "number"
+    },
+    "attention": {
+      "type": "number"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number"
+    }
+  },
+  "required": []
+}

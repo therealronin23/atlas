@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CRMCore",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "crm_id": {
+      "type": "string"
+    },
+    "contacts": {
+      "type": "array"
+    },
+    "companies": {
+      "type": "array"
+    },
+    "leads": {
+      "type": "array"
+    },
+    "deals": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

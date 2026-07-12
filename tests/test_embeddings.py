@@ -149,3 +149,37 @@ class TestLiteLLMEmbedderEdgeCases:
     def test_empty_batch(self) -> None:
         emb = LiteLLMEmbedder(PRESET_OPENAI_SMALL, mode="stub")
         assert emb.embed_batch([]) == []
+
+
+class TestFastEmbedModelCache:
+    """El modelo ONNX se carga UNA vez por proceso (2026-07-10): cada carga
+    cuesta ~500MB de RSS que el allocator no devuelve al SO ni liberando la
+    instancia — sin cache, la suite acumulaba 7.5GB y earlyoom la mataba."""
+
+    def test_two_instances_share_one_model_load(self, monkeypatch) -> None:
+        import sys
+        import types
+
+        loads: list[str] = []
+
+        class _FakeModel:
+            def __init__(self, model_name: str) -> None:
+                loads.append(model_name)
+
+            def embed(self, texts):
+                return [[0.0] * 384 for _ in texts]
+
+        fake = types.ModuleType("fastembed")
+        fake.TextEmbedding = lambda model_name: _FakeModel(model_name)  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "fastembed", fake)
+
+        from atlas.memory.embeddings import FastEmbedEmbedder
+
+        monkeypatch.setattr(FastEmbedEmbedder, "_MODEL_CACHE", {})
+        a = FastEmbedEmbedder(model_name="m-test", dim=384)
+        b = FastEmbedEmbedder(model_name="m-test", dim=384)
+        assert loads == ["m-test"]  # una sola carga
+        assert a._model is b._model  # instancia compartida
+        # Modelo distinto = carga propia (no se mezclan vectores de modelos).
+        FastEmbedEmbedder(model_name="otro", dim=384)
+        assert loads == ["m-test", "otro"]

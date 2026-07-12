@@ -469,15 +469,16 @@ class TestNvidiaNimProvider:
         assert len(nvidia.account_pool) >= 2
 
     def test_nvidia_extra_frontier_models_present(self) -> None:
-        """Kimi y Mistral-Large-3 deben estar como L2 NVIDIA NIM con el mismo pool.
+        """GLM y Mistral-Large-3 deben estar como L2 NVIDIA NIM con el mismo pool.
 
-        Prove-it 2026-06-22 contra integrate.api.nvidia.com: responden
-        moonshotai/kimi-k2.6 y mistralai/mistral-large-3-675b-instruct-2512
-        (mistral-large-2-instruct da 404 en este tier). nvidia_glm retirado
-        2026-06-28: prove-it en vivo confirma HTTP 410 Gone.
+        Historia del asiento CN: nvidia_glm (glm-5.1) retirado 2026-06-28
+        (410 Gone); nvidia_kimi (kimi-k2.6) retirado 2026-07-10 — 404
+        "Function not found for account" en las 2 cuentas del pool dos días
+        seguidos de smoke, aunque siga listado en /v1/models. Re-mapeado a
+        z-ai/glm-5.2 (prove-it en vivo 2026-07-10, responde chat/completions).
         """
         expected = {
-            "nvidia_kimi": "nvidia_nim/moonshotai/kimi-k2.6",
+            "nvidia_glm": "nvidia_nim/z-ai/glm-5.2",
             "nvidia_mistral_large": (
                 "nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512"
             ),
@@ -778,3 +779,106 @@ class TestHermes4Provider:
     def test_hermes4_405b_not_in_catalog_pending_funding_decision(self) -> None:
         prov = next((p for p in DEFAULT_PROVIDERS if p.name == "openrouter_hermes4_405b"), None)
         assert prov is None
+
+
+class TestToolsCapability:
+    """2026-07-08 — incidente real: el fallback aterrizaba requests CON tools
+    en modelos sin tool-calling (groq_compound) y el coder moría con
+    BadRequestError en vez de saltar al siguiente proveedor."""
+
+    def test_request_with_tools_skips_unsupported_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        providers[0].supports_tools = False  # groq_test no soporta tools
+        calls: list[str] = []
+
+        def fake_completion(**kwargs: Any) -> Any:
+            calls.append(kwargs["model"])
+            return _ok_completion(text="ok")
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=providers, mode="live")
+        tools = [{"type": "function", "function": {"name": "f", "parameters": {}}}]
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1, tools=tools))
+
+        assert resp.success is True
+        assert resp.provider == "openrouter_test"
+        assert not any("groq" in m for m in calls)  # jamás se intentó
+
+    def test_request_without_tools_still_uses_that_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        providers[0].supports_tools = False
+        monkeypatch.setattr(litellm, "completion", lambda **kw: _ok_completion(text="ok"))
+        hub = InferenceHub(providers=providers, mode="live")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+        assert resp.success is True
+        assert resp.provider == "groq_test"  # sin tools, el flag no excluye
+
+    def test_tools_rejection_marks_provider_hot(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def conditional(**kwargs: Any) -> Any:
+            if "groq" in kwargs["model"]:
+                raise litellm.BadRequestError(
+                    "`tool calling` is not supported with this model",
+                    llm_provider="groq", model="x",
+                )
+            return _ok_completion(text="from openrouter")
+
+        monkeypatch.setattr(litellm, "completion", conditional)
+        hub = InferenceHub(providers=providers, mode="live")
+        tools = [{"type": "function", "function": {"name": "f", "parameters": {}}}]
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1, tools=tools))
+
+        assert resp.success is True
+        assert providers[0].supports_tools is False  # aprendido en caliente
+
+
+class TestRateLimitWait:
+    """2026-07-08 — absorción de robustez: con wait_for_ratelimit=True el hub
+    espera al cooldown más próximo y re-camina la cadena en vez de devolver
+    all_failed (incidente real: 5 delegaciones de ToolCoder perdidas cuando
+    esperar ~60s las habría salvado)."""
+
+    def _rate_limited_then_ok(self) -> Any:
+        state = {"calls": 0}
+
+        def fake(**kwargs: Any) -> Any:
+            state["calls"] += 1
+            if state["calls"] <= 2:  # primera caminata: ambos proveedores caen
+                raise litellm.RateLimitError("rate", llm_provider="x", model="y")
+            return _ok_completion(text="tras esperar")
+
+        return fake
+
+    def test_waits_for_cooldown_and_retries_walk(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.setattr(litellm, "completion", self._rate_limited_then_ok())
+        sleeps: list[float] = []
+        hub = InferenceHub(providers=providers, mode="live", sleep_fn=sleeps.append)
+
+        resp = hub.infer(InferenceRequest(
+            prompt="x", level=InferenceLevel.L1, wait_for_ratelimit=True,
+        ))
+
+        assert resp.success is True
+        assert resp.text == "tras esperar"
+        assert sleeps, "debió dormir esperando el cooldown"
+        assert max(sleeps) <= 121.0  # cap de espera
+
+    def test_without_flag_fails_fast(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.setattr(litellm, "completion", self._rate_limited_then_ok())
+        sleeps: list[float] = []
+        hub = InferenceHub(providers=providers, mode="live", sleep_fn=sleeps.append)
+
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.success is False  # all_failed, sin re-caminata

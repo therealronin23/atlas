@@ -1,0 +1,10 @@
+{
+  "pack_id": "gestoria_pack",
+  "sector_id": "gestoria_fiscal_contable",
+  "display_name": "Pack Gestoría fiscal/contable",
+  "connectors": ["gmail", "local_csv_folder", "odoo_erp", "generic_erp"],
+  "setup_order": ["gmail", "local_csv_folder", "generic_erp", "odoo_erp"],
+  "optional_connectors": ["legacy_desktop_app"],
+  "rationale": "Correo de clientes, documentación local y ERP/contabilidad cubren la mayoría de gestorías; legacy_desktop_app cubre software de escritorio sin API.",
+  "demo": true
+}

@@ -1,0 +1,49 @@
+{
+  "connector_id": "whatsapp_business_platform",
+  "human_name": "WhatsApp Business Platform",
+  "category": "communication",
+  "recommended_route": "native_api",
+  "fallback_routes": ["openapi_rest", "webhooks", "human_manual"],
+  "difficulty": "technical",
+  "default_mode": "read_draft",
+  "safe_defaults": {
+    "send": false,
+    "delete": false
+  },
+  "capabilities": ["message.read"],
+  "gated_capabilities": {
+    "message.send": "gate_outbound"
+  },
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "external_page",
+      "description": "Registrar la app en Meta for Developers y activar el número de WhatsApp Business"
+    },
+    {
+      "step_id": "2",
+      "kind": "manual_secret",
+      "description": "Genera el token permanente y expórtalo como WHATSAPP_BUSINESS_TOKEN"
+    },
+    {
+      "step_id": "3",
+      "kind": "automatic",
+      "description": "Atlas registra la referencia env:WHATSAPP_BUSINESS_TOKEN sin leer su valor"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Leer mensajes entrantes del número de WhatsApp Business configurado"
+    ],
+    "will_not": [
+      "Enviar mensajes salientes sin tu aprobación explícita (gate_outbound)"
+    ]
+  },
+  "credential": {
+    "auth_mode": "api_key",
+    "storage": "credential_reference_only"
+  },
+  "legal_notes": "Requiere cuenta oficial de WhatsApp Business API y cumplimiento de las políticas de mensajería de Meta.",
+  "demo": true
+}

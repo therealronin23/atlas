@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/policy_rule.schema.json",
+  "title": "AtlasPolicyRule",
+  "description": "Regla del PolicyEngine (determinista, fail-closed). Las reglas hard=true están además replicadas en código: borrar el fixture NO las relaja.",
+  "type": "object",
+  "required": [
+    "policy_id",
+    "description",
+    "applies_to",
+    "effect",
+    "enabled"
+  ],
+  "properties": {
+    "policy_id": {
+      "type": "string",
+      "pattern": "^pol_[a-z0-9_]+$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "applies_to": {
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "capacidades exactas o prefijo con * final (erp.accounting.*)"
+        },
+        "connectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data_classes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "personal",
+              "sensitive",
+              "credentials"
+            ]
+          }
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "effect": {
+      "type": "string",
+      "enum": [
+        "deny",
+        "require_gate",
+        "allow_readonly",
+        "allow"
+      ]
+    },
+    "unless": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "human_approved",
+          "gate_approved",
+          "local_only",
+          "sandboxed"
+        ]
+      },
+      "description": "condiciones que levantan el efecto (vacío = incondicional)"
+    },
+    "hard": {
+      "type": "boolean",
+      "description": "true = invariante replicado en código, no relajable por fixture"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

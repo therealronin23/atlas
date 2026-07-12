@@ -1,0 +1,23 @@
+id: delegated_to_manual_2026_07_09
+title: "Cuándo escribir a mano vs delegar a Atlas"
+corroborated: true
+date_created: "2026-07-09"
+verified_by: ["operator_session"]
+
+lesson: |
+  Obsidian parser (misión 4) fue delegado 2 veces: L1 + L2, ambos hit techo
+  de 10 turnos sin converger. Causa real: spec con 4+ requisitos en worktree
+  aislado (no tiene acceso a estructura de paquete real).
+
+  CRITERIO PRÁCTICO para delegar vs escribir a mano:
+  - Delega si: spec ≤3 requisitos, estructura clara, repo-context disponible
+  - Escribe si: >4 requisitos, spec densa, worktree aislado, importaciones raras
+
+  Costo: 2×10 turnos de modelos (abortoado). Beneficio: lección registrada
+  + JSON repair fix identificado + L1-techo medido. Inversión válida porque
+  identificó límites del arnés con evidencia.
+
+recommendation: |
+  Próximas delegaciones densas → especificar estructura de paquete en la
+  tarea. O partir en sub-specs. O escribir a mano. El patrón de "10 turnos
+  sin converger" es terminal; mejor detectarlo temprano.

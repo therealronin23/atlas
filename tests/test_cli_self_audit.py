@@ -37,7 +37,11 @@ class _FakeOrchestrator:
         self.runner = _FakeSelfAudit()
         # Workspace temporal: el single-writer guard (ROADMAP §7) toma flock
         # sobre <workspace>/memory/audit/.writer.lock antes de correr.
-        self._workspace = tempfile.mkdtemp(prefix="atlas-cli-test-")
+        # TemporaryDirectory con finalizer del GC: mkdtemp a pelo dejó 120
+        # directorios atlas-cli-test-* huérfanos en /tmp (tmpfs del incidente
+        # 2026-07-09) — cada corrida de la suite sumaba 3 sin limpiar jamás.
+        self._workspace_tmp = tempfile.TemporaryDirectory(prefix="atlas-cli-test-")
+        self._workspace = self._workspace_tmp.name
 
     def self_audit(self):
         return self.runner

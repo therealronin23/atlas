@@ -1,0 +1,8 @@
+{
+  "connector_id": "generic_crm",
+  "human_name": "Generic CRM",
+  "category": "crm",
+  "recommended_route": "detect",
+  "difficulty": "variable",
+  "default_mode": "read_only"
+}

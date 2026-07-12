@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ForkDecision",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "reference_id": {
+      "type": "string"
+    },
+    "license_compatible": {
+      "type": "boolean"
+    },
+    "critical_need": {
+      "type": "boolean"
+    },
+    "adr": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

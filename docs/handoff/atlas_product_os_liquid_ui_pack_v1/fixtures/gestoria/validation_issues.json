@@ -1,0 +1,9 @@
+{
+  "issues": [
+    {
+      "issue_id": "issue_missing_dn_invoice",
+      "kind": "missing_evidence",
+      "blocks_submission": true
+    }
+  ]
+}

@@ -29,7 +29,7 @@ vs "hecho objetivo" — un juicio semántico/pragmático, no léxico.
 **Ya se midió un problema de forma idéntica en este repo y falló.** El muro 1c atacó "intención vs
 tema" con un detector contrastivo sobre embeddings: separación ×2-3 pero **~33% de falsos positivos
 en la frontera** → veredicto "no es detector usable"
-(`docs/reference/reports/immune_intent_vs_topic_contrastive.md`). Personal-vs-factual es la misma
+(`docs/audits/reports/immune_intent_vs_topic_contrastive.md`). Personal-vs-factual es la misma
 naturaleza (subjetivo vs objetivo), no capturable de forma fiable por embeddings + umbral.
 
 **Aquí el fallo es PEOR que no clasificar.** ~33% de error fronterizo ⇒ ~1 de cada 3 memorias dudosas

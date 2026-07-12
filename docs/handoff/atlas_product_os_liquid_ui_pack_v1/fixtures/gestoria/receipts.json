@@ -1,0 +1,10 @@
+{
+  "receipts": [
+    {
+      "receipt_id": "rec_001",
+      "amount": 1210.0,
+      "matched_invoice": "inv_001",
+      "demo": true
+    }
+  ]
+}

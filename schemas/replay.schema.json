@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/replay.schema.json",
+  "title": "AtlasReplay",
+  "description": "Sesion de replay del event store OS (reproducir que paso y por que).",
+  "type": "object",
+  "required": [
+    "replay_id",
+    "source_ref",
+    "started_at",
+    "status",
+    "event_count"
+  ],
+  "properties": {
+    "replay_id": {
+      "type": "string",
+      "pattern": "^rpl_[A-Za-z0-9_-]+$"
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "fixture o segmento del store"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ]
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "multiplicador; null = instantaneo"
+    }
+  },
+  "additionalProperties": false
+}

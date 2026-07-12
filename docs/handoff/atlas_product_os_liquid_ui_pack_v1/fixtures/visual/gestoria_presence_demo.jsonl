@@ -1,0 +1,2 @@
+{"event": "data.assembled", "reaction": "flows_into_sheet"}
+{"event": "missing_evidence.detected", "reaction": "amber_gap"}

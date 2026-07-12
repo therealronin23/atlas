@@ -1,0 +1,10 @@
+{
+  "description": "Escritura CRM (contactos/oportunidades) exige gate — no se concede por defecto en ninguna receta",
+  "request": {
+    "capability": "crm.contacts.write",
+    "connector_id": "generic_crm"
+  },
+  "expected_decision": "require_gate",
+  "expected_hard": false,
+  "expected_gate_id": "gate_business_write"
+}

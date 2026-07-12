@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OAuthProfile",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "provider": {
+      "type": "string"
+    },
+    "scopes": {
+      "type": "array"
+    },
+    "redirect_uri": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

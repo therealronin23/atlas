@@ -1,0 +1,2 @@
+{"event": "approval.required", "visual_state": "waiting_approval"}
+{"event": "lockdown.enabled", "visual_state": "lockdown"}

@@ -90,6 +90,11 @@ class PreflightGate:
                 "graveyard_overdue": module.graveyard_overdue(),
                 "empty_dirs": module.empty_dirs(),
                 "stale_refs": module.stale_refs(),
+                # 2026-07-08 (orden real de docs): desviaciones árbol↔INDEX.yaml
+                # y del grafo de enlaces entran en el preflight del lazo — el
+                # orden se defiende solo.
+                "docs_index_drift": module.docs_index_drift(),
+                "docs_graph_drift": module.docs_graph_drift(),
             }
         except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
             return {"error": [f"sanitation_audit no pudo ejecutarse: {exc}"]}

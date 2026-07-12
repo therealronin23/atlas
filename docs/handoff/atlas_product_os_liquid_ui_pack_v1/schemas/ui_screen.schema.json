@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UIScreen",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "screen_id": {
+      "type": "string"
+    },
+    "regions": {
+      "type": "array"
+    },
+    "required_visible": {
+      "type": "array"
+    }
+  },
+  "required": []
+}

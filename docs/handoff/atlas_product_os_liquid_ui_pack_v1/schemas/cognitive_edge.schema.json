@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CognitiveEdge",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "edge_id": {
+      "type": "string"
+    },
+    "from": {
+      "type": "string"
+    },
+    "to": {
+      "type": "string"
+    },
+    "relation": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,14 @@
+{
+  "connector_id": "claude_anthropic",
+  "human_name": "Claude / Anthropic",
+  "category": "ai",
+  "recommended_route": "guided_api_key",
+  "difficulty": "medium",
+  "default_mode": "restricted",
+  "safe_defaults": {
+    "cloud_sensitive_data": false
+  },
+  "gates": {
+    "cloud_sensitive_data": "cloud_data_gate"
+  }
+}

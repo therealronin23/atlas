@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Connector",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "connector_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "connection_methods": {
+      "type": "array"
+    },
+    "capabilities": {
+      "type": "array"
+    },
+    "default_mode": {
+      "type": "string"
+    },
+    "gates": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

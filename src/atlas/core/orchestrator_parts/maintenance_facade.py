@@ -61,6 +61,34 @@ def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
+def _render_research_report(
+    today: str, seeds: list[str], queries: list[str], findings: list[Any]
+) -> str:
+    """Informe crudo para docs/inbox/ — flujo sancionado: docs_triage.py lo
+    clasifica después (nunca 'vigente' hasta revisión humana)."""
+    lines = [
+        f"# Investigación autónoma — {today}",
+        "",
+        "status: propuesto",
+        "",
+        f"Semillas ({len(seeds)}): " + ", ".join(seeds),
+        f"Consultas expandidas ({len(queries)}): " + ", ".join(queries),
+        "",
+        f"## Hallazgos ({len(findings)})",
+        "",
+    ]
+    if not findings:
+        lines.append("Sin hallazgos esta pasada — todas las fuentes fallaron o no hubo resultados.")
+    for finding in findings:
+        lines.append(f"### [{finding.source}] {finding.title}")
+        lines.append(f"- tema: {finding.topic}")
+        lines.append(f"- url: {finding.url}")
+        if finding.excerpt:
+            lines.append(f"- extracto: {finding.excerpt}")
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 class MaintenanceFacade:
     """Factory perezosa de todas las piezas de auto-mantenimiento (ADR-039).
 
@@ -227,23 +255,42 @@ class MaintenanceFacade:
                         orch.advance_cold_update(proposal.id)
 
             def _self_build_cycle() -> None:
-                # Autoconstrucción: muele UN item pending del backlog por ciclo.
-                # Opt-in explícito (gasta LLM): el operador activa ATLAS_SELF_BUILD=1.
-                # Un item por tick acota el gasto; el resultado queda auditado en
-                # Merkle por el runner y las propuestas van a ColdUpdate (HITL intacto).
-                import os
-
-                if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
-                    return
-                from atlas.core.self_maintenance.backlog import load_backlog, pending
-
+                # Autoconstrucción: ver maintenance_self_build_tick (extraído a
+                # método para que el preflight y el gating sean testeables).
                 try:
-                    items = pending(load_backlog(self._project_root() / "docs" / "backlog.yaml"))
-                    if not items:
-                        return
-                    runner = self._orch.maintenance_self_build_runner()
-                    runner.run_item(items[0])
+                    self.maintenance_self_build_tick()
                 except Exception:  # noqa: BLE001 — un item malo no tumba el tick del scheduler
+                    pass
+
+            def _research_cycle() -> None:
+                # Investigación abierta: ver maintenance_research_tick. Aislado
+                # como los demás ciclos — un fallo de red/parseo no tumba el
+                # scheduler ni bloquea self-build/dep/batch.
+                try:
+                    self.maintenance_research_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
+            def _provider_smoke_cycle() -> None:
+                # Smoke de cadena: ver maintenance_provider_smoke_tick. Aislado
+                # igual que los demás ciclos.
+                try:
+                    self.maintenance_provider_smoke_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
+            def _knowledge_ingest_cycle() -> None:
+                # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
+                try:
+                    self.maintenance_knowledge_ingest_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+                    pass
+
+            def _project_graph_cycle() -> None:
+                # Grafo vivo automático: ver maintenance_project_graph_tick.
+                try:
+                    self.maintenance_project_graph_tick()
+                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
                     pass
 
             def _batch_cycle() -> None:
@@ -292,10 +339,522 @@ class MaintenanceFacade:
                 discover=self._orch.maintenance_registry_scout().discover,
                 analyze=analyst.analyze,
                 notify=_notify,
-                extra_cycles=(_dep_cycle, _batch_cycle, _self_build_cycle),
+                extra_cycles=(
+                    _dep_cycle, _batch_cycle, _self_build_cycle,
+                    _research_cycle, _provider_smoke_cycle,
+                    _knowledge_ingest_cycle, _project_graph_cycle,
+                ),
                 **scheduler_kwargs,
             )
         return self._maintenance_scheduler
+
+    def maintenance_self_build_tick(self) -> dict[str, Any]:
+        """Un tick de autoconstrucción: preflight barato → UN item pending del backlog.
+
+        Roadmap "juicio real" paso 1, cableado en producción (2026-07-08): antes
+        de gastar LLM en construir, ``PreflightGate`` descarta gratis lo
+        obviamente malo (CVEs de dependencias + radar de saneamiento). Si el
+        preflight no pasa, el tick se salta ESTE ciclo con evidencia en Merkle
+        (nunca silencioso) — no se construye sobre una base vulnerable; el
+        ``_dep_cycle`` propone el bump que lo desbloquea.
+
+        Opt-in explícito (gasta LLM): requiere ``ATLAS_SELF_BUILD=1``. Un item
+        por tick acota el gasto; el resultado queda auditado en Merkle por el
+        runner y las propuestas van a ColdUpdate (HITL intacto)."""
+        # Guardia anti-recursión (incidente 2026-07-09, EN PRODUCCIÓN): la
+        # suite que el propio lazo corre en su worktree hereda el env del
+        # daemon (ATLAS_SELF_BUILD=1 vía systemd EnvironmentFile) — un test
+        # que arranque el MaintenanceScheduler real disparaba OTRO run_item
+        # real → otro worktree → otra suite → cascada hasta agotar la máquina.
+        # ToolCoder/AtlasCoder/ValidationRunner/evo marcan sus suites con
+        # ATLAS_NESTED_TEST_RUN=1; aquí el tick se niega, gaste lo que gaste
+        # el resto del env en pedirlo.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
+            return {"status": "disabled"}
+
+        from atlas.core.self_maintenance.backlog import (
+            load_backlog,
+            load_queue_state,
+            next_runnable,
+            record_outcome,
+            save_queue_state,
+        )
+        from atlas.core.self_maintenance.preflight_gate import PreflightGate
+
+        preflight = PreflightGate().check()
+        if not preflight.passed:
+            self._orch._merkle.log(
+                action="self_build.preflight_blocked",
+                agent="maintenance_facade",
+                result="skipped",
+                risk_level="moderate",
+                payload={
+                    "cve_found": preflight.cve_found,
+                    "cve_findings": preflight.cve_findings[:20],
+                },
+            )
+            return {"status": "preflight_blocked", "preflight": preflight.to_dict()}
+
+        items = load_backlog(self._project_root() / "docs" / "backlog.yaml")
+        # Selección con backoff (2026-07-09): un item que falla N ticks seguidos
+        # cede el turno al siguiente pendiente en vez de acaparar el lazo — la
+        # noche del 07-08 un solo item quemó todos los ticks mientras el resto
+        # de la cola esperaba. El contador persiste entre reinicios del daemon.
+        state_path = self._project_root() / "workspace" / "self_build" / "queue_state.json"
+        state = load_queue_state(state_path)
+        # No reproponer un item que ya tiene una propuesta esperando revisión
+        # humana (incidente 2026-07-11, ver docstring de next_runnable).
+        open_statuses = {"proposed", "validated", "approved"}
+        open_proposal_item_ids = frozenset(
+            item_id
+            for p in self._orch.cold_update().list_proposals()
+            if p.status in open_statuses
+            and (item_id := p.evidence.get("backlog_item_id"))
+        )
+        item = next_runnable(items, state, open_proposal_item_ids=open_proposal_item_ids)
+        if item is None:
+            return {"status": "no_pending"}
+        runner = self._orch.maintenance_self_build_runner()
+        result: dict[str, Any] = runner.run_item(item)
+        save_queue_state(
+            state_path,
+            record_outcome(state, item.id, success=result.get("status") == "proposed"),
+        )
+        # 2026-07-09: tres ticks fallidos en una noche dejaron CERO rastro —
+        # solo el preflight se auditaba. El resultado de cada run_item queda
+        # en Merkle siempre, converja o no; sin esto el lazo es ciego a sus
+        # propios fracasos y nadie puede reconstruir qué pasó.
+        self._orch._merkle.log(
+            action="self_build.run_item",
+            agent="maintenance_facade",
+            result=str(result.get("status", "unknown")),
+            risk_level="moderate",
+            payload={
+                "item_id": result.get("item_id"),
+                "proposal_id": result.get("proposal_id"),
+                "detail": str(result.get("detail") or "")[:800],
+                "files_changed": result.get("files_changed", []),
+            },
+        )
+        return {"status": "ran", "result": result}
+
+    def maintenance_research_tick(self) -> dict[str, Any]:
+        """Un tick de investigación: intereses recientes → consultas variadas →
+        descubrimiento abierto → informe en docs/inbox/ (Fase 4, 2026-07-09).
+
+        Causa raíz del hueco (barrido previo): ``PanoramaScout``,
+        ``TopicExpander`` y ``SotaSnapshotRecorder`` estaban completos y
+        probados, pero sin dueño en el scheduler — "ayer se suponía que Atlas
+        iba a investigar y no lo hizo" (corrección directa del usuario).
+
+        Descubrimiento ABIERTO, no lista fija (matiz de la visión: serendipia
+        sistematizada, no vigilancia de una lista conocida de competidores):
+        las semillas son los títulos de las lecciones más recientes del
+        ``LessonStore`` — lo que Atlas acaba de aprender/fallar decide qué
+        investiga después. Sin lecciones aún, cae a los 3 intereses de fondo
+        que ``topic_expander.py`` documenta como ejemplo (memoria de agentes,
+        orquestación local, auditoría verificable) — intereses propios de
+        Atlas, no una lista de fuentes externas fijas.
+
+        Opt-in explícito (gasta LLM + red saliente): requiere
+        ``ATLAS_RESEARCH=1``. Cadencia propia de 24h vía fichero de estado
+        (independiente del poll del scheduler) — no tiene sentido pagar el
+        ciclo completo de descubrimiento más de una vez al día."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_RESEARCH", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "research" / "state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.inference_hub import InferenceHub
+        from atlas.core.lesson_store import LessonStore
+        from atlas.core.self_maintenance.panorama_scout import PanoramaScout
+        from atlas.core.self_maintenance.topic_expander import TopicExpander
+
+        orch = self._orch
+        hub = orch._inference_hub or InferenceHub(mode="auto")
+
+        # Semillas: títulos de las lecciones más recientes (lo aprendido/
+        # fallado decide qué se investiga) — fallback a intereses de fondo
+        # de Atlas si el store está vacío (arranque en frío, sin lecciones).
+        store = LessonStore(self._project_root() / "workspace" / "lessons")
+        recent = sorted(store.all(), key=lambda item: item.created_at, reverse=True)[:3]
+        seeds = [lesson.title for lesson in recent] or [
+            "memoria de agentes de IA",
+            "orquestación local de modelos",
+            "auditoría verificable de sistemas de IA",
+        ]
+
+        expander = TopicExpander(hub=hub, merkle=orch._merkle)
+        queries = expander.expand(seeds, queries_per_seed=4)
+
+        scout = PanoramaScout(
+            merkle=orch._merkle,
+            bridge=orch._ssrf_bridge,
+            fetch=_egress_fetch_text,
+            topics=queries,
+            max_results_per_topic=4,
+        )
+        findings = scout.discover()
+
+        report_path = self._project_root() / "docs" / "inbox" / f"research_{today}.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(_render_research_report(today, seeds, queries, findings), encoding="utf-8")
+
+        state["last_run_date"] = today
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.research_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={
+                "seeds": seeds,
+                "queries_count": len(queries),
+                "findings_count": len(findings),
+                "report_path": str(report_path),
+            },
+        )
+        return {
+            "status": "ran",
+            "seeds": seeds,
+            "queries_count": len(queries),
+            "findings_count": len(findings),
+            "report_path": str(report_path),
+        }
+
+    def maintenance_provider_smoke_tick(self) -> dict[str, Any]:
+        """Smoke diario de la cadena de proveedores (Fase 5, 2026-07-09).
+
+        Causa raíz: modelos decomisionados/renombrados upstream se
+        descubrían por accidente, quemando una llamada real fallida en
+        cada pasada del fallback hasta retirarlos a mano — "falta smoke
+        diario de cadena" (memoria provider-chain-rot). Cada proveedor de
+        ``DEFAULT_PROVIDERS`` recibe UNA llamada mínima en aislamiento
+        (``InferenceHub.probe_provider``, bypasea la cadena de fallback);
+        el resultado (ok/failed/skipped) se persiste + audita en Merkle.
+        Barato por diseño (max_tokens=8 por proveedor): no gasta el
+        presupuesto de un LLM caro.
+
+        Opt-in explícito: requiere ``ATLAS_PROVIDER_SMOKE=1``. Cadencia
+        propia de 24h (fichero de estado, independiente del poll del
+        scheduler)."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_PROVIDER_SMOKE", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "self_build" / "provider_smoke_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.inference_hub import InferenceHub
+        from atlas.core.self_maintenance.provider_smoke import ProviderChainSmoke
+
+        orch = self._orch
+        hub = orch._inference_hub or InferenceHub(mode="auto")
+        smoke = ProviderChainSmoke(hub=hub)
+        results = smoke.run()
+
+        dead = [r.provider_name for r in results if r.outcome == "failed"]
+        ok = [r.provider_name for r in results if r.outcome == "ok"]
+        skipped = [r.provider_name for r in results if r.outcome == "skipped"]
+
+        state["last_run_date"] = today
+        state["last_results"] = [r.to_dict() for r in results]
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.provider_smoke_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={"ok": ok, "dead": dead, "skipped": skipped},
+        )
+        return {"status": "ran", "ok": ok, "dead": dead, "skipped": skipped}
+
+    def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
+        """Cierre del ciclo investigación→acción (2026-07-09): los informes que
+        ``maintenance_research_tick`` deja en docs/inbox/ morían allí.
+
+        Tres pasos, todos deterministas (CERO LLM):
+        1. Triage acotado: ``scripts/docs_triage.py`` clasifica los
+           ``research_*.md`` del inbox por regla determinista → docs/knowledge
+           con alta 'propuesto' en INDEX.yaml (flujo sancionado; 'vigente'
+           sigue siendo del revisor humano).
+        2. Ingesta al sustrato: la carga estándar del repo (docs vigentes +
+           lecciones) y los informes triados entran al ``SqliteMemoryIndex``
+           del tronco vía ``knowledge_ingest`` — antes era un one-shot manual
+           sin dueño runtime. Solo ficheros CAMBIADOS (sha256 en el estado):
+           la pasada diaria no re-embebe el corpus entero.
+        3. Evidencia en Merkle.
+
+        La BD es la del tronco MCP (~/atlas-mcp/memory.db) salvo override
+        ``ATLAS_MEMORY_DB`` — mismo sustrato que sirve ``recall`` a cualquier
+        agente conectado. Opt-in: ``ATLAS_KNOWLEDGE_INGEST=1``. Cadencia
+        propia de 24h (fichero de estado, independiente del poll)."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_KNOWLEDGE_INGEST", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import hashlib
+        import json
+        from datetime import datetime, timezone
+
+        root = self._project_root()
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = root / "workspace" / "knowledge" / "ingest_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        # 1. Triage determinista acotado a research_*.md (sin LLM: la regla
+        # por nombre basta y el tick no debe gastar inferencia en clasificar).
+        triaged = 0
+        triage_script = root / "scripts" / "docs_triage.py"
+        if triage_script.is_file():
+            import importlib.util
+
+            spec = importlib.util.spec_from_file_location("docs_triage", triage_script)
+            assert spec and spec.loader
+            triage = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(triage)
+            plan = [
+                step for step in triage.build_plan(root / "docs", llm_classify=None)
+                if step["file"].startswith("research_") and step["action"] == "move"
+            ]
+            if plan:
+                triaged = triage.apply_plan(plan, root / "docs")
+
+        # 2. Ingesta incremental al sustrato del tronco.
+        from atlas.mcp.memory_server import build_gated_index
+        from atlas.mcp.memory_trunk import MemoryTrunk
+        from atlas.memory.knowledge_ingest import (
+            ingest_paths, repo_knowledge_paths, research_report_paths,
+        )
+
+        db_env = os.environ.get("ATLAS_MEMORY_DB", "").strip()
+        db_path = Path(db_env).expanduser() if db_env else Path.home() / "atlas-mcp" / "memory.db"
+        ingested_sha: dict[str, str] = state.setdefault("ingested_sha", {})
+
+        def _changed(paths: list[Path]) -> list[Path]:
+            out: list[Path] = []
+            for p in paths:
+                try:
+                    sha = hashlib.sha256(p.read_bytes()).hexdigest()
+                except OSError:
+                    continue
+                rel = str(p.relative_to(root)) if p.is_relative_to(root) else str(p)
+                if ingested_sha.get(rel) != sha:
+                    out.append(p)
+                    ingested_sha[rel] = sha
+            return out
+
+        index = build_gated_index(db_path)
+        try:
+            trunk = MemoryTrunk(index)
+            repo_res = ingest_paths(
+                trunk, _changed(repo_knowledge_paths(root)), repo_root=root,
+            )
+            research_res = ingest_paths(
+                trunk, _changed(research_report_paths(root)), repo_root=root,
+                record_type="research_report",
+            )
+        finally:
+            index.close()
+
+        # 3. Digestión (E, 2026-07-10): hallazgos de los informes → candidatos
+        # de catálogo (determinista, dedupe fail-closed, status SIEMPRE
+        # 'candidato'). El eslabón que faltaba: el ciclo consumía pero no
+        # convertía hallazgos en candidatos accionables.
+        digested = 0
+        try:
+            from atlas.core.self_maintenance.research_digest import (
+                append_candidates_to_catalog,
+                digest_findings,
+            )
+            from atlas.mcp.catalog import load_catalog, load_taxonomy
+
+            catalog_path = root / "docs" / "design" / "mcp_catalog.yaml"
+            classified_path = root / "docs" / "design" / "mcp_catalog_classified.yaml"
+            if catalog_path.is_file():
+                catalog = load_catalog(catalog_path)
+                if classified_path.is_file():
+                    catalog = catalog + load_catalog(classified_path)
+                reports = [
+                    p.read_text(encoding="utf-8", errors="replace")
+                    for p in research_report_paths(root)
+                ]
+                suggestions = digest_findings(
+                    reports, catalog, load_taxonomy(catalog_path)
+                )
+                if suggestions and classified_path.is_file():
+                    digested = append_candidates_to_catalog(suggestions, classified_path)
+        except Exception:  # noqa: BLE001 — la digestión es extra, nunca rompe la ingesta
+            pass
+
+        state["last_run_date"] = today
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        payload = {
+            "triaged": triaged,
+            "repo_docs": repo_res["docs"],
+            "repo_records": repo_res["records"],
+            "research_docs": research_res["docs"],
+            "research_records": research_res["records"],
+            "digested_candidates": digested,
+            "db_path": str(db_path),
+        }
+        self._orch._merkle.log(
+            action="self_maintenance.knowledge_ingest_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=payload,
+        )
+        return {"status": "ran", **payload}
+
+    def maintenance_project_graph_tick(self) -> dict[str, Any]:
+        """Regeneración automática del grafo vivo del proyecto (Fase 3bis).
+
+        "El grafo ES el presente": las tools graph_* del tronco responden desde
+        la BD Kuzu, y esta se quedaba atrás en cuanto había commits nuevos (la
+        query de importers de inference_hub daba 19 vs 20 de grep por un módulo
+        posterior a la última ingesta). Sin LLM y sin red: git log + parse de
+        imports + MERGE idempotente en Kuzu (``build_project_graph``).
+
+        Gating por HEAD, no por reloj: el grafo solo puede cambiar si hay
+        commits nuevos, así que se salta mientras HEAD no se mueva — más
+        fresco que una cadencia diaria (regenera al primer poll tras un
+        commit) y más barato (cero trabajo en reposo).
+
+        Regenera sobre una COPIA y hace swap al final: el write-lock de Kuzu
+        es de proceso entero y excluye hasta las conexiones read-only de otros
+        procesos (verificado en vivo 2026-07-10: ~9 min de "Could not set
+        lock" en las tools graph_* durante un build directo). Con el swap la
+        ventana de indisponibilidad pasa de minutos a microsegundos.
+
+        Opt-in explícito: requiere ``ATLAS_PROJECT_GRAPH=1``. BD override:
+        ``ATLAS_PROJECT_GRAPH_DB`` (default DEFAULT_GRAPH_DB)."""
+        # Guardia anti-recursión — ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_PROJECT_GRAPH", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        import subprocess
+        from datetime import datetime, timezone
+
+        root = self._project_root()
+        try:
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root, capture_output=True, text=True, check=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            return {"status": "no_git"}
+
+        state_path = root / "workspace" / "knowledge" / "project_graph_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_head") == head:
+            return {"status": "up_to_date", "head": head}
+
+        import shutil
+
+        from atlas.memory.project_graph import (
+            DEFAULT_GRAPH_DB,
+            build_project_graph,
+            resolve_graph_embedder,
+        )
+
+        db_env = os.environ.get("ATLAS_PROJECT_GRAPH_DB", "").strip()
+        db = Path(db_env).expanduser() if db_env else DEFAULT_GRAPH_DB
+        wal = db.with_name(db.name + ".wal")
+        rebuild = db.with_name(db.name + ".rebuild")
+        rebuild_wal = rebuild.with_name(rebuild.name + ".wal")
+        rebuild.unlink(missing_ok=True)
+        rebuild_wal.unlink(missing_ok=True)
+        if db.exists():
+            # Copia = el histórico bitemporal se conserva (MERGE incremental);
+            # el write-lock cae sobre la copia, no sobre la BD servida.
+            db.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(db, rebuild)
+            if wal.exists():
+                shutil.copy2(wal, rebuild_wal)
+
+        metrics = build_project_graph(root, rebuild, embedder=resolve_graph_embedder())
+
+        # Call-graph de Graphify (D3, 2026-07-10): si el cache existe, se
+        # ingiere al MISMO rebuild antes del swap (MERGE idempotente; datos
+        # con staleness explícita por content_hash — del último run de
+        # graphify, no del working tree).
+        callgraph_cache = root / "src" / "graphify-out" / "cache" / "ast"
+        if callgraph_cache.is_dir():
+            try:
+                from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
+
+                metrics["callgraph"] = load_callgraph_into_kuzu(callgraph_cache, rebuild)
+            except Exception:  # noqa: BLE001 — el call-graph es extra, nunca rompe la regen
+                pass
+
+        # Swap: primero el fichero principal, luego el wal (el close de la
+        # ingesta hace checkpoint, así que el wal del rebuild suele estar
+        # vacío/ausente). Ventana de inconsistencia: microsegundos.
+        os.replace(rebuild, db)
+        if rebuild_wal.exists():
+            os.replace(rebuild_wal, wal)
+        else:
+            wal.unlink(missing_ok=True)
+
+        state["last_head"] = head
+        state["last_run"] = datetime.now(timezone.utc).isoformat()
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        self._orch._merkle.log(
+            action="self_maintenance.project_graph_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={"head": head, "commits": len(metrics.get("commits", []))},
+        )
+        return {"status": "ran", "head": head, "metrics": metrics}
 
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).
@@ -321,12 +880,50 @@ class MaintenanceFacade:
         """Lote de self_audit — combina propuestas `validated` del mismo origen
         y las prueba conjuntamente en un worktree efímero (ver
         ``ColdUpdateBatcher``). Reusa el ``ColdUpdateManager`` ya existente del
-        orquestador; no aplica nada por sí mismo."""
+        orquestador; no aplica nada por sí mismo.
+
+        Roadmap "juicio real" pasos 2 y 5, cableados en producción (2026-07-08):
+        ``BatchPremortemGate`` razona sobre riesgos de la COMBINACIÓN antes de
+        pagar la suite completa (señal, nunca gate duro) y ``FailureLessonSink``
+        convierte cada exclusión de la bisección en una lección con contador de
+        ocurrencias en el LessonStore unificado (<repo>/workspace/lessons) — sin
+        esto el lazo no aprendía nada de sus propios fallos."""
         if self._maintenance_cold_update_batcher is None:
             from atlas.core.cold_update_batcher import ColdUpdateBatcher
+            from atlas.core.inference_hub import InferenceHub
+            from atlas.core.self_maintenance.batch_premortem import BatchPremortemGate
+            from atlas.core.self_maintenance.failure_lesson_sink import (
+                FailureLessonSink,
+            )
+
+            orch = self._orch
+            hub = orch._inference_hub or InferenceHub(mode="auto")
+            premortem = BatchPremortemGate(hub=hub, merkle=orch._merkle)
+
+            # Mismo patrón defensivo que el LessonStore del codegen proposer:
+            # si el store no puede abrirse, el batcher corre sin sink (señal
+            # degradada) en vez de romper el ciclo de lotes.
+            sink: Any = None
+            try:
+                from atlas.core.lesson_store import LessonStore
+
+                _repo_root = orch._repo_root() or orch._workspace
+                sink = FailureLessonSink(
+                    store=LessonStore(_repo_root / "workspace" / "lessons"),
+                )
+            except Exception:  # noqa: BLE001 — sink opcional, nunca bloquea
+                sink = None
+
+            # 2026-07-10: BenchmarkGate por fin CABLEADO (TODO histórico de
+            # este fichero). Señal, nunca gate bloqueante; sin dataset marca
+            # skipped con receta accionable (scripts/fetch_longmemeval.py).
+            from atlas.core.self_maintenance.benchmark_gate import BenchmarkGate
 
             self._maintenance_cold_update_batcher = ColdUpdateBatcher(
                 manager=self._orch.cold_update(),
+                premortem=premortem,
+                failure_lesson_sink=sink,
+                benchmark_gate=BenchmarkGate(repo_root=_repo_root),
             )
         return self._maintenance_cold_update_batcher
 
@@ -452,13 +1049,17 @@ class MaintenanceFacade:
 
                 _repo_root = orch._repo_root() or orch._workspace
                 _lesson_store = LessonStore(_repo_root / "workspace" / "lessons")
-                # threshold: sin override — el default de LessonRecaller (0.8) ya
-                # está calibrado para embeddings SEMÁNTICOS (ver su docstring);
-                # el 0.65 anterior compensaba el hash NO-semántico de
-                # StubEmbedder(dim=64) que se acaba de dejar de usar aquí.
+                # threshold 0.55 MEDIDO 2026-07-08 (antes: default 0.8, que en
+                # la práctica no recuperaba NADA): con fastembed multilingüe,
+                # consultas claramente relacionadas puntúan 0.55-0.69 y las no
+                # relacionadas ≤0.47. A 0.8 el lazo "aprendía" lecciones que
+                # jamás volvían a salir. Falso positivo aquí es barato (una
+                # línea extra de avoid_pattern en el prompt de codegen); este
+                # override NO toca los umbrales del sistema inmune.
                 _lesson_recaller: Any = LessonRecaller(
                     _lesson_store,
                     embedder=default_embedder(),
+                    threshold=0.55,
                 )
             except Exception:  # noqa: BLE001 — directorio no existe u otro error; degradado
                 _lesson_store = None

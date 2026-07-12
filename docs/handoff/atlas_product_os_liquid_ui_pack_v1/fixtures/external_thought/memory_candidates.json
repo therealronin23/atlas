@@ -1,0 +1,10 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "memcand_001",
+      "type": "decision",
+      "label": "Web harness is not final UX",
+      "requires_review": true
+    }
+  ]
+}

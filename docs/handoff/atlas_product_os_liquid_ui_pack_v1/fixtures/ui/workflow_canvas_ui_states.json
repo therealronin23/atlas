@@ -1,0 +1,14 @@
+{
+  "node_states": [
+    "idle",
+    "configured",
+    "missing_config",
+    "ready",
+    "running",
+    "waiting_approval",
+    "completed",
+    "failed",
+    "blocked",
+    "risky"
+  ]
+}

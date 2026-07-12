@@ -97,8 +97,9 @@ sectors:
       grafos: {label: Grafos de conocimiento, aliases: [graph, kg, entidades]}
       fuentes: {label: Fuentes/APIs, aliases: [apis, sources, ingesta]}
     entries:
-      - {name: atlas-memory, kind: mcp, subsector: memoria, source: atlas.mcp.memory_server, purpose: "sustrato verificable (NUESTRO)", install: "claude mcp add atlas-memory", status: instalado}
-      - {name: atlas-knowledge, kind: mcp, subsector: fuentes, source: atlas.mcp.knowledge_server, purpose: "knowledge-src → run_mission (NUESTRO)", install: "claude mcp add atlas-knowledge", status: instalado}
+      - {name: atlas-memory, kind: mcp, subsector: memoria, source: atlas.mcp.memory_server, purpose: "sustrato verificable (NUESTRO): recall/add/supersede/shred para continuidad entre sesiones", install: "claude mcp add atlas-memory", status: instalado, best_for: [recordar preferencias, recuperar lecciones, continuidad], examples: ["recordar una decisión", "recuperar errores previos parecidos"]}
+      - {name: atlas-graph, kind: mcp, subsector: grafos, source: atlas.mcp.graph_server, purpose: "grafo vivo del proyecto (Kuzu): quién importa X, blast radius, linaje temporal, churn — entender Atlas SIN leer docs (NUESTRO, verificado 19/19 vs grep 2026-07-09)", install: "python -m atlas.mcp.graph_server", tags: [conocimiento-memoria, programacion], status: instalado, best_for: [refactor, blast-radius, lineage, codebase-map], examples: ["qué toca este módulo", "blast radius antes de editar"]}
+      - {name: atlas-knowledge, kind: mcp, subsector: fuentes, source: atlas.mcp.knowledge_server, purpose: "knowledge-src → run_mission (NUESTRO): APIs libres con procedencia para research barato", install: "claude mcp add atlas-knowledge", status: instalado, best_for: [research, datos abiertos, ingestion], examples: ["consulta Wikipedia", "ingiere indicador World Bank"]}
       - {name: Wikipedia REST, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:WikipediaSource", purpose: "summary API (NUESTRO)", tags: [conocimiento-memoria, investigacion], status: instalado}
       - {name: World Bank, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:WorldBankSource", purpose: "indicadores abiertos (NUESTRO)", tags: [conocimiento-memoria, datos], status: instalado}
       - {name: Open-Meteo, kind: api, subsector: fuentes, mode: served, source: "atlas.mcp.knowledge_trunk:OpenMeteoSource", purpose: "clima sin auth (NUESTRO, prove-it E2E)", tags: [conocimiento-memoria, datos], trust: vetted, status: instalado}
@@ -160,7 +161,7 @@ sectors:
       operacion: {label: Operación, aliases: [ops, ledger, disciplina, sanitation]}
       escritorio: {label: Escritorio, aliases: [desktop, gui, computer-use, mouse, teclado]}
     entries:
-      - {name: atlas-operating, kind: mcp, subsector: operacion, source: atlas.mcp.operating_server, purpose: "OPERATING LOOP + ledger + sanitation (NUESTRO)", install: "claude mcp add atlas-operating", status: instalado}
+      - {name: atlas-operating, kind: mcp, subsector: operacion, source: atlas.mcp.operating_server, purpose: "OPERATING LOOP + ledger + sanitation (NUESTRO): estado vivo, AGENTS.md y auditoría de higiene", install: "claude mcp add atlas-operating", status: instalado, best_for: [preflight, estado-vivo, ledger, sanitation], examples: ["leer WHERE actual", "verificar disciplina antes de cambiar"]}
       - {name: Filesystem, kind: mcp, subsector: ficheros, source: "modelcontextprotocol/servers", purpose: "acceso a ficheros", status: candidato}
       - {name: Git / GitHub, kind: mcp, subsector: git, purpose: "git + issues/PRs", status: candidato}
       - {name: Docker MCP, kind: mcp, subsector: operacion, source: "docker", purpose: "containers/images/local dev; alto impacto, candidato con allowlist estricta", tags: [infraestructura, programacion], trust: research-2026, status: candidato}

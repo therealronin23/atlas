@@ -1,0 +1,17 @@
+{
+  "pack_id": "personal_pack",
+  "connectors": [
+    "gmail",
+    "calendar",
+    "drive",
+    "local_documents",
+    "whatsapp_personal_import"
+  ],
+  "setup_order": [
+    "gmail",
+    "calendar",
+    "drive",
+    "local_documents",
+    "whatsapp_personal_import"
+  ]
+}

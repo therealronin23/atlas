@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIProvider",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "provider_id": {
+      "type": "string"
+    },
+    "models": {
+      "type": "array"
+    },
+    "allowed_data_classes": {
+      "type": "array"
+    },
+    "cost_policy": {
+      "type": "object"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SyncJob",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "sync_job_id": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

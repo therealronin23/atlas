@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SubmissionCeremony",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "ceremony_id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "destination": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    },
+    "payload_hash": {
+      "type": "string"
+    },
+    "approved": {
+      "type": "boolean"
+    }
+  },
+  "required": []
+}

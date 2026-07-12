@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gestoria case_file",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "demo": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "id"
+  ]
+}

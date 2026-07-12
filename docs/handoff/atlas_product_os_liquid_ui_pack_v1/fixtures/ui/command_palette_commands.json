@@ -1,0 +1,10 @@
+{
+  "commands": [
+    "new_objective",
+    "import_thought",
+    "open_workbench",
+    "search_memory",
+    "connect_source",
+    "lockdown"
+  ]
+}

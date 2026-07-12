@@ -1,0 +1,38 @@
+{
+  "id": "lesson-f47dded51406",
+  "title": "Orden de docs 2026-07-08: INDEX.yaml + inbox/triage + grafo",
+  "provenance": "external_source",
+  "detection_heuristic": "docs_index_drift o docs_graph_drift no vacíos en sanitation_audit/PreflightGate",
+  "avoid_pattern": "No crear ni mover docs fuera del orden: doc nuevo -> docs/inbox/ y scripts/docs_triage.py (alta como status:propuesto, la promoción a vigente es humana); tras mover docs, regenerar docs/INDEX.yaml con scripts/docs_index_audit.py --write y comprobar enlaces con scripts/docs_graph.py. Un doc vigente sin enlaces [[wikilink]] queda inalcanzable (hoy hay 106 así: enlazar al crear).",
+  "evidence": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "corroboration",
+        "passed": true,
+        "detail": "",
+        "cost": "STATIC"
+      }
+    ],
+    "total_cost": "STATIC",
+    "verifier_ids": [
+      "lesson.corroboration"
+    ],
+    "reason": "",
+    "created_at": "2026-07-08T20:32:47.291456+00:00"
+  },
+  "regression_test_path": null,
+  "source_refs": [
+    "scripts/docs_index_audit.py",
+    "scripts/docs_triage.py",
+    "scripts/docs_graph.py",
+    "docs/governance/REPO_STANDARD.md"
+  ],
+  "tags": [
+    "docs-order",
+    "knowledge"
+  ],
+  "created_at": "2026-07-08T20:32:47.291504+00:00",
+  "occurrence_count": 1,
+  "last_seen_at": ""
+}

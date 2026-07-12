@@ -1,0 +1,21 @@
+{
+  "pack_id": "gestoria_pack",
+  "connectors": [
+    "gmail",
+    "google_drive",
+    "local_csv_folder",
+    "odoo_erp",
+    "generic_erp",
+    "pdf_ocr",
+    "certificate_reference"
+  ],
+  "setup_order": [
+    "gmail",
+    "google_drive",
+    "local_csv_folder",
+    "odoo_erp",
+    "generic_erp",
+    "pdf_ocr",
+    "certificate_reference"
+  ]
+}

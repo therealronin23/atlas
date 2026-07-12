@@ -1,0 +1,17 @@
+{
+  "pack_id": "crm_sales_pack",
+  "connectors": [
+    "generic_crm",
+    "gmail",
+    "calendar",
+    "drive",
+    "whatsapp_business_platform"
+  ],
+  "setup_order": [
+    "generic_crm",
+    "gmail",
+    "calendar",
+    "drive",
+    "whatsapp_business_platform"
+  ]
+}

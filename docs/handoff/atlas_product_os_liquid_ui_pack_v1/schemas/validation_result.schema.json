@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ValidationResult",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "result_id": {
+      "type": "string"
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "issues": {
+      "type": "array"
+    }
+  },
+  "required": []
+}
