@@ -234,6 +234,102 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: FalkorDB/benchmark
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/FalkorDB/benchmark
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: SiWarlock/AI-System-Of-Work-Assistant-Agent
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/SiWarlock/AI-System-Of-Work-Assistant-Agent
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: bigyong-996/cs5296-graph-multihop-optimization
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/bigyong-996/cs5296-graph-multihop-optimization
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:multihop query optimization
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: dsivov/Context_Graph
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/dsivov/Context_Graph
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:time aware reasoning
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: tamnd/graph-bench
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/tamnd/graph-bench
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: ysenarath/graph-db-benchmark
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/ysenarath/graph-db-benchmark
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
   datos:
     label: Datos
     entries:
@@ -482,6 +578,22 @@ sectors:
       tags:
       - data
       - yaml
+    - name: agnesebelloni/Advanced-Data-Management-Benchmark
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/agnesebelloni/Advanced-Data-Management-Benchmark
+      install: ''
+      status: candidato
+      tags:
+      - datos
+      evidence:
+      - tema:graph database benchmark
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
   diseno:
     label: Diseño
     entries:
@@ -1749,6 +1861,38 @@ sectors:
       status: candidato
       tags:
       - 05-data-ai
+    - name: aroviq/aroviq
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/aroviq/aroviq
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:time aware reasoning
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: shahnaishadh/sarathi-ai
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/shahnaishadh/sarathi-ai
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:time aware reasoning
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
   infraestructura:
     label: Infraestructura
     entries:
@@ -2676,6 +2820,22 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: dzackgarza/itree
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/dzackgarza/itree
+      install: ''
+      status: candidato
+      tags:
+      - infraestructura
+      evidence:
+      - tema:tree traversal
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
   investigacion:
     label: Investigación
     entries:
@@ -2936,6 +3096,22 @@ sectors:
       tags:
       - docs
       - markdown
+    - name: lightmeterminiaturisation293/Langent-MCP_One-Click_Kit
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/lightmeterminiaturisation293/Langent-MCP_One-Click_Kit
+      install: ''
+      status: candidato
+      tags:
+      - investigacion
+      evidence:
+      - tema:document indexing
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
   productividad:
     label: Productividad
     entries:
@@ -5442,6 +5618,54 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: BandanaSingha24/AI-ML-DL-in-Cancer-Genomics
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/BandanaSingha24/AI-ML-DL-in-Cancer-Genomics
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: orassayag/node-modules-remover
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/orassayag/node-modules-remover
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:tree traversal
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: xKosinus/PriMut
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/xKosinus/PriMut
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:2
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-11T05:18:43.943823+00:00'
   uncategorized:
     label: uncategorized
     entries:

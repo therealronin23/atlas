@@ -8,6 +8,38 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **CAMPAÑA x10 (2026-07-10, plan de-acuerdo-puedes-hacerlo-fizzy-sifakis):
+  Fable planifica/audita, Sonnet implementa, el lazo mastica en paralelo** —
+  - A: f2-6b despiezado en 3 items mecánicos (gen pares → runner juez vs
+    baseline → informe con veredicto) tras el techo medido; graphiti-study
+    reasignado. Cola del lazo: vault-wiring → f2-6b-1..3 → mem-1.
+  - B: disección adopt-real de Graphiti/Zep (clon efímero borrado):
+    2 patrones con sustancia — mem-1 (tiempo-del-hecho vs tiempo-de-sistema,
+    alta en backlog) y mem-2 (invalidación por contradicción, SOLO propuesta
+    con gate de auditoría); RRF/MMR descartados con evidencia
+    (docs/inbox/graphiti_dissection_2026-07-10.md).
+  - C: medición de memoria POR FIN reproducible — fetch idempotente del
+    dataset (bug real de symlink HF cazado y arreglado) + **3ª aparición de
+    'embedder ignora el env'**: eval_longmemeval medía SIEMPRE el stub
+    (0.30/0.36); con el fix R@5=0.94 (n=50, fastembed) vs 0.35 stub.
+    BenchmarkGate CABLEADO al batcher (TODO histórico) + bug to_dict()
+    (señal siempre None) + tri-estado skipped accionable. ADR-057: canónico
+    por caso de uso, puente diferido con trigger cuantitativo. multihop=0.0
+    anotado como anomalía pre-existente.
+  - D: grafo fase 2 — embeddings reales por env (ATLAS_GRAPH_EMBEDDER=
+    fastembed, activado) + call-graph de Graphify (217 JSONs ya extraídos,
+    prior art interno) cargado a Kuzu con tools graph_callers/graph_callees
+    en el tronco. El vault-wiring es del LAZO (su item).
+  - E: digestión cableada al tick diario — informes → candidatos de
+    catálogo deterministas, dedupe fail-closed, status siempre 'candidato'.
+    Sanity real: 128 hallazgos → 0 candidatos (sin señal cruzada aún, cero
+    falsos positivos).
+  - F: cuarentena CERRADA — git resolvió las deleciones como RENAMES (la
+    reorg movía a docs/audits|outreach, no borraba); INDEX regenerado,
+    validate limpio (216 entradas, 0 missing/orphans/expired).
+  - Método: 7 subagentes (2 Explore + 1 Plan + 4 Sonnet impl) con specs
+    cerrados y ficheros disjuntos; el facade (hotspot) en UN commit de
+    wiring de Fable; cada diff auditado antes de commitear.
 - **Mañana 2026-07-10 (post-reset): suite 7.5GB→1.9GB, hook vivo, ciclo
   autónomo completo verificado** —
   - **RSS de la suite RESUELTO** (2262de41): cache de proceso del modelo ONNX
