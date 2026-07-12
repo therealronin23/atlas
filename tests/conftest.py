@@ -83,7 +83,7 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     # CABLEADO, no calidad semántica). Un test concreto que SÍ quiera probar
     # el semántico real puede seguir haciendo su propio
     # monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed") dentro del test.
-    monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed")
+    monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
 
 
 @pytest.fixture(autouse=True)
