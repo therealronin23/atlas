@@ -1,0 +1,22 @@
+# Atlas Core Knowledge Stack - Pinned Dependencies
+# Purpose: Reproducible builds for Graphify, Neo4j, and related tools
+# Last Updated: 2026-07-14
+
+# Core graph extraction and analysis
+graphify==0.9.11                    # Knowledge graph generation (PINNED for stability)
+neo4j==6.2.0                        # Graph database driver
+graphiti==0.1.13                    # Temporal knowledge graphs
+
+# LLM integrations
+anthropic>=0.28.0                   # Claude API
+ollama>=0.1.0                       # Local LLM support
+
+# Utilities
+python-dotenv>=1.0.0                # Environment configuration
+pyyaml>=6.0                         # YAML parsing
+requests>=2.31.0                    # HTTP client
+
+# Optional: Advanced GraphRAG (when needed)
+# langchain>=0.1.0                  # For advanced RAG workflows
+# llama-index>=0.9.0                # For semantic indexing
+# neo4j-python-driver>=5.0          # Already covered by neo4j above
