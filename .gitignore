@@ -120,3 +120,6 @@ workspace/research/
 workspace/knowledge/
 # Salida de builds de graphify (mal ubicada bajo src/, no es código)
 src/graphify-out/
+graphify-out/
+graphify-vault/
+notebooklm-package/

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+  changed=$(git diff --name-only HEAD^ HEAD)
+else
+  changed=$(git ls-tree --name-only -r HEAD)
+fi
+
+if printf '%s\n' "$changed" | grep -Eq '^(src/|docs/|README\.md|pyproject\.toml|.*\.py$|.*\.md$|.*\.yaml$|.*\.toml$)'; then
+  echo 'Relevant files changed; updating knowledge graph...'
+  ./scripts/update-knowledge-graph.sh
+else
+  echo 'No knowledge-graph-relevant changes detected; skipping update.'
+fi
