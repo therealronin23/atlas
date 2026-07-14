@@ -148,6 +148,18 @@ Python code execution is fail-closed (`BwrapUnavailableError`); other Atlas
 functionality is unaffected. Slice 2 seccomp-bpf remains deferred because it
 requires an explicit external dependency decision.
 
+## Graphify / Obsidian / NotebookLM guidance
+
+For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` over a separate `CLAUDE.md` so the operating context remains centralized.
+
+- Run `./scripts/update-knowledge-graph.sh` from the repo root to update the code-only Graphify graph and rebuild the Obsidian export.
+- Open `graphify-out/GRAPH_REPORT.md` first for architecture context before reading source code.
+- Use `graphify query "<question>"`, `graphify explain "<concept>"`, and `graphify path "A" "B"` for focused, low-token exploration.
+- Open `graphify-vault/` in Obsidian for graph-based navigation of nodes, links, and code/document relationships.
+- Use `./scripts/prepare-notebooklm.sh` to generate a NotebookLM upload package from the current report and docs.
+- Recommended Obsidian plugins: Dataview, Graph View, QuickAdd, Natural Language Dates, Search Extended.
+- The current Graphify build is intentionally `code-only` to avoid LLM API key/token cost. To ingest docs/papers later, set `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` and re-run the update script.
+
 ## How To Resume
 
 1. Activate the venv.
