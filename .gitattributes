@@ -1,0 +1,15 @@
+# Git merge strategy for auto-generated knowledge graph files
+# These files are regenerated on every commit, so conflicts are unnecessary
+# Use "ours" strategy to prefer the branch version (which is newer)
+
+# Graphify outputs
+graphify-out/graph.json merge=ours
+graphify-out/GRAPH_REPORT.md merge=ours
+graphify-out/graph.graphml merge=ours
+graphify-out/cypher.txt merge=ours
+graphify-out/manifest.json merge=ours
+graphify-out/.graphify_analysis.json merge=ours
+
+# Obsidian vault exports (also auto-generated)
+graphify-vault/ merge=ours
+graphify-vault/*.md merge=ours
