@@ -48,6 +48,9 @@ Thumbs.db
 *.pem
 secrets/
 
+# External tooling and clones
+tools/understand-anything/
+
 # MCP server config — real file local (puede listar servers/paths privados);
 # la plantilla mcp_servers.example.json sí se commitea. Secretos van por
 # env_passthrough, nunca en el JSON (ADR-035).

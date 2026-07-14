@@ -14,7 +14,20 @@ This directory contains:
 | `install_hermes_agent_vps.sh` | One-shot installer for Hermes-Agent on the VPS (apt deps, pip venv, Ollama, systemd-user unit, ~/.hermes/config.yaml + .env). Idempotent. |
 | `deploy_hermes_vps_oneshot.sh` | Operator wrapper that runs from the laptop: scps the install script to the VPS and triggers it with secrets via SSH env. |
 | `reconfigure_hermes_vps.sh` | Reconfigure Hermes-Agent without reinstalling (config.yaml only). |
+| `update-knowledge-graph.sh` | Fast Graphify refresh for code-only graphs, Obsidian export, and Neo4j Cypher generation. |
+| `update-knowledge-graph-rag.sh` | GraphRAG-capable Graphify build using an LLM backend, plus Obsidian export and Neo4j-ready export. |
+| `prepare-notebooklm.sh` | Build a NotebookLM upload package from `GRAPH_REPORT.md`, repository docs, and optional Obsidian vault notes. |
+| `install-knowledge-hooks.sh` | Install a repository Git hook that triggers a lightweight Graphify update after commits affecting docs/code. |
+| `neo4j-import.sh` | Import Graphify-generated `graphify-out/cypher.txt` into a Neo4j instance using local `cypher-shell` or Docker fallback. |
+| `neo4j-rag-query.sh` | Run a sample GraphRAG validation query against a Neo4j instance imported from Graphify. |
+| `install-knowledge-stack.sh` | Install GraphRAG/Neo4j Python dependencies, pull Neo4j Docker images, and clone the Understand-Anything repo for local reference. |
 | `hermes_local.sh` | Run the REST-compatible Hermes stub on the laptop (`start|stop|status|logs`) using the same HTTP contract Atlas used against the VPS. |
+
+## GraphRAG and local LLM support
+
+- `update-knowledge-graph-rag.sh` now supports `--api-timeout` and `--max-workers` for tuning local model performance.
+- It also auto-detects a local Ollama service at `http://127.0.0.1:11434/v1` if no backend is explicitly configured.
+- For NotebookLM, use `prepare-notebooklm.sh` to package `GRAPH_REPORT.md`, repository docs, and optional Obsidian vault notes.
 | `verify_twin_pairing.sh` | Read-only health check across Tailscale + Atlas + Hermes-VPS + Ollama + skill files. |
 | `pipeline_smoke.py` | Gate D pipeline smoke — calls real Groq/OpenRouter, verifies fallback chain. |
 | `gate_h_smoke.py` | Gate H synthesis + ResultAuditor smoke. |
