@@ -27,3 +27,16 @@ graphify export neo4j
 
 printf '\nDone.\n- Graph report: %s/GRAPH_REPORT.md\n- Obsidian vault: %s\n- Neo4j import: %s/cypher.txt\n' "$(pwd)/graphify-out" "$(pwd)/$VAULT_DIR" "$(pwd)/graphify-out"
 printf '\nNOTE: This is currently a code-only graph. To include docs/papers extraction, export nodes with an LLM backend by setting GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY and re-running the script.\n'
+printf 'For a richer GraphRAG-ready workflow, use ./scripts/update-knowledge-graph-rag.sh --backend <backend> --model <model>.\n'
+
+# Verify Graphify version (added 2026-07-14)
+if command -v graphify &> /dev/null; then
+  GRAPHIFY_VERSION=$(graphify --version 2>&1 | grep -oP 'graphify \K[\d.]+' || echo "unknown")
+  if [ "$GRAPHIFY_VERSION" != "0.9.11" ]; then
+    echo "ERROR: Graphify version mismatch"
+    echo "  Expected: 0.9.11"
+    echo "  Got: $GRAPHIFY_VERSION"
+    echo "  Fix: pip install graphify==0.9.11"
+    exit 1
+  fi
+fi
