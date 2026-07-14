@@ -3,7 +3,31 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-OUT_DIR="${1:-notebooklm-package}"
+OUT_DIR="notebooklm-package"
+VAULT_ROOT="graphify-vault"
+INCLUDE_VAULT=false
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --out)
+      shift
+      OUT_DIR="${1:-$OUT_DIR}"
+      ;;
+    --vault-root)
+      shift
+      VAULT_ROOT="${1:-$VAULT_ROOT}"
+      ;;
+    --include-vault)
+      INCLUDE_VAULT=true
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR/docs"
 mkdir -p "$OUT_DIR/graphify"
@@ -20,6 +44,12 @@ if [ -d docs ]; then
   done
 fi
 
+if [ "$INCLUDE_VAULT" = true ] && [ -d "$VAULT_ROOT" ]; then
+  mkdir -p "$OUT_DIR/vault"
+  echo "Including Obsidian vault from $VAULT_ROOT into $OUT_DIR/vault"
+  cp -r "$VAULT_ROOT"/* "$OUT_DIR/vault/"
+fi
+
 cat > "$OUT_DIR/README.md" <<'EOF'
 # NotebookLM package for atlas-core
 
@@ -29,8 +59,14 @@ This package is optimized for NotebookLM ingestion:
 2. Read `01-Repository-README.md` and `docs/*.md` for project-specific design.
 3. Use the Obsidian vault only if you need node-level code/document connections.
 
-To include the full Obsidian vault, add `--include-vault` and use the generated notes carefully.
+If the vault is included, the notes are copied into `vault/`.
+
+To include the full Obsidian vault, rerun with `--include-vault`.
 EOF
 
 printf 'NotebookLM package prepared at %s\n' "$(pwd)/$OUT_DIR"
-printf 'If you want to include the Obsidian vault notes, copy them from graphify-vault/ separately.\n'
+if [ "$INCLUDE_VAULT" = true ]; then
+  printf 'Included Obsidian vault notes from %s\n' "$(pwd)/$VAULT_ROOT"
+else
+  printf 'If you want the full Obsidian vault, rerun with --include-vault.\n'
+fi
