@@ -278,6 +278,27 @@ def test_load_callgraph_is_idempotent(tmp_path: Path) -> None:
         db.close()
 
 
+def test_load_callgraph_reads_nested_cache_dir(tmp_path: Path) -> None:
+        cache_dir = tmp_path / "cache" / "v0.9.11"
+        _write_cache(cache_dir)
+        db_path = tmp_path / "kuzu" / "cg.kuzu"
+
+        result = load_callgraph_into_kuzu(cache_dir.parent, db_path)
+
+        assert result["files"] == 2
+        assert result["symbols"] == 7
+        assert result["calls"] == 2
+
+        db = kuzu.Database(str(db_path))
+        conn = kuzu.Connection(db)
+        try:
+            r = conn.execute("MATCH (n:Symbol) RETURN count(n)")
+            assert r.get_next()[0] == 7
+        finally:
+            conn.close()
+            db.close()
+
+
 def test_empty_cache_dir(tmp_path: Path) -> None:
     cache_dir = tmp_path / "empty"
     cache_dir.mkdir()
