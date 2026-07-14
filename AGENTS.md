@@ -120,6 +120,40 @@ Compliance/transparency vocabulary authority:
 | `defense-pattern mutation & selection` | afinidad maduración |
 | `decision/action provenance record` | never "chain-of-thought auditable" |
 
+## Token Budget Awareness (Important for Cost Control)
+
+Before starting expensive operations, check current token budget:
+
+```bash
+# Check token usage across all providers
+./scripts/token-tracker.sh report
+
+# Example output:
+# ✅ openrouter: 45% budget (225k/500k tokens)
+# ✅ anthropic: 92% budget (184k/200k tokens) ← CRITICAL
+# ✅ groq: 10% budget (100k/1M tokens)
+# ✅ gemini: 5% budget (50k/1M tokens)
+```
+
+**Provider budgets** (monthly, adjust in scripts/token-tracker.sh):
+- **Groq**: 1M tokens (free tier, fastest)
+- **OpenRouter**: 500K tokens (multi-model)
+- **Anthropic**: 200K tokens (conservative, local recommendation)
+- **Ollama**: Unlimited (local 7B model)
+- **Gemini**: 1M tokens
+
+**Decision rules**:
+- If approaching >80%: Use Ollama locally instead
+- If >95%: Pause expensive operations, use GraphRAG for efficient context
+- If critical: Switch to grep/local graph queries only
+
+**Setup automated tracking** (requires sudo):
+```bash
+sudo bash -c 'echo "0 * * * * /home/ronin/proyectos/atlas-core/scripts/token-tracker.sh report >> /var/log/atlas-token-budget.log 2>&1" | crontab -'
+```
+
+Or run manually each hour to check budget before acting.
+
 ## Key Commands
 
 ```bash
