@@ -150,7 +150,7 @@ requires an explicit external dependency decision.
 
 ## Graphify / Obsidian / NotebookLM guidance
 
-For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` over a separate `CLAUDE.md` so the operating context remains centralized.
+For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` (and the lowercase alias `agents.md`) as the canonical project guidance. Avoid creating a separate `CLAUDE.md` unless the workflow is truly Claude-specific.
 
 - Run `./scripts/update-knowledge-graph.sh` from the repo root to update the code-only Graphify graph and rebuild the Obsidian export.
 - Open `graphify-out/GRAPH_REPORT.md` first for architecture context before reading source code.
@@ -160,6 +160,32 @@ For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` over a se
 - To include the Obsidian vault notes in the NotebookLM package, run `./scripts/prepare-notebooklm.sh --include-vault`.
 - Recommended Obsidian plugins: Dataview, Graph View, QuickAdd, Natural Language Dates, Search Extended.
 - The current Graphify build is intentionally `code-only` to avoid LLM API key/token cost. To ingest docs/papers later, set `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` and re-run the update script.
+- For GraphRAG and Neo4j-backed reasoning, use `./scripts/update-knowledge-graph-rag.sh --backend <backend> --model <model>`. This builds a semantic graph, exports Obsidian, and generates `graphify-out/cypher.txt`.
+- To load the generated graph into Neo4j, set `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD`, then run `./scripts/neo4j-import.sh`.
+- Graphify supports local and env-driven LLM backends: `OPENAI_BASE_URL`/`OPENAI_API_KEY`, `OLLAMA_BASE_URL`, `ANTHROPIC_BASE_URL`/`ANTHROPIC_API_KEY`, `GEMINI_BASE_URL`/`GEMINI_API_KEY`, or `claude-cli`.
+- Example local Graphify GraphRAG setup:
+  ```bash
+  export OPENAI_BASE_URL=http://localhost:8080/v1
+  export OPENAI_API_KEY=<your-key>
+  export GRAPHIFY_BACKEND=openai
+  export GRAPHIFY_MODEL=gpt-4.1-mini
+  ./scripts/update-knowledge-graph-rag.sh --import-neo4j
+  ```
+- If credentials are stored in `.env`, load them before running the GraphRAG script: `source .env`.
+- Use `--api-timeout` and `--max-workers` with `./scripts/update-knowledge-graph-rag.sh` to tune local Ollama or other backend latency.
+- Keep `./scripts/update-knowledge-graph.sh` as the daily low-token maintenance path. Use `./scripts/update-knowledge-graph-rag.sh` when you want richer semantic node/link extraction and a Neo4j-ready graph.
+- Use `./scripts/neo4j-rag-query.sh [PATTERN]` after importing into Neo4j to verify the graph and explore GraphRAG neighborhood queries.
+- Understand-Anything is a powerful complementary layer for semantic project understanding. It is best used in parallel with Graphify: Graphify for structural code/doc graphs, Understand-Anything for dashboard-driven concept discovery and browsing.
+- Install local GraphRAG tooling with `./scripts/install-knowledge-stack.sh --all`.
+- Use `scripts/install-knowledge-hooks.sh` to install a Git post-commit hook that keeps the Graphify code-only graph fresh after source or docs changes.
+- VS Code tasks are available in `.vscode/tasks.json` for updating the knowledge graph, running the GraphRAG build, and preparing NotebookLM packages.
+- The local environment now has Graphiti and the Neo4j Python driver installed in `.venv`. Use `source .env` before running the GraphRAG scripts so backend credentials are available.
+- Graphiti is a good next step if you want temporal GraphRAG and agent memory over changes. It pairs well with Neo4j and can consume the `graphify-out/cypher.txt` import as a stable knowledge layer.
+- Suggested GraphRAG workflow:
+  1. Maintain the base graph with `./scripts/update-knowledge-graph.sh`.
+  2. Build the semantic GraphRAG graph when needed with `./scripts/update-knowledge-graph-rag.sh --backend <backend> --model <model> --import-neo4j`.
+  3. Validate with `./scripts/neo4j-rag-query.sh <term>`.
+  4. Use Obsidian and NotebookLM for human-facing exploration and summaries.
 
 ## How To Resume
 

@@ -2,16 +2,8 @@
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
-
-if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
-  changed=$(git diff --name-only HEAD^ HEAD)
-else
-  changed=$(git ls-tree --name-only -r HEAD)
-fi
-
-if printf '%s\n' "$changed" | grep -Eq '^(src/|docs/|README\.md|pyproject\.toml|.*\.py$|.*\.md$|.*\.yaml$|.*\.toml$)'; then
-  echo 'Relevant files changed; updating knowledge graph...'
+CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD)
+if printf '%s\n' "$CHANGED" | grep -Eq '^(src/|docs/|README\.md$|AGENTS\.md$|agents\.md$|scripts/|.*\.md$)'; then
+  printf 'Detected knowledge artefact changes in this commit. Running lightweight Graphify update...\n'
   ./scripts/update-knowledge-graph.sh
-else
-  echo 'No knowledge-graph-relevant changes detected; skipping update.'
 fi
