@@ -92,7 +92,11 @@ def load_callgraph_into_kuzu(
 
     Devuelve métricas: ``{"symbols": int, "calls": int, "files": int}``.
     """
-    files = sorted(cache_dir.glob("*.json"))
+    files = sorted(
+        p
+        for p in cache_dir.rglob("*.json")
+        if p.is_file() and p.name != "stat-index.json"
+    )
     db_path.parent.mkdir(parents=True, exist_ok=True)
     db = kuzu.Database(str(db_path), max_db_size=max_db_size)
     conn = kuzu.Connection(db)
