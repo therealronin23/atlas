@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from pathlib import Path
 
@@ -22,6 +23,20 @@ def _make_signer() -> HMACSigner:
 
 
 class TestMerkleLoggerUnsigned:
+    def test_log_dir_and_file_are_private_under_permissive_umask(
+        self, tmp_path: Path
+    ) -> None:
+        log_dir = tmp_path / "nested"
+        previous_umask = os.umask(0)
+        try:
+            logger = MerkleLogger(log_dir)
+            logger.log("task.created", "test-agent", "success")
+        finally:
+            os.umask(previous_umask)
+
+        assert log_dir.stat().st_mode & 0o777 == 0o700
+        assert (log_dir / "merkle.jsonl").stat().st_mode & 0o777 == 0o600
+
     def test_append_and_verify_unsigned(self, tmp_path: Path) -> None:
         logger = MerkleLogger(tmp_path)
         logger.log("task.created", "test-agent", "success")

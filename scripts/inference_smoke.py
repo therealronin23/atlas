@@ -3,8 +3,8 @@
 Smoke test del InferenceHub en modo live.
 
 Uso:
-    set -a && source .env && set +a
-    PYTHONPATH=src python scripts/inference_smoke.py
+    PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+      .venv/bin/python scripts/inference_smoke.py
 
 Pide una respuesta corta a cada proveedor configurado y reporta latencia,
 exito/error y un fragmento del texto devuelto. Requiere al menos una key

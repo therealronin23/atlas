@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""
-Smoke operativo end-to-end (Sesion A).
+"""Smoke histórico del contrato REST Hermes y del bot propio de Atlas.
+
+NO prueba el Hermes-Agent oficial ni su Telegram. Puede mutar la cola REST,
+aprobar una escritura aislada y, si no se omite, enviar un mensaje real desde
+el bot propio de Atlas. No se ejecuta desde la auditoría autónoma.
 
 Uso:
-    source .venv/bin/activate && source .env
-    PYTHONPATH=src python scripts/operational_smoke.py
+    PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+      .venv/bin/python scripts/operational_smoke.py --skip-telegram
 
 Opciones:
     --skip-cli-approval   No ejecuta ciclo editor write + approve en workspace temporal
-    --skip-telegram       No envia mensaje outbound a Telegram
+    --send-telegram       Envia deliberadamente un mensaje real con el bot propio de Atlas
+    --skip-telegram       Alias de compatibilidad; Telegram ya se omite por defecto
     --workspace PATH      Usar ATLAS_HOME existente (default: directorio temporal)
 
 Comprueba:
@@ -154,6 +158,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Atlas operational smoke")
     parser.add_argument("--skip-cli-approval", action="store_true")
     parser.add_argument("--skip-telegram", action="store_true")
+    parser.add_argument("--send-telegram", action="store_true")
     parser.add_argument("--workspace", type=Path, default=None)
     args = parser.parse_args()
 
@@ -176,10 +181,10 @@ def main() -> int:
             _check_cli_approval(workspace)
         else:
             print("[4/5] CLI approval SKIP")
-        if not args.skip_telegram:
+        if args.send_telegram and not args.skip_telegram:
             _check_telegram_outbound()
         else:
-            print("[5/5] telegram SKIP")
+            print("[5/5] telegram SKIP (use --send-telegram for an external message)")
     finally:
         if cleanup:
             import shutil

@@ -419,9 +419,11 @@ class EditorTool:
         )
 
     def _resolve_permissions_config(self) -> Path:
+        from atlas.runtime_paths import atlas_data_root
+
         candidates = [
             Path.cwd() / "config" / "permissions.yaml",
-            Path(__file__).resolve().parents[3] / "config" / "permissions.yaml",
+            atlas_data_root() / "config" / "permissions.yaml",
         ]
         for candidate in candidates:
             if candidate.exists():

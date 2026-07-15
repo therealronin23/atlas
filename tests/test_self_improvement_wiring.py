@@ -455,8 +455,11 @@ class TestProjectGraphTick:
         monkeypatch.setenv("ATLAS_PROJECT_GRAPH_DB", str(db))
         repo = tmp_path / "repo"
         self._git_repo(repo)
+        cache = repo / "graphify-out" / "cache" / "ast" / "v0.9.11"
+        cache.mkdir(parents=True)
 
         builds: list[Path] = []
+        callgraph_loads: list[tuple[Path, Path, dict[str, Any]]] = []
 
         def _fake_build(root: Path, db_path: Path, **kw: Any) -> dict[str, Any]:
             # El tick construye sobre la COPIA .rebuild y hace swap después.
@@ -470,9 +473,32 @@ class TestProjectGraphTick:
             "atlas.memory.project_graph.build_project_graph", _fake_build,
         )
 
+        def _fake_callgraph(
+            cache_dir: Path, db_path: Path, **kwargs: Any
+        ) -> dict[str, Any]:
+            callgraph_loads.append((cache_dir, db_path, kwargs))
+            return {"files": 266, "symbols": 1200, "calls": 700}
+
+        monkeypatch.setattr(
+            "atlas.memory.callgraph_to_kuzu.load_callgraph_into_kuzu",
+            _fake_callgraph,
+        )
+
         first = orch.maintenance_project_graph_tick()
         assert first["status"] == "ran"
         assert builds == [repo.resolve()]
+        assert first["metrics"]["callgraph"]["symbols"] == 1200
+        assert callgraph_loads == [
+            (
+                repo / "graphify-out" / "cache" / "ast",
+                db.with_name(db.name + ".rebuild"),
+                {
+                    "source_prefix": "src/atlas",
+                    "replace": True,
+                    "strict": True,
+                },
+            )
+        ]
         # Swap hecho: la BD servida existe y la copia .rebuild ya no.
         assert db.read_text(encoding="utf-8") == "kuzu-fake"
         assert not db.with_name(db.name + ".rebuild").exists()
@@ -494,3 +520,70 @@ class TestProjectGraphTick:
         third = orch.maintenance_project_graph_tick()
         assert third["status"] == "ran"
         assert len(builds) == 2
+        assert len(callgraph_loads) == 2
+
+    def test_callgraph_errors_abort_without_swapping_or_advancing_state(
+        self, orch: Orchestrator, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH", "1")
+        db = tmp_path / "graphdb" / "project_graph.kuzu"
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH_DB", str(db))
+        repo = tmp_path / "repo"
+        self._git_repo(repo)
+        (repo / "graphify-out" / "cache" / "ast" / "v0.9.11").mkdir(
+            parents=True
+        )
+
+        def _fake_build(root: Path, db_path: Path, **kw: Any) -> dict[str, Any]:
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            db_path.write_text("rebuild-only", encoding="utf-8")
+            return {"commits": ["abc"]}
+
+        def _broken_callgraph(*args: Any, **kwargs: Any) -> dict[str, Any]:
+            raise ValueError("broken Graphify cache")
+
+        monkeypatch.setattr(
+            "atlas.memory.project_graph.build_project_graph", _fake_build
+        )
+        monkeypatch.setattr(
+            "atlas.memory.callgraph_to_kuzu.load_callgraph_into_kuzu",
+            _broken_callgraph,
+        )
+
+        with pytest.raises(ValueError, match="broken Graphify cache"):
+            orch.maintenance_project_graph_tick()
+
+        assert not db.exists()
+        assert not (
+            repo / "workspace" / "knowledge" / "project_graph_state.json"
+        ).exists()
+
+    def test_zero_symbol_callgraph_is_not_a_successful_regeneration(
+        self, orch: Orchestrator, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH", "1")
+        db = tmp_path / "graphdb" / "project_graph.kuzu"
+        monkeypatch.setenv("ATLAS_PROJECT_GRAPH_DB", str(db))
+        repo = tmp_path / "repo"
+        self._git_repo(repo)
+        (repo / "graphify-out" / "cache" / "ast" / "v0.9.11").mkdir(
+            parents=True
+        )
+
+        def _fake_build(root: Path, db_path: Path, **kw: Any) -> dict[str, Any]:
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            db_path.write_text("rebuild-only", encoding="utf-8")
+            return {"commits": ["abc"]}
+
+        monkeypatch.setattr(
+            "atlas.memory.project_graph.build_project_graph", _fake_build
+        )
+        monkeypatch.setattr(
+            "atlas.memory.callgraph_to_kuzu.load_callgraph_into_kuzu",
+            lambda *args, **kwargs: {"files": 0, "symbols": 0, "calls": 0},
+        )
+
+        with pytest.raises(RuntimeError, match="zero symbols"):
+            orch.maintenance_project_graph_tick()
+
+        assert not db.exists()

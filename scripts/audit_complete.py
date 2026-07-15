@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Auditoria completa ejecutable — pytest, mypy, smokes, conteos."""
+"""Auditoria completa ejecutable — pytest acotado, mypy y smokes.
+
+Pytest se ejecuta por lotes de ficheros en procesos independientes.  El
+aislamiento evita que imports/caches de cientos de módulos se acumulen en un
+único proceso hasta superar el ``MemoryMax`` del runner systemd de 24 horas.
+"""
 
 from __future__ import annotations
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -24,6 +30,11 @@ SENSITIVE_ENV_KEYS = (
     "TAILSCALE_AUTH_KEY",
 )
 
+DEFAULT_TEST_BATCH_SIZE = 20
+MAX_TEST_BATCH_SIZE = 64
+DEFAULT_CHECK_TIMEOUT_SECONDS = 1800
+MAX_CHECK_TIMEOUT_SECONDS = 21600
+
 
 def redact(text: str, env: dict) -> str:
     redacted = text
@@ -34,14 +45,58 @@ def redact(text: str, env: dict) -> str:
     return redacted
 
 
+def _check_timeout(env: dict) -> int:
+    raw = str(
+        env.get(
+            "ATLAS_AUDIT_CHECK_TIMEOUT_SECONDS",
+            DEFAULT_CHECK_TIMEOUT_SECONDS,
+        )
+    )
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_CHECK_TIMEOUT_SECONDS
+    if 1 <= value <= MAX_CHECK_TIMEOUT_SECONDS:
+        return value
+    return DEFAULT_CHECK_TIMEOUT_SECONDS
+
+
 def run(cmd: list[str], cwd: Path, env: dict | None = None) -> dict:
     e = {**os.environ, **(env or {})}
-    r = subprocess.run(cmd, cwd=cwd, env=e, capture_output=True, text=True, check=False)
+    timeout = _check_timeout(e)
+    process = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=e,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    timed_out = False
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            stdout, stderr = process.communicate()
+    if timed_out:
+        stderr = f"{stderr or ''}\nERROR: check timed out after {timeout}s"
     return {
         "cmd": " ".join(cmd),
-        "exit": r.returncode,
-        "stdout_tail": redact(r.stdout or "", e)[-1500:],
-        "stderr_tail": redact(r.stderr or "", e)[-800:],
+        "exit": 124 if timed_out else process.returncode,
+        "stdout_tail": redact(stdout or "", e)[-1500:],
+        "stderr_tail": redact(stderr or "", e)[-800:],
     }
 
 
@@ -53,6 +108,78 @@ def skipped(name: str, reason: str) -> dict:
         "stderr_tail": "",
         "skipped": True,
     }
+
+
+def discover_test_files(root: Path) -> list[Path]:
+    """Return the complete, deterministic set of pytest source files."""
+    return sorted((root / "tests").rglob("test_*.py"))
+
+
+def discover_computer_use_test_files(root: Path) -> list[Path]:
+    """Return a safe superset of files that can declare computer-use tests.
+
+    Pytest's marker expression remains the authority.  Text discovery only
+    narrows collection to files capable of mentioning the marker, so mixed
+    core/browser modules remain correctly filtered by ``-m computer_use``.
+    """
+    return [
+        path
+        for path in discover_test_files(root)
+        if "computer_use" in path.read_text(encoding="utf-8")
+    ]
+
+
+def _test_batch_size(env: dict) -> int:
+    raw = str(env.get("ATLAS_AUDIT_TEST_BATCH_SIZE", DEFAULT_TEST_BATCH_SIZE))
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_TEST_BATCH_SIZE
+    if 1 <= value <= MAX_TEST_BATCH_SIZE:
+        return value
+    return DEFAULT_TEST_BATCH_SIZE
+
+
+def run_pytest_batches(
+    root: Path,
+    env: dict,
+    files: list[Path],
+    *,
+    marker: str,
+    batch_size: int,
+) -> list[dict]:
+    """Run pytest in bounded subprocesses and return one check per batch."""
+    checks: list[dict] = []
+    total = (len(files) + batch_size - 1) // batch_size
+    for batch_number, start in enumerate(range(0, len(files), batch_size), start=1):
+        batch = files[start : start + batch_size]
+        relative = [str(path.relative_to(root)) for path in batch]
+        print(
+            f"[audit] pytest {marker!r} batch {batch_number}/{total} "
+            f"({len(batch)} files)",
+            flush=True,
+        )
+        checks.append(
+            run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pytest",
+                    *relative,
+                    "-q",
+                    "--tb=line",
+                    "-m",
+                    marker,
+                ],
+                root,
+                env,
+            )
+        )
+        print(
+            f"[audit] batch {batch_number}/{total} exit={checks[-1]['exit']}",
+            flush=True,
+        )
+    return checks
 
 
 def smoke_self_audit(root: Path, env: dict) -> dict:
@@ -121,12 +248,26 @@ def main() -> int:
         "checks": [],
     }
 
-    report["checks"].append(
-        run([sys.executable, "-m", "pytest", "tests/", "-q", "-m", "not computer_use"], root, env)
+    batch_size = _test_batch_size(env)
+    test_files = discover_test_files(root)
+    report["checks"].extend(
+        run_pytest_batches(
+            root,
+            env,
+            test_files,
+            marker="not computer_use",
+            batch_size=batch_size,
+        )
     )
     if env.get("ATLAS_AUDIT_COMPUTER_USE") == "1":
-        report["checks"].append(
-            run([sys.executable, "-m", "pytest", "tests/", "-q", "-m", "computer_use"], root, env)
+        report["checks"].extend(
+            run_pytest_batches(
+                root,
+                env,
+                discover_computer_use_test_files(root),
+                marker="computer_use",
+                batch_size=batch_size,
+            )
         )
     else:
         report["checks"].append(
@@ -145,16 +286,20 @@ def main() -> int:
                 run([sys.executable, str(path)], root, env)
             )
     report["checks"].append(smoke_self_audit(root, env))
+    report["checks"].append(
+        run([sys.executable, str(root / "scripts" / "twin_e2e_smoke.py")], root, env)
+    )
 
-    if env.get("ATLAS_AUDIT_LIVE") == "1":
+    if env.get("ATLAS_AUDIT_LIVE") == "1" and env.get("VPS_HOST"):
         report["checks"].append(
-            run([sys.executable, str(root / "scripts" / "operational_smoke.py")], root, env)
+            run(["bash", str(root / "scripts" / "verify_twin_pairing.sh")], root, env)
         )
     else:
         report["checks"].append(
             skipped(
-                "scripts/operational_smoke.py",
-                "set ATLAS_AUDIT_LIVE=1 and load .env to run live Hermes/Telegram smoke",
+                "scripts/verify_twin_pairing.sh",
+                "set ATLAS_AUDIT_LIVE=1 and VPS_HOST for a read-only live pairing check; "
+                "provider inference and Telegram delivery are never automatic",
             )
         )
 

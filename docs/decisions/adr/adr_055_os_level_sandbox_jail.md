@@ -1,6 +1,7 @@
 # ADR-055 — Jail OS-level para ejecución de código no confiable
 
-Fecha: 2026-06-18 · Estado: **Propuesto** · Resuelve el hallazgo CRÍTICO de la
+Fecha: 2026-06-18 · Estado: **Aceptado, parcialmente implementado; revisado
+2026-07-16** · Resuelve el hallazgo CRÍTICO de la
 auditoría de seguridad del 2026-06-18 (`security-auditor`: "ASTGuard is a
 bypassable denylist — full sandbox escape to arbitrary OS command execution") ·
 Contexto: `ast_guard.py`, `sandbox.py`, `process_hardening.py`, `executor.py`,
@@ -133,6 +134,28 @@ independientes**: ninguna confía en la otra.
 5. **Slice 5 — Documentar requisito de `bwrap`** en AGENTS.md/instalación;
    actualizar claims de `sandbox.py` de "aspiracional" a "enforced" SOLO tras
    pasar los tests de los slices 1–4.
+
+## Estado de implementación verificado el 2026-07-16
+
+- **Slices 1, 3, 4 y 5 implementados.** `BwrapJail` crea namespaces de usuario,
+  montaje, red, PID/IPC/UTS; monta una raíz mínima, deja el cwd read-only por
+  defecto, permite escritura solo cuando la capacidad la declara y falla
+  cerrado si `bwrap` falta.
+- **El path de comandos estructurados también está contenido.** `execute_exec`
+  ya no ejecuta el allowlist directamente en el host. `git -C` recibe solo el
+  repo autorizado read-only; `patch --input` recibe el patch read-only y el cwd
+  escribible explícito; entradas fuera del workspace se rechazan.
+- **Captura acotada.** stdout/stderr se respaldan por ficheros temporales y se
+  limitan; se mantienen timeout y rlimits.
+- **Slice 2 parcial, no cerrado.** En x86_64 existe un filtro seccomp BPF de
+  *denylist* para syscalls de alto riesgo. No es la allowlist propuesta en esta
+  ADR y, fuera de x86_64, el jail continúa sin filtro seccomp con warning. La
+  contención de namespace/montaje/red sigue activa, pero no debe describirse
+  como seccomp allowlist completa.
+- Las pruebas reales cubren bwrap disponible, cwd escribible limitado, repo git
+  externo autorizado read-only y ausencia de fallback inseguro. Una suite
+  verde es evidencia del checkout probado, no una garantía absoluta contra
+  vulnerabilidades del kernel.
 
 ## Criterios de compuerta
 

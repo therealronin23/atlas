@@ -112,5 +112,20 @@ def test_orchestrator_uses_kanban_without_offline_duplication(
     assert task.status == TaskStatus.DELEGATED
     assert task.result is not None
     assert task.result["accepted"] is True
-    assert "Hermes kanban local" in task.result["note"]
+    assert "Hermes kanban (local)" in task.result["note"]
     assert orch._offline_queue.depth == before
+
+
+def test_orchestrator_selects_explicit_ssh_kanban_transport(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HERMES_KANBAN_TRANSPORT", "ssh")
+    monkeypatch.setenv("HERMES_SSH_HOST", "root@100.64.0.2")
+    monkeypatch.delenv("HERMES_BASE_URL", raising=False)
+    orch = object.__new__(Orchestrator)
+    orch._offline_queue = OfflineQueue(tmp_path / "memory")
+
+    adapter = Orchestrator._build_hermes_adapter(orch)
+
+    assert isinstance(adapter, HermesKanbanAdapter)
+    assert adapter.transport == "ssh"

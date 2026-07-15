@@ -1,5 +1,10 @@
 # Gate C — Seal
 
+> **Evidencia histórica (2026-05-23), no estado operativo actual.** Este sello
+> documenta el antiguo stub REST/Docker. No debe ejecutarse como runbook ni
+> usarse para afirmar que Hermes, el VPS o Telegram están vivos. Autoridad
+> actual: `atlas reality`, `docs/design/atlas_ecosystem_map.md` y ADR-026..029.
+
 **Fecha:** 2026-05-23
 **Estado:** COMPLETE
 **Tests:** 147/147 passing

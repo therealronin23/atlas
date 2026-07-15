@@ -45,10 +45,13 @@ Copia `.env.example` a `.env` y rellena. Las relevantes:
 | Variable | Gate | Descripción |
 |---|---|---|
 | `ATLAS_HOME` | — | Workspace root. Default `~/atlas`. |
-| `HERMES_BASE_URL` | C | URL del Hermes REST-compatible: VPS (`100.x:8443`) o local (`127.0.0.1:8443`). |
-| `HERMES_API_KEY` | C | Shared secret para HMAC-SHA256. Lo emite `install_hermes_vps.sh`. |
-| `TELEGRAM_BOT_TOKEN` | C | Token de @BotFather para `atlas` bot. Opcional. |
-| `TELEGRAM_CHAT_ID` | C | Chat ID autorizado. Solo este chat puede mandarle órdenes. |
+| `HERMES_API_KEY` | C | Secreto HMAC de al menos 32 bytes para el canal Hermes→Atlas. El wrapper seguro puede generarlo y guardarlo sin imprimirlo. |
+| `ATLAS_DASHBOARD_URL` | C | Origen privado/Tailscale de Atlas que usa la skill `atlas-twin`; no admite credenciales, ruta, query ni fragmento. |
+| `HERMES_MODEL_PROVIDER` / `HERMES_MODEL` | C | Proveedor y modelo explícitos para el Hermes oficial. El provisionador admite `custom:groq` u `openrouter`. |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_ALLOWED_USERS` | C | Bot y lista numérica de usuarios autorizados por Hermes. Configurarlos no prueba entrega viva. |
+| `HERMES_KANBAN_TRANSPORT` / `HERMES_SSH_HOST` | C | Canal Atlas→Hermes (`local` o `ssh`); en SSH el destino debe ser `usuario@host` privado/Tailscale. |
+| `HERMES_BASE_URL` | C | Solo compatibilidad con el antiguo `HermesRestAdapter`; no es el transporte nativo del Hermes-Agent oficial. |
+| `TELEGRAM_CHAT_ID` | C | Chat autorizado para el bot propio de Atlas, distinto del bot gestionado por Hermes. |
 | `GROQ_API_KEY` | D | Free tier, llama-3.3-70b y qwen3-32b. ~150ms. |
 | `OPENROUTER_API_KEY` | D | Free tier, varios modelos open. Latencia variable. |
 | `TOGETHERAI_API_KEY` | D | Opcional. Atlas no la pide; LiteLLM la usa si la encuentra. |
@@ -64,8 +67,8 @@ Copia `.env.example` a `.env` y rellena. Las relevantes:
 ### 1.3 Verificar la instalación
 
 ```bash
-PYTHONPATH=src python -m pytest tests/ --ignore=tests/test_browser.py -q
-# suite core (~522+ passed; browser tests requieren Playwright)
+PYTHONPATH=src python -m pytest tests/ -q
+# Los tests marcados computer_use se ejecutan aparte cuando se desea validar navegador.
 
 MYPYPATH=src python -m mypy src/atlas/
 # debe imprimir: Success
@@ -87,13 +90,13 @@ atlas status
 
 Output:
 ```
-Atlas Core v0.6
+Atlas Core
   Workspace:       /home/usuario/atlas
-  Version:         0.6.0
+  Version:         <versión instalada>
   Uptime:          12.5s
   Governance:      OK
   Merkle chain:    OK
-  Hermes mode:     mock         # o "live" si HERMES_BASE_URL configurado
+  Hermes mode:     mock         # "configured" tampoco significa probado en vivo
   Queue depth:     0
   Tools:           N
   Audit records:   M
@@ -168,7 +171,8 @@ D activo, esto ocurre:
      LOCAL_SAFE.
 5. **Route**:
    - `BLOCKED` → governance, no se ejecuta.
-   - `DELEGATE_HERMES` → envía a Hermes-VPS.
+   - `DELEGATE_HERMES` → usa el adapter Hermes configurado; si no está
+     alcanzable, la ruta debe degradar sin fingir ejecución.
    - `REQUIRES_APPROVAL` → entra a queue de aprobación (Telegram).
    - `DETERMINISTIC_TOOL` → git/fs/atlas tools, sin LLM.
    - `LOCAL_SAFE` con InferenceHub:
@@ -247,79 +251,50 @@ export ATLAS_MEMORY_VECTOR=0
 
 ---
 
-## 4. Smoke tests reales
+## 4. Verificación
 
-Verificación contra infraestructura viva. Runbook completo:
-[docs/operational_runbook.md](operational_runbook.md).
+El runbook actual está en
+[operational_runbook.md](operational_runbook.md). Cada comando prueba una capa
+distinta; no sumar sus conclusiones por intuición.
 
-### 4.0 `operational_smoke.py` (recomendado)
-
-Checklist operativo: env, `Orchestrator.status`, Hermes REST, ciclo CLI
-approval (editor write), Telegram outbound opcional.
+### 4.0 Estado local y suite
 
 ```bash
-set -a && source .env && set +a
-PYTHONPATH=src python scripts/operational_smoke.py
+PYTHONPATH=src atlas reality --run-checks --json
 ```
 
-Con workspace real:
+Esto prueba estado local, suite core y mypy. Proveedores y servicios externos
+siguen sin verificarse salvo que un smoke específico los llame realmente.
+
+### 4.1 Contrato twin aislado
 
 ```bash
-PYTHONPATH=src python scripts/operational_smoke.py --workspace ~/atlas
+PYTHONPATH=src python scripts/twin_e2e_smoke.py
 ```
 
-### 4.1 `hermes_smoke.py`
+Verifica HMAC, nonce, grounding y Merkle dentro de un workspace temporal. No
+prueba el VPS ni Telegram. El modo `--live` solo admite una URL Atlas privada o
+Tailscale y reutiliza el cliente endurecido de la skill.
 
-Prueba el adapter HermesRest contra Hermes-VPS por Tailscale.
-Requiere `HERMES_BASE_URL` + `HERMES_API_KEY` en `.env`.
+### 4.2 Pairing Hermes real
 
 ```bash
-set -a && source .env && set +a
-PYTHONPATH=src python scripts/hermes_smoke.py
+VPS_HOST=<tailscale-ip-o-nombre.ts.net> scripts/verify_twin_pairing.sh
 ```
 
-Output esperado (4 pasos OK):
-```
-[1/4] health_check http://100.108.132.116:8443 ...
-      reachable=True mode=live version=stub-0.1.0
-[2/4] enqueue_task echo ...      accepted=True delegation_id=...
-[3/4] get_queue_status ...       depth=1 next=...
-[4/4] cancel_task ...             cancelled=True
-OK
-```
+Comprueba el servicio fijado y el canal firmado. Su propia salida recuerda que
+no realiza inferencia ni envía Telegram; ambas requieren pruebas separadas.
 
-### 4.2 `inference_smoke.py`
-
-Prueba cada proveedor LLM con key en entorno.
+### 4.3 Inferencia Atlas
 
 ```bash
-PYTHONPATH=src python scripts/inference_smoke.py
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  .venv/bin/python scripts/inference_smoke.py
 ```
 
-Output:
-```
-  - groq_llama            OK     180ms  Atlas operativo
-  - groq_qwen             OK     190ms  <think> Okay, the user...
-  - openrouter_nemotron   OK    12000ms  atlas operativo
-  - openrouter_liquid     OK     339ms  atlas operativo
-  - together_free         SKIP (sin key)
-  - gemini_free           SKIP (sin key)
-```
-
-### 4.3 `pipeline_smoke.py`
-
-End-to-end del pipeline Gate D completo, 5 intents.
-
-```bash
-PYTHONPATH=src python scripts/pipeline_smoke.py
-```
-
-Cada intent reporta `route`, `tool`, `classifier_path`, `ghost`,
-`latency_ms`, `timetravel` steps. Si pasa por `inference_hub.complete`,
-también muestra `provider`, `latency_hub`, `tokens`, `excerpt` y
-`pii_redacted`.
-
-Exit code 0 si los 5 cumplen su expectativa.
+Solo los proveedores llamados con éxito quedan verificados para esa ejecución.
+`hermes_smoke.py` y `operational_smoke.py` pertenecen al contrato REST legado y
+no sirven como evidencia del Hermes-Agent oficial.
 
 ---
 
@@ -367,25 +342,18 @@ source .env && curl -sS https://openrouter.ai/api/v1/models \
 Edita `DEFAULT_PROVIDERS` en `src/atlas/core/inference_hub.py` para
 apuntar a uno vigente.
 
-### 5.5 Hermes-VPS no responde
+### 5.5 Hermes-Agent no responde
 
 ```bash
-# verificar tailnet
 tailscale status
-
-# probar conectividad TCP al puerto 8443
-nc -zv 100.108.132.116 8443
-
-# si el VPS está vivo pero el agente no
-ssh root@<ip-publica-vps>
-docker ps | grep hermes
-docker logs hermes-agent -n 50
+VPS_HOST=<tailscale-ip-o-nombre.ts.net> scripts/verify_twin_pairing.sh
+ssh -o StrictHostKeyChecking=yes root@<tailscale-host> \
+  'systemctl status hermes-agent.service --no-pager'
 ```
 
-Si el contenedor está caído:
-```bash
-ssh root@<ip-publica-vps> "cd /opt/hermes/agent && docker compose up -d"
-```
+No usar IP pública, Docker ni rutas `/root/.hermes`: no pertenecen al
+despliegue endurecido actual. Un pairing verde no demuestra proveedor o
+Telegram; probarlos explícitamente antes de declararlos operativos.
 
 ### 5.6 KuzuDB dim mismatch al abrir VectorStore
 

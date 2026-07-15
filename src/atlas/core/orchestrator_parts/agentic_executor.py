@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any
 
 from atlas.core.contracts import EventType, RoutingLevel, Task, TaskStatus
 from atlas.core.decider import Allow, DecisionAction, Deny, RequiresHuman
+from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
 from atlas.memory.block_memory import (
     BlockLimitExceeded,
     BlockMemoryError,
@@ -460,10 +461,9 @@ class AgenticExecutor:
             "tool": task.tool_name,
             # ADR-033: el lote de mutaciones, para que Telegram pueda ofrecer
             # botones de aprobación parcial (uno por mutación) además del lote.
-            "pending_mutations": [
-                {"id": m.get("id"), "name": m.get("name")}
-                for m in pending_mutations
-            ],
+            "pending_mutations": TaskPersistence.summarize_pending_mutations(
+                pending_mutations
+            ),
         }, task.id)
 
     def _dispatch_mutation(

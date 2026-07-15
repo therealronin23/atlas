@@ -11,6 +11,7 @@ import logging
 import json
 import os
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -315,19 +316,18 @@ class Orchestrator:
     def adopt_mcp_server(self, cfg: McpServerConfig, task: Task) -> str:
         """Adopta un server MCP en caliente bajo veredicto del decisor (ADR-040).
 
-        Mutación reversible: ``remove_server`` deshace la adopción. Si el decisor
-        autoriza y ``add_server`` reporta ``ok:``, registra el undo
-        ``MCP_SERVER`` atado al ``action_hash`` exacto que autorizó. Devuelve el
-        estado textual (``ok:`` / ``skipped:`` / ``vetoed:`` / ``error:`` /
-        ``denegado:`` / ``requiere aprobación humana``) para que el llamante lo
-        reporte (Telegram, auto-mantenimiento)."""
-        verdict, act_hash = self._consult_decider(
+        Ejecutar código de tercero puede leer o exfiltrar antes de que
+        ``remove_server`` lo detenga; unregister NO es undo. Por ello se declara
+        irreversible y de sensibilidad alta hasta que exista aislamiento real
+        previo al spawn. En modo autónomo queda denegado y en modo humano exige
+        aprobación explícita."""
+        verdict, _act_hash = self._consult_decider(
             DecisionAction(
                 kind="mcp_adopt",
                 requires_approval=True,
                 mutating=True,
-                reversible=True,
-                sensitivity=task.sensitivity,
+                reversible=False,
+                sensitivity="high",
                 descriptor=cfg.name,
                 reason="adopción de server MCP",
             ),
@@ -337,10 +337,7 @@ class Orchestrator:
             return "requiere aprobación humana para adoptar el server"
         if isinstance(verdict, Deny):
             return f"denegado: {verdict.reason}"
-        status = self._mcp.add_server(cfg)
-        if status.startswith("ok:"):
-            self.register_undo(act_hash, MCP_SERVER, cfg.name)
-        return status
+        return self._mcp.add_server(cfg)
 
     def execute_reversible_code(
         self, code: str, task: Task, *, descriptor: str = ""
@@ -981,7 +978,7 @@ class Orchestrator:
         self._mcp_started = False
 
     def memory_read(self, layer: str) -> Any:
-        layer_map = {
+        layer_map: dict[str, Callable[[], Any]] = {
             "system_context": lambda: self._system_context.as_system_context(),
             "error_registry": lambda: [e.to_dict() for e in self._error_registry.all()],
             "approved_patterns": lambda: [e.to_dict() for e in self._approved_patterns.all()],
@@ -1714,7 +1711,7 @@ class Orchestrator:
             self._offline_queue.enqueue(entry_cls(delegation=signed_payload))
         elif isinstance(self._hermes, HermesKanbanAdapter):
             signed_payload = payload
-            mode_note = "Hermes kanban local"
+            mode_note = f"Hermes kanban ({self._hermes.transport})"
             merkle_action = "hermes.kanban_delegated"
         elif isinstance(self._hermes, HermesRestAdapter):
             signed_payload = self._hermes._sign_payload(payload)
@@ -2041,7 +2038,7 @@ class Orchestrator:
 
     def _build_hermes_adapter(self) -> HermesAdapter:
         kanban_transport = os.environ.get("HERMES_KANBAN_TRANSPORT", "").strip().lower()
-        if kanban_transport and kanban_transport != "ssh":
+        if kanban_transport:
             _log.info("Hermes: kanban (%s)", kanban_transport)
             return HermesKanbanAdapter(
                 offline_queue=self._offline_queue,
@@ -2056,8 +2053,9 @@ class Orchestrator:
                 offline_queue=self._offline_queue,
             )
         _log.warning(
-            "Hermes: mock (faltan HERMES_BASE_URL/HERMES_API_KEY). "
-            "Carga .env para VPS real."
+            "Hermes no configurado: se usa el adapter mock. Configure un "
+            "HERMES_KANBAN_TRANSPORT explícito (y HERMES_SSH_HOST para SSH) o "
+            "el contrato REST legado; ninguna configuración implica evidencia viva."
         )
         return HermesMockAdapter()
 
@@ -2094,7 +2092,9 @@ class Orchestrator:
 
     def _copy_defaults(self, config_dir: Path) -> None:
         """Copia governance.json y permissions.yaml si no existen en el workspace."""
-        src_dir = Path(__file__).parent.parent.parent.parent.parent / "config"
+        from atlas.runtime_paths import atlas_data_root
+
+        src_dir = atlas_data_root() / "config"
         if not src_dir.exists():
             # En instalacion pip el config esta en un sitio diferente;
             # crear defaults minimos inline

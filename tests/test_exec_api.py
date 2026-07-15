@@ -17,6 +17,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -24,6 +25,7 @@ from fastapi.testclient import TestClient
 
 from atlas.core.orchestrator import Orchestrator
 from atlas.interfaces.exec_api import (
+    HEADER_NONCE,
     HEADER_SIGNATURE,
     HEADER_TIMESTAMP,
     build_router,
@@ -35,7 +37,7 @@ from atlas.interfaces.exec_api import (
 # ---------------------------------------------------------------------------
 
 
-SECRET = "test-secret-hermes-key-abc123"
+SECRET = "test-secret-hermes-key-at-least-32-bytes"
 
 
 @pytest.fixture
@@ -52,11 +54,20 @@ def client(orch: Orchestrator) -> TestClient:
     return TestClient(app)
 
 
-def _sign(body: bytes) -> dict[str, str]:
-    sig = hmac.new(SECRET.encode(), body, hashlib.sha256).hexdigest()
+def _sign(
+    body: bytes,
+    *,
+    timestamp: str | None = None,
+    nonce: str | None = None,
+) -> dict[str, str]:
+    timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+    nonce = nonce or uuid4().hex
+    signed = timestamp.encode() + b"\n" + nonce.encode() + b"\n" + body
+    sig = hmac.new(SECRET.encode(), signed, hashlib.sha256).hexdigest()
     return {
         HEADER_SIGNATURE: sig,
-        HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+        HEADER_TIMESTAMP: timestamp,
+        HEADER_NONCE: nonce,
     }
 
 
@@ -71,6 +82,7 @@ class TestHmacAuth:
         body = json.dumps({"command": "echo", "args": ["hi"]}).encode()
         r = client.post("/api/exec/shell", content=body, headers={
             HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+            HEADER_NONCE: uuid4().hex,
         })
         assert r.status_code == 401
 
@@ -79,17 +91,16 @@ class TestHmacAuth:
         r = client.post("/api/exec/shell", content=body, headers={
             HEADER_SIGNATURE: "deadbeef" * 8,
             HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+            HEADER_NONCE: uuid4().hex,
         })
         assert r.status_code == 401
 
     def test_stale_timestamp_returns_401(self, client: TestClient) -> None:
         body = json.dumps({"command": "echo"}).encode()
         stale_ts = "2020-01-01T00:00:00+00:00"
-        sig = hmac.new(SECRET.encode(), body, hashlib.sha256).hexdigest()
-        r = client.post("/api/exec/shell", content=body, headers={
-            HEADER_SIGNATURE: sig,
-            HEADER_TIMESTAMP: stale_ts,
-        })
+        r = client.post(
+            "/api/exec/shell", content=body, headers=_sign(body, timestamp=stale_ts)
+        )
         assert r.status_code == 401
 
     def test_missing_timestamp_returns_401(self, client: TestClient) -> None:
@@ -97,8 +108,44 @@ class TestHmacAuth:
         sig = hmac.new(SECRET.encode(), body, hashlib.sha256).hexdigest()
         r = client.post("/api/exec/shell", content=body, headers={
             HEADER_SIGNATURE: sig,
+            HEADER_NONCE: uuid4().hex,
         })
         assert r.status_code == 401
+
+    def test_naive_timestamp_returns_401_not_500(self, client: TestClient) -> None:
+        body = json.dumps({"command": "echo"}).encode()
+        naive = datetime.now().isoformat()
+        r = client.post(
+            "/api/exec/shell", content=body, headers=_sign(body, timestamp=naive)
+        )
+        assert r.status_code == 401
+
+    def test_missing_nonce_returns_401(self, client: TestClient) -> None:
+        body = json.dumps({"command": "echo"}).encode()
+        timestamp = datetime.now(timezone.utc).isoformat()
+        signed = timestamp.encode() + b"\n\n" + body
+        signature = hmac.new(SECRET.encode(), signed, hashlib.sha256).hexdigest()
+        r = client.post(
+            "/api/exec/shell",
+            content=body,
+            headers={HEADER_SIGNATURE: signature, HEADER_TIMESTAMP: timestamp},
+        )
+        assert r.status_code == 401
+
+    def test_timestamp_is_covered_by_signature(self, client: TestClient) -> None:
+        body = json.dumps({"command": "echo"}).encode()
+        signed_headers = _sign(body)
+        signed_headers[HEADER_TIMESTAMP] = datetime.now(timezone.utc).isoformat()
+        r = client.post("/api/exec/shell", content=body, headers=signed_headers)
+        assert r.status_code == 401
+
+    def test_nonce_cannot_be_replayed(self, client: TestClient) -> None:
+        body = b"not json"
+        headers = _sign(body)
+        first = client.post("/api/exec/shell", content=body, headers=headers)
+        second = client.post("/api/exec/shell", content=body, headers=headers)
+        assert first.status_code == 400
+        assert second.status_code == 401
 
     def test_no_secret_returns_503(
         self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
@@ -112,6 +159,25 @@ class TestHmacAuth:
             HEADER_SIGNATURE: "x" * 64,
             HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
         })
+        assert r.status_code == 503
+
+    def test_weak_secret_returns_503(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("HERMES_API_KEY", "too-short")
+        app = FastAPI()
+        app.include_router(build_router(lambda: orch))
+        c = TestClient(app)
+        body = b"{}"
+        r = c.post(
+            "/api/exec/health",
+            content=body,
+            headers={
+                HEADER_SIGNATURE: "x" * 64,
+                HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+                HEADER_NONCE: uuid4().hex,
+            },
+        )
         assert r.status_code == 503
 
 
@@ -142,6 +208,28 @@ class TestExecShell:
         body = b"not json"
         r = client.post("/api/exec/shell", content=body, headers=_sign(body))
         assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# /api/exec/health
+# ---------------------------------------------------------------------------
+
+
+class TestExecHealth:
+
+    def test_signed_health_reports_live_atlas_state(self, client: TestClient) -> None:
+        body = b"{}"
+        r = client.post("/api/exec/health", content=body, headers=_sign(body))
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["ok"] is True
+        assert data["merkle_chain_ok"] is True
+        assert data["governance_ok"] is True
+        assert "version" in data
+
+    def test_unsigned_health_is_rejected(self, client: TestClient) -> None:
+        r = client.post("/api/exec/health", content=b"{}")
+        assert r.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -326,6 +414,7 @@ class TestMerkleAudit:
         client.post("/api/exec/shell", content=body, headers={
             HEADER_SIGNATURE: "deadbeef" * 8,
             HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+            HEADER_NONCE: uuid4().hex,
         })
         recent = orch._merkle.tail(5)
         refused = [r for r in recent if r.action == "exec.refused.bad_signature"]

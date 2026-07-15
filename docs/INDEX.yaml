@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-11'
+generated: '2026-07-16'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
@@ -89,6 +89,82 @@ entries:
   status: historico
   verified: null
 - path: docs/archive/2026-05-snapshots/debt_closure_2026-05-25.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/AUDIT_AND_PREMORTEM_2026-07-14.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/AUDIT_QUICK_REFERENCE.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/CLAUDE_PROMPT.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/COMPLETION_CERTIFICATE_2026-07-14.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/DEPLOYMENT_SUMMARY.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/FINAL_CHECKLIST_3_ITEMS.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/FINAL_REMEDIATION_SUMMARY_2026-07-14.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/HONESTO_EVALUACION_FINAL.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/HONEST_VERDICT_OLLAMA_VS_CLOUD.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/NEXT_STEPS.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/QUICK_START_2026.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/README.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/REMEDIATION_COMPLETE_2026-07-14.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/REMEDIATION_FINAL_REPORT.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/REMEDIATION_RUNBOOK.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/STATUS_FINAL_PHASE_REALTIME.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/UPDATE_STATUS_OLLAMA_FINAL.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/WORKFLOW_GUIDE.md
+  type: historia
+  status: historico
+  verified: null
+- path: docs/archive/2026-07-14-knowledge-stack/requirements-knowledge-stack.txt
   type: historia
   status: historico
   verified: null
@@ -256,6 +332,10 @@ entries:
 - path: docs/archive/vscode_session_2026-06-17/osmosis_filter_design.md
   type: historia
   status: historico
+  verified: null
+- path: docs/audit_complete_latest.json
+  type: conocimiento
+  status: vigente
   verified: null
 - path: docs/audits/audit_adr051_052_premortem_2026-06-15.md
   type: evidencia
@@ -733,6 +813,10 @@ entries:
   type: decision
   status: vigente
   verified: null
+- path: docs/decisions/adr/adr_069_mission_layer_v0_foundry.md
+  type: decision
+  status: vigente
+  verified: null
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
@@ -835,6 +919,10 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/design/audit_premortem_postmortem_2026-07-16.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/design/backlog.md
   type: design
   status: vigente
@@ -910,6 +998,10 @@ entries:
   status: vigente
   verified: null
 - path: docs/design/mcp_trunk_portable.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/design/mission_layer_self_construction_spec.md
   type: design
   status: vigente
   verified: null
@@ -3366,6 +3458,10 @@ entries:
   status: vigente
   verified: null
 - path: docs/superpowers/specs/2026-06-25-recording-decider-design.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/superpowers/specs/2026-07-15-succession-ecosystem-design.md
   type: design
   status: vigente
   verified: null

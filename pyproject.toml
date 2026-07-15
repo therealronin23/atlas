@@ -63,20 +63,17 @@ evolution = [
     # api_base OpenAI-compatible — probado en vivo, sin conflictos de deps.
     "openevolve>=0.2.27",
 ]
-redteam = [
-    # ADR-056: tooling de red-team SOLO dev/CI — NUNCA importado por el runtime.
-    # Instalar en venv aislado y FIJAR torch al índice CPU para quedarse en ~1.8GB
-    # (si no, garak arrastra torch+CUDA ~5-8GB):
-    #   python -m venv .venv-redteam
-    #   .venv-redteam/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
-    #   .venv-redteam/bin/pip install garak
-    # El harness corre con ATLAS_HOME aislado, jamás contra el servicio vivo.
-    "garak>=0.15",
-    # PyRIT (multi-turn agéntico). Conflicto cosmético: sube `datasets` a 5.x
-    # (garak pide <4); verificado que garak sigue cargando su corpus igual.
-    # El atacante LLM va por API (modelo abierto, p.ej. Groq) — los modelos
-    # locales de este entorno no sirven (thinking-models / crash de Ollama).
-    "pyrit>=0.14",
+redteam-garak = [
+    # ADR-056 (amend. 2026-07-15): Garak y PyRIT NO comparten entorno.
+    # Garak 0.15.x exige datasets<4 y arrastra torch; instalar en su propio venv
+    # con el índice CPU. El harness además aísla ATLAS_HOME del servicio vivo.
+    "garak>=0.15,<0.16",
+    "torch>=2.6",
+]
+redteam-pyrit = [
+    # PyRIT 0.14.x exige datasets>=4.8 y por tanto vive en otro venv. El atacante
+    # va por API; este extra sigue siendo tooling dev/CI, nunca runtime Atlas.
+    "pyrit>=0.14,<0.15",
 ]
 # NOTA — scraping (Crawl4AI, absorbido 2026-07-02): NO es un extra de pip como
 # los de arriba porque NO puede convivir en este venv. `crawl4ai` fija
@@ -92,8 +89,40 @@ redteam = [
 [project.scripts]
 atlas = "atlas.interfaces.cli:cli"
 
+[tool.uv]
+# Los metadatos oficiales son incompatibles. uv los resuelve en forks separados
+# y rechaza que ambos extras se activen en un mismo entorno.
+conflicts = [
+    [
+        { extra = "redteam-garak" },
+        { extra = "redteam-pyrit" },
+    ],
+]
+
+[tool.uv.sources]
+# Evita que el extra aislado de Garak descargue wheels CUDA/NVIDIA innecesarios
+# en esta máquina CPU-only. La selección sólo se activa para ese extra.
+torch = [{ index = "torch-cpu", extra = "redteam-garak" }]
+
+[[tool.uv.index]]
+name = "torch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"atlas.interfaces" = ["templates/*.html"]
+
+[tool.setuptools.data-files]
+"share/atlas-core/config" = ["config/governance.json", "config/permissions.yaml"]
+"share/atlas-core/fixtures/connection_recipes" = ["fixtures/connection_recipes/*.json"]
+"share/atlas-core/fixtures/connector_packs" = ["fixtures/connector_packs/*.json"]
+"share/atlas-core/fixtures/connectors" = ["fixtures/connectors/*.json"]
+"share/atlas-core/fixtures/governance" = ["fixtures/governance/*.json"]
+"share/atlas-core/fixtures/question_packs" = ["fixtures/question_packs/*.json"]
+"share/atlas-core/fixtures/security" = ["fixtures/security/*.json"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

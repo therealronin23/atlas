@@ -29,7 +29,7 @@ Metodología (held-out por familia):
 Uso:
     PYTHONPATH=src python3 scripts/redteam/transfer_experiment.py \
         --variants 10 --embedder stub --out docs/audits/reports/immune_transfer_experiment.md
-    # embedder=hf (semántico real) requiere el venv .venv-redteam.
+    # embedder=hf (semántico real) requiere el venv .venv-redteam-garak.
 """
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ from atlas.memory.pattern_abstractor import PatternAbstractor
 
 # Familias de ataque (ilustrativas pero de vocabulario dispar dentro de cada una).
 # El corpus real de Garak (probes agrupados por familia) puede sustituir estas
-# semillas corriendo bajo el venv .venv-redteam; la taxonomía de Garak es el
+# semillas corriendo bajo el venv .venv-redteam-garak; la taxonomía de Garak es el
 # ground-truth EXTERNO de "familia" (evita filtrado circular).
 FAMILIES: dict[str, list[str]] = {
     "instruction_override": [
@@ -335,7 +335,7 @@ Procedencia: cadena Merkle verificada = {chain_ok} ({chain_msg}). Cada patrón s
 lecciones ancladas en la cadena → se puede probar QUÉ se sembró y CUÁNDO.
 
 Límites honestos: familias y semillas ilustrativas (sustituibles por el corpus real de Garak bajo
-`.venv-redteam`, cuya taxonomía de probes es el ground-truth externo de "familia"). El embedder
+`.venv-redteam-garak`, cuya taxonomía de probes es el ground-truth externo de "familia"). El embedder
 léxico no captura semántica entre vocabularios dispares; el resultado con `--embedder hf` (semántico)
 es el que cuenta para juzgar transferencia. La transferencia cross-family fuerte NO está resuelta por
 nadie; mostramos el mecanismo y medimos su frontera, no prometemos cobertura.

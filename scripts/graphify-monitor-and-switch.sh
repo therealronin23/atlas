@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Monitor Graphify logs and switch provider if error thresholds exceeded.
-cd "$(dirname "$0")/.."
-
-# Bug 1 (2026-07-15): choose_fallback() nunca veia las API keys del .env
-# porque nunca se cargaba tras el cd -- siempre caia al default openai:openai
-# (modelo gpt-4o-mini, que NVIDIA no sirve). Mismo patron que
-# run-graphify-quality-pipeline.sh.
-if [ -f ".env" ]; then
-  set -a
-  source ".env"
-  set +a
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+DOTENV_PATH="$ROOT_DIR/.env"
+if [[ -f "$DOTENV_PATH" && "${ATLAS_SAFE_DOTENV_FILE:-}" != "$DOTENV_PATH" ]]; then
+  export ATLAS_SAFE_DOTENV_FILE="$DOTENV_PATH"
+  exec python3 "$ROOT_DIR/scripts/safe_dotenv.py" "$DOTENV_PATH" -- \
+    bash "$(readlink -f "${BASH_SOURCE[0]}")" "$@"
 fi
+
+# Las credenciales se cargan como datos antes de reejecutar el monitor; nunca
+# se evalúa el contenido de .env como shell.
 
 LOG_MONITOR=/tmp/graphify_monitor.log
 CHECK_INTERVAL=${GRAPHIFY_MONITOR_INTERVAL:-30}

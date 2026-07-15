@@ -27,6 +27,7 @@ from atlas.core.self_maintenance import (
     McpProposal,
     Source,
 )
+from atlas.core.self_maintenance.preflight_gate import PreflightGate, PreflightResult
 from atlas.runtime.service_runner import AtlasServiceRunner
 
 
@@ -70,6 +71,15 @@ def _proposal(cap: str = "mcp-test") -> McpProposal:
         purpose="test",
         risks=[],
         evidence=[],
+    )
+
+
+def _passing_preflight(self: PreflightGate) -> PreflightResult:
+    return PreflightResult(
+        passed=True,
+        cve_found=False,
+        cve_findings=[],
+        sanitation_findings={},
     )
 
 
@@ -389,6 +399,7 @@ class TestSelfBuildCycleWiring:
         from atlas.core.self_maintenance import backlog as backlog_mod
 
         monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        monkeypatch.setattr(PreflightGate, "check", _passing_preflight)
         item = self._pending_item("item-1")
         monkeypatch.setattr(backlog_mod, "load_backlog", lambda path: [item])
 
@@ -411,6 +422,7 @@ class TestSelfBuildCycleWiring:
         from atlas.core.self_maintenance import backlog as backlog_mod
 
         monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        monkeypatch.setattr(PreflightGate, "check", _passing_preflight)
         item1 = self._pending_item("item-1")
         item2 = self._pending_item("item-2")
         monkeypatch.setattr(backlog_mod, "load_backlog", lambda path: [item1, item2])
@@ -434,6 +446,7 @@ class TestSelfBuildCycleWiring:
         from atlas.core.self_maintenance import backlog as backlog_mod
 
         monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        monkeypatch.setattr(PreflightGate, "check", _passing_preflight)
         item = self._pending_item("item-1")
         monkeypatch.setattr(backlog_mod, "load_backlog", lambda path: [item])
 

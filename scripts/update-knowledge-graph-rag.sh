@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+DOTENV_PATH="$ROOT_DIR/.env"
+if [[ -f "$DOTENV_PATH" && "${ATLAS_SAFE_DOTENV_FILE:-}" != "$DOTENV_PATH" ]]; then
+  export ATLAS_SAFE_DOTENV_FILE="$DOTENV_PATH"
+  exec python3 "$ROOT_DIR/scripts/safe_dotenv.py" "$DOTENV_PATH" -- \
+    bash "$(readlink -f "${BASH_SOURCE[0]}")" "$@"
+fi
 
 if [ ! -f ".venv/bin/activate" ]; then
   echo "ERROR: .venv not found. Activate the project virtualenv or create it first." >&2
@@ -10,12 +17,7 @@ fi
 
 source .venv/bin/activate
 
-if [ -f ".env" ]; then
-  # Load credentials from .env for Graphify backends (GEMINI_API_KEY, OPENAI_API_KEY, etc.)
-  set -a
-  source ".env"
-  set +a
-fi
+export PYTHONHASHSEED=0
 
 VAULT_DIR="graphify-vault"
 BACKEND="${GRAPHIFY_BACKEND:-}"
@@ -43,7 +45,7 @@ Options:
   --no-cluster              Skip community clustering/labeling
   --max-concurrency N       LLM concurrency for semantic extraction (default: 1)
   --max-workers N           Worker threads for Graphify extraction (default: 1)
-  --token-budget N          Token budget for Graphify semantic extraction (default: 60000)
+  --token-budget N          Token budget for Graphify semantic extraction (default: 4000)
   --api-timeout S           HTTP timeout in seconds for the LLM backend (default: 600)
   -h, --help                Show this help text
 
@@ -58,7 +60,6 @@ Environment:
   NEO4J_USER               Neo4j username (default: neo4j)
   NEO4J_PASSWORD           Neo4j password (required for import)
 EOF
-  exit 1
 }
 
 while [ "$#" -gt 0 ]; do
@@ -105,14 +106,27 @@ while [ "$#" -gt 0 ]; do
       ;;
     -h|--help)
       usage
+      exit 0
       ;;
     *)
       echo "Unknown argument: $1" >&2
       usage
+      exit 2
       ;;
   esac
   shift
 done
+
+if ! command -v graphify >/dev/null 2>&1; then
+  echo "ERROR: graphify is not installed in the active virtualenv." >&2
+  exit 1
+fi
+
+GRAPHIFY_VERSION="$(graphify --version 2>&1 | awk 'NR == 1 {print $2}')"
+if [ "$GRAPHIFY_VERSION" != "0.9.11" ]; then
+  echo "ERROR: Graphify version mismatch (expected 0.9.11, got ${GRAPHIFY_VERSION:-unknown})." >&2
+  exit 1
+fi
 
 if [ -z "$BACKEND" ] && [ "$CODE_ONLY" = false ]; then
   if [ -n "${NVIDIA_API_KEY:-}" ]; then
@@ -171,19 +185,25 @@ fi
 
 if [ "$CODE_ONLY" = true ]; then
   if [ -f graphify-out/graph.json ]; then
-    graphify . --update --code-only ${GRAPHIFY_FORCE:+--force}
+    UPDATE_ARGS=()
+    if [ "$FORCE" = true ]; then
+      UPDATE_ARGS+=("--force")
+    fi
+    graphify update . "${UPDATE_ARGS[@]}"
   else
-    graphify . --code-only
+    graphify extract . --code-only --no-cluster
   fi
-  graphify . --cluster-only --code-only
+  if [ "$NO_CLUSTER" = false ]; then
+    graphify cluster-only . --no-label --no-viz
+  fi
 else
   MODEL_ARGS=()
   if [ -n "$MODEL" ]; then
     MODEL_ARGS=("--model" "$MODEL")
   fi
-  graphify extract . --backend "$BACKEND" "${MODEL_ARGS[@]}" --max-concurrency "$MAX_CONCURRENCY" --max-workers "$MAX_WORKERS" --token-budget "$TOKEN_BUDGET" --api-timeout "$API_TIMEOUT"
+  graphify extract . --backend "$BACKEND" "${MODEL_ARGS[@]}" --max-concurrency "$MAX_CONCURRENCY" --max-workers "$MAX_WORKERS" --token-budget "$TOKEN_BUDGET" --api-timeout "$API_TIMEOUT" --no-cluster
   if [ "$NO_CLUSTER" = false ]; then
-    graphify . --cluster-only --backend "$BACKEND" "${MODEL_ARGS[@]}"
+    graphify cluster-only . --backend "$BACKEND" "${MODEL_ARGS[@]}" --no-viz
   fi
 fi
 

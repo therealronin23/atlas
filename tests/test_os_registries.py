@@ -154,10 +154,15 @@ def test_sectors_and_objectives_endpoints(tmp_path: Path) -> None:
     from atlas.events.store import OsEventStore
 
     store = OsEventStore(tmp_path / "events.jsonl")
-    client = TestClient(create_app(
-        store=store, fixtures_dir=REPO_ROOT / "fixtures",
-        business_core_path=tmp_path / "business_core.json",
-    ))
+    client = TestClient(
+        create_app(
+            store=store,
+            fixtures_dir=REPO_ROOT / "fixtures",
+            business_core_path=tmp_path / "business_core.json",
+        ),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
 
     sectors_body = client.get("/sectors").json()
     assert sectors_body["count"] == 5

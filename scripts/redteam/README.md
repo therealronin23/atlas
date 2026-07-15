@@ -9,14 +9,18 @@ log co-firmado. **No son benchmarks de producto**: miden atribución y metodolog
 ## Requisitos
 
 ```bash
-# venv aislado de tooling (NO entra en las deps del paquete; ADR-056)
-python3 -m venv .venv-redteam
-.venv-redteam/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
-.venv-redteam/bin/pip install garak pyrit
+# Dos venvs aislados: sus rangos de `datasets` son incompatibles (ADR-056).
+python3 -m venv .venv-redteam-garak
+.venv-redteam-garak/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+.venv-redteam-garak/bin/pip install -e '.[redteam-garak]'
+
+python3 -m venv .venv-redteam-pyrit
+.venv-redteam-pyrit/bin/pip install -e '.[redteam-pyrit]'
 # atacante/maestro vía API: las claves se leen de .env (GROQ_API_KEY, NVIDIA_API_KEY)
 ```
 
-Todas se ejecutan con `PYTHONPATH=src .venv-redteam/bin/python ...`.
+Las campañas Garak usan `.venv-redteam-garak`; Crescendo usa
+`.venv-redteam-pyrit`. Las demos sin esas herramientas pueden usar el venv principal.
 
 ## Demos
 
@@ -30,10 +34,10 @@ Todas se ejecutan con `PYTHONPATH=src .venv-redteam/bin/python ...`.
 Ejemplos:
 
 ```bash
-PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/garak_campaign.py --attacks 60 --benign 40 --out docs/audits/reports/redteam_campaign_report.md
-PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/generalization_curve.py --embedder hf --threshold 0.7 --out docs/audits/reports/immune_generalization_curve.md
-CRESCENDO_OUT=docs/audits/reports/pyrit_crescendo_report.md PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/pyrit_crescendo.py
-TEACHER_PROVIDER=nvidia DEBATE_OUT=docs/audits/reports/frontier_debate_report.md PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/frontier_debate.py
+PYTHONPATH=src .venv-redteam-garak/bin/python scripts/redteam/garak_campaign.py --attacks 60 --benign 40 --out docs/audits/reports/redteam_campaign_report.md
+PYTHONPATH=src .venv-redteam-garak/bin/python scripts/redteam/generalization_curve.py --embedder hf --threshold 0.7 --out docs/audits/reports/immune_generalization_curve.md
+CRESCENDO_OUT=docs/audits/reports/pyrit_crescendo_report.md PYTHONPATH=src .venv-redteam-pyrit/bin/python scripts/redteam/pyrit_crescendo.py
+TEACHER_PROVIDER=nvidia DEBATE_OUT=docs/audits/reports/frontier_debate_report.md PYTHONPATH=src .venv/bin/python scripts/redteam/frontier_debate.py
 ```
 
 ## Límites honestos (válidos para todas)

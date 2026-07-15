@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -16,10 +17,15 @@ REPO = Path(__file__).resolve().parent.parent
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
     store = OsEventStore(tmp_path / "events.jsonl")
-    return TestClient(create_app(
-        store=store, fixtures_dir=REPO / "fixtures",
-        business_core_path=tmp_path / "business_core.json",
-    ))
+    return TestClient(
+        create_app(
+            store=store,
+            fixtures_dir=REPO / "fixtures",
+            business_core_path=tmp_path / "business_core.json",
+        ),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
 
 
 # -- Integration Fabric / Easy Connection Layer -------------------------------
@@ -126,7 +132,11 @@ def test_onboarding_session_survives_bridge_restart(tmp_path: Path) -> None:
         store=store1, fixtures_dir=REPO / "fixtures",
         business_core_path=business_core_path,
     )
-    client1 = TestClient(app1)
+    client1 = TestClient(
+        app1,
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
     started = client1.post(
         "/business/onboarding/start", json={"pack_id": "qp_restauracion_hosteleria"},
     ).json()
@@ -143,7 +153,11 @@ def test_onboarding_session_survives_bridge_restart(tmp_path: Path) -> None:
         store=store2, fixtures_dir=REPO / "fixtures",
         business_core_path=business_core_path,
     )
-    client2 = TestClient(app2)
+    client2 = TestClient(
+        app2,
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
     resumed = client2.post("/business/onboarding/confirm_answer",
                            json={"session_id": session_id,
                                  "question_id": "sales_channels"}).json()
@@ -182,9 +196,85 @@ def test_business_core_draft_and_gated_activation_via_api(client: TestClient) ->
                          json={"business_core_id": core_id, "approved_by": "op"}).json()
     assert active["status"] == "active"
     assert active["activation"]["approved"] is True
+    assert active["activation"]["approved_by"] == "atlas-loopback:127.0.0.1"
 
     fetched = client.get(f"/business/core/{core_id}").json()
     assert fetched["business_core_id"] == core_id
+
+
+def test_activation_identity_is_server_derived_not_client_claimed(
+    client: TestClient,
+) -> None:
+    draft = client.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+    client.post(
+        "/business/core/request-activation", json={"business_core_id": core_id},
+    )
+
+    active = client.post(
+        "/business/core/activate",
+        json={"business_core_id": core_id, "approved_by": "forged-admin"},
+    ).json()
+
+    assert active["activation"]["approved_by"] == "atlas-loopback:127.0.0.1"
+    assert active["activation"]["approved_by"] != "forged-admin"
+
+
+def test_activation_no_longer_requires_client_claimed_identity(
+    client: TestClient,
+) -> None:
+    draft = client.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+    client.post(
+        "/business/core/request-activation", json={"business_core_id": core_id},
+    )
+
+    active = client.post(
+        "/business/core/activate", json={"business_core_id": core_id},
+    )
+
+    assert active.status_code == 200
+    assert active.json()["activation"]["approved_by"] == "atlas-loopback:127.0.0.1"
+
+
+def test_remote_activation_identity_is_credential_fingerprint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    token = "atlas-os-test-token-with-more-than-32-bytes"
+    monkeypatch.setenv("ATLAS_OS_BRIDGE_TOKEN", token)
+    remote = TestClient(
+        create_app(
+            store=OsEventStore(tmp_path / "remote-events.jsonl"),
+            fixtures_dir=REPO / "fixtures",
+            business_core_path=tmp_path / "remote-business-core.json",
+        ),
+        base_url="http://atlas.example",
+        client=("203.0.113.10", 50000),
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    draft = remote.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+    remote.post(
+        "/business/core/request-activation", json={"business_core_id": core_id},
+    )
+
+    active = remote.post(
+        "/business/core/activate",
+        json={"business_core_id": core_id, "approved_by": "forged-admin"},
+    ).json()
+    expected = f"atlas-token:{hashlib.sha256(token.encode()).hexdigest()[:16]}"
+
+    assert active["activation"]["approved_by"] == expected
+    assert token not in active["activation"]["approved_by"]
 
 
 def test_business_core_unknown_id_404(client: TestClient) -> None:
@@ -227,12 +317,17 @@ def test_reject_activation_via_api_returns_to_draft(client: TestClient) -> None:
         "created_from_kind": "manual", "created_from_ref": "test",
     }).json()
     core_id = draft["business_core_id"]
-    client.post("/business/core/request-activation", json={"business_core_id": core_id})
+    pending = client.post(
+        "/business/core/request-activation", json={"business_core_id": core_id},
+    ).json()
+    ticket_id = pending["activation"]["gate_ticket_id"]
     rejected = client.post("/business/core/reject", json={
         "business_core_id": core_id, "rejected_by": "op", "decision_note": "no",
     }).json()
     assert rejected["status"] == "draft"
     assert client.get("/gates/open").json()["count"] == 0
+    ticket = client.get(f"/gates/{ticket_id}").json()
+    assert ticket["resolved_by"] == "atlas-loopback:127.0.0.1"
 
 
 def test_gate_unknown_ticket_404(client: TestClient) -> None:

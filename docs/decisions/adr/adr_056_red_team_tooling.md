@@ -1,6 +1,6 @@
 # ADR-056 — Adopción de tooling de red-team (Garak + PyRIT) como dev/CI aislado
 
-Fecha: 2026-06-19 · Estado: **Aceptado** (2026-06-19; extra `[redteam]` definido en pyproject, venv aislado `.venv-redteam`, harness `function`-generator sin servidor HTTP) · Decisor: PDP (usuario)
+Fecha: 2026-06-19 · Estado: **Aceptado** (enmendado 2026-07-15: extras incompatibles separados) · Decisor: PDP (usuario)
 Contexto: `docs/project_needs_inventory.md` §1, OSM-001 (métrica de campaña),
 OSM-009 (red-team simulado), OSM-012/013 (co-evolución), regla 6 CLAUDE.md.
 
@@ -32,8 +32,8 @@ argumentar la dep: aquí la dep **no entra en el path de producción**; vive en 
 desarrollo. El núcleo del filtro sigue sin deps nuevas.
 
 ### Restricciones de aislamiento (firmes)
-1. **No-runtime**: se instalan en un extra/venv de dev (`requirements-redteam.txt` o extra
-   `[redteam]`), nunca en las deps del paquete `atlas`. El runtime no las importa.
+1. **No-runtime**: se instalan en extras/venvs de dev separados (`redteam-garak` y
+   `redteam-pyrit`), nunca en las deps del paquete `atlas`. El runtime no las importa.
 2. **Entorno aislado**: el harness de red-team corre con `ATLAS_HOME` propio, NUNCA contra
    el servicio vivo (el CLI/servicio escribe Merkle single-writer → corromper la cadena).
 3. **No en la suite normal**: los tests que invoquen Garak/PyRIT van marcados (p. ej.
@@ -79,12 +79,15 @@ escribe `report.jsonl` + HTML estructurados.
   la trayectoria del DriftTripwire turno a turno. Resultado honesto (`docs/pyrit_crescendo_report.md`):
   el crescendo gradual tiende a quedarse bajo el umbral (límite documentado del atacante lento);
   un salto brusco del atacante SÍ dispara el tripwire; la atribución se mantiene 100% en todo turno.
-  Footprint: PyRIT sube `datasets` a 5.x (garak pide <4) — conflicto cosmético verificado inocuo.
+  Footprint: PyRIT exige `datasets>=4.8` y Garak 0.15.x exige `datasets>=3,<4`.
+  El conflicto no es cosmético: sus metadatos son irresolubles en un mismo entorno.
+  Desde 2026-07-15 se instalan en venvs separados y `tool.uv.conflicts` impide
+  activarlos juntos; no se fuerzan dependencias incompatibles.
   Atacante = modelo abierto para minimizar fricción de ToS; red-teaming autorizado del propio sistema.
 
 ## Criterios de cierre (cuándo pasa a Aceptado) — TODOS CUMPLIDOS (2026-06-19)
-1. ✅ Extra `[redteam]` definido en `pyproject.toml`; runtime no importa nada de ahí
-   (garak vive en venv aislado `.venv-redteam`, ignorado en git).
+1. ✅ Extras `[redteam-garak]` y `[redteam-pyrit]` definidos en `pyproject.toml`;
+   runtime no importa nada de ahí y cada herramienta vive en su propio venv aislado.
 2. ✅ Harness aislado `scripts/redteam/garak_campaign.py`: corre con `ATLAS_HOME`
    temporal (nunca contra el servicio vivo), usa el generador en-proceso (sin
    servidor HTTP) y el corpus real de Garak (DanInTheWild + promptinject).

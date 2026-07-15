@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from atlas.memory.embeddings import StubEmbedder
+from atlas.memory.embeddings import StubEmbedder, embedding_identity_fingerprint
 from atlas.memory.memory_index import SqliteMemoryIndex
 from atlas.memory.record import GenericRecord
 
@@ -77,7 +77,9 @@ class TestSupersedeGuards:
 class TestMigrationBackfill:
     def test_pre_1d_rows_get_tier_and_stay_active(self, tmp_path: Path) -> None:
         db = tmp_path / "legacy.db"
-        # Construye a mano el esquema PRE-1d (sin columnas temporales ni meta).
+        # Construye a mano el esquema PRE-1d (sin columnas temporales). Para
+        # permitir la migración de una fila vectorial heredada aportamos prueba
+        # explícita del espacio que la generó; sin ella el motor falla cerrado.
         con = sqlite3.connect(str(db))
         con.execute(
             "CREATE TABLE records (ordinal INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -89,6 +91,15 @@ class TestMigrationBackfill:
         con.execute(
             "INSERT INTO records (id, text, vector, created_at) VALUES (?,?,?,?)",
             ("legacy-1", "dato heredado", blob, "t"),
+        )
+        identity = StubEmbedder(dim=64).identity
+        con.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+        con.executemany(
+            "INSERT INTO meta (key, value) VALUES (?, ?)",
+            (
+                ("embedder_identity", identity),
+                ("embedder_fingerprint", embedding_identity_fingerprint(identity)),
+            ),
         )
         con.commit()
         con.close()

@@ -58,12 +58,37 @@ def test_import_is_idempotent(tmp_path: Path) -> None:
     assert len(list_imported_records(base=tmp_path)) == len(first.records)
 
 
+def test_import_rejects_provider_path_traversal(tmp_path: Path) -> None:
+    base = tmp_path / "imports"
+    malicious = {"provider": "../escaped", "messages": []}
+
+    with pytest.raises(ValueError, match="provider"):
+        import_conversation(malicious, base=base)
+
+    assert not list(base.glob("escaped*.json"))
+
+
+def test_import_raw_filename_is_hash_only_and_private(tmp_path: Path) -> None:
+    result = import_conversation(FIXTURE, base=tmp_path)
+    raw_path = Path(result.source_ref)
+
+    assert raw_path.parent == (tmp_path / "raw")
+    assert raw_path.stem.isalnum()
+    assert "claude" not in raw_path.name.lower()
+    assert raw_path.stat().st_mode & 0o777 == 0o600
+    assert raw_path.parent.stat().st_mode & 0o777 == 0o700
+
+
 def test_endpoint_import_emits_real_events(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "home"))
     store = OsEventStore(tmp_path / "events.jsonl")
-    client = TestClient(create_app(store=store, fixtures_dir=REPO / "fixtures"))
+    client = TestClient(
+        create_app(store=store, fixtures_dir=REPO / "fixtures"),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
 
     body = client.post("/memory/import", json=FIXTURE).json()
     assert body["raw_preserved"] is True
@@ -83,3 +108,20 @@ def test_endpoint_import_emits_real_events(
 
     listed = client.get("/memory/imports").json()
     assert listed["count"] == body["record_count"]
+
+
+def test_endpoint_rejects_invalid_provider(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "home"))
+    client = TestClient(
+        create_app(fixtures_dir=REPO / "fixtures"),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
+
+    response = client.post(
+        "/memory/import",
+        json={"provider": "../../escape", "messages": []},
+    )
+
+    assert response.status_code == 400
+    assert "provider" in response.json()["detail"]

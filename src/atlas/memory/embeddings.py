@@ -19,17 +19,25 @@ mantener la suite hermetica.
 from __future__ import annotations
 
 import hashlib
+import importlib
+import importlib.util
 import math
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-try:
-    import litellm
-    _HAS_LITELLM = True
-except ImportError:  # pragma: no cover
-    litellm = None  # type: ignore[assignment]
-    _HAS_LITELLM = False
+litellm: Any | None = None
+_HAS_LITELLM = importlib.util.find_spec("litellm") is not None
+
+
+def _litellm_module() -> Any:
+    global litellm
+    if litellm is None:
+        if not _HAS_LITELLM:
+            raise RuntimeError("litellm no instalado pero mode=live")
+        litellm = importlib.import_module("litellm")
+    return litellm
 
 
 # ---------------------------------------------------------------------------
@@ -39,14 +47,32 @@ except ImportError:  # pragma: no cover
 
 @runtime_checkable
 class Embedder(Protocol):
-    """Protocolo minimo. La dim fija debe ser estable durante la vida del store."""
+    """Embedding-space contract used by persistent vector stores.
+
+    ``dim`` alone is insufficient: unrelated models routinely share a vector
+    length. ``identity`` therefore names the declared producer space and
+    ``fingerprint`` provides a compact integrity value for persistence. Local
+    model implementations bind this to artifact bytes; hosted aliases can only
+    identify the provider declaration unless the provider exposes a revision.
+    """
 
     @property
     def dim(self) -> int: ...
 
+    @property
+    def identity(self) -> str: ...
+
+    @property
+    def fingerprint(self) -> str: ...
+
     def embed(self, text: str) -> list[float]: ...
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]: ...
+
+
+def embedding_identity_fingerprint(identity: str) -> str:
+    """Return the stable digest persisted alongside an embedder identity."""
+    return f"sha256:{hashlib.sha256(identity.encode('utf-8')).hexdigest()}"
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +97,18 @@ class StubEmbedder:
     @property
     def dim(self) -> int:
         return self._dim
+
+    @property
+    def identity(self) -> str:
+        # Bump v1 if tokenisation, hashing, signed-counting or normalisation changes.
+        return (
+            "atlas.stub.sha256-bow-signed-l2:v1;"
+            f"dim={self._dim};tokenizer=unicode-lower-whitespace"
+        )
+
+    @property
+    def fingerprint(self) -> str:
+        return embedding_identity_fingerprint(self.identity)
 
     def embed(self, text: str) -> list[float]:
         vec = [0.0] * self._dim
@@ -125,15 +163,18 @@ class LiteLLMEmbedder:
         mode: str = "auto",
         stub_fallback: StubEmbedder | None = None,
     ) -> None:
-        if mode not in ("auto", "live", "stub"):
-            raise ValueError(f"mode invalido: {mode}")
         self._config = config
         self._mode = os.environ.get("ATLAS_EMBEDDING_MODE", mode)
+        if self._mode not in ("auto", "live", "stub"):
+            raise ValueError(f"mode invalido: {self._mode}")
         self._stub = stub_fallback or StubEmbedder(dim=config.dim)
         if self._stub.dim != config.dim:
             raise ValueError(
                 f"stub.dim ({self._stub.dim}) != config.dim ({config.dim})"
             )
+        # Resolve auto exactly once. Changing credentials later must not switch
+        # the vector space used by an already-open persistent store.
+        self._effective_mode = self._resolve_effective_mode()
 
     @property
     def dim(self) -> int:
@@ -146,6 +187,27 @@ class LiteLLMEmbedder:
     @property
     def mode(self) -> str:
         return self._mode
+
+    @property
+    def effective_mode(self) -> str:
+        return self._effective_mode
+
+    @property
+    def identity(self) -> str:
+        fallback = (
+            f";fallback={self._stub.identity}"
+            if self._effective_mode == "stub"
+            else ""
+        )
+        return (
+            "litellm.embedding:v1;"
+            f"model={self._config.model};dim={self._config.dim};"
+            f"effective_mode={self._effective_mode}{fallback}"
+        )
+
+    @property
+    def fingerprint(self) -> str:
+        return embedding_identity_fingerprint(self.identity)
 
     def embed(self, text: str) -> list[float]:
         if self._resolve_live():
@@ -162,29 +224,32 @@ class LiteLLMEmbedder:
     # ---------------------------------------------------------------------
 
     def _resolve_live(self) -> bool:
+        return self._effective_mode == "live"
+
+    def _resolve_effective_mode(self) -> str:
         if self._mode == "stub":
-            return False
+            return "stub"
         if self._mode == "live":
-            return True
+            return "live"
         # auto
         if os.environ.get("PYTEST_CURRENT_TEST"):
-            return False
+            return "stub"
         if not _HAS_LITELLM:
-            return False
+            return "stub"
         if self._config.api_key_env is None:
-            return True   # litellm puede tener key implicita
-        return bool(os.environ.get(self._config.api_key_env))
+            return "live"   # litellm puede tener key implicita
+        return "live" if os.environ.get(self._config.api_key_env) else "stub"
 
     def _embed_live(self, texts: list[str]) -> list[list[float]]:
         if not _HAS_LITELLM:
             raise RuntimeError("litellm no instalado pero mode=live")
-        assert litellm is not None
+        llm = _litellm_module()
         api_key = (
             os.environ.get(self._config.api_key_env)
             if self._config.api_key_env
             else None
         )
-        response = litellm.embedding(
+        response = llm.embedding(
             model=self._config.model,
             input=texts,
             api_key=api_key,
@@ -270,6 +335,7 @@ class FastEmbedEmbedder:
     # la mataba (y el daemon pagaba lo mismo por cada índice que abría).
     # embed() de fastembed es stateless: compartir la instancia es seguro.
     _MODEL_CACHE: dict[str, Any] = {}
+    _ARTIFACT_DIGEST_CACHE: dict[str, str] = {}
 
     def __init__(
         self, model_name: str = FASTEMBED_DEFAULT_MODEL, dim: int = FASTEMBED_DEFAULT_DIM
@@ -288,6 +354,55 @@ class FastEmbedEmbedder:
         self._model = cached
         self._dim = dim
         self._model_name = model_name
+        metadata = importlib.import_module("importlib.metadata")
+        try:
+            self._implementation_version = metadata.version("fastembed")
+        except metadata.PackageNotFoundError:  # pragma: no cover - dev shim
+            module = importlib.import_module("fastembed")
+            self._implementation_version = str(
+                getattr(module, "__version__", "unversioned")
+            )
+        artifact_digest = self._ARTIFACT_DIGEST_CACHE.get(model_name)
+        if artifact_digest is None:
+            artifact_digest = self._artifact_digest(cached)
+            self._ARTIFACT_DIGEST_CACHE[model_name] = artifact_digest
+        self._artifact_sha256 = artifact_digest
+
+    @staticmethod
+    def _artifact_digest(model: Any) -> str:
+        """Hash the exact local tokenizer/model artifacts used by FastEmbed.
+
+        Model names and package versions are not sufficient: a remote model
+        repository can move while retaining its alias. FastEmbed exposes the
+        resolved snapshot directory on its concrete pooled model. If that
+        directory cannot be established, persistent identity must fail closed.
+        """
+        concrete = getattr(model, "model", None)
+        raw_dir = getattr(concrete, "_model_dir", None)
+        if raw_dir is None:
+            raise RuntimeError(
+                "fastembed did not expose its resolved model artifact directory; "
+                "cannot derive a persistent embedding identity"
+            )
+        root = Path(raw_dir)
+        if not root.is_dir():
+            raise RuntimeError(
+                f"fastembed model artifact directory is unavailable: {root}"
+            )
+        manifest = hashlib.sha256()
+        files = sorted(path for path in root.rglob("*") if path.is_file())
+        if not files:
+            raise RuntimeError(f"fastembed model artifact directory is empty: {root}")
+        for path in files:
+            relative = path.relative_to(root).as_posix().encode("utf-8")
+            content_hash = hashlib.sha256()
+            with path.open("rb") as handle:
+                for block in iter(lambda: handle.read(1024 * 1024), b""):
+                    content_hash.update(block)
+            manifest.update(len(relative).to_bytes(4, "big"))
+            manifest.update(relative)
+            manifest.update(content_hash.digest())
+        return manifest.hexdigest()
 
     @property
     def dim(self) -> int:
@@ -296,6 +411,19 @@ class FastEmbedEmbedder:
     @property
     def model(self) -> str:
         return self._model_name
+
+    @property
+    def identity(self) -> str:
+        return (
+            "fastembed.onnx:v2;"
+            f"model={self._model_name};dim={self._dim};"
+            f"implementation_version={self._implementation_version};"
+            f"artifact_sha256={self._artifact_sha256}"
+        )
+
+    @property
+    def fingerprint(self) -> str:
+        return embedding_identity_fingerprint(self.identity)
 
     def embed(self, text: str) -> list[float]:
         return self.embed_batch([text])[0]

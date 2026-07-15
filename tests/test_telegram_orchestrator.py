@@ -247,6 +247,29 @@ def test_bot_on_approval_required_sends_inline_keyboard():
     assert "approve:t-1:yes" in {b["callback_data"] for b in btns}
 
 
+def test_bot_on_approval_required_shows_mutation_arguments() -> None:
+    bot, client, ops = _make_bot()
+
+    class FakeEvent:
+        payload = {
+            "task_id": "t-args",
+            "intent": "editar",
+            "reason": "mutación",
+            "pending_mutations": [{
+                "id": "m1",
+                "name": "editor_write",
+                "arguments_preview": '{"path":"visible.txt"}',
+                "arguments_sha256": "b" * 64,
+            }],
+        }
+
+    bot.on_approval_required(FakeEvent())
+
+    text = client.sent[0][1]
+    assert "visible.txt" in text
+    assert "sha256:bbbbbbbbbbbb" in text
+
+
 def test_bot_pending_command_lists():
     class Ops:
         def status(self): return {}

@@ -13,14 +13,22 @@ Arrancar:  atlas os-bridge
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
+import ipaddress
 import json
+import os
 import sqlite3
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from starlette.datastructures import Headers
+from starlette.responses import JSONResponse, Response
 
 from atlas.api.missions import (
     mission_receipt,
@@ -40,11 +48,14 @@ from atlas.api.product_routes import register_product_routes
 from atlas.events.player import EventPlayer
 from atlas.events.schemas import Causality, EventStatus, OsEvent, Risk
 from atlas.events.store import OsEventStore
+from atlas.runtime_paths import atlas_data_root
 
 HOST = "127.0.0.1"
 PORT = 7341
+AUTH_TOKEN_ENV = "ATLAS_OS_BRIDGE_TOKEN"
+_MIN_AUTH_TOKEN_BYTES = 32
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT = atlas_data_root()
 _FIXTURES = _REPO_ROOT / "fixtures"
 
 _INTENT_PIPELINE: list[tuple[str, str, EventStatus]] = [
@@ -63,6 +74,149 @@ _INTENT_PIPELINE: list[tuple[str, str, EventStatus]] = [
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+class _AuthenticationError(Exception):
+    """Credencial o contexto de red no admitido por el bridge."""
+
+
+def _is_loopback_host(host: str | None) -> bool:
+    """Comprueba loopback sin resolver DNS ni confiar en cabeceras proxy."""
+    if host is None:
+        return False
+    candidate = host.strip().removeprefix("[").removesuffix("]")
+    if candidate.casefold() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(candidate).is_loopback
+    except ValueError:
+        return False
+
+
+def _configured_strong_token() -> str | None:
+    token = os.environ.get(AUTH_TOKEN_ENV, "")
+    if len(token.encode("utf-8")) < _MIN_AUTH_TOKEN_BYTES:
+        return None
+    return token
+
+
+def _tokens_equal(left: str, right: str) -> bool:
+    """Comparación constante también para entradas Unicode hostiles."""
+    return hmac.compare_digest(left.encode("utf-8"), right.encode("utf-8"))
+
+
+def _validate_bind_security(host: str) -> None:
+    """Impide exponer el bridge fuera de loopback sin secreto fuerte."""
+    if not _is_loopback_host(host) and _configured_strong_token() is None:
+        raise RuntimeError(
+            f"{AUTH_TOKEN_ENV} debe contener al menos "
+            f"{_MIN_AUTH_TOKEN_BYTES} bytes para escuchar fuera de loopback"
+        )
+
+
+def _presented_token(headers: Headers) -> str | None:
+    authorization = headers.get("authorization")
+    bearer: str | None = None
+    if authorization is not None:
+        scheme, separator, value = authorization.partition(" ")
+        if scheme.casefold() != "bearer" or not separator or not value.strip():
+            raise _AuthenticationError
+        bearer = value.strip()
+
+    x_token = headers.get("x-atlas-token")
+    if x_token is not None:
+        x_token = x_token.strip()
+        if not x_token:
+            raise _AuthenticationError
+    if bearer is not None and x_token is not None:
+        if not _tokens_equal(bearer, x_token):
+            raise _AuthenticationError
+    return bearer or x_token
+
+
+def _credential_identity(token: str) -> str:
+    """Identidad auditable opaca: deriva de la credencial, no la revela."""
+    fingerprint = hashlib.sha256(token.encode("utf-8")).hexdigest()[:16]
+    return f"atlas-token:{fingerprint}"
+
+
+def _authenticate_client(client_host: str | None, headers: Headers) -> str:
+    presented = _presented_token(headers)
+    if presented is not None:
+        configured = _configured_strong_token()
+        if configured is None or not _tokens_equal(presented, configured):
+            raise _AuthenticationError
+        return _credential_identity(configured)
+    if _is_loopback_host(client_host):
+        return f"atlas-loopback:{client_host}"
+    raise _AuthenticationError
+
+
+def _authority_hostname(authority: str | None) -> str | None:
+    if not authority or any(char.isspace() for char in authority):
+        return None
+    try:
+        parsed = urlsplit(f"//{authority}")
+        # Acceder a .port fuerza la validación de puertos no numéricos/rango.
+        _ = parsed.port
+        if (
+            parsed.username is not None
+            or parsed.password is not None
+            or bool(parsed.path)
+            or bool(parsed.query)
+            or bool(parsed.fragment)
+        ):
+            return None
+        return parsed.hostname
+    except ValueError:
+        return None
+
+
+def _validate_loopback_http_host(
+    client_host: str | None, headers: Headers, identity: str,
+) -> None:
+    """Cierra DNS rebinding cuando loopback opera sin una credencial."""
+    if not identity.startswith("atlas-loopback:"):
+        return
+    host = _authority_hostname(headers.get("host"))
+    if not _is_loopback_host(client_host) or not _is_loopback_host(host):
+        raise _AuthenticationError
+
+
+def _validate_websocket_origin(client_host: str | None, headers: Headers) -> None:
+    host = _authority_hostname(headers.get("host"))
+    origin_value = headers.get("origin")
+    if host is None or origin_value is None:
+        raise _AuthenticationError
+    try:
+        origin = urlsplit(origin_value)
+    except ValueError as exc:
+        raise _AuthenticationError from exc
+    try:
+        origin_host = origin.hostname
+        _ = origin.port
+    except ValueError as exc:
+        raise _AuthenticationError from exc
+    if (
+        origin.scheme not in {"http", "https"}
+        or origin_host is None
+        or origin.username is not None
+        or origin.password is not None
+        or origin.path not in {"", "/"}
+        or bool(origin.query)
+        or bool(origin.fragment)
+    ):
+        raise _AuthenticationError
+
+    client_is_loopback = _is_loopback_host(client_host)
+    host_is_loopback = _is_loopback_host(host)
+    if client_is_loopback != host_is_loopback:
+        raise _AuthenticationError
+    same_endpoint = host.casefold() == origin_host.casefold()
+    if not same_endpoint and not (
+        host_is_loopback and _is_loopback_host(origin_host)
+    ):
+        raise _AuthenticationError
 
 
 def _load_connectors(connectors_dir: Path) -> dict[str, ConnectorSpec]:
@@ -271,6 +425,20 @@ def create_app(
     app = FastAPI(title="Atlas OS Bridge", docs_url=None, redoc_url=None,
                   openapi_url=None)
 
+    @app.middleware("http")
+    async def authenticate_http(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        client_host = request.client.host if request.client is not None else None
+        try:
+            identity = _authenticate_client(client_host, request.headers)
+            _validate_loopback_http_host(client_host, request.headers, identity)
+        except _AuthenticationError:
+            return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+        request.state.auth_identity = identity
+        return await call_next(request)
+
     def emit(
         type_: str,
         summary: str,
@@ -380,7 +548,10 @@ def create_app(
         """Import REAL (Fase 8): preserva raw, extrae por reglas, emite eventos."""
         from atlas.api.conversation_import import import_conversation
 
-        result = import_conversation(raw)
+        try:
+            result = import_conversation(raw)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         if not result.already_imported:
             # Este import SÍ ocurrió (raw preservado en disco): simulated=False.
             emit(
@@ -623,6 +794,14 @@ def create_app(
 
     @app.websocket("/events")
     async def ws_events(ws: WebSocket) -> None:
+        client_host = ws.client.host if ws.client is not None else None
+        try:
+            identity = _authenticate_client(client_host, ws.headers)
+            _validate_websocket_origin(client_host, ws.headers)
+        except _AuthenticationError:
+            await ws.close(code=1008)
+            return
+        ws.state.auth_identity = identity
         await ws.accept()
         queue: asyncio.Queue[OsEvent] = asyncio.Queue()
         loop = asyncio.get_running_loop()
@@ -650,6 +829,7 @@ def create_app(
 
 def serve(host: str = HOST, port: int = PORT) -> None:
     """Arranque bloqueante (usado por `atlas os-bridge`)."""
+    _validate_bind_security(host)
     import uvicorn  # noqa: PLC0415 — import perezoso, solo al servir
 
     uvicorn.run("atlas.api.server:app", host=host, port=port, log_level="info")

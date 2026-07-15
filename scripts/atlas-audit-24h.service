@@ -11,7 +11,9 @@ After=atlas-core.service
 Type=oneshot
 WorkingDirectory=/home/ronin/proyectos/atlas-core
 ExecStart=/home/ronin/proyectos/atlas-core/scripts/run_24h_autonomous_audit.sh
-TimeoutStartSec=90000
+# El ciclo útil dura 24h; tres horas de margen cubren los gates fragmentados
+# de entrada/salida sin convertir el timeout en la causa de un falso fracaso.
+TimeoutStartSec=27h
 # Journal en vez de redirección artesanal: tres de los cinco arranques del
 # 2026-06-12 murieron en el launcher (setsid/nohup), no en Atlas. systemd
 # resuelve el desacople de la sesión del shell.
@@ -19,6 +21,11 @@ StandardOutput=journal
 StandardError=journal
 MemoryAccounting=yes
 MemoryMax=4G
+KillMode=control-group
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
 
 [Install]
 WantedBy=default.target

@@ -374,7 +374,21 @@ class PoCReproductionVerifier:
                 total_cost=CostTier.STATIC,
             )
         sandbox = self._sandbox_factory()
-        result = sandbox.execute(finding.poc_script)
+        try:
+            result = sandbox.execute_in_jail(finding.poc_script)
+        except Exception as exc:
+            return Evidence(
+                verdict=Verdict.FAIL,
+                checks=(
+                    Check(name="authorization", passed=True, detail=decision.reason),
+                    Check(
+                        name="poc_reproduction",
+                        passed=False,
+                        detail=f"jail fail-closed: {type(exc).__name__}",
+                    ),
+                ),
+                total_cost=CostTier.SANDBOX,
+            )
         reproduced = result.success and result.exit_code == 0
         verdict = Verdict.PASS if reproduced else Verdict.FAIL
         return Evidence(

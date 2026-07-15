@@ -140,6 +140,28 @@ def test_authorizer_merges_env_chat_id(monkeypatch: pytest.MonkeyPatch):
     assert auth.is_allowed(42) is True
 
 
+def test_authorizer_separates_group_chat_from_authorized_sender() -> None:
+    auth = TelegramAuthorizer([-100123], allowed_user_ids=[42])
+
+    assert auth.is_allowed(-100123) is True
+    assert auth.is_update_allowed(-100123, 42) is True
+    assert auth.is_update_allowed(-100123, 99) is False
+
+
+def test_authorizer_reads_authorized_user_ids_from_profile() -> None:
+    class FakeProfile:
+        def telegram_config(self):
+            return {
+                "authorized_chat_ids": [-100123],
+                "authorized_user_ids": [42],
+            }
+
+    auth = TelegramAuthorizer.from_permission_profile(FakeProfile())
+
+    assert auth.is_update_allowed(-100123, 42) is True
+    assert auth.is_update_allowed(-100123, 99) is False
+
+
 def test_authorizer_accepts_permission_profile_property(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
@@ -294,6 +316,61 @@ def test_bot_rejects_unauthorized_and_logs_merkle():
     assert len(merkle.entries) == 1
     assert merkle.entries[0]["action"] == "telegram.unauthorized"
     assert merkle.entries[0]["payload"]["chat_id"] == 99
+
+
+def test_bot_rejects_unauthorized_sender_inside_allowed_group() -> None:
+    client = FakeClient()
+    ops = FakeOps()
+    auth = TelegramAuthorizer([-100123], allowed_user_ids=[42])
+    bot = TelegramBot(client=client, authorizer=auth, ops=ops)
+
+    bot.handle_update({
+        "update_id": 1,
+        "message": {
+            "chat": {"id": -100123, "type": "group"},
+            "from": {"id": 99},
+            "text": "/status",
+        },
+    })
+
+    assert ops.calls == []
+    assert client.sent and "denegado" in client.sent[0][1].lower()
+
+
+def test_bot_accepts_authorized_sender_inside_allowed_group() -> None:
+    client = FakeClient()
+    ops = FakeOps()
+    auth = TelegramAuthorizer([-100123], allowed_user_ids=[42])
+    bot = TelegramBot(client=client, authorizer=auth, ops=ops)
+
+    bot.handle_update({
+        "update_id": 1,
+        "message": {
+            "chat": {"id": -100123, "type": "group"},
+            "from": {"id": 42},
+            "text": "/status",
+        },
+    })
+
+    assert ("status", ()) in ops.calls
+
+
+def test_callback_rejects_unauthorized_sender_inside_allowed_group() -> None:
+    client = FakeClient()
+    ops = FakeOps()
+    auth = TelegramAuthorizer([-100123], allowed_user_ids=[42])
+    bot = TelegramBot(client=client, authorizer=auth, ops=ops)
+
+    bot.handle_update({
+        "callback_query": {
+            "id": "cb-group",
+            "from": {"id": 99},
+            "message": {"chat": {"id": -100123, "type": "group"}},
+            "data": "approve:task-99:yes",
+        }
+    })
+
+    assert not any(call[0] == "approve" for call in ops.calls)
 
 
 def test_bot_unknown_command_returns_message():

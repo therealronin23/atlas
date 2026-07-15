@@ -42,9 +42,10 @@ def test_client_config_lists_every_native_root_with_a_launch_command() -> None:
     assert mem["command"]  # un ejecutable
     assert "atlas.mcp.memory_server" in mem["args"]
     assert "/save/memory.db" in mem["args"]
-    # atlas-graph no recibe path arg: el server usa DEFAULT_GRAPH_DB.
+    # atlas-graph recibe repo_root para contrastar frescura con HEAD; la BD
+    # sigue resolviéndose mediante DEFAULT_GRAPH_DB.
     graph = servers["atlas-graph"]
-    assert graph["args"] == ["-m", "atlas.mcp.graph_server"]
+    assert graph["args"] == ["-m", "atlas.mcp.graph_server", "/repo"]
 
 
 def test_tool_overhead_is_small_anti_kitchen_sink() -> None:

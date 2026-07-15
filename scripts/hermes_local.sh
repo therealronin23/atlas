@@ -1,20 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOTENV_PATH="$ROOT_DIR/.env"
+if [[ -f "$DOTENV_PATH" && "${ATLAS_SAFE_DOTENV_FILE:-}" != "$DOTENV_PATH" ]]; then
+  export ATLAS_SAFE_DOTENV_FILE="$DOTENV_PATH"
+  exec python3 "$ROOT_DIR/scripts/safe_dotenv.py" "$DOTENV_PATH" -- \
+    bash "$(readlink -f "${BASH_SOURCE[0]}")" "$@"
+fi
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/atlas-hermes-local"
 PID_FILE="${STATE_DIR}/hermes-local.pid"
 LOG_FILE="${STATE_DIR}/hermes-local.log"
 
 mkdir -p "${STATE_DIR}"
-
-if [[ -f "${ROOT_DIR}/.env" ]]; then
-  set -a
-  source "${ROOT_DIR}/.env"
-  set +a
-fi
+chmod 700 "${STATE_DIR}"
 
 : "${HERMES_API_KEY:?HERMES_API_KEY no está definido en .env o entorno}"
+if (( ${#HERMES_API_KEY} < 32 )); then
+  echo "HERMES_API_KEY debe contener al menos 32 caracteres" >&2
+  exit 1
+fi
 
 export HERMES_BIND_ADDR="${HERMES_BIND_ADDR:-127.0.0.1}"
 export HERMES_PORT="${HERMES_PORT:-8443}"
@@ -36,12 +42,12 @@ start() {
     echo "Hermes local ya está activo (pid $(cat "${PID_FILE}"))"
     return 0
   fi
-  setsid bash -c '
-    echo $$ > "'"${PID_FILE}"'"
-    exec "'"${PYTHON_BIN}"'" "'"${AGENT_SCRIPT}"'" >>"'"${LOG_FILE}"'" 2>&1 </dev/null
-  ' >/dev/null 2>&1 &
+  setsid "${PYTHON_BIN}" "${AGENT_SCRIPT}" >>"${LOG_FILE}" 2>&1 </dev/null &
+  local spawned_pid=$!
+  printf '%s\n' "${spawned_pid}" >"${PID_FILE}"
   sleep 1
   if ! is_running; then
+    rm -f "${PID_FILE}"
     echo "Hermes local no arrancó. Revisa ${LOG_FILE}" >&2
     return 1
   fi

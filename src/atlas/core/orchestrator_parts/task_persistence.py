@@ -12,8 +12,10 @@ problemas de disco accesorios).
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -43,6 +45,74 @@ class TaskPersistence:
 
     # ------------------------------------------------------------------ summary
 
+    _SECRET_ARGUMENT_KEY = re.compile(
+        r"(?:^|_)(?:api_key|token|secret|password|passphrase|authorization|"
+        r"cookie|credential|private_key)(?:$|_)",
+        re.IGNORECASE,
+    )
+    _ARGUMENT_PREVIEW_LIMIT = 480
+
+    @classmethod
+    def _redact_argument_value(cls, value: Any, *, key: str = "") -> Any:
+        normalized_key = key.replace("-", "_").replace(" ", "_")
+        if normalized_key and cls._SECRET_ARGUMENT_KEY.search(normalized_key):
+            return "<redacted>"
+        if isinstance(value, dict):
+            return {
+                str(k): cls._redact_argument_value(v, key=str(k))
+                for k, v in value.items()
+            }
+        if isinstance(value, list):
+            return [cls._redact_argument_value(item) for item in value]
+        return value
+
+    @classmethod
+    def summarize_arguments(cls, raw: Any) -> tuple[str, str]:
+        """Return a bounded redacted preview plus a digest of exact arguments.
+
+        The preview is safe for human-facing approval surfaces. The SHA-256 is
+        over the exact serialized tool-call arguments that will be resumed, so
+        truncation/redaction is explicit instead of silently hiding the payload.
+        """
+        if isinstance(raw, str):
+            exact = raw
+        else:
+            exact = json.dumps(raw, ensure_ascii=False, sort_keys=True, default=str)
+        digest = hashlib.sha256(exact.encode("utf-8")).hexdigest()
+        try:
+            parsed = json.loads(exact)
+        except (json.JSONDecodeError, TypeError):
+            preview = exact
+        else:
+            preview = json.dumps(
+                cls._redact_argument_value(parsed),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            )
+        if len(preview) > cls._ARGUMENT_PREVIEW_LIMIT:
+            preview = preview[: cls._ARGUMENT_PREVIEW_LIMIT - 3] + "..."
+        return preview, digest
+
+    @classmethod
+    def summarize_pending_mutations(
+        cls,
+        mutations: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        summarized: list[dict[str, Any]] = []
+        for mutation in mutations:
+            preview, digest = cls.summarize_arguments(
+                mutation.get("arguments", "")
+            )
+            summarized.append({
+                "id": mutation.get("id"),
+                "name": mutation.get("name"),
+                "arguments_preview": preview,
+                "arguments_sha256": digest,
+            })
+        return summarized
+
     @staticmethod
     def summary(task: Task) -> dict[str, Any]:
         """Resumen consumido por CLI/Telegram/dashboard.
@@ -62,9 +132,9 @@ class TaskPersistence:
         if isinstance(state, dict):
             muts = state.get("pending_mutations") or []
             summary["agentic"] = True
-            summary["pending_mutations"] = [
-                {"id": m.get("id"), "name": m.get("name")} for m in muts
-            ]
+            summary["pending_mutations"] = TaskPersistence.summarize_pending_mutations(
+                [m for m in muts if isinstance(m, dict)]
+            )
         return summary
 
     # ------------------------------------------------------------------ quarantine

@@ -1,5 +1,9 @@
 # Gate G — Seal
 
+> **Evidencia histórica (2026-05-25), no estado operativo actual.** Los conteos,
+> VPS, Docker, Telegram y smokes siguientes describen aquel cierre. No prueban
+> el entorno presente. Usar `atlas reality` y el runbook revisado de 2026-07-16.
+
 **Date:** 2026-05-25
 **Status:** COMPLETE
 **Tests:** 513/513 passing

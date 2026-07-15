@@ -14,7 +14,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from atlas.business.core_engine import (
@@ -101,7 +101,7 @@ class CoreActivateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     business_core_id: str
-    approved_by: str = Field(min_length=1)
+    approved_by: str | None = Field(default=None, min_length=1, deprecated=True)
     decision_note: str | None = None
     evidence: list[str] = Field(default_factory=list)
 
@@ -110,7 +110,7 @@ class CoreRejectRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     business_core_id: str
-    rejected_by: str = Field(min_length=1)
+    rejected_by: str | None = Field(default=None, min_length=1, deprecated=True)
     decision_note: str | None = None
 
 
@@ -197,6 +197,12 @@ def register_product_routes(
                 status_code=500, detail="pack de la sesión ya no existe"
             )
         return session, pack
+
+    def _server_identity(request: Request) -> str:
+        identity = getattr(request.state, "auth_identity", None)
+        if not isinstance(identity, str) or not identity:
+            raise HTTPException(status_code=401, detail="unauthorized")
+        return identity
 
     # -- Integration Fabric / Easy Connection Layer --------------------------
 
@@ -369,10 +375,12 @@ def register_product_routes(
         return core.model_dump(mode="json")
 
     @app.post("/business/core/activate")
-    def business_core_activate(req: CoreActivateRequest) -> dict[str, Any]:
+    def business_core_activate(
+        req: CoreActivateRequest, request: Request,
+    ) -> dict[str, Any]:
         try:
             core = business.approve_activation(
-                req.business_core_id, req.approved_by,
+                req.business_core_id, _server_identity(request),
                 decision_note=req.decision_note, evidence=req.evidence,
             )
         except KeyError as exc:
@@ -382,10 +390,12 @@ def register_product_routes(
         return core.model_dump(mode="json")
 
     @app.post("/business/core/reject")
-    def business_core_reject(req: CoreRejectRequest) -> dict[str, Any]:
+    def business_core_reject(
+        req: CoreRejectRequest, request: Request,
+    ) -> dict[str, Any]:
         try:
             core = business.reject_activation(
-                req.business_core_id, req.rejected_by,
+                req.business_core_id, _server_identity(request),
                 decision_note=req.decision_note,
             )
         except KeyError as exc:

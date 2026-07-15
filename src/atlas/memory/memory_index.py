@@ -22,7 +22,9 @@ conexión o serializar con un lock.
 
 from __future__ import annotations
 
+import os
 import sqlite3
+import stat
 import struct
 import time
 from collections.abc import Iterable
@@ -32,7 +34,11 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from cryptography.fernet import Fernet
 
 from atlas.immunity.lesson_recaller import RecallResult, _cosine_similarity
-from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.memory.embeddings import (
+    Embedder,
+    StubEmbedder,
+    embedding_identity_fingerprint,
+)
 from atlas.memory.record import MemoryRecord
 
 if TYPE_CHECKING:
@@ -134,6 +140,8 @@ CREATE TABLE IF NOT EXISTS content_keys (
 """
 
 _META_EMBEDDER_DIM = "embedder_dim"
+_META_EMBEDDER_IDENTITY = "embedder_identity"
+_META_EMBEDDER_FINGERPRINT = "embedder_fingerprint"
 
 # Columnas a añadir si el índice viene de un esquema previo (migración suave).
 _TEMPORAL_COLUMNS = {
@@ -172,6 +180,22 @@ def _unpack(blob: bytes) -> list[float]:
     return list(struct.unpack(f"<{n}d", blob))
 
 
+def _prepare_private_sqlite_file(path: Path) -> None:
+    """Create or tighten a SQLite file without following a final symlink."""
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    path.parent.chmod(0o700)
+    flags = os.O_RDWR | os.O_CREAT
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(path, flags, 0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValueError(f"SQLite path is not a regular file: {path}")
+        os.fchmod(fd, 0o600)
+    finally:
+        os.close(fd)
+
+
 class SqliteMemoryIndex:
     """Índice SQLite persistente genérico para recall de near-duplicates.
 
@@ -204,7 +228,7 @@ class SqliteMemoryIndex:
                 Default False → comportamiento y esquema actuales INTACTOS.
         """
         self._path = Path(db_path)
-        self._path.parent.mkdir(parents=True, exist_ok=True)
+        _prepare_private_sqlite_file(self._path)
         self._tenant = tenant
         self._embedder: Embedder = embedder if embedder is not None else StubEmbedder(dim=64)
         self._threshold = threshold
@@ -221,6 +245,7 @@ class SqliteMemoryIndex:
         # Separar las claves de los datos garantiza que el shred es irrecuperable
         # incluso si alguien obtiene la DB de records (no encontrará las claves).
         keys_path = self._path.with_name(self._path.name + ".keys")
+        _prepare_private_sqlite_file(keys_path)
         self._keys_conn = sqlite3.connect(str(keys_path))
         self._keys_conn.execute("PRAGMA secure_delete=ON")  # sobrescribe páginas al borrar claves
         self._keys_conn.execute(
@@ -234,6 +259,7 @@ class SqliteMemoryIndex:
         self._migrate_class_ttl()
         self._migrate_keystore()
         self._guard_embedder_dim()
+        self._guard_embedder_identity()
         if self._lexical_index:
             self._init_fts()
         self._conn.commit()
@@ -443,6 +469,93 @@ class SqliteMemoryIndex:
                 f"dim={row[0]} pero el embedder actual usa dim={dim}. Usa el embedder "
                 f"original o reconstruye el índice."
             )
+
+    def _guard_embedder_identity(self) -> None:
+        """Persist and verify the exact vector space, failing closed on ambiguity.
+
+        A legacy index without this metadata can only be adopted when it has no
+        vectors. If records already exist, dimension equality cannot prove which
+        model produced them, so a rebuild is required.
+        """
+        try:
+            current_identity = self._embedder.identity
+            declared_fingerprint = self._embedder.fingerprint
+        except AttributeError as exc:
+            raise ValueError(
+                "Embedder lacks a stable identity; persistent vector storage "
+                "requires Embedder.identity and Embedder.fingerprint."
+            ) from exc
+        current_fingerprint = embedding_identity_fingerprint(current_identity)
+        if declared_fingerprint != current_fingerprint:
+            raise ValueError(
+                "Embedder fingerprint is inconsistent with Embedder.identity; "
+                "refusing persistent vector storage."
+            )
+        identity_row = self._conn.execute(
+            "SELECT value FROM meta WHERE key=?", (_META_EMBEDDER_IDENTITY,)
+        ).fetchone()
+        fingerprint_row = self._conn.execute(
+            "SELECT value FROM meta WHERE key=?", (_META_EMBEDDER_FINGERPRINT,)
+        ).fetchone()
+
+        if identity_row is None and fingerprint_row is None:
+            has_vectors = self._conn.execute(
+                "SELECT EXISTS(SELECT 1 FROM records LIMIT 1)"
+            ).fetchone()[0]
+            if has_vectors:
+                raise ValueError(
+                    f"Index {self._path.name} contains vectors but lacks embedder "
+                    "identity metadata. Rebuild it with the intended embedder; "
+                    "dimension alone cannot prove the vector space."
+                )
+            self._conn.executemany(
+                "INSERT INTO meta (key, value) VALUES (?, ?)",
+                (
+                    (_META_EMBEDDER_IDENTITY, current_identity),
+                    (_META_EMBEDDER_FINGERPRINT, current_fingerprint),
+                ),
+            )
+            return
+
+        stored_identity = str(identity_row[0]) if identity_row is not None else None
+        stored_fingerprint = (
+            str(fingerprint_row[0]) if fingerprint_row is not None else None
+        )
+        if stored_identity is not None:
+            expected_stored_fingerprint = embedding_identity_fingerprint(stored_identity)
+            if (
+                stored_fingerprint is not None
+                and stored_fingerprint != expected_stored_fingerprint
+            ):
+                raise ValueError(
+                    f"Embedder identity metadata is inconsistent in {self._path.name}; "
+                    "rebuild the index."
+                )
+            if stored_identity != current_identity:
+                raise ValueError(
+                    f"Embedder identity mismatch: index {self._path.name} uses "
+                    f"{stored_identity!r}, current embedder uses {current_identity!r}. "
+                    "Use the original embedder or rebuild the index."
+                )
+            if stored_fingerprint is None:
+                self._conn.execute(
+                    "INSERT INTO meta (key, value) VALUES (?, ?)",
+                    (_META_EMBEDDER_FINGERPRINT, expected_stored_fingerprint),
+                )
+            return
+
+        # A fingerprint without the clear identity is still cryptographic proof
+        # when it matches the current identity; restore the diagnostic metadata.
+        if stored_fingerprint != current_fingerprint:
+            raise ValueError(
+                f"Embedder identity mismatch: index {self._path.name} has fingerprint "
+                f"{stored_fingerprint!r}, current embedder has {current_fingerprint!r}. "
+                "Use the original embedder or rebuild the index."
+            )
+        self._conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?, ?)",
+            (_META_EMBEDDER_IDENTITY, current_identity),
+        )
 
     # ------------------------------------------------------------------
     # Escritura

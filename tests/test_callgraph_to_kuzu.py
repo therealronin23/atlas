@@ -299,11 +299,76 @@ def test_load_callgraph_reads_nested_cache_dir(tmp_path: Path) -> None:
             db.close()
 
 
+def test_load_callgraph_filters_and_replaces_with_requested_source_corpus(
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+
+    src_data = _file_a()
+    for node in src_data["nodes"]:
+        if node.get("source_file"):
+            node["source_file"] = "src/atlas/mod_a.py"
+        if node.get("origin_file"):
+            node["origin_file"] = "/repo/src/atlas/mod_a.py"
+    test_data = _file_b()
+    for node in test_data["nodes"]:
+        if node.get("source_file"):
+            node["source_file"] = "tests/test_mod_b.py"
+        if node.get("origin_file"):
+            node["origin_file"] = "/repo/tests/test_mod_b.py"
+
+    (cache_dir / f"{_HASH_A}.json").write_text(json.dumps(src_data), encoding="utf-8")
+    (cache_dir / f"{_HASH_B}.json").write_text(json.dumps(test_data), encoding="utf-8")
+    db_path = tmp_path / "kuzu" / "cg.kuzu"
+
+    # Primero deja datos ajenos al corpus para demostrar que replace los retira.
+    load_callgraph_into_kuzu(cache_dir, db_path)
+    result = load_callgraph_into_kuzu(
+        cache_dir,
+        db_path,
+        source_prefix="src/atlas",
+        replace=True,
+    )
+
+    assert result["files"] == 1
+    assert result["symbols"] == 5
+    assert result["calls"] == 1
+
+    db = kuzu.Database(str(db_path))
+    conn = kuzu.Connection(db)
+    try:
+        rows = conn.execute("MATCH (n:Symbol) RETURN n.source_file")
+        source_files: list[str] = []
+        while rows.has_next():
+            source_files.append(str(rows.get_next()[0]))
+        assert source_files
+        assert all(not path.startswith("tests/") for path in source_files)
+    finally:
+        conn.close()
+        db.close()
+
+
 def test_empty_cache_dir(tmp_path: Path) -> None:
     cache_dir = tmp_path / "empty"
     cache_dir.mkdir()
     result = load_callgraph_into_kuzu(cache_dir, tmp_path / "kuzu" / "e.kuzu")
     assert result == {"symbols": 0, "calls": 0, "files": 0}
+
+
+def test_strict_mode_rejects_corrupt_cache_instead_of_loading_partial_graph(
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / "cache"
+    _write_cache(cache_dir)
+    (cache_dir / "corrupt.json").write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="invalid Graphify AST cache file"):
+        load_callgraph_into_kuzu(
+            cache_dir,
+            tmp_path / "kuzu" / "cg.kuzu",
+            strict=True,
+        )
 
 
 # ---------------------------------------------------------------------------

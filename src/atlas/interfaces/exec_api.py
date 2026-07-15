@@ -7,9 +7,9 @@ shell commands, file ops, browser actions.
 
 Security model:
 
-  HMAC-SHA256 over the raw request body with the shared HERMES_API_KEY.
-  Plus a millisecond-precision ISO timestamp header to defeat replay
-  attacks (rejected if drift > 300s).
+  HMAC-SHA256 over timestamp, a single-use nonce and the raw request body
+  with the shared HERMES_API_KEY. Requests outside a 300s window or with a
+  nonce already persisted by Atlas are rejected.
 
   Once authenticated, the request goes through the SAME ADR-020 capability
   pipeline as direct CLI use — CapabilityIssuer + PermissionProfile +
@@ -32,7 +32,12 @@ import hmac
 import json
 import logging
 import os
+import re
+import sqlite3
+import stat
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import APIRouter, HTTPException, Request
@@ -49,8 +54,11 @@ _log = logging.getLogger(__name__)
 
 HEADER_SIGNATURE = "X-Hermes-Signature"
 HEADER_TIMESTAMP = "X-Hermes-Timestamp"
+HEADER_NONCE = "X-Hermes-Nonce"
 TIMESTAMP_DRIFT_S = 300   # 5 min; matches typical NTP tolerance
 SHARED_SECRET_ENV = "HERMES_API_KEY"
+MIN_SHARED_SECRET_BYTES = 32
+_NONCE_RE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 
 
 # ---------------------------------------------------------------------------
@@ -60,15 +68,23 @@ SHARED_SECRET_ENV = "HERMES_API_KEY"
 
 def _shared_secret() -> bytes | None:
     raw = os.environ.get(SHARED_SECRET_ENV, "").strip()
-    return raw.encode("utf-8") if raw else None
+    encoded = raw.encode("utf-8")
+    return encoded if len(encoded) >= MIN_SHARED_SECRET_BYTES else None
 
 
-def _verify_signature(secret: bytes, body: bytes, signature_hex: str) -> bool:
+def _verify_signature(
+    secret: bytes,
+    timestamp: str,
+    nonce: str,
+    body: bytes,
+    signature_hex: str,
+) -> bool:
     """Constant-time HMAC-SHA256 verification."""
     if not signature_hex:
         return False
     try:
-        expected = hmac.new(secret, body, hashlib.sha256).hexdigest()
+        signed = timestamp.encode() + b"\n" + nonce.encode() + b"\n" + body
+        expected = hmac.new(secret, signed, hashlib.sha256).hexdigest()
     except Exception:
         return False
     return hmac.compare_digest(expected, signature_hex.strip())
@@ -84,11 +100,54 @@ def _verify_timestamp(ts_header: str) -> tuple[bool, str]:
         ts = datetime.fromisoformat(normalized)
     except Exception:
         return False, "unparseable"
+    if ts.utcoffset() is None:
+        return False, "timezone_required"
     now = datetime.now(timezone.utc)
     drift = abs((now - ts).total_seconds())
     if drift > TIMESTAMP_DRIFT_S:
         return False, f"drift_{int(drift)}s"
     return True, "ok"
+
+
+def _claim_nonce(orch: Any, nonce: str) -> bool:
+    """Atomically persist a nonce so a valid request cannot be replayed."""
+    workspace = Path(getattr(orch, "_workspace", Path.home() / "atlas"))
+    store_dir = workspace / "security"
+    store_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    store_dir.chmod(0o700)
+    db_path = store_dir / "exec_nonces.sqlite3"
+
+    flags = os.O_RDWR | os.O_CREAT
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(db_path, flags, 0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValueError("nonce store is not a regular file")
+        os.fchmod(fd, 0o600)
+    finally:
+        os.close(fd)
+
+    now = time.time()
+    with sqlite3.connect(str(db_path), timeout=5.0) as conn:
+        conn.execute("PRAGMA secure_delete=ON")
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS used_nonces "
+            "(nonce TEXT PRIMARY KEY, seen_at REAL NOT NULL)"
+        )
+        conn.execute(
+            "DELETE FROM used_nonces WHERE seen_at < ?",
+            (now - TIMESTAMP_DRIFT_S * 2,),
+        )
+        try:
+            conn.execute(
+                "INSERT INTO used_nonces (nonce, seen_at) VALUES (?, ?)",
+                (nonce, now),
+            )
+        except sqlite3.IntegrityError:
+            return False
+    db_path.chmod(0o600)
+    return True
 
 
 def _key_id(secret: bytes) -> str:
@@ -124,7 +183,12 @@ async def _authenticate(request: Request, orch: Any) -> bytes:
             agent="exec_api",
             result="refused",
             risk_level="moderate",
-            payload={"reason": f"{SHARED_SECRET_ENV} not configured"},
+            payload={
+                "reason": (
+                    f"{SHARED_SECRET_ENV} missing or shorter than "
+                    f"{MIN_SHARED_SECRET_BYTES} bytes"
+                )
+            },
         )
         raise HTTPException(status_code=503, detail="exec api not configured")
 
@@ -141,8 +205,20 @@ async def _authenticate(request: Request, orch: Any) -> bytes:
         )
         raise HTTPException(status_code=401, detail="invalid timestamp")
 
+    timestamp = request.headers.get(HEADER_TIMESTAMP, "").strip()
+    nonce = request.headers.get(HEADER_NONCE, "").strip()
+    if not _NONCE_RE.fullmatch(nonce):
+        orch._merkle.log(
+            action="exec.refused.bad_nonce",
+            agent="exec_api",
+            result="refused",
+            risk_level="high",
+            payload={"key_id": _key_id(secret)},
+        )
+        raise HTTPException(status_code=401, detail="invalid nonce")
+
     sig = request.headers.get(HEADER_SIGNATURE, "")
-    if not _verify_signature(secret, body, sig):
+    if not _verify_signature(secret, timestamp, nonce, body, sig):
         orch._merkle.log(
             action="exec.refused.bad_signature",
             agent="exec_api",
@@ -151,6 +227,16 @@ async def _authenticate(request: Request, orch: Any) -> bytes:
             payload={"key_id": _key_id(secret)},
         )
         raise HTTPException(status_code=401, detail="invalid signature")
+
+    if not _claim_nonce(orch, nonce):
+        orch._merkle.log(
+            action="exec.refused.replay",
+            agent="exec_api",
+            result="refused",
+            risk_level="high",
+            payload={"key_id": _key_id(secret)},
+        )
+        raise HTTPException(status_code=401, detail="replayed request")
 
     return body
 
@@ -168,6 +254,30 @@ def build_router(orch_provider: Any) -> APIRouter:
     to avoid a circular import and to keep the module unit-testable.
     """
     router = APIRouter(prefix="/api/exec", tags=["exec"])
+
+    # ------------------------------------------------------------------
+    # POST /api/exec/health
+    # ------------------------------------------------------------------
+
+    @router.post("/health")
+    async def exec_health(request: Request) -> dict[str, Any]:
+        """Authenticated twin readiness probe using the same replay guard.
+
+        A POST is intentional: every Hermes-facing route uses one exact HMAC
+        contract over a body. The public dashboard health route is protected
+        separately by the dashboard bearer middleware when bound remotely.
+        """
+        orch = orch_provider()
+        body = await _authenticate(request, orch)
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="invalid json body")
+        if payload != {}:
+            raise HTTPException(status_code=400, detail="health body must be an empty object")
+        report = dict(orch.health_report())
+        report["ok"] = True
+        return report
 
     # ------------------------------------------------------------------
     # POST /api/exec/shell
@@ -583,5 +693,6 @@ __all__ = [
     "build_router",
     "HEADER_SIGNATURE",
     "HEADER_TIMESTAMP",
+    "HEADER_NONCE",
     "TIMESTAMP_DRIFT_S",
 ]

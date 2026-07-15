@@ -3,7 +3,7 @@
 priores VERIFICADOS en cadena, las corrobora / contradice / acepta / rechaza.
 
 Dev/red-team, NO runtime. Corre con:
-    PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/frontier_debate.py
+    PYTHONPATH=src .venv/bin/python scripts/redteam/frontier_debate.py
 
 Tesis (eje propio, honesto): NO entrenamos pesos — ACUMULAMOS conocimiento
 verificable y model-agnostic. El maestro es un LLM falible; el valor es que el

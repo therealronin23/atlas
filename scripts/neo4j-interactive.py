@@ -4,13 +4,14 @@ Neo4j Interactive Graph Analysis for Atlas Core
 Provides quick insights and enables ad-hoc Cypher queries
 """
 
+import os
 import sys
 from neo4j import GraphDatabase
 
 # Connection details
-URI = "bolt://localhost:7687"
-USER = "neo4j"
-PASSWORD = "atlasneo4j"
+URI = os.getenv("NEO4J_URI", "bolt://127.0.0.1:7687")
+USER = os.getenv("NEO4J_USER", "neo4j")
+PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 class AtlasGraphAnalyzer:
     def __init__(self, uri, user, password):
@@ -106,6 +107,8 @@ class AtlasGraphAnalyzer:
         return self.run_query(query)
 
 def main():
+    if not PASSWORD:
+        raise SystemExit("NEO4J_PASSWORD is required")
     analyzer = AtlasGraphAnalyzer(URI, USER, PASSWORD)
     
     try:
@@ -183,7 +186,7 @@ def main():
         print("💡 Next steps:")
         print("  1. Open Neo4j Browser: http://localhost:7474")
         print("  2. Use CLAUDE_PROMPT.md to dive deeper with Claude")
-        print("  3. Check WORKFLOW_GUIDE.md for more analysis patterns")
+        print("  3. Check docs/archive/2026-07-14-knowledge-stack/WORKFLOW_GUIDE.md for more analysis patterns")
         print()
         
     finally:

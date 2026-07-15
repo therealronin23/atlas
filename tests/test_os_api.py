@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.datastructures import Headers
+from starlette.websockets import WebSocketDisconnect
 
 from atlas.api.server import create_app
 from atlas.events.store import OsEventStore
@@ -16,10 +18,15 @@ REPO = Path(__file__).resolve().parent.parent
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
     store = OsEventStore(tmp_path / "events.jsonl")
-    return TestClient(create_app(
-        store=store, fixtures_dir=REPO / "fixtures",
-        business_core_path=tmp_path / "business_core.json",
-    ))
+    return TestClient(
+        create_app(
+            store=store,
+            fixtures_dir=REPO / "fixtures",
+            business_core_path=tmp_path / "business_core.json",
+        ),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
 
 
 def test_health(client: TestClient) -> None:
@@ -28,6 +35,76 @@ def test_health(client: TestClient) -> None:
     assert body["real"] is True
     assert body["connectors"] == 5
     assert body["gates"] == 12
+
+
+def test_remote_http_requires_a_strong_bearer_or_x_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    token = "atlas-os-test-token-with-more-than-32-bytes"
+    monkeypatch.setenv("ATLAS_OS_BRIDGE_TOKEN", token)
+    app = create_app(
+        store=OsEventStore(tmp_path / "remote-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "remote-business-core.json",
+    )
+    remote = TestClient(
+        app,
+        base_url="http://atlas.example",
+        client=("203.0.113.10", 50000),
+    )
+
+    assert remote.get("/health").status_code == 401
+    assert remote.get(
+        "/health", headers={"Authorization": f"Bearer {token}"},
+    ).status_code == 200
+    assert remote.get(
+        "/health", headers={"X-Atlas-Token": token},
+    ).status_code == 200
+    assert remote.get(
+        "/health", headers={"Authorization": "Bearer wrong"},
+    ).status_code == 401
+
+
+def test_non_ascii_token_is_rejected_without_internal_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from atlas.api.server import _AuthenticationError, _authenticate_client
+
+    monkeypatch.setenv(
+        "ATLAS_OS_BRIDGE_TOKEN", "atlas-os-test-token-with-more-than-32-bytes",
+    )
+    headers = Headers(
+        raw=[(b"authorization", "Bearer contraseña".encode("latin-1"))],
+    )
+
+    with pytest.raises(_AuthenticationError):
+        _authenticate_client("203.0.113.10", headers)
+
+
+def test_non_loopback_bind_refuses_missing_or_weak_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from atlas.api.server import _validate_bind_security
+
+    monkeypatch.delenv("ATLAS_OS_BRIDGE_TOKEN", raising=False)
+    with pytest.raises(RuntimeError, match="ATLAS_OS_BRIDGE_TOKEN"):
+        _validate_bind_security("0.0.0.0")
+
+    monkeypatch.setenv("ATLAS_OS_BRIDGE_TOKEN", "too-short")
+    with pytest.raises(RuntimeError, match="ATLAS_OS_BRIDGE_TOKEN"):
+        _validate_bind_security("192.0.2.20")
+
+    _validate_bind_security("127.0.0.1")
+    _validate_bind_security("::1")
+
+
+def test_loopback_http_rejects_malformed_or_rebound_host(client: TestClient) -> None:
+    assert client.get(
+        "/health", headers={"Host": "127.0.0.1:not-a-port"},
+    ).status_code == 401
+    assert client.get(
+        "/health", headers={"Host": "attacker.example"},
+    ).status_code == 401
 
 
 def test_orchestrator_never_imported() -> None:
@@ -175,12 +252,70 @@ def test_evaluate_legacy_action_still_uses_v1(client: TestClient) -> None:
 def test_websocket_tail_and_live_push(client: TestClient) -> None:
     client.post("/simulate", json={"fixture": "demo_first_run"})
     first_batch = client.get("/events").json()["count"]
-    with client.websocket_connect("/events") as ws:
+    with client.websocket_connect(
+        "/events",
+        headers={"Host": "127.0.0.1:7341", "Origin": "http://127.0.0.1:3000"},
+    ) as ws:
         seen = [ws.receive_json() for _ in range(min(first_batch, 50))]
         assert seen[0]["id"].startswith("evt_")
         client.post("/connectors/conn_github/test")
         live = ws.receive_json()
         assert live["type"] == "connector.connected"
+
+
+def test_websocket_rejects_missing_or_cross_site_origin(client: TestClient) -> None:
+    with pytest.raises(WebSocketDisconnect) as missing:
+        with client.websocket_connect("/events"):
+            pass
+    assert missing.value.code == 1008
+
+    with pytest.raises(WebSocketDisconnect) as cross_site:
+        with client.websocket_connect(
+            "/events",
+            headers={"Host": "127.0.0.1:7341", "Origin": "https://attacker.example"},
+        ):
+            pass
+    assert cross_site.value.code == 1008
+
+    with pytest.raises(WebSocketDisconnect) as malformed:
+        with client.websocket_connect(
+            "/events",
+            headers={
+                "Host": "127.0.0.1:7341",
+                "Origin": "http://127.0.0.1:not-a-port",
+            },
+        ):
+            pass
+    assert malformed.value.code == 1008
+
+
+def test_remote_websocket_requires_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    token = "atlas-os-test-token-with-more-than-32-bytes"
+    monkeypatch.setenv("ATLAS_OS_BRIDGE_TOKEN", token)
+    app = create_app(
+        store=OsEventStore(tmp_path / "remote-ws-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "remote-ws-business-core.json",
+    )
+    remote = TestClient(
+        app,
+        base_url="http://atlas.example",
+        client=("203.0.113.10", 50000),
+    )
+    origin = {"Host": "atlas.example:7341", "Origin": "https://atlas.example"}
+
+    with pytest.raises(WebSocketDisconnect) as denied:
+        with remote.websocket_connect("/events", headers=origin):
+            pass
+    assert denied.value.code == 1008
+
+    with remote.websocket_connect(
+        "/events",
+        headers={**origin, "Authorization": f"Bearer {token}"},
+    ):
+        pass
 
 
 def test_memory_summary_shape(client: TestClient) -> None:

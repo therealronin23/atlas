@@ -86,7 +86,7 @@ Atlas ecosystem taxonomy lives in `docs/design/atlas_ecosystem_map.md`.
 `arxiv-citation-verification` · `adopt-real-not-shell` ·
 `research-before-deciding` · `challenge-the-trio` ·
 `deep-onboarding-new-sessions` · `no-rewrite-git-history` ·
-`absorb-without-cloning`.
+`absorb-without-cloning` · `adversarial-audit-no-assumptions`.
 
 When the user states a recurring preference or workflow improvement, add/update
 a `feedback-*.md` memory, add a one-liner in `MEMORY.md`, and add the mania name

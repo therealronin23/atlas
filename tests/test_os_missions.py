@@ -220,10 +220,15 @@ def test_missions_payload_aggregates() -> None:
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
     store = OsEventStore(tmp_path / "events.jsonl")
-    return TestClient(create_app(
-        store=store, fixtures_dir=REPO / "fixtures",
-        business_core_path=tmp_path / "business_core.json",
-    ))
+    return TestClient(
+        create_app(
+            store=store,
+            fixtures_dir=REPO / "fixtures",
+            business_core_path=tmp_path / "business_core.json",
+        ),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
 
 
 def test_missions_endpoint_shape(client: TestClient) -> None:

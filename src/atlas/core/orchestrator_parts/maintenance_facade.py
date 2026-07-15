@@ -820,18 +820,42 @@ class MaintenanceFacade:
 
         metrics = build_project_graph(root, rebuild, embedder=resolve_graph_embedder())
 
-        # Call-graph de Graphify (D3, 2026-07-10): si el cache existe, se
-        # ingiere al MISMO rebuild antes del swap (MERGE idempotente; datos
-        # con staleness explícita por content_hash — del último run de
-        # graphify, no del working tree).
-        callgraph_cache = root / "src" / "graphify-out" / "cache" / "ast"
-        if callgraph_cache.is_dir():
-            try:
-                from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
+        # Call-graph de Graphify (D3, 2026-07-10): se ingiere al MISMO rebuild
+        # antes del swap. El cache oficial vive en <repo>/graphify-out (no en
+        # src/graphify-out, que era un residuo antiguo) y se limita al corpus
+        # de producción src/atlas. Un cache ausente/roto o Symbol==0 invalida
+        # TODA la regeneración: no se sirve una BD que finja tener call-graph.
+        callgraph_cache = root / "graphify-out" / "cache" / "ast"
+        try:
+            if not callgraph_cache.is_dir():
+                raise RuntimeError(
+                    f"Graphify AST cache unavailable: {callgraph_cache}"
+                )
 
-                metrics["callgraph"] = load_callgraph_into_kuzu(callgraph_cache, rebuild)
-            except Exception:  # noqa: BLE001 — el call-graph es extra, nunca rompe la regen
-                pass
+            from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
+
+            callgraph_metrics = load_callgraph_into_kuzu(
+                callgraph_cache,
+                rebuild,
+                source_prefix="src/atlas",
+                replace=True,
+                strict=True,
+            )
+            if int(callgraph_metrics.get("symbols", 0)) <= 0:
+                raise RuntimeError(
+                    "Graphify call-graph produced zero symbols for corpus src/atlas"
+                )
+            if int(callgraph_metrics.get("files", 0)) <= 0:
+                raise RuntimeError(
+                    "Graphify call-graph matched zero files for corpus src/atlas"
+                )
+            metrics["callgraph"] = callgraph_metrics
+        except Exception:
+            # El rebuild nunca se publica si Graphify falla; se elimina para
+            # que tampoco parezca un artefacto listo en una inspección manual.
+            rebuild.unlink(missing_ok=True)
+            rebuild_wal.unlink(missing_ok=True)
+            raise
 
         # Swap: primero el fichero principal, luego el wal (el close de la
         # ingesta hace checkpoint, así que el wal del rebuild suele estar
@@ -852,7 +876,11 @@ class MaintenanceFacade:
             agent="maintenance_facade",
             result="ran",
             risk_level="safe",
-            payload={"head": head, "commits": len(metrics.get("commits", []))},
+            payload={
+                "head": head,
+                "commits": len(metrics.get("commits", [])),
+                "callgraph": metrics["callgraph"],
+            },
         )
         return {"status": "ran", "head": head, "metrics": metrics}
 

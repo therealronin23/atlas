@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Smoke E2E del twin Hermes -> Atlas (ADR-027 + ADR-031).
+Prueba de contrato del canal Hermes -> Atlas (ADR-027 + ADR-031).
 
 Sella el circuito reverso: Hermes (VPS) delega un intent a Atlas via
 POST /api/exec/intent (HMAC), Atlas lo resuelve con grounding real (git_log,
@@ -13,13 +13,15 @@ Dos modos:
     Levanta un Orchestrator sobre un ATLAS_HOME aislado que es un repo git
     real con commits conocidos, monta el router /api/exec via TestClient y
     verifica que el intent "dame los ultimos commits" devuelve esos commits
-    EXACTOS (grounding) y que el Merkle registro el circuito. No toca el
-    workspace vivo (~/atlas), asi que es seguro con el servicio corriendo.
+    EXACTOS (grounding) y que el Merkle registro el circuito. Verifica el
+    contrato, pero NO demuestra que Hermes, el VPS o Telegram estén vivos.
 
   LIVE — contra un Atlas que ya esta sirviendo /api/exec:
       HERMES_API_KEY=<secret> \
       PYTHONPATH=src python scripts/twin_e2e_smoke.py --live https://atlas.tail-xxxx.ts.net
-    Firma y envia el POST por red, igual que haria Hermes desde el VPS.
+    Usa el mismo cliente endurecido que se instala como skill de Hermes:
+    origen privado/Tailscale, sin proxies ni redirects, HMAC con nonce y
+    respuesta acotada.
 
 Sale 0 si el circuito esta sellado, !=0 si algo falla.
 """
@@ -34,11 +36,13 @@ import os
 import subprocess
 import sys
 import tempfile
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 HEADER_SIGNATURE = "X-Hermes-Signature"
 HEADER_TIMESTAMP = "X-Hermes-Timestamp"
+HEADER_NONCE = "X-Hermes-Nonce"
 
 # Commits sembrados en el repo aislado; el intent debe devolverlos tal cual.
 SEED_COMMITS = ("twin smoke: segundo commit", "twin smoke: primer commit")
@@ -46,10 +50,14 @@ INTENT = "dame los ultimos commits"
 
 
 def _sign(secret: str, body: bytes) -> dict[str, str]:
-    sig = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    timestamp = datetime.now(timezone.utc).isoformat()
+    nonce = uuid.uuid4().hex
+    signed = timestamp.encode() + b"\n" + nonce.encode() + b"\n" + body
+    sig = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
     return {
         HEADER_SIGNATURE: sig,
-        HEADER_TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+        HEADER_TIMESTAMP: timestamp,
+        HEADER_NONCE: nonce,
     }
 
 
@@ -81,7 +89,7 @@ def _seed_repo(repo: Path) -> None:
     _git(repo, "commit", "-q", "-m", SEED_COMMITS[0])
 
 
-def _check_response(data: dict) -> int:
+def _check_response(data: dict[str, object]) -> int:
     print(f"      ok={data.get('ok')} status={data.get('status')} "
           f"route={data.get('route')} tool={data.get('tool')}")
     result = data.get("result")
@@ -147,28 +155,41 @@ def run_local() -> int:
             return 1
         print(f"      Merkle OK: exec.intent.via_hermes presente. recientes={actions[-6:]}")
 
-    print("OK — circuito twin Hermes->Atlas sellado (grounding + auditoria).")
+    print("OK — contrato twin verificado en aislamiento; VPS/Telegram no verificados.")
     return 0
 
 
 def run_live(base_url: str) -> int:
-    import urllib.request
-
     secret = os.environ.get("HERMES_API_KEY")
     if not secret:
         print("ERROR: HERMES_API_KEY requerido en modo --live.")
         return 2
 
-    url = base_url.rstrip("/") + "/api/exec/intent"
-    body = json.dumps({"intent": INTENT}).encode()
-    headers = {"Content-Type": "application/json", **_sign(secret, body)}
-    print(f"[live] POST {url}  intent={INTENT!r} ...")
-    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    twin_client = Path(__file__).resolve().parent / "hermes_skill_atlas_twin" / "atlas_twin.py"
+    print(f"[live] intent firmado hacia {base_url!r} ...")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(twin_client),
+            "--base-url",
+            base_url,
+            "--timeout",
+            "30",
+            "intent",
+            INTENT,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=35,
+    )
+    if completed.returncode != 0:
+        print(f"ERROR: cliente twin rechazo la prueba: {completed.stderr.strip()}")
+        return 1
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:  # noqa: BLE001
-        print(f"ERROR: peticion fallo: {exc}")
+        data = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        print("ERROR: el cliente twin no devolvio JSON valido")
         return 1
 
     # En modo live no controlamos los commits del repo destino; basta con que
@@ -178,7 +199,7 @@ def run_live(base_url: str) -> int:
     if data.get("status") != "done":
         print(f"ERROR: el intent no termino en 'done': {data}")
         return 1
-    print("OK — Atlas vivo resolvio el intent delegado via HMAC.")
+    print("OK — Atlas vivo resolvio el intent firmado; Hermes/Telegram siguen sin probarse.")
     return 0
 
 
