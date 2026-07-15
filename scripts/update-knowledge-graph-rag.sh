@@ -10,6 +10,13 @@ fi
 
 source .venv/bin/activate
 
+if [ -f ".env" ]; then
+  # Load credentials from .env for Graphify backends (GEMINI_API_KEY, OPENAI_API_KEY, etc.)
+  set -a
+  source ".env"
+  set +a
+fi
+
 VAULT_DIR="graphify-vault"
 BACKEND="${GRAPHIFY_BACKEND:-}"
 MODEL="${GRAPHIFY_MODEL:-}"
@@ -18,7 +25,7 @@ FORCE=false
 CODE_ONLY=false
 NO_CLUSTER=false
 MAX_CONCURRENCY=1
-TOKEN_BUDGET=60000
+TOKEN_BUDGET=4000
 API_TIMEOUT=600
 MAX_WORKERS=1
 
@@ -108,7 +115,13 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ -z "$BACKEND" ] && [ "$CODE_ONLY" = false ]; then
-  if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  if [ -n "${NVIDIA_API_KEY:-}" ]; then
+    BACKEND=openai
+    export OPENAI_API_KEY="${OPENAI_API_KEY:-${NVIDIA_API_KEY}}"
+    export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://integrate.api.nvidia.com/v1}"
+    export GRAPHIFY_OPENAI_MODEL="${GRAPHIFY_OPENAI_MODEL:-${MODEL:-meta/llama-3.3-70b-instruct}}"
+    MODEL="${GRAPHIFY_OPENAI_MODEL:-meta/llama-3.3-70b-instruct}"
+  elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
     BACKEND=claude
   elif [ -n "${OPENAI_API_KEY:-}" ]; then
     BACKEND=openai
@@ -119,6 +132,13 @@ if [ -z "$BACKEND" ] && [ "$CODE_ONLY" = false ]; then
   elif [ -n "${DEEPSEEK_API_KEY:-}" ]; then
     BACKEND=deepseek
   fi
+fi
+
+if [ "$BACKEND" = "openai" ] && [ -z "${OPENAI_API_KEY:-}" ] && [ -n "${NVIDIA_API_KEY:-}" ] && [ "$CODE_ONLY" = false ]; then
+  export OPENAI_API_KEY="${NVIDIA_API_KEY}"
+  export OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://integrate.api.nvidia.com/v1}"
+  export GRAPHIFY_OPENAI_MODEL="${GRAPHIFY_OPENAI_MODEL:-${MODEL:-meta/llama-3.3-70b-instruct}}"
+  MODEL="${GRAPHIFY_OPENAI_MODEL:-meta/llama-3.3-70b-instruct}"
 fi
 
 # Auto-detect a local Ollama service if one is running and no backend is configured.
@@ -137,6 +157,9 @@ fi
 
 if [ "$CODE_ONLY" = false ]; then
   echo "Building semantic Graphify graph with backend=$BACKEND ${MODEL:+model=$MODEL}."
+  export GRAPHIFY_MAX_OUTPUT_TOKENS="${GRAPHIFY_MAX_OUTPUT_TOKENS:-4096}"
+  export GRAPHIFY_LLM_TEMPERATURE="${GRAPHIFY_LLM_TEMPERATURE:-0}"
+  export GRAPHIFY_API_TIMEOUT="${GRAPHIFY_API_TIMEOUT:-$API_TIMEOUT}"
 fi
 
 echo "Writing Obsidian export to: $(pwd)/$VAULT_DIR"
