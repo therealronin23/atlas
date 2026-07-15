@@ -22,6 +22,12 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 
+from atlas.api.missions import (
+    mission_receipt,
+    missions_payload,
+    proposal_to_mission,
+    radar_findings,
+)
 from atlas.api.models import (
     ConnectorSpec,
     EvaluateRequest,
@@ -168,6 +174,38 @@ def _files_touched_from_patch(patch_text: str) -> list[str]:
     return files
 
 
+def _load_proposals() -> list[dict[str, Any]] | dict[str, Any]:
+    """Carga READ-ONLY del ledger de ColdUpdate; si no se puede, devuelve el
+    payload de error ({real: False, …}) para que el endpoint lo retorne tal
+    cual. Mismo patrón honesto que _self_build_summary."""
+    path = _REPO_ROOT.parent / "atlas-cold-updates" / "proposals.json"
+    if not path.exists():
+        return {"real": False, "status": "BLOCKED_BY_MISSING_DEPENDENCY",
+                "detail": f"no existe {path}"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"real": False, "status": "UNVERIFIED", "detail": str(exc)}
+    proposals: list[dict[str, Any]] = data.get("proposals", [])
+    return proposals
+
+
+def _proposal_files_touched(proposal: dict[str, Any]) -> list[str]:
+    """Ficheros tocados por el patch real de una propuesta (si existe)."""
+    patch_path = proposal.get("patch_path")
+    if not patch_path:
+        return []
+    patch_file = Path(patch_path)
+    if not patch_file.exists():
+        return []
+    try:
+        return _files_touched_from_patch(
+            patch_file.read_text(encoding="utf-8", errors="replace")
+        )
+    except OSError:
+        return []
+
+
 def _self_build_proposal_detail(proposal_id: str) -> dict[str, Any]:
     """Lectura READ-ONLY de una propuesta concreta del ledger de
     ColdUpdateManager, con el diff parseado a ficheros tocados — mismo
@@ -297,6 +335,45 @@ def create_app(
     @app.get("/self-build/proposal/{proposal_id}")
     def self_build_proposal(proposal_id: str) -> dict[str, Any]:
         return _self_build_proposal_detail(proposal_id)
+
+    # -- Mission Layer v0 (Foundry, ADR-069) -------------------------------
+    # Proyección read-only del ledger de ColdUpdate como misiones. Mismo
+    # patrón que /self-build/*: leer proposals.json, jamás instanciar
+    # ColdUpdateManager. /missions/radar va ANTES de /missions/{id} para
+    # que el path param no capture "radar".
+
+    @app.get("/missions/radar")
+    def missions_radar() -> dict[str, Any]:
+        proposals = _load_proposals()
+        if isinstance(proposals, dict):  # error payload
+            return proposals
+        return {"real": True, "findings": radar_findings(proposals)}
+
+    @app.get("/missions/{mission_id}")
+    def mission_detail(mission_id: str) -> dict[str, Any]:
+        proposals = _load_proposals()
+        if isinstance(proposals, dict):
+            return proposals
+        proposal_id = mission_id.removeprefix("msn_")
+        proposal = next(
+            (p for p in proposals if p.get("id") == proposal_id), None
+        )
+        if proposal is None:
+            return {"real": False, "status": "NOT_FOUND",
+                    "detail": f"sin misión con id={mission_id}"}
+        files = _proposal_files_touched(proposal)
+        return {
+            "real": True,
+            "mission": proposal_to_mission(proposal, files_touched=files),
+            "receipt": mission_receipt(proposal, files_touched=files),
+        }
+
+    @app.get("/missions")
+    def missions_list(limit: int = 50) -> dict[str, Any]:
+        proposals = _load_proposals()
+        if isinstance(proposals, dict):
+            return proposals
+        return missions_payload(proposals, limit=limit)
 
     @app.post("/memory/import")
     def memory_import(raw: dict[str, Any]) -> dict[str, Any]:

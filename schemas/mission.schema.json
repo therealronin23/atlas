@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/mission.schema.json",
+  "title": "AtlasMission",
+  "description": "La unidad semántica que une propuestas, eventos, gates, tests, riesgo y decisión (Foundry v0, ADR-069). Sin Mission, Atlas tiene piezas correctas pero no comportamiento coherente. v0: proyección read-only de una propuesta real del ledger de ColdUpdateManager (ADR-025); versiones futuras admiten más fuentes (workflow dinámico, investigación, radar).",
+  "type": "object",
+  "required": [
+    "mission_id",
+    "intent",
+    "state",
+    "risk",
+    "origin",
+    "source",
+    "created_at",
+    "updated_at",
+    "human_action_required"
+  ],
+  "properties": {
+    "mission_id": {
+      "type": "string",
+      "pattern": "^msn_[A-Za-z0-9_-]+$"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "qué se pidió/propuso, en lenguaje humano"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "request_received",
+        "reality_check",
+        "scope_selected",
+        "plan_proposed",
+        "delegated",
+        "worktree_created",
+        "files_changed",
+        "tests_running",
+        "diff_ready",
+        "risk_review",
+        "memory_writes_proposed",
+        "awaiting_human_approval",
+        "approved_pending_apply",
+        "applied",
+        "parked",
+        "rejected",
+        "failed",
+        "receipt_written",
+        "unknown"
+      ],
+      "description": "estados visibles del product contract (export Diseño UI Atlas L45597); v0 solo alcanza los que el ledger real puede afirmar"
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["none", "low", "medium", "high", "critical", "unknown"]
+    },
+    "origin": {
+      "type": "string",
+      "description": "quién originó la misión (self_audit, swarm, operator, radar…)"
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["cold_update_proposal"]
+        },
+        "ref": {
+          "type": "string",
+          "description": "id del objeto fuente (proposal id del ledger)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "created_at": {
+      "type": ["string", "null"]
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "ficheros tocados por el patch (parseados del diff real)"
+    },
+    "evidence_bundle": {"$ref": "#/$defs/EvidenceBundle"},
+    "next_action": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/NextAction"}]
+    },
+    "human_action_required": {
+      "type": "boolean",
+      "description": "true si la siguiente acción es una decisión/comando humano"
+    },
+    "gate": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/GateReference"}]
+    },
+    "model_use": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/ModelUse"}
+    },
+    "soul_invocations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/SoulInvocation"}
+    },
+    "receipt_ref": {
+      "type": ["string", "null"],
+      "description": "receipt_id del AtlasMissionReceipt asociado"
+    }
+  },
+  "$defs": {
+    "EvidenceBundle": {
+      "type": "object",
+      "description": "evidencia real y comprobable, nunca prosa: validación pytest/mypy, evidencia de origen, referencias verificables",
+      "properties": {
+        "validation": {"type": ["object", "null"]},
+        "evidence": {"type": ["object", "null"]},
+        "refs": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "NextAction": {
+      "type": "object",
+      "required": ["kind", "command", "actor"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["cli"]},
+        "command": {
+          "type": "string",
+          "description": "comando real que un humano correría — NUNCA se ejecuta desde el bridge (ADR-058 read-only)"
+        },
+        "actor": {"type": "string", "enum": ["human"]}
+      },
+      "additionalProperties": false
+    },
+    "GateReference": {
+      "type": "object",
+      "required": ["gate_ticket_id"],
+      "properties": {
+        "gate_ticket_id": {
+          "type": "string",
+          "pattern": "^gt_[A-Za-z0-9_-]+$"
+        },
+        "gate_id": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "ModelUse": {
+      "type": "object",
+      "required": ["role", "model"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "para qué se usó el modelo (plan, patch, review adversarial, verificación, resumen)"
+        },
+        "model": {"type": "string"},
+        "trust_boundary": {
+          "type": "string",
+          "enum": [
+            "LOCAL_ONLY",
+            "LOCAL_DEGRADED",
+            "EXTERNAL_REDACTED",
+            "EXTERNAL_EXPLICIT_EXPORT",
+            "BLOCKED"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SoulInvocation": {
+      "type": "object",
+      "required": ["soul_id", "outcome"],
+      "properties": {
+        "soul_id": {
+          "type": "string",
+          "pattern": "^soul_[A-Za-z0-9_-]+$"
+        },
+        "outcome": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

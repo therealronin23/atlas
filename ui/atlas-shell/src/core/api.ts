@@ -149,6 +149,83 @@ export interface SelfBuildProposalDetail {
   next_action?: string | null;
 }
 
+// --- Mission Layer v0 (Foundry, ADR-069): /missions, /missions/{id}, /missions/radar ---
+
+export interface MissionNextAction {
+  kind: "cli";
+  command: string;
+  actor: "human";
+}
+
+export interface MissionEvidenceBundle {
+  validation: Record<string, unknown> | null;
+  evidence: Record<string, unknown> | null;
+  refs: string[];
+}
+
+export interface Mission {
+  mission_id: string;
+  intent: string;
+  state: string;
+  risk: string;
+  origin: string;
+  source: { kind: string; ref: string };
+  created_at: string | null;
+  updated_at: string | null;
+  artifacts: string[];
+  evidence_bundle: MissionEvidenceBundle;
+  next_action: MissionNextAction | null;
+  human_action_required: boolean;
+  receipt_ref: string | null;
+}
+
+export interface MissionReceipt {
+  receipt_id: string;
+  mission_id: string;
+  what_happened: string;
+  why_it_matters: string;
+  what_atlas_did: string;
+  whats_missing: string;
+  decision_needed: string;
+  evidence_refs: string[];
+  verifiable: boolean;
+  generated_at: string;
+}
+
+export interface MissionsResponse {
+  real: boolean;
+  status?: string;
+  detail?: string;
+  total?: number;
+  by_state?: Record<string, number>;
+  by_risk?: Record<string, number>;
+  by_origin?: Record<string, number>;
+  missions?: Mission[];
+}
+
+export interface MissionDetailResponse {
+  real: boolean;
+  status?: string;
+  detail?: string;
+  mission?: Mission;
+  receipt?: MissionReceipt;
+}
+
+export interface RadarFinding {
+  detector: string;
+  severity: "silent" | "radar" | "ask" | "gate";
+  summary: string;
+  mission_ids: string[];
+  evidence: string[];
+}
+
+export interface RadarResponse {
+  real: boolean;
+  status?: string;
+  detail?: string;
+  findings?: RadarFinding[];
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
@@ -202,6 +279,10 @@ export const api = {
     get<SelfBuildSummary>(`/self-build/summary?limit=${limit}`),
   selfBuildProposal: (id: string) =>
     get<SelfBuildProposalDetail>(`/self-build/proposal/${encodeURIComponent(id)}`),
+  missions: (limit = 80) => get<MissionsResponse>(`/missions?limit=${limit}`),
+  missionDetail: (id: string) =>
+    get<MissionDetailResponse>(`/missions/${encodeURIComponent(id)}`),
+  missionsRadar: () => get<RadarResponse>("/missions/radar"),
 };
 
 export function connectEventsWs(onEvent: (e: OsEvent) => void, onState: (up: boolean) => void): () => void {
