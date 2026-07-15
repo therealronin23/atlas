@@ -8,6 +8,21 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MISSION LAYER v0 + MISSION CONSOLE (2026-07-15, ADR-069)** — el export
+  "Diseño UI Atlas.md" (65.640 líneas) destilado a `docs/inbox/
+  atlas_foundry_v0_destilado_2026-07-15.md` + spec en `docs/design/
+  mission_layer_self_construction_spec.md` (cumple el prerequisito de
+  ADR-068). Construido y verificado en navegador real: 3 schemas Foundry
+  (mission/receipt/soul_manifest), adapter puro ColdUpdate→Mission +
+  receipt determinista, radar con 4 detectores (cazó en vivo el bucle real
+  del vault Obsidian ×15 + 3 bucles de dep-bumps), endpoints read-only
+  `/missions*`, y Mission Console como vista por defecto del shell.
+  Test E2E rojo (`tests/acceptance/test_self_construction_golden_route.py`,
+  xfail strict) = contrato de lo que falta. **Próxima acción**: cerrar la
+  ruta dorada por pasos (superficie pública de petición → worktree → diff →
+  aprobación → apply/park) hasta que el xfail salte como XPASS; primera
+  soul (devil_advocate) sobre el contrato ya existente.
+
 - **CAMPAÑA x10 (2026-07-10, plan de-acuerdo-puedes-hacerlo-fizzy-sifakis):
   Fable planifica/audita, Sonnet implementa, el lazo mastica en paralelo** —
   - A: f2-6b despiezado en 3 items mecánicos (gen pares → runner juez vs

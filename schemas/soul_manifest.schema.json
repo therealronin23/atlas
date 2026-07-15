@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/soul_manifest.schema.json",
+  "title": "AtlasSoulManifest",
+  "description": "Contrato de una soul ejecutable (Foundry Fase C, ADR-069): no un personaje ni una carpeta de prompts, sino un paquete ejecutable con system prompt, skills, tools permitidas/prohibidas, modelo preferente, frontera de privacidad, schema de salida, memoria permitida y criterio de evaluación. El Soul Catalog debe ser runtime propio porque MCP no puede imponer system prompt (muro conocido del ecosistema). v0 define SOLO el contrato; la primera soul crítica a ejecutar será devil_advocate.",
+  "type": "object",
+  "required": [
+    "soul_id",
+    "name",
+    "purpose",
+    "system_prompt_ref",
+    "skills",
+    "tools_allowed",
+    "tools_forbidden",
+    "preferred_model_role",
+    "privacy_boundary",
+    "output_schema_ref",
+    "memory_scope",
+    "evaluation_criteria",
+    "version"
+  ],
+  "properties": {
+    "soul_id": {
+      "type": "string",
+      "pattern": "^soul_[A-Za-z0-9_-]+$"
+    },
+    "name": {"type": "string", "minLength": 1},
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "description": "para qué existe (p.ej. devil_advocate: desafiar propuestas antes de que Atlas apruebe sus propias ideas)"
+    },
+    "system_prompt_ref": {
+      "type": "string",
+      "description": "ruta/ref al system prompt versionado — nunca inline aquí"
+    },
+    "skills": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "tools_allowed": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "tools_forbidden": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "preferred_model_role": {
+      "type": "string",
+      "description": "rol de InferenceHub (chat, edit, apply…) — la soul NO fija un modelo concreto, fija el rol; el Model Fabric resuelve"
+    },
+    "privacy_boundary": {
+      "type": "string",
+      "enum": [
+        "LOCAL_ONLY",
+        "LOCAL_DEGRADED",
+        "EXTERNAL_REDACTED",
+        "EXTERNAL_EXPLICIT_EXPORT",
+        "BLOCKED"
+      ]
+    },
+    "output_schema_ref": {
+      "type": "string",
+      "description": "schema JSON que la salida de la soul debe cumplir — salida no estructurada = soul mal definida"
+    },
+    "memory_scope": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "qué memoria puede leer/escribir (vacío = ninguna)"
+    },
+    "evaluation_criteria": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "description": "cómo se mide si la soul hizo bien su trabajo"
+    },
+    "version": {"type": "string"}
+  },
+  "additionalProperties": false
+}

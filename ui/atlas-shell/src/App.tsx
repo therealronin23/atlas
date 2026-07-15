@@ -13,6 +13,7 @@ import type {
 } from "./core/types";
 import { DEFAULT_PREFERENCES } from "./core/types";
 import { AutobuildLedger } from "./components/AutobuildLedger";
+import { MissionConsole } from "./components/MissionConsole";
 import { EventInspector } from "./components/EventInspector";
 import { HarnessPanel } from "./components/HarnessPanel";
 import { ExecutionPipeline } from "./components/ExecutionPipeline";
@@ -27,6 +28,7 @@ import { Personalization } from "./components/control/Personalization";
 import { SecurityCenter } from "./components/control/SecurityCenter";
 
 type View =
+  | "missions"
   | "command"
   | "timeline"
   | "memory"
@@ -50,7 +52,9 @@ function loadPrefs(): Preferences {
 
 export default function App() {
   const [state, dispatch] = useReducer(reduce, initialState);
-  const [view, setView] = useState<View>("command");
+  // Mission Console es el centro mental del shell (Foundry v0, ADR-069):
+  // se abre en la superficie de decisión, no en el dashboard.
+  const [view, setView] = useState<View>("missions");
   const [connected, setConnected] = useState(false);
   const [prefs, setPrefs] = useState<Preferences>(loadPrefs);
   const [health, setHealth] = useState<HealthInfo | null>(null);
@@ -146,6 +150,7 @@ export default function App() {
       <div className="layout">
         <nav className="sidebar">
           <h4>Cognitive Surface</h4>
+          {nav("missions", "⟁ Mission Console")}
           {nav("command", "◈ Command Center")}
           {nav("timeline", "≡ Timeline")}
           {nav("memory", "◇ Memory Vault")}
@@ -158,6 +163,15 @@ export default function App() {
           {nav("autobuild", "◎ Autobuild Ledger")}
         </nav>
         <main className="main">
+          {view === "missions" && (
+            <div className="panel" style={{ flex: 1 }}>
+              <header>
+                Mission Console · Atlas construyendo Atlas
+                <span className="badge real">REAL — ColdUpdate ledger</span>
+              </header>
+              <MissionConsole />
+            </div>
+          )}
           {view === "command" && (
             <div className="content">
               <div className="panel" style={{ flex: 2.2, display: "flex" }}>

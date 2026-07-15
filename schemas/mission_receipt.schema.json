@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/mission_receipt.schema.json",
+  "title": "AtlasMissionReceipt",
+  "description": "El resumen humano accionable de una misión (Foundry v0, ADR-069): qué pasó, por qué importa, qué hizo Atlas, qué falta y qué decisión se necesita. Con referencias de evidencia comprobables — un receipt sin evidencia verificable debe declararse verifiable=false, no fingir.",
+  "type": "object",
+  "required": [
+    "receipt_id",
+    "mission_id",
+    "what_happened",
+    "why_it_matters",
+    "what_atlas_did",
+    "whats_missing",
+    "decision_needed",
+    "evidence_refs",
+    "verifiable",
+    "generated_at"
+  ],
+  "properties": {
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^rcp_[A-Za-z0-9_-]+$"
+    },
+    "mission_id": {
+      "type": "string",
+      "pattern": "^msn_[A-Za-z0-9_-]+$"
+    },
+    "what_happened": {"type": "string", "minLength": 1},
+    "why_it_matters": {"type": "string", "minLength": 1},
+    "what_atlas_did": {"type": "string", "minLength": 1},
+    "whats_missing": {"type": "string", "minLength": 1},
+    "decision_needed": {"type": "string", "minLength": 1},
+    "evidence_refs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "referencias comprobables: ids de ledger, exit codes, rutas de patch/worktree — nunca prosa"
+    },
+    "verifiable": {
+      "type": "boolean",
+      "description": "true solo si hay validación real (pytest/mypy ejecutados) detrás"
+    },
+    "generated_at": {"type": "string"}
+  },
+  "additionalProperties": false
+}
