@@ -8,6 +8,20 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **F1 GRAPHIFY: SANGRADO CORTADO (2026-07-15, plan toasty-hatching-pillow)** —
+  2 procesos runaway matados ~15:4x (monitor PID 927269 desde 00:31, capture
+  PID 1278946). Causa raíz: el monitor nunca cargaba `.env` → fallback
+  perpetuo `openai:gpt-4o-mini` contra el endpoint NVIDIA (que no lo sirve),
+  contadores acumulados sobre log duplicado, y fallos jamás cacheados → 446
+  docs reintentados sin fin (culpable principal:
+  `docs/design/mcp_catalog_classified.yaml` 195KB vs presupuesto de salida
+  4096). Fixes TDD (Sonnet, 23 tests rojo→verde, mypy --strict):
+  `.graphifyignore`, `source .env` en el monitor, remapeo residual
+  `gpt-*→meta/llama-3.3-70b-instruct`, contadores por delta persistido,
+  `scripts/graphify_failure_guard.py` (3 fallos → auto-ignore idempotente),
+  log en append con cabecera por corrida. El monitor NO se relanza en bucle
+  (decisión del operador pendiente). Corrida limpia única lanzada para
+  verificar que `graphify-out/quality-report.json` existe por fin.
 - **MISSION LAYER v0 + MISSION CONSOLE (2026-07-15, ADR-069)** — el export
   "Diseño UI Atlas.md" (65.640 líneas) destilado a `docs/inbox/
   atlas_foundry_v0_destilado_2026-07-15.md` + spec en `docs/design/

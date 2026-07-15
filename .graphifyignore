@@ -1,0 +1,23 @@
+# Graphify ignore — ficheros excluidos del escaneo/extracción semántica.
+#
+# GRAPHIFY_MAX_OUTPUT_TOKENS=4096 trunca cualquier chunk single-file que no
+# quepa en ese presupuesto ("truncated at max_completion_tokens"). Los YAML/
+# JSON de datos >100KB de docs/ no aportan grafo semántico útil (son datos
+# tabulares/catálogos, no prosa) y solo generan ruido de truncados — 56
+# truncados observados contra mcp_catalog_classified.yaml en
+# graphify-out/logs/pipeline.log (2026-07).
+#
+# Candidatos hallados vía:
+#   find docs -type f \( -name "*.yaml" -o -name "*.json" \) -size +100k
+
+# 195KB — catálogo MCP clasificado, dato tabular puro.
+docs/design/mcp_catalog_classified.yaml
+
+# 115KB — snapshot de auditoría, dato tabular puro.
+docs/self_audit_latest.json
+
+# 115KB — índice máquina de docs/, dato tabular puro (ver docs/INDEX.yaml).
+docs/INDEX.yaml
+
+# Entradas por debajo de esta línea las añade scripts/graphify_failure_guard.py
+# automáticamente cuando un fichero acumula 3+ fallos de extracción (Bug 4).

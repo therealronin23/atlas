@@ -10,6 +10,12 @@ fi
 
 source .venv/bin/activate
 
+if [ -f ".env" ]; then
+  set -a
+  source ".env"
+  set +a
+fi
+
 VAULT_DIR="${1:-graphify-vault}"
 mkdir -p "$VAULT_DIR"
 
