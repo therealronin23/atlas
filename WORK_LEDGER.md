@@ -17,11 +17,23 @@ de escribir: `atlas reality --json`.
   receipt determinista, radar con 4 detectores (cazó en vivo el bucle real
   del vault Obsidian ×15 + 3 bucles de dep-bumps), endpoints read-only
   `/missions*`, y Mission Console como vista por defecto del shell.
-  Test E2E rojo (`tests/acceptance/test_self_construction_golden_route.py`,
-  xfail strict) = contrato de lo que falta. **Próxima acción**: cerrar la
-  ruta dorada por pasos (superficie pública de petición → worktree → diff →
-  aprobación → apply/park) hasta que el xfail salte como XPASS; primera
-  soul (devil_advocate) sobre el contrato ya existente.
+  **RUTA DORADA CERRADA el mismo día**: `GoldenRoute` en
+  `src/atlas/missions/golden_route.py` — fachada pública que ENVUELVE
+  ColdUpdateManager (adopt-real): petición determinista sin LLM (v0 es
+  doc-only, append bajo docs/; lo demás se rechaza honesto) → plan → patch
+  unificado → worktree del motor → validación observable → aprobación
+  humana registrada en Merkle ANTES de actuar (PermissionError sin ella)
+  → apply con commit del motor → receipt (mission_receipt) + audit_ref.
+  El xfail(strict) se quitó y el E2E corre verde sobre repo fixture (+ test
+  de rechazo que aparca sin tocar main). Revisado por subagente Sonnet
+  ANTES de commitear (ACEPTAR CON ARREGLOS): 2 bugs de borde reales
+  arreglados — patch imposible sobre fichero de 0 bytes (hunk @@ -0,0 +1)
+  y `_approval` fijado aunque el motor rechazara la transición — + guarda
+  anti-symlink explícita, cada uno con su test. 72 tests del paquete
+  afectado, mypy --strict limpio.
+  **Próxima acción**: primera soul (devil_advocate) sobre el contrato
+  soul_manifest ya existente; después, ampliar el vocabulario de peticiones
+  de la ruta (hoy: append de línea a docs/).
 
 - **CAMPAÑA x10 (2026-07-10, plan de-acuerdo-puedes-hacerlo-fizzy-sifakis):
   Fable planifica/audita, Sonnet implementa, el lazo mastica en paralelo** —

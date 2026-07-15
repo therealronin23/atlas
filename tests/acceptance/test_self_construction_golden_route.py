@@ -1,73 +1,236 @@
-"""Test E2E de la RUTA DORADA de autoconstrucción — DELIBERADAMENTE ROJO.
+"""Test E2E de la RUTA DORADA de autoconstrucción (Foundry v0, ADR-069).
 
-Este test describe el producto interno de Atlas (Foundry v0, ADR-069; brief
-"Self-Construction Rescue Session v0.2" del export Diseño UI Atlas L45472):
+Describe el producto interno de Atlas (brief "Self-Construction Rescue
+Session v0.2" del export Diseño UI Atlas L45472):
 
     Usuario pide una mejora concreta de Atlas por una superficie PÚBLICA
-    → Atlas verifica el repo real → propone plan mínimo → worktree aislado
-    → cambio acotado → tests/mypy → diff visible + riesgo + evidencia
-    → APROBACIÓN HUMANA obligatoria → aplica o aparca (reversible)
-    → actualiza ledger/memoria/grafo/auditoría → receipt verificable.
+    → Atlas propone plan mínimo → worktree aislado → cambio acotado
+    → validación observable → diff visible + riesgo + evidencia
+    → APROBACIÓN HUMANA obligatoria → aplica (commit del motor) o aparca
+    → receipt verificable + audit ref Merkle.
 
-Está marcado xfail(strict=True) mientras la ruta no exista: NO es un test
-aspiracional decorativo — es el contrato de qué falta, en código. Cuando la
-ruta se cierre de verdad, el xfail saltará como XPASS(strict) y OBLIGARÁ a
-quitar el marcador (momento de celebrarlo, no de silenciarlo).
+Corre sobre un repo fixture (como exige el brief: "a clean test repo or
+fixture repo, a tiny documentation-only requested change") con un runner de
+validación inyectado que ejecuta subprocesos REALES baratos — la validación
+pytest/mypy real del motor ya está cubierta por tests/test_cold_update_manager.py
+y no se re-testea aquí.
 
-Reglas que el test codifica (deben seguir siendo ciertas cuando se cierre):
-  * jamás llamar clases internas directamente (solo superficie pública),
+Reglas que el test codifica:
+  * jamás llamar clases internas del motor directamente (solo GoldenRoute),
   * jamás editar el árbol principal antes de aprobación,
-  * jamás aplicar sin aprobación humana registrada,
-  * siempre diff visible + tests observables + receipt,
-  * jamás tocar rutas protegidas (config/governance.json),
-  * jamás push ni efectos externos.
+  * jamás aplicar sin aprobación humana registrada (PermissionError),
+  * siempre diff visible + validación observable + receipt,
+  * el apply lo commitea el MOTOR con evidencia (nunca push).
 """
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
-pytestmark = pytest.mark.xfail(
-    reason=(
-        "La ruta dorada de autoconstrucción no está cerrada todavía "
-        "(Foundry v0 en construcción, ADR-069): existe la proyección "
-        "read-only (/missions) pero no la superficie pública de petición "
-        "→ plan → worktree → diff → aprobación → apply/park → receipt."
-    ),
-    strict=True,
-)
+from atlas.core.validation_runner import ValidationReport
 
 
-def test_self_build_golden_route_requires_approval_and_receipt() -> None:
-    # Superficie pública de petición: aún no existe. Cuando exista debe ser
-    # un módulo importable sin efectos laterales (contrato, no clase interna).
-    from atlas.missions.golden_route import GoldenRoute  # noqa: F401
+def _run_git(repo: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args], cwd=repo, check=True, capture_output=True, text=True
+    )
 
-    route = GoldenRoute()
+
+@pytest.fixture()
+def fixture_repo(tmp_path: Path) -> Path:
+    """Repo git mínimo con el doc de demo commiteado."""
+    repo = tmp_path / "demo-repo"
+    (repo / "docs" / "demo").mkdir(parents=True)
+    (repo / "docs" / "demo" / "GOLDEN_ROUTE_DEMO.md").write_text(
+        "# Golden Route Demo\n\nLínea base.\n", encoding="utf-8"
+    )
+    (repo / "docs" / "demo" / "EMPTY.md").write_text("", encoding="utf-8")
+    _run_git(repo, "init")
+    _run_git(repo, "config", "user.email", "test@atlas.local")
+    _run_git(repo, "config", "user.name", "atlas-test")
+    _run_git(repo, "add", ".")
+    _run_git(repo, "commit", "-m", "base")
+    return repo
+
+
+class _SubprocessRunner:
+    """Checks reales baratos: subprocesos de verdad, exit codes de verdad."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+
+    def run(self, timeout_s: int = 600) -> ValidationReport:
+        code = subprocess.run(
+            [sys.executable, "-c", "raise SystemExit(0)"], cwd=self._path
+        ).returncode
+        return ValidationReport(
+            passed=code == 0,
+            pytest_exit=code,
+            mypy_exit=code,
+            pytest_summary="fixture subprocess check",
+            mypy_summary="fixture subprocess check",
+        )
+
+
+def test_self_build_golden_route_requires_approval_and_receipt(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
     session = route.request(
-        "añade una línea al final de docs/demo/GOLDEN_ROUTE_DEMO.md",
+        "añade una línea al final de docs/demo/GOLDEN_ROUTE_DEMO.md"
     )
 
     # plan mínimo antes de tocar nada
     assert session.plan is not None
+    assert session.plan["path"] == "docs/demo/GOLDEN_ROUTE_DEMO.md"
     assert session.state == "plan_proposed"
 
     # worktree aislado, jamás el árbol principal
     assert session.worktree_path is not None
-    assert "atlas-core" not in str(session.worktree_path)
+    assert not str(session.worktree_path).startswith(str(fixture_repo))
+    main_doc = (fixture_repo / "docs" / "demo" / "GOLDEN_ROUTE_DEMO.md").read_text(
+        encoding="utf-8"
+    )
+    assert main_doc == "# Golden Route Demo\n\nLínea base.\n"  # intacto
 
     # cambio acotado + validación observable
     session.execute()
-    assert session.diff  # diff visible o no cuenta
+    assert session.state == "awaiting_human_approval"
+    assert session.diff and "GOLDEN_ROUTE_DEMO.md" in session.diff
+    assert session.validation is not None
     assert session.validation["pytest_exit"] is not None
 
     # SIN aprobación no hay apply — debe negarse, no aplicar en silencio
     with pytest.raises(PermissionError):
         session.apply()
+    # y el árbol principal sigue intacto tras el intento
+    assert (fixture_repo / "docs" / "demo" / "GOLDEN_ROUTE_DEMO.md").read_text(
+        encoding="utf-8"
+    ) == "# Golden Route Demo\n\nLínea base.\n"
 
-    # aprobación humana registrada → apply o park reversible
+    # aprobación humana registrada → apply
+    session.approve(actor="operator", decision="approve")
+    assert session.state == "approved_pending_apply"
+    result = session.apply()
+
+    # el cambio llegó al árbol principal y el MOTOR lo commiteó
+    final_doc = (fixture_repo / "docs" / "demo" / "GOLDEN_ROUTE_DEMO.md").read_text(
+        encoding="utf-8"
+    )
+    assert final_doc.startswith("# Golden Route Demo\n\nLínea base.\n")
+    assert len(final_doc) > len(main_doc)  # la línea nueva está
+    log = subprocess.run(
+        ["git", "log", "--oneline"], cwd=fixture_repo,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert len(log.strip().splitlines()) == 2  # base + commit del motor
+
+    # receipt verificable + auditoría Merkle
+    assert result.receipt["verifiable"] is True
+    assert result.receipt["decision_needed"].startswith("Ninguna")
+    assert result.receipt["mission_id"] == f"msn_{result.proposal_id}"
+    assert result.audit_ref  # hash_self del registro Merkle
+    assert session.state == "applied"
+
+
+def test_golden_route_reject_parks_without_touching_main(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
+    session = route.request(
+        'añade la línea "No debería llegar a main" al final de '
+        "docs/demo/GOLDEN_ROUTE_DEMO.md"
+    )
+    session.execute()
+    session.approve(actor="operator", decision="reject")
+    assert session.state == "rejected"
+
+    with pytest.raises(PermissionError):
+        session.apply()
+    assert (fixture_repo / "docs" / "demo" / "GOLDEN_ROUTE_DEMO.md").read_text(
+        encoding="utf-8"
+    ) == "# Golden Route Demo\n\nLínea base.\n"
+
+
+def test_golden_route_appends_to_empty_doc_end_to_end(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    """Caso borde real (revisión Sonnet): un .md recién creado de 0 bytes."""
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
+    session = route.request(
+        'añade la línea "Primera" al final de docs/demo/EMPTY.md'
+    )
+    session.execute()
     session.approve(actor="operator", decision="approve")
     result = session.apply()
     assert result.receipt["verifiable"] is True
-    assert result.receipt["decision_needed"].startswith("Ninguna")
-    assert result.audit_ref  # Merkle o no ocurrió
+    assert (fixture_repo / "docs" / "demo" / "EMPTY.md").read_text(
+        encoding="utf-8"
+    ) == "Primera\n"
+
+
+def test_golden_route_out_of_order_approve_does_not_mark_decision(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    """approve() antes de execute(): el motor rechaza la transición y la
+    sesión NO debe quedar marcada como decidida — apply() sigue exigiendo
+    aprobación con PermissionError (no el RuntimeError genérico)."""
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
+    session = route.request(
+        "añade una línea al final de docs/demo/GOLDEN_ROUTE_DEMO.md"
+    )
+    with pytest.raises(RuntimeError):
+        session.approve(actor="operator", decision="approve")
+    with pytest.raises(PermissionError):
+        session.apply()
+
+
+def test_golden_route_refuses_symlink_under_docs(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    """Defensa explícita, no accidente de git apply/patch."""
+    from atlas.missions.golden_route import GoldenRoute, UnsupportedRequestError
+
+    secret = tmp_path / "secret.txt"
+    secret.write_text("fuera del repo\n", encoding="utf-8")
+    (fixture_repo / "docs" / "evil.md").symlink_to(secret)
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
+    with pytest.raises(UnsupportedRequestError, match="symlink"):
+        route.request("añade una línea al final de docs/evil.md")
