@@ -28,6 +28,7 @@ from typing import Any
 _DECISION_MARKERS = ("decisión:", "decision:", "decidimos", "queda decidido")
 _FAILURE_MARKERS = ("falló", "fallo:", "error '", 'error "', "lección:", "leccion:")
 _PATTERN_MARKERS = ("patrón recomendado", "patron recomendado", "error común a evitar")
+_PROVIDER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 
 
 def _now() -> str:
@@ -37,6 +38,56 @@ def _now() -> str:
 def _imports_home() -> Path:
     home = Path(os.environ.get("ATLAS_HOME", "~/atlas")).expanduser()
     return home / "os_imports"
+
+
+def _validated_provider(raw: object) -> str:
+    provider = str(raw or "unknown")
+    if not _PROVIDER_RE.fullmatch(provider):
+        raise ValueError("provider must be a safe 1-64 character identifier")
+    return provider
+
+
+def _secure_directory(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(path, 0o700)
+
+
+def _assert_private_regular_file(path: Path) -> None:
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"refusing unsafe import path: {path}")
+    os.chmod(path, 0o600)
+
+
+def _write_new_private(path: Path, content: str) -> bool:
+    """Create one private regular file without following links.
+
+    Returns False if another writer already created the same digest path.
+    """
+
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except FileExistsError:
+        _assert_private_regular_file(path)
+        return False
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(content)
+        handle.flush()
+        os.fsync(handle.fileno())
+    return True
+
+
+def _append_private(path: Path, lines: list[str]) -> None:
+    flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags, 0o600)
+    os.fchmod(descriptor, 0o600)
+    with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
+        for line in lines:
+            handle.write(line + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 @dataclass
@@ -94,22 +145,25 @@ def _extract(messages: list[dict[str, Any]], source: str, raw_ref: str) -> list[
 def import_conversation(raw: dict[str, Any], base: Path | None = None) -> ImportResult:
     home = base or _imports_home()
     raw_dir = home / "raw"
-    raw_dir.mkdir(parents=True, exist_ok=True)
+    _secure_directory(raw_dir)
 
     canonical = json.dumps(raw, sort_keys=True, ensure_ascii=False)
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
-    provider = str(raw.get("provider", "unknown"))
-    raw_path = raw_dir / f"{provider}_{digest}.json"
+    provider = _validated_provider(raw.get("provider", "unknown"))
+    # Provider is provenance, never path material. Hash-only naming removes the
+    # traversal surface and makes idempotence content-addressed across providers.
+    raw_path = raw_dir / f"{digest}.json"
+    if not raw_path.resolve().is_relative_to(raw_dir.resolve()):
+        raise ValueError("raw import path escaped its storage directory")
     raw_ref = str(raw_path)
 
-    already = raw_path.exists()
-    if not already:
-        raw_path.write_text(canonical + "\n", encoding="utf-8")
+    already = not _write_new_private(raw_path, canonical + "\n")
 
     records_path = home / "memory_records.jsonl"
     if already:
         existing: list[dict[str, Any]] = []
         if records_path.exists():
+            _assert_private_regular_file(records_path)
             for line in records_path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
                     rec = json.loads(line)
@@ -122,9 +176,10 @@ def import_conversation(raw: dict[str, Any], base: Path | None = None) -> Import
     if not isinstance(messages, list):
         messages = []
     records = _extract(messages, source=f"import:{provider}", raw_ref=raw_ref)
-    with records_path.open("a", encoding="utf-8") as fh:
-        for rec in records:
-            fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    _append_private(
+        records_path,
+        [json.dumps(record, ensure_ascii=False) for record in records],
+    )
     return ImportResult(source_ref=raw_ref, raw_preserved=True,
                         already_imported=False, records=records)
 
@@ -134,6 +189,7 @@ def list_imported_records(base: Path | None = None, limit: int = 200) -> list[di
     path = home / "memory_records.jsonl"
     if not path.exists():
         return []
+    _assert_private_regular_file(path)
     records = [
         json.loads(line)
         for line in path.read_text(encoding="utf-8").splitlines()

@@ -37,6 +37,9 @@ system_read_allowed:
 
 telegram:
   authorized_chat_ids: []
+  # Necesario además de un chat de grupo autorizado; evita que cualquier
+  # miembro del grupo pueda ejecutar tareas o pulsar approvals.
+  authorized_user_ids: []
   require_passphrase_for_approve: false
   passphrase_hash: ""
 

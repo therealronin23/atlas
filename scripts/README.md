@@ -1,57 +1,70 @@
-# Atlas Core — scripts/
+# Atlas Core — scripts
 
-This directory contains:
+Este directorio mezcla utilidades operativas permanentes, verificadores y
+artefactos históricos. La presencia de un script no demuestra que el servicio
+correspondiente esté instalado ni vivo. Antes de operar, consultar:
 
-- **Long-lived utilities** that live in production (Hermes deploy, Atlas systemd, smoke tests)
-- **One-shot fix scripts** from the 2026-05-27/28 Hermes-Agent deployment debugging session, kept for reference and reproducibility
+```bash
+PYTHONPATH=src atlas reality --json
+```
 
-## Long-lived (use these)
+## Rutas operativas vigentes
 
-| Script | What it does |
-|---|---|
-| `install_atlas_systemd.sh` | Install Atlas Core as a systemd-user service on the laptop. Idempotent. Survives logout via `loginctl enable-linger`. |
-| `atlas-core.service` | The systemd unit template, copied to `~/.config/systemd/user/` by the installer above. |
-| `install_hermes_agent_vps.sh` | One-shot installer for Hermes-Agent on the VPS (apt deps, pip venv, Ollama, systemd-user unit, ~/.hermes/config.yaml + .env). Idempotent. |
-| `deploy_hermes_vps_oneshot.sh` | Operator wrapper that runs from the laptop: scps the install script to the VPS and triggers it with secrets via SSH env. |
-| `reconfigure_hermes_vps.sh` | Reconfigure Hermes-Agent without reinstalling (config.yaml only). |
-| `update-knowledge-graph.sh` | Fast Graphify refresh for code-only graphs, Obsidian export, and Neo4j Cypher generation. |
-| `update-knowledge-graph-rag.sh` | GraphRAG-capable Graphify build using an LLM backend, plus Obsidian export and Neo4j-ready export. |
-| `prepare-notebooklm.sh` | Build a NotebookLM upload package from `GRAPH_REPORT.md`, repository docs, and optional Obsidian vault notes. |
-| `install-knowledge-hooks.sh` | Install a repository Git hook that triggers a lightweight Graphify update after commits affecting docs/code. |
-| `neo4j-import.sh` | Import Graphify-generated `graphify-out/cypher.txt` into a Neo4j instance using local `cypher-shell` or Docker fallback. |
-| `neo4j-rag-query.sh` | Run a sample GraphRAG validation query against a Neo4j instance imported from Graphify. |
-| `install-knowledge-stack.sh` | Install GraphRAG/Neo4j Python dependencies, pull Neo4j Docker images, and clone the Understand-Anything repo for local reference. |
-| `hermes_local.sh` | Run the REST-compatible Hermes stub on the laptop (`start|stop|status|logs`) using the same HTTP contract Atlas used against the VPS. |
+| Script | Alcance real |
+| --- | --- |
+| `install_atlas_systemd.sh` | Instala la unidad local de Atlas. No demuestra que quede sana: verificar después con `atlas reality --run-checks`. |
+| `install_hermes_agent_vps.sh` | Provisionador root del Hermes-Agent oficial fijado a una versión y commit auditados. Consume un JSON `0600`, instala usuario dedicado y una unidad endurecida. No ejecuta una inferencia ni envía Telegram. |
+| `deploy_hermes_vps_oneshot.sh` | Prepara el JSON mínimo desde `.env` y llama al provisionador mediante una relación SSH/Tailscale ya confiable. Los secretos viajan en fichero `0600`, no por argumentos. |
+| `verify_twin_pairing.sh` | Prueba de solo lectura del servicio fijado y del canal firmado Hermes→Atlas. No prueba proveedor ni entrega Telegram. |
+| `hermes_skill_atlas_twin/` | Skill canónica de Hermes para `/api/exec/{health,intent,shell,file,browser,audit}`. Restringe el origen a loopback/red privada/Tailscale, desactiva proxy y redirects y acota respuestas. |
+| `update-knowledge-graph.sh` | Refresco estructural Graphify de bajo coste y exportación Obsidian/Cypher. |
+| `update-knowledge-graph-rag.sh` | Construcción GraphRAG semántica con backend explícito y exportación para Neo4j. |
+| `neo4j-import.sh` | Importa el Cypher generado; requiere credenciales/configuración Neo4j explícitas. |
+| `neo4j-rag-query.sh` | Consulta de validación sobre un Neo4j ya importado. |
+| `prepare-notebooklm.sh` | Empaqueta informe y documentos para una carga manual a NotebookLM. |
+| `audit_complete.py` | Recoge evidencia local de auditoría; no sustituye pruebas vivas externas. |
+| `twin_e2e_smoke.py` | En modo local verifica el contrato aislado, no el VPS. `--live` reutiliza el cliente twin endurecido contra un Atlas privado/Tailscale. |
 
-## GraphRAG and local LLM support
+El despliegue Hermes requiere valores explícitos en `.env`:
 
-- `update-knowledge-graph-rag.sh` now supports `--api-timeout` and `--max-workers` for tuning local model performance.
-- It also auto-detects a local Ollama service at `http://127.0.0.1:11434/v1` if no backend is explicitly configured.
-- For NotebookLM, use `prepare-notebooklm.sh` to package `GRAPH_REPORT.md`, repository docs, and optional Obsidian vault notes.
-| `verify_twin_pairing.sh` | Read-only health check across Tailscale + Atlas + Hermes-VPS + Ollama + skill files. |
-| `pipeline_smoke.py` | Gate D pipeline smoke — calls real Groq/OpenRouter, verifies fallback chain. |
-| `gate_h_smoke.py` | Gate H synthesis + ResultAuditor smoke. |
-| `gate_i_smoke.py` | Gate I `atlas serve` operational smoke. |
-| `operational_smoke.py` | End-to-end Hermes REST + HMAC (on-host, needs HERMES_* in env). |
-| `audit_complete.py` | Full local-state audit dump. |
+- `VPS_HOST` se pasa al wrapper como variable de proceso y debe ser Tailscale o
+  MagicDNS con clave de host SSH ya enrolada.
+- `TELEGRAM_BOT_TOKEN` y `TELEGRAM_ALLOWED_USERS` pertenecen a Hermes.
+- `HERMES_MODEL_PROVIDER` es `custom:groq` u `openrouter`, con
+  `HERMES_MODEL` y la clave del proveedor seleccionado.
+- `ATLAS_DASHBOARD_URL` debe ser un origen privado/Tailscale sin credenciales.
+- `HERMES_API_KEY` debe contener al menos 32 bytes; el wrapper puede generarla
+  y guardarla localmente sin imprimirla.
 
-## One-shot fixes (historical, archived)
+Después del provisionado, la única afirmación autorizada por
+`verify_twin_pairing.sh` es que el binario/servicio y el canal firmado cumplen
+sus comprobaciones. Para declarar proveedor o Telegram vivos hacen falta sus
+respectivas pruebas reales y actuales.
 
-Moved to `scripts/archive/2026-05-hermes-debugging/` — see the README in that
-directory for the full index of 15 one-shot fix scripts from the Hermes-Agent
-deployment debugging marathon (2026-05-27/28). Each one's changes are baked
-into the consolidated `install_hermes_agent_vps.sh` and
-`reconfigure_hermes_vps.sh`; do **not** re-execute the archived ones.
+## Compatibilidad, no despliegue nativo
 
-### Why so many?
+- `hermes_smoke.py`, `operational_smoke.py` y `hermes_local.sh` ejercitan el
+  antiguo contrato REST `HermesRestAdapter`. No verifican el Hermes-Agent
+  oficial ni deben usarse como evidencia del twin nativo.
+- `hermes_skill_atlas_audit/` es un envoltorio de compatibilidad que delega en
+  `hermes_skill_atlas_twin/`; no es una segunda implementación del transporte.
 
-Hermes-Agent is genuinely complex (config schema undocumented in places,
-user-level systemd, Skills Hub remote registry, context-length minimum of
-64K, compression model separate from primary, etc.). Each script fixed a
-specific surfaced bug. They are also useful as documentation: each commit
-message explains a different gotcha.
+## Retirados de forma fail-closed
 
-If we ever redo this from scratch, the consolidated path is:
-1. `install_hermes_agent_vps.sh` (now contains all the path fixes inline)
-2. `reconfigure_hermes_vps.sh` (writes the v6+ config)
-3. `verify_twin_pairing.sh` (sanity check)
+`install_hermes_vps.sh`, `reconfigure_hermes_vps.sh` y
+`hermes_unlock_skills.sh` terminan con código 64. Se conservan como rutas
+reconocibles para que una automatización antigua falle con una explicación en
+vez de desplegar como root, modificar configuración sin validación o relajar
+permisos.
+
+Los arreglos puntuales de mayo están en
+`scripts/archive/2026-05-hermes-debugging/`. Son evidencia histórica y no deben
+re-ejecutarse.
+
+## Grafos
+
+Graphify estructural es la ruta diaria. GraphRAG consume un backend LLM y debe
+ejecutarse de forma deliberada. Un fichero exportado no basta: validar después
+los conteos y, para Neo4j, ejecutar una consulta real. Si el grafo del proyecto
+no coincide con `HEAD`, las consultas estructurales del tronco fallan cerradas
+hasta que se regenere en un estado versionado coherente.

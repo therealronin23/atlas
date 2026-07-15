@@ -13,6 +13,8 @@ SDK `mcp` opcional, import diferido, sin lógica de dominio aquí.
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +22,7 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 from atlas.core.graphs import QUERIES
+from atlas.core.git_env import clean_git_env
 from atlas.memory.project_graph import DEFAULT_GRAPH_DB
 
 
@@ -30,7 +33,12 @@ def _rows(result: Any) -> list[tuple[Any, ...]]:
     return out
 
 
-def build_graph_server(db_path: Path, *, name: str = "atlas-graph") -> "FastMCP":
+def build_graph_server(
+    db_path: Path,
+    *,
+    repo_root: Path | None = None,
+    name: str = "atlas-graph",
+) -> "FastMCP":
     """Construye el server. Abre la BD en modo solo-lectura por llamada (la
     regeneración escribe desde otro proceso; el lock de Kuzu es por conexión)."""
     import kuzu
@@ -50,28 +58,112 @@ def build_graph_server(db_path: Path, *, name: str = "atlas-graph") -> "FastMCP"
             conn.close()
             db.close()
 
+    def _head_sha() -> str:
+        if repo_root is None:
+            return ""
+        try:
+            return subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            return ""
+
+    def _source_tree_dirty() -> bool | None:
+        """Whether committed graph inputs differ from the working tree.
+
+        The project graph is intentionally built from ``git show`` snapshots of
+        ``src/atlas``.  Matching HEAD alone is therefore insufficient while an
+        agent is editing source files: those edits are not represented in Kuzu.
+        ``None`` means the check itself could not be trusted.
+        """
+        if repo_root is None:
+            return None
+        try:
+            result = subprocess.run(
+                [
+                    "git",
+                    "status",
+                    "--porcelain=v1",
+                    "--untracked-files=all",
+                    "--",
+                    "src/atlas",
+                ],
+                cwd=repo_root,
+                env=clean_git_env(),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return None
+        return bool(result.stdout.strip())
+
+    def _latest_snapshot() -> tuple[str, int, Any] | None:
+        rows = _query(
+            "MATCH (v:FileVersion) "
+            "RETURN v.commit_sha, count(*), max(v.ingested_at) AS t "
+            "ORDER BY t DESC LIMIT 1"
+        )
+        if not rows:
+            return None
+        return str(rows[0][0]), int(rows[0][1]), rows[0][2]
+
+    def _freshness() -> tuple[str, str, str, bool | None]:
+        latest = _latest_snapshot()
+        graph_sha = latest[0] if latest else ""
+        head_sha = _head_sha()
+        source_dirty = _source_tree_dirty()
+        if not graph_sha:
+            return "EMPTY", graph_sha, head_sha, source_dirty
+        if not head_sha or source_dirty is None:
+            return "UNKNOWN", graph_sha, head_sha, source_dirty
+        if graph_sha != head_sha:
+            return "STALE", graph_sha, head_sha, source_dirty
+        if source_dirty:
+            return "DIRTY", graph_sha, head_sha, source_dirty
+        return "FRESH", graph_sha, head_sha, source_dirty
+
+    def _require_fresh_sha() -> str:
+        status, graph_sha, head_sha, source_dirty = _freshness()
+        if status != "FRESH":
+            raise RuntimeError(
+                "project graph freshness is "
+                f"{status}: graph_commit_sha={graph_sha or '<none>'}, "
+                f"head_sha={head_sha or '<unavailable>'}, "
+                f"source_tree_dirty={source_dirty}"
+            )
+        return graph_sha
+
     @server.tool()
     def graph_overview() -> dict[str, Any]:
         """Radiografía del grafo: commits ingeridos, nº de módulos, top hubs por
         fan-in (los módulos de los que más depende el resto de Atlas)."""
-        shas = _query(
-            "MATCH (v:FileVersion) RETURN DISTINCT v.commit_sha ORDER BY v.commit_sha"
+        snapshots = _query(
+            "MATCH (v:FileVersion) "
+            "RETURN v.commit_sha, max(v.ingested_at) AS t ORDER BY t"
         )
-        latest = _query(
-            "MATCH (v:FileVersion) RETURN v.commit_sha, count(*) "
-            "ORDER BY count(*) DESC LIMIT 1"
-        )
+        latest = _latest_snapshot()
         hubs: list[tuple[Any, ...]] = []
         if latest:
             hubs = _query(
                 "MATCH (a:FileVersion)-[:IMPORTS]->(b:FileVersion) "
                 "WHERE b.commit_sha = $sha "
                 "RETURN b.path, count(a) AS fan_in ORDER BY fan_in DESC LIMIT 10",
-                {"sha": latest[0][0]},
+                {"sha": latest[0]},
             )
+        freshness, graph_sha, head_sha, source_dirty = _freshness()
         return {
-            "commits_ingested": [s[0] for s in shas],
-            "modules_latest": latest[0][1] if latest else 0,
+            "commits_ingested": [str(row[0]) for row in snapshots],
+            "graph_commit_sha": graph_sha,
+            "head_sha": head_sha,
+            "freshness": freshness,
+            "source_tree_dirty": source_dirty,
+            "modules_latest": latest[1] if latest else 0,
             "top_hubs_by_fan_in": [{"module": h[0], "fan_in": h[1]} for h in hubs],
         }
 
@@ -179,18 +271,20 @@ def build_graph_server(db_path: Path, *, name: str = "atlas-graph") -> "FastMCP"
         }
 
     def _latest_sha() -> str:
-        rows = _query(
-            "MATCH (v:FileVersion) RETURN v.commit_sha, max(v.ingested_at) AS t "
-            "ORDER BY t DESC LIMIT 1"
-        )
-        return str(rows[0][0]) if rows else ""
+        return _require_fresh_sha()
 
     return server
 
 
-def serve(db_path: Path | None = None, *, name: str = "atlas-graph") -> None:
+def serve(
+    repo_root: Path | None = None,
+    db_path: Path | None = None,
+    *,
+    name: str = "atlas-graph",
+) -> None:
     """Punto de entrada stdio."""
-    server = build_graph_server(db_path or DEFAULT_GRAPH_DB, name=name)
+    root = repo_root or Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd()))
+    server = build_graph_server(db_path or DEFAULT_GRAPH_DB, repo_root=root, name=name)
     server.run()
 
 

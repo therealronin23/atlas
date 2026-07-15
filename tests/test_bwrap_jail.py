@@ -21,6 +21,7 @@ from atlas.security.bwrap_jail import (
     _find_bwrap,
     _require_bwrap,
     build_bwrap_argv,
+    build_command_bwrap_argv,
     build_seccomp_bpf,
 )
 
@@ -132,6 +133,63 @@ def test_bwrap_argv_binds_output_dir():
     idx = argv.index("--bind")
     assert argv[idx + 1] == "/tmp/out"
     assert argv[idx + 2] == "/tmp/atlas_output"
+
+
+def test_command_bwrap_argv_mounts_only_working_dir(tmp_path: Path):
+    work = tmp_path / "work"
+    work.mkdir()
+    argv = build_command_bwrap_argv(
+        "/usr/bin/bwrap", ["git", "status"], str(work),
+    )
+    bind_pairs = [
+        (argv[i + 1], argv[i + 2])
+        for i in range(len(argv) - 2)
+        if argv[i] in {"--bind", "--ro-bind"}
+    ]
+    assert (str(work), str(work)) in bind_pairs
+    assert ("/", "/") not in bind_pairs
+    assert argv[argv.index("--chdir") + 1] == str(work)
+    assert argv[-2:] == ["git", "status"]
+
+
+def test_command_bwrap_argv_defaults_working_dir_to_read_only(tmp_path: Path):
+    work = tmp_path / "work"
+    work.mkdir()
+    argv = build_command_bwrap_argv(
+        "/usr/bin/bwrap", ["find", "."], str(work),
+    )
+    ro_pairs = [
+        (argv[i + 1], argv[i + 2])
+        for i in range(len(argv) - 2)
+        if argv[i] == "--ro-bind"
+    ]
+    assert (str(work), str(work)) in ro_pairs
+
+
+def test_command_bwrap_argv_can_mount_explicit_read_only_input(tmp_path: Path):
+    work = tmp_path / "work"
+    work.mkdir()
+    input_file = tmp_path / "change.patch"
+    input_file.write_text("diff", encoding="utf-8")
+    argv = build_command_bwrap_argv(
+        "/usr/bin/bwrap",
+        ["patch", "--input", str(input_file)],
+        str(work),
+        working_dir_writable=True,
+        read_only_paths=(str(input_file),),
+    )
+    bind_pairs = [
+        (argv[i + 1], argv[i + 2])
+        for i in range(len(argv) - 2)
+        if argv[i] in {"--bind", "--ro-bind"}
+    ]
+    assert (str(work), str(work)) in bind_pairs
+    assert (str(input_file), str(input_file)) in bind_pairs
+
+
+def test_command_bwrap_argv_rejects_empty_command(tmp_path: Path):
+    with pytest.raises(ValueError, match="vacio"):
+        build_command_bwrap_argv("/usr/bin/bwrap", [], str(tmp_path))
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +337,21 @@ def test_bwrap_jail_run_extra_env_merged():
     assert kwargs["env"]["MY_VAR"] == "1"
 
 
+def test_bwrap_jail_run_command_uses_jail_and_devnull_stdin(tmp_path: Path):
+    work = tmp_path / "work"
+    work.mkdir()
+    with patch("shutil.which", return_value="/usr/bin/bwrap"):
+        jail = BwrapJail()
+    with patch("subprocess.run", return_value=_make_proc()) as mock_run:
+        result = jail.run_command(["echo", "ok"], working_dir=work)
+    argv = mock_run.call_args.args[0]
+    kwargs = mock_run.call_args.kwargs
+    assert result.success is True
+    assert "--unshare-all" in argv
+    assert argv[-2:] == ["echo", "ok"]
+    assert kwargs["stdin"] is not None
+
+
 # ---------------------------------------------------------------------------
 # Sandbox.execute_in_jail
 # ---------------------------------------------------------------------------
@@ -415,6 +488,65 @@ else:
     result = real_jail.run(script)
     assert result.success, f"stderr: {result.stderr}"
     assert "ok" in result.stdout
+
+
+@pytestmark_bwrap
+def test_real_command_jail_reads_cwd_but_not_host_parent(
+    real_jail: BwrapJail, tmp_path: Path,
+) -> None:
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / "visible.txt").write_text("VISIBLE", encoding="utf-8")
+    secret = tmp_path / "secret.txt"
+    secret.write_text("HOST_SECRET", encoding="utf-8")
+
+    visible = real_jail.run_command(["cat", "visible.txt"], working_dir=work)
+    blocked = real_jail.run_command(["cat", str(secret)], working_dir=work)
+
+    assert visible.success and visible.stdout.strip() == "VISIBLE"
+    assert blocked.success is False
+    assert "HOST_SECRET" not in blocked.stdout
+
+
+@pytestmark_bwrap
+def test_real_command_jail_working_dir_is_read_only_by_default(
+    real_jail: BwrapJail, tmp_path: Path,
+) -> None:
+    work = tmp_path / "work"
+    work.mkdir()
+    result = real_jail.run_command(
+        ["python3", "-c", "open('escape.txt','w').write('x')"],
+        working_dir=work,
+    )
+    assert result.success is False
+    assert not (work / "escape.txt").exists()
+
+
+@pytestmark_bwrap
+def test_real_command_jail_explicit_writable_working_dir(
+    real_jail: BwrapJail, tmp_path: Path,
+) -> None:
+    work = tmp_path / "work"
+    work.mkdir()
+    result = real_jail.run_command(
+        ["python3", "-c", "open('result.txt','w').write('ok')"],
+        working_dir=work,
+        working_dir_writable=True,
+    )
+    assert result.success, result.stderr
+    assert (work / "result.txt").read_text(encoding="utf-8") == "ok"
+
+
+@pytestmark_bwrap
+def test_real_command_jail_has_no_network(real_jail: BwrapJail, tmp_path: Path) -> None:
+    work = tmp_path / "work"
+    work.mkdir()
+    code = (
+        "import socket; "
+        "socket.create_connection(('1.1.1.1', 53), timeout=0.2)"
+    )
+    result = real_jail.run_command(["python3", "-c", code], working_dir=work)
+    assert result.success is False
 
 
 def test_new_lpe_syscalls_in_blocklist() -> None:

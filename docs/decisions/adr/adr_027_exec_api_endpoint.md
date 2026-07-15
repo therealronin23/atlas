@@ -1,120 +1,76 @@
-# ADR-027 — `/api/exec` Endpoint (Hermes-driven capability execution)
+# ADR-027 — Canal firmado `/api/exec/*` para Hermes
 
-- **Status:** Accepted (2026-05-28)
-- **Depends on:** ADR-020 (Capability tokens), ADR-026 (Twin architecture)
+- **Estado:** Aceptado; revisado el 2026-07-16
+- **Depende de:** ADR-020 (capacidades), ADR-026 (twin)
 
-## Context
+## Contexto
 
-ADR-026 deployed the twin pair (Atlas-laptop ↔ Hermes-Agent-VPS). The twin
-communicates one-way today: Hermes can call Atlas's read-only dashboard
-(`/api/health`), but cannot ask Atlas to execute anything on the laptop.
+Hermes necesita pedir acciones a Atlas sin obtener acceso directo al proceso,
+al workspace o a un shell general. La frontera debe autenticar cada petición,
+impedir replay y reutilizar la autorización y auditoría de Atlas.
 
-That gap blocks the headline use case: "I'm out with my phone, the Telegram
-bot can chat but it can't actually do anything on my laptop." Users want to
-ask Hermes — and have Hermes ask Atlas — to:
+## Decisión
 
-- Open a URL in Chrome (e.g. RustDesk login flow)
-- Run `git pull` in a known workspace
-- Read a file, dump it back via Telegram
-- Click a button, type a sequence, screenshot the desktop
+El dashboard puede montar estas rutas `POST`:
 
-All of these are already possible via `AtlasExecutor` + capability tokens
-(ADR-020) for any caller that has *in-process* access to the orchestrator.
-What's missing is a **secure, audited HTTP path** so Hermes (out-of-process,
-remote) can invoke them.
+| Ruta | Función |
+| --- | --- |
+| `/api/exec/health` | Comprueba el estado de Atlas mediante el mismo canal firmado. El cuerpo exacto es `{}`. |
+| `/api/exec/intent` | Entrega una intención al orquestador. |
+| `/api/exec/shell` | Ejecuta comando y argumentos permitidos por Atlas. |
+| `/api/exec/file` | Lee o escribe un fichero dentro de las fronteras autorizadas. |
+| `/api/exec/browser` | `navigate`, `extract` o `screenshot` mediante el browser controlado. |
+| `/api/exec/audit` | Añade a la cadena de Atlas un recibo de una acción originada en Hermes. |
 
-## Decision
+No existe una ruta `/computer` ni acciones browser `click/type` en este
+contrato actual.
 
-Atlas Core exposes a new `/api/exec/*` family of REST endpoints on the
-existing dashboard FastAPI app, gated by **HMAC-SHA256 with the shared
-`HERMES_API_KEY`** (same secret already established for `HermesAdapter`).
+## Autenticación y replay
 
-```
-POST  /api/exec/shell      execute a shell command (allowlist-bounded)
-POST  /api/exec/file       read/write a single file (capability-bounded)
-POST  /api/exec/browser    Playwright action (open/click/screenshot)
-POST  /api/exec/computer   xdotool-class action (mouse/keyboard) — requires Xvfb/X11
-```
+Cada petición incluye:
 
-### Authentication
+- `X-Hermes-Timestamp`: fecha ISO-8601 con zona, dentro de 300 segundos.
+- `X-Hermes-Nonce`: 16–128 caracteres seguros y no usados previamente.
+- `X-Hermes-Signature`: HMAC-SHA256 hexadecimal de
+  `timestamp + "\n" + nonce + "\n" + cuerpo_exacto`.
 
-Each request must include:
+`HERMES_API_KEY` debe contener al menos 32 bytes. Un secreto ausente o débil
+produce 503. Los nonces aceptados se reclaman atómicamente en SQLite dentro del
+workspace, con fichero `0600`; repetir uno produce 401 aunque la firma sea
+válida. Firma y comparación son sobre los bytes recibidos, no sobre JSON
+re-serializado.
 
-- `X-Hermes-Signature: hex(hmac_sha256(HERMES_API_KEY, request_body))`
-- `X-Hermes-Timestamp: ISO-8601` (rejected if drift > 300 s, prevents replay)
+## Autorización y auditoría
 
-The HMAC is verified against `HERMES_API_KEY` from Atlas's environment. If
-the key isn't configured, the endpoint returns **503** (not 401, to make the
-operational misconfiguration obvious in logs).
+Autenticarse no concede una capacidad. Cada acción pasa por los componentes de
+permisos, aprobación, contención y ejecución de Atlas. Éxitos, fallos y
+rechazos se registran en Merkle; el identificador de clave es un prefijo del
+hash del secreto, nunca el secreto.
 
-### Authorization
+`/audit` fuerza `agent=hermes_vps` y prefijo `hermes.` para no confundir un
+recibo externo con una acción nativa. El recibo afirma que Hermes reportó una
+acción; no demuestra por sí solo que el efecto externo ocurriera.
 
-After HMAC succeeds, the endpoint goes through the **existing** ADR-020
-pipeline:
+## Cliente canónico
 
-1. `CapabilityIssuer` mints an ephemeral token for the requested action
-   (raises `CapabilityDenied` if PermissionProfile blocks it)
-2. `AtlasExecutor.execute_*` runs the action with that token
-3. Action + outcome land in MerkleLogger as a forensic entry
+`scripts/hermes_skill_atlas_twin/atlas_twin.py` es la única implementación
+Hermes-side autorizada. Es stdlib-only y:
 
-This means **nothing changes about Atlas's security model**. Hermes doesn't
-gain new privileges — it gains a *transport* to the same capability gate
-Atlas uses internally. The PermissionProfile is the single source of truth
-for what can run.
+- acepta solo orígenes loopback, privados o Tailscale sin credenciales/ruta;
+- ignora proxies ambientales y rechaza redirects;
+- limita timeout, tamaño de respuesta y escritura;
+- lee `.env` como datos desde fichero regular no-symlink y sin permisos de
+  grupo/otros;
+- solo permite el conjunto fijo de endpoints anterior.
 
-### Audit trail
+La skill `atlas-audit` histórica delega en este cliente; no mantiene otro
+transporte.
 
-Every `/api/exec` call writes at least one Merkle entry:
+## Límites
 
-```
-action:  exec.<verb>.via_hermes
-agent:   exec_api
-risk:    safe | moderate | high | critical
-payload: {command, returncode, duration_ms, hmac_kid}
-```
-
-A separate WAL entry goes via the ObservabilityStack so the dashboard's
-"Recent activity" panel shows Hermes-driven actions in real time.
-
-## Consequences
-
-### What this enables
-
-- Hermes-side skill (SKILL.md in a tap or local) wraps the endpoints and
-  exposes them to the Hermes LLM as native tools. The user prompt
-  *"abre github.com en chrome"* now actually opens the browser on the
-  laptop.
-- The Telegram bot becomes an effective remote-control interface, gated
-  by the same governance and Merkle log as direct CLI use.
-- Future remote interfaces (web app, mobile companion) reuse the same
-  HMAC-protected endpoints.
-
-### Failure modes
-
-| Failure | Behavior |
-|---|---|
-| Missing `HERMES_API_KEY` | 503 + Merkle `exec.refused.no_key` |
-| HMAC mismatch | 401 + Merkle `exec.refused.bad_signature` (with rate-limited counter) |
-| Timestamp drift > 300 s | 401 + Merkle `exec.refused.stale_request` |
-| `CapabilityDenied` | 403 + Merkle `exec.refused.capability_denied` |
-| Action raises | 500 + Merkle `exec.failed.<verb>` with exception text |
-
-All refusals are logged; no information about what was requested leaks back
-to the caller beyond the HTTP code.
-
-### Non-decisions
-
-- No JWT, OAuth, or session cookies. HMAC + timestamp is sufficient for
-  the symmetric, single-tenant trust model (Atlas and Hermes are the only
-  two principals).
-- No rate-limiting in the endpoint itself. PermissionProfile already caps
-  shell, file, and browser. Add rate limiting later if abuse is observed.
-- The endpoint is **not** exposed on the public IP. Listens on `:7331`
-  bound to `127.0.0.1` (already default) + reachable from the Tailscale
-  interface. To talk to Atlas, Hermes must already be in the Tailscale mesh.
-
-### Migration
-
-No migration needed. `/api/exec/*` is additive. The legacy `HermesAdapter`
-REST contract (Atlas → Hermes-stub) is preserved for backward compat in
-the code but is no longer used (the stub is retired; see ADR-026).
+- La aplicación no crea por sí misma una red privada: bind, firewall y
+  Tailscale siguen siendo responsabilidad del despliegue.
+- No hay rate limiting propio en esta capa. Nonce, permisos y red reducen el
+  riesgo, pero un secreto robado permitiría presión autenticada hasta rotarlo.
+- “Contrato probado en tests” y “Atlas alcanzable desde el VPS” son evidencias
+  distintas y se informan por separado.

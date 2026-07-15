@@ -7,7 +7,7 @@ usage() {
   cat <<'EOF' >&2
 Usage: ./scripts/neo4j-rag-query.sh [PATTERN]
 
-If PATTERN is provided, the script searches Neo4j node names containing that term.
+If PATTERN is provided, the script searches Neo4j node labels containing that term.
 If no pattern is given, it returns a small sample of the graph.
 
 Environment:
@@ -15,11 +15,11 @@ Environment:
   NEO4J_USER     Neo4j username (default: neo4j)
   NEO4J_PASSWORD Neo4j password (required)
 EOF
-  exit 1
 }
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   usage
+  exit 0
 fi
 
 NEO4J_URI="${NEO4J_URI:-bolt://localhost:7687}"
@@ -35,26 +35,63 @@ fi
 if [ "$#" -gt 1 ]; then
   echo "ERROR: Only one optional PATTERN argument is supported." >&2
   usage
+  exit 2
 fi
 
+PARAM_ARGS=()
 if [ "$#" -eq 1 ]; then
   PATTERN="$1"
-  QUERY="MATCH p=(n)-[*..3]-(m) WHERE toLower(n.name) CONTAINS toLower(\"$PATTERN\") RETURN p LIMIT 20"
+  PYTHON_BIN="python3"
+  if [ -x .venv/bin/python ]; then
+    PYTHON_BIN=.venv/bin/python
+  fi
+  PARAM_LITERAL="$($PYTHON_BIN - "$PATTERN" <<'PY'
+import sys
+
+value = sys.argv[1]
+escaped = (
+    value.replace("\\", "\\\\")
+    .replace("'", "\\'")
+    .replace("\r", "\\r")
+    .replace("\n", "\\n")
+)
+print("{pattern: '" + escaped + "'}")
+PY
+)"
+  PARAM_ARGS=(-P "$PARAM_LITERAL")
+  QUERY='MATCH (n)
+WHERE toLower(coalesce(n.label, "")) CONTAINS toLower($pattern)
+WITH n LIMIT 10
+OPTIONAL MATCH (n)-[r]-(m)
+RETURN n.id AS node_id, n.label AS node_label, type(r) AS relation,
+       m.id AS neighbor_id, m.label AS neighbor_label
+LIMIT 100'
 else
-  QUERY="MATCH p=(n)-[*..2]-(m) RETURN p LIMIT 20"
+  QUERY='MATCH (n)-[r]-(m)
+RETURN n.id AS node_id, n.label AS node_label, type(r) AS relation,
+       m.id AS neighbor_id, m.label AS neighbor_label
+LIMIT 20'
 fi
 
 if command -v cypher-shell >/dev/null 2>&1; then
   echo "Running GraphRAG validation query against Neo4j at $NEO4J_URI..."
-  echo "$QUERY" | cypher-shell -a "$NEO4J_URI" -u "$NEO4J_USER" -p "$NEO4J_PASSWORD"
+  printf '%s\n' "$QUERY" | \
+    NEO4J_PASSWORD="$NEO4J_PASSWORD" \
+    cypher-shell -a "$NEO4J_URI" -u "$NEO4J_USER" \
+      --access-mode read --transaction-timeout 10s --format plain \
+      "${PARAM_ARGS[@]}"
   exit 0
 fi
 
 if command -v docker >/dev/null 2>&1; then
   echo "cypher-shell not found locally. Falling back to Docker image neo4j:latest."
   printf '%s\n' "$QUERY" | docker run --rm --network host -i \
-    -e NEO4J_AUTH="${NEO4J_USER}/${NEO4J_PASSWORD}" \
-    neo4j:latest sh -c "cypher-shell -a '$NEO4J_URI' -u '$NEO4J_USER' -p '$NEO4J_PASSWORD'"
+    -e NEO4J_URI="$NEO4J_URI" \
+    -e NEO4J_USERNAME="$NEO4J_USER" \
+    -e NEO4J_PASSWORD="$NEO4J_PASSWORD" \
+    --entrypoint cypher-shell \
+    neo4j:latest --access-mode read --transaction-timeout 10s --format plain \
+    "${PARAM_ARGS[@]}"
   exit 0
 fi
 

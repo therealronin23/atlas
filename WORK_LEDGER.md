@@ -8,6 +8,21 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **AUDITORÍA INTEGRAL ADVERSARIAL — CIERRE LOCAL VERDE, SELLO DE GRAFOS EN
+  CURSO (2026-07-16)** — pre-mortem, revisión multidimensional y remediación
+  ejecutados sobre seguridad, ejecución, API/WS, Telegram/HITL, Merkle,
+  memoria/embeddings, MCP/grafos, Graphify/GraphRAG/Neo4j, CI/supply-chain,
+  systemd/auditoría y Hermes oficial. Suite core, marcador computer-use,
+  mypy, scanner Atlas, Merkle y regresiones dirigidas pasan; Crawl4AI real se
+  omite por `.venv-scraping` ausente. Hermes/VPS/proveedor/Telegram y Neo4j no
+  se declaran vivos: `atlas reality` marca Hermes mock y no había credenciales
+  ni servicio Neo4j. Informe canónico:
+  `docs/design/audit_premortem_postmortem_2026-07-16.md`.
+  **Próxima acción:** fijar el commit auditado, reconstruir Graphify/GraphRAG y
+  el proyecto Kuzu sobre ese SHA, y repetir importer/blast-radius hasta FRESH;
+  después solo queda una decisión operativa separada para desplegar/probar
+  Hermes real.
+
 - **F1 GRAPHIFY: SANGRADO CORTADO (2026-07-15, plan toasty-hatching-pillow)** —
   2 procesos runaway matados ~15:4x (monitor PID 927269 desde 00:31, capture
   PID 1278946). Causa raíz: el monitor nunca cargaba `.env` → fallback

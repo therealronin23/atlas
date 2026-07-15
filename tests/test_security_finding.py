@@ -72,9 +72,12 @@ class FakeSandbox:
         self._result = _SandboxResult(success=success, exit_code=exit_code, stdout=stdout, stderr=stderr)
         self.call_count = 0
 
-    def execute(self, code: str, **kwargs) -> _SandboxResult:
+    def execute_in_jail(self, code: str, **kwargs) -> _SandboxResult:
         self.call_count += 1
         return self._result
+
+    def execute(self, code: str, **kwargs) -> _SandboxResult:
+        raise AssertionError("PoC no debe usar la ruta pública/legacy de host")
 
 
 # ---------------------------------------------------------------------------

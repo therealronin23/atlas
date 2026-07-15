@@ -1,7 +1,5 @@
-# Atlas Core — CI
-# test-and-types: suite core sin Playwright.
-# browser: computer-use/Playwright debe pasar; readiness rota no se mergea.
-# operational_smoke.py es solo on-host (requiere HERMES_* reales); no corre en CI.
+# Atlas Core — lock-gated CI for the explicitly tested Python 3.11/3.12 baseline.
+# Live provider/Hermes smokes remain on-host because CI has no production secrets.
 
 name: CI
 
@@ -11,52 +9,183 @@ on:
   pull_request:
     branches: [main, master]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.21"
+
 jobs:
-  test-and-types:
+  lock:
+    name: Lock integrity
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          python-version: "3.12"
+          persist-credentials: false
 
-      - name: Install package and dev deps
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Verify uv.lock is current
+        run: uv lock --check
+
+  test-and-types:
+    name: Python ${{ matrix.python-version }} core
+    needs: lock
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install the required OS command jail
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bubblewrap
 
-      - name: Pytest (core suite, sin browser/Playwright)
+      - name: Sync exact core and development dependencies
+        run: uv sync --frozen --extra dev --python "${{ matrix.python-version }}"
+
+      - name: Pytest core (computer-use excluded explicitly)
         env:
           PYTHONPATH: src
           ATLAS_MEMORY_VECTOR: "0"
           ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
-        run: |
-          python -m pytest tests/ -q --tb=line
+        run: uv run --frozen pytest tests/ -q --tb=line -m "not computer_use"
 
-      - name: mypy
+      - name: mypy strict
+        if: matrix.python-version == '3.12'
         env:
           MYPYPATH: src
-        run: python -m mypy src/atlas/
+        run: uv run --frozen mypy src/atlas/
+
+      - name: Dependency vulnerability audit
+        if: matrix.python-version == '3.12'
+        # Audit an exact export instead of the environment: atlas-core itself
+        # is editable/non-PyPI, while every third-party runtime/dev package is
+        # pinned (with hashes) by uv.lock and remains fully auditable.
+        run: |
+          uv export --frozen --extra dev --no-emit-project \
+            >"$RUNNER_TEMP/atlas-audit-requirements.txt"
+          uv run --frozen pip-audit --strict \
+            -r "$RUNNER_TEMP/atlas-audit-requirements.txt"
 
   browser:
+    name: Computer-use (Playwright)
+    needs: lock
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
 
-      - name: Install with computer-use extra
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,computer-use]"
-          python -m playwright install chromium
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Browser tests
+      - name: Sync exact browser dependencies
+        run: uv sync --frozen --extra dev --extra computer-use --python "3.12"
+
+      - name: Install Chromium and system libraries
+        run: uv run --frozen playwright install --with-deps chromium
+
+      - name: Run every test selected by the computer_use marker
         env:
           PYTHONPATH: src
-        # pyproject's default `addopts` deselects -m computer_use, so we
-        # have to opt back in here to actually run the 25 browser tests.
-        run: python -m pytest tests/test_browser.py -q --tb=line -m computer_use
+          ATLAS_MEMORY_VECTOR: "0"
+          ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
+        run: uv run --frozen pytest tests/ -q --tb=line -m computer_use
+
+  wheel-smoke:
+    name: Installed wheel smoke (Python 3.11)
+    needs: lock
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Build wheel
+        run: uv build --wheel --out-dir dist
+
+      - name: Install and verify outside the checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke_venv="$RUNNER_TEMP/.venv-wheel-smoke"
+          wheel="$(find "$GITHUB_WORKSPACE/dist" -maxdepth 1 -name 'atlas_core-*.whl' -print -quit)"
+          test -n "$wheel"
+          uv venv "$smoke_venv" --python "3.11"
+          uv export --frozen --no-dev --no-emit-project \
+            >"$RUNNER_TEMP/atlas-runtime-requirements.txt"
+          uv pip install --python "$smoke_venv/bin/python" \
+            -r "$RUNNER_TEMP/atlas-runtime-requirements.txt"
+          uv pip install --python "$smoke_venv/bin/python" --no-deps "$wheel"
+          cd "$RUNNER_TEMP"
+          unset ATLAS_CORE_ROOT PYTHONPATH
+          "$smoke_venv/bin/python" - <<'PY'
+          from importlib.resources import files
+
+          import atlas
+          from atlas.runtime_paths import atlas_data_root
+
+          data_root = atlas_data_root()
+          required = (
+              data_root / "config" / "governance.json",
+              data_root / "config" / "permissions.yaml",
+              data_root / "fixtures" / "connection_recipes",
+              data_root / "fixtures" / "connector_packs",
+              data_root / "fixtures" / "governance",
+              data_root / "fixtures" / "question_packs",
+              data_root / "fixtures" / "security",
+          )
+          missing = [str(path) for path in required if not path.exists()]
+          if missing:
+              raise SystemExit(f"wheel data missing: {missing}")
+          template = files("atlas.interfaces").joinpath("templates/status.html")
+          if not template.is_file():
+              raise SystemExit("wheel template missing: templates/status.html")
+          print(f"installed atlas import and resources OK: {atlas.__name__}")
+          PY
+          "$RUNNER_TEMP/.venv-wheel-smoke/bin/atlas" --help >/dev/null

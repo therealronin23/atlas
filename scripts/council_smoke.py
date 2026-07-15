@@ -5,8 +5,8 @@ decisión de ejemplo y reporta el veredicto + qué proveedor respondió o falló
 Requiere secretos vivos (GEMINI_API_KEY + NVIDIA_API_KEY[_2]) y red. NO es un test
 de la suite (patrón `inference_smoke.py`). Uso:
 
-    set -a && source .env && set +a
-    PYTHONPATH=src python scripts/council_smoke.py
+    PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+      .venv/bin/python scripts/council_smoke.py
 """
 
 from __future__ import annotations

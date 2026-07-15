@@ -1,7 +1,7 @@
 """Adaptador Embedder local (HuggingFace) para validación — SOLO dev/red-team.
 
 NO es runtime del paquete `atlas`: vive en scripts/redteam y se carga perezosamente
-desde el venv aislado `.venv-redteam` (que ya trae transformers vía Garak). Permite
+desde `.venv-redteam-garak` (que ya trae transformers vía Garak). Permite
 validar la curva de generalización con embeddings SEMÁNTICOS reales (no el
 StubEmbedder léxico), sin clave API ni coste: modelo local all-MiniLM-L6-v2 (~90MB,
 dim 384), descargado una vez y luego offline.

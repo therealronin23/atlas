@@ -13,12 +13,14 @@ from __future__ import annotations
 import logging
 import os
 import re
+import secrets
 from collections import deque
+from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from atlas.core.inference_hub import DEFAULT_PROVIDERS
@@ -35,6 +37,16 @@ _log = logging.getLogger(__name__)
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 PORT = 7331
+DASHBOARD_TOKEN_ENV = "ATLAS_DASHBOARD_TOKEN"
+_INDEPENDENTLY_AUTHENTICATED_POSTS = {
+    "/api/exec/health",
+    "/api/exec/shell",
+    "/api/exec/file",
+    "/api/exec/intent",
+    "/api/exec/audit",
+    "/api/exec/browser",
+    "/api/hermes/webhook",
+}
 
 app = FastAPI(
     title="Atlas Dashboard",
@@ -43,6 +55,58 @@ app = FastAPI(
     openapi_url=None,
 )
 _templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+
+def _is_loopback_host(value: str) -> bool:
+    host = value.strip().lower()
+    if host.startswith("[") and "]" in host:
+        host = host[1 : host.index("]")]
+    elif host.count(":") == 1:
+        host = host.split(":", 1)[0]
+    if host in {"localhost", "localhost.localdomain"}:
+        return True
+    try:
+        return ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _validate_bind_security(host: str) -> None:
+    """Refuse a network-visible dashboard unless a strong token is configured."""
+    if _is_loopback_host(host):
+        return
+    token = os.environ.get(DASHBOARD_TOKEN_ENV, "")
+    if len(token) < 32:
+        raise RuntimeError(
+            f"non-loopback dashboard bind requires {DASHBOARD_TOKEN_ENV} "
+            "with at least 32 characters"
+        )
+
+
+@app.middleware("http")
+async def _dashboard_access_control(request: Request, call_next: Any) -> Any:
+    """Keep local UI convenient while authenticating every remote read route."""
+    if (
+        request.method == "POST"
+        and request.url.path in _INDEPENDENTLY_AUTHENTICATED_POSTS
+    ):
+        return await call_next(request)
+
+    client_host = request.client.host if request.client is not None else ""
+    request_host = request.headers.get("host", "")
+    if _is_loopback_host(client_host) and _is_loopback_host(request_host):
+        return await call_next(request)
+
+    expected = os.environ.get(DASHBOARD_TOKEN_ENV, "")
+    authorization = request.headers.get("authorization", "")
+    supplied = (
+        authorization[7:].strip()
+        if authorization.lower().startswith("bearer ")
+        else request.headers.get("x-atlas-dashboard-token", "").strip()
+    )
+    if len(expected) >= 32 and secrets.compare_digest(supplied, expected):
+        return await call_next(request)
+    return JSONResponse(status_code=401, content={"detail": "authentication required"})
 
 # ---------------------------------------------------------------------------
 # Singleton Orchestrator (lazy, one per process)
@@ -458,5 +522,6 @@ async def api_agentic_progress() -> list[dict[str, Any]]:
 
 def serve(host: str = "127.0.0.1", port: int = PORT) -> None:
     """Arranca el dashboard con uvicorn. Llamar desde CLI."""
+    _validate_bind_security(host)
     import uvicorn  # noqa: PLC0415 — import tardío para no penalizar import
     uvicorn.run(app, host=host, port=port, log_level="warning")

@@ -205,6 +205,16 @@ class HermesKanbanAdapter(HermesAdapter):
         self._offline_queue = offline_queue
         self._assignee = (assignee or os.environ.get("HERMES_KANBAN_ASSIGNEE") or self.DEFAULT_ASSIGNEE).strip()
 
+    @property
+    def transport(self) -> str:
+        return str(
+            getattr(
+                self._bridge,
+                "transport",
+                os.environ.get("HERMES_KANBAN_TRANSPORT", "unknown"),
+            )
+        )
+
     def health_check(self) -> HermesStatus:
         reachable = self._bridge.reachable()
         depth = 0

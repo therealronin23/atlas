@@ -14,14 +14,16 @@ Orchestrator:
 from __future__ import annotations
 
 import json
+import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from atlas.core.contracts import Event, EventType, Task
+from atlas.core.contracts import Event, EventType, Task, TaskSource
 from atlas.core.orchestrator import Orchestrator
+from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
 from atlas.runtime.service_runner import AtlasServiceRunner
 
 
@@ -121,6 +123,29 @@ def test_service_runner_tick_throttled(orch: Orchestrator) -> None:
     assert runner.tick(force=False) == []
 
 
+def test_pending_summary_exposes_redacted_arguments_and_exact_digest() -> None:
+    raw = json.dumps({
+        "path": "notes/visible.txt",
+        "content": "hola",
+        "api_token": "must-not-leak",
+    })
+    task = Task(intent="escribe", source=TaskSource.CLI)
+    task.metadata["agentic_state"] = {
+        "pending_mutations": [{
+            "id": "m1",
+            "name": "editor_write",
+            "arguments": raw,
+        }]
+    }
+
+    mutation = TaskPersistence.summary(task)["pending_mutations"][0]
+
+    assert "notes/visible.txt" in mutation["arguments_preview"]
+    assert "must-not-leak" not in mutation["arguments_preview"]
+    assert "redacted" in mutation["arguments_preview"]
+    assert mutation["arguments_sha256"] == hashlib.sha256(raw.encode()).hexdigest()
+
+
 # ===========================================================================
 # CLI — approve --only / sweep / pending con mutaciones
 # ===========================================================================
@@ -149,6 +174,8 @@ def test_cli_pending_shows_mutations_and_sweep(
     out = runner.invoke(cli_mod.cli, ["pending"])
     assert out.exit_code == 0
     assert "editor_write" in out.output  # la mutación aparece listada
+    assert "f.txt" in out.output  # el humano ve qué se va a tocar
+    assert "sha256:" in out.output  # el resumen queda ligado a los args exactos
 
     swept = runner.invoke(cli_mod.cli, ["sweep"])
     assert swept.exit_code == 0
@@ -245,11 +272,18 @@ def test_telegram_pending_lists_mutations() -> None:
     bot, _, ops = _make_bot()
     ops.pending_approvals = lambda: [{  # type: ignore[assignment]
         "task_id": "t9", "intent": "edita", "reason": "mutación",
-        "pending_mutations": [{"id": "a", "name": "editor_write"}],
+        "pending_mutations": [{
+            "id": "a",
+            "name": "editor_write",
+            "arguments_preview": '{"path":"nota.txt"}',
+            "arguments_sha256": "a" * 64,
+        }],
     }]
     out = bot._cmd_pending("")
     assert "editor_write" in out
     assert "a:editor_write" in out
+    assert "nota.txt" in out
+    assert "sha256:aaaaaaaaaaaa" in out
 
 
 def test_telegram_approval_keyboard_per_mutation() -> None:
@@ -324,8 +358,15 @@ def test_dashboard_progress_endpoint(
     # Emitir un progreso por el bus → debe aparecer en el feed.
     o._bus.publish(_make_progress_event("tX"))
 
-    client = TestClient(dash.app, raise_server_exceptions=True)
-    res = client.get("/api/agentic/progress")
+    client = TestClient(
+        dash.app,
+        raise_server_exceptions=True,
+        client=("127.0.0.1", 50000),
+    )
+    res = client.get(
+        "/api/agentic/progress",
+        headers={"Host": "127.0.0.1"},
+    )
     assert res.status_code == 200
     data = res.json()
     assert data and data[0]["task_id"] == "tX"

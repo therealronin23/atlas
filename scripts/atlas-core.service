@@ -10,6 +10,19 @@ EnvironmentFile=/home/ronin/proyectos/atlas-core/.env
 ExecStart=/home/ronin/proyectos/atlas-core/.venv/bin/atlas serve --poll-interval 1.0
 Restart=always
 RestartSec=10
+# El runtime y sus hijos crean memoria, claves y logs: nunca heredar una umask
+# permisiva del login. bwrap fue verificado bajo no-new-privileges.
+UMask=0077
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+PrivateTmp=true
+# Control de recursos a nivel de cgroup (reemplaza el RLIMIT_AS/NPROC por-proceso
+# que se omite para servers MCP de larga vida — ver ADR-034). Acota TODO el
+# árbol de atlas-core, incluidos los servers MCP adoptados, sin romper runtimes.
+MemoryAccounting=yes
+MemoryMax=4G
+MemoryHigh=3G
+TasksMax=4096
 StandardOutput=append:/home/ronin/proyectos/atlas-core/.atlas.log
 StandardError=append:/home/ronin/proyectos/atlas-core/.atlas.err
 # Heredar variables del shell del usuario al arrancar

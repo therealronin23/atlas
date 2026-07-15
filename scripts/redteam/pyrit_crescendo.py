@@ -5,7 +5,7 @@ Objetivo: medir la TRAYECTORIA del DriftTripwire turno a turno durante una
 escalada crescendo orquestada por PyRIT.
 
 Esto es dev/red-team, NO runtime. Corre con:
-    PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/pyrit_crescendo.py
+    PYTHONPATH=src .venv-redteam-pyrit/bin/python scripts/redteam/pyrit_crescendo.py
 
 El "sistema bajo test" es el gateway Osmosis + DriftTripwire en proceso.
 PyRIT orquesta la lógica crescendo (max_turns, backtrack, scoring).

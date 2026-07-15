@@ -13,6 +13,7 @@ Criterios de aceptación:
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import struct
 
@@ -38,6 +39,22 @@ class TestKeystoreSeparado:
         idx.upsert(_rec("k1", "dato sensible"))
         keys_path = db.parent / (db.name + ".keys")
         assert keys_path.exists(), "El fichero .keys debe existir tras upsert"
+
+    def test_sqlite_files_and_parent_are_private_under_permissive_umask(
+        self, tmp_path: Path
+    ) -> None:
+        parent = tmp_path / "shared"
+        db = parent / "m.db"
+        previous_umask = os.umask(0)
+        try:
+            idx = SqliteMemoryIndex(db, embedder=StubEmbedder(dim=64))
+        finally:
+            os.umask(previous_umask)
+        idx.close()
+
+        assert parent.stat().st_mode & 0o777 == 0o700
+        assert db.stat().st_mode & 0o777 == 0o600
+        assert (parent / "m.db.keys").stat().st_mode & 0o777 == 0o600
 
     def test_keystore_has_the_key(self, tmp_path: Path) -> None:
         db = tmp_path / "m.db"

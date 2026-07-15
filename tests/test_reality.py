@@ -42,6 +42,8 @@ def test_collect_reality_reports_static_facts(tmp_path: Path, monkeypatch) -> No
     workspace = tmp_path / "atlas"
     monkeypatch.delenv("HERMES_BASE_URL", raising=False)
     monkeypatch.delenv("HERMES_API_KEY", raising=False)
+    monkeypatch.delenv("HERMES_KANBAN_TRANSPORT", raising=False)
+    monkeypatch.delenv("ATLAS_HERMES_LOCAL", raising=False)
 
     report = collect_reality(repo_root=root, workspace=workspace)
 
@@ -49,6 +51,8 @@ def test_collect_reality_reports_static_facts(tmp_path: Path, monkeypatch) -> No
     assert report["runtime"]["source_file_count"] == 1
     assert report["runtime"]["test_file_count"] == 1
     assert report["hermes"]["mode"] == "mock"
+    assert report["hermes"]["configured"] is False
+    assert report["hermes"]["live_verified"] is False
     assert report["docs"]["status"] == "ok"
     assert any(c["name"] == "self_improvement.cold_update" for c in report["capabilities"])
 
@@ -65,6 +69,50 @@ def test_collect_reality_prefers_kanban_transport_for_hermes(tmp_path: Path, mon
     assert report["hermes"]["mode"] == "kanban_local"
     assert report["hermes"]["base_url_set"] is True
     assert report["hermes"]["api_key_set"] is True
+    assert report["hermes"]["configured"] is True
+    assert report["hermes"]["live_verified"] is False
+    hermes_capability = next(
+        capability
+        for capability in report["capabilities"]
+        if capability["name"] == "hermes.delegation"
+    )
+    assert hermes_capability["status"] == "configured"
+
+
+def test_collect_reality_rejects_incomplete_hermes_ssh_config(tmp_path: Path, monkeypatch) -> None:
+    root = _mini_repo(tmp_path)
+    workspace = tmp_path / "atlas"
+    monkeypatch.setenv("HERMES_KANBAN_TRANSPORT", "ssh")
+    monkeypatch.delenv("HERMES_SSH_HOST", raising=False)
+
+    report = collect_reality(repo_root=root, workspace=workspace)
+
+    assert report["hermes"]["mode"] == "kanban_ssh"
+    assert report["hermes"]["configured"] is False
+    assert "requires HERMES_SSH_HOST" in report["hermes"]["reason"]
+
+
+def test_capability_plane_degrades_command_execution_without_bwrap(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    from atlas.core import reality
+
+    root = _mini_repo(tmp_path)
+    monkeypatch.setattr(
+        reality.shutil,
+        "which",
+        lambda command: None if command == "bwrap" else "/synthetic/bin",
+    )
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    command = next(
+        capability
+        for capability in report["capabilities"]
+        if capability["name"] == "execution.command"
+    )
+    assert command["status"] == "degraded"
+    assert "fail closed" in command["evidence"]
 
 
 def test_browser_state_degrades_when_expected_playwright_executable_is_missing(

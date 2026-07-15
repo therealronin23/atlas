@@ -3,12 +3,9 @@ ADR-028 — Twin Kanban Bridge.
 
 The bidirectional twin-brain channel Atlas <-> Hermes-Agent.
 
-Hermes-Agent (Nous Research) does not expose a callable REST surface (the
-`hermes mcp serve` transport is broken upstream as of v0.15.0). Its durable
-SQLite-backed kanban board, however, is shared across profiles and is the
-intended substrate for agent-to-agent collaboration: tasks are claimed
-atomically, can depend on each other, and are executed by a named profile in
-an isolated workspace.
+Hermes-Agent's durable kanban board is the explicit outbound collaboration
+surface used here. Historical observations about other Hermes transports do
+not establish their current upstream state.
 
 Atlas reaches that board over the Tailscale SSH tunnel by invoking
 `hermes kanban <subcommand>` on the VPS. Inbound (Hermes -> Atlas) already
@@ -23,24 +20,66 @@ Design constraints (AGENTS.md coding rules):
 
 from __future__ import annotations
 
+import hashlib
+import ipaddress
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Sequence, cast
+from typing import Any, BinaryIO, Callable, Sequence, cast
 
 # Type of a transport runner: (argv, timeout_s) -> (returncode, stdout, stderr)
 Runner = Callable[[Sequence[str], float], "tuple[int, str, str]"]
 
-DEFAULT_SSH_HOST = "root@178.105.216.187"
-DEFAULT_KANBAN_BIN = "/root/.hermes/venv/bin/hermes"
+DEFAULT_SSH_HOST = ""
+DEFAULT_KANBAN_BIN = "/opt/hermes-agent/.venv/bin/hermes"
 DEFAULT_LOCAL_KANBAN_BIN = "hermes"
 DEFAULT_TIMEOUT_S = 30.0
 DEFAULT_TRANSPORT = "ssh"
+DEFAULT_SERVICE_USER = "hermes"
+DEFAULT_SERVICE_HOME = "/var/lib/hermes"
+MAX_TRANSPORT_OUTPUT_BYTES = 1_048_576
+ALLOWED_KANBAN_ACTIONS = frozenset(
+    {"boards", "create", "list", "show", "comment", "complete", "stats", "archive"}
+)
+_SSH_DESTINATION_RE = re.compile(
+    r"^[a-z_][a-z0-9_-]{0,31}@(?:[A-Za-z0-9][A-Za-z0-9.-]{0,252}|\[[0-9A-Fa-f:]+\])$"
+)
+_SERVICE_USER_RE = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
+_REMOTE_BINARY_RE = re.compile(r"^/[A-Za-z0-9_./+~-]+$")
+_ALLOWED_SSH_NETWORKS = tuple(
+    ipaddress.ip_network(value)
+    for value in (
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "100.64.0.0/10",
+        "fc00::/7",
+    )
+)
+
+
+def ssh_destination_is_allowed(value: str) -> bool:
+    """Accept only a syntactically safe private/Tailscale SSH destination."""
+    if not _SSH_DESTINATION_RE.fullmatch(value):
+        return False
+    host = value.rsplit("@", 1)[1]
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    normalized = host.casefold().rstrip(".")
+    if normalized.endswith(".ts.net"):
+        return True
+    try:
+        address = ipaddress.ip_address(normalized)
+    except ValueError:
+        return False
+    return any(address in network for network in _ALLOWED_SSH_NETWORKS)
 
 
 @dataclass
@@ -64,13 +103,37 @@ class KanbanResult:
 
 
 def _default_runner(argv: Sequence[str], timeout_s: float) -> "tuple[int, str, str]":
-    proc = subprocess.run(  # noqa: S603 — argv is a fixed list, never shell=True
-        list(argv),
-        capture_output=True,
-        text=True,
-        timeout=timeout_s,
-    )
-    return proc.returncode, proc.stdout, proc.stderr
+    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+        proc = subprocess.run(  # noqa: S603 — argv list, never shell=True
+            list(argv),
+            stdin=subprocess.DEVNULL,
+            stdout=stdout_file,
+            stderr=stderr_file,
+            timeout=timeout_s,
+            check=False,
+            start_new_session=True,
+        )
+        stdout = _read_bounded_output(stdout_file)
+        stderr = _read_bounded_output(stderr_file)
+    return proc.returncode, stdout, stderr
+
+
+def _read_bounded_output(handle: BinaryIO) -> str:
+    handle.seek(0)
+    raw: bytes = handle.read(MAX_TRANSPORT_OUTPUT_BYTES + 1)
+    if len(raw) > MAX_TRANSPORT_OUTPUT_BYTES:
+        raw = raw[:MAX_TRANSPORT_OUTPUT_BYTES] + b"\n[output truncated]\n"
+    return raw.decode("utf-8", "replace")
+
+
+def _argument_metadata(arguments: Sequence[str]) -> dict[str, Any]:
+    encoded = json.dumps(
+        list(arguments), ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
+    return {
+        "argument_count": len(arguments),
+        "arguments_sha256": hashlib.sha256(encoded).hexdigest(),
+    }
 
 
 class KanbanBridge:
@@ -82,8 +145,8 @@ class KanbanBridge:
         Object exposing ``log(action, agent, result, risk_level, payload)``.
         Optional; when present every invocation is recorded.
     ssh_host:
-        SSH destination of the VPS. Defaults to ``HERMES_SSH_HOST`` env var or
-        the Tailscale/public IP from runtime config.
+        Private/Tailscale SSH destination of the VPS. Defaults to the explicit
+        ``HERMES_SSH_HOST`` environment variable.
     kanban_bin:
         Path to the ``hermes`` binary on the VPS.
     runner:
@@ -97,6 +160,7 @@ class KanbanBridge:
         merkle: Any | None = None,
         ssh_host: str | None = None,
         kanban_bin: str | None = None,
+        service_user: str | None = None,
         transport: str | None = None,
         runner: Runner | None = None,
         timeout_s: float = DEFAULT_TIMEOUT_S,
@@ -105,9 +169,27 @@ class KanbanBridge:
         self._host = ssh_host or os.environ.get("HERMES_SSH_HOST", DEFAULT_SSH_HOST)
         self._bin = kanban_bin or os.environ.get("HERMES_KANBAN_BIN", DEFAULT_KANBAN_BIN)
         self._transport = transport or _resolve_transport()
+        self._service_user = service_user or os.environ.get(
+            "HERMES_SERVICE_USER", DEFAULT_SERVICE_USER,
+        )
+        if self._transport not in {"ssh", "local"}:
+            raise ValueError("kanban transport must be ssh or local")
+        if self._transport == "ssh":
+            if not self._host:
+                raise ValueError("HERMES_SSH_HOST is required for ssh transport")
+            if not ssh_destination_is_allowed(self._host):
+                raise ValueError("unsafe or non-private SSH destination")
+            if not _REMOTE_BINARY_RE.fullmatch(self._bin):
+                raise ValueError("unsafe remote Hermes binary path")
+            if not _SERVICE_USER_RE.fullmatch(self._service_user):
+                raise ValueError("unsafe Hermes service user")
         self._runner = runner or _default_runner
         self._timeout = timeout_s
         self._board_path = _default_board_path()
+
+    @property
+    def transport(self) -> str:
+        return self._transport
 
     # ------------------------------------------------------------------
     # Core invocation
@@ -122,25 +204,56 @@ class KanbanBridge:
         to the offline path.
         """
         action = kanban_args[0] if kanban_args else "noop"
+        if action not in ALLOWED_KANBAN_ACTIONS:
+            raise ValueError(f"unsupported kanban action: {action}")
+        if any("\x00" in argument for argument in kanban_args):
+            raise ValueError("kanban arguments must not contain NUL bytes")
+        argument_metadata = _argument_metadata(kanban_args[1:])
         if self._transport == "local":
             try:
                 return self._run_local(action, *kanban_args[1:])
             except OSError as exc:
-                self._log(action, "failure", "moderate", {"error": str(exc), "args": list(kanban_args)})
+                self._log(
+                    action,
+                    "failure",
+                    "moderate",
+                    {**argument_metadata, "error_type": type(exc).__name__},
+                )
                 raise
 
-        remote_cmd = shlex.join([self._bin, "kanban", *kanban_args])
+        remote_cmd = shlex.join([
+            "runuser",
+            "-u",
+            self._service_user,
+            "--",
+            "env",
+            f"HOME={DEFAULT_SERVICE_HOME}",
+            f"HERMES_HOME={DEFAULT_SERVICE_HOME}/.hermes",
+            self._bin,
+            "kanban",
+            *kanban_args,
+        ])
         argv = [
             "ssh",
             "-o", "BatchMode=yes",
             "-o", "ConnectTimeout=5",
+            "-o", "StrictHostKeyChecking=yes",
+            "-o", "IdentitiesOnly=yes",
+            "-o", "PasswordAuthentication=no",
+            "-o", "KbdInteractiveAuthentication=no",
+            "-o", "LogLevel=ERROR",
             self._host,
             remote_cmd,
         ]
         try:
             rc, out, err = self._runner(argv, timeout_s or self._timeout)
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
-            self._log(action, "failure", "moderate", {"error": str(exc), "args": list(kanban_args)})
+            self._log(
+                action,
+                "failure",
+                "moderate",
+                {**argument_metadata, "error_type": type(exc).__name__},
+            )
             raise
 
         parsed = _try_json(out)
@@ -149,7 +262,11 @@ class KanbanBridge:
             action,
             "success" if ok else "failure",
             "moderate",
-            {"args": list(kanban_args), "returncode": rc, "transport": self._transport},
+            {
+                **argument_metadata,
+                "returncode": rc,
+                "transport": self._transport,
+            },
         )
         return KanbanResult(ok=ok, returncode=rc, stdout=out, stderr=err, parsed=parsed)
 
@@ -231,25 +348,25 @@ class KanbanBridge:
         local_cli = os.environ.get("HERMES_KANBAN_LOCAL_BIN", DEFAULT_LOCAL_KANBAN_BIN)
         if shutil.which(local_cli):
             argv = [local_cli, "kanban", action, *args]
-            proc = subprocess.run(  # noqa: S603
-                argv,
-                capture_output=True,
-                text=True,
-                timeout=self._timeout,
-            )
-            parsed = _try_json(proc.stdout)
-            ok = proc.returncode == 0
+            returncode, stdout, stderr = _default_runner(argv, self._timeout)
+            parsed = _try_json(stdout)
+            ok = returncode == 0
             self._log(
                 action,
                 "success" if ok else "failure",
                 "moderate",
-                {"args": [action, *args], "transport": "local", "cli": local_cli, "returncode": proc.returncode},
+                {
+                    **_argument_metadata(args),
+                    "transport": "local",
+                    "cli": Path(local_cli).name,
+                    "returncode": returncode,
+                },
             )
             return KanbanResult(
                 ok=ok,
-                returncode=proc.returncode,
-                stdout=proc.stdout,
-                stderr=proc.stderr,
+                returncode=returncode,
+                stdout=stdout,
+                stderr=stderr,
                 parsed=parsed,
             )
 
@@ -291,7 +408,11 @@ class KanbanBridge:
             action,
             "success",
             "moderate",
-            {"args": [action, *args], "transport": "local", "board_path": str(self._board_path)},
+            {
+                **_argument_metadata(args),
+                "transport": "local",
+                "board_path": str(self._board_path),
+            },
         )
         return KanbanResult(ok=True, returncode=0, stdout=out, stderr="", parsed=result)
 

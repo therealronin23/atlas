@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Campaña de red-team: corpus de Garak → gateway Osmosis aislado → métrica de campaña.
 
-Este harness NO es runtime: corre en el venv aislado `.venv-redteam`
+Este harness NO es runtime: corre en el venv aislado `.venv-redteam-garak`
 (que tiene garak) con `PYTHONPATH=src`, y SIEMPRE contra un `ATLAS_HOME` temporal,
 NUNCA contra el servicio vivo (el log Merkle es single-writer; tocarlo en vivo lo
 corrompe).
@@ -23,7 +23,7 @@ Qué mide (y qué NO):
                       embedder; aquí el embedder es StubEmbedder (sin red).
 
 Uso:
-    PYTHONPATH=src .venv-redteam/bin/python scripts/redteam/garak_campaign.py \
+    PYTHONPATH=src .venv-redteam-garak/bin/python scripts/redteam/garak_campaign.py \
         --attacks 60 --benign 40
 """
 from __future__ import annotations

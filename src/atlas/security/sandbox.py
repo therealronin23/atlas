@@ -8,15 +8,11 @@ un snapshot. Si algo sale mal, el usuario puede hacer Undo real a nivel de
 filesystem/VM, no solo git revert.
 
 Dos capas:
-  NORMAL tier (subprocess aislado): Subprocess aislado con CPU/RAM limitados
-                      via resource.setrlimit (aplicado en child). El acceso de
-                      red NO esta bloqueado a nivel OS (no hay netns/seccomp);
-                      la contencion de red es aspiracional y requiere un jail
-                      a nivel de OS (futuro). Solo puede escribir en workspace.
-  OMEGA (alto riesgo): snapshot del workspace antes de ejecutar para permitir
-                       undo fisico (restore_snapshot). La ejecucion corre en el
-                       mismo tier NORMAL endurecido; el aislamiento por VM real
-                       (Proxmox) queda fuera de alcance del host local.
+  NORMAL: código y comandos pasan por un jail bubblewrap sin red y con rootfs
+          mínimo. Los comandos ven solo su directorio de trabajo, read-only
+          salvo una mutación autorizada explícitamente.
+  OMEGA: snapshot del workspace antes de ejecutar para permitir undo físico;
+         la ejecución conserva el mismo límite OS fail-closed.
 """
 
 from __future__ import annotations
@@ -52,9 +48,8 @@ class SandboxResult:
 class LayeredIsolationSandbox:
     """
     Sandbox de ejecucion de codigo por capas.
-    NORMAL tier: subprocess aislado con limites de recursos (CPU/RAM via
-    resource.setrlimit). La contención de red a nivel OS (netns/seccomp)
-    es aspiracional — requiere un jail externo (futuro).
+    NORMAL tier: bubblewrap + límites CPU/RAM/FSIZE, sin red y con mount
+    namespace mínimo. Sin bubblewrap, la ejecución se deniega.
     OMEGA: snapshot local del workspace (tarfile) antes de ejecutar + restore.
     """
 
@@ -117,7 +112,17 @@ class LayeredIsolationSandbox:
                     snapshot_id=snapshot_id,
                 )
         else:
-            return self._execute_normal(code, working_dir, wall)
+            try:
+                return self.execute_in_jail(code, timeout_s=wall)
+            except BwrapUnavailableError as exc:
+                return SandboxResult(
+                    success=False,
+                    stdout="",
+                    stderr=f"[jail fail-closed] {exc}",
+                    exit_code=-1,
+                    duration_ms=0,
+                    operational_mode=OperationalMode.NORMAL,
+                )
 
     def execute_command(
         self,
@@ -125,45 +130,47 @@ class LayeredIsolationSandbox:
         operational_mode: OperationalMode = OperationalMode.NORMAL,
         working_dir: Path | None = None,
         timeout_s: int | None = None,
+        *,
+        working_dir_writable: bool = False,
+        read_only_paths: tuple[Path, ...] = (),
     ) -> SandboxResult:
         """
-        Ejecuta un comando shell (no Python) con limites de recursos.
-        El AST Guard no aplica aqui — la allowlist de Permission Profile
-        ya lo valido antes de llegar a este punto.
+        Ejecuta argv (nunca shell) dentro de bubblewrap. El AST Guard no
+        aplica: la allowlist y el capability token ya fueron validados antes.
+        Fail-closed sin bwrap. El working_dir es read-only por defecto.
         """
         wall = self._effective_timeout(timeout_s)
-        cwd = working_dir or self._workspace
-        start = time.perf_counter()
-
-        def _set_limits() -> None:
-            """ADR-034: same child hardening for structured commands."""
-            apply_in_child(
-                ram_bytes=self.RAM_LIMIT_ALFA_BYTES,
-                cpu_seconds=self.CPU_TIME_LIMIT_ALFA_S,
-                fsize_bytes=self.FSIZE_LIMIT_NORMAL_BYTES,
-            )
-
+        cwd = (working_dir or self._workspace).expanduser().resolve(strict=True)
+        workspace = self._workspace.expanduser().resolve(strict=True)
         try:
-            result = subprocess.run(
-                command,
-                cwd=str(cwd),
-                capture_output=True,
-                text=True,
-                timeout=wall,
-                preexec_fn=_set_limits,
-                start_new_session=True,
-                env=self._safe_env(),
+            cwd.relative_to(workspace)
+        except ValueError as exc:
+            raise ValueError(f"working_dir fuera del workspace: {cwd}") from exc
+
+        jail = self._get_bwrap()
+        if jail is None:
+            raise BwrapUnavailableError(
+                "bwrap no disponible — comando estructurado bloqueado (ADR-055)."
             )
-            duration_ms = int((time.perf_counter() - start) * 1000)
+        self._sync_jail_limits(jail)
+        declared_inputs = tuple(path.expanduser().resolve(strict=True) for path in read_only_paths)
+        try:
+            result = jail.run_command(
+                command,
+                working_dir=cwd,
+                working_dir_writable=working_dir_writable,
+                read_only_paths=declared_inputs,
+                timeout_s=wall,
+            )
             return SandboxResult(
                 success=(result.returncode == 0),
                 stdout=result.stdout,
                 stderr=result.stderr,
                 exit_code=result.returncode,
-                duration_ms=duration_ms,
+                duration_ms=result.duration_ms,
                 operational_mode=operational_mode,
             )
-        except subprocess.TimeoutExpired:
+        except (TimeoutError, subprocess.TimeoutExpired):
             return SandboxResult(
                 success=False,
                 stdout="",
@@ -172,7 +179,7 @@ class LayeredIsolationSandbox:
                 duration_ms=wall * 1000,
                 operational_mode=operational_mode,
             )
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return SandboxResult(
                 success=False,
                 stdout="",
@@ -211,6 +218,7 @@ class LayeredIsolationSandbox:
             raise BwrapUnavailableError(
                 "bwrap no disponible — ejecución de código no confiable bloqueada (ADR-055)."
             )
+        self._sync_jail_limits(jail)
         # ASTGuard as pre-lint (defense-in-depth, not the security boundary)
         guard_result = self._ast_guard.validate(code)
         if not guard_result.passed:
@@ -224,7 +232,7 @@ class LayeredIsolationSandbox:
             )
         try:
             result = jail.run(code, timeout_s=timeout_s)
-        except TimeoutError:
+        except (TimeoutError, subprocess.TimeoutExpired):
             wall = timeout_s or BwrapJail.WALL_TIMEOUT_S
             return SandboxResult(
                 success=False,
@@ -242,6 +250,11 @@ class LayeredIsolationSandbox:
             duration_ms=result.duration_ms,
             operational_mode=OperationalMode.NORMAL,
         )
+
+    def _sync_jail_limits(self, jail: BwrapJail) -> None:
+        jail.RAM_LIMIT_BYTES = self.RAM_LIMIT_ALFA_BYTES
+        jail.CPU_TIME_LIMIT_S = self.CPU_TIME_LIMIT_ALFA_S
+        jail.FSIZE_LIMIT_BYTES = self.FSIZE_LIMIT_NORMAL_BYTES
 
     # ------------------------------------------------------------------
     # NORMAL tier: subprocess con resource limits

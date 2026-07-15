@@ -1,54 +1,22 @@
 ---
 name: atlas-audit
-description: Record meaningful Hermes actions in Atlas's tamper-evident Merkle ledger.
+description: Compatibility alias for auditing through the repository-owned atlas-twin skill.
 ---
 
-# atlas-audit
+# atlas-audit compatibility
 
-Hermes runs unaudited by default. Atlas keeps an append-only, hash-chained
-Merkle ledger of everything it does. This skill lets Hermes write its own
-actions into that same chain, so the twin has one forensic record of both
-hemispheres (ADR-029, reverse twin direction).
+This skill is superseded by `atlas-twin`, which is the single authority for
+the signed transport. New deployments install only `atlas-twin`.
 
-## When to use
-
-After completing any action with side effects or worth remembering:
-- a skill run (`skill.run`)
-- a Telegram reply that took an external action (`telegram.action`)
-- a cron tick (`cron.tick`)
-- a delegation to Atlas (`atlas.delegated`)
-
-Do **not** audit pure small-talk replies — keep the ledger signal-rich.
-
-## How
-
-Run the client with the action, an outcome, a risk level, and an optional
-JSON payload of structured facts:
+If this compatibility directory is still present, the old command delegates
+to that client and retains the existing arguments:
 
 ```bash
-python3 ~/.hermes/skills/atlas-audit/atlas_audit.py \
-    --action skill.run \
-    --result success \
-    --risk moderate \
-    --payload '{"skill": "weather", "city": "Madrid", "duration_ms": 812}'
+python3 "${HERMES_SKILL_DIR}/atlas_audit.py" \
+  --action skill.run --result success --risk moderate \
+  --payload '{"skill":"weather"}'
 ```
 
-`--result` ∈ {success, failure, blocked, pending, refused}
-`--risk`   ∈ {safe, moderate, high, critical}
-
-The action is automatically namespaced under `hermes.` on the Atlas side, so a
-Hermes-origin record can never be confused with an Atlas-native one. The
-command prints a JSON receipt with the chained hash:
-
-```json
-{"ok": true, "id": "...", "action": "hermes.skill.run", "hash_self": "...", "hash_prev": "..."}
-```
-
-## Requirements
-
-- `HERMES_API_KEY` in the environment (the same shared secret the inbound
-  `/api/exec/*` endpoints use).
-- Atlas reachable over Tailscale (`http://100.85.236.58:7331`). Override with
-  `ATLAS_AUDIT_URL` if the address changes.
-- If Atlas is offline the client exits non-zero and prints why; treat audit as
-  best-effort — never block a user-facing reply on it.
+Do not construct an HMAC manually, use `curl`, or treat an audit failure as a
+successful receipt. The returned `hash_self` is the evidence that Atlas
+actually appended the record.

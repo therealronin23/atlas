@@ -13,11 +13,9 @@ vez superado el umbral se quedaba "superado" para siempre aunque no hubiera
 fallos nuevos. Debe comparar solo el incremento (delta) desde la última
 pasada, persistido en un fichero de estado.
 
-Aislamiento: cada test COPIA el script real a tmp_path/scripts/ (el script
-hace `cd "$(dirname "$0")/.."`, así que ejecutar la copia ahí evita que
-`source .env` cargue el `.env` REAL del repo con credenciales reales — la
-consigna es no tocar nunca el .env real ni imprimir valores de keys reales).
-El .env usado en los tests es siempre sintético (NVIDIA_API_KEY=fake-for-test).
+Aislamiento: cada test copia el script y su lector seguro a
+`tmp_path/scripts/`. El `.env` sintético se interpreta como datos y nunca se
+evalúa como shell; el real del repo no se abre ni se imprime.
 """
 from __future__ import annotations
 
@@ -28,6 +26,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_PATH = REPO_ROOT / "scripts" / "graphify-monitor-and-switch.sh"
+DOTENV_LOADER = REPO_ROOT / "scripts" / "safe_dotenv.py"
 
 
 def _copy_script(tmp_path: Path) -> Path:
@@ -36,6 +35,9 @@ def _copy_script(tmp_path: Path) -> Path:
     dst = scripts_dir / "graphify-monitor-and-switch.sh"
     dst.write_text(SCRIPT_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     dst.chmod(0o755)
+    loader = scripts_dir / "safe_dotenv.py"
+    loader.write_text(DOTENV_LOADER.read_text(encoding="utf-8"), encoding="utf-8")
+    loader.chmod(0o755)
     return dst
 
 
@@ -61,7 +63,9 @@ class TestBug1EnvNotLoaded:
         self, tmp_path: Path
     ) -> None:
         script = _copy_script(tmp_path)
-        (tmp_path / ".env").write_text("NVIDIA_API_KEY=fake-for-test\n", encoding="utf-8")
+        env_file = tmp_path / ".env"
+        env_file.write_text("NVIDIA_API_KEY=fake-for-test\n", encoding="utf-8")
+        env_file.chmod(0o600)
 
         result = _run(script, tmp_path, "--print-fallback-only", env=_clean_env())
 

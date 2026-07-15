@@ -2,14 +2,12 @@
 
 Hilo completo: una mutación reversible pasa por el seam, se ejecuta, deja su
 handle de undo real atado al ``action_hash`` que el decisor autorizó, y
-``revert(action_hash)`` la deshace. Cubre los DOS productores forward:
+``revert(action_hash)`` la deshace.
 
-  * ``adopt_mcp_server`` → undo ``MCP_SERVER`` (``remove_server``).
   * ``execute_reversible_code`` → undo ``SNAPSHOT`` (``restore_snapshot``).
 
-Antes de este slice ``register_undo`` no tenía ningún llamante en producción y
-el ``AutonomousDecider`` denegaba toda mutación (invariante 4, sin undo). Estos
-son los únicos call-sites que declaran ``reversible=True``.
+Adoptar MCP se prueba aparte como irreversible: detener/unregistrar un proceso
+no revierte lecturas, exfiltración ni escrituras ya realizadas.
 
 Regla de tests del proyecto: nunca lanzar proceso real — la ejecución OMEGA se
 mockea (``_sandbox.execute``); el snapshot subyacente sí es real (tarfile) para
@@ -24,7 +22,6 @@ import pytest
 
 from atlas.core.contracts import OperationalMode, Task, TaskSource
 from atlas.core.decider import (
-    MCP_SERVER,
     SNAPSHOT,
     Allow,
     AutonomousDecider,
@@ -65,8 +62,15 @@ def _expected_hash(kind: str, descriptor: str, intent: str) -> str:
     )
 
 
-class TestAdoptMcpServerReversible:
-    def test_autonomous_allows_adopts_and_registers_undo(self, orch, monkeypatch) -> None:
+class _ExplicitAllowDecider:
+    def decide(self, action, sanctioned_intent, context):
+        assert action.reversible is False
+        assert action.sensitivity == "high"
+        return Allow(reason="explicit operator approval in test")
+
+
+class TestAdoptMcpServerIrreversible:
+    def test_autonomous_denies_adoption_before_spawn(self, orch, monkeypatch) -> None:
         orch.set_decider(AutonomousDecider())
         adopted: list[str] = []
 
@@ -82,32 +86,8 @@ class TestAdoptMcpServerReversible:
 
         status = orch.adopt_mcp_server(cfg, task)
 
-        assert status.startswith("ok:")
-        assert adopted == ["weather"]
-        h = _expected_hash("mcp_adopt", "weather", task.intent)
-        handle = orch._revert_registry.get(h)
-        assert handle is not None
-        assert handle.kind == MCP_SERVER and handle.ref == "weather"
-
-    def test_full_cycle_revert_removes_server(self, orch, monkeypatch) -> None:
-        orch.set_decider(AutonomousDecider())
-        removed: list[str] = []
-        monkeypatch.setattr(
-            orch._mcp, "add_server", lambda cfg: f"ok: server '{cfg.name}' adoptado"
-        )
-        monkeypatch.setattr(
-            orch._mcp, "remove_server", lambda name: removed.append(name) or True
-        )
-
-        task = Task(intent="adopta el server weather", source=TaskSource.CLI)
-        cfg = McpServerConfig(name="weather", cmd=["weather-mcp"])
-        orch.adopt_mcp_server(cfg, task)
-
-        h = _expected_hash("mcp_adopt", "weather", task.intent)
-        assert orch.revert(h) is True
-        assert removed == ["weather"]
-        # Handle consumido tras el revert.
-        assert orch._revert_registry.get(h) is None
+        assert status.startswith("denegado:")
+        assert adopted == []
 
     def test_unanchored_descriptor_denied_no_undo(self, orch, monkeypatch) -> None:
         orch.set_decider(AutonomousDecider())
@@ -140,17 +120,19 @@ class TestAdoptMcpServerReversible:
         assert "humana" in status
         assert called == []
 
-    def test_failed_add_does_not_register_undo(self, orch, monkeypatch) -> None:
-        orch.set_decider(AutonomousDecider())
+    def test_explicit_allow_can_adopt_but_registers_no_false_undo(
+        self, orch, monkeypatch
+    ) -> None:
+        orch.set_decider(_ExplicitAllowDecider())
         monkeypatch.setattr(
-            orch._mcp, "add_server", lambda cfg: "error: no arrancó"
+            orch._mcp, "add_server", lambda cfg: "ok: adopted after explicit approval"
         )
         task = Task(intent="adopta el server weather", source=TaskSource.CLI)
         cfg = McpServerConfig(name="weather", cmd=["weather-mcp"])
 
         status = orch.adopt_mcp_server(cfg, task)
 
-        assert status.startswith("error:")
+        assert status.startswith("ok:")
         h = _expected_hash("mcp_adopt", "weather", task.intent)
         assert orch._revert_registry.get(h) is None
 

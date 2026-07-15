@@ -20,6 +20,7 @@ import fcntl
 import hashlib
 import json
 import os
+import stat
 import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
 
 GENESIS_HASH: str = "0" * 64
 MAX_FILE_BYTES: int = 50 * 1024 * 1024  # 50 MB
+TAIL_READ_BLOCK_BYTES: int = 64 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +123,12 @@ class MerkleLogger:
 
     def __init__(self, log_dir: Path, signer: Signer | None = None) -> None:
         self._log_dir = log_dir
-        self._log_dir.mkdir(parents=True, exist_ok=True)
+        self._log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self._log_dir.chmod(0o700)
+        for existing_log in self._log_dir.glob("merkle*.jsonl"):
+            if existing_log.is_symlink() or not existing_log.is_file():
+                raise ValueError(f"Merkle log is not a regular file: {existing_log}")
+            existing_log.chmod(0o600)
         self._lock = threading.Lock()
         self._last_hash: str = GENESIS_HASH
         self._record_count: int = 0
@@ -147,7 +154,20 @@ class MerkleLogger:
         """
         with self._lock:
             self._rotate_if_needed()
-            with self._current_file.open("a", encoding="utf-8") as f:
+            flags = os.O_APPEND | os.O_CREAT | os.O_WRONLY
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            fd = os.open(self._current_file, flags, 0o600)
+            try:
+                if not stat.S_ISREG(os.fstat(fd).st_mode):
+                    raise ValueError(
+                        f"Merkle log is not a regular file: {self._current_file}"
+                    )
+                os.fchmod(fd, 0o600)
+            except Exception:
+                os.close(fd)
+                raise
+            with os.fdopen(fd, "a", encoding="utf-8") as f:
                 fcntl.flock(f.fileno(), fcntl.LOCK_EX)
                 try:
                     prev_hash = self._read_last_hash_from_disk()
@@ -273,8 +293,26 @@ class MerkleLogger:
             return records
 
     def tail(self, n: int = 20) -> list[AuditRecord]:
-        all_records = self.read_all()
-        return all_records[-n:]
+        # Preserve the historical slicing behavior for zero/negative values.
+        # Positive tails take the bounded reverse-reading path below.
+        if n <= 0:
+            return self.read_all()[-n:]
+
+        with self._lock:
+            newest_first: list[AuditRecord] = []
+            for log_file in reversed(sorted(self._log_dir.glob("merkle*.jsonl"))):
+                for line in self._iter_lines_reverse(log_file):
+                    try:
+                        data = json.loads(line)
+                        data.pop("signature", None)
+                        data.pop("sig_algo", None)
+                        newest_first.append(AuditRecord(**data))
+                    except Exception:
+                        continue
+                    if len(newest_first) == n:
+                        return list(reversed(newest_first))
+
+            return list(reversed(newest_first))
 
     @property
     def record_count(self) -> int:
@@ -352,3 +390,28 @@ class MerkleLogger:
                 line = line.strip()
                 if line:
                     yield line
+
+    @staticmethod
+    def _iter_lines_reverse(
+        path: Path,
+        block_size: int = TAIL_READ_BLOCK_BYTES,
+    ) -> Iterator[str]:
+        """Yield non-empty UTF-8 lines newest-first without loading the file."""
+        with path.open("rb") as f:
+            position = f.seek(0, os.SEEK_END)
+            remainder = b""
+
+            while position > 0:
+                read_size = min(block_size, position)
+                position -= read_size
+                f.seek(position)
+                parts = (f.read(read_size) + remainder).split(b"\n")
+                remainder = parts[0]
+                for line in reversed(parts[1:]):
+                    line = line.strip()
+                    if line:
+                        yield line.decode("utf-8")
+
+            remainder = remainder.strip()
+            if remainder:
+                yield remainder.decode("utf-8")

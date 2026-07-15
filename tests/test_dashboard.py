@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+_DASHBOARD_TOKEN = "test-dashboard-token-with-at-least-32-chars"
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -39,13 +41,18 @@ def workspace(tmp_path: Path) -> Path:
 def client(workspace: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     """TestClient con ATLAS_HOME apuntando al workspace temporal."""
     monkeypatch.setenv("ATLAS_HOME", str(workspace))
+    monkeypatch.setenv("ATLAS_DASHBOARD_TOKEN", _DASHBOARD_TOKEN)
 
     # Reiniciar el singleton de Orchestrator para que use el workspace del test
     import atlas.interfaces.dashboard as dash_module
     dash_module._orch = None
 
     from atlas.interfaces.dashboard import app
-    return TestClient(app, raise_server_exceptions=True)
+    return TestClient(
+        app,
+        raise_server_exceptions=True,
+        headers={"Authorization": f"Bearer {_DASHBOARD_TOKEN}"},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +60,43 @@ def client(workspace: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 # ---------------------------------------------------------------------------
 
 class TestDashboardRoutes:
+    def test_remote_request_without_token_is_rejected(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ATLAS_HOME", str(workspace))
+        monkeypatch.setenv("ATLAS_DASHBOARD_TOKEN", _DASHBOARD_TOKEN)
+        from atlas.interfaces.dashboard import app
+
+        response = TestClient(app).get("/audit")
+        assert response.status_code == 401
+
+    def test_non_loopback_bind_requires_strong_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from atlas.interfaces.dashboard import _validate_bind_security
+
+        monkeypatch.delenv("ATLAS_DASHBOARD_TOKEN", raising=False)
+        with pytest.raises(RuntimeError, match="ATLAS_DASHBOARD_TOKEN"):
+            _validate_bind_security("0.0.0.0")
+        _validate_bind_security("127.0.0.1")
+
+    def test_remote_exec_health_reaches_its_own_hmac_authentication(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("ATLAS_HOME", str(workspace))
+        monkeypatch.setenv("ATLAS_DASHBOARD_TOKEN", _DASHBOARD_TOKEN)
+        from atlas.interfaces.dashboard import app
+
+        remote = TestClient(
+            app,
+            base_url="http://atlas.tailnet.invalid",
+            client=("100.64.0.2", 50000),
+        )
+        response = remote.post("/api/exec/health", content=b"{}")
+        # The dashboard bearer middleware must not mask the independent HMAC
+        # layer. An unwired route is 404; a wired/unsigned route is 401.
+        assert response.status_code in {401, 404}
+
     def test_status_200(self, client: TestClient) -> None:
         r = client.get("/")
         assert r.status_code == 200

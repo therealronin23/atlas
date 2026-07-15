@@ -28,7 +28,11 @@ from typing import Any
 
 import kuzu
 
-from atlas.memory.embeddings import Embedder, StubEmbedder
+from atlas.memory.embeddings import (
+    Embedder,
+    StubEmbedder,
+    embedding_identity_fingerprint,
+)
 
 
 log = logging.getLogger(__name__)
@@ -82,6 +86,8 @@ class VectorStoreError(Exception):
 
 
 META_KEY_DIM = "embedding_dim"
+META_KEY_IDENTITY = "embedding_identity"
+META_KEY_FINGERPRINT = "embedding_fingerprint"
 META_KEY_VERSION = "schema_version"
 SCHEMA_VERSION = "1"
 
@@ -125,6 +131,7 @@ class KuzuVectorStore:
         self._conn = kuzu.Connection(self._db)
         self._init_schema()
         self._verify_dim()
+        self._verify_identity()
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -348,6 +355,69 @@ class KuzuVectorStore:
                 f"actual usa dim={self._embedder.dim}. Recrea con recreate=True "
                 f"o usa el embedder original."
             )
+
+    def _verify_identity(self) -> None:
+        """Verify the exact embedding space, not merely its vector length."""
+        try:
+            current_identity = self._embedder.identity
+            declared_fingerprint = self._embedder.fingerprint
+        except AttributeError as exc:
+            raise VectorStoreError(
+                "Embedder lacks a stable identity; persistent vector storage "
+                "requires Embedder.identity and Embedder.fingerprint."
+            ) from exc
+        current_fingerprint = embedding_identity_fingerprint(current_identity)
+        if declared_fingerprint != current_fingerprint:
+            raise VectorStoreError(
+                "Embedder fingerprint is inconsistent with Embedder.identity; "
+                "refusing persistent vector storage."
+            )
+        stored_identity = self._read_meta(META_KEY_IDENTITY)
+        stored_fingerprint = self._read_meta(META_KEY_FINGERPRINT)
+
+        if stored_identity is None and stored_fingerprint is None:
+            vector_count = sum(
+                self.count(node_type)
+                for node_type in ("Pattern", "Failure", "Evidence")
+            )
+            if vector_count:
+                raise VectorStoreError(
+                    f"Store {self._db_path.name} contains vectors but lacks embedder "
+                    "identity metadata. Recreate it with the intended embedder; "
+                    "dimension alone cannot prove the vector space."
+                )
+            self._upsert_meta(META_KEY_IDENTITY, current_identity)
+            self._upsert_meta(META_KEY_FINGERPRINT, current_fingerprint)
+            return
+
+        if stored_identity is not None:
+            expected_stored_fingerprint = embedding_identity_fingerprint(stored_identity)
+            if (
+                stored_fingerprint is not None
+                and stored_fingerprint != expected_stored_fingerprint
+            ):
+                raise VectorStoreError(
+                    f"Embedder identity metadata is inconsistent in "
+                    f"{self._db_path.name}; recreate the store."
+                )
+            if stored_identity != current_identity:
+                raise VectorStoreError(
+                    f"Embedder identity mismatch: store {self._db_path.name} uses "
+                    f"{stored_identity!r}, current embedder uses {current_identity!r}. "
+                    "Use the original embedder or recreate the store."
+                )
+            if stored_fingerprint is None:
+                self._upsert_meta(META_KEY_FINGERPRINT, expected_stored_fingerprint)
+            return
+
+        if stored_fingerprint != current_fingerprint:
+            raise VectorStoreError(
+                f"Embedder identity mismatch: store {self._db_path.name} has "
+                f"fingerprint {stored_fingerprint!r}, current embedder has "
+                f"{current_fingerprint!r}. Use the original embedder or recreate "
+                "the store."
+            )
+        self._upsert_meta(META_KEY_IDENTITY, current_identity)
 
     def _upsert_meta(self, key: str, value: str) -> None:
         existing = self._read_meta(key)

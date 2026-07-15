@@ -1,149 +1,142 @@
-# Operational Runbook — Atlas Core
+# Runbook operativo — Atlas Core
 
-**Date:** 2026-05-25  
-**Scope:** Sesion A — validar loop operativo local + Hermes VPS + Telegram.
+**Revisado:** 2026-07-16
+**Alcance:** separar salud local, contrato aislado y evidencia externa viva.
 
-## Prerequisites
+## 1. Preflight factual
+
+Desde la raíz del repositorio:
 
 ```bash
-cd ~/proyectos/atlas-core
 source .venv/bin/activate
-source .env   # HERMES_*, TELEGRAM_*, API keys; todas las lineas KEY=value
+PYTHONPATH=src atlas reality --json
 ```
 
-Variables minimas:
+No cargar `.env` con `source`: los scripts operativos vigentes usan
+`scripts/safe_dotenv.py`, que lo interpreta como datos, exige fichero regular
+privado y no expande shell.
 
-| Variable | Uso |
-|----------|-----|
-| `HERMES_BASE_URL` | URL Hermes REST-compatible: VPS por Tailscale o local (`http://127.0.0.1:8443`) |
-| `HERMES_API_KEY` | Secreto HMAC compartido |
-| `ATLAS_PENDING_HMAC_KEY` | Opcional; si falta, usa `HERMES_API_KEY` para firmar pending |
-| `TELEGRAM_BOT_TOKEN` | Bot API token |
-| `TELEGRAM_CHAT_ID` | Chat autorizado (ADR-013) |
-| `ATLAS_HOME` | Opcional; default `~/atlas` |
+Interpretación de Hermes:
 
-## Automated smoke
+- `mock` / `degraded`: no hay canal configurado y no es un fallo del core.
+- `configured`: la forma de la configuración es válida; no prueba alcance.
+- `live_verified=false`: resultado esperado del recolector estático. Solo un
+  smoke explícito puede aportar evidencia viva.
+
+## 2. Salud local
 
 ```bash
-PYTHONPATH=src python scripts/operational_smoke.py
+PYTHONPATH=src atlas audit --verify
+PYTHONPATH=src atlas doctor
+PYTHONPATH=src atlas health
+PYTHONPATH=src atlas reality --run-checks --json
 ```
 
-Pasos: env → `Orchestrator.status` → Hermes REST → ciclo editor approval en workspace temporal → Telegram outbound (si tokens presentes).
+`--run-checks` ejecuta suite core y mypy en el checkout actual. El navegador se
+incluye solo con `--include-browser`; una instalación de Chromium no demuestra
+que una navegación concreta funcione.
 
-Opciones:
+No ejecutar el CLI contra el workspace vivo mientras otro proceso escribe la
+misma cadena Merkle. La auditoría autónoma usa deliberadamente
+`.atlas-audit-home` aislado.
+
+## 3. Canal Hermes→Atlas en aislamiento
 
 ```bash
-PYTHONPATH=src python scripts/operational_smoke.py --skip-telegram
-PYTHONPATH=src python scripts/operational_smoke.py --workspace ~/atlas
+PYTHONPATH=src python scripts/twin_e2e_smoke.py
 ```
 
-## Gate I — servicio 24/7
+Esta prueba crea un repo y workspace temporales, firma un intent con nonce,
+comprueba grounding contra commits sembrados y verifica la entrada Merkle.
+Conclusión permitida: el contrato funciona en aislamiento. No concluye nada
+sobre VPS, proveedor o Telegram.
+
+## 4. Despliegue Hermes oficial
+
+El despliegue es un efecto externo y solo se ejecuta cuando esté decidido por
+el operador. Preparar `.env` desde `.env.example`, mantenerlo `0600` y usar un
+host SSH ya enrolado:
 
 ```bash
-# Foreground (Telegram + OfflineMonitor)
-atlas serve
-
-# Health JSON
-atlas health
-curl -s http://127.0.0.1:7331/api/health   # si ATLAS_SERVE_DASHBOARD=1
-
-PYTHONPATH=src python scripts/gate_i_smoke.py
+chmod 600 .env
+VPS_HOST=<tailscale-ip-o-nombre-completo.ts.net> \
+  scripts/deploy_hermes_vps_oneshot.sh
 ```
 
-systemd user unit: copiar `scripts/atlas-core.service` a `~/.config/systemd/user/` y `systemctl --user enable --now atlas-core`.
+El wrapper rechaza IP pública, hostname arbitrario, host key nueva, sintaxis
+dotenv ambigua, secreto corto, proveedor/modelo implícitos y usuarios Telegram
+no numéricos. El provisionador instala el commit fijado y corre como usuario
+`hermes`; no instala Ollama ni habilita hooks automáticamente.
 
-Env opcionales: `ATLAS_SERVE_DASHBOARD=1`, `ATLAS_THERMAL_MONITOR=1`, `ATLAS_PIPELINE_GATE_D=1`.
-
-Smokes individuales (regresion):
+## 5. Verificación del pairing
 
 ```bash
-PYTHONPATH=src python scripts/hermes_smoke.py
-PYTHONPATH=src python scripts/pipeline_smoke.py
-PYTHONPATH=src python scripts/inference_smoke.py
+VPS_HOST=<tailscale-ip-o-nombre-completo.ts.net> \
+  scripts/verify_twin_pairing.sh
 ```
 
-## Manual checklist
+Un resultado verde demuestra, en esa ejecución:
 
-### 1. Status
+- servicio activo con usuario dedicado y no-new-privileges;
+- checkout igual al commit auditado;
+- skill remota igual al artefacto local y root-owned;
+- health firmado Hermes→Atlas con gobierno/Merkle sanos.
 
-```bash
-atlas status
+No demuestra una inferencia del proveedor ni entrega Telegram. Para promover
+Hermes a `ACTIVO`, ejecutar además una solicitud real desde un usuario Telegram
+permitido, observar respuesta del modelo y conservar hora/resultado sin copiar
+tokens o secretos al repo. Si una de las dos capas falla, informar cuál; no
+resumir el conjunto como “Hermes vivo”.
+
+## 6. Canal Atlas→Hermes
+
+Configuración SSH:
+
+```text
+HERMES_KANBAN_TRANSPORT=ssh
+HERMES_SSH_HOST=root@<tailscale-ip-o-nombre-completo.ts.net>
 ```
 
-Esperado: Governance OK, Merkle chain OK, Hermes mode live (no offline).
+Después reiniciar Atlas con el entorno actualizado y realizar una delegación
+intencional de bajo riesgo. Verificar el resultado kanban y la entrada Merkle.
+El login SSH puede provisionar como root, pero `KanbanBridge` ejecuta el binario
+como usuario `hermes`. No hay destino por defecto ni fallback a IP pública.
 
-### 2. CLI approval flow
+## 7. Telegram propio de Atlas
 
-```bash
-atlas task "editor write projects/smoke.txt :: ok"
-atlas pending
-atlas approve <task_id>
-atlas pending   # debe quedar vacio
-```
+Es distinto del Telegram gestionado por Hermes. Atlas usa
+`TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`/`TELEGRAM_CHAT_IDS`, además de su
+perfil de permisos. Probar `/status`, `/pending` y un rechazo/aprobación de bajo
+riesgo desde un chat autorizado. No poner passphrases, tokens ni payloads
+sensibles en la evidencia.
 
-Verificar fichero `~/atlas/projects/smoke.txt` y entrada Merkle `task.approval`, `approval.persisted`.
+## 8. Troubleshooting
 
-### 3. Telegram (manual)
+| Síntoma | Comprobación segura |
+| --- | --- |
+| `safe_dotenv` rechaza `.env` | Confirmar fichero regular, dueño actual, modo `0600`, claves únicas y sintaxis literal `KEY=value`. |
+| Pairing no alcanza VPS | `tailscale status`; confirmar nombre `.ts.net`/IP privada y host key SSH pre-enrolada. |
+| Servicio Hermes caído | `ssh -o StrictHostKeyChecking=yes root@<tailscale-host> 'systemctl status hermes-agent.service --no-pager'`. |
+| Pairing verde, Telegram falla | Revisar `TELEGRAM_ALLOWED_USERS`, token y logs de la unidad; no culpar al canal Atlas firmado. |
+| Pairing verde, modelo falla | Validar proveedor/modelo y cuota con una inferencia real; configuración no equivale a disponibilidad. |
+| Pending no carga | Verificar `ATLAS_PENDING_HMAC_KEY`; los envelopes legacy sin MAC se rechazan. |
 
-Arrancar bot (desde Python o integracion existente):
+No usar las antiguas instrucciones Docker, puertos REST `8443`, IP pública o
+`/root/.hermes`: son del stub histórico. `scripts/hermes_smoke.py` y
+`scripts/operational_smoke.py` validan compatibilidad REST, no el Hermes-Agent
+nativo.
 
-```python
-from atlas.core.orchestrator import Orchestrator
-orch = Orchestrator()
-orch.start_telegram_bot()  # requiere TELEGRAM_BOT_TOKEN en env
-```
+## 9. Plantilla de evidencia
 
-Desde el cliente Telegram autorizado:
-
-- `/status` — resumen del core
-- `/task modificar algo sensible` — debe pedir approval si aplica
-- `/pending` — lista pendientes
-- Aprobar con `/approve <task_id> <passphrase>` si `require_passphrase_for_approve: true` en `permissions.yaml`
-
-### 4. Hermes delegation
-
-Intent que clasifique como `DELEGATE_HERMES` (tarea larga / investigacion). Verificar en VPS cola o `scripts/hermes_smoke.py`.
-
-### 5. Merkle audit
-
-```bash
-atlas audit
-```
-
-Buscar acciones recientes: `task.created`, `task.approval`, `hermes.delegated`, `pipeline.gate_d_enabled`.
-
-## Pending approvals (v1 HMAC)
-
-Ficheros en `~/atlas/memory/pending_approvals/<task_id>.json` usan envelope `{"v":1,"task":{...},"mac":"..."}`.
-
-Ficheros legacy sin `mac` se **rechazan** al cargar. Borrar JSON viejos o re-enviar la tarea.
-
-## Gate D + memoria vectorial
-
-```bash
-export ATLAS_PIPELINE_GATE_D=1
-export ATLAS_MEMORY_VECTOR=1   # default; usar 0 para desactivar Kuzu
-atlas task "lista los archivos"
-```
-
-Tras activar pipeline: Kuzu en `~/atlas/memory/kuzu/atlas.kuzu`, distiller y registros conectados.
-
-## Troubleshooting
-
-| Sintoma | Accion |
-|---------|--------|
-| `source .env` falla en zsh | Solo lineas `KEY=value` o `KEY="valor"` |
-| Hermes offline | `tailscale status`, `scripts/hermes_smoke.py` |
-| Pending no carga | Verificar `ATLAS_PENDING_HMAC_KEY` o `HERMES_API_KEY`; eliminar JSON legacy |
-| Telegram no responde | Token, `TELEGRAM_CHAT_ID`, bot no en otro proceso |
-
-## Evidence template (Gate G+)
-
-```
-Date:
-Host:
-atlas status: OK / FAIL
-operational_smoke.py: OK / FAIL
-CLI approve cycle: task_id=... OK
-Telegram /status /pending: OK / manual skip
+```text
+Fecha UTC:
+Commit Atlas:
+atlas reality: estado + límites
+Merkle verify: PASS/FAIL
+Suite core/mypy: PASS/FAIL
+Twin aislado: PASS/FAIL/SKIP
+Pairing vivo: PASS/FAIL/SKIP
+Inferencia Hermes real: PASS/FAIL/SKIP
+Entrega Telegram real: PASS/FAIL/SKIP
+Motivo de cada SKIP:
 ```

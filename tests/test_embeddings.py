@@ -156,15 +156,22 @@ class TestFastEmbedModelCache:
     cuesta ~500MB de RSS que el allocator no devuelve al SO ni liberando la
     instancia — sin cache, la suite acumulaba 7.5GB y earlyoom la mataba."""
 
-    def test_two_instances_share_one_model_load(self, monkeypatch) -> None:
+    def test_two_instances_share_one_model_load(self, tmp_path, monkeypatch) -> None:
         import sys
         import types
 
         loads: list[str] = []
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        (model_dir / "model.onnx").write_bytes(b"fake-model")
+
+        class _ConcreteModel:
+            _model_dir = model_dir
 
         class _FakeModel:
             def __init__(self, model_name: str) -> None:
                 loads.append(model_name)
+                self.model = _ConcreteModel()
 
             def embed(self, texts):
                 return [[0.0] * 384 for _ in texts]
@@ -176,6 +183,7 @@ class TestFastEmbedModelCache:
         from atlas.memory.embeddings import FastEmbedEmbedder
 
         monkeypatch.setattr(FastEmbedEmbedder, "_MODEL_CACHE", {})
+        monkeypatch.setattr(FastEmbedEmbedder, "_ARTIFACT_DIGEST_CACHE", {})
         a = FastEmbedEmbedder(model_name="m-test", dim=384)
         b = FastEmbedEmbedder(model_name="m-test", dim=384)
         assert loads == ["m-test"]  # una sola carga

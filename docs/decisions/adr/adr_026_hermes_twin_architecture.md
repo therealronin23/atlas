@@ -1,130 +1,85 @@
-# ADR-026 — Atlas + Hermes-Agent Twin Architecture
+# ADR-026 — Arquitectura twin Atlas + Hermes-Agent
 
-- **Status:** Accepted (2026-05-27)
-- **Replaces:** The original `scripts/install_hermes_vps.sh` stub
-- **Supersedes:** Implicit "Hermes is a stub executor" assumption in earlier ADRs
+- **Estado:** Aceptado; revisado el 2026-07-16
+- **Sustituye:** el supuesto de que Hermes es un ejecutor REST propio de Atlas
+- **Relacionado:** ADR-027 (entrada firmada), ADR-028 (kanban saliente), ADR-029 (auditoría inversa)
 
----
+## Contexto
 
-## Context
+Atlas había usado el nombre Hermes para dos cosas distintas: un stub REST
+propio y el agente oficial de Nous Research. Esa ambigüedad produjo contratos,
+scripts y afirmaciones operativas incompatibles. Una decisión arquitectónica
+no puede servir como prueba de que un VPS, un proveedor o Telegram estén vivos.
 
-Discovered (2026-05-27) that the `Hermes` we were referencing in the Atlas
-codebase is not the same Hermes the user actually wants in the VPS.
+## Decisión
 
-| Concept                                  | What it really is                                          |
-| ---------------------------------------- | ---------------------------------------------------------- |
-| `scripts/install_hermes_vps.sh` (legacy) | A minimal REST+HMAC stub. No LLM. Just queues delegations. |
-| **Hermes-Agent (Nous Research)**         | A fully autonomous agent. Has its own LLM, memory, multi-platform messaging (Telegram, Discord, Slack), and skills system. |
+Atlas y el Hermes-Agent oficial son pares separados con una autoridad
+asimétrica:
 
-User intent: replace the stub with the real Hermes-Agent. The VPS exists to
-host an actual agent, not to forward stub messages. Burning RAM+CPU on a
-shell that does nothing was wasteful.
+- Atlas conserva gobierno, permisos, contención y registro Merkle.
+- Hermes puede gestionar conversación, proveedor y Telegram como servicio
+  externo no confiable.
+- Hermes→Atlas usa la skill `atlas-twin` y `/api/exec/*`, firmados con HMAC,
+  timestamp y nonce de un solo uso.
+- Atlas→Hermes usa `HermesKanbanAdapter` con transporte `local` o SSH
+  privado/Tailscale explícito.
+- Configuración significa únicamente que existen parámetros válidos. Solo una
+  prueba viva y actual permite hablar de conectividad, inferencia o entrega.
 
-## Decision
+No existe un “tool gateway” ficticio ni se adapta el Hermes oficial al antiguo
+REST stub. `HermesRestAdapter` queda como compatibilidad heredada, claramente
+separada del camino nativo.
 
-**Twin architecture** — Atlas (local) and Hermes-Agent (VPS) are siblings:
+## Despliegue decidido
 
-```
-┌─────────────── HP Omen (laptop) ───────────────┐
-│                                                │
-│  Atlas Core 0.9.0+                             │
-│  ├─ Orchestrator (governance, classify, audit) │
-│  ├─ AtlasExecutor + Capability tokens          │
-│  ├─ Merkle SHA-256 chain                       │
-│  ├─ InferenceHub (LiteLLM fallback chain)      │
-│  └─ Dashboard :7331 (FastAPI)                  │
-│                                                │
-└─────────────────────┬──────────────────────────┘
-                      │  Tailscale 100.85.236.58
-                      │
-                      ↕ REST + HMAC
-                      │
-┌─────────────────────┴──────────────────────────┐
-│  Hetzner CPX22 VPS — 100.108.132.116           │
-│                                                │
-│  Hermes-Agent (Nous Research)                  │
-│  ├─ Autonomous LLM agent                       │
-│  ├─ Telegram bot @GodAtlas_bot (PRIMARY UI)    │
-│  ├─ Memory persistente (~/.hermes/memories/)   │
-│  ├─ Tool gateway → Atlas Core (twin pairing)   │
-│  │                                             │
-│  └─ Ollama daemon (CPU)                        │
-│     └─ qwen2.5:1.5b — fallback inferencia      │
-│                                                │
-└────────────────────────────────────────────────┘
-```
+La ruta canónica es:
 
-### Responsibilities
+1. `scripts/deploy_hermes_vps_oneshot.sh` construye un bootstrap mínimo desde
+   `.env`, lo transfiere como fichero `0600` mediante SSH con host key ya
+   enrolada y llama al provisionador.
+2. `scripts/install_hermes_agent_vps.sh` instala la versión `0.18.2`, tag
+   `v2026.7.7.2`, commit
+   `9de9c25f620ff7f1ce0fd5457d596052d5159596`, usando el lock upstream y un
+   instalador `uv` fijado y verificado por hash.
+3. El proceso corre como usuario `hermes` sin login, con unidad systemd
+   endurecida. Estado mutable en `/var/lib/hermes`; código en
+   `/opt/hermes-agent`; skill twin root-owned y de solo lectura para el
+   servicio.
+4. Proveedor, modelo, usuarios Telegram y origen Atlas son explícitos. No hay
+   Ollama, fallback o autoaprobación implícitos.
+5. `scripts/verify_twin_pairing.sh` comprueba commit, identidad de servicio,
+   artefacto de skill y health firmado. Deliberadamente no gasta tokens ni
+   envía Telegram.
 
-| Component           | Owns                                                                  |
-| ------------------- | --------------------------------------------------------------------- |
-| **Atlas Core**      | Governance L0, Merkle audit, capability tokens, KuzuDB memory, ColdUpdateManager, SelfAuditLoop, pipeline Gate D, deterministic tools (git, fs, browser, editor) |
-| **Hermes-Agent**    | Telegram conversation, autonomous reasoning loop, multi-platform messaging, Ollama-backed local inference, Tool Gateway, agentic skills, scheduled actions (cron) |
+Las antiguas rutas `install_hermes_vps.sh`, `reconfigure_hermes_vps.sh` y
+`hermes_unlock_skills.sh` fallan cerradas con código 64.
 
-### Communication: Twin Handshake
+## Invariantes
 
-1. **Outbound (Atlas → Hermes-Agent)**: existing `HermesAdapter` posts
-   `DelegationPayload` via REST+HMAC. Useful when Atlas wants Hermes to
-   execute a long-running or messaging-heavy task.
-2. **Inbound (Hermes-Agent → Atlas)**: Hermes-Agent has Atlas registered
-   as a *tool* in its tool gateway. URL: the laptop's Tailscale dashboard
-   `http://100.85.236.58:7331/api/*`. Use cases:
-   - Query the Merkle log
-   - Request a governance check
-   - Submit an intent that needs Atlas's capability tokens
+- Ningún secreto se imprime, se pasa en argv o se obtiene ejecutando `.env`.
+- El SSH remoto y las URLs Atlas deben ser privados o Tailscale.
+- Una clave HMAC tiene al menos 32 bytes.
+- El usuario de login SSH puede provisionar, pero el runtime nunca corre como
+  root.
+- La adopción upstream está fijada a material inmutable y su configuración se
+  valida con el código de esa misma versión.
+- Toda acción que entra en Atlas pasa por sus permisos y auditoría; Hermes no
+  amplía privilegios.
 
-The shared HMAC key (`HERMES_API_KEY`) is generated by
-`scripts/install_hermes_agent_vps.sh` and pasted into Atlas's `.env`.
+## Estado operativo
 
-## Why this layout
+Este ADR describe el diseño y los artefactos. En la auditoría del 2026-07-16,
+`atlas reality --json` informó `hermes.mode=mock`, sin proveedor externo
+configurado en el entorno inspeccionado. Por tanto no se afirma que el VPS,
+Hermes, Telegram o un proveedor estén vivos. Evidencias históricas de otros
+días permanecen históricas.
 
-- **Use what we pay for.** The VPS RAM/CPU was sitting idle; now it hosts
-  an actual LLM agent + a small Ollama model 24/7.
-- **Resilience.** When the laptop is off, Hermes-Agent still answers
-  Telegram and remembers state. When Hermes is offline, Atlas keeps its
-  local pipeline.
-- **Separation of concerns.** Atlas was never meant to be a chat UI —
-  it's an orchestrator. Telegram conversational flow belongs in Hermes.
-- **No duplicate Telegram bot.** Only one `@GodAtlas_bot`. Atlas stops
-  its own polling thread once Hermes is up.
+## Consecuencias y límites
 
-## Consequences
-
-### Code changes (this PR)
-
-- **`scripts/install_hermes_agent_vps.sh`** — new installer (replaces stub
-  installer). Installs Hermes-Agent via pip in a venv, Ollama with
-  `qwen2.5:1.5b`, configures `~/.hermes/config.yaml` for OpenRouter
-  primary + Ollama fallback, registers Telegram bot, creates systemd
-  unit.
-- **`src/atlas/hermes/hermes.py`** — `HermesAdapter` simplified docstring
-  to reflect that the remote is now an actual agent, not a stub.
-- **`AGENTS.md`** — note added that Hermes is now the real Nous Research
-  agent.
-
-### Code that did NOT change
-
-- The `HermesAdapter` REST/HMAC contract is preserved. The VPS endpoint
-  still receives `DelegationPayload` JSON with HMAC headers. Hermes-Agent
-  exposes a compatible adapter via its tool gateway.
-- The mock (`HermesMockAdapter`) stays for tests.
-- The legacy installer (`scripts/install_hermes_vps.sh`) is **kept** for
-  reference but its docstring now points users to the new installer.
-
-### Operational
-
-- Operator must run `install_hermes_agent_vps.sh` once on the VPS with
-  the API keys. The script prints the HMAC handshake key to paste into
-  the laptop's `.env`.
-- The Atlas-local Telegram bot is **disabled** once Hermes-Agent
-  registers the bot. Set `ATLAS_DISABLE_TELEGRAM=1` in Atlas's env.
-
-## Open questions
-
-- Does Hermes-Agent expose an HTTP API for inbound REST calls, or only
-  receive via the messaging gateways? If the former isn't yet provided,
-  the Atlas → Hermes pathway will use Hermes-Agent's "skill" mechanism
-  to expose a `/api/atlas/delegate` endpoint via a custom Python skill.
-  Tracked as follow-up.
-- The Ollama model choice (`qwen2.5:1.5b`) is a guess at "fits in a
-  CPX22's RAM and isn't useless". Tune after first deploy.
+- La continuidad remota depende de Tailscale/SSH, del proveedor elegido y del
+  servicio externo; Atlas debe degradar honestamente cuando fallen.
+- El secreto es simétrico: su compromiso exige rotación coordinada.
+- La verificación de transporte no sustituye una inferencia real ni una entrega
+  Telegram real.
+- Cambiar versión, dependencias o modelo requiere una nueva revisión; no se
+  sigue automáticamente `latest`.

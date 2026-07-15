@@ -58,24 +58,58 @@ class TelegramAuthorizer:
     Construible desde una lista directa o desde PermissionProfile.telegram_config().
     """
 
-    def __init__(self, allowed_chat_ids: list[int]) -> None:
+    def __init__(
+        self,
+        allowed_chat_ids: list[int],
+        *,
+        allowed_user_ids: list[int] | None = None,
+    ) -> None:
         self._allowed = {int(cid) for cid in allowed_chat_ids}
+        # En un chat privado, chat_id == user_id. Mantener esos IDs positivos
+        # conserva la configuración histórica. Los grupos usan IDs negativos y
+        # requieren además una identidad humana explícita: autorizar el grupo no
+        # autoriza automáticamente a todos sus miembros.
+        self._allowed_users = {cid for cid in self._allowed if cid > 0}
+        self._allowed_users.update(int(uid) for uid in (allowed_user_ids or []))
 
     @classmethod
     def from_permission_profile(cls, profile: Any) -> "TelegramAuthorizer":
         raw_cfg = profile.telegram_config
         cfg = raw_cfg() if callable(raw_cfg) else raw_cfg
         ids = list(cfg.get("authorized_chat_ids") or [])
+        user_ids = list(cfg.get("authorized_user_ids") or [])
         env_ids = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_IDS")
         if env_ids:
             for raw in env_ids.replace(";", ",").split(","):
                 raw = raw.strip()
                 if raw:
                     ids.append(int(raw))
-        return cls(ids)
+        env_user_ids = os.environ.get("TELEGRAM_USER_ID") or os.environ.get(
+            "TELEGRAM_USER_IDS"
+        )
+        if env_user_ids:
+            for raw in env_user_ids.replace(";", ",").split(","):
+                raw = raw.strip()
+                if raw:
+                    user_ids.append(int(raw))
+        return cls(ids, allowed_user_ids=user_ids)
 
     def is_allowed(self, chat_id: int) -> bool:
         return int(chat_id) in self._allowed
+
+    def is_update_allowed(self, chat_id: int, user_id: int | None) -> bool:
+        """Autoriza simultáneamente el destino y la identidad que actuó.
+
+        Telegram siempre incluye ``from.id`` en mensajes/callbacks de usuarios.
+        El fallback positivo cubre fixtures/updates privados antiguos; en grupos
+        la ausencia del remitente falla cerrada.
+        """
+        normalized_chat = int(chat_id)
+        if normalized_chat not in self._allowed:
+            return False
+        if user_id is None:
+            return normalized_chat > 0 and normalized_chat in self._allowed_users
+        return int(user_id) in self._allowed_users
 
     def allowed_ids(self) -> list[int]:
         return sorted(self._allowed)
@@ -239,12 +273,14 @@ class TelegramBot:
             return
         chat = message.get("chat") or {}
         chat_id = chat.get("id")
+        from_user = message.get("from") or {}
+        user_id = from_user.get("id")
         text = (message.get("text") or "").strip()
         if chat_id is None or not text:
             return
 
-        if not self._auth.is_allowed(int(chat_id)):
-            self._log_unauthorized(chat_id, text)
+        if not self._auth.is_update_allowed(int(chat_id), user_id):
+            self._log_unauthorized(chat_id, text, user_id=user_id)
             self._safe_send(chat_id, "Acceso denegado.")
             return
 
@@ -278,10 +314,15 @@ class TelegramBot:
         from_user = callback.get("from") or {}
         chat = (callback.get("message") or {}).get("chat") or {}
         chat_id = chat.get("id") or from_user.get("id")
+        user_id = from_user.get("id")
         data = callback.get("data") or ""
 
-        if chat_id is None or not self._auth.is_allowed(int(chat_id)):
-            self._log_unauthorized(chat_id or 0, f"callback:{data}")
+        if chat_id is None or not self._auth.is_update_allowed(int(chat_id), user_id):
+            self._log_unauthorized(
+                chat_id or 0,
+                f"callback:{data}",
+                user_id=user_id,
+            )
             try:
                 self._client.answer_callback_query(cb_id, "denegado")
             except TelegramAPIError:
@@ -385,6 +426,16 @@ class TelegramBot:
         intent = p.get("intent", "")
         reason = p.get("reason", "")
         text = f"Approval requerido\nIntent: {intent}\nMotivo: {reason}\nID: {task_id}"
+        mutations = p.get("pending_mutations") or []
+        for mutation in mutations[:5]:
+            preview = str(mutation.get("arguments_preview") or "")[:240]
+            digest = str(mutation.get("arguments_sha256") or "")[:12]
+            text += (
+                f"\n- {mutation.get('id')}:{mutation.get('name')} "
+                f"args={preview} sha256:{digest}"
+            )
+        if len(mutations) > 5:
+            text += f"\n- ... y {len(mutations) - 5} mutación(es) más; usa /pending."
         if self._passphrase_required():
             text += (
                 "\n\nPassphrase requerida: usa /approve <task_id> <passphrase> "
@@ -501,8 +552,16 @@ class TelegramBot:
                     f" ({it.get('reason','')})")
             muts = it.get("pending_mutations") or []
             if muts:
-                names = ", ".join(f"{m.get('id')}:{m.get('name')}" for m in muts)
-                line += f"\n    mutaciones: {names}"
+                line += "\n    mutaciones:"
+                for mutation in muts[:5]:
+                    preview = str(mutation.get("arguments_preview") or "")[:240]
+                    digest = str(mutation.get("arguments_sha256") or "")[:12]
+                    line += (
+                        f"\n      {mutation.get('id')}:{mutation.get('name')} "
+                        f"args={preview} sha256:{digest}"
+                    )
+                if len(muts) > 5:
+                    line += f"\n      ... y {len(muts) - 5} más"
             out.append(line)
         return "\n".join(out)
 
@@ -635,7 +694,13 @@ class TelegramBot:
         except TelegramAPIError:
             pass
 
-    def _log_unauthorized(self, chat_id: int, text: str) -> None:
+    def _log_unauthorized(
+        self,
+        chat_id: int,
+        text: str,
+        *,
+        user_id: int | None = None,
+    ) -> None:
         if self._merkle is None:
             return
         try:
@@ -644,7 +709,11 @@ class TelegramBot:
                 agent=self.AGENT,
                 result="rejected",
                 risk_level="medium",
-                payload={"chat_id": int(chat_id), "preview": text[:64]},
+                payload={
+                    "chat_id": int(chat_id),
+                    "user_id": int(user_id) if user_id is not None else None,
+                    "preview": text[:64],
+                },
             )
         except Exception:
             pass

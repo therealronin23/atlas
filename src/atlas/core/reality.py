@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -198,23 +199,56 @@ def _hermes_state() -> dict[str, Any]:
     base_url = os.environ.get("HERMES_BASE_URL", "").strip()
     api_key = os.environ.get("HERMES_API_KEY", "").strip()
     kanban_transport = os.environ.get("HERMES_KANBAN_TRANSPORT", "").strip().lower()
+    ssh_host = os.environ.get("HERMES_SSH_HOST", "").strip()
     local_takeover = os.environ.get("ATLAS_HERMES_LOCAL", "").strip().lower() in {"1", "true", "yes"}
     if kanban_transport:
         mode = f"kanban_{kanban_transport}"
-        reason = (
-            "HERMES_KANBAN_TRANSPORT is set; Atlas delegates through Hermes kanban. "
-            "Run hermes_smoke or a live delegation for runtime evidence"
-        )
+        if kanban_transport == "local":
+            configured = True
+            reason = (
+                "local Hermes kanban transport is configured; run a live delegation "
+                "for runtime evidence"
+            )
+        elif kanban_transport == "ssh" and ssh_host:
+            from atlas.hermes.kanban_bridge import ssh_destination_is_allowed  # noqa: PLC0415
+
+            configured = ssh_destination_is_allowed(ssh_host)
+            reason = (
+                "SSH Hermes kanban transport and private/Tailscale host are configured; "
+                "run a live delegation for runtime evidence"
+                if configured
+                else "HERMES_SSH_HOST must be a safe user@private-or-Tailscale destination"
+            )
+        elif kanban_transport == "ssh":
+            configured = False
+            reason = "HERMES_KANBAN_TRANSPORT=ssh requires HERMES_SSH_HOST"
+        else:
+            configured = False
+            reason = f"unsupported HERMES_KANBAN_TRANSPORT={kanban_transport!r}"
     elif base_url and api_key:
         mode = "configured"
-        reason = "HERMES_BASE_URL and HERMES_API_KEY are set; run hermes_smoke for live evidence"
+        configured = True
+        reason = (
+            "legacy HermesRestAdapter variables are set; only the legacy REST smoke "
+            "can verify that compatibility endpoint"
+        )
     elif local_takeover:
         mode = "local_takeover"
-        reason = "ATLAS_HERMES_LOCAL active; Hermes delegation runs locally"
+        configured = True
+        reason = "legacy ATLAS_HERMES_LOCAL is set; run a live delegation for runtime evidence"
     else:
         mode = "mock"
-        reason = "missing HERMES_BASE_URL/HERMES_API_KEY"
-    return {"mode": mode, "base_url_set": bool(base_url), "api_key_set": bool(api_key), "reason": reason}
+        configured = False
+        reason = "no native Hermes kanban transport or legacy REST contract configured"
+    return {
+        "mode": mode,
+        "configured": configured,
+        "live_verified": False,
+        "base_url_set": bool(base_url),
+        "api_key_set": bool(api_key),
+        "ssh_host_set": bool(ssh_host),
+        "reason": reason,
+    }
 
 
 def _llm_state() -> dict[str, Any]:
@@ -280,6 +314,7 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
     mcp = report["mcp"]
     merkle = report["workspace"]["merkle"]
     autonomy = report["autonomy"]
+    bwrap_available = shutil.which("bwrap") is not None
     return [
         {
             "name": "audit.merkle",
@@ -291,11 +326,15 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "name": "execution.command",
-            "status": "ready",
+            "status": "ready" if bwrap_available else "degraded",
             "trusted": True,
             "mutating": True,
             "reversible": False,
-            "evidence": "LayeredIsolationSandbox command path uses process_hardening",
+            "evidence": (
+                "bubblewrap is available; structured commands use the OS jail"
+                if bwrap_available
+                else "bubblewrap is missing; structured command execution will fail closed"
+            ),
         },
         {
             "name": "browser.computer_use",
@@ -307,7 +346,10 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "name": "hermes.delegation",
-            "status": "ready" if hermes["mode"] == "configured" else "degraded",
+            # Environment variables prove configuration, not reachability or a
+            # successful provider/Telegram round trip. A fresh smoke may report
+            # live evidence elsewhere, but this static collector never invents it.
+            "status": "configured" if hermes["configured"] else "degraded",
             "trusted": False,
             "mutating": True,
             "reversible": False,
@@ -326,8 +368,11 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
             "status": "configured" if mcp["enabled_count"] else "empty",
             "trusted": False,
             "mutating": True,
-            "reversible": True,
-            "evidence": f"enabled_servers={mcp['enabled_count']}",
+            "reversible": False,
+            "evidence": (
+                f"enabled_servers={mcp['enabled_count']}; unregister cannot undo "
+                "effects performed by third-party code"
+            ),
         },
         {
             "name": "self_improvement.cold_update",

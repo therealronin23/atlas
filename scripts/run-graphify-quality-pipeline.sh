@@ -3,6 +3,12 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+DOTENV_PATH="$ROOT_DIR/.env"
+if [[ -f "$DOTENV_PATH" && "${ATLAS_SAFE_DOTENV_FILE:-}" != "$DOTENV_PATH" ]]; then
+  export ATLAS_SAFE_DOTENV_FILE="$DOTENV_PATH"
+  exec python3 "$ROOT_DIR/scripts/safe_dotenv.py" "$DOTENV_PATH" -- \
+    bash "$(readlink -f "${BASH_SOURCE[0]}")" "$@"
+fi
 
 if [ ! -f ".venv/bin/activate" ]; then
   echo "ERROR: .venv not found. Activate the project virtualenv or create it first." >&2
@@ -10,12 +16,6 @@ if [ ! -f ".venv/bin/activate" ]; then
 fi
 
 source .venv/bin/activate
-
-if [ -f ".env" ]; then
-  set -a
-  source ".env"
-  set +a
-fi
 
 usage() {
   cat <<'EOF' >&2

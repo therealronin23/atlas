@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""
-Smoke test del HermesRestAdapter contra una instancia real.
+"""Smoke de compatibilidad del HermesRestAdapter legado.
+
+NO prueba el Hermes-Agent oficial, la skill atlas-twin, un proveedor ni
+Telegram. Este script muta la cola REST creando y cancelando una tarea.
 
 Uso:
-    HERMES_BASE_URL=https://hermes.tail-xxxxx.ts.net \
-    HERMES_API_KEY=<shared-secret> \
-    PYTHONPATH=src python scripts/hermes_smoke.py
+    PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+      .venv/bin/python scripts/hermes_smoke.py
 
 Comprueba:
   1) health_check responde

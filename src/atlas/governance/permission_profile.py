@@ -272,6 +272,11 @@ class PermissionProfile:
     def shell_allowlist(self) -> list[str]:
         return list(self._cfg.get("shell_allowlist", []))
 
+    @property
+    def git_inspect_root(self) -> Path | None:
+        """Único repositorio externo que `git -C` puede montar read-only."""
+        return self._git_inspect_root
+
     # ------------------------------------------------------------------
     # Privado
     # ------------------------------------------------------------------

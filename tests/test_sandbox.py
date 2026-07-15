@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from atlas.core.contracts import OperationalMode
-from atlas.security.bwrap_jail import BwrapUnavailableError
+from atlas.security.bwrap_jail import BwrapJail, BwrapResult, BwrapUnavailableError
 from atlas.security.sandbox import LayeredIsolationSandbox
 
 
@@ -165,8 +165,9 @@ class TestJailRouting:
         assert result.success is False
         assert "bwrap" in result.stderr.lower() or result.exit_code != 0
 
-    def test_normal_execute_without_omega_still_works(self, sandbox: LayeredIsolationSandbox) -> None:
-        """execute() en modo NORMAL (código interno de confianza) sigue usando _execute_normal."""
+    def test_normal_execute_also_routes_through_jail(self, sandbox: LayeredIsolationSandbox) -> None:
+        """El método público no debe ofrecer una ruta host para código Python."""
+        jail_calls: list[str] = []
         normal_calls: list[str] = []
 
         from atlas.security.sandbox import SandboxResult
@@ -178,6 +179,66 @@ class TestJailRouting:
                 duration_ms=1, operational_mode=OperationalMode.NORMAL,
             )
 
+        def fake_jail(code: str, *, timeout_s: int | None = None) -> SandboxResult:
+            jail_calls.append(code)
+            return SandboxResult(
+                success=True, stdout="ok", stderr="", exit_code=0,
+                duration_ms=1, operational_mode=OperationalMode.NORMAL,
+            )
+
+        sandbox.execute_in_jail = fake_jail  # type: ignore[method-assign]
         sandbox._execute_normal = fake_normal  # type: ignore[method-assign]
         sandbox.execute("x = 1", operational_mode=OperationalMode.NORMAL)
-        assert normal_calls == ["x = 1"]
+        assert jail_calls == ["x = 1"]
+        assert normal_calls == []
+
+
+class TestStructuredCommandJail:
+    def test_routes_command_to_bwrap_read_only_by_default(
+        self, sandbox: LayeredIsolationSandbox, tmp_path: Path,
+    ) -> None:
+        jail = MagicMock(spec=BwrapJail)
+        jail.run_command.return_value = BwrapResult(0, "ok\n", "", 2)
+        sandbox._bwrap = jail
+
+        result = sandbox.execute_command(["echo", "ok"], working_dir=tmp_path)
+
+        assert result.success is True
+        jail.run_command.assert_called_once_with(
+            ["echo", "ok"],
+            working_dir=tmp_path.resolve(),
+            working_dir_writable=False,
+            read_only_paths=(),
+            timeout_s=60,
+        )
+
+    def test_command_jail_fail_closed_without_bwrap(
+        self, sandbox: LayeredIsolationSandbox,
+    ) -> None:
+        sandbox._bwrap = None
+        with pytest.raises(BwrapUnavailableError):
+            sandbox.execute_command(["echo", "never"])
+
+    def test_declared_patch_input_and_write_scope_are_forwarded(
+        self, sandbox: LayeredIsolationSandbox, tmp_path: Path,
+    ) -> None:
+        input_file = tmp_path / "change.patch"
+        input_file.write_text("diff", encoding="utf-8")
+        jail = MagicMock(spec=BwrapJail)
+        jail.run_command.return_value = BwrapResult(0, "", "", 1)
+        sandbox._bwrap = jail
+
+        sandbox.execute_command(
+            ["patch", "--input", str(input_file)],
+            working_dir=tmp_path,
+            working_dir_writable=True,
+            read_only_paths=(input_file,),
+        )
+
+        jail.run_command.assert_called_once_with(
+            ["patch", "--input", str(input_file)],
+            working_dir=tmp_path.resolve(),
+            working_dir_writable=True,
+            read_only_paths=(input_file.resolve(),),
+            timeout_s=60,
+        )

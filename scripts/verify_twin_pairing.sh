@@ -1,118 +1,128 @@
 #!/usr/bin/env bash
-# ============================================================================
-# verify_twin_pairing.sh — Comprueba el estado de la conexión Atlas ↔ Hermes.
-#
-# Ejecutar desde el laptop (donde vive Atlas Core):
-#   bash scripts/verify_twin_pairing.sh
-#
-# Comprueba 6 cosas en orden:
-#   1. Tailscale up + VPS reachable
-#   2. Atlas Core local arranca y expone /api/health
-#   3. Hermes-Agent VPS está active (systemctl --user)
-#   4. Ollama VPS responde + listo (modelo cargado)
-#   5. Hermes-Agent puede ALCANZAR Atlas (tool atlas_twin)
-#   6. SOUL.md y config.yaml están donde deben + son legibles por Hermes
-# ============================================================================
-set -uo pipefail   # NOT -e: queremos seguir aunque algo falle
+# Read-only, evidence-producing Atlas <-> Hermes pairing verification.
+set -uo pipefail
+IFS=$'\n\t'
 
-VPS_HOST="${VPS_HOST:-100.108.132.116}"
-VPS_HOST_PUB="${VPS_HOST_PUB:-178.105.216.187}"
-ATLAS_DASHBOARD_URL="${ATLAS_DASHBOARD_URL:-http://100.85.236.58:7331}"
-HERMES_HOME=/root/.hermes
+readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+readonly ENV_FILE="${ENV_FILE:-${REPO_ROOT}/.env}"
+readonly TWIN_CLIENT="${REPO_ROOT}/scripts/hermes_skill_atlas_twin/atlas_twin.py"
+readonly VPS_USER="${VPS_USER:-root}"
+: "${VPS_HOST:?Set VPS_HOST to the verified Tailscale IP or MagicDNS name}"
+readonly VPS_HOST
+readonly REMOTE="${VPS_USER}@${VPS_HOST}"
+readonly REMOTE_CLIENT="/var/lib/hermes/.hermes/skills/atlas-twin/atlas_twin.py"
+readonly SSH_OPTIONS=(
+    -o BatchMode=yes
+    -o ConnectTimeout=8
+    -o StrictHostKeyChecking=yes
+    -o LogLevel=ERROR
+)
 
-pass() { echo "  ✅ $*"; }
-fail() { echo "  ❌ $*"; }
-warn() { echo "  ⚠️  $*"; }
+failures=0
+pass() { printf '  PASS  %s\n' "$*"; }
+fail() { printf '  FAIL  %s\n' "$*" >&2; failures=$((failures + 1)); }
+note() { printf '  NOTE  %s\n' "$*"; }
 
-# ---------------------------------------------------------------------------
-echo "── 1. Tailscale ──"
-if tailscale status 2>&1 | grep -q hermes-vps; then
-    pass "Tailscale mesh activa (hermes-vps visible)"
-else
-    fail "hermes-vps no en mesh (¿tailscale down?)"
+if [[ ! "${VPS_USER}" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+    fail "VPS_USER is invalid"
 fi
-if timeout 3 ping -c 1 -W 2 "${VPS_HOST}" >/dev/null 2>&1; then
-    pass "VPS responde por Tailscale ($VPS_HOST)"
-else
-    fail "VPS no responde por Tailscale"
+if [[ ! "${VPS_HOST}" =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]]; then
+    fail "VPS_HOST is invalid"
 fi
+if ! python3 - "${VPS_HOST}" <<'PY'
+import ipaddress
+import sys
 
-# ---------------------------------------------------------------------------
-echo ""
-echo "── 2. Atlas Core local (laptop) ──"
-ATLAS_HEALTH=$(curl -s --max-time 3 "${ATLAS_DASHBOARD_URL}/api/health" 2>/dev/null || echo "")
-if [[ -n "$ATLAS_HEALTH" ]]; then
-    pass "Atlas dashboard /api/health responde"
-    echo "$ATLAS_HEALTH" | python3 -c "import sys,json; h=json.load(sys.stdin); [print(f'     {k}: {h[k]}') for k in ('version','merkle_chain_ok','telegram_running','hermes_reachable')] " 2>/dev/null || true
-else
-    warn "Atlas no está corriendo en :7331. Para arrancarlo:"
-    echo "       cd ~/proyectos/atlas-core && set -a; source .env; set +a; nohup .venv/bin/atlas serve > /tmp/atlas.log 2>&1 &"
+host = sys.argv[1].casefold().rstrip(".")
+if host.endswith(".ts.net"):
+    raise SystemExit(0)
+try:
+    address = ipaddress.ip_address(host)
+except ValueError:
+    raise SystemExit(1)
+raise SystemExit(0 if address in ipaddress.ip_network("100.64.0.0/10") else 1)
+PY
+then
+    fail "VPS_HOST is not a Tailscale address"
 fi
 
-# ---------------------------------------------------------------------------
-echo ""
-echo "── 3. Hermes-Agent en VPS ──"
-HERMES_STATE=$(ssh -o ConnectTimeout=5 root@${VPS_HOST_PUB} \
-    'export XDG_RUNTIME_DIR=/run/user/0; systemctl --user is-active hermes-gateway.service' 2>&1 | tail -1)
-if [[ "$HERMES_STATE" == "active" ]]; then
-    pass "hermes-gateway.service: active"
+printf '%s\n' 'Atlas signed readiness'
+if [[ ! -f "${ENV_FILE}" || -L "${ENV_FILE}" ]]; then
+    fail "local .env is missing or symlinked"
+elif local_health="$(python3 "${TWIN_CLIENT}" --env-file "${ENV_FILE}" health 2>&1)"; then
+    if python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["ok"] and d["merkle_chain_ok"]' \
+        <<<"${local_health}"; then
+        pass "Atlas accepted a fresh signed nonce and its Merkle chain is integral"
+    else
+        fail "Atlas health response did not prove readiness"
+    fi
 else
-    fail "hermes-gateway.service: $HERMES_STATE"
+    fail "Atlas signed health failed: ${local_health}"
 fi
 
-# ---------------------------------------------------------------------------
-echo ""
-echo "── 4. Ollama en VPS ──"
-OLLAMA_LIST=$(ssh -o ConnectTimeout=5 root@${VPS_HOST_PUB} 'ollama list 2>&1' | tail -5)
-if echo "$OLLAMA_LIST" | grep -qE "qwen|llama|phi"; then
-    pass "Ollama tiene modelo cargado:"
-    echo "$OLLAMA_LIST" | sed 's/^/     /'
+printf '%s\n' 'Hermes pinned service'
+if service_state="$(ssh "${SSH_OPTIONS[@]}" "${REMOTE}" \
+    'systemctl is-active hermes-agent.service' 2>&1)" \
+    && [[ "${service_state}" == "active" ]]; then
+    pass "hermes-agent.service is active"
 else
-    fail "Ollama sin modelo: $OLLAMA_LIST"
-fi
-OLLAMA_API=$(ssh -o ConnectTimeout=5 root@${VPS_HOST_PUB} \
-    'curl -s --max-time 2 http://127.0.0.1:11434/api/version 2>&1' | head -1)
-if echo "$OLLAMA_API" | grep -q version; then
-    pass "Ollama API responde: $OLLAMA_API"
-else
-    fail "Ollama API no responde: $OLLAMA_API"
+    fail "hermes-agent.service is not active: ${service_state:-unreachable}"
 fi
 
-# ---------------------------------------------------------------------------
-echo ""
-echo "── 5. ¿Hermes puede llegar a Atlas? (twin pairing reverso) ──"
-HERMES_TO_ATLAS=$(ssh -o ConnectTimeout=5 root@${VPS_HOST_PUB} \
-    "curl -s -o /dev/null -w '%{http_code}' --max-time 5 ${ATLAS_DASHBOARD_URL}/api/health 2>&1" | tail -1)
-if [[ "$HERMES_TO_ATLAS" == "200" ]]; then
-    pass "Hermes-VPS → Atlas-laptop /api/health = 200 (Tailscale OK)"
-elif [[ "$HERMES_TO_ATLAS" == "000" ]]; then
-    warn "Hermes-VPS NO alcanza Atlas-laptop. Causa probable: atlas serve no corriendo"
-    echo "       Arranca atlas en el laptop primero (paso 2)"
+expected_commit="9de9c25f620ff7f1ce0fd5457d596052d5159596"
+if actual_commit="$(ssh "${SSH_OPTIONS[@]}" "${REMOTE}" \
+    'git -C /opt/hermes-agent rev-parse HEAD' 2>&1)" \
+    && [[ "${actual_commit}" == "${expected_commit}" ]]; then
+    pass "Hermes code matches the audited immutable commit"
 else
-    warn "Hermes-VPS → Atlas: HTTP $HERMES_TO_ATLAS"
+    fail "Hermes release commit mismatch or unreadable"
 fi
 
-# ---------------------------------------------------------------------------
-echo ""
-echo "── 6. Identity / SOUL en VPS ──"
-ssh -o ConnectTimeout=5 root@${VPS_HOST_PUB} '
-ls -la /root/.hermes/SOUL.md /root/.hermes/config.yaml 2>&1 | head -3
-echo "---"
-echo "SOUL.md primeras 5 líneas:"
-head -5 /root/.hermes/SOUL.md 2>&1
-echo "---"
-echo "Identity en config.yaml:"
-grep -A4 "^identity:" /root/.hermes/config.yaml 2>&1
-' 2>&1 | sed 's/^/  /'
+if service_identity="$(ssh "${SSH_OPTIONS[@]}" "${REMOTE}" \
+    "systemctl show hermes-agent.service -p User -p NoNewPrivileges --value" 2>&1)" \
+    && [[ "${service_identity}" == *"hermes"* && "${service_identity}" == *"yes"* ]]; then
+    pass "Hermes runs as the dedicated user with no-new-privileges"
+else
+    fail "Hermes service identity/hardening check failed"
+fi
 
-# ---------------------------------------------------------------------------
-echo ""
-echo "============= RESUMEN ============="
-echo "Ahora pregúntale al bot en Telegram (lenguaje natural):"
-echo ""
-echo "  ▶ 'usa el tool atlas_twin para consultar /api/health de Atlas'"
-echo "    → Si responde con merkle_chain_ok, gate_d_enabled, etc → ✅ twin OK"
-echo ""
-echo "  ▶ 'quién eres? cuáles son tus 3 reglas inviolables?'"
-echo "    → Si menciona 'Atlas twin' y Governance L0 → ✅ SOUL.md cargado"
-echo "    → Si dice solo 'Nous Research bot' → ❌ Hermes ignora SOUL.md"
+printf '%s\n' 'Hermes to Atlas signed channel'
+skill_trusted=0
+local_skill_sha="$(sha256sum "${TWIN_CLIENT}" | awk '{print $1}')"
+if remote_skill_evidence="$(ssh "${SSH_OPTIONS[@]}" "${REMOTE}" \
+    "sha256sum '${REMOTE_CLIENT}'; stat -c '%U:%G %a' '${REMOTE_CLIENT}'" 2>&1)"; then
+    remote_skill_sha="$(awk 'NR == 1 {print $1}' <<<"${remote_skill_evidence}")"
+    remote_skill_mode="$(awk 'NR == 2 {print $0}' <<<"${remote_skill_evidence}")"
+    if [[ "${remote_skill_sha}" == "${local_skill_sha}" \
+        && "${remote_skill_mode}" == "root:hermes 750" ]]; then
+        pass "remote atlas-twin client matches the local audited artifact and is root-owned"
+        skill_trusted=1
+    else
+        fail "remote atlas-twin client hash or ownership differs from the audited artifact"
+    fi
+else
+    fail "remote atlas-twin client cannot be verified"
+fi
+
+remote_probe="runuser -u hermes -- env HOME=/var/lib/hermes HERMES_HOME=/var/lib/hermes/.hermes python3 '${REMOTE_CLIENT}' health"
+if [[ ${skill_trusted} -ne 1 ]]; then
+    fail "signed remote probe skipped because its client artifact is untrusted"
+elif remote_health="$(ssh "${SSH_OPTIONS[@]}" "${REMOTE}" "${remote_probe}" 2>&1)"; then
+    if python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["ok"] and d["governance_ok"]' \
+        <<<"${remote_health}"; then
+        pass "Hermes reached Atlas through the real signed skill"
+    else
+        fail "remote twin response did not prove Atlas governance readiness"
+    fi
+else
+    fail "Hermes could not complete the signed twin probe: ${remote_health}"
+fi
+
+note "This verifier does not spend provider tokens or send a Telegram message."
+note "Provider inference and Telegram delivery remain unverified until their explicit live smokes pass."
+
+if [[ ${failures} -ne 0 ]]; then
+    printf 'Twin verification failed: %d check(s).\n' "${failures}" >&2
+    exit 1
+fi
+printf '%s\n' 'Twin verification passed for the signed transport and service boundary.'

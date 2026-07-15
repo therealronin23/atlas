@@ -18,10 +18,10 @@ from rich import print as rprint
 from typing import TYPE_CHECKING, Any
 
 from atlas.core.contracts import TaskSource
-from atlas.core.orchestrator import Orchestrator
 from atlas import __version__
 
 if TYPE_CHECKING:
+    from atlas.core.orchestrator import Orchestrator
     from atlas.memory.block_memory import BlockMemory
     from atlas.security.writer_lock import MerkleWriterLock
 
@@ -32,6 +32,8 @@ _orch: Orchestrator | None = None
 def get_orchestrator() -> Orchestrator:
     global _orch
     if _orch is None:
+        from atlas.core.orchestrator import Orchestrator  # noqa: PLC0415
+
         _orch = Orchestrator()
     return _orch
 
@@ -160,6 +162,20 @@ def pending() -> None:
             str(item.get("intent") or ""),
         )
     console.print(table)
+    details = [
+        mutation
+        for item in items
+        for mutation in (item.get("pending_mutations") or [])
+    ]
+    if details:
+        console.print("[bold]Argumentos de mutación (redactados):[/bold]")
+        for mutation in details:
+            preview = str(mutation.get("arguments_preview") or "")
+            digest = str(mutation.get("arguments_sha256") or "")[:12]
+            console.print(
+                f"  {mutation.get('id')}:{mutation.get('name')} "
+                f"args={preview} sha256:{digest}"
+            )
 
 
 @cli.command("approve")
@@ -1021,7 +1037,9 @@ def os_bridge(host: str, port: int) -> None:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[3]
+    from atlas.runtime_paths import atlas_data_root  # noqa: PLC0415
+
+    return atlas_data_root()
 
 
 @cli.group("connections")

@@ -18,8 +18,8 @@ Al final, verify_chain en MerkleLogger + cada cadena de TimeTravel,
 y un resumen con latencias, paths del classifier y stats del cache.
 
 Uso:
-    set -a && source .env && set +a
-    PYTHONPATH=src python scripts/pipeline_smoke.py
+    PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+      .venv/bin/python scripts/pipeline_smoke.py
 """
 
 from __future__ import annotations

@@ -22,6 +22,8 @@ from __future__ import annotations
 import os
 import random
 import time
+import importlib
+import importlib.util
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -41,22 +43,22 @@ import logging as _logging  # noqa: E402
 _logging.getLogger("LiteLLM").setLevel(_logging.ERROR)
 _logging.getLogger("litellm").setLevel(_logging.ERROR)
 
-try:
-    from dotenv import load_dotenv as _load_dotenv
-    _load_dotenv()
-except ImportError:
-    pass
+litellm: Any | None = None
+_HAS_LITELLM = importlib.util.find_spec("litellm") is not None
 
-try:
-    import litellm
-    _HAS_LITELLM = True
-    try:
-        litellm.suppress_debug_info = True
-    except Exception:  # pragma: no cover
-        pass
-except ImportError:  # pragma: no cover
-    litellm = None  # type: ignore[assignment]
-    _HAS_LITELLM = False
+
+def _litellm_module() -> Any:
+    """Import LiteLLM only for a real provider call."""
+    global litellm
+    if litellm is None:
+        if not _HAS_LITELLM:
+            raise RuntimeError("litellm no instalado")
+        litellm = importlib.import_module("litellm")
+        try:
+            setattr(litellm, "suppress_debug_info", True)
+        except Exception:  # pragma: no cover
+            pass
+    return litellm
 
 
 RATE_LIMIT_COOLDOWN_S = 60.0
@@ -726,7 +728,7 @@ class InferenceHub:
             if request.context:
                 messages.insert(0, {"role": "system", "content": request.context})
 
-        assert litellm is not None
+        llm = _litellm_module()
         extra_kwargs: dict[str, Any] = {}
         if provider.api_key_env is None:
             extra_kwargs["api_base"] = provider.base_url
@@ -754,7 +756,7 @@ class InferenceHub:
         last_exc: BaseException | None = None
         for attempt in range(INFER_MAX_RETRIES + 1):
             try:
-                completion = litellm.completion(
+                completion = llm.completion(
                     model=provider.litellm_model,
                     messages=messages,
                     max_tokens=request.max_tokens,

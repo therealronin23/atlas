@@ -13,6 +13,7 @@ backstop cuando la capability transporta codigo Python a ejecutar.
 from __future__ import annotations
 
 import http.client
+import ipaddress
 import socket
 import ssl
 import urllib.error
@@ -20,6 +21,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+from typing import IO
 
 from atlas.logging.merkle_logger import MerkleLogger
 from atlas.security.ast_guard import ASTGuard
@@ -103,7 +105,7 @@ class _PinnedHTTPSHandler(urllib.request.HTTPSHandler):
         )
 
 
-class _PinnedHTTPHandler(urllib.request.AbstractHTTPHandler):
+class _PinnedHTTPHandler(urllib.request.HTTPHandler):
     def __init__(self, pinned_ip: str) -> None:
         super().__init__()
         self._pinned_ip = pinned_ip
@@ -117,23 +119,64 @@ class _PinnedHTTPHandler(urllib.request.AbstractHTTPHandler):
     http_request = urllib.request.AbstractHTTPHandler.do_request_
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Expone las respuestas 30x al executor; nunca sigue saltos por su cuenta."""
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: http.client.HTTPMessage,
+        newurl: str,
+    ) -> None:
+        del req, fp, code, msg, headers, newurl
+        return None
+
+
 def _build_opener_with_pinned_ip(
     pinned_ip: str | None,
     url: str,
     timeout_s: int,
 ) -> urllib.request.OpenerDirector:
-    """Construye un opener que conecta a pinned_ip si está disponible.
+    """Construye un opener de un solo salto, sin proxy ni redirects automáticos."""
+    del timeout_s
+    parsed = urllib.parse.urlsplit(url)
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"}:
+        raise ExecutorError(f"esquema de transporte no permitido: {scheme or '<vacío>'}")
 
-    Si pinned_ip es None (host ya era IP literal), devuelve el opener por
-    defecto sin modificaciones.
-    """
-    if pinned_ip is None:
-        return urllib.request.build_opener()
-    scheme = urllib.parse.urlparse(url).scheme
+    host = parsed.hostname
+    if not host:
+        raise ExecutorError("URL de red sin hostname")
+    selected_ip = pinned_ip
+    if selected_ip is None:
+        try:
+            ipaddress.ip_address(host)
+        except ValueError as exc:
+            raise ExecutorError(
+                f"SSRF check permitido sin IP fijada para hostname: {host}"
+            ) from exc
+        selected_ip = host
+    try:
+        ipaddress.ip_address(selected_ip)
+    except ValueError as exc:
+        raise ExecutorError(f"IP fijada inválida: {selected_ip}") from exc
+
+    common_handlers: tuple[urllib.request.BaseHandler, ...] = (
+        urllib.request.ProxyHandler({}),
+        _NoRedirectHandler(),
+    )
     if scheme == "https":
-        return urllib.request.build_opener(_PinnedHTTPSHandler(pinned_ip))
-    # http
-    return urllib.request.build_opener(_PinnedHTTPHandler(pinned_ip))
+        return urllib.request.build_opener(
+            *common_handlers,
+            _PinnedHTTPSHandler(selected_ip),
+        )
+    return urllib.request.build_opener(
+        *common_handlers,
+        _PinnedHTTPHandler(selected_ip),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +208,9 @@ class AtlasExecutor:
     """
 
     AGENT = "atlas.executor"
+    MAX_REDIRECTS = 5
+    MAX_REDIRECT_LOCATION_BYTES = 8 * 1024
+    REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
 
     def __init__(
         self,
@@ -291,40 +337,109 @@ class AtlasExecutor:
                 f"SSRF check bloqueado en el sink: {sink_decision.reason}"
             )
 
-        req_headers = dict(headers or {})
+        req_headers = {
+            key: value
+            for key, value in (headers or {}).items()
+            if key.lower() not in {"host", "proxy-authorization"}
+        }
         req_headers.setdefault("User-Agent", "AtlasCore/0.3")
 
-        # Pin a nivel de CONEXIÓN (no de URL) para evitar segunda resolución DNS (TOCTOU).
-        # Conectamos a la IP ya validada por el SSRF bridge, pero la URL y el SNI/cert
-        # validation usan siempre el hostname original → TLS funciona correctamente.
-        pinned_ip = sink_decision.pinned_ip
-        opener = _build_opener_with_pinned_ip(pinned_ip, cap.url, timeout_s)
+        current_url = cap.url
+        current_decision = sink_decision
+        redirect_count = 0
 
-        request = urllib.request.Request(
-            cap.url,
-            data=body,
-            method=cap.method,
-            headers=req_headers,
-        )
+        while True:
+            # Cada salto usa exclusivamente la IP devuelta por la validación de
+            # ese mismo URL. La URL original conserva Host y SNI correctos.
+            opener = _build_opener_with_pinned_ip(
+                current_decision.pinned_ip,
+                current_url,
+                timeout_s,
+            )
+            request = urllib.request.Request(
+                current_url,
+                data=body,
+                method=cap.method,
+                headers=req_headers,
+            )
 
-        try:
-            with opener.open(request, timeout=timeout_s) as resp:
-                response_bytes = resp.read(cap.max_response_bytes + 1)
-                truncated = len(response_bytes) > cap.max_response_bytes
-                if truncated:
-                    response_bytes = response_bytes[: cap.max_response_bytes]
-                response_headers = {k: v for k, v in resp.headers.items()}
-                status = resp.getcode() or 0
-        except urllib.error.HTTPError as e:
-            # HTTP error con respuesta — log + raise como ExecutorError
-            self._log_network_failure(cap, f"HTTPError {e.code}")
-            raise ExecutorError(f"HTTP {e.code} desde {cap.url}: {e.reason}") from e
-        except urllib.error.URLError as e:
-            self._log_network_failure(cap, str(e))
-            raise ExecutorError(f"error de red {cap.url}: {e.reason}") from e
-        except TimeoutError as e:
-            self._log_network_failure(cap, "timeout")
-            raise ExecutorError(f"timeout tras {timeout_s}s en {cap.url}") from e
+            try:
+                with opener.open(request, timeout=timeout_s) as resp:
+                    response_bytes = resp.read(cap.max_response_bytes + 1)
+                    truncated = len(response_bytes) > cap.max_response_bytes
+                    if truncated:
+                        response_bytes = response_bytes[: cap.max_response_bytes]
+                    response_headers = {k: v for k, v in resp.headers.items()}
+                    status = resp.getcode() or 0
+                break
+            except urllib.error.HTTPError as e:
+                location = e.headers.get("Location")
+                if e.code in self.REDIRECT_STATUS_CODES and location:
+                    e.close()
+                    if redirect_count >= self.MAX_REDIRECTS:
+                        reason = f"demasiados redirects (máximo {self.MAX_REDIRECTS})"
+                        self._log_network_failure(cap, reason)
+                        raise ExecutorError(reason) from e
+                    if cap.method not in {"GET", "HEAD"}:
+                        reason = f"redirect no permitido para método {cap.method}"
+                        self._log_network_failure(cap, reason)
+                        raise ExecutorError(reason) from e
+                    if len(location.encode("utf-8")) > self.MAX_REDIRECT_LOCATION_BYTES:
+                        reason = "Location de redirect excede el límite permitido"
+                        self._log_network_failure(cap, reason)
+                        raise ExecutorError(reason) from e
+
+                    next_url = urllib.parse.urljoin(current_url, location)
+                    current_scheme = urllib.parse.urlsplit(current_url).scheme.lower()
+                    next_scheme = urllib.parse.urlsplit(next_url).scheme.lower()
+                    if next_scheme != current_scheme:
+                        reason = (
+                            "cambio de esquema en redirect bloqueado: "
+                            f"{current_scheme} -> {next_scheme or '<vacío>'}"
+                        )
+                        self._log_network_failure(cap, reason)
+                        raise ExecutorError(reason) from e
+
+                    redirect_decision = self._ssrf_bridge.check(next_url)
+                    if not redirect_decision.allowed:
+                        self._merkle.log(
+                            action="network.ssrf_blocked",
+                            agent=self.AGENT,
+                            result="blocked",
+                            risk_level="high",
+                            payload={
+                                "url": next_url,
+                                "source_url": current_url,
+                                "stage": "redirect",
+                                "reason": redirect_decision.reason,
+                            },
+                        )
+                        raise ExecutorError(
+                            f"SSRF bloqueado en redirect: {redirect_decision.reason}"
+                        ) from e
+                    if redirect_decision.domain.lower() != sink_decision.domain.lower():
+                        reason = (
+                            "cambio de host en redirect bloqueado por la capability: "
+                            f"{sink_decision.domain} -> {redirect_decision.domain}"
+                        )
+                        self._log_network_failure(cap, reason)
+                        raise ExecutorError(reason) from e
+
+                    redirect_count += 1
+                    current_url = next_url
+                    current_decision = redirect_decision
+                    continue
+
+                self._log_network_failure(cap, f"HTTPError {e.code}")
+                raise ExecutorError(
+                    f"HTTP {e.code} desde {current_url}: {e.reason}"
+                ) from e
+            except urllib.error.URLError as e:
+                self._log_network_failure(cap, str(e))
+                raise ExecutorError(f"error de red {current_url}: {e.reason}") from e
+            except TimeoutError as e:
+                self._log_network_failure(cap, "timeout")
+                raise ExecutorError(f"timeout tras {timeout_s}s en {current_url}") from e
 
         self._merkle.log(
             action="network.request",
@@ -338,6 +453,8 @@ class AtlasExecutor:
                 "status_code": status,
                 "bytes_received": len(response_bytes),
                 "truncated": truncated,
+                "final_url": current_url,
+                "redirect_count": redirect_count,
             },
         )
         return NetworkResponse(
@@ -396,28 +513,41 @@ class AtlasExecutor:
         # Delegamos al sandbox para la ejecucion fisica.
         # Si el capability transporta código Python, usamos el jail OS-level
         # (ADR-055). Fail-closed: sin bwrap, la ejecución se rechaza.
-        if cap.code is not None:
-            try:
+        try:
+            if cap.code is not None:
                 result = self._sandbox.execute_in_jail(
                     cap.code,
                     timeout_s=cap.timeout_s,
                 )
-            except BwrapUnavailableError as exc:
-                self._merkle.log(
-                    action="exec.jail_unavailable",
-                    agent=self.AGENT,
-                    result="blocked",
-                    risk_level="high",
-                    payload={"command": cap.command, "reason": str(exc)},
+            else:
+                try:
+                    writable, read_only_paths = self._structured_command_scope(cap)
+                except ExecutorError as exc:
+                    self._merkle.log(
+                        action="exec.scope_denied",
+                        agent=self.AGENT,
+                        result="blocked",
+                        risk_level="high",
+                        payload={"command": cap.command, "reason": str(exc)},
+                    )
+                    raise
+                full_command = [cap.command, *cap.args]
+                result = self._sandbox.execute_command(
+                    command=full_command,
+                    working_dir=cap.working_dir,
+                    timeout_s=cap.timeout_s,
+                    working_dir_writable=writable,
+                    read_only_paths=read_only_paths,
                 )
-                raise ExecutorError(str(exc)) from exc
-        else:
-            full_command = [cap.command, *cap.args]
-            result = self._sandbox.execute_command(
-                command=full_command,
-                working_dir=cap.working_dir,
-                timeout_s=cap.timeout_s,
+        except BwrapUnavailableError as exc:
+            self._merkle.log(
+                action="exec.jail_unavailable",
+                agent=self.AGENT,
+                result="blocked",
+                risk_level="high",
+                payload={"command": cap.command, "reason": str(exc)},
             )
+            raise ExecutorError(str(exc)) from exc
 
         self._merkle.log(
             action="exec.command",
@@ -435,6 +565,61 @@ class AtlasExecutor:
             },
         )
         return result
+
+    def _structured_command_scope(
+        self, cap: ExecCapability,
+    ) -> tuple[bool, tuple[Path, ...]]:
+        """Deriva mounts mínimos del capability ya revalidado.
+
+        Todos los comandos son read-only salvo `patch`. Un patch solo obtiene
+        escritura sobre su cwd y lectura sobre los ficheros declarados mediante
+        `-i/--input`. `git -C` recibe exclusivamente el repo fijado por el perfil.
+        """
+        read_only: list[Path] = []
+        writable = cap.command == "patch"
+
+        if cap.command == "git" and len(cap.args) >= 2 and cap.args[0] == "-C":
+            root = self._issuer.profile.git_inspect_root
+            requested = Path(cap.args[1]).expanduser().resolve()
+            if root is None or requested != root:
+                raise ExecutorError("git -C no coincide con git_inspect_root")
+            if not root.is_dir():
+                raise ExecutorError(f"git_inspect_root no existe: {root}")
+            read_only.append(root)
+
+        if cap.command == "patch":
+            inputs: list[str] = []
+            index = 0
+            while index < len(cap.args):
+                arg = cap.args[index]
+                if arg in {"-i", "--input"}:
+                    if index + 1 >= len(cap.args):
+                        raise ExecutorError(f"entrada patch incompleta: {arg}")
+                    inputs.append(cap.args[index + 1])
+                    index += 2
+                    continue
+                if arg.startswith("--input="):
+                    inputs.append(arg.split("=", 1)[1])
+                elif arg.startswith("-i") and len(arg) > 2:
+                    inputs.append(arg[2:])
+                index += 1
+
+            for raw in inputs:
+                candidate = Path(raw).expanduser()
+                if not candidate.is_absolute():
+                    candidate = cap.working_dir / candidate
+                try:
+                    resolved = candidate.resolve(strict=True)
+                except (OSError, RuntimeError) as exc:
+                    raise ExecutorError(f"entrada patch no existe: {candidate}") from exc
+                decision = self._issuer.profile.evaluate_path(str(resolved), write=False)
+                if not decision.allowed:
+                    raise ExecutorError(f"entrada patch rechazada: {decision.reason}")
+                if not resolved.is_file():
+                    raise ExecutorError(f"entrada patch no es fichero regular: {resolved}")
+                read_only.append(resolved)
+
+        return writable, tuple(dict.fromkeys(read_only))
 
     # ------------------------------------------------------------------
     # Helpers privados

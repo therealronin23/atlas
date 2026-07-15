@@ -8,7 +8,8 @@ INSTALL_UNDERSTAND_ANYTHING=false
 INSTALL_NEO4J_IMAGE=false
 START_NEO4J=false
 NEO4J_CONTAINER_NAME="atlas-neo4j"
-NEO4J_PASSWORD="${NEO4J_PASSWORD:-atlasneo4j}"
+NEO4J_PASSWORD="${NEO4J_PASSWORD:-}"
+NEO4J_IMAGE="${NEO4J_IMAGE:-neo4j:2026.06.0}"
 UNDERSTAND_ANYTHING_DIR="tools/understand-anything"
 
 usage() {
@@ -16,21 +17,22 @@ usage() {
 Usage: ./scripts/install-knowledge-stack.sh [options]
 
 Options:
-  --deps                    Install GraphRAG dependencies in .venv (graphiti, neo4j Python driver)
-  --understand-anything     Clone the Understand-Anything repo for local reference/use
-  --neo4j-image             Pull the Neo4j Docker image for GraphRAG/Graphify import
-  --start-neo4j             Start a local Neo4j container using Docker
+  --deps                    Install GraphRAG dependencies in .venv
+  --understand-anything     Clone Understand-Anything for local reference/use
+  --neo4j-image             Pull the pinned Neo4j Docker image
+  --start-neo4j             Start a loopback-only local Neo4j container
   --all                     Run all install tasks
   -h, --help                Show this help text
 
 Environment:
-  NEO4J_PASSWORD            Neo4j password for local container (default: atlasneo4j)
+  NEO4J_PASSWORD            Required for --start-neo4j (minimum 16 characters)
+  NEO4J_IMAGE               Pinned image override (default: neo4j:2026.06.0)
 EOF
-  exit 1
 }
 
 if [ "$#" -eq 0 ]; then
   usage
+  exit 2
 fi
 
 while [ "$#" -gt 0 ]; do
@@ -55,68 +57,81 @@ while [ "$#" -gt 0 ]; do
       ;;
     -h|--help)
       usage
+      exit 0
       ;;
     *)
       echo "Unknown option: $1" >&2
       usage
+      exit 2
       ;;
   esac
   shift
 done
 
-if [ ! -f ".venv/bin/activate" ]; then
-  echo "ERROR: .venv not found. Create the project virtualenv first." >&2
-  exit 1
-fi
-
-source .venv/bin/activate
-
 if [ "$INSTALL_DEPS" = true ]; then
-  echo "Installing GraphRAG dependencies into .venv..."
-  python -m pip install --upgrade pip setuptools wheel
-  python -m pip install graphiti==0.1.13 neo4j==6.2.0
+  if [ ! -x .venv/bin/python ]; then
+    echo "ERROR: .venv/bin/python is unavailable." >&2
+    exit 1
+  fi
+  echo "Installing pinned GraphRAG dependencies into .venv..."
+  .venv/bin/python -m pip install graphiti==0.1.13 neo4j==6.2.0
   echo "Dependencies installed: graphiti, neo4j."
 fi
 
 if [ "$INSTALL_UNDERSTAND_ANYTHING" = true ]; then
   if [ -d "$UNDERSTAND_ANYTHING_DIR" ]; then
-    echo "Understand-Anything repository already exists at $UNDERSTAND_ANYTHING_DIR."
+    echo "Understand-Anything already exists at $UNDERSTAND_ANYTHING_DIR."
   else
     echo "Cloning Understand-Anything into $UNDERSTAND_ANYTHING_DIR..."
     mkdir -p "$(dirname "$UNDERSTAND_ANYTHING_DIR")"
     git clone https://github.com/Egonex-AI/Understand-Anything.git "$UNDERSTAND_ANYTHING_DIR"
   fi
-  echo "Understand-Anything is available at $UNDERSTAND_ANYTHING_DIR. Use Claude Code plugin install commands in the repo if desired."
 fi
 
 if [ "$INSTALL_NEO4J_IMAGE" = true ] || [ "$START_NEO4J" = true ]; then
   if ! command -v docker >/dev/null 2>&1; then
-    echo "ERROR: Docker is required to pull or start Neo4j." >&2
+    echo "ERROR: Docker is required for Neo4j setup." >&2
     exit 1
   fi
 fi
 
 if [ "$INSTALL_NEO4J_IMAGE" = true ]; then
-  echo "Pulling Neo4j Docker image..."
-  docker pull neo4j:latest
-  echo "Neo4j Docker image is ready."
+  echo "Pulling pinned Neo4j image $NEO4J_IMAGE..."
+  docker pull "$NEO4J_IMAGE"
 fi
 
 if [ "$START_NEO4J" = true ]; then
-  if docker ps --format '{{.Names}}' | grep -qx "$NEO4J_CONTAINER_NAME"; then
-    echo "Neo4j container '$NEO4J_CONTAINER_NAME' is already running."
-  else
-    if docker ps -a --format '{{.Names}}' | grep -qx "$NEO4J_CONTAINER_NAME"; then
-      echo "Starting existing Neo4j container '$NEO4J_CONTAINER_NAME'..."
-      docker start "$NEO4J_CONTAINER_NAME"
-    else
-      echo "Starting new Neo4j container '$NEO4J_CONTAINER_NAME'..."
-      docker run -d --name "$NEO4J_CONTAINER_NAME" -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH="neo4j/$NEO4J_PASSWORD" neo4j:latest
-    fi
+  if [ -z "$NEO4J_PASSWORD" ]; then
+    echo "ERROR: NEO4J_PASSWORD is required for --start-neo4j." >&2
+    exit 1
   fi
-  echo "Neo4j is available at bolt://localhost:7687 with user 'neo4j'. Set NEO4J_PASSWORD to $NEO4J_PASSWORD or export a custom password before running this script."
-fi
+  if [ "${#NEO4J_PASSWORD}" -lt 16 ]; then
+    echo "ERROR: NEO4J_PASSWORD must contain at least 16 characters." >&2
+    exit 1
+  fi
 
-if [ "$INSTALL_DEPS" = false ] && [ "$INSTALL_UNDERSTAND_ANYTHING" = false ] && [ "$INSTALL_NEO4J_IMAGE" = false ] && [ "$START_NEO4J" = false ]; then
-  usage
+  if docker ps -a --format '{{.Names}}' | grep -qx "$NEO4J_CONTAINER_NAME"; then
+    PORT_BINDINGS="$(docker inspect --format '{{json .HostConfig.PortBindings}}' "$NEO4J_CONTAINER_NAME")"
+    if [[ "$PORT_BINDINGS" != *'127.0.0.1'* ]]; then
+      echo "ERROR: existing Neo4j container is not loopback-only; recreate it securely." >&2
+      exit 1
+    fi
+    if ! docker ps --format '{{.Names}}' | grep -qx "$NEO4J_CONTAINER_NAME"; then
+      docker start "$NEO4J_CONTAINER_NAME" >/dev/null
+    fi
+    echo "Neo4j container is running on loopback only."
+  else
+    echo "Starting loopback-only Neo4j container..."
+    export NEO4J_AUTH="neo4j/$NEO4J_PASSWORD"
+    docker run -d --name "$NEO4J_CONTAINER_NAME" \
+      --restart unless-stopped \
+      -p 127.0.0.1:7474:7474 \
+      -p 127.0.0.1:7687:7687 \
+      -e NEO4J_AUTH \
+      -v atlas-neo4j-data:/data \
+      -v atlas-neo4j-logs:/logs \
+      "$NEO4J_IMAGE" >/dev/null
+    unset NEO4J_AUTH
+    echo "Neo4j is available at bolt://127.0.0.1:7687 with user 'neo4j'."
+  fi
 fi

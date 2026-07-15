@@ -61,11 +61,11 @@ def native_roots() -> list[RootSpec]:
                    "ingest_open_meteo", "ingest_frankfurter"),
         ),
         RootSpec(
-            # Grafo vivo del proyecto (Kuzu). Sin path arg: el server resuelve
-            # DEFAULT_GRAPH_DB él mismo (la BD vive fuera del save_dir del tronco).
+            # Grafo vivo del proyecto (Kuzu). Recibe repo_root para comparar el
+            # snapshot servido con HEAD; la BD sigue en DEFAULT_GRAPH_DB.
             "atlas-graph",
             "atlas.mcp.graph_server",
-            "",
+            "repo",
             tools=(
                 "graph_overview",
                 "graph_importers",

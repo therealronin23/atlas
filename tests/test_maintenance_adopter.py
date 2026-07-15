@@ -5,10 +5,9 @@ Dos niveles:
 - **Unit** (``TestAdopterWiring``): el adopter traduce ``McpProposal`` →
   ``McpServerConfig`` + ``Task`` y delega en el callable ``adopt`` inyectado.
   Verifica cfg/task/intent-anclada/auditoría sin orquestador real.
-- **E2E** (``TestAdopterEndToEnd``): orquestador real. Con ``AutonomousDecider``
-  e intención anclada el server se adopta de verdad (``add_server`` mockeado) y
-  queda el undo reversible. Con el ``HumanDecider`` por defecto el seam exige
-  aprobación y nada se adopta.
+- **E2E** (``TestAdopterEndToEnd``): orquestador real. La adopción ejecuta código
+  de tercero y se considera irreversible; el autónomo la deniega y el
+  ``HumanDecider`` exige aprobación.
 
 Regla del proyecto: nunca se lanza un proceso real — ``add_server`` se mockea.
 """
@@ -20,8 +19,7 @@ from pathlib import Path
 import pytest
 
 from atlas.core.contracts import Task, TaskSource
-from atlas.core.decider import AutonomousDecider, action_hash
-from atlas.core.decider import DecisionAction, MCP_SERVER
+from atlas.core.decider import AutonomousDecider
 from atlas.core.self_maintenance import MaintenanceAdopter, McpProposal
 from atlas.mcp import McpServerConfig
 from atlas.logging.merkle_logger import MerkleLogger
@@ -129,7 +127,7 @@ def orch(tmp_path: Path):
 
 
 class TestAdopterEndToEnd:
-    def test_autonomous_adopts_and_registers_undo(self, orch, monkeypatch) -> None:
+    def test_autonomous_denies_irreversible_mcp_before_spawn(self, orch, monkeypatch) -> None:
         orch.set_decider(AutonomousDecider())
         adopted: list[str] = []
         monkeypatch.setattr(
@@ -139,22 +137,8 @@ class TestAdopterEndToEnd:
 
         status = orch.maintenance_adopter().adopt(_proposal(capability="weather"))
 
-        assert status.startswith("ok:")
-        assert adopted == ["weather"]
-        # El undo reversible quedó atado al action_hash que el decisor autorizó.
-        h = action_hash(
-            DecisionAction(
-                kind="mcp_adopt",
-                requires_approval=True,
-                mutating=True,
-                reversible=True,
-                sensitivity="low",
-                descriptor="weather",
-            ),
-            "adopta el server MCP weather v1.2.0",
-        )
-        handle = orch._revert_registry.get(h)
-        assert handle is not None and handle.kind == MCP_SERVER and handle.ref == "weather"
+        assert status.startswith("denegado:")
+        assert adopted == []
 
     def test_human_decider_requires_approval_no_adopt(self, orch, monkeypatch) -> None:
         # Default = HumanDecider: el seam exige aprobación, nada se adopta.

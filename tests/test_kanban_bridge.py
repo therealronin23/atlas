@@ -14,6 +14,14 @@ from atlas.hermes.kanban_bridge import (
 )
 
 
+SSH_HOST = "root@100.64.0.2"
+
+
+@pytest.fixture(autouse=True)
+def configured_ssh_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERMES_SSH_HOST", SSH_HOST)
+
+
 class FakeRunner:
     """Records argv it was called with and returns a scripted result."""
 
@@ -53,9 +61,43 @@ def test_run_builds_ssh_argv_with_defaults():
     argv = runner.calls[0]
     assert argv[0] == "ssh"
     assert "BatchMode=yes" in argv
-    assert DEFAULT_SSH_HOST in argv
-    # the remote command is the last arg, shell-quoted
-    assert argv[-1] == f"{DEFAULT_KANBAN_BIN} kanban boards"
+    assert DEFAULT_SSH_HOST == ""
+    assert SSH_HOST in argv
+    assert "StrictHostKeyChecking=yes" in argv
+    assert "IdentitiesOnly=yes" in argv
+    # The SSH login may be root, but the process is always demoted to the
+    # dedicated service account with its explicit HOME/HERMES_HOME.
+    assert argv[-1] == (
+        "runuser -u hermes -- env HOME=/var/lib/hermes "
+        "HERMES_HOME=/var/lib/hermes/.hermes "
+        f"{DEFAULT_KANBAN_BIN} kanban boards"
+    )
+
+
+def test_ssh_transport_requires_an_explicit_destination(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("HERMES_SSH_HOST", raising=False)
+    with pytest.raises(ValueError, match="HERMES_SSH_HOST"):
+        KanbanBridge(runner=FakeRunner(), transport="ssh")
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        "-oProxyCommand=evil",
+        "root@host name",
+        "root@",
+        "root@178.105.216.187",
+        "root@example.com",
+    ],
+)
+def test_unsafe_ssh_destinations_are_rejected(host: str):
+    with pytest.raises(ValueError, match="SSH destination"):
+        KanbanBridge(runner=FakeRunner(), ssh_host=host, transport="ssh")
+
+
+def test_unknown_transport_is_rejected():
+    with pytest.raises(ValueError, match="transport"):
+        KanbanBridge(runner=FakeRunner(), transport="magic")
 
 
 def test_run_quotes_arguments_with_spaces():
@@ -74,15 +116,16 @@ def test_custom_host_and_bin():
     bridge.run("stats")
     argv = runner.calls[0]
     assert "root@10.0.0.1" in argv
-    assert argv[-1] == "/opt/hermes kanban stats"
+    assert argv[-1].endswith("/opt/hermes kanban stats")
+    assert argv[-1].startswith("runuser -u hermes -- env ")
 
 
 def test_host_from_env(monkeypatch):
-    monkeypatch.setenv("HERMES_SSH_HOST", "root@env-host")
+    monkeypatch.setenv("HERMES_SSH_HOST", "root@hermes.example-tailnet.ts.net")
     runner = FakeRunner()
     bridge = KanbanBridge(runner=runner, transport="ssh")
     bridge.run("boards")
-    assert "root@env-host" in runner.calls[0]
+    assert "root@hermes.example-tailnet.ts.net" in runner.calls[0]
 
 
 def test_transport_local_from_env(monkeypatch, tmp_path):
@@ -115,6 +158,14 @@ def test_run_returns_not_ok_on_nonzero_exit():
     assert res.ok is False
     assert res.returncode == 2
     assert res.stderr == "boom"
+
+
+def test_unsupported_kanban_action_is_rejected_before_ssh():
+    runner = FakeRunner()
+    bridge = KanbanBridge(runner=runner, transport="ssh")
+    with pytest.raises(ValueError, match="unsupported kanban action"):
+        bridge.run("plugin", "install", "untrusted")
+    assert runner.calls == []
 
 
 def test_json_stdout_is_parsed():
@@ -223,6 +274,17 @@ def test_success_logged_to_merkle():
     assert rec["action"] == "kanban.boards"
     assert rec["agent"] == "kanban_bridge"
     assert rec["result"] == "success"
+
+
+def test_merkle_payload_fingerprints_arguments_instead_of_recording_content():
+    merkle = FakeMerkle()
+    bridge = KanbanBridge(merkle=merkle, runner=FakeRunner(rc=0), transport="ssh")
+    secret_body = "private customer material"
+    bridge.create_task("title", body=secret_body)
+    payload = merkle.records[0]["payload"]
+    assert secret_body not in str(payload)
+    assert payload["argument_count"] == 4
+    assert len(payload["arguments_sha256"]) == 64
 
 
 def test_failure_logged_to_merkle():

@@ -1,79 +1,52 @@
-# ADR-028 — Twin Kanban Bridge (Atlas → Hermes outbound channel)
+# ADR-028 — Puente kanban Atlas→Hermes
 
-- **Status:** Accepted (2026-05-29)
-- **Depends on:** ADR-026 (Twin architecture), ADR-027 (`/api/exec` inbound)
-- **Resolves part of:** ADR-012 (Memory/state sync Hermes ↔ Atlas)
+- **Estado:** Aceptado; revisado el 2026-07-16
+- **Depende de:** ADR-026 y ADR-027
 
-## Context
+## Contexto
 
-ADR-027 gave Hermes-Agent (VPS) an authenticated inbound path to Atlas
-(`/api/exec/*`). The reverse direction — Atlas asking Hermes to do something —
-had no transport.
+El canal firmado resuelve Hermes→Atlas. Para trabajo saliente y durable Atlas
+usa la interfaz kanban del Hermes oficial. Las observaciones de mayo sobre
+otras interfaces upstream pertenecen a aquellas versiones y no se proyectan
+sobre la versión actual sin volver a investigarla.
 
-The obvious candidate, `hermes mcp serve` (expose Hermes conversations over
-the Model Context Protocol), is **broken upstream**: both v0.14.0 and v0.15.0
-raise `ModuleNotFoundError: No module named 'mcp_serve'` at
-`hermes_cli/mcp_config.py:748`. `hermes acp` is editor-oriented (stdio for
-VS Code/Zed). Neither offers a usable agent-to-agent surface today.
+## Decisión
 
-Hermes-Agent does ship a **durable SQLite-backed kanban board**
-(`hermes kanban`) explicitly designed for "tasks claimed atomically, depending
-on other tasks, executed by a named profile in an isolated workspace" — i.e.
-the intended substrate for multi-agent collaboration. The gateway hosts an
-embedded dispatcher that promotes `ready` tasks every 60s.
+`src/atlas/hermes/kanban_bridge.py` invoca `hermes kanban` mediante uno de dos
+transportes explícitos:
 
-## Decision
+- `local`: integración local/compatibilidad.
+- `ssh`: destino `usuario@host` privado o Tailscale, host key estricta, sin
+  contraseña ni interacción, y ejecución remota degradada a usuario `hermes`
+  con `HOME=/var/lib/hermes`.
 
-Atlas reaches the Hermes kanban over the existing Tailscale SSH tunnel by
-invoking `hermes kanban <subcommand>` on the VPS. This is the outbound twin
-channel until/unless a native RPC surface ships.
+No hay destino por defecto, IP pública hardcodeada ni `/root/.hermes`. El
+binario remoto debe ser una ruta absoluta segura; el provisionado usa
+`/opt/hermes-agent/.venv/bin/hermes`.
 
-- **Module:** `src/atlas/hermes/kanban_bridge.py` — `KanbanBridge`.
-- **Transport:** stdlib `subprocess` running `ssh <host> hermes kanban ...`.
-  No new dependencies (coding rule 6). Runner is injectable for tests.
-- **Audit:** every invocation logs `kanban.<action>` to the Merkle ledger
-  (coding rule 1), success and failure alike.
-- **Direction of authority (ADR-000):** Atlas decides, Hermes executes. Atlas
-  *creates and assigns* tasks; Hermes workers *claim and run* them. Atlas
-  never cedes control of its own pipeline.
+## Frontera
 
-## Non-Negotiables
+- Acciones permitidas: `boards`, `create`, `list`, `show`, `comment`,
+  `complete`, `stats` y `archive`.
+- Nunca se usa `shell=True`; los argumentos remotos se forman con quoting
+  estándar y se rechazan NULs.
+- stdout/stderr se capturan en fichero temporal y se acotan a 1 MiB.
+- Cada invocación se registra en Merkle. Títulos, cuerpos y comentarios no se
+  copian al ledger: se guarda número de argumentos y SHA-256 para reducir fuga
+  de contenido.
+- Fallos de transporte levantan excepción para activar degradación; una salida
+  no cero vuelve como resultado inspeccionable.
 
-- Read paths (`boards`, `list`, `show`, `stats`) are safe and unrestricted.
-- Write paths (`create`, `comment`, `complete`) are real production mutations
-  on a shared board; they must be intentional and audited.
-- The bridge never runs `shell=True`; argv is a fixed list and remote args are
-  `shlex`-quoted before crossing the SSH boundary.
-- Transport failure (ssh missing, timeout) raises so the orchestrator can route
-  to the offline path; a non-zero *exit* does not raise (caller inspects `.ok`).
+## Estado de verificación
 
-## Flag verification status
+Las formas de los subcomandos usadas por el adapter se contrastaron con el
+código fuente fijado de Hermes `0.18.2` y se cubren con runner inyectado. Eso no
+equivale a una conexión viva con un VPS. `atlas reality` solo marca el canal
+como `configured` si el transporte es válido y, en SSH, existe un destino
+privado/Tailscale seguro; nunca lo marca `ready` por variables de entorno.
 
-Verified live against `hermes kanban <sub> --help` on the VPS (v0.15.0,
-2026-05-29). The wrappers match the real CLI surface:
+## Futuro
 
-- `create <title>` — `title` is **positional** (there is no `--title`).
-  Options used: `--body`, `--assignee`, `--triage`, `--json`. Other real
-  flags available via `run()`: `--parent`, `--workspace`, `--branch`,
-  `--priority`, `--idempotency-key`, `--max-runtime`, `--skill`,
-  `--initial-status`.
-- `comment <task_id> <text...>` — both **positional**; `--author` optional
-  (there is no `--text`).
-- `complete <task_ids...>` — **positional**; `--result`, `--summary`,
-  `--metadata` optional (there is no `--status`).
-- Board selection is **stateful** (current board, default `default`); no
-  per-command `--board` flag exists, so the wrappers do not pass one.
-
-The generic `run(*args)` is flag-agnostic and always correct.
-
-## Diagnostics
-
-`atlas doctor` includes an advisory `hermes_twin` check that calls
-`KanbanBridge.reachable()`. Advisory because a laptop offline from the VPS is a
-normal operating state, not an Atlas fault.
-
-## Future
-
-When Hermes ships a working `mcp serve` (or an HTTP RPC), revisit: MCP would
-give synchronous request/response, complementing the kanban's durable async
-model. Track upstream: `NousResearch/hermes-agent`.
+Otra superficie upstream solo reemplazará este puente si aporta evidencia
+mejor de seguridad, durabilidad y operabilidad. La migración deberá mantener
+la autoridad de Atlas y una ruta reversible; no se adoptará por novedad.

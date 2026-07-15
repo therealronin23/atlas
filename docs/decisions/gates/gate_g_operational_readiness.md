@@ -1,5 +1,10 @@
 # Gate G — Operational Readiness
 
+> **Snapshot histórico del 2026-05-25.** No es un runbook vigente ni evidencia
+> de conectividad actual. Las rutas Hermes REST/Docker quedaron como
+> compatibilidad histórica; consultar ADR-026..029 y
+> `docs/operations/operational_runbook.md`.
+
 **Status:** complete
 **Date:** 2026-05-25
 
