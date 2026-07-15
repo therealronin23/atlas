@@ -48,6 +48,12 @@
    `xfail(strict=True)` — el contrato en código de lo que falta (petición
    pública → plan → worktree → diff → aprobación → apply/park → receipt).
    `strict=True` obliga a quitar el marcador el día que la ruta cierre.
+   **CERRADO el mismo día**: `GoldenRoute`
+   (`src/atlas/missions/golden_route.py`) envuelve ColdUpdateManager —
+   petición determinista (v0 doc-only), aprobación humana en Merkle antes
+   de actuar (PermissionError sin ella), receipt + audit_ref. El marcador
+   xfail se retiró y el E2E corre verde sobre repo fixture. El bridge
+   sigue sin importar `atlas.missions` (ADR-058 intacto).
 
 ## Lo que esto NO es
 
