@@ -9,8 +9,9 @@ fuente: '"Diseño UI Atlas.md" (raíz del repo) — export ChatGPT, 148 turnos, 
 
 El export es una conversación de ~una semana que empieza como diseño de UI y termina en una
 decisión estratégica concreta. Esta destilación extrae SOLO lo accionable y lo cruza con el
-estado real del repo a 2026-07-15. El fichero crudo queda como fuente; el mapa de líneas de
-abajo permite recuperar cualquier detalle sin releerlo entero.
+estado real del repo a 2026-07-15. El fichero crudo queda como fuente histórica privada y
+local, excluida de Git y Graphify; el mapa de líneas de abajo permite recuperar cualquier
+detalle sin releerlo entero ni contaminar la autoridad semántica publicada.
 
 **Verificado contra el repo hoy**: entre los 26 `schemas/*.schema.json` NO existe ninguno de
 los contratos Foundry (mission, receipt, soul, evidence_bundle, model_use). Los "mission" que

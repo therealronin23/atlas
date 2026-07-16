@@ -19,6 +19,10 @@ docs/self_audit_latest.json
 # 115KB — índice máquina de docs/, dato tabular puro (ver docs/INDEX.yaml).
 docs/INDEX.yaml
 
+# Raw private ChatGPT export (1.7MB) already distilled into the canonical
+# Foundry note. Ingesting it duplicated stale UI alternatives and signed URLs.
+Diseño UI Atlas.md
+
 # Derivados de publicación del mismo paper. El Markdown contiguo es la fuente
 # semántica humana; el HTML declara generator=pandoc y el PDF es binario,
 # indivisible en Graphify 0.9.11 y devolvía una respuesta hueca aun con 65K de

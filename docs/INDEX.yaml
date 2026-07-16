@@ -459,7 +459,7 @@ entries:
   verified: null
 - path: docs/continuation/CONTINUATION_STATE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
 - path: docs/continuation/IMPLEMENTATION_LOG.md
   type: conocimiento
@@ -479,7 +479,7 @@ entries:
   verified: null
 - path: docs/continuation/REPO_AUDIT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
 - path: docs/continuation/TESTING_STATUS.md
   type: conocimiento
@@ -559,7 +559,7 @@ entries:
   verified: null
 - path: docs/continuation/phase_recovery/PACK_MANIFEST_atlas_os_build_pack_v1.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
 - path: docs/continuation/phase_recovery/PACK_MANIFEST_atlas_product_os_liquid_ui_pack_v1.md
   type: conocimiento

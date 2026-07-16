@@ -1,5 +1,9 @@
 # REPO_AUDIT — Atlas OS build (Fase 0, 2026-07-10)
 
+> **Snapshot histórico pre-build.** Los conteos y el toolchain describen el
+> commit `d70b75e0`; no son estado vivo. Consultar `atlas reality`,
+> `WORK_LEDGER.md` y ADR-059 para el presente.
+
 Auditoría forense del repo real ANTES de construir Atlas OS. Fuente de verdad:
 `atlas reality --json` (commit d70b75e0, v0.12.0, dirty=12 rutas del operador)
 + grafo vivo (trunk MCP) + lectura dirigida. Los paquetes handoff están en

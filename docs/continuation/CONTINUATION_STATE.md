@@ -3,6 +3,10 @@
 Actualizado: 2026-07-11 (sesión Fable 5/Opus, Fase 15 + Fase 16 — Product OS;
 misma fecha, sesión posterior Sonnet — Phase Recovery F1-F16).
 
+> **Snapshot histórico.** Conserva evidencia y conteos de esa sesión, no el
+> estado vivo ni la próxima acción. Para continuar hoy: `WORK_LEDGER.md`,
+> `atlas reality --json` y el grafo estructural fresco.
+
 ## Current Status
 
 Sobre la base final-compatible del 2026-07-10 (Event Kernel, Backend
@@ -215,20 +219,21 @@ vez), no más documentos de reencuadre.
 ```bash
 cd ~/proyectos/atlas-core && source .venv/bin/activate
 PYTHONPATH=src atlas os-bridge          # bridge en 127.0.0.1:7341
-cd ui/atlas-shell && npm install && npm run dev   # shell en 127.0.0.1:5173 (ARNÉS, ver su README)
+cd ui/atlas-shell && npm ci && npm run dev   # Node de .node-version; shell 127.0.0.1:5173
 ```
 
 ## How To Test
 
 ```bash
-PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q   # 190 passed
+PYTHONPATH=src ATLAS_NESTED_TEST_RUN=1 python -m pytest tests/test_os_*.py -q
 MYPYPATH=src python -m mypy src/atlas/api/ src/atlas/events/ src/atlas/fabric/ src/atlas/business/ src/atlas/interfaces/cli.py
 cd ui/atlas-shell && npm run build      # tsc strict + vite
 ```
 
 ## Known Failures
 
-Ninguno en los 190 tests OS al cierre de Fase 16.
+Ninguno en la suite OS ejecutada al cierre histórico de Fase 16; verificar de
+nuevo antes de hacer una afirmación actual.
 
 ## Where To Continue
 

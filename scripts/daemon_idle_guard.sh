@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Guarda barata de daemon inactivo — F4.4 (plan toasty-hatching-pillow.md, F4 — DAEMON).
 #
-# Cableado en el hook SessionStart (.claude/settings.json), MISMO mecanismo que
-# capability_route_hook (comando `bash "$CLAUDE_PROJECT_DIR/scripts/<script>.sh"`
-# en la lista de "hooks"): al arrancar una sesión nueva, si atlas-core.service
-# lleva > DAEMON_IDLE_GUARD_THRESHOLD_SECONDS (24h por defecto) inactivo,
-# imprime UNA línea de aviso a stdout (se inyecta como contexto de arranque).
+# Cableado en los hooks SessionStart portables de Claude y Codex, por el MISMO
+# mecanismo que capability_route_hook: al arrancar una sesión nueva, si
+# atlas-core.service lleva > DAEMON_IDLE_GUARD_THRESHOLD_SECONDS (24h por
+# defecto) inactivo, imprime UNA línea de aviso a stdout (se inyecta como
+# contexto de arranque).
 # Si el daemon está activo, o inactivo desde hace menos del umbral, permanece
 # en silencio (sin salida, sin ruido en cada sesión).
 #
@@ -13,8 +13,8 @@
 # maintenance_facade): el radar es un consumidor que corre DENTRO del propio
 # tick del daemon (self_maintenance). Pedirle al radar que detecte que el
 # daemon está muerto es una contradicción — si el daemon no corre, el radar
-# tampoco corre, y nunca dispararía el aviso. Este guard vive fuera, en el
-# hook de sesión de Claude Code, precisamente porque NO depende de que
+# tampoco corre, y nunca dispararía el aviso. Este guard vive fuera, en los
+# hooks de sesión de los clientes, precisamente porque NO depende de que
 # atlas-core.service esté vivo para ejecutarse.
 #
 # Testabilidad: systemctl se resuelve vía PATH (mockeable) — ver

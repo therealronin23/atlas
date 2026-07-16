@@ -24,9 +24,13 @@ Según `atlas_product_os_liquid_ui_pack_v1` (`tasks/DO_NOT_DO.md`,
 La superficie de producto real (Cognitive Surface nativa, candidatas
 Slint/wgpu) queda diferida a una fase posterior con su propia decisión.
 Ver `docs/design/UI_QUALITY_GATE.md` para el criterio de aceptación que
-esa superficie SÍ deberá pasar quen se construya.
+esa superficie SÍ deberá pasar cuando se construya.
 
 ## Cómo arrancarlo
+
+Requiere Node `22.22.2` (pin en `.node-version`; mínimo contractual
+`>=22.12.0`) y npm 10.9 (`packageManager` registra la versión verificada).
+La instalación reproducible es `npm ci`.
 
 ```bash
 cd ~/proyectos/atlas-core && source .venv/bin/activate

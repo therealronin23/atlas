@@ -347,6 +347,38 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
     restaura artefactos y elimina exclusivamente las claves nacidas durante la
     corrida. El wrapper repite la limpieza como defensa y la informa por
     separado. Dos regresiones prueban rollback y preservación del cache previo.
+56. **El config local de Codex podía filtrarse con un staging amplio.** El TOML
+    no rastreado contenía una credencial OAuth, rutas absolutas, MCPs del host y
+    sandbox amplio; además estaba en modo 0664. Queda anclado en `.gitignore`,
+    fuera del commit y restringido localmente a 0600. Los hooks portables viven
+    en un JSON separado sin secretos. La credencial observada no se declara
+    revocada: su rotación en Google sigue siendo una acción externa pendiente.
+    Capturas internas locales `refs/codex/turn-diffs/*` aún alcanzan blobs de
+    ambos artefactos para el undo de esta tarea; no pertenecen a `main` y
+    `git push origin main` no las publica, pero un futuro push `--all/--mirror`
+    sí sería improcedente hasta limpiar esas capturas y rotar la credencial.
+57. **El hook Codex encontraba el wrapper pero perdía la raíz del proyecto.**
+    La primera versión supuso una variable `CODEX_PROJECT_DIR` que el cliente no
+    documenta; la [documentación oficial de hooks Codex](https://developers.openai.com/codex/hooks)
+    establece que se ejecutan desde el CWD de sesión, que puede ser un
+    subdirectorio. El JSON resuelve ahora cada script con
+    `git rev-parse --show-toplevel` y el wrapper usa la misma raíz como fallback.
+    Una regresión ejecuta el comando real desde `ui/atlas-shell` y falló antes
+    de la corrección. La configuración no se presenta como ejecución viva:
+    Codex solo carga hooks de proyecto tras confiar explícitamente esa capa.
+58. **La UI versionada estaba fuera de CI y su decisión había derivado.** El
+    lock pendiente subía Vite 5→7, pero ADR-059, la pregunta abierta y OS-R4
+    seguían fijando Node 18/Vite 5; el lock anterior tenía 13 avisos aplicables.
+    Node 22.22.2, engines/package manager, ADR y riesgo quedan reconciliados;
+    CI instala el lock exacto, rechaza advisories altos/críticos y construye la
+    shell. El lock actual da cero vulnerabilidades y el build transforma 77
+    módulos.
+59. **Una fuente privada no rastreada contaminaba GraphRAG.** El export bruto
+    "Diseño UI Atlas.md" (1,7 MB, 65.640 líneas) ya estaba destilado, pero
+    Graphify lo había ingerido como comunidad propia de 54 nodos y lo mezclaba
+    con consultas generales; contiene URLs firmadas y contexto local. Queda
+    ignorado tanto por Git como por Graphify y restringido localmente a 0600.
+    Solo su destilación operativa es autoridad publicable.
 
 ## Verificación ejecutada
 
@@ -368,6 +400,9 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
 | Ledger local de tokens | uso reportado atribuido; se declara expresamente distinto de billing/cuota viva |
 | Validación de config Hermes contra código upstream fijado | exit 0 para Groq y OpenRouter |
 | `git diff --check` | exit 0 |
+| Hooks portables y exclusión de artefactos privados | 11 pruebas dirigidas; JSON válido; config local ignorado y 0600 |
+| Atlas shell | `npm ci --engine-strict`, árbol directo válido, 0 advisories y build Vite 7 de 77 módulos |
+| Índice documental | `docs_index_audit.py --strict`, cero faltantes, huérfanos o vigentes caducados |
 
 La suite emitió un warning upstream: FastEmbed cambió el pooling de un modelo.
 El nuevo guard de identidad incluye versión y artefactos, por lo que una base
@@ -410,11 +445,15 @@ persistente incompatible se rechaza/migra explícitamente en vez de mezclarse.
 - El enfoque fail-closed hizo visibles dependencias ausentes y grafos viejos.
 - La investigación contra fuente primaria evitó inventar schema/flags Hermes.
 - Separar contrato, configuración y vida eliminó varias contradicciones.
+- La revisión independiente del diff de cierre detectó que una variable Codex
+  asumida no era parte del contrato oficial; la regresión se reescribió para
+  ejecutar el comando real desde un subdirectorio antes de aceptar el arreglo.
 
 ### Lo que no funcionó o no estuvo disponible
 
-- Los subagentes delegados agotaron su cuota y no aportaron revisión
-  independiente; el agente principal repitió verificación local.
+- Los subagentes de la primera pasada agotaron su cuota; en el cierre posterior
+  sí hubo revisiones independientes de dependencias, fuentes privadas, secretos
+  y diff final. No se confunden esos informes con ejecución de servicios vivos.
 - Neo4j no estaba escuchando y no había `NEO4J_PASSWORD`; solo se validaron
   export e importador en aislamiento.
 - El grafo MCP vivo estaba viejo durante la edición y, correctamente, no dio
@@ -438,6 +477,7 @@ persistente incompatible se rechaza/migra explícitamente en vez de mezclarse.
 | REST Hermes legado | Compatibilidad | Demostrar cero callers externos y retirarlo con migración/ADR |
 | Inferred edges de Graphify | Riesgo epistemológico | Usarlos como hipótesis; confirmar decisiones estructurales con grafo AST/Kuzu fresco o código/tests |
 | Client secret OAuth observado en argv externo | Abierto, credencial | Rotar en Google; retirar la versión expuesta; relanzar el conector sin secreto en argv |
+| Trust/capturas locales de hooks Codex | Abierto, cliente local | Revisar/confiar los hooks tras el commit; no publicar refs `refs/codex/*`; limpiar capturas solo cuando ya no se necesite undo y después de rotar OAuth |
 | Cache semántico sin identidad prompt/modelo | Compensado, no cerrado upstream | Mantener `mixed_or_unverified`; vaciar/reextraer con una única identidad cuando se necesite provenance uniforme |
 | Heurística legacy-ID upstream sobre nodos MCP `L1` | Falso positivo conocido | Usar `legacy_file_id_count` del quality gate; no ocultar una advertencia real sin esa prueba |
 | Proveedor GraphRAG externo | Variable/no SLA | Preflight pequeño, límites de timeout/retry/concurrency y full scan strict; no inferir disponibilidad futura de un éxito puntual |
