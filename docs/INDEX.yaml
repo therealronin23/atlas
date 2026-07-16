@@ -951,6 +951,10 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/design/fable5_build_doctrine.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/design/fleet_security_plan.md
   type: design
   status: vigente
