@@ -1,5 +1,11 @@
 # NEXT_AI_INSTRUCTIONS — cómo continuar Atlas OS
 
+> **SUPERSEDED como protocolo de arranque (2026-07-15)**: el protocolo vigente
+> es el de `AGENTS.md` (raíz del repo) — reality → grafo → ledger → ecosystem
+> map. Este documento queda como registro histórico de las fases F15/F16
+> (Atlas OS, 2026-07-10/11). Sus invariantes de "Qué NO tocar jamás" siguen
+> siendo ciertos, pero la fuente de autoridad es AGENTS.md.
+
 Escrito para una IA menos potente. Sigue esto literalmente.
 
 ## Qué es Atlas
