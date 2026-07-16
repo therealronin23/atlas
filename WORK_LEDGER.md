@@ -17,7 +17,9 @@ de escribir: `atlas reality --json`.
   pasan; Crawl4AI real se omite por `.venv-scraping` ausente. GraphRAG se
   reconstruye por full scan, sin fallos/huecos/parciales/schema warnings, y el
   export Obsidian es transaccional. `atlas reality --run-checks` proyecta sus
-  resultados al resumen de tests sin conservar estados `unknown`. Hermes/VPS/proveedor/Telegram y Neo4j no
+  resultados al resumen de tests sin conservar estados `unknown`; los
+  checkpoints semánticos nacidos durante cualquier corrida fallida se purgan
+  transaccionalmente. Hermes/VPS/proveedor/Telegram y Neo4j no
   se declaran vivos: `atlas reality` marca Hermes mock y no había credenciales
   ni servicio Neo4j. Informe canónico:
   `docs/design/audit_premortem_postmortem_2026-07-16.md`.
