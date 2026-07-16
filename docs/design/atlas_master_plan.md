@@ -158,9 +158,18 @@ Porqué: multiplica todo lo posterior — "que se construya sola más rápido".
   acaba como misión aparcada o aprobada.
 - T1.4 Cola del daemon alimentada desde ESTE plan (backlog.yaml como puente).
   Evidencia: el daemon completa ítems T1 en horario nocturno con receipts.
-- T1.5 Coding Territory (ADR-068): AtlasCoder integrado a la ruta dorada como
-  el "cómo" de T1.1, con sus propios proveedores. Evidencia: tarea de código
-  completada 100% con proveedores de Atlas (cero tokens Claude del operador).
+- T1.5 Coding Territory (ADR-068) — ENMENDADA 2026-07-17 (operador: "aider y
+  openhands son la polla, hemos querido absorberlos supuestamente y somos 100
+  veces peores"): NO crecer AtlasCoder desde cero (cascarón — violaba nuestra
+  propia manía adopt-real). En su lugar: disección adopt-real de Aider
+  (Apache-2.0) y OpenHands (MIT) — clon efímero, medir en 3 tareas reales
+  contra AtlasCoder, veredicto Cónclave — y ENVOLVER al ganador como motor de
+  código de Atlas: proveedores del hub, lecciones del sustrato dentro,
+  ceremonia de la ruta dorada alrededor (readback+aprobación+receipt).
+  Distinción de ley: dependencia (propietario: Claude Code/Cursor = plus) ≠
+  absorción (open source vendorizado = órgano propio). Evidencia: tarea de
+  código real completada por el motor absorbido con proveedores de Atlas,
+  cero tokens Claude del operador, y medición comparativa registrada.
 
 ### T2 — UI/UX viva ("ver a Atlas, no leer un puto .md")
 Porqué aquí: con T0+T1 la consola muestra misiones/receipts REALES; y el
