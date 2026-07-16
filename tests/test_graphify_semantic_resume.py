@@ -7,6 +7,7 @@ read live credentials, or write Graphify's real cache.
 from __future__ import annotations
 
 import importlib.util
+import builtins
 import os
 import sys
 from collections.abc import Callable
@@ -134,6 +135,36 @@ def test_successful_file_checkpoints_survive_failure_and_rerun_only_retries_miss
     assert retry.cached == ("docs/a.md", "docs/c.md")
     assert retry.failed == ()
     assert set(cached) == {"docs/a.md", "docs/b.md", "docs/c.md"}
+
+
+def test_injected_resume_loop_does_not_require_graphify_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    m = _module()
+    source = _source_files(tmp_path, "docs/a.md")[0]
+    real_import = builtins.__import__
+
+    def blocked_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "graphify" or name.startswith("graphify."):
+            raise ModuleNotFoundError("graphify intentionally absent", name=name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+    report = m.resume_sources(
+        [source],
+        root=tmp_path,
+        provider="unattributed",
+        model="test-model",
+        is_cached=lambda _source: False,
+        extract_one=lambda _path, callback: (
+            callback(1, 1, _payload("docs/a.md"))
+            or m.ExtractionAttempt(_payload("docs/a.md"))
+        ),
+        checkpoint=lambda _source, _payload: None,
+        log_tokens=lambda _provider, _tokens, _model: None,
+    )
+
+    assert report.complete is True
 
 
 def test_filter_exact_source_drops_foreign_records_but_keeps_cross_file_links(
@@ -404,25 +435,19 @@ def test_missing_api_key_is_fatal() -> None:
 
 
 def test_semantic_source_discovery_includes_images(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     m = _module()
     image = _source_files(tmp_path, "docs/diagram.png")[0]
-    import graphify.detect
-
-    monkeypatch.setattr(
-        graphify.detect,
-        "detect",
-        lambda _root: {
+    detector = lambda _root: {
             "files": {
                 "document": [],
                 "paper": [],
                 "image": [str(image)],
             }
-        },
-    )
+        }
 
-    assert m._semantic_sources(tmp_path) == [image]
+    assert m._semantic_sources(tmp_path, detect_fn=detector) == [image]
 
 
 def test_report_write_does_not_follow_predictable_temporary_symlink(

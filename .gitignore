@@ -127,6 +127,10 @@ skills-lock.json
 workspace/self_build/
 workspace/research/
 workspace/knowledge/
+# Router telemetry/cooldown are local runtime state; prompt hashes and turn
+# state are evidence inputs, not source artifacts to publish.
+workspace/mcp/*.jsonl
+workspace/mcp/*.json
 # Salida de builds de graphify (mal ubicada bajo src/, no es código)
 src/graphify-out/
 graphify-out/

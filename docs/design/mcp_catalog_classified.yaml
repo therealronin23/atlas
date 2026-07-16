@@ -1893,6 +1893,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: TheAarvee/MIRA-Tamil-Localized-Voice-Assistant
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/TheAarvee/MIRA-Tamil-Localized-Voice-Assistant
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:time aware reasoning
+      - informe:3
+      - informe:4
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-16T13:57:27.382864+00:00'
   infraestructura:
     label: Infraestructura
     entries:
@@ -3112,6 +3128,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: Tieon-genuschenopodium508/bloblens
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Tieon-genuschenopodium508/bloblens
+      install: ''
+      status: candidato
+      tags:
+      - investigacion
+      evidence:
+      - tema:document indexing
+      - informe:3
+      - informe:4
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-16T13:57:27.382864+00:00'
   productividad:
     label: Productividad
     entries:

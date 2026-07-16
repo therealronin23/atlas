@@ -80,6 +80,30 @@ def test_build_project_graph_and_server_queries(tiny_repo: Path, tmp_path: Path)
     assert len(lineage) == 2  # presente en ambos commits
 
 
+def test_note_neighborhood_before_vault_ingestion_returns_clean_message(
+    tmp_path: Path,
+) -> None:
+    """F3.1 (red de seguridad): sin tabla ObsidianNote (vault jamás ingerido),
+    graph_note_neighborhood devuelve un mensaje limpio — mismo contrato que
+    graph_callers ante la tabla Symbol ausente, no un traceback RuntimeError."""
+    pytest.importorskip("mcp.server.fastmcp")
+    from atlas.mcp.graph_server import build_graph_server
+
+    db_path = tmp_path / "kuzu" / "empty.kuzu"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    # BD existente pero sin la tabla ObsidianNote — read_only=True en
+    # build_graph_server no puede crear una BD vacía, se deja creada antes.
+    db = kuzu.Database(str(db_path))
+    kuzu.Connection(db).close()
+    db.close()
+
+    server = build_graph_server(db_path)
+    tools = {t.name: t for t in server._tool_manager.list_tools()}
+
+    result = tools["graph_note_neighborhood"].fn(note_stem="cualquiera")
+    assert result == {"error": "vault no ingerido aún"}
+
+
 def test_overview_selects_latest_snapshot_not_the_one_with_most_modules(
     tiny_repo: Path, tmp_path: Path
 ) -> None:

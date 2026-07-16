@@ -229,16 +229,21 @@ def build_graph_server(
     def graph_note_neighborhood(note_stem: str) -> dict[str, Any]:
         """Vecindario de una nota Obsidian del vault del proyecto (si está
         cargado): a qué enlaza y quién la enlaza."""
-        out = _query(
-            "MATCH (a:ObsidianNote)-[:LINKS_TO]->(b:ObsidianNote) "
-            "WHERE a.path ENDS WITH $f RETURN b.path LIMIT 25",
-            {"f": f"{note_stem}.md"},
-        )
-        inc = _query(
-            "MATCH (a:ObsidianNote)-[:LINKS_TO]->(b:ObsidianNote) "
-            "WHERE b.path ENDS WITH $f RETURN a.path LIMIT 25",
-            {"f": f"{note_stem}.md"},
-        )
+        try:
+            out = _query(
+                "MATCH (a:ObsidianNote)-[:LINKS_TO]->(b:ObsidianNote) "
+                "WHERE a.path ENDS WITH $f RETURN b.path LIMIT 25",
+                {"f": f"{note_stem}.md"},
+            )
+            inc = _query(
+                "MATCH (a:ObsidianNote)-[:LINKS_TO]->(b:ObsidianNote) "
+                "WHERE b.path ENDS WITH $f RETURN a.path LIMIT 25",
+                {"f": f"{note_stem}.md"},
+            )
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"error": "vault no ingerido aún"}
+            raise
         return {"links_to": [r[0] for r in out], "linked_from": [r[0] for r in inc]}
 
     @server.tool()

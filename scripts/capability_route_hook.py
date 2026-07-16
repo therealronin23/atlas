@@ -15,9 +15,15 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from atlas.mcp.capability_router import format_routing_block, route_capabilities
-from atlas.mcp.catalog import load_catalog, load_taxonomy
+from atlas.mcp.catalog import CatalogEntry, load_catalog, load_taxonomy
+from atlas.mcp.router_telemetry import (
+    DEFAULT_COOLDOWN_TURNS,
+    append_suggestion,
+    apply_cooldown,
+)
 
 
 def _extract_prompt(raw: str) -> str:
@@ -37,7 +43,7 @@ def _extract_prompt(raw: str) -> str:
     return ""
 
 
-def _load_entries(repo_root: Path) -> tuple[list, dict]:
+def _load_entries(repo_root: Path) -> tuple[list[CatalogEntry], dict[str, Any]]:
     catalog_path = repo_root / "docs" / "design" / "mcp_catalog.yaml"
     entries = load_catalog(catalog_path)
     taxonomy = load_taxonomy(catalog_path)
@@ -57,6 +63,17 @@ def main() -> int:
         action="store_true",
         help="Salida JSON para Cursor beforeSubmitPrompt",
     )
+    parser.add_argument(
+        "--cooldown-turns",
+        type=int,
+        default=DEFAULT_COOLDOWN_TURNS,
+        help="F5.2: turnos sin repetir una tool ya sugerida",
+    )
+    parser.add_argument(
+        "--no-state",
+        action="store_true",
+        help="Salta cooldown y telemetría (debug manual; no toca workspace/mcp)",
+    )
     args = parser.parse_args()
 
     prompt = args.prompt.strip() or _extract_prompt(sys.stdin.read())
@@ -66,6 +83,26 @@ def main() -> int:
     repo = args.repo_root.resolve()
     entries, taxonomy = _load_entries(repo)
     hits = route_capabilities(prompt, entries, taxonomy, limit=args.limit)
+
+    if not args.no_state:
+        # F5.2 anti-fatiga + F5.1 telemetría. Fail-soft: el estado/registro
+        # JAMÁS rompe el hook de prompts (peor caso: sugerencia repetida y
+        # sin telemetría, nunca un prompt bloqueado).
+        state_dir = repo / "workspace" / "mcp"
+        try:
+            hits = apply_cooldown(
+                hits,
+                state_dir / "router_cooldown.json",
+                cooldown_turns=args.cooldown_turns,
+            )
+            # Se registra SOLO lo realmente mostrado tras el cooldown (hash del
+            # prompt, nunca el texto): es lo que mide el cierre de bucle.
+            append_suggestion(
+                state_dir / "routing_suggestions.jsonl", prompt=prompt, hits=hits
+            )
+        except Exception:  # noqa: BLE001 — telemetría, nunca bloquea el hook
+            pass
+
     block = format_routing_block(hits)
     if not block:
         return 0

@@ -8,6 +8,18 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **F3/F5 CIERRE DE CABLEADO (2026-07-16)** — la revisión de los cambios
+  pendientes encontró tres huecos reales: el tick no pasaba el vault a Kuzu,
+  `ObsidianNote` no migraba `cohesion`, y el tronco no conservaba
+  `timeout_seconds` ni adopciones persistidas. Se añadieron migración aditiva,
+  propagación de timeout, adopción fail-open con catálogo curado por delante,
+  telemetría/cooldown y smokes de proceso. **Próxima acción:** suite completa
+  local y publicar el lote; el runner remoto sigue limitado por
+  bubblewrap/dependencias opcionales. La suite local queda en 3532 verdes;
+  `reality --run-checks --include-browser` sigue bloqueándose en su subproceso
+  GraphRAG y se detuvo por PID exacto, por lo que no se declara ese smoke como
+  verde.
+
 - **F4 DAEMON: REARRANCADO + NOTA DE HONESTIDAD (2026-07-16)** — el daemon
   estuvo PARADO desde el 2026-07-12 20:44:52 (parada MANUAL limpia vía
   systemctl, el journal la registra; 19min de CPU consumidos) hasta hoy

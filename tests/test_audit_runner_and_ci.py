@@ -212,7 +212,9 @@ def test_ci_uses_locked_matrix_browser_marker_and_isolated_wheel_smoke() -> None
     assert matrix == ["3.11", "3.12"]
     assert "uv lock --check" in raw
     assert "uv sync --frozen --extra dev" in raw
-    assert "apt-get install -y --no-install-recommends bubblewrap" in raw
+    assert "apt-get install -y --no-install-recommends apparmor bubblewrap" in raw
+    assert "profile atlas-ci-bwrap /usr/bin/bwrap flags=(default_allow)" in raw
+    assert "apparmor_restrict_unprivileged_userns)\" = \"1\"" in raw
     assert "uv export --frozen --extra dev --no-emit-project" in raw
     assert "pip-audit --strict" in raw
     assert "atlas-audit-requirements.txt" in raw

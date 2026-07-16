@@ -2,6 +2,9 @@
 
 - `ci-isolated-imports-are-explicit`: los jobs aislados incluyen la raíz en
   `PYTHONPATH` y declaran paquetes auxiliares importados por tests.
+- `vault-and-trunk-wiring-is-tested`: las rutas de producción deben pasar el
+  vault al grafo y el tronco debe conservar timeout/adopciones; cada cableado
+  necesita un test de integración, no solo una función aislada.
 
 Lecciones operativas que explican el porqué de las reglas vivas. El estado vive en
 `WORK_LEDGER.md`; los detalles de diseño viven en `docs/design/`.

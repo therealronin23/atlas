@@ -16,12 +16,15 @@ Diseño: docs/design/mcp_trunk_portable.md + WORK_LEDGER (línea TRONCO-AGREGADO
 
 from __future__ import annotations
 
+import json
+import os
 import shlex
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from atlas.mcp.config import McpServerConfig
+from atlas.mcp.config import McpServerConfig, load_servers
 
 
 def load_secrets_env(path: Path) -> dict[str, str]:
@@ -98,8 +101,18 @@ def servers_from_registry(registry: Any) -> dict[str, list[str]]:
     return out
 
 
+def adopted_servers_path() -> Path:
+    """Resolve the user-adopted MCP config using the Orchestrator convention."""
+    configured = os.environ.get("ATLAS_MCP_SERVERS", "").strip()
+    if configured:
+        return Path(configured).expanduser()
+    workspace = Path(os.environ.get("ATLAS_HOME", str(Path.home() / "atlas"))).expanduser()
+    return workspace / "mcp_servers.json"
+
+
 def trunk_children(
-    catalog: list["CatalogEntry"], *, save_dir: Path, repo_root: Path, python: str | None = None
+    catalog: list["CatalogEntry"], *, save_dir: Path, repo_root: Path,
+    python: str | None = None, adopted_path: Path | None = None,
 ) -> list[McpServerConfig]:
     """Hijos del tronco DERIVADOS DEL CATÁLOGO (paso 2): toda entrada conectable
     (kind=mcp, mode=connected, status instalado|verificado). Las raíces NUESTRAS
@@ -110,17 +123,36 @@ def trunk_children(
     our_cfgs = {c.cmd[c.cmd.index("-m") + 1]: c
                 for c in root_configs(save_dir=save_dir, repo_root=repo_root, python=python)}
     out: list[McpServerConfig] = []
+    curated_names: set[str] = set()
     for e in catalog:
         if e.kind != "mcp" or e.mode != "connected" or e.status not in {"instalado", "verificado"}:
             continue
         if e.source in by_module:  # raíz nuestra → comando ya resuelto con path arg
-            out.append(our_cfgs[e.source])
+            out.append(replace(our_cfgs[e.source], timeout_seconds=e.timeout_seconds))
+            curated_names.add(e.name)
         elif e.install.strip():    # externa → comando de su `install`
             out.append(McpServerConfig(
                 name=e.name, cmd=shlex.split(e.install),
                 env_passthrough=list(e.env_passthrough),  # secretos por entorno, no en cmd
                 read_only_tools=list(e.read_only_tools),  # ADR-035 dec.5: resto = mutate/HITL
+                timeout_seconds=e.timeout_seconds,
             ))
+            curated_names.add(e.name)
+
+    # Adoption is an explicit user-owned config, not an install path. Read it
+    # fail-open so a malformed optional file cannot prevent the trunk from
+    # serving curated roots; curated entries always win name conflicts.
+    if adopted_path is not None:
+        try:
+            adopted = load_servers(adopted_path)
+        except (OSError, TypeError, ValueError, KeyError, json.JSONDecodeError):
+            adopted = []
+        for cfg in adopted:
+            if not cfg.enabled or not cfg.name or cfg.name == "atlas-trunk":
+                continue
+            if cfg.name in curated_names or any(existing.name == cfg.name for existing in out):
+                continue
+            out.append(cfg)
     return out
 
 
@@ -429,7 +461,10 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         catalog = catalog + load_catalog(classified)
     # Hijos DERIVADOS DEL CATÁLOGO (paso 2): nuestras raíces + externos verificados.
     # NO se llama start_all() — spawn perezoso, cada raíz arranca al primer dispatch.
-    children = trunk_children(catalog, save_dir=save_dir, repo_root=repo_root)
+    children = trunk_children(
+        catalog, save_dir=save_dir, repo_root=repo_root,
+        adopted_path=adopted_servers_path(),
+    )
     registry = McpRegistry(children)
 
     def _refresh(tool: str) -> dict[str, list[str]]:

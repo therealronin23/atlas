@@ -11,20 +11,21 @@ import sys
 from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import Any
-
-try:
-    from neo4j import GraphDatabase
-except ImportError:  # pragma: no cover - exercised only in an incomplete operator env
-    print(
-        "ERROR: neo4j driver is not installed; install the pinned knowledge-stack requirements.",
-        file=sys.stderr,
-    )
-    raise SystemExit(1)
+from typing import Any, cast
 
 
 _IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 _SCALAR_TYPES = (str, int, float, bool)
+
+
+def _graph_database() -> Any:
+    try:
+        from neo4j import GraphDatabase
+    except ImportError as exc:  # pragma: no cover - operator environment only
+        raise RuntimeError(
+            "neo4j driver is not installed; install the pinned knowledge-stack requirements"
+        ) from exc
+    return GraphDatabase
 
 
 def _identifier(value: object, *, kind: str, uppercase: bool = False) -> str:
@@ -37,7 +38,7 @@ def _identifier(value: object, *, kind: str, uppercase: bool = False) -> str:
 
 
 def _properties(raw: Mapping[str, object], *, identifier: str) -> dict[str, object]:
-    properties = {
+    properties: dict[str, object] = {
         key: value
         for key, value in raw.items()
         if isinstance(key, str)
@@ -206,14 +207,17 @@ def import_graph(
 
     with driver.session() as session:
         session.execute_write(_ensure_schema)
-        return session.execute_write(
-            _import_transaction,
-            node_groups,
-            edge_groups,
-            replace,
-            batch_size,
-            expected_nodes,
-            expected_relationships,
+        return cast(
+            tuple[int, int],
+            session.execute_write(
+                _import_transaction,
+                node_groups,
+                edge_groups,
+                replace,
+                batch_size,
+                expected_nodes,
+                expected_relationships,
+            ),
         )
 
 
@@ -267,7 +271,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         flush=True,
     )
 
-    driver = GraphDatabase.driver(uri, auth=(user, password), connection_timeout=5)
+    try:
+        graph_database = _graph_database()
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}.", file=sys.stderr)
+        return 1
+    driver = graph_database.driver(uri, auth=(user, password), connection_timeout=5)
     try:
         driver.verify_connectivity()
         actual_nodes, actual_relationships = import_graph(
