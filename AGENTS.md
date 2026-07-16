@@ -88,6 +88,7 @@ Atlas ecosystem taxonomy lives in `docs/design/atlas_ecosystem_map.md`.
 `deep-onboarding-new-sessions` · `no-rewrite-git-history` ·
 `absorb-without-cloning` · `adversarial-audit-no-assumptions` ·
 `graph-rebuild-single-writer` · `semantic-full-scan-before-publish` ·
+`semantic-checkpoint-per-source` ·
 `semantic-coverage-human-owned` · `filesystem-limits-are-runtime-facts` ·
 `cost-ledger-is-not-billing` · `local-agent-config-is-secret-by-default` ·
 `distill-private-sources-before-graphing` · `tracked-surface-requires-ci`.
@@ -201,7 +202,15 @@ For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` (and the 
 - To include the Obsidian vault notes in the NotebookLM package, run `./scripts/prepare-notebooklm.sh --include-vault`.
 - Recommended Obsidian plugins: Dataview, Graph View, QuickAdd, Natural Language Dates, Search Extended.
 - The daily Graphify path is intentionally `code-only` to avoid LLM API cost. A semantic rebuild is deliberate and must publish through `./scripts/run-graphify-quality-pipeline.sh --strict --backend <backend> --model <model>`; the lower-level `update-knowledge-graph-rag.sh` is not a quality verdict.
-- The strict semantic path forces a full live-file scan while reusing safe cache entries, rejects failed/hollow/partial/invalid-confidence output and source drift, verifies real file-node IDs, restores the last published graph on failure, purges cache keys born in any failed/interrupted transaction, exports Obsidian transactionally within the filesystem's actual `NAME_MAX`, and generates `graphify-out/cypher.txt`.
+- The strict semantic path forces a full live-file scan while reusing safe cache entries, rejects failed/hollow/partial/invalid-confidence output and source drift, verifies real file-node IDs, restores the last published graph on failure, rolls back only unverified cache writes born after the publication baseline, exports Obsidian transactionally within the filesystem's actual `NAME_MAX`, and generates `graphify-out/cypher.txt`.
+- Before that publication transaction, semantic misses are extracted and
+  checkpointed one source at a time with incremental upstream cache writes
+  disabled. A checkpoint is written only after exact-source filtering, schema
+  validation, stable-content verification and a terminal response; later
+  failures preserve earlier verified sources, and the next run retries only
+  misses. Actual response usage is logged from each top-level callback; the
+  checkpoint path disables adaptive retries because Graphify 0.9.11 omits the
+  truncated parent attempt from its aggregate token usage.
 - To load the generated graph into Neo4j, set `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD`, then run `./scripts/neo4j-import.sh`.
 - Graphify supports local and env-driven LLM backends: `OPENAI_BASE_URL`/`OPENAI_API_KEY`, `OLLAMA_BASE_URL`, `ANTHROPIC_BASE_URL`/`ANTHROPIC_API_KEY`, `GEMINI_BASE_URL`/`GEMINI_API_KEY`, or `claude-cli`.
 - Example local Graphify GraphRAG setup:

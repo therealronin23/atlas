@@ -232,28 +232,6 @@ for PRIVATE_ARTIFACT in "$LOG_PATH" "$QUALITY_REPORT_PATH"; do
   touch "$PRIVATE_ARTIFACT"
   chmod 600 "$PRIVATE_ARTIFACT"
 done
-SEMANTIC_CACHE_BASELINE="$(mktemp "$ROOT_DIR/graphify-out/logs/.semantic-cache-baseline.XXXXXX")"
-trap 'rm -f -- "$SEMANTIC_CACHE_BASELINE"' EXIT
-python3 - "$SEMANTIC_CACHE_BASELINE" <<'PY'
-import json
-import re
-import sys
-from pathlib import Path
-
-cache_dir = Path('graphify-out/cache/semantic')
-if cache_dir.exists() and (cache_dir.is_symlink() or not cache_dir.is_dir()):
-    raise SystemExit('unsafe semantic cache directory')
-names = []
-if cache_dir.is_dir():
-    names = sorted(
-        entry.name
-        for entry in cache_dir.glob('*.json')
-        if entry.is_file()
-        and not entry.is_symlink()
-        and re.fullmatch(r'[0-9a-f]{64}\.json', entry.name)
-    )
-Path(sys.argv[1]).write_text(json.dumps(names) + '\n', encoding='utf-8')
-PY
 python3 - "$QUALITY_REPORT_PATH" <<'PY'
 import json
 import sys
@@ -274,7 +252,7 @@ Path(sys.argv[1]).write_text(
 )
 PY
 
-export GRAPHIFY_MAX_OUTPUT_TOKENS="${GRAPHIFY_MAX_OUTPUT_TOKENS:-4096}"
+export GRAPHIFY_MAX_OUTPUT_TOKENS="${GRAPHIFY_MAX_OUTPUT_TOKENS:-16384}"
 export GRAPHIFY_LLM_TEMPERATURE="${GRAPHIFY_LLM_TEMPERATURE:-0}"
 export GRAPHIFY_API_TIMEOUT="$API_TIMEOUT"
 
@@ -298,6 +276,95 @@ if [ "$BACKEND_EXPLICIT" = true ]; then
 fi
 if [ "$MODEL_EXPLICIT" = true ]; then
   RAG_ARGS+=(--model "$MODEL")
+fi
+
+# Complete and validate content-addressed checkpoints before starting the
+# publication transaction. The lower script owns backend auto-detection and
+# routing, so resume cannot silently use a different provider. A failed resume
+# exits before publication; already verified per-source checkpoints remain for
+# the next invocation. The full run repeats this cheap cache check while
+# holding the writer lock, closing source-drift races.
+if [ "${GRAPHIFY_SKIP_SEMANTIC_RESUME:-0}" != "1" ]; then
+  set +e
+  python3 - "$LOG_PATH" \
+    ./scripts/update-knowledge-graph-rag.sh --resume-only "${RAG_ARGS[@]}" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+
+log_path = sys.argv[1]
+command = sys.argv[2:]
+flags = os.O_WRONLY | os.O_APPEND | os.O_CLOEXEC
+flags |= getattr(os, 'O_NOFOLLOW', 0)
+try:
+    log_fd = os.open(log_path, flags)
+except OSError as exc:
+    print(
+        f"ERROR: could not open private Graphify log ({type(exc).__name__})",
+        file=sys.stderr,
+    )
+    raise SystemExit(73) from None
+
+with os.fdopen(log_fd, 'a', encoding='utf-8', errors='replace', buffering=1) as log:
+    try:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        log.write(
+            f"[atlas resume] could not launch checkpoint phase: "
+            f"{type(exc).__name__}\n"
+        )
+        raise SystemExit(69) from None
+    try:
+        raise SystemExit(process.wait())
+    except KeyboardInterrupt:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait()
+        raise SystemExit(130) from None
+PY
+  RESUME_EXIT_CODE=$?
+  set -e
+  if [ "$RESUME_EXIT_CODE" -ne 0 ]; then
+    python3 - "$QUALITY_REPORT_PATH" "$RESUME_EXIT_CODE" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+Path(sys.argv[1]).write_text(
+    json.dumps(
+        {
+            "status": "semantic_resume_incomplete",
+            "exit_code": int(sys.argv[2]),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "verified_checkpoints_preserved": True,
+        },
+        indent=2,
+        sort_keys=True,
+    )
+    + "\n",
+    encoding="utf-8",
+)
+PY
+    exit "$RESUME_EXIT_CODE"
+  fi
 fi
 
 set +e
@@ -429,125 +496,94 @@ PY
 RAG_EXIT_CODE=$?
 set -e
 
-# Graphify 0.9.11 caches semantic fragments only by source-content hash. It
-# checkpoints each successful chunk, so a later chunk failure for another
-# slice of the same source can leave a partial whole-file cache hit. Purge all
-# cache keys born during a failed run while preserving the baseline. Also
-# remove entries tied to explicit single-file partials and invalid confidence.
-set +e
-SEMANTIC_CACHE_CLEANUP_COUNTS=$(python3 - \
-  "$LOG_PATH" \
-  "$SEMANTIC_CACHE_BASELINE" \
-  "$RAG_EXIT_CODE" <<'PY'
+# Cache recovery has one transaction authority:
+# update-knowledge-graph-rag.sh. This wrapper must never purge every new key --
+# that was the restart-from-zero bug. It only removes entries proven unsafe by
+# an explicit partial-source diagnostic or invalid confidence, and reports the
+# lower layer's own rollback count.
+SEMANTIC_CACHE_CLEANUP_COUNTS="$(python3 - "$LOG_PATH" <<'PY'
 import json
 import re
 import sys
 from pathlib import Path
 
 root = Path.cwd().resolve()
-log_path = Path(sys.argv[1])
-try:
-    text = log_path.read_text(encoding='utf-8', errors='replace')
-    marker = '--- run started '
-    start = text.rfind(marker)
-    current = text[start:] if start >= 0 else text
-    baseline_raw = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
-    if not isinstance(baseline_raw, list) or not all(
-        isinstance(name, str) and re.fullmatch(r'[0-9a-f]{64}\.json', name)
-        for name in baseline_raw
-    ):
-        raise ValueError('invalid semantic cache baseline')
-    baseline = set(baseline_raw)
-    failed_run = int(sys.argv[3]) != 0 or any(
-        'failed:' in line for line in current.splitlines()
-    )
-    matches = re.findall(
-        r'\[graphify\] single-file chunk (.+?) truncated at [^\n]*partial result kept',
+text = Path(sys.argv[1]).read_text(encoding='utf-8', errors='replace')
+marker = '--- run started '
+start = text.rfind(marker)
+current = text[start:] if start >= 0 else text
+targets: set[Path] = set()
+for raw in re.findall(
+    r'\[graphify\] single-file chunk (.+?) truncated at [^\n]*partial result kept',
+    current,
+):
+    candidate = Path(raw)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    resolved = candidate.resolve()
+    if resolved.is_relative_to(root):
+        targets.add(resolved)
+
+cache_dir = root / 'graphify-out' / 'cache' / 'semantic'
+if cache_dir.exists() and (cache_dir.is_symlink() or not cache_dir.is_dir()):
+    raise SystemExit('unsafe semantic cache directory')
+purged_partial = 0
+purged_invalid = 0
+allowed_confidence = {'AMBIGUOUS', 'EXTRACTED', 'INFERRED'}
+if cache_dir.is_dir():
+    for entry in cache_dir.glob('*.json'):
+        if entry.is_symlink() or not entry.is_file():
+            continue
+        try:
+            payload = json.loads(entry.read_text(encoding='utf-8'))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        invalid_confidence = any(
+            isinstance(edge, dict)
+            and edge.get('confidence', 'EXTRACTED') not in allowed_confidence
+            for edge in (payload.get('edges') or [])
+        )
+        if invalid_confidence:
+            entry.unlink()
+            purged_invalid += 1
+            continue
+        sources: set[Path] = set()
+        for key in ('nodes', 'edges', 'hyperedges'):
+            values = payload.get(key) or []
+            if not isinstance(values, list):
+                continue
+            for item in values:
+                if not isinstance(item, dict):
+                    continue
+                raw_source = item.get('source_file')
+                if not isinstance(raw_source, str) or not raw_source:
+                    continue
+                source = Path(raw_source)
+                if not source.is_absolute():
+                    source = root / source
+                sources.add(source.resolve())
+        if sources & targets:
+            entry.unlink()
+            purged_partial += 1
+
+purged_inner = sum(
+    int(value)
+    for value in re.findall(
+        r'\[atlas graphify\] purged (\d+) semantic cache entries created by failed run\.',
         current,
     )
-    targets: set[Path] = set()
-    for raw in matches:
-        candidate = Path(raw)
-        if not candidate.is_absolute():
-            candidate = root / candidate
-        resolved = candidate.resolve()
-        if resolved.is_relative_to(root) and resolved.is_file():
-            targets.add(resolved)
-
-    cache_dir = root / 'graphify-out' / 'cache' / 'semantic'
-    purged_partial = 0
-    purged_invalid = 0
-    purged_failed_run = sum(
-        int(value)
-        for value in re.findall(
-            r'\[atlas graphify\] purged (\d+) semantic cache entries created by failed run\.',
-            current,
-        )
-    )
-    allowed_confidence = {'AMBIGUOUS', 'EXTRACTED', 'INFERRED'}
-    if cache_dir.is_dir() and not cache_dir.is_symlink():
-        for entry in cache_dir.glob('*.json'):
-            if entry.is_symlink() or not entry.is_file():
-                continue
-            if failed_run and entry.name not in baseline:
-                entry.unlink()
-                purged_failed_run += 1
-                continue
-            try:
-                payload = json.loads(entry.read_text(encoding='utf-8'))
-            except (OSError, json.JSONDecodeError):
-                continue
-            invalid_confidence = False
-            if isinstance(payload, dict):
-                invalid_confidence = any(
-                    isinstance(edge, dict)
-                    and edge.get('confidence', 'EXTRACTED') not in allowed_confidence
-                    for edge in (payload.get('edges') or [])
-                )
-            if invalid_confidence:
-                entry.unlink()
-                purged_invalid += 1
-                continue
-            sources: set[Path] = set()
-            if isinstance(payload, dict):
-                for key in ('nodes', 'edges', 'hyperedges'):
-                    values = payload.get(key) or []
-                    if not isinstance(values, list):
-                        continue
-                    for item in values:
-                        if not isinstance(item, dict):
-                            continue
-                        raw_source = item.get('source_file')
-                        if not isinstance(raw_source, str) or not raw_source:
-                            continue
-                        source = Path(raw_source)
-                        if not source.is_absolute():
-                            source = root / source
-                        sources.add(source.resolve())
-            if sources & targets:
-                entry.unlink()
-                purged_partial += 1
-    print(purged_partial, purged_invalid, purged_failed_run)
-except Exception as exc:
-    print(
-        f'ERROR: partial semantic-cache cleanup failed ({type(exc).__name__})',
-        file=sys.stderr,
-    )
-    raise SystemExit(73) from None
-PY
 )
-PARTIAL_CACHE_CLEANUP_EXIT=$?
-set -e
-if [ "$PARTIAL_CACHE_CLEANUP_EXIT" -ne 0 ]; then
-  PURGED_PARTIAL_CACHE_ENTRIES=0
-  PURGED_INVALID_CACHE_ENTRIES=0
-  PURGED_FAILED_RUN_CACHE_ENTRIES=0
+print(purged_partial, purged_invalid, purged_inner)
+PY
+)" || {
+  echo "ERROR: targeted semantic-cache cleanup failed." >&2
   RAG_EXIT_CODE=73
-else
-  read -r PURGED_PARTIAL_CACHE_ENTRIES PURGED_INVALID_CACHE_ENTRIES \
-    PURGED_FAILED_RUN_CACHE_ENTRIES \
-    <<< "$SEMANTIC_CACHE_CLEANUP_COUNTS"
-fi
+  SEMANTIC_CACHE_CLEANUP_COUNTS="0 0 0"
+}
+read -r PURGED_PARTIAL_CACHE_ENTRIES PURGED_INVALID_CACHE_ENTRIES \
+  PURGED_FAILED_RUN_CACHE_ENTRIES <<< "$SEMANTIC_CACHE_CLEANUP_COUNTS"
 
 if [ "$RAG_EXIT_CODE" -ne 0 ]; then
   python3 - \

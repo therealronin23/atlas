@@ -342,11 +342,10 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
     checkpoints de cada chunk exitoso agrupando por `source_file`; si otra
     slice del mismo fichero falla, ya existe una entrada bajo el hash del
     fichero completo. La siguiente corrida veía un hit y ocultaba el fragmento
-    ausente. Bajo el mismo lock de publicación se guarda ahora el conjunto de
-    claves previo; cualquier fallo, señal, deriva o transacción interrumpida
-    restaura artefactos y elimina exclusivamente las claves nacidas durante la
-    corrida. El wrapper repite la limpieza como defensa y la informa por
-    separado. Dos regresiones prueban rollback y preservación del cache previo.
+    ausente. La primera remediación purgó todas las claves nacidas durante una
+    corrida fallida: evitó el falso verde, pero aplicó atomicidad a una frontera
+    demasiado grande y provocó la pérdida de progreso descrita en el hallazgo
+    60. Se conserva solo como antecedente del arreglo definitivo por fuente.
 56. **El config local de Codex podía filtrarse con un staging amplio.** El TOML
     no rastreado contenía una credencial OAuth, rutas absolutas, MCPs del host y
     sandbox amplio; además estaba en modo 0664. Queda anclado en `.gitignore`,
@@ -379,6 +378,20 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
     con consultas generales; contiene URLs firmadas y contexto local. Queda
     ignorado tanto por Git como por Graphify y restringido localmente a 0600.
     Solo su destilación operativa es autoridad publicable.
+60. **El rollback seguro convertía 15/16 éxitos en cero y repetía consumo.**
+    Graphify escribe cada chunk antes del callback, agrupa por `source_file` con
+    `merge_existing=True` y puede crear o mutar hashes ajenos al chunk. El
+    wrapper inferior y el quality wrapper guardaban solo nombres y purgaban
+    indiscriminadamente todo hash nuevo ante el fallo final; además, el retry
+    adaptativo omitía del agregado los tokens del intento padre truncado. Atlas
+    separa ahora trabajo verificable de publicación: bajo el mismo lock extrae
+    una fuente por vez con cache incremental y retry adaptativo desactivados,
+    registra tokens en el callback, filtra cualquier salida cruzada o dangling,
+    exige schema válido y hash de contenido estable, y hace un único write
+    atómico. Un 504 deja pendientes solo sus fuentes; auth, billing, cuota, 429
+    o modelo rechazado detienen el lote. El full scan, manifest, grafo, Cypher y
+    vault mantienen rollback conjunto. Seis unit tests y dos regresiones de
+    wrapper demuestran que reiniciar repite únicamente misses seguros.
 
 ## Verificación ejecutada
 
@@ -391,11 +404,11 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
 | `atlas audit --verify` | cadena íntegra |
 | `atlas doctor` | OK local; integraciones externas explícitamente no configuradas |
 | Coherencia del resumen `atlas reality --run-checks` | core/browser reflejan la evidencia de `checks`; regresión dirigida exit 0 |
-| Transacción de cache semántico tras chunk fallido/deriva | claves nuevas purgadas; baseline previo preservado; regresiones exit 0 |
+| Resume + transacción semántica tras fallo/deriva | fuentes completas preservadas; fuente fallida no cacheada; publicación revertida; regresiones exit 0 |
 | Tests dirigidos Hermes/deploy/HMAC/kanban/reality | exit 0 |
 | Tests dirigidos dotenv/auditoría/grafos/Neo4j | exit 0 |
 | Regresiones lock/reconciliación/calidad GraphRAG | exit 0 |
-| GraphRAG full-scan estricto | `passed`; cero JSON inválido, chunks fallidos, huecos, parciales, warnings de schema o IDs legacy reales |
+| GraphRAG full-scan estricto | La corrida histórica anterior pasó; la verificación posterior al arreglo quedó limitada a 702/714 hits porque NVIDIA y Ollama no respondieron de forma utilizable a las fuentes largas. No se declara full scan nuevo ni cobertura semántica completa |
 | Export Obsidian transaccional | una nota por nodo canónico o más, canvas presente, nombres dentro del límite real y cero backups residuales |
 | Ledger local de tokens | uso reportado atribuido; se declara expresamente distinto de billing/cuota viva |
 | Validación de config Hermes contra código upstream fijado | exit 0 para Groq y OpenRouter |
@@ -437,6 +450,10 @@ persistente incompatible se rechaza/migra explícitamente en vez de mezclarse.
     se identifica por fichero, pero extracción, reintento y fallo ocurren por
     slices/chunks; sin transacción, “algún resultado del fichero” se confundía
     con “fichero completo”.
+11. **Atomicidad aplicada a estado de trabajo verificable.** Revertir una
+    publicación incompleta era correcto; borrar junto con ella unidades ya
+    completas e independientes no lo era. La frontera de checkpoint debe ser
+    menor que la frontera de publicación.
 
 ### Lo que funcionó
 

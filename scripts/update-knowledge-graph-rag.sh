@@ -32,6 +32,7 @@ IMPORT_NEO4J=false
 FORCE=false
 CODE_ONLY=false
 NO_CLUSTER=false
+RESUME_ONLY=false
 MAX_CONCURRENCY=1
 TOKEN_BUDGET=4000
 API_TIMEOUT="${GRAPHIFY_API_TIMEOUT:-600}"
@@ -50,6 +51,7 @@ Options:
   --force                   Force Graphify to rewrite the graph even if the rebuild shrinks
   --code-only               Build only the code graph (no semantic extraction)
   --no-cluster              Skip community clustering/labeling
+  --resume-only             Complete verified per-source semantic checkpoints, then exit
   --max-concurrency N       LLM concurrency for semantic extraction (default: 1)
   --max-workers N           Worker threads for Graphify extraction (default: 1)
   --token-budget N          Token budget for Graphify semantic extraction (default: 4000)
@@ -97,6 +99,9 @@ while [ "$#" -gt 0 ]; do
     --no-cluster)
       NO_CLUSTER=true
       ;;
+    --resume-only)
+      RESUME_ONLY=true
+      ;;
     --max-concurrency)
       shift
       MAX_CONCURRENCY="${1:-$MAX_CONCURRENCY}"
@@ -129,6 +134,11 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
+
+if [ "$RESUME_ONLY" = true ] && { [ "$CODE_ONLY" = true ] || [ "$IMPORT_NEO4J" = true ]; }; then
+  echo "ERROR: --resume-only cannot be combined with --code-only or --import-neo4j." >&2
+  exit 2
+fi
 
 if ! command -v graphify >/dev/null 2>&1; then
   echo "ERROR: graphify is not installed in the active virtualenv." >&2
@@ -210,7 +220,10 @@ if [ "$CODE_ONLY" = false ]; then
     exit 2
   fi
   echo "Building semantic Graphify graph with backend=$BACKEND ${MODEL:+model=$MODEL}."
-  export GRAPHIFY_MAX_OUTPUT_TOKENS="${GRAPHIFY_MAX_OUTPUT_TOKENS:-4096}"
+  # 4096 repeatedly truncated Atlas's larger control documents. Checkpoint
+  # extraction uses one source, no adaptive retry, and rejects length stops;
+  # 16384 is the measured safe completion ceiling for this corpus.
+  export GRAPHIFY_MAX_OUTPUT_TOKENS="${GRAPHIFY_MAX_OUTPUT_TOKENS:-16384}"
   export GRAPHIFY_LLM_TEMPERATURE="${GRAPHIFY_LLM_TEMPERATURE:-0}"
   export GRAPHIFY_API_TIMEOUT="$API_TIMEOUT"
   # Graphify's OpenAI-compatible default is six retries. Combined with a
@@ -691,6 +704,28 @@ else
   # AST rebuild when it publishes last. Use the upstream lock pathname so the
   # hook queues its change set instead of racing us.
   acquire_semantic_lock
+  if [ "$RESUME_ONLY" = true ] || [ "${GRAPHIFY_SKIP_SEMANTIC_RESUME:-0}" != "1" ]; then
+    RESUME_ARGS=(
+      --root "$ROOT_DIR"
+      --backend "$BACKEND"
+      --token-budget "$TOKEN_BUDGET"
+    )
+    if [ -n "$MODEL" ]; then
+      RESUME_ARGS+=(--model "$MODEL")
+    fi
+    if python3 scripts/graphify_semantic_resume.py "${RESUME_ARGS[@]}"; then
+      :
+    else
+      RESUME_EXIT_CODE=$?
+      echo "ERROR: semantic checkpoints remain incomplete; verified progress was preserved." >&2
+      exit "$RESUME_EXIT_CODE"
+    fi
+  fi
+  if [ "$RESUME_ONLY" = true ]; then
+    release_semantic_lock
+    trap - EXIT INT TERM
+    exit 0
+  fi
   # Graphify 0.9.11's incremental `extract` builds only the changed subset and
   # then publishes that subset as graph.json. A semantic refresh must instead
   # scan every live file while still reusing the content-addressed semantic

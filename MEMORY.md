@@ -23,13 +23,18 @@ Lecciones operativas que explican el porqué de las reglas vivas. El estado vive
   manifest de forma transaccional para forzar detección completa, conserva el
   anterior ante fallo y no publica si faltan manifest, export o quality gate.
   Un resultado truncado/parcial nunca se conserva como hit futuro: se rechaza y
-  se purga su entrada de cache cuando puede atribuirse con seguridad. Como
-  Graphify checkpointa por chunk pero cachea por fichero, la transacción guarda
-  las claves previas y elimina todas las nacidas durante un fallo/interrupción;
-  “alguna slice produjo datos” no demuestra completitud del fichero. Un shrink
+  se purga su entrada de cache cuando puede atribuirse con seguridad. Un shrink
   de clustering solo se fuerza tras demostrar full scan, snapshot estable, IDs
   canónicos y cobertura comunitaria exacta; el mensaje de éxito upstream no es
   evidencia suficiente.
+- `semantic-checkpoint-per-source`: rollback de publicación y rollback de
+  trabajo no son la misma frontera. Graphify checkpointa chunks pero cachea por
+  fichero y puede escribir fuentes cruzadas; por eso Atlas desactiva ese writer,
+  extrae una fuente cada vez y guarda una sola vez tras demostrar respuesta
+  terminal, fuente exacta, schema válido y contenido estable. Un fallo posterior
+  conserva esas fuentes; reiniciar desde cero tras 15/16 no es atomicidad, es
+  pérdida de trabajo y coste. El uso se registra por callback y el resume no usa
+  retry adaptativo mientras upstream omita los tokens del intento padre.
 - `semantic-coverage-human-owned`: un error o una respuesta del LLM puede
   generar una candidatura de exclusión, nunca editar `.graphifyignore` por
   defecto. Los monitores no matan procesos por coincidencia global ni cambian
