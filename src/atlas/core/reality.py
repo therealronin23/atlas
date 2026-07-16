@@ -62,6 +62,7 @@ def collect_reality(
     report["capabilities"] = _capability_plane(report)
     if run_checks:
         report["checks"] = _run_checks(root, include_browser=include_browser)
+        _project_check_evidence(report)
     report["status"] = _overall_status(report)
     report["strict_failures"] = strict_failures(report)
     return report
@@ -427,6 +428,27 @@ def _run_checks(root: Path, *, include_browser: bool) -> dict[str, Any]:
             root,
         ).to_dict()
     return checks
+
+
+def _project_check_evidence(report: dict[str, Any]) -> None:
+    """Keep the summary test state consistent with freshly executed checks."""
+    tests = report.get("tests")
+    checks = report.get("checks")
+    if not isinstance(tests, dict) or not isinstance(checks, dict):
+        return
+    for state_name, check_name in (
+        ("core", "pytest_core"),
+        ("browser", "pytest_browser"),
+    ):
+        check = checks.get(check_name)
+        if not isinstance(check, dict):
+            continue
+        exit_code = check.get("exit_code")
+        summary = str(check.get("summary") or f"exit_code={exit_code}")
+        tests[state_name] = {
+            "status": "passed" if exit_code == 0 else "failed",
+            "reason": summary,
+        }
 
 
 def _default_check_timeout() -> int:

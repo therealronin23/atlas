@@ -12,7 +12,8 @@ guard parsea un log de pipeline buscando los dos patrones confirmados:
      content, ver graphify/llm.py:876-880).
 
 Acumula contador por fichero en un counts-file JSON y, al llegar a 3 fallos,
-anade el fichero (idempotente) a .graphifyignore.
+propone el fichero. La aplicación idempotente a `.graphifyignore` solo ocurre
+con `--apply-ignore` explícito.
 
 Diseno adicional (no pedido literalmente pero necesario dada la Tarea 6 del
 mismo plan: run-graphify-quality-pipeline.sh ahora ABRE el log en modo
@@ -57,6 +58,59 @@ def _invalid_json_line(path: str) -> str:
 
 
 class TestThresholdCrossing:
+    def test_default_is_advisory_and_does_not_mutate_ignore(
+        self, tmp_path: Path, capsys
+    ) -> None:
+        m = _mod()
+        log = tmp_path / "pipeline.log"
+        target = "docs/adversarial.md"
+        log.write_text(
+            "\n".join([_truncated_line(target)] * 3) + "\n",
+            encoding="utf-8",
+        )
+        ignore_file = tmp_path / ".graphifyignore"
+        counts_file = tmp_path / "counts.json"
+
+        rc = m.main(
+            [
+                str(log),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+            ]
+        )
+
+        assert rc == 0
+        assert not ignore_file.exists()
+        assert "candidate only" in capsys.readouterr().out
+
+    def test_unsafe_parent_path_is_never_applied(
+        self, tmp_path: Path, capsys
+    ) -> None:
+        m = _mod()
+        log = tmp_path / "pipeline.log"
+        log.write_text(
+            "\n".join([_truncated_line("../../src/atlas") ] * 3) + "\n",
+            encoding="utf-8",
+        )
+        ignore_file = tmp_path / ".graphifyignore"
+
+        rc = m.main(
+            [
+                str(log),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(tmp_path / "counts.json"),
+                "--apply-ignore",
+            ]
+        )
+
+        assert rc == 0
+        assert not ignore_file.exists()
+        assert "unsafe" in capsys.readouterr().out.lower()
+
     def test_three_truncated_failures_same_file_added_to_ignore(self, tmp_path: Path) -> None:
         m = _mod()
         log = tmp_path / "pipeline.log"
@@ -65,7 +119,16 @@ class TestThresholdCrossing:
         ignore_file = tmp_path / ".graphifyignore"
         counts_file = tmp_path / "counts.json"
 
-        rc = m.main([str(log), "--ignore-file", str(ignore_file), "--counts-file", str(counts_file)])
+        rc = m.main(
+            [
+                str(log),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+                "--apply-ignore",
+            ]
+        )
 
         assert rc == 0
         assert ignore_file.exists()
@@ -81,7 +144,16 @@ class TestThresholdCrossing:
         ignore_file = tmp_path / ".graphifyignore"
         counts_file = tmp_path / "counts.json"
 
-        rc = m.main([str(log), "--ignore-file", str(ignore_file), "--counts-file", str(counts_file)])
+        rc = m.main(
+            [
+                str(log),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+                "--apply-ignore",
+            ]
+        )
 
         assert rc == 0
         if ignore_file.exists():
@@ -96,19 +168,46 @@ class TestThresholdCrossing:
         # Corrida 1: 2 fallos (todavia no cruza el umbral).
         log1 = tmp_path / "run1.log"
         log1.write_text("\n".join([_truncated_line(target)] * 2) + "\n", encoding="utf-8")
-        m.main([str(log1), "--ignore-file", str(ignore_file), "--counts-file", str(counts_file)])
+        m.main(
+            [
+                str(log1),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+                "--apply-ignore",
+            ]
+        )
         assert not ignore_file.exists() or target not in ignore_file.read_text(encoding="utf-8")
 
         # Corrida 2: 2 fallos mas -> total acumulado 4, cruza el umbral.
         log2 = tmp_path / "run2.log"
         log2.write_text("\n".join([_truncated_line(target)] * 2) + "\n", encoding="utf-8")
-        m.main([str(log2), "--ignore-file", str(ignore_file), "--counts-file", str(counts_file)])
+        m.main(
+            [
+                str(log2),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+                "--apply-ignore",
+            ]
+        )
         assert target in ignore_file.read_text(encoding="utf-8")
 
         # Corrida 3: sigue cruzado -> NO debe duplicar la entrada.
         log3 = tmp_path / "run3.log"
         log3.write_text(_truncated_line(target) + "\n", encoding="utf-8")
-        m.main([str(log3), "--ignore-file", str(ignore_file), "--counts-file", str(counts_file)])
+        m.main(
+            [
+                str(log3),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+                "--apply-ignore",
+            ]
+        )
 
         ignored_text = ignore_file.read_text(encoding="utf-8")
         assert ignored_text.count(target) == 1, (
@@ -126,7 +225,16 @@ class TestInvalidJsonPattern:
         ignore_file = tmp_path / ".graphifyignore"
         counts_file = tmp_path / "counts.json"
 
-        rc = m.main([str(log), "--ignore-file", str(ignore_file), "--counts-file", str(counts_file)])
+        rc = m.main(
+            [
+                str(log),
+                "--ignore-file",
+                str(ignore_file),
+                "--counts-file",
+                str(counts_file),
+                "--apply-ignore",
+            ]
+        )
 
         assert rc == 0
         assert target in ignore_file.read_text(encoding="utf-8")
@@ -230,6 +338,7 @@ class TestCliContract:
                 str(ignore_file),
                 "--counts-file",
                 str(counts_file),
+                "--apply-ignore",
             ],
             capture_output=True,
             text=True,

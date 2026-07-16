@@ -69,7 +69,6 @@ def test_autonomous_scripts_never_source_dotenv_as_shell_code() -> None:
         "update-knowledge-graph.sh",
         "update-knowledge-graph-rag.sh",
         "run-graphify-quality-pipeline.sh",
-        "graphify-monitor-and-switch.sh",
         "hermes_local.sh",
     )
     for name in names:
@@ -77,3 +76,23 @@ def test_autonomous_scripts_never_source_dotenv_as_shell_code() -> None:
         assert 'source ".env"' not in raw
         assert 'source "${ROOT_DIR}/.env"' not in raw
         assert "safe_dotenv.py" in raw
+
+
+def test_live_operator_docs_never_source_dotenv_as_shell_code() -> None:
+    paths = (
+        REPO / "AGENTS.md",
+        REPO / "docs" / "operations" / "USAGE.md",
+        REPO / "docs" / "operations" / "prometheus_setup.md",
+        REPO / "docs" / "audits" / "self_audit_loop.md",
+        REPO / "docs" / "decisions" / "gates" / "gate_c_seal.md",
+        REPO / "docs" / "design" / "plan_deliberation_council_v1.md",
+        REPO
+        / "docs"
+        / "superpowers"
+        / "plans"
+        / "2026-06-24-council-v2.0-trio-reliability.md",
+    )
+    for path in paths:
+        raw = path.read_text(encoding="utf-8")
+        assert "source .env" not in raw, path
+        assert "set -a" not in raw, path

@@ -19,5 +19,14 @@ docs/self_audit_latest.json
 # 115KB — índice máquina de docs/, dato tabular puro (ver docs/INDEX.yaml).
 docs/INDEX.yaml
 
-# Entradas por debajo de esta línea las añade scripts/graphify_failure_guard.py
-# automáticamente cuando un fichero acumula 3+ fallos de extracción (Bug 4).
+# Derivados de publicación del mismo paper. El Markdown contiguo es la fuente
+# semántica humana; el HTML declara generator=pandoc y el PDF es binario,
+# indivisible en Graphify 0.9.11 y devolvía una respuesta hueca aun con 65K de
+# salida. Ingerir los tres duplica conceptos y el PDF no puede recuperarse por
+# bisección adaptativa.
+docs/outreach/paper/paper_subject_enforced_completeness.html
+docs/outreach/paper/paper_subject_enforced_completeness.pdf
+
+# `scripts/graphify_failure_guard.py` solo propone candidaturas cuando un
+# fichero acumula 3+ fallos. Añadir una exclusión exige revisión humana y
+# `--apply-ignore`; la salida de un LLM nunca cambia cobertura por defecto.

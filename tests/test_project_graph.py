@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import Any, cast
 
 import kuzu
 import pytest
@@ -157,6 +158,41 @@ def test_current_queries_fail_explicitly_when_source_tree_is_dirty(
         tools["graph_importers"].fn(module="atlas.a")
 
 
+def test_current_queries_fail_when_server_process_predates_current_head(
+    tiny_repo: Path, tmp_path: Path
+) -> None:
+    db_path = tmp_path / "pg.kuzu"
+    build_project_graph(tiny_repo, db_path, commits=10)
+
+    pytest.importorskip("mcp.server.fastmcp")
+    from atlas.mcp.graph_server import build_graph_server
+
+    server = build_graph_server(db_path, repo_root=tiny_repo)
+    tools = {tool.name: tool for tool in server._tool_manager.list_tools()}
+    started_head = _git(tiny_repo, "rev-parse", "HEAD")
+
+    (tiny_repo / "src" / "atlas" / "c.py").write_text(
+        "from atlas import a\n", encoding="utf-8"
+    )
+    _git(tiny_repo, "add", ".")
+    _git(tiny_repo, "commit", "-q", "-m", "c3-server-stays-open")
+    build_project_graph(tiny_repo, db_path, commits=10)
+
+    overview = tools["graph_overview"].fn()
+    assert overview["graph_commit_sha"] == _git(tiny_repo, "rev-parse", "HEAD")
+    assert overview["head_sha"] == overview["graph_commit_sha"]
+    assert overview["server_started_head_sha"] == started_head
+    assert overview["freshness"] == "SERVER_STALE"
+    with pytest.raises(RuntimeError, match="SERVER_STALE"):
+        tools["graph_importers"].fn(module="atlas.a")
+
+    refreshed_server = build_graph_server(db_path, repo_root=tiny_repo)
+    refreshed_tools = {
+        tool.name: tool for tool in refreshed_server._tool_manager.list_tools()
+    }
+    assert refreshed_tools["graph_overview"].fn()["freshness"] == "FRESH"
+
+
 def test_build_is_idempotent(tiny_repo: Path, tmp_path: Path) -> None:
     db_path = tmp_path / "pg.kuzu"
     m1 = build_project_graph(tiny_repo, db_path, commits=10)
@@ -185,7 +221,8 @@ def test_build_project_graph_propagates_embedder(tiny_repo: Path, tmp_path: Path
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:FileVersion) RETURN n.embedding LIMIT 1")
-        emb = r.get_next()[0]
+        assert not isinstance(r, list)
+        emb = cast(list[Any], r.get_next())[0]
         assert len(emb) == 8
     finally:
         conn.close()
@@ -201,7 +238,8 @@ def test_build_project_graph_default_embedder_is_unchanged(tiny_repo: Path, tmp_
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:FileVersion) RETURN n.embedding LIMIT 1")
-        emb = r.get_next()[0]
+        assert not isinstance(r, list)
+        emb = cast(list[Any], r.get_next())[0]
         assert len(emb) == 64
     finally:
         conn.close()
