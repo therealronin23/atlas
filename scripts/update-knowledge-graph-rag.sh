@@ -236,6 +236,8 @@ GRAPHIFY_MANIFEST="graphify-out/manifest.json"
 GRAPHIFY_MANIFEST_BACKUP="graphify-out/.semantic-manifest.backup"
 SEMANTIC_PUBLISH_BACKUP="graphify-out/.semantic-publish.backup"
 SEMANTIC_PUBLISH_PREPARING="graphify-out/.semantic-publish.preparing"
+SEMANTIC_CACHE_DIR="graphify-out/cache/semantic"
+SEMANTIC_CACHE_BASELINE_NAME="semantic-cache-baseline.json"
 SEMANTIC_PUBLISH_ARTIFACTS=(
   "graphify-out/manifest.json"
   "graphify-out/graph.json"
@@ -248,9 +250,77 @@ SEMANTIC_PUBLISH_ARTIFACTS=(
   "graphify-out/graph.graphml"
 )
 
+snapshot_semantic_cache() {
+  python3 - "$1" "$SEMANTIC_CACHE_DIR" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+destination = Path(sys.argv[1])
+cache_dir = Path(sys.argv[2])
+if cache_dir.exists() and (cache_dir.is_symlink() or not cache_dir.is_dir()):
+    raise SystemExit('ERROR: unsafe semantic cache directory.')
+names = []
+if cache_dir.is_dir():
+    names = sorted(
+        entry.name
+        for entry in cache_dir.glob('*.json')
+        if entry.is_file()
+        and not entry.is_symlink()
+        and re.fullmatch(r'[0-9a-f]{64}\.json', entry.name)
+    )
+destination.write_text(json.dumps(names) + '\n', encoding='utf-8')
+PY
+}
+
+restore_semantic_cache() {
+  python3 - \
+    "$SEMANTIC_PUBLISH_BACKUP/$SEMANTIC_CACHE_BASELINE_NAME" \
+    "$SEMANTIC_CACHE_DIR" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+baseline_path = Path(sys.argv[1])
+cache_dir = Path(sys.argv[2])
+if baseline_path.exists() and (
+    baseline_path.is_symlink() or not baseline_path.is_file()
+):
+    raise SystemExit('ERROR: unsafe semantic cache baseline.')
+if baseline_path.is_file():
+    raw = json.loads(baseline_path.read_text(encoding='utf-8'))
+    if not isinstance(raw, list) or not all(
+        isinstance(name, str) and re.fullmatch(r'[0-9a-f]{64}\.json', name)
+        for name in raw
+    ):
+        raise SystemExit('ERROR: invalid semantic cache baseline.')
+    baseline = set(raw)
+else:
+    # Compatibility with a transaction left by the older implementation:
+    # without a baseline, preserving a potentially partial checkpoint would
+    # be a false hit. Re-extraction is expensive but safe.
+    baseline = set()
+if cache_dir.exists() and (cache_dir.is_symlink() or not cache_dir.is_dir()):
+    raise SystemExit('ERROR: unsafe semantic cache directory.')
+purged = 0
+if cache_dir.is_dir():
+    for entry in cache_dir.glob('*.json'):
+        if entry.is_symlink() or not entry.is_file():
+            continue
+        if not re.fullmatch(r'[0-9a-f]{64}\.json', entry.name):
+            continue
+        if entry.name not in baseline:
+            entry.unlink()
+            purged += 1
+print(purged)
+PY
+}
+
 restore_semantic_publish() {
   if [ "$SEMANTIC_PUBLISH_PREPARED" = true ]; then
-    local artifact backup_path
+    local artifact backup_path purged_cache
     for artifact in "${SEMANTIC_PUBLISH_ARTIFACTS[@]}"; do
       rm -f -- "$artifact"
       backup_path="$SEMANTIC_PUBLISH_BACKUP/${artifact##*/}"
@@ -258,6 +328,13 @@ restore_semantic_publish() {
         cp -p -- "$backup_path" "$artifact"
       fi
     done
+    if ! purged_cache="$(restore_semantic_cache)"; then
+      echo "ERROR: semantic cache rollback failed; publication backup retained." >&2
+      return 73
+    fi
+    if [ "$purged_cache" -gt 0 ]; then
+      echo "[atlas graphify] purged $purged_cache semantic cache entries created by failed run."
+    fi
     rm -rf -- "$SEMANTIC_PUBLISH_BACKUP"
     SEMANTIC_PUBLISH_PREPARED=false
   fi
@@ -296,6 +373,8 @@ prepare_semantic_publish() {
       cp -p -- "$artifact" "$SEMANTIC_PUBLISH_PREPARING/${artifact##*/}"
     fi
   done
+  snapshot_semantic_cache \
+    "$SEMANTIC_PUBLISH_PREPARING/$SEMANTIC_CACHE_BASELINE_NAME"
   mv "$SEMANTIC_PUBLISH_PREPARING" "$SEMANTIC_PUBLISH_BACKUP"
   SEMANTIC_PUBLISH_PREPARED=true
 }

@@ -138,6 +138,7 @@ def _prepare_fake_graphify_repo(tmp_path: Path, script_name: str) -> tuple[Path,
         "save_manifest(result['files'], manifest_path='graphify-out/manifest.json', kind='both', root=root)\n"
         "PY\n"
         "  printf '%s\\n' \"${GRAPHIFY_GRAPH_REPLACEMENT:-{\\\"nodes\\\":[],\\\"links\\\":[]}}\" > graphify-out/graph.json\n"
+        "  if [ -n \"${GRAPHIFY_CREATE_CACHE_ENTRY:-}\" ]; then mkdir -p \"$(dirname \"$GRAPHIFY_CREATE_CACHE_ENTRY\")\"; printf '{}\\n' > \"$GRAPHIFY_CREATE_CACHE_ENTRY\"; fi\n"
         "  if [ -n \"${GRAPHIFY_MUTATE_AFTER_EXTRACT_FILE:-}\" ]; then printf 'changed after snapshot\\n' > \"$GRAPHIFY_MUTATE_AFTER_EXTRACT_FILE\"; fi\n"
         "fi\n"
         "if [ \"${1:-}\" = 'cluster-only' ]; then\n"
@@ -281,6 +282,11 @@ def test_semantic_refresh_restores_last_publication_when_source_drifts(
     previous_graph = graph_path.read_bytes()
     previous_manifest = manifest_path.read_bytes()
     drift_file = tmp_path / "changed-during-extract.md"
+    cache_dir = tmp_path / "graphify-out" / "cache" / "semantic"
+    cache_dir.mkdir(parents=True)
+    existing_cache = cache_dir / ("a" * 64 + ".json")
+    failed_run_cache = cache_dir / ("b" * 64 + ".json")
+    existing_cache.write_text("{}\n", encoding="utf-8")
 
     result = _run(
         script,
@@ -294,6 +300,7 @@ def test_semantic_refresh_restores_last_publication_when_source_drifts(
             GRAPHIFY_GRAPH_REPLACEMENT=(
                 '{"nodes":[{"id":"candidate"}],"links":[]}'
             ),
+            GRAPHIFY_CREATE_CACHE_ENTRY=str(failed_run_cache),
             GRAPHIFY_MUTATE_AFTER_EXTRACT_FILE=str(drift_file),
         ),
     )
@@ -302,6 +309,8 @@ def test_semantic_refresh_restores_last_publication_when_source_drifts(
     assert "source tree drifted" in result.stderr
     assert graph_path.read_bytes() == previous_graph
     assert manifest_path.read_bytes() == previous_manifest
+    assert existing_cache.is_file()
+    assert not failed_run_cache.exists()
     assert not (tmp_path / "graphify-out" / ".semantic-publish.backup").exists()
     assert not (tmp_path / "graphify-out" / ".semantic-publish.preparing").exists()
     calls = calls_path.read_text(encoding="utf-8").splitlines()
@@ -735,6 +744,47 @@ def test_quality_strict_rejects_failed_semantic_chunks(tmp_path: Path) -> None:
     ).read_text(encoding="utf-8")
 
 
+def test_quality_strict_purges_cache_entries_created_by_failed_run(
+    tmp_path: Path,
+) -> None:
+    script = _copy_script(tmp_path, "run-graphify-quality-pipeline.sh")
+    venv_bin = tmp_path / ".venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    (venv_bin / "activate").write_text(
+        "# isolated no-op activate\n", encoding="utf-8"
+    )
+    cache_dir = tmp_path / "graphify-out" / "cache" / "semantic"
+    cache_dir.mkdir(parents=True)
+    existing = cache_dir / ("a" * 64 + ".json")
+    created_during_failure = cache_dir / ("b" * 64 + ".json")
+    existing.write_text("{}\n", encoding="utf-8")
+    rag = tmp_path / "scripts" / "update-knowledge-graph-rag.sh"
+    rag.write_text(
+        "#!/usr/bin/env bash\n"
+        "set -euo pipefail\n"
+        f"printf '{{}}\\n' > '{created_during_failure}'\n"
+        "echo '[graphify] chunk 2/3 failed: synthetic provider failure'\n",
+        encoding="utf-8",
+    )
+    rag.chmod(0o755)
+    (tmp_path / "scripts" / "graphify_failure_guard.py").write_text(
+        "# isolated no-op guard\n", encoding="utf-8"
+    )
+
+    result = _run(script, tmp_path, "--strict", "--min-nodes", "1")
+
+    assert result.returncode == 78
+    assert existing.is_file()
+    assert not created_during_failure.exists()
+    assert not list((tmp_path / "graphify-out" / "logs").glob(".semantic-cache-baseline.*"))
+    report = json.loads(
+        (tmp_path / "graphify-out" / "quality-report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["purged_failed_run_cache_entries"] == 1
+
+
 def test_quality_strict_stops_provider_work_when_a_threshold_is_impossible(
     tmp_path: Path,
 ) -> None:
@@ -780,8 +830,9 @@ def test_quality_strict_stops_provider_work_when_a_threshold_is_impossible(
     assert report == {
         "exit_code": 78,
         "status": "quality_threshold_aborted",
-        "finished_at": report["finished_at"],
-        "purged_invalid_cache_entries": 0,
+            "finished_at": report["finished_at"],
+            "purged_failed_run_cache_entries": 0,
+            "purged_invalid_cache_entries": 0,
         "purged_partial_cache_entries": 0,
         "quality_counters": {
             "failed_chunk_count": 1,

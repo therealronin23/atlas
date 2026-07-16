@@ -23,7 +23,10 @@ Lecciones operativas que explican el porqué de las reglas vivas. El estado vive
   manifest de forma transaccional para forzar detección completa, conserva el
   anterior ante fallo y no publica si faltan manifest, export o quality gate.
   Un resultado truncado/parcial nunca se conserva como hit futuro: se rechaza y
-  se purga su entrada de cache cuando puede atribuirse con seguridad. Un shrink
+  se purga su entrada de cache cuando puede atribuirse con seguridad. Como
+  Graphify checkpointa por chunk pero cachea por fichero, la transacción guarda
+  las claves previas y elimina todas las nacidas durante un fallo/interrupción;
+  “alguna slice produjo datos” no demuestra completitud del fichero. Un shrink
   de clustering solo se fuerza tras demostrar full scan, snapshot estable, IDs
   canónicos y cobertura comunitaria exacta; el mensaje de éxito upstream no es
   evidencia suficiente.

@@ -99,6 +99,11 @@ deliberada y cuantificada mediante `--max-failed-chunks` o
 `--max-hollow-responses` puede relajar esos límites. Los resultados truncados
 marcados como parciales y las advertencias de schema/confidence también
 rechazan; sus entradas de cache se purgan solo cuando la atribución es segura.
+Además, la transacción captura las claves semánticas antes de extraer: si un
+chunk falla después de que otra slice del mismo fichero haya hecho checkpoint,
+un fallo/señal/deriva elimina las claves nuevas y preserva el baseline. Una
+transacción interrumpida se reconcilia al adquirir de nuevo el lock, de modo que
+un fragmento incompleto no puede reaparecer como hit verde.
 Una comprobación propia valida IDs de nodos de fichero AST sin el falso positivo
 que la heurística upstream produce sobre comandos MCP ubicados en `L1`.
 Como `cluster-only` 0.9.11 ignora el `False` de su shrink guard, la ruta solo

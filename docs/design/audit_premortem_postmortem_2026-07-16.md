@@ -338,6 +338,15 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
     ejecutar exactamente el comando ya terminado. La evidencia viva se proyecta
     ahora al resumen solo después de completar cada check; una regresión cubre
     simultáneamente éxito core, fallo browser y degradación global.
+55. **Un chunk fallido podía reaparecer como cache hit verde.** Graphify hace
+    checkpoints de cada chunk exitoso agrupando por `source_file`; si otra
+    slice del mismo fichero falla, ya existe una entrada bajo el hash del
+    fichero completo. La siguiente corrida veía un hit y ocultaba el fragmento
+    ausente. Bajo el mismo lock de publicación se guarda ahora el conjunto de
+    claves previo; cualquier fallo, señal, deriva o transacción interrumpida
+    restaura artefactos y elimina exclusivamente las claves nacidas durante la
+    corrida. El wrapper repite la limpieza como defensa y la informa por
+    separado. Dos regresiones prueban rollback y preservación del cache previo.
 
 ## Verificación ejecutada
 
@@ -350,6 +359,7 @@ Antes de reparar, se asumió que la auditoría podía fracasar de estas formas:
 | `atlas audit --verify` | cadena íntegra |
 | `atlas doctor` | OK local; integraciones externas explícitamente no configuradas |
 | Coherencia del resumen `atlas reality --run-checks` | core/browser reflejan la evidencia de `checks`; regresión dirigida exit 0 |
+| Transacción de cache semántico tras chunk fallido/deriva | claves nuevas purgadas; baseline previo preservado; regresiones exit 0 |
 | Tests dirigidos Hermes/deploy/HMAC/kanban/reality | exit 0 |
 | Tests dirigidos dotenv/auditoría/grafos/Neo4j | exit 0 |
 | Regresiones lock/reconciliación/calidad GraphRAG | exit 0 |
@@ -388,6 +398,10 @@ persistente incompatible se rechaza/migra explícitamente en vez de mezclarse.
 9. **Límites de filesystem tratados como constantes de plataforma.** Un cap de
    200 parecía conservador frente a 255, pero no frente al filesystem real de
    143 ni frente a una sustitución incremental con derivados huérfanos.
+10. **Granularidad de cache distinta de la granularidad de fallo.** El cache
+    se identifica por fichero, pero extracción, reintento y fallo ocurren por
+    slices/chunks; sin transacción, “algún resultado del fichero” se confundía
+    con “fichero completo”.
 
 ### Lo que funcionó
 
