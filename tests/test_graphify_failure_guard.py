@@ -360,3 +360,37 @@ class TestCliContract:
             ]
         )
         assert rc == 0
+
+
+class TestI3ConcurrentMergeLocking:
+    """I3 (revisión final de rama, 2026-07-16): merge_counts era
+    read-modify-write sin exclusión mutua — dos pipelines solapados perdían
+    incrementos. El CLI debe serializar el bloque merge+threshold con flock."""
+
+    def test_parallel_invocations_do_not_lose_increments(self, tmp_path: Path) -> None:
+        n = 20
+        counts_file = tmp_path / "counts.json"
+        ignore_file = tmp_path / ".graphifyignore"
+        procs = []
+        for i in range(n):
+            log = tmp_path / f"run_{i}.log"
+            log.write_text(_truncated_line("docs/big.yaml") + "\n", encoding="utf-8")
+            procs.append(
+                subprocess.Popen(
+                    [
+                        sys.executable,
+                        str(SCRIPT_PATH),
+                        str(log),
+                        "--counts-file",
+                        str(counts_file),
+                        "--ignore-file",
+                        str(ignore_file),
+                    ],
+                    cwd=tmp_path,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            )
+        assert all(p.wait() == 0 for p in procs)
+        data = json.loads(counts_file.read_text(encoding="utf-8"))
+        assert data["docs/big.yaml"] == n  # sin lock se pierden incrementos

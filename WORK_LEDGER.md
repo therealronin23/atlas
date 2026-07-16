@@ -12,7 +12,9 @@ de escribir: `atlas reality --json`.
   piezas: tools `graph_communities()` y `graph_semantic_neighbors(note)` en el
   tronco (graph_server + RootSpec; la semántica graphify — comunidades con
   cohesión y miembros — por fin consultable por MCP; 3 tests nuevos + paridad,
-  mypy --strict). F3.3 quedó cubierta por la sesión Codex con contrato MÁS
+  mypy --strict; NOTA: la BD servida aún no tiene ObsidianNote — responderán
+  el mensaje limpio "vault no ingerido" hasta que el próximo tick alcance
+  HEAD e ingiera graphify-vault). F3.3 quedó cubierta por la sesión Codex con contrato MÁS
   estricto que el plan (Symbol==0 o cache roto invalida la regeneración entera
   en vez de loguear — desviación aceptada: mejor honesto que silencioso).
   Excepción puntual a la delegación: estas 2 tools las implementó Fable
@@ -122,6 +124,14 @@ de escribir: `atlas reality --json`.
   log en append con cabecera por corrida. El monitor NO se relanza en bucle
   (decisión del operador pendiente). Corrida limpia única lanzada para
   verificar que `graphify-out/quality-report.json` existe por fin.
+  **CORRECCIÓN (revisión final, 2026-07-16 noche)**: la auditoría Codex
+  RETIRÓ después `graphify-monitor-and-switch.sh`, `capture-llm-failures.sh`
+  y `graphify-autoremediation.sh` (stubs fail-closed `exit 64`: usaban
+  pgrep/kill workstation-wide y cambio implícito de proveedor). De F1 sigue
+  vivo el trío `.graphifyignore` + `graphify_failure_guard.py` (con flock
+  desde la revisión final) + el quality wrapper. La vía única y deliberada:
+  `run-graphify-quality-pipeline.sh` en foreground. La decisión "¿monitor en
+  bucle?" queda RESUELTA por retiro.
 - **MISSION LAYER v0 + MISSION CONSOLE (2026-07-15, ADR-069)** — el export
   "Diseño UI Atlas.md" (65.640 líneas) destilado a `docs/inbox/
   atlas_foundry_v0_destilado_2026-07-15.md` + spec en `docs/design/

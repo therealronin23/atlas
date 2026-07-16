@@ -29,8 +29,11 @@ aislados) se escanean completos.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 FAILURE_THRESHOLD = 3
@@ -73,6 +76,24 @@ def scan_log(log_path: Path) -> dict[str, int]:
                 if path:
                     counts[path] = counts.get(path, 0) + 1
     return counts
+
+
+@contextmanager
+def _state_lock(counts_file: Path) -> Iterator[None]:
+    """Exclusion mutua entre corridas solapadas (I3, revision final 2026-07-16):
+    merge_counts es read-modify-write y apply_threshold anade al ignore-file;
+    dos pipelines solapados perdian incrementos. flock sobre un lockfile
+    hermano (el counts-file se reescribe entero y no puede ser su propio
+    lock). El lock se libera solo al cerrar el handle, incluso si el proceso
+    muere a mitad."""
+    counts_file.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = counts_file.with_name(counts_file.name + ".lock")
+    with open(lock_path, "w", encoding="utf-8") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
 
 
 def _load_counts(counts_file: Path) -> dict[str, int]:
@@ -178,16 +199,17 @@ def main(argv: list[str] | None = None) -> int:
     counts_file = Path(args.counts_file)
 
     new_counts = scan_log(log_path)
-    total_counts = merge_counts(counts_file, new_counts)
-    threshold_paths = [
-        path
-        for path, count in sorted(total_counts.items())
-        if count >= FAILURE_THRESHOLD
-    ]
-    unsafe_paths = [path for path in threshold_paths if not _safe_ignore_path(path)]
-    newly_added = (
-        apply_threshold(ignore_file, total_counts) if args.apply_ignore else []
-    )
+    with _state_lock(counts_file):
+        total_counts = merge_counts(counts_file, new_counts)
+        threshold_paths = [
+            path
+            for path, count in sorted(total_counts.items())
+            if count >= FAILURE_THRESHOLD
+        ]
+        unsafe_paths = [path for path in threshold_paths if not _safe_ignore_path(path)]
+        newly_added = (
+            apply_threshold(ignore_file, total_counts) if args.apply_ignore else []
+        )
 
     for path in newly_added:
         print(f"[failure_guard] {path} cruzo el umbral de {FAILURE_THRESHOLD} fallos -> anadido a {ignore_file}")
