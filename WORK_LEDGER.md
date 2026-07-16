@@ -8,6 +8,29 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **GRAPHRAG REANUDABLE SIN VOLVER A CERO (2026-07-16)** — causa raíz
+  reproducida: Graphify 0.9.11 escribía cache incremental por chunk con
+  `merge_existing=True`, un chunk podía contaminar otra fuente y dos rollbacks
+  por nombres borraban 15/16 resultados ya pagados al fallar el último. La
+  publicación atómica se conserva, pero el trabajo previo ahora se separa:
+  extracción serial por fuente, writer incremental desactivado, salida 16.384,
+  sin retry adaptativo que subcuente tokens, filtro de fuente exacta, schema y
+  hash estable antes del write atómico. Cada respuesta registra uso real al
+  callback; fallos transitorios conservan otras fuentes y bloqueos de
+  cuota/billing/auth/modelo cortan el lote. Regresiones locales cubren
+  reanudación selectiva, contaminación cruzada, parciales, corte fatal y que el
+  wrapper no vuelva a purgar checkpoints verificados. **Próxima acción:** en
+  futuras reconstrucciones, usar siempre el quality wrapper; una interrupción
+  debe mostrar misses decrecientes, nunca reiniciar fuentes verificadas.
+- **LÍMITE VIVO DE LA CORRIDA SEMÁNTICA (2026-07-16)** — tras el arreglo, el
+  cache conserva 702/714 fuentes detectadas; las 12 restantes no se publicaron.
+  NVIDIA (70B/8B) y Ollama (4B/0.5B) quedaron bloqueados en la primera fuente
+  larga bajo sus límites; los procesos fueron detenidos por PID exacto y no se
+  declara un full scan semántico verde. El camino de reanudación sí quedó
+  probado localmente y conserva los 702 hits. **Próxima acción:** repetir con
+  un proveedor/modelo que responda al corpus; esa operación ya no debe repetir
+  los hits ni borrar progreso.
+
 - **CIERRE DE RESIDUOS Y PAQUETE PUBLICABLE A `main` (2026-07-16)** — los
   cinco cambios locales restantes se clasificaron por evidencia. Se conserva
   Vite 7.3.6 + plugin React 5.1.4 porque elimina 13 avisos del lock anterior;
@@ -34,8 +57,9 @@ de escribir: `atlas reality --json`.
   reconstruye por full scan, sin fallos/huecos/parciales/schema warnings, y el
   export Obsidian es transaccional. `atlas reality --run-checks` proyecta sus
   resultados al resumen de tests sin conservar estados `unknown`; los
-  checkpoints semánticos nacidos durante cualquier corrida fallida se purgan
-  transaccionalmente. Hermes/VPS/proveedor/Telegram y Neo4j no
+  checkpoints semánticos verificados por fuente sobreviven a fallos posteriores
+  mientras la publicación incompleta se revierte transaccionalmente.
+  Hermes/VPS/proveedor/Telegram y Neo4j no
   se declaran vivos: `atlas reality` marca Hermes mock y no había credenciales
   ni servicio Neo4j. Informe canónico:
   `docs/design/audit_premortem_postmortem_2026-07-16.md`.

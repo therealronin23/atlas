@@ -9,9 +9,11 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import signal
 import stat
 import subprocess
 import sys
+import time
 import tomllib
 from pathlib import Path
 from types import ModuleType
@@ -33,6 +35,9 @@ def _clean_env(**overrides: str) -> dict[str, str]:
     env = {
         "PATH": os.environ.get("PATH", ""),
         "PYTHONPATH": graphify_pythonpath,
+        # Isolated shell tests use tiny stubs in place of the semantic stack.
+        # Dedicated resume tests opt back in explicitly.
+        "GRAPHIFY_SKIP_SEMANTIC_RESUME": "1",
     }
     env.update(overrides)
     return env
@@ -485,6 +490,149 @@ def test_quality_pipeline_rejects_invalid_numeric_controls_before_work(
     assert f"--{label}" in result.stderr
 
 
+def test_quality_resume_checkpoints_survive_incomplete_helper_before_baseline(
+    tmp_path: Path,
+) -> None:
+    script = _copy_script(tmp_path, "run-graphify-quality-pipeline.sh")
+    venv_bin = tmp_path / ".venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    (venv_bin / "activate").write_text(
+        "# isolated no-op activate\n", encoding="utf-8"
+    )
+
+    checkpoint = (
+        tmp_path
+        / "graphify-out"
+        / "cache"
+        / "semantic"
+        / ("c" * 64 + ".json")
+    )
+    helper = tmp_path / "scripts" / "graphify_semantic_resume.py"
+    helper.write_text(
+        "#!/usr/bin/env python3\n"
+        "from pathlib import Path\n"
+        "import sys\n"
+        "\n"
+        "baseline = list(Path('graphify-out/logs').glob("
+        "'.semantic-cache-baseline.*'))\n"
+        "if baseline:\n"
+        "    raise SystemExit(91)\n"
+        "checkpoint = Path('graphify-out/cache/semantic/') / "
+        f"'{checkpoint.name}'\n"
+        "checkpoint.parent.mkdir(parents=True, exist_ok=True)\n"
+        "checkpoint.write_text('{}\\n', encoding='utf-8')\n"
+        "raise SystemExit(78)\n",
+        encoding="utf-8",
+    )
+    helper.chmod(0o755)
+
+    lower_called = tmp_path / "lower-called"
+    rag = tmp_path / "scripts" / "update-knowledge-graph-rag.sh"
+    rag.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ \" $* \" == *' --resume-only '* ]]; then\n"
+        "  exec python3 scripts/graphify_semantic_resume.py\n"
+        "fi\n"
+        "touch \"$LOWER_CALLED\"\n"
+        "exit 42\n",
+        encoding="utf-8",
+    )
+    rag.chmod(0o755)
+
+    result = _run(
+        script,
+        tmp_path,
+        "--strict",
+        env=_clean_env(
+            GRAPHIFY_SKIP_SEMANTIC_RESUME="0",
+            LOWER_CALLED=str(lower_called),
+        ),
+    )
+
+    assert result.returncode == 78, result.stderr
+    assert checkpoint.is_file()
+    assert not lower_called.exists()
+    assert not list(
+        (tmp_path / "graphify-out" / "logs").glob(
+            ".semantic-cache-baseline.*"
+        )
+    )
+
+
+def test_quality_resume_interrupt_terminates_the_whole_checkpoint_group(
+    tmp_path: Path,
+) -> None:
+    script = _copy_script(tmp_path, "run-graphify-quality-pipeline.sh")
+    venv_bin = tmp_path / ".venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    (venv_bin / "activate").write_text(
+        "# isolated no-op activate\n", encoding="utf-8"
+    )
+    runner_pid = tmp_path / "runner.pid"
+    worker_pid = tmp_path / "worker.pid"
+    rag = tmp_path / "scripts" / "update-knowledge-graph-rag.sh"
+    rag.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ \" $* \" == *' --resume-only '* ]]; then\n"
+        "  echo \"$PPID\" > \"$RUNNER_PID\"\n"
+        "  sleep 30 &\n"
+        "  echo \"$!\" > \"$WORKER_PID\"\n"
+        "  wait \"$!\"\n"
+        "fi\n"
+        "exit 42\n",
+        encoding="utf-8",
+    )
+    rag.chmod(0o755)
+    process = subprocess.Popen(
+        ["bash", str(script), "--strict"],
+        cwd=tmp_path,
+        env=_clean_env(
+            GRAPHIFY_SKIP_SEMANTIC_RESUME="0",
+            RUNNER_PID=str(runner_pid),
+            WORKER_PID=str(worker_pid),
+        ),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    worker = -1
+    try:
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if runner_pid.is_file() and worker_pid.is_file():
+                break
+            time.sleep(0.02)
+        assert runner_pid.is_file() and worker_pid.is_file()
+        runner = int(runner_pid.read_text(encoding="utf-8"))
+        worker = int(worker_pid.read_text(encoding="utf-8"))
+        os.kill(runner, signal.SIGINT)
+        stdout, stderr = process.communicate(timeout=10)
+        assert process.returncode == 130, (stdout, stderr)
+
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline and Path(f"/proc/{worker}").exists():
+            stat_text = Path(f"/proc/{worker}/stat").read_text(encoding="utf-8")
+            if stat_text.split()[2] == "Z":
+                break
+            time.sleep(0.02)
+        if Path(f"/proc/{worker}/stat").exists():
+            assert (
+                Path(f"/proc/{worker}/stat")
+                .read_text(encoding="utf-8")
+                .split()[2]
+                == "Z"
+            )
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        if worker > 0:
+            try:
+                os.kill(worker, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
 def test_quality_report_counts_only_current_run_and_does_not_double_count(
     tmp_path: Path,
 ) -> None:
@@ -744,7 +892,7 @@ def test_quality_strict_rejects_failed_semantic_chunks(tmp_path: Path) -> None:
     ).read_text(encoding="utf-8")
 
 
-def test_quality_strict_purges_cache_entries_created_by_failed_run(
+def test_quality_wrapper_does_not_repurge_inner_recovered_checkpoint(
     tmp_path: Path,
 ) -> None:
     script = _copy_script(tmp_path, "run-graphify-quality-pipeline.sh")
@@ -775,14 +923,14 @@ def test_quality_strict_purges_cache_entries_created_by_failed_run(
 
     assert result.returncode == 78
     assert existing.is_file()
-    assert not created_during_failure.exists()
+    assert created_during_failure.is_file()
     assert not list((tmp_path / "graphify-out" / "logs").glob(".semantic-cache-baseline.*"))
     report = json.loads(
         (tmp_path / "graphify-out" / "quality-report.json").read_text(
             encoding="utf-8"
         )
     )
-    assert report["purged_failed_run_cache_entries"] == 1
+    assert report["purged_failed_run_cache_entries"] == 0
 
 
 def test_quality_strict_stops_provider_work_when_a_threshold_is_impossible(
