@@ -98,7 +98,7 @@ jobs:
 
       - name: Pytest core (computer-use excluded explicitly)
         env:
-          PYTHONPATH: src
+          PYTHONPATH: .:src
           ATLAS_MEMORY_VECTOR: "0"
           ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
         run: uv run --frozen pytest tests/ -q --tb=line -m "not computer_use"
@@ -148,7 +148,7 @@ jobs:
 
       - name: Run every test selected by the computer_use marker
         env:
-          PYTHONPATH: src
+          PYTHONPATH: .:src
           ATLAS_MEMORY_VECTOR: "0"
           ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
         run: uv run --frozen pytest tests/ -q --tb=line -m computer_use

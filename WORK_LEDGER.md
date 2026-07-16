@@ -8,6 +8,9 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **CI IMPORTS ESTABLES (2026-07-16)** — `uv run` aislado no incluía la raíz:
+  se corrigió `PYTHONPATH` y `scripts/`/`tests/` son paquetes explícitos.
+
 - **GRAPHRAG REANUDABLE SIN VOLVER A CERO (2026-07-16)** — causa raíz
   reproducida: Graphify 0.9.11 escribía cache incremental por chunk con
   `merge_existing=True`, un chunk podía contaminar otra fuente y dos rollbacks
