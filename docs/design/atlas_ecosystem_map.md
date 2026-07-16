@@ -1,5 +1,9 @@
 # Atlas Ecosystem Map
 
+CI ejecuta los tests en un entorno `uv` aislado; la raíz del repositorio forma
+parte explícita de `PYTHONPATH` y los módulos auxiliares son paquetes
+importables, evitando depender del directorio incidental del runner.
+
 Canonical map for Atlas state after the 2026-07-07 context recovery. This file
 classifies the ecosystem; it is not a feature roadmap. The strategy is selective
 assimilation without cloning: study external systems, absorb useful capabilities

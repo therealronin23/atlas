@@ -1,5 +1,8 @@
 # MEMORY
 
+- `ci-isolated-imports-are-explicit`: los jobs aislados incluyen la raíz en
+  `PYTHONPATH` y declaran paquetes auxiliares importados por tests.
+
 Lecciones operativas que explican el porqué de las reglas vivas. El estado vive en
 `WORK_LEDGER.md`; los detalles de diseño viven en `docs/design/`.
 
