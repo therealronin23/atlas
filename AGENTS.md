@@ -86,7 +86,10 @@ Atlas ecosystem taxonomy lives in `docs/design/atlas_ecosystem_map.md`.
 `arxiv-citation-verification` · `adopt-real-not-shell` ·
 `research-before-deciding` · `challenge-the-trio` ·
 `deep-onboarding-new-sessions` · `no-rewrite-git-history` ·
-`absorb-without-cloning` · `adversarial-audit-no-assumptions`.
+`absorb-without-cloning` · `adversarial-audit-no-assumptions` ·
+`graph-rebuild-single-writer` · `semantic-full-scan-before-publish` ·
+`semantic-coverage-human-owned` · `filesystem-limits-are-runtime-facts` ·
+`cost-ledger-is-not-billing`.
 
 When the user states a recurring preference or workflow improvement, add/update
 a `feedback-*.md` memory, add a one-liner in `MEMORY.md`, and add the mania name
@@ -122,18 +125,21 @@ Compliance/transparency vocabulary authority:
 
 ## Token Budget Awareness (Important for Cost Control)
 
-Before starting expensive operations, check current token budget:
+Before starting expensive operations, check the local token ledger:
 
 ```bash
-# Check token usage across all providers
+# Check usage explicitly recorded by Atlas tooling
 ./scripts/token-tracker.sh report
 
 # Example output:
-# ✅ openrouter: 45% budget (225k/500k tokens)
-# ✅ anthropic: 92% budget (184k/200k tokens) ← CRITICAL
-# ✅ groq: 10% budget (100k/1M tokens)
-# ✅ gemini: 5% budget (50k/1M tokens)
+# ✅ openrouter: 45% budget (225k/500k locally recorded tokens)
+# ℹ️  nvidia: budget unknown (120k locally recorded tokens)
 ```
+
+This is **not** provider billing or a live quota query. Calls that bypass the
+ledger are not inferred. Record response-reported usage with
+`./scripts/token-tracker.sh log <provider> <actual-token-count> <model>`; never
+log a token cap as if it were actual usage.
 
 **Provider budgets** (monthly, adjust in scripts/token-tracker.sh):
 - **Groq**: 1M tokens (free tier, fastest)
@@ -141,18 +147,16 @@ Before starting expensive operations, check current token budget:
 - **Anthropic**: 200K tokens (conservative, local recommendation)
 - **Ollama**: Unlimited (local 7B model)
 - **Gemini**: 1M tokens
+- **NVIDIA / OpenAI direct**: budget unknown until explicitly configured;
+  usage may be recorded but no percentage is claimed
 
-**Decision rules**:
+**Decision rules for locally recorded usage**:
 - If approaching >80%: Use Ollama locally instead
 - If >95%: Pause expensive operations, use GraphRAG for efficient context
 - If critical: Switch to grep/local graph queries only
 
-**Setup automated tracking** (requires sudo):
-```bash
-sudo bash -c 'echo "0 * * * * /home/ronin/proyectos/atlas-core/scripts/token-tracker.sh report >> /var/log/atlas-token-budget.log 2>&1" | crontab -'
-```
-
-Or run manually each hour to check budget before acting.
+Running `report` periodically only reports the ledger; it does not collect
+provider usage. Prefer wiring actual response usage at each caller.
 
 ## Key Commands
 
@@ -166,13 +170,15 @@ PYTHONPATH=src atlas health
 PYTHONPATH=src atlas audit --verify
 ```
 
-Live smokes require current secrets/network:
+Live smokes require current secrets/network. Parse `.env` as data:
 
 ```bash
-set -a && source .env && set +a
-PYTHONPATH=src python scripts/inference_smoke.py
-PYTHONPATH=src python scripts/hermes_smoke.py
-PYTHONPATH=src python scripts/operational_smoke.py
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  .venv/bin/python scripts/inference_smoke.py
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  .venv/bin/python scripts/hermes_smoke.py
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  .venv/bin/python scripts/operational_smoke.py --skip-telegram
 ```
 
 ## Runtime Dependency: bubblewrap
@@ -193,8 +199,8 @@ For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` (and the 
 - Use `./scripts/prepare-notebooklm.sh` to generate a NotebookLM upload package from the current report and docs.
 - To include the Obsidian vault notes in the NotebookLM package, run `./scripts/prepare-notebooklm.sh --include-vault`.
 - Recommended Obsidian plugins: Dataview, Graph View, QuickAdd, Natural Language Dates, Search Extended.
-- The current Graphify build is intentionally `code-only` to avoid LLM API key/token cost. To ingest docs/papers later, set `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` and re-run the update script.
-- For GraphRAG and Neo4j-backed reasoning, use `./scripts/update-knowledge-graph-rag.sh --backend <backend> --model <model>`. This builds a semantic graph, exports Obsidian, and generates `graphify-out/cypher.txt`.
+- The daily Graphify path is intentionally `code-only` to avoid LLM API cost. A semantic rebuild is deliberate and must publish through `./scripts/run-graphify-quality-pipeline.sh --strict --backend <backend> --model <model>`; the lower-level `update-knowledge-graph-rag.sh` is not a quality verdict.
+- The strict semantic path forces a full live-file scan while reusing safe cache entries, rejects failed/hollow/partial/invalid-confidence output and source drift, verifies real file-node IDs, restores the last published graph on failure, exports Obsidian transactionally within the filesystem's actual `NAME_MAX`, and generates `graphify-out/cypher.txt`.
 - To load the generated graph into Neo4j, set `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD`, then run `./scripts/neo4j-import.sh`.
 - Graphify supports local and env-driven LLM backends: `OPENAI_BASE_URL`/`OPENAI_API_KEY`, `OLLAMA_BASE_URL`, `ANTHROPIC_BASE_URL`/`ANTHROPIC_API_KEY`, `GEMINI_BASE_URL`/`GEMINI_API_KEY`, or `claude-cli`.
 - Example local Graphify GraphRAG setup:
@@ -203,21 +209,22 @@ For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` (and the 
   export OPENAI_API_KEY=<your-key>
   export GRAPHIFY_BACKEND=openai
   export GRAPHIFY_MODEL=gpt-4.1-mini
-  ./scripts/update-knowledge-graph-rag.sh --import-neo4j
+  ./scripts/run-graphify-quality-pipeline.sh --strict
+  ./scripts/neo4j-import.sh
   ```
-- If credentials are stored in `.env`, load them before running the GraphRAG script: `source .env`.
-- Use `--api-timeout` and `--max-workers` with `./scripts/update-knowledge-graph-rag.sh` to tune local Ollama or other backend latency.
-- Keep `./scripts/update-knowledge-graph.sh` as the daily low-token maintenance path. Use `./scripts/update-knowledge-graph-rag.sh` when you want richer semantic node/link extraction and a Neo4j-ready graph.
+- The GraphRAG scripts load `.env` through `safe_dotenv.py`; never source it as shell code.
+- Use `--api-timeout`, `--max-workers`, and `--max-concurrency` with the strict quality wrapper to tune local Ollama or another backend.
+- Keep `./scripts/update-knowledge-graph.sh` as the daily low-token maintenance path. Use the strict quality wrapper when you want richer semantic extraction and a Neo4j-ready export. Graphify 0.9.11 caches semantics by content only; any cache hit makes provenance `mixed_or_unverified`, so semantic edges remain hypotheses until confirmed by the fresh Kuzu/AST graph, code, or tests.
 - Use `./scripts/neo4j-rag-query.sh [PATTERN]` after importing into Neo4j to verify the graph and explore GraphRAG neighborhood queries.
 - Understand-Anything is a powerful complementary layer for semantic project understanding. It is best used in parallel with Graphify: Graphify for structural code/doc graphs, Understand-Anything for dashboard-driven concept discovery and browsing.
 - Install local GraphRAG tooling with `./scripts/install-knowledge-stack.sh --all`.
 - Use `scripts/install-knowledge-hooks.sh` to install a Git post-commit hook that keeps the Graphify code-only graph fresh after source or docs changes.
 - VS Code tasks are available in `.vscode/tasks.json` for updating the knowledge graph, running the GraphRAG build, and preparing NotebookLM packages.
-- The local environment now has Graphiti and the Neo4j Python driver installed in `.venv`. Use `source .env` before running the GraphRAG scripts so backend credentials are available.
+- The local environment now has Graphiti and the Neo4j Python driver installed in `.venv`. GraphRAG obtains backend credentials through its validated dotenv re-exec.
 - Graphiti is a good next step if you want temporal GraphRAG and agent memory over changes. It pairs well with Neo4j and can consume the `graphify-out/cypher.txt` import as a stable knowledge layer.
 - Suggested GraphRAG workflow:
   1. Maintain the base graph with `./scripts/update-knowledge-graph.sh`.
-  2. Build the semantic GraphRAG graph when needed with `./scripts/update-knowledge-graph-rag.sh --backend <backend> --model <model> --import-neo4j`.
+  2. Build the semantic GraphRAG graph when needed with `./scripts/run-graphify-quality-pipeline.sh --strict --backend <backend> --model <model>`.
   3. Validate with `./scripts/neo4j-rag-query.sh <term>`.
   4. Use Obsidian and NotebookLM for human-facing exploration and summaries.
 

@@ -41,8 +41,8 @@ HERMES_API_KEY=<shared-secret-emitido-por-install_hermes_vps.sh>
 
 Comando:
 ```bash
-set -a && source .env && set +a
-PYTHONPATH=src python scripts/hermes_smoke.py
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  .venv/bin/python scripts/hermes_smoke.py
 ```
 
 Salida:

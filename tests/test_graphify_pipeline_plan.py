@@ -67,6 +67,29 @@ def _run(script: Path, tmp_path: Path, *args: str, env: dict[str, str]) -> subpr
 
 
 class TestBug2NvidiaModelRemap:
+    def test_print_plan_normalizes_legacy_openai_api_base(
+        self, tmp_path: Path
+    ) -> None:
+        script = _copy_script(tmp_path)
+        env = _clean_env(
+            OPENAI_API_KEY="synthetic-nvidia-key",
+            OPENAI_API_BASE="https://integrate.api.nvidia.com/v1",
+        )
+
+        result = _run(
+            script,
+            tmp_path,
+            "--backend",
+            "openai",
+            "--model",
+            "openai/gpt-oss-120b",
+            "--print-plan",
+            env=env,
+        )
+
+        assert result.returncode == 0, result.stderr
+        assert "endpoint=https://integrate.api.nvidia.com/v1" in result.stdout
+
     def test_print_plan_forces_nvidia_model_when_backend_openai_forced_explicitly(
         self, tmp_path: Path
     ) -> None:

@@ -322,21 +322,28 @@ Las reglas relajadas están documentadas en el comentario de
 ### 5.3 Groq devuelve 401 Invalid API Key
 
 La key fue compartida en chat o foro → el escáner de Groq la
-auto-revocó. Genera nueva en https://console.groq.com/keys y actualiza
-`.env`:
-
-```bash
-sed -i 's/^GROQ_API_KEY=.*/GROQ_API_KEY=gsk_nueva.../' .env
-```
+auto-revocó. Genera una nueva en https://console.groq.com/keys, edita `.env`
+con un editor local que no la deje en argv/historial y conserva modo `0600`.
 
 ### 5.4 OpenRouter devuelve "No endpoints found"
 
 El modelo concreto fue retirado. Lista de modelos free vigentes:
 
 ```bash
-source .env && curl -sS https://openrouter.ai/api/v1/models \
-  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
-  | python -c "import json,sys; print('\n'.join(m['id'] for m in json.load(sys.stdin)['data'] if ':free' in m['id']))"
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  .venv/bin/python - <<'PY'
+import json
+import os
+import urllib.request
+
+request = urllib.request.Request(
+    "https://openrouter.ai/api/v1/models",
+    headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
+)
+with urllib.request.urlopen(request, timeout=20) as response:
+    payload = json.load(response)
+print("\n".join(model["id"] for model in payload["data"] if ":free" in model["id"]))
+PY
 ```
 
 Edita `DEFAULT_PROVIDERS` en `src/atlas/core/inference_hub.py` para

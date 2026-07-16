@@ -57,6 +57,50 @@ def test_collect_reality_reports_static_facts(tmp_path: Path, monkeypatch) -> No
     assert any(c["name"] == "self_improvement.cold_update" for c in report["capabilities"])
 
 
+def test_collect_reality_projects_live_check_evidence_into_test_state(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from atlas.core import reality
+
+    root = _mini_repo(tmp_path)
+    monkeypatch.setattr(
+        reality,
+        "_run_checks",
+        lambda _root, *, include_browser: {
+            "pytest_core": {
+                "command": ["pytest", "tests/"],
+                "exit_code": 0,
+                "summary": "12 passed",
+            },
+            "mypy": {
+                "command": ["mypy", "src/atlas/"],
+                "exit_code": 0,
+                "summary": "Success: no issues found",
+            },
+            "pytest_browser": {
+                "command": ["pytest", "-m", "computer_use"],
+                "exit_code": 1,
+                "summary": "1 failed, 3 passed",
+            },
+        },
+    )
+
+    report = collect_reality(
+        repo_root=root,
+        workspace=tmp_path / "atlas",
+        run_checks=True,
+        include_browser=True,
+    )
+
+    assert report["tests"]["core"] == {"status": "passed", "reason": "12 passed"}
+    assert report["tests"]["browser"] == {
+        "status": "failed",
+        "reason": "1 failed, 3 passed",
+    }
+    assert report["status"] == "degraded"
+
+
 def test_collect_reality_prefers_kanban_transport_for_hermes(tmp_path: Path, monkeypatch) -> None:
     root = _mini_repo(tmp_path)
     workspace = tmp_path / "atlas"

@@ -73,42 +73,85 @@ def _check_workspace(orch: Any) -> Check:
 
 
 def _check_env() -> Check:
-    """Advisory: surface which integration secrets are present (never values)."""
-    keys = ["HERMES_API_KEY", "GROQ_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
+    """Advisory: surface integration settings that are present (never values).
+
+    Integrations are optional and provider-specific, so absence is not reported
+    as a fabricated universal requirement. Completeness belongs to the
+    selected integration's own readiness check.
+    """
+    keys = [
+        "HERMES_KANBAN_TRANSPORT",
+        "HERMES_SSH_HOST",
+        "HERMES_API_KEY",
+        "HERMES_BASE_URL",
+        "HERMES_MODEL_PROVIDER",
+        "GROQ_API_KEY",
+        "OPENROUTER_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_ALLOWED_USERS",
+        "TELEGRAM_CHAT_ID",
+        "ATLAS_DASHBOARD_URL",
+    ]
     present = {k: bool(os.environ.get(k, "").strip()) for k in keys}
-    missing = [k for k, v in present.items() if not v]
+    present_keys = [key for key, is_present in present.items() if is_present]
     return Check(
         "environment",
-        ok=not missing,
-        detail="all integration keys present" if not missing else f"missing: {', '.join(missing)}",
+        ok=bool(present_keys),
+        detail=(
+            f"integration settings present: {', '.join(present_keys)}"
+            if present_keys
+            else "no external integration settings in the process environment"
+        ),
         advisory=True,
         data=present,
     )
 
 
 def _check_hermes_twin(orch: Any, kanban: Any | None) -> Check:
-    """Advisory: reachability of the Hermes kanban over SSH.
+    """Advisory: reachability of the configured native Hermes kanban transport.
 
     Advisory because a laptop offline from the VPS is a normal operating
     state, not an Atlas fault.
     """
     bridge = kanban
     if bridge is None:
+        transport = os.environ.get("HERMES_KANBAN_TRANSPORT", "").strip().lower()
+        if not transport:
+            return Check(
+                "hermes_twin",
+                False,
+                "native kanban transport not configured",
+                advisory=True,
+                data={"configured": False, "live_verified": False},
+            )
         try:
             from atlas.hermes.kanban_bridge import KanbanBridge
 
             bridge = KanbanBridge(merkle=getattr(orch, "_merkle", None))
         except Exception as exc:  # noqa: BLE001
-            return Check("hermes_twin", False, f"bridge init failed: {exc}", advisory=True)
+            return Check(
+                "hermes_twin",
+                False,
+                f"configured transport invalid: {exc}",
+                advisory=True,
+                data={"configured": True, "live_verified": False},
+            )
     try:
         reachable = bridge.reachable()
     except Exception as exc:  # noqa: BLE001
-        return Check("hermes_twin", False, f"unreachable: {exc}", advisory=True)
+        return Check(
+            "hermes_twin",
+            False,
+            f"unreachable: {exc}",
+            advisory=True,
+            data={"configured": True, "live_verified": False},
+        )
     return Check(
         "hermes_twin",
         reachable,
         "kanban board reachable" if reachable else "kanban board unreachable",
         advisory=True,
+        data={"configured": True, "live_verified": reachable},
     )
 
 

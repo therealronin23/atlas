@@ -486,7 +486,7 @@ if __name__ == "__main__":
         print(f"  - {c.name}: {'PASS' if c.passed else 'OBJETA'} | {c.detail[:120]}")
 ```
 - [ ] **Step 2: Ejecutar el smoke** (manual, con secretos):
-  Run: `set -a && source .env && set +a && PYTHONPATH=src .venv/bin/python scripts/council_smoke.py`
+  Run: `PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- .venv/bin/python scripts/council_smoke.py`
   Expected: imprime el trío y un veredicto; anotar qué proveedor dio 404 si lo hay
   (memoria `nvidia-nim-frontier-models.md`).
 - [ ] **Step 3: Anotar honestamente en CAPABILITIES.md** una fila:

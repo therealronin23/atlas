@@ -12,11 +12,9 @@
 
 ```bash
 cd ~/proyectos/atlas-core
-source .venv/bin/activate
-set -a && source .env && set +a
-
-# Inicia atlas serve con Prometheus enabled
-ATLAS_PROMETHEUS=1 atlas serve
+# Inicia atlas serve con Prometheus enabled; .env se interpreta como datos
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  env ATLAS_PROMETHEUS=1 PYTHONPATH=src .venv/bin/atlas serve
 # → Escucha en localhost:7331
 # → /api/health (JSON)
 # → /metrics (Prometheus text format)

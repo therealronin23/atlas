@@ -12,8 +12,10 @@ emite graphify.llm (ver .venv/lib/python3.12/site-packages/graphify/llm.py):
      la MISMA linea (repr de los primeros 200 chars del raw content).
 
 Acumula un contador por fichero en un counts-file JSON (persistente entre
-corridas) y, cuando un fichero llega a FAILURE_THRESHOLD fallos, lo anade
-(idempotente, con comentario "# auto: failure_guard") a .graphifyignore.
+corridas) y, cuando un fichero llega a FAILURE_THRESHOLD fallos, lo presenta
+como candidatura. Nunca cambia cobertura semantica por defecto: modificar
+.graphifyignore requiere ``--apply-ignore`` explicito y una ruta relativa
+segura. La salida del LLM no es autoridad para excluir fuentes.
 
 Scoping por marcador de corrida: run-graphify-quality-pipeline.sh (Tarea 6
 del mismo plan) escribe el log en modo append y marca el inicio de cada
@@ -29,7 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 FAILURE_THRESHOLD = 3
 RUN_STARTED_MARKER = "--- run started"
@@ -119,13 +121,29 @@ def _append_to_ignore(ignore_file: Path, path: str, *, count: int) -> None:
     ignore_file.write_text(existing, encoding="utf-8")
 
 
+def _safe_ignore_path(path: str) -> bool:
+    """Accept only inert, repository-relative Graphify ignore entries."""
+    if not path or path[0] in {"#", "!"} or "\\" in path:
+        return False
+    if any(ord(character) < 32 for character in path):
+        return False
+    candidate = PurePosixPath(path)
+    return not candidate.is_absolute() and all(
+        part not in {"", ".", ".."} for part in candidate.parts
+    )
+
+
 def apply_threshold(ignore_file: Path, total_counts: dict[str, int]) -> list[str]:
     """Anade a ignore_file (idempotente) cada fichero que cruzo el umbral.
     Devuelve la lista de ficheros recien anadidos en esta llamada."""
     already_ignored = _ignored_paths(ignore_file)
     newly_added = []
     for path, count in sorted(total_counts.items()):
-        if count >= FAILURE_THRESHOLD and path not in already_ignored:
+        if (
+            count >= FAILURE_THRESHOLD
+            and path not in already_ignored
+            and _safe_ignore_path(path)
+        ):
             _append_to_ignore(ignore_file, path, count=count)
             already_ignored.add(path)
             newly_added.append(path)
@@ -145,6 +163,14 @@ def main(argv: list[str] | None = None) -> int:
         default="graphify-out/.graphify_failure_counts.json",
         help="Fichero JSON de contadores persistentes por fichero",
     )
+    parser.add_argument(
+        "--apply-ignore",
+        action="store_true",
+        help=(
+            "Aplicar candidaturas seguras a .graphifyignore; por defecto solo "
+            "se informan"
+        ),
+    )
     args = parser.parse_args(argv)
 
     log_path = Path(args.log_path)
@@ -153,10 +179,28 @@ def main(argv: list[str] | None = None) -> int:
 
     new_counts = scan_log(log_path)
     total_counts = merge_counts(counts_file, new_counts)
-    newly_added = apply_threshold(ignore_file, total_counts)
+    threshold_paths = [
+        path
+        for path, count in sorted(total_counts.items())
+        if count >= FAILURE_THRESHOLD
+    ]
+    unsafe_paths = [path for path in threshold_paths if not _safe_ignore_path(path)]
+    newly_added = (
+        apply_threshold(ignore_file, total_counts) if args.apply_ignore else []
+    )
 
     for path in newly_added:
         print(f"[failure_guard] {path} cruzo el umbral de {FAILURE_THRESHOLD} fallos -> anadido a {ignore_file}")
+    for path in unsafe_paths:
+        print(f"[failure_guard] unsafe ignore candidate rejected: {path!r}")
+    if not args.apply_ignore:
+        for path in threshold_paths:
+            if _safe_ignore_path(path):
+                print(
+                    f"[failure_guard] candidate only: {path} has "
+                    f"{total_counts[path]} accumulated extraction failures; "
+                    "review before using --apply-ignore"
+                )
 
     return 0
 

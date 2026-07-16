@@ -73,6 +73,13 @@ def build_graph_server(
         except (OSError, subprocess.CalledProcessError):
             return ""
 
+    # A stdio MCP process imports its implementation once. The project graph
+    # can be atomically rebuilt underneath it, but that must not make an old
+    # server binary look current after HEAD advances. Capture the deployment
+    # revision and require a process restart before serving present-tense
+    # dependency answers for a newer checkout.
+    server_started_head_sha = _head_sha()
+
     def _source_tree_dirty() -> bool | None:
         """Whether committed graph inputs differ from the working tree.
 
@@ -126,6 +133,10 @@ def build_graph_server(
             return "STALE", graph_sha, head_sha, source_dirty
         if source_dirty:
             return "DIRTY", graph_sha, head_sha, source_dirty
+        if not server_started_head_sha:
+            return "UNKNOWN", graph_sha, head_sha, source_dirty
+        if server_started_head_sha != head_sha:
+            return "SERVER_STALE", graph_sha, head_sha, source_dirty
         return "FRESH", graph_sha, head_sha, source_dirty
 
     def _require_fresh_sha() -> str:
@@ -135,6 +146,7 @@ def build_graph_server(
                 "project graph freshness is "
                 f"{status}: graph_commit_sha={graph_sha or '<none>'}, "
                 f"head_sha={head_sha or '<unavailable>'}, "
+                f"server_started_head_sha={server_started_head_sha or '<unavailable>'}, "
                 f"source_tree_dirty={source_dirty}"
             )
         return graph_sha
@@ -161,6 +173,7 @@ def build_graph_server(
             "commits_ingested": [str(row[0]) for row in snapshots],
             "graph_commit_sha": graph_sha,
             "head_sha": head_sha,
+            "server_started_head_sha": server_started_head_sha,
             "freshness": freshness,
             "source_tree_dirty": source_dirty,
             "modules_latest": latest[1] if latest else 0,

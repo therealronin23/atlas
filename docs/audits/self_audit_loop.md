@@ -8,8 +8,8 @@ candidate improvements. It does not hot-patch Atlas and it does not merge into
 ## Run
 
 ```bash
-set -a && source .env && set +a
-PYTHONPATH=src atlas self-audit run --hours 24 --profile full
+PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
+  env PYTHONPATH=src .venv/bin/atlas self-audit run --hours 24 --profile full
 ```
 
 Smoke one cycle before a long run:
