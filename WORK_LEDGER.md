@@ -8,6 +8,19 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **F4 DAEMON: REARRANCADO + NOTA DE HONESTIDAD (2026-07-16)** — el daemon
+  estuvo PARADO desde el 2026-07-12 20:44:52 (parada MANUAL limpia vía
+  systemctl, el journal la registra; 19min de CPU consumidos) hasta hoy
+  15:50 — **4 días sin documentar en ningún doc canónico y sin rearrancar**;
+  el ledger ColdUpdate sin propuestas nuevas desde el 12-jul 15:19.
+  Rearrancado tras reinstalar el unit (el repo llevaba hardening de la
+  auditoría Codex — UMask=0077, NoNewPrivileges, RestrictSUIDSGID,
+  PrivateTmp — más los límites MemoryMax=4G/TasksMax=4096 ya commiteados):
+  `active`, journal limpio. Guarda nueva contra recaídas:
+  `scripts/daemon_idle_guard.sh` en el hook SessionStart (silencio salvo
+  inactive >24h; tests 8 passed) — el grueso lo commiteó la sesión Codex
+  concurrente (066b4163/a03484c8) y esta sesión lo verificó contra el spec
+  del plan. F4 del plan toasty-hatching-pillow CERRADA.
 - **CI IMPORTS ESTABLES (2026-07-16)** — `uv run` aislado no incluía la raíz:
   se corrigió `PYTHONPATH` y `scripts/`/`tests/` son paquetes explícitos.
 
