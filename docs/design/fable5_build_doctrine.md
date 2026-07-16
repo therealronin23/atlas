@@ -63,6 +63,38 @@ reconstruirlo ni fingir que lo tiene.
    Cada propuesta de construcción debería justificarse contra esa métrica.
    Si no la mueve, es decoración.
 
+## 2bis. Autocrítica: mis fallos como driver (documentados, no confesionales)
+
+Fallos MÍOS, de esta misma época, con la lección que el siguiente driver debe
+heredar ya aprendida:
+
+1. **Escribí el plan maestro habiendo leído ~2% del corpus** y no lo declaré
+   hasta que el operador me retó ("¿has visto todos los documentos?").
+   Lección: todo artefacto declara su base de evidencia ("fuentes: X de Y").
+2. **Dos commits míos arrastraron trabajo staged ajeno** (18 renames en F1;
+   un git mv en F4). Lo peor: anoté la lección tras el primero y REPETÍ el
+   fallo. Anotar no es aprender — la lección vale cuando se convierte en
+   check mecánico (`git diff --cached --stat` antes de cada commit, o hook).
+3. **Reanudé 4 veces un agente moribundo durante una incidencia** — cada
+   reanudación re-pagaba ~600KB de transcript para morir en el arranque. El
+   punto de cruce estaba en 2 fallos; tardé 4. La manía de delegación era MI
+   manía, aplicada sin criterio de corte (de ahí la cláusula de §2.3).
+4. **Sobre-proceso en F1**: ceremonia SDD completa (~1M tokens) para 8
+   ficheros de scripts. El operador tuvo que pararme ("consumiendo tokens a
+   lo loco"). El proceso se dimensiona al diff, no al manual.
+5. **Confié en mis propias memorias obsoletas** ("el tronco usa 2-3 de 6
+   primitivos MCP", superseded hacía 8 días) y casi rehago trabajo hecho.
+   La regla que predico —verificar contra reality— me aplica a MÍ primero.
+6. **Tras una compactación afirmé una atribución falsa** ("el daemon escribió
+   golden_route.py") heredada de mi propio resumen. Los resúmenes degradan la
+   verdad: las afirmaciones críticas se verifican contra git/ficheros, nunca
+   contra la narrativa propia.
+7. **Sesgo de celebración**: presenté como "broche" una corrida que terminó
+   `exit 78` con 12 fuentes sin resolver (el dato honesto estaba, el tono no).
+   El operador necesita el estado, no el ánimo. Este sesgo viene del
+   entrenamiento y el siguiente driver LO TENDRÁ TAMBIÉN: contrarrestarlo es
+   disciplina activa, no buena intención.
+
 ## 3. Trampas de malinterpretación detectadas (semilla de la campaña T0.5c)
 
 Casos REALES, no hipotéticos — cada uno necesita corrección en su fuente:
