@@ -114,6 +114,21 @@ Fable; sin T0, cada una re-deriva o malinterpreta.
   (spec B+C §4). Evidencia: Sonnet frío 6/6 con ≥1 ciclo fallo→arreglo.
 - T0.4 Mapa-árbol del ecosistema con ciclo de vida de piezas + radar de
   deriva (spec B+C §5). Evidencia: pieza sin fila en el mapa → hallazgo.
+- T0.5 **Absorción del pasado** (añadido 2026-07-16 tras reto del operador
+  "¿has visto todos los documentos?" — respuesta honesta: no, 666 docs):
+  - a) Doctrina Fable 5 (`fable5_build_doctrine.md`): el criterio del modelo
+    saliente, firmado. HECHA — ingerir al sustrato.
+  - b) Digestión total del corpus contra este plan: los 666 docs clasificados
+    (alimenta-ítem / candidata / histórico / GAP). Evidencia: % de cobertura +
+    lista de gaps + lista de contradicciones; plan v2 con fuentes citadas y
+    lista explícita de "revisado y descartado".
+  - c) Lint de la capa de autoridad y CORRECCIÓN: discrepancias entre docs,
+    manías mal redactadas, trampas ejemplo-como-alcance, afirmaciones
+    caducadas (semilla: doctrina §3). Docs del operador → diff propuesto;
+    memorias del harness → corrección directa. Evidencia: cada trampa de la
+    semilla cerrada o descartada con motivo.
+  - d) Intake de chats externos: export → inbox → digestión (b). El operador
+    elige cuáles; uno a uno, mayor valor primero.
 
 ### T1 — Autoconstrucción a pleno pulmón (ADR-068: F6 es núcleo, no negocio)
 Porqué: multiplica todo lo posterior — "que se construya sola más rápido".
