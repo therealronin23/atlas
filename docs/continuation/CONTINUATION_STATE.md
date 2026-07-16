@@ -1,11 +1,36 @@
 # CONTINUATION_STATE — Atlas OS
 
-Actualizado: 2026-07-11 (sesión Fable 5/Opus, Fase 15 + Fase 16 — Product OS;
+Actualizado: 2026-07-15 (Mission Layer v0 + GoldenRoute, ADR-069). Entrada
+anterior: 2026-07-11 (sesión Fable 5/Opus, Fase 15 + Fase 16 — Product OS;
 misma fecha, sesión posterior Sonnet — Phase Recovery F1-F16).
 
 > **Snapshot histórico.** Conserva evidencia y conteos de esa sesión, no el
 > estado vivo ni la próxima acción. Para continuar hoy: `WORK_LEDGER.md`,
 > `atlas reality --json` y el grafo estructural fresco.
+
+## 2026-07-15 — Mission Layer v0 + GoldenRoute (ADR-069)
+
+El spec de alcance que ADR-068 exigía existe
+(`docs/design/mission_layer_self_construction_spec.md`) y el primer corte real
+de Foundry está en `main`:
+
+- **Mission Layer v0** (commit `281c0939`): 3 schemas nuevos (mission,
+  mission_receipt, soul_manifest), proyección read-only de `proposals.json`
+  en `src/atlas/api/missions.py` (jamás se instancia ColdUpdateManager desde
+  el bridge — ADR-058 intacto), Self-Build Radar con 4 detectores
+  deterministas (cazó en vivo el bucle real del vault Obsidian ×15), y
+  Mission Console como vista por defecto del shell.
+- **GoldenRoute CERRADA** (commit `8ec49c3f`): petición pública → plan
+  determinista (v0 doc-only) → patch → worktree aislado → validación →
+  **aprobación humana en Merkle ANTES de actuar** → apply → receipt. El
+  xfail(strict=True) del E2E se retiró; corre verde.
+- Protocolo de arranque reconciliado: `NEXT_AI_INSTRUCTIONS.md` queda
+  SUPERSEDED como protocolo por `AGENTS.md` (ver cabecera de aquel doc).
+  Roles de modelo y política de delegación: `docs/design/actor_roles.md`.
+
+Detalle y evidencia: `docs/decisions/adr/adr_069_mission_layer_v0_foundry.md`
++ filas Mission Layer v0 / GoldenRoute / Self-Build Radar en
+`docs/design/atlas_ecosystem_map.md`.
 
 ## Current Status
 

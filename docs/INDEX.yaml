@@ -901,6 +901,10 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/design/actor_roles.md
+  type: design
+  status: vigente
+  verified: '2026-07-16'
 - path: docs/design/architectural_patterns_matrix_2026-07-08.md
   type: design
   status: vigente
@@ -3321,6 +3325,11 @@ entries:
   status: propuesto
   verified: null
   notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_atlas_foundry_v0_2026-07-15.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al sustrato 2026-07-16'
 - path: docs/membrana/OSM-000_membrana.md
   type: compliance
   status: vigente

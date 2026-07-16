@@ -25,6 +25,8 @@ Pre-flight, cheap and factual:
    - `docs/design/atlas_ecosystem_map.md` = canonical ecosystem map.
    - Design docs = HOW/detail/checklists.
    - `MEMORY.md` and `feedback-*.md` = WHY/lessons/manias.
+   - `docs/design/actor_roles.md` = who Fable/Sonnet/Haiku/Opus are + delegation policy.
+   - This file is the boot protocol; `docs/continuation/NEXT_AI_INSTRUCTIONS.md` is SUPERSEDED (historical F15/F16).
 6. Update ledger, design note, and memory in the same commit as the work.
 
 Definition of done: relevant tests green, mypy strict clean when code changes,
