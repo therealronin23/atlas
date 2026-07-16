@@ -247,6 +247,52 @@ def build_graph_server(
         return {"links_to": [r[0] for r in out], "linked_from": [r[0] for r in inc]}
 
     @server.tool()
+    def graph_communities() -> dict[str, Any]:
+        """Comunidades semánticas del vault (notas graphify ``_COMMUNITY_*``,
+        note_type='community'): cohesión y nº de miembros (sus wikilinks
+        resueltos), ordenadas por cohesión."""
+        try:
+            rows = _query(
+                "MATCH (c:ObsidianNote) WHERE c.note_type = 'community' "
+                "OPTIONAL MATCH (c)-[:LINKS_TO]->(m:ObsidianNote) "
+                "RETURN c.path, c.title, c.cohesion, count(m) AS members "
+                "ORDER BY c.cohesion DESC LIMIT 50"
+            )
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"error": "vault no ingerido aún"}
+            raise
+        return {
+            "communities": [
+                {"path": r[0], "title": r[1], "cohesion": r[2], "members": r[3]}
+                for r in rows
+            ]
+        }
+
+    @server.tool()
+    def graph_semantic_neighbors(note_stem: str) -> dict[str, Any]:
+        """Vecinos SEMÁNTICOS de una nota: las demás notas de sus mismas
+        comunidades graphify (no hace falta que se enlacen entre sí)."""
+        try:
+            rows = _query(
+                "MATCH (c:ObsidianNote)-[:LINKS_TO]->(n:ObsidianNote) "
+                "WHERE c.note_type = 'community' AND n.path ENDS WITH $f "
+                "MATCH (c)-[:LINKS_TO]->(other:ObsidianNote) "
+                "WHERE other.path <> n.path "
+                "RETURN DISTINCT other.path, other.title, c.title LIMIT 25",
+                {"f": f"{note_stem}.md"},
+            )
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"error": "vault no ingerido aún"}
+            raise
+        return {
+            "neighbors": [
+                {"path": r[0], "title": r[1], "community": r[2]} for r in rows
+            ]
+        }
+
+    @server.tool()
     def graph_callers(symbol: str) -> dict[str, Any]:
         """Quién llama a `symbol` (match por sufijo de nombre, hasta 25).
         `symbol` es el nombre tal como lo emite graphify (ej. ".start()" o

@@ -8,6 +8,18 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **F3 CERRADA → PLAN TOASTY F1-F5 COMPLETO (2026-07-16 noche)** — últimas
+  piezas: tools `graph_communities()` y `graph_semantic_neighbors(note)` en el
+  tronco (graph_server + RootSpec; la semántica graphify — comunidades con
+  cohesión y miembros — por fin consultable por MCP; 3 tests nuevos + paridad,
+  mypy --strict). F3.3 quedó cubierta por la sesión Codex con contrato MÁS
+  estricto que el plan (Symbol==0 o cache roto invalida la regeneración entera
+  en vez de loguear — desviación aceptada: mejor honesto que silencioso).
+  Excepción puntual a la delegación: estas 2 tools las implementó Fable
+  directo — el agente Sonnet murió 4 veces por la incidencia 529 de Anthropic
+  y cada reanudación re-pagaba su transcript; hacerlo a mano era más barato.
+  Pendientes de la campaña: revisión final de rama única + decisiones del
+  operador (monitor graphify, higiene docs/handoff en INDEX, F2.6, spec B+C).
 - **F3/F5 CIERRE DE CABLEADO (2026-07-16)** — la revisión de los cambios
   pendientes encontró tres huecos reales: el tick no pasaba el vault a Kuzu,
   `ObsidianNote` no migraba `cohesion`, y el tronco no conservaba

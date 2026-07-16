@@ -74,6 +74,8 @@ def native_roots() -> list[RootSpec]:
                 "graph_churn",
                 "graph_imports_of",
                 "graph_note_neighborhood",
+                "graph_communities",
+                "graph_semantic_neighbors",
                 "graph_callers",
                 "graph_callees",
             ),
