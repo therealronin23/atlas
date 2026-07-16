@@ -818,7 +818,21 @@ class MaintenanceFacade:
             if wal.exists():
                 shutil.copy2(wal, rebuild_wal)
 
-        metrics = build_project_graph(root, rebuild, embedder=resolve_graph_embedder())
+        # Vault-wiring (F3.2, 2026-07-16): sin vault_root las tablas
+        # ObsidianNote/LINKS_TO jamás llegaban a la BD servida (hallazgo C2).
+        # Default = <repo>/graphify-vault (donde graphify deja el vault);
+        # override env ATLAS_OBSIDIAN_VAULT (mismo patrón que
+        # ATLAS_PROJECT_GRAPH_DB). build_project_graph ya ignora un vault
+        # inexistente (guard is_dir), así que esto nunca rompe la regen.
+        vault_env = os.environ.get("ATLAS_OBSIDIAN_VAULT", "").strip()
+        vault_root = Path(vault_env).expanduser() if vault_env else root / "graphify-vault"
+
+        metrics = build_project_graph(
+            root,
+            rebuild,
+            vault_root=vault_root,
+            embedder=resolve_graph_embedder(),
+        )
 
         # Call-graph de Graphify (D3, 2026-07-10): se ingiere al MISMO rebuild
         # antes del swap. El cache oficial vive en <repo>/graphify-out (no en

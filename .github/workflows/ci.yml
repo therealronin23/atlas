@@ -88,10 +88,19 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
 
-      - name: Install the required OS command jail
+      - name: Install and authorize the required OS command jail
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends bubblewrap
+          sudo apt-get install -y --no-install-recommends apparmor bubblewrap
+          sudo apparmor_parser -r /dev/stdin <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile atlas-ci-bwrap /usr/bin/bwrap flags=(default_allow) {
+            userns,
+          }
+          APPARMOR
+          test "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = "1"
+          bwrap --unshare-all --ro-bind / / /bin/true
 
       - name: Sync exact core and development dependencies
         run: uv sync --frozen --extra dev --python "${{ matrix.python-version }}"

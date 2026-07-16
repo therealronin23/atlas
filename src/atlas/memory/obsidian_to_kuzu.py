@@ -9,6 +9,7 @@ solo se deja `ingested_at` como gancho para no re-migrar.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import math
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,7 @@ __all__ = ["load_vault_into_kuzu"]
 
 _SCHEMA = (
     "CREATE NODE TABLE IF NOT EXISTS ObsidianNote("
-    "path STRING, title STRING, note_type STRING, community STRING, "
+    "path STRING, title STRING, note_type STRING, community STRING, cohesion DOUBLE, "
     "tags STRING[], ingested_at TIMESTAMP, PRIMARY KEY(path))",
     "CREATE REL TABLE IF NOT EXISTS LINKS_TO(FROM ObsidianNote TO ObsidianNote)",
 )
@@ -57,6 +58,14 @@ def load_vault_into_kuzu(
     try:
         for ddl in _SCHEMA:
             conn.execute(ddl)
+        # CREATE IF NOT EXISTS does not evolve an existing Kuzu table. The
+        # production graph may predate ``cohesion``; migrate that one additive
+        # column in place and tolerate the already-present case.
+        try:
+            conn.execute("ALTER TABLE ObsidianNote ADD cohesion DOUBLE")
+        except RuntimeError as exc:
+            if "already has property cohesion" not in str(exc):
+                raise
 
         # stem → path para resolver wikilinks (primera nota gana en colisión)
         stem_to_path: dict[str, str] = {}
@@ -65,23 +74,42 @@ def load_vault_into_kuzu(
             stem_to_path.setdefault(stem, rel_path)
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        note_rows = [
-            {
+        note_rows = []
+        cohesion_rows: list[dict[str, float | str]] = []
+        for rel_path, note in vault.items():
+            raw_cohesion = note["frontmatter"].get("cohesion")
+            cohesion = (
+                float(raw_cohesion)
+                if isinstance(raw_cohesion, (int, float))
+                and not isinstance(raw_cohesion, bool)
+                and math.isfinite(float(raw_cohesion))
+                else None
+            )
+            note_rows.append({
                 "path": rel_path,
                 "title": str(note["frontmatter"].get("title") or Path(rel_path).stem),
                 "note_type": str(note["frontmatter"].get("type") or ""),
                 "community": str(note["frontmatter"].get("community", "")),
                 "tags": [str(t) for t in note["tags"]],
                 "ts": now,
-            }
-            for rel_path, note in vault.items()
-        ]
+            })
+            if cohesion is not None:
+                cohesion_rows.append({"path": rel_path, "cohesion": cohesion})
         for batch in _chunks(note_rows, _BATCH_SIZE):
             conn.execute(
                 "UNWIND $rows AS row "
                 "MERGE (n:ObsidianNote {path: row.path}) "
                 "SET n.title = row.title, n.note_type = row.note_type, "
-                "n.community = row.community, n.tags = row.tags, n.ingested_at = row.ts",
+                "n.community = row.community, n.tags = row.tags, "
+                "n.ingested_at = row.ts",
+                {"rows": batch},
+            )
+
+        for batch in _chunks(cohesion_rows, _BATCH_SIZE):
+            conn.execute(
+                "UNWIND $rows AS row "
+                "MATCH (n:ObsidianNote {path: row.path}) "
+                "SET n.cohesion = row.cohesion",
                 {"rows": batch},
             )
 

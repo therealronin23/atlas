@@ -71,6 +71,9 @@ class CatalogEntry:
     # por defecto (fail-safe): el catálogo declara explícitamente lo seguro, no
     # lo peligroso.
     read_only_tools: tuple[str, ...] = ()
+    # Budget por request del transporte MCP; se conserva en el catálogo para
+    # que el tronco no pierda el límite al convertir una entrada en config.
+    timeout_seconds: float = 15.0
 
 
 def load_catalog(path: Path) -> list[CatalogEntry]:
@@ -110,6 +113,7 @@ def load_catalog(path: Path) -> list[CatalogEntry]:
                     transport=str(raw.get("transport", "")),
                     env_passthrough=tuple(str(v) for v in (raw.get("env_passthrough") or [])),
                     read_only_tools=tuple(str(v) for v in (raw.get("read_only_tools") or [])),
+                    timeout_seconds=float(raw.get("timeout_seconds", 15.0)),
                 )
             )
     return out

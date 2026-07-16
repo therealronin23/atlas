@@ -7,6 +7,7 @@ must never source the real ``.env`` or contact the live Neo4j instance.
 from __future__ import annotations
 
 import importlib.util
+import builtins
 import json
 import os
 import signal
@@ -111,7 +112,78 @@ def _prepare_fake_graphify_repo(tmp_path: Path, script_name: str) -> tuple[Path,
     script = _copy_script(tmp_path, script_name)
     venv_bin = tmp_path / ".venv" / "bin"
     venv_bin.mkdir(parents=True)
-    (venv_bin / "activate").write_text("# isolated no-op activate\n", encoding="utf-8")
+    fake_package = tmp_path / "fake-python" / "graphify"
+    fake_package.mkdir(parents=True)
+    (fake_package / "__init__.py").write_text("\n", encoding="utf-8")
+    (fake_package / "detect.py").write_text(
+        "import json\n"
+        "from pathlib import Path\n"
+        "\n"
+        "def detect(root):\n"
+        "    root = Path(root).resolve()\n"
+        "    groups = {'code': [], 'document': [], 'paper': [], 'image': []}\n"
+        "    ignored = {'.git', '.venv', 'fake-bin', 'fake-python', 'graphify-out'}\n"
+        "    for path in root.rglob('*'):\n"
+        "        if not path.is_file() or any(part in ignored for part in path.parts):\n"
+        "            continue\n"
+        "        suffix = path.suffix.lower()\n"
+        "        if suffix in {'.py', '.sh'}:\n"
+        "            groups['code'].append(str(path))\n"
+        "        elif suffix in {'.md', '.txt'}:\n"
+        "            groups['document'].append(str(path))\n"
+        "        elif suffix == '.pdf':\n"
+        "            groups['paper'].append(str(path))\n"
+        "        elif suffix in {'.png', '.jpg', '.jpeg', '.webp'}:\n"
+        "            groups['image'].append(str(path))\n"
+        "    return {'files': groups}\n"
+        "\n"
+        "def save_manifest(files, manifest_path, kind, root):\n"
+        "    Path(manifest_path).write_text(json.dumps({'files': files, 'kind': kind}) + '\\n', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    (fake_package / "build.py").write_text(
+        "class NodeView:\n"
+        "    def __init__(self, records):\n"
+        "        self._records = records\n"
+        "    def __iter__(self):\n"
+        "        return iter(self._records)\n"
+        "    def __contains__(self, node_id):\n"
+        "        return node_id in self._records\n"
+        "    def __getitem__(self, node_id):\n"
+        "        return self._records[node_id]\n"
+        "\n"
+        "class Graph:\n"
+        "    def __init__(self, raw):\n"
+        "        self._records = {str(node['id']): dict(node) for node in raw.get('nodes', [])}\n"
+        "        self.nodes = NodeView(self._records)\n"
+        "        self.links = list(raw.get('links') or raw.get('edges') or [])\n"
+        "    def number_of_nodes(self):\n"
+        "        return len(self._records)\n"
+        "    def number_of_edges(self):\n"
+        "        return len(self.links)\n"
+        "\n"
+        "def build_from_json(raw, directed=False):\n"
+        "    return Graph(raw)\n",
+        encoding="utf-8",
+    )
+    (fake_package / "export.py").write_text(
+        "import json\n"
+        "from pathlib import Path\n"
+        "\n"
+        "def to_json(graph, communities, output, force=False, community_labels=None):\n"
+        "    for community, members in communities.items():\n"
+        "        for node_id in members:\n"
+        "            if node_id in graph.nodes:\n"
+        "                graph.nodes[node_id]['community'] = community\n"
+        "    payload = {'directed': False, 'multigraph': False, 'nodes': list(graph._records.values()), 'links': graph.links}\n"
+        "    Path(output).write_text(json.dumps(payload) + '\\n', encoding='utf-8')\n"
+        "    return True\n",
+        encoding="utf-8",
+    )
+    (venv_bin / "activate").write_text(
+        'export PYTHONPATH="$PWD/fake-python${PYTHONPATH:+:$PYTHONPATH}"\n',
+        encoding="utf-8",
+    )
     (tmp_path / "graphify-out").mkdir()
     (tmp_path / "graphify-out" / "graph.json").write_text("{}\n", encoding="utf-8")
     (tmp_path / "graphify-out" / "manifest.json").write_text(
@@ -326,6 +398,63 @@ def test_semantic_refresh_restores_last_publication_when_source_drifts(
 def test_obsidian_adapter_caps_filenames_to_real_filesystem_limit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    graphify_module = ModuleType("graphify")
+    export_module = ModuleType("graphify.export")
+    security_module = ModuleType("graphify.security")
+    networkx_module = ModuleType("networkx")
+    readwrite_module = ModuleType("networkx.readwrite")
+    json_graph_module = ModuleType("networkx.readwrite.json_graph")
+
+    class FakeGraph:
+        def __init__(self, raw: dict[str, object]) -> None:
+            self._nodes = {
+                str(node["id"]): dict(node)
+                for node in raw.get("nodes", [])
+                if isinstance(node, dict) and "id" in node
+            }
+
+        def nodes(self, data: bool = False) -> object:
+            if data:
+                return list(self._nodes.items())
+            return list(self._nodes)
+
+        def number_of_nodes(self) -> int:
+            return len(self._nodes)
+
+        def number_of_edges(self) -> int:
+            return 0
+
+    json_graph_module.node_link_graph = lambda raw, **_kwargs: FakeGraph(raw)  # type: ignore[attr-defined]
+    readwrite_module.json_graph = json_graph_module  # type: ignore[attr-defined]
+    networkx_module.readwrite = readwrite_module  # type: ignore[attr-defined]
+
+    def cap_filename(value: str, limit: int = 200) -> str:
+        return value.encode("utf-8")[:limit].decode("utf-8", errors="ignore")
+
+    def to_obsidian(graph: object, _communities: object, output: str, **_kwargs: object) -> int:
+        output_path = Path(output)
+        nodes = list(graph.nodes(data=True))
+        for node_id, attributes in nodes:
+            label = str(attributes.get("label") or node_id)
+            stem = export_module._cap_filename(label)
+            (output_path / f"{stem}.md").write_text(f"# {label}\n", encoding="utf-8")
+        return len(nodes)
+
+    def to_canvas(_graph: object, _communities: object, output: str, **_kwargs: object) -> None:
+        Path(output).write_text("{}\n", encoding="utf-8")
+
+    export_module._cap_filename = cap_filename  # type: ignore[attr-defined]
+    export_module.to_obsidian = to_obsidian  # type: ignore[attr-defined]
+    export_module.to_canvas = to_canvas  # type: ignore[attr-defined]
+    security_module.check_graph_file_size_cap = lambda _path: None  # type: ignore[attr-defined]
+    graphify_module.export = export_module  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "graphify", graphify_module)
+    monkeypatch.setitem(sys.modules, "graphify.export", export_module)
+    monkeypatch.setitem(sys.modules, "graphify.security", security_module)
+    monkeypatch.setitem(sys.modules, "networkx", networkx_module)
+    monkeypatch.setitem(sys.modules, "networkx.readwrite", readwrite_module)
+    monkeypatch.setitem(sys.modules, "networkx.readwrite.json_graph", json_graph_module)
+
     path = SCRIPTS / "graphify_obsidian_export.py"
     spec = importlib.util.spec_from_file_location("graphify_obsidian_export", path)
     assert spec is not None and spec.loader is not None
@@ -1450,7 +1579,7 @@ def test_neo4j_backup_is_fail_closed_and_restarts_running_container() -> None:
     assert "Could not copy backup" not in text
 
 
-def test_hook_installer_honours_configured_hooks_path(tmp_path: Path) -> None:
+def test_hook_installer_delegates_to_graphify_hook_install(tmp_path: Path) -> None:
     script = _copy_script(tmp_path, "install-knowledge-hooks.sh")
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
     subprocess.run(
@@ -1460,17 +1589,35 @@ def test_hook_installer_honours_configured_hooks_path(tmp_path: Path) -> None:
     )
     venv_bin = tmp_path / ".venv" / "bin"
     venv_bin.mkdir(parents=True)
-    (venv_bin / "graphify").symlink_to(REPO_ROOT / ".venv" / "bin" / "graphify")
+    calls = tmp_path / "graphify-calls.txt"
+    graphify = venv_bin / "graphify"
+    graphify.write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '%s\\n' \"$*\" >> \"$GRAPHIFY_CALLS\"\n"
+        "if [ \"${1:-}\" = '--version' ]; then printf 'graphify 0.9.11\\n'; exit 0; fi\n"
+        "if [ \"${1:-}\" = 'hook' ] && [ \"${2:-}\" = 'install' ]; then\n"
+        "  hooks=\"$(git config --get core.hooksPath || printf '.git/hooks')\"\n"
+        "  mkdir -p \"$hooks\"\n"
+        "  for name in post-commit post-checkout; do\n"
+        "    printf '#!/usr/bin/env bash\\n# graphify-hook-start\\n# graphify-checkout-hook-start\\n' > \"$hooks/$name\"\n"
+        "    chmod +x \"$hooks/$name\"\n"
+        "  done\n"
+        "fi\n",
+        encoding="utf-8",
+    )
+    graphify.chmod(0o755)
 
-    result = _run(script, tmp_path)
+    result = _run(
+        script,
+        tmp_path,
+        env=_clean_env(GRAPHIFY_CALLS=str(calls)),
+    )
 
     assert result.returncode == 0, result.stderr
-    post_commit = tmp_path / ".githooks" / "post-commit"
-    post_checkout = tmp_path / ".githooks" / "post-checkout"
-    assert post_commit.is_file()
-    assert post_checkout.is_file()
-    assert "# graphify-hook-start" in post_commit.read_text(encoding="utf-8")
-    assert "# graphify-checkout-hook-start" in post_checkout.read_text(encoding="utf-8")
+    assert calls.read_text(encoding="utf-8").splitlines() == [
+        "--version",
+        "hook install",
+    ]
 
 
 def test_hook_installer_help_has_no_side_effects(tmp_path: Path) -> None:
@@ -1507,6 +1654,22 @@ def _load_batch_import_module() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_batch_import_pure_functions_load_without_neo4j_driver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import = builtins.__import__
+
+    def blocked_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "neo4j" or name.startswith("neo4j."):
+            raise ModuleNotFoundError("neo4j intentionally absent", name=name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+    module = _load_batch_import_module()
+
+    assert module._identifier("calls", kind="relationship", uppercase=True) == "CALLS"
 
 
 def _sample_graph_export() -> dict[str, object]:

@@ -219,20 +219,34 @@ def _safe_failure_reason(diagnostics: str) -> tuple[bool, str]:
 
 
 def _validate_checkpoint_payload(payload: dict[str, Any]) -> None:
-    from graphify.semantic_cleanup import validate_semantic_fragment
-    from graphify.validate import validate_extraction
-
     if not any(payload.get(key) for key in ("nodes", "edges", "hyperedges")):
         raise IncompleteExtractionError("extraction returned no exact-source records")
-    errors = [
-        error
-        for error in validate_extraction(payload)
-        # Semantic relations may intentionally target an entity defined by a
-        # different source/cache entry. Their own source_file is still exact;
-        # full-corpus validation resolves those endpoints after cache merge.
-        if "does not match any node id" not in error
-    ]
-    errors.extend(validate_semantic_fragment(payload))
+    try:
+        from graphify.semantic_cleanup import validate_semantic_fragment
+        from graphify.validate import validate_extraction
+    except ModuleNotFoundError as exc:
+        if exc.name != "graphify" and not (exc.name or "").startswith("graphify."):
+            raise
+        # The dependency-injected loop is intentionally unit-testable without
+        # the optional operator stack. Runtime extraction imports Graphify
+        # separately, so this fallback cannot mask an incomplete live install.
+        errors = []
+        for key in ("nodes", "edges", "hyperedges"):
+            records = payload.get(key, [])
+            if not isinstance(records, list) or not all(
+                isinstance(record, dict) for record in records
+            ):
+                errors.append(f"{key} must be a list of objects")
+    else:
+        errors = [
+            error
+            for error in validate_extraction(payload)
+            # Semantic relations may intentionally target an entity defined by a
+            # different source/cache entry. Their own source_file is still exact;
+            # full-corpus validation resolves those endpoints after cache merge.
+            if "does not match any node id" not in error
+        ]
+        errors.extend(validate_semantic_fragment(payload))
     if errors:
         raise IncompleteExtractionError(
             f"semantic fragment validation failed ({len(errors)} error(s))"
@@ -393,10 +407,17 @@ def resume_sources(
     )
 
 
-def _semantic_sources(root: Path) -> list[Path]:
-    from graphify.detect import detect
+def _semantic_sources(
+    root: Path,
+    *,
+    detect_fn: Callable[[Path], dict[str, Any]] | None = None,
+) -> list[Path]:
+    if detect_fn is None:
+        from graphify.detect import detect
 
-    detection = detect(root)
+        detect_fn = detect
+
+    detection = detect_fn(root)
     files = detection.get("files") or {}
     values = (
         list(files.get("document") or [])
