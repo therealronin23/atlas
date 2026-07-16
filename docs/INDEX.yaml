@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-16'
+generated: '2026-07-17'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
@@ -924,6 +924,10 @@ entries:
   status: vigente
   verified: null
 - path: docs/design/atlas_synthesis_2026-06-26.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/design/audit_addendum_2026-07-17.md
   type: design
   status: vigente
   verified: null
@@ -3461,6 +3465,14 @@ entries:
   status: vigente
   verified: null
 - path: docs/superpowers/plans/2026-06-25-f2-6-personal-factual.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/superpowers/plans/2026-07-16-t0-succession-core.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/superpowers/plans/2026-07-17-bootstrap-fable-autonomo.md
   type: design
   status: vigente
   verified: null

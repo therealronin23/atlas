@@ -38,6 +38,11 @@ continuo (sin "¿sigo?").
    `/home/ronin/.claude/plans/toasty-hatching-pillow.md`). Si no hay
    presupuesto: deja el prompt del test escrito en
    `docs/superpowers/plans/` y márcalo pendiente.
+4bis. **Cola de arreglos de auditoría**: ejecuta los ítems [bootstrap] de
+   `docs/design/audit_addendum_2026-07-17.md` §4 (tick del grafo + re-sello
+   FRESH primero — es prerequisito de las queries estructurales que
+   necesitarás). Cada cierre con evidencia pegada. Los ítems [operador] NO
+   los toques: preséntalos en el informe final como lista de decisiones.
 5. **Cierre**: WORK_LEDGER (1 entrada), memoria de sesión actualizada
    (`~/.claude/.../memory/toasty-campaign-status-2026-07-16.md` → añade el
    resultado de esta ola), y propuesta de siguiente ola (T2.1 consola mínima
