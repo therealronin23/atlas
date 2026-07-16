@@ -89,7 +89,8 @@ Atlas ecosystem taxonomy lives in `docs/design/atlas_ecosystem_map.md`.
 `absorb-without-cloning` · `adversarial-audit-no-assumptions` ·
 `graph-rebuild-single-writer` · `semantic-full-scan-before-publish` ·
 `semantic-coverage-human-owned` · `filesystem-limits-are-runtime-facts` ·
-`cost-ledger-is-not-billing`.
+`cost-ledger-is-not-billing` · `local-agent-config-is-secret-by-default` ·
+`distill-private-sources-before-graphing` · `tracked-surface-requires-ci`.
 
 When the user states a recurring preference or workflow improvement, add/update
 a `feedback-*.md` memory, add a one-liner in `MEMORY.md`, and add the mania name

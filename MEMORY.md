@@ -48,3 +48,15 @@ Lecciones operativas que explican el porqué de las reglas vivas. El estado vive
   debe proyectar su resultado en todos los resúmenes derivados antes de calcular
   el estado global; conservar `unknown` tras medir es una contradicción, no una
   cautela.
+- `local-agent-config-is-secret-by-default`: configuraciones de clientes de
+  agentes pueden mezclar credenciales, rutas absolutas y permisos amplios. Solo
+  se versionan adaptadores/hook portables; el config real se ignora, se restringe
+  a 0600 y cualquier credencial expuesta se rota fuera del repo.
+- `distill-private-sources-before-graphing`: un export conversacional bruto puede
+  tener valor histórico y a la vez filtrar URLs firmadas, duplicar decisiones
+  descartadas y degradar GraphRAG. Se conserva privado; solo la destilación
+  verificable entra en Git y en el grafo semántico.
+- `tracked-surface-requires-ci`: si una superficie versionada tiene su propio
+  lock/build, la suite Python no la representa. Su runtime mínimo, instalación
+  exacta, auditoría de dependencias y build deben estar declarados y ejecutarse
+  en CI.

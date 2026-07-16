@@ -8,6 +8,22 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **CIERRE DE RESIDUOS Y PAQUETE PUBLICABLE A `main` (2026-07-16)** — los
+  cinco cambios locales restantes se clasificaron por evidencia. Se conserva
+  Vite 7.3.6 + plugin React 5.1.4 porque elimina 13 avisos del lock anterior;
+  Node 22.22.2 queda reproducible y el shell entra en CI con instalación,
+  auditoría y build. Los hooks portables de Claude/Codex quedan configurados y
+  sus comandos verificados; el wrapper resuelve la raíz Git real de Codex con
+  regresión, pero la carga requiere confiar la capa `.codex/` en el cliente.
+  `.codex/config.toml` se mantiene
+  local, ignorado y con modo 0600 porque contiene credencial/rutas/permisos del
+  host. El export bruto "Diseño UI Atlas.md" se conserva solo como fuente
+  histórica privada: su valor ya está destilado, queda fuera de Git/Graphify y
+  en modo 0600 para no exponer URLs firmadas ni contaminar el grafo con alternativas
+  obsoletas. **Próxima acción:** tras actualizar `main`, revisar/confiar los
+  hooks del proyecto en Codex; rotar fuera del repo el client secret OAuth ya
+  observado y relanzar el conector sin transportarlo por argv.
+
 - **AUDITORÍA INTEGRAL ADVERSARIAL — CIERRE LOCAL Y SEMÁNTICO VERDE
   (2026-07-16)** — pre-mortem, revisión multidimensional y remediación
   ejecutados sobre seguridad, ejecución, API/WS, Telegram/HITL, Merkle,

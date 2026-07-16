@@ -44,12 +44,13 @@ KEEP_WITH_BOUNDARY / MODIFY / REPLACE / DEPRECATE / INVESTIGATE / REJECT.
 ## D3 — Stack UI: Tauri + React (pack ADR-0005)
 
 - **Supuesto**: hace falta desktop nativo desde v1.
-- **Riesgo actual**: node 18.19 (Vite>5 exige node 20+); compilar Tauri mete
+- **Riesgo actual (enmendado 2026-07-16)**: compilar Tauri aún metería
   toolchain Rust + webkit2gtk en el camino crítico de una máquina con 4GB de
-  /tmp y historial earlyoom; y el valor v1 está en el shell reactivo a
-  eventos, no en el empaquetado.
-- **Veredicto: MODIFY.** v1 = **web-first**: Vite 5 + React 18 + TypeScript en
-  `ui/atlas-shell/`, servida por el bridge (build estático) o `vite dev`.
+  `/tmp` e historial earlyoom. El límite Node 18 dejó de existir: el host y CI
+  usan Node 22.22.2 y mantener Vite 5 conservaba advisories npm.
+- **Veredicto: MODIFY.** v1 = **web-first**: Vite 7 + React 18 + TypeScript en
+  `ui/atlas-shell/`, servida por el bridge (build estático) o `vite dev`; lock,
+  audit y build quedan en CI.
   El pack ADR-0006 (renderer abstraction) se KEEP: el dominio/eventos viven
   fuera de React; Tauri queda como wrapper futuro documentado, no bloqueado.
 - **Registra**: ADR-059.

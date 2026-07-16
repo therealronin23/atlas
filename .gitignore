@@ -47,6 +47,9 @@ Thumbs.db
 *.key
 *.pem
 secrets/
+# Codex client config is machine-local and may contain credentials, absolute
+# paths, and sandbox permissions. Portable project hooks live in hooks.json.
+/.codex/config.toml
 
 # External tooling and clones
 tools/understand-anything/
@@ -87,6 +90,9 @@ docs/texto arrastrado.txt
 docs/conversation_summary.md
 # Raw exported chat — valuable regulatory content; distill into a clean doc before tracking.
 /Gemini-Auditoría*.md
+# Raw ChatGPT export already distilled into docs/inbox/; it also contains
+# signed asset URLs and local context, so keep the source private and local.
+/Diseño UI Atlas.md
 # Local agent/skill bundles copied into the workspace; use installed skills instead.
 /.agents/
 # Stale doc: documents Antivirus/Membrane modules that don't exist in src/ (wrong imports).

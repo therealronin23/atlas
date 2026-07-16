@@ -4,6 +4,10 @@
 **Auditor:** Claude Code agent (Haiku)  
 **Scope:** Full file-by-file classification of `docs/handoff/atlas_build_pack/` against real repo implementation
 
+> **Historical snapshot.** Classifications reflect the 2026-07-11 checkout.
+> Current runtime/toolchain decisions live in the numbered ADRs and
+> `WORK_LEDGER.md`.
+
 ---
 
 ## Summary
@@ -64,7 +68,7 @@
 | 11_HARNESS_ADAPTER_CONTRACT.md | READ | Specifies adapter JSON schema with 10+ properties. | Reference for adapter pattern. Actual `schemas/adapter.schema.json` exists and matches structure. |
 | 12_GOVERNANCE_GATES.md | READ | Describes 10 gates (Vision, Event, Graph, Memory, Adapter, Human Approval, Audit, Security, UX, Release). | Pure governance. **PARTIALLY_IMPLEMENTED** — Real repo has Gate system (adr_063, src/atlas/governance/gates.py); SecurityCenter.tsx exists. Actual gates more sophisticated than proposal (risk-based policy engine, not simple 10-gate checklist). |
 | 13_GRAPH_RENDERING_STRATEGY.md | READ | Proposes different layouts per territory; mentions React Flow, Cytoscape, Sigma, D3. | Design reference. Real implementation: Living Knowledge Graph uses **d3-force** (ADR-059), NOT React Flow. Cytoscape/Sigma deferred. No territory-specific layouts implemented. |
-| 14_TECH_STACK_DECISIONS.md | SUPERSEDED | Proposes Tauri + React + TypeScript. | **ADR-059 supersedes this.** Real decision: Vite 5 + React 18 + TypeScript (no Tauri in v1). Tauri deferred as future wrapper. d3-force replaces proposed Cytoscape/Sigma. |
+| 14_TECH_STACK_DECISIONS.md | SUPERSEDED | Proposes Tauri + React + TypeScript. | **ADR-059 supersedes this.** Web-first React+TypeScript (Vite 7/Node 22 since the 2026-07-16 amendment); no Tauri in v1. d3-force replaces proposed Cytoscape/Sigma. |
 | 15_FRAMEWORK_BOUNDARIES.md | READ | Lists role of LangGraph, LangChain, CrewAI, Tauri, etc. | Design principle. Generally respected but not enforced at ADR level. |
 | 16_ADR_INDEX.md | READ | Lists 10 ADRs (0001–0010). | Meta-document. Real repo never adopted these ADR numbers; see below. |
 | 17_PHASES_ROADMAP.md | PARTIALLY_IMPLEMENTED | Proposes 8 phases (0–7) with explicit deliverables. | **Critical:** Phases 0–4 executed (under different naming, F0–F4 in PHASE_SOURCE_INDEX). **Phases 5–6 NEVER EXECUTED** — no React Flow, no Monaco, no dedicated territories. Phase 7 (Hardening) partially done (Gates/Sandbox/Failure Memory YES, Performance/Packaging/Audit Replay NO). See PHASE_SOURCE_INDEX.md for full mapping. |
@@ -80,7 +84,7 @@
 | ADR-0002-event-canon-source-of-truth.md | SUPERSEDED | Says all UI/replay/audit depend on events. | Observed via ADR-058 (Event Kernel Bridge) + real event store. Principles sound; implementation different (projection + bridge, not canonical replacement). |
 | ADR-0003-living-graph-home.md | SUPERSEDED | Says Living Knowledge Graph is home, not chat. | Principle applied: LivingGraph.tsx exists and is central. But no separate "Home" route or "Command Center" component — integration into main App.tsx instead. |
 | ADR-0004-visual-orchestrator-territory.md | SUPERSEDED + PENDING | Says Orchestrator is territory, not home. | Principle accepted but **NEVER IMPLEMENTED.** No UI territory for Orchestrator. Fase 5 MISSING. |
-| ADR-0005-tauri-react-renderer-v1.md | SUPERSEDED | Says Tauri + React for shell v1. | **ADR-059 explicitly supersedes:** Vite + React, Tauri deferred. Rationale: Node 18 vs 20+ requirement, RAM/disk pressure, emphasis on reactive contracts not packaging. Decision sound for v1. |
+| ADR-0005-tauri-react-renderer-v1.md | SUPERSEDED | Says Tauri + React for shell v1. | **ADR-059 explicitly supersedes:** web-first Vite + React, Tauri deferred. The original Node 18 constraint was removed by the 2026-07-16 Node 22/Vite 7 amendment; RAM/disk pressure and the renderer boundary remain. |
 | ADR-0006-renderer-abstraction.md | IMPLEMENTED | Says renderer is swappable, React has no domain logic. | Principle observed: event-reducer/types in core, components are pure renderers. No formal abstraction layer, but clean separation. |
 | ADR-0007-atlas-kernel-not-langgraph.md | IMPLEMENTED | Says LangGraph optional, Atlas keeps own kernel. | Principle observed: real implementation uses event-based kernel (src/atlas/events/), not LangGraph-driven. |
 | ADR-0008-adapter-contract-required.md | IMPLEMENTED | Says all integrations must declare contract (schema, permissions, risk, etc.). | Principle observed: `schemas/adapter.schema.json` exists; real connectors (gmail, github, etc.) validate against it. |
