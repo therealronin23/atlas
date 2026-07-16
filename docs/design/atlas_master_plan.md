@@ -65,6 +65,21 @@ entero? Si no toca ninguna, no entra en un tramo: va a inbox como candidata.
 7. **No re-litigar lo sellado** (§4). La duda ante una manía del operador se
    resuelve leyendo la memoria/feedback correspondiente, no preguntándole otra
    vez ni ignorándola.
+8. **Readback obligatorio en peticiones ambiguas** (añadido 2026-07-17; origen:
+   caso Cursor + "el modelo hace como que entiende y hace lo que le sale").
+   Ante una petición interpretable, el plan de misión declara: "interpreto X;
+   alternativas que descarto: Y, Z" — y el operador aprueba la INTERPRETACIÓN
+   antes que el diff. Nada ambiguo se ejecuta sin readback aceptado.
+9. **Las métricas de eficacia de Atlas son estas, en este orden** (cómo se
+   mide lo "inmedible"): (a) tasa de re-trabajo — correcciones/reversiones
+   posteriores por malentendido, extraída de git+ledger; (b) tasa de
+   aceptación del readback a la primera; (c) hallazgos por auditoría de
+   intención (caza de discrepancias dicho-vs-hecho, método probado
+   2026-07-16: cazó el ledger mintiendo sobre scripts retirados); (d) test
+   de sucesión 6/6; (e) benchmarks estándar donde existan (memoria:
+   LongMemEval R@5=0.94 ya medido; código: suite tipo SWE cuando AtlasCoder
+   madure). Ceremonia sobre confianza: modelo flojo = vocabulario estrecho
+   con barandillas; modelo frontier = vocabulario ancho, MISMA ceremonia.
 
 ## 3. Escalera de decisiones (quién decide qué)
 
