@@ -77,7 +77,17 @@ def _infer_type(rel: Path) -> str:
 
 
 def _infer_status(rel: Path) -> str:
-    return "historico" if rel.parts and rel.parts[0] == "archive" else "vigente"
+    if not rel.parts:
+        return "vigente"
+    if rel.parts[0] == "archive":
+        return "historico"
+    # docs/handoff = packs de sucesión: snapshots congelados (historia), SALVO
+    # el pack vivo GENERATED, que se regenera con `atlas handoff` y lleva su
+    # propio MANIFEST con head_sha (decisión ola bootstrap 2026-07-17: sin
+    # esto ~555 entradas heredaban 'vigente' y caducarían en masa).
+    if rel.parts[0] == "handoff" and (len(rel.parts) < 2 or rel.parts[1] != "GENERATED"):
+        return "historico"
+    return "vigente"
 
 
 def scan_tree(docs_dir: Path | None = None) -> list[Path]:
@@ -107,10 +117,20 @@ def write_index(docs_dir: Path | None = None) -> int:
     for rel in scan_tree(docs_dir):
         key = str(rel)
         prev = existing.get(key, {})
+        inferred_status = _infer_status(rel.relative_to("docs"))
+        prev_status = prev.get("status")
+        # Migración de defaults: 'vigente' era el default histórico del
+        # generador — si la taxonomía ahora infiere 'historico', el default
+        # cede. Los status curados a mano (propuesto/superseded/…) se
+        # conservan SIEMPRE (contrato del header).
+        if prev_status in (None, "vigente") and inferred_status == "historico":
+            status = inferred_status
+        else:
+            status = prev_status if prev_status is not None else inferred_status
         entry = {
             "path": key,
             "type": prev.get("type", _infer_type(rel.relative_to("docs"))),
-            "status": prev.get("status", _infer_status(rel.relative_to("docs"))),
+            "status": status,
             "verified": prev.get("verified"),
         }
         if prev.get("notes"):
