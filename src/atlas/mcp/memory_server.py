@@ -185,6 +185,16 @@ def build_tenant_memory_server(
     return server
 
 
+# Umbral `matched` de la ruta semántica de producción, MEDIDO 2026-07-17 sobre
+# la BD real con fastembed multilingual-MiniLM (5 queries con objetivo conocido
+# + 3 negativas): aciertos reales 0.533-0.774, ruido 0.303-0.449 → 0.5 separa
+# la banda. El default 0.8 del índice (pensado para near-duplicates con stub)
+# marcaba matched=False en el 100% de los aciertos reales. Los docs LARGOS
+# ingeridos enteros (doctrine:*, destilados) puntúan ~0.45 — eso se arregla con
+# chunking en la digestión (T0.5b), no bajando más este umbral.
+_SEMANTIC_MATCH_THRESHOLD = 0.5
+
+
 def build_gated_index(
     db_path: Path, *, require_provenance: bool = False
 ) -> "SqliteMemoryIndex":
@@ -195,7 +205,12 @@ def build_gated_index(
 
     gate = ProvenanceWriteGate() if require_provenance else None
     # Embedder gobernado por env (ATLAS_EMBEDDER=fastembed → semántico local; default stub).
-    return SqliteMemoryIndex(db_path, embedder=default_embedder(), write_gate=gate)
+    return SqliteMemoryIndex(
+        db_path,
+        embedder=default_embedder(),
+        write_gate=gate,
+        threshold=_SEMANTIC_MATCH_THRESHOLD,
+    )
 
 
 def serve(db_path: Path, *, name: str = "atlas-memory", require_provenance: bool = False) -> None:
