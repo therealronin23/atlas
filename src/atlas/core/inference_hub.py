@@ -68,6 +68,8 @@ RATE_LIMIT_COOLDOWN_S = 60.0
 # (medido), se promueven a campo de Provider con estas como default — cambio aditivo.
 INFER_MAX_RETRIES = 2          # reintentos extra → 3 intentos totales
 INFER_RETRY_BASE_S = 0.5       # backoff: intento k espera ~BASE*2**(k-1) + jitter
+INFER_REQUEST_TIMEOUT_S = 120.0  # tope duro por llamada: un proveedor colgado no
+                                 # puede bloquear al caller (Cónclave >20min, 2026-07-17)
 
 # Substring del nombre de excepción litellm que SÍ se reintenta. RateLimit queda
 # fuera (ya tiene cooldown); Authentication/BadRequest/NotFound son permanentes.
@@ -761,6 +763,7 @@ class InferenceHub:
                     messages=messages,
                     max_tokens=request.max_tokens,
                     temperature=request.temperature,
+                    timeout=INFER_REQUEST_TIMEOUT_S,
                     **extra_kwargs,
                 )
                 last_exc = None
