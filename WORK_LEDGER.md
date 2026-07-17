@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **T0.1+T0.2 CERRADAS — núcleo de sucesión vivo (2026-07-17, ola bootstrap)** —
+  la memoria privada del harness YA vive en el sustrato con procedencia
+  (58 registros `harness:*` + 2 `doctrine:*` en ~/atlas-mcp/memory.db, recall
+  verificado: succession-proofing 0.700, doctrina 0.733, ambos con Merkle) y
+  `atlas handoff` regenera el pack de sucesión desde fuentes vivas
+  (docs/handoff/GENERATED/, MANIFEST con head_sha; `--check` exit 1 si STALE).
+  Commits c0f2b72f (migración, dry-run default) + 2852e132 (handoff). El tipo
+  `user` NO se migra (dato personal, queda en harness a propósito). Backups
+  pre-migración: ~/atlas-mcp/memory.db{,.keys}.pre-t0-migration.bak.
+  **Próxima acción:** T5.1 smoke de proveedores (recon + mini-plan) y cola
+  [bootstrap] del addendum de auditoría 2026-07-17.
 - **F3 CERRADA → PLAN TOASTY F1-F5 COMPLETO (2026-07-16 noche)** — últimas
   piezas: tools `graph_communities()` y `graph_semantic_neighbors(note)` en el
   tronco (graph_server + RootSpec; la semántica graphify — comunidades con
