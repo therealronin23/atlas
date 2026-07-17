@@ -48,9 +48,26 @@ hallazgos se aceptan como base sin re-litigar.
    arreglos en 13070572); los docs de dirección son opinión/plan (riesgo:
    intención, no código — lo cubre T0.5c). Re-sello = §2.1 + suite dirigida.
    [bootstrap]
-3. **12 fuentes graphify largas sin cobertura semántica** (702/714, límites de
-   NVIDIA/Ollama). Opciones: Groq / ignore deliberado / aceptar 98,3%.
-   [operador N3 → luego bootstrap]
+3. **~~12 fuentes graphify largas sin cobertura semántica~~ — DIAGNOSTICADA
+   2026-07-17 (ola bootstrap), causa raíz distinta a la supuesta.** No era el
+   proveedor: el LLM topa `max_completion_tokens` y devuelve JSON truncado que
+   graphify descarta ("invalid JSON, skipping chunk"). Medido: WORK_LEDGER.md
+   → 0 nodos con el techo por defecto (out=15358) vs **303 nodos** con
+   `GRAPHIFY_MAX_OUTPUT_TOKENS=60000` (out=56015). Groq quedó descartado por
+   TPM (413 real, 12k < ~18k/chunk) y ese error tapaba el problema de fondo.
+   Estado: cobertura **694/699 = 99,3%** (12 fuentes sin valor semántico
+   excluidas con criterio: scratch, graveyard, y el pack GENERATED por dedupe
+   con sus fuentes). Quedan 5 (WORK_LEDGER, ecosystem_map, synthesis,
+   research×2): re-run pendiente con el techo alto — cupo diario de Gemini
+   agotado el 17-jul. `ecosystem_map` falla incluso con techo alto (causa sin
+   diagnosticar, probable tabla gigante). YA NO es decisión del operador: es
+   trabajo de bootstrap con receta conocida.
+4. **Guard de cache semántica demasiado laxo** (hallazgo colateral):
+   `is_verified_cache_payload` no exige `_atlas_checkpoint`, así que una cache
+   escrita por graphify fuera de `graphify_semantic_resume.py` cuenta como
+   verificada aunque le falten chunks. Detectado al contaminarlo yo mismo con
+   una prueba de diagnóstico (cache borrada, cobertura re-medida). El script
+   es honesto; su guard de lectura no. [bootstrap]
 
 ## 3. Premortem de la CAMPAÑA DE ARREGLOS (cómo puede fracasar "resolverlo todo")
 
@@ -78,10 +95,15 @@ hallazgos se aceptan como base sin re-litigar.
 
 **[operador — N3, nadie puede hacerlo por ti]:**
 7. **Rotar el client secret OAuth de Google Workspace** visto en argv
-   (riesgo ABIERTO más urgente del audit; relanzar conector sin secreto en
-   línea de comandos).
-8. Decidir 12 fuentes largas (Groq/ignore/aceptar) — §2.3.
-9. Higiene docs/handoff en INDEX (500 `vigente` por defecto).
+   (riesgo ABIERTO más urgente del audit). Vector confirmado en vivo
+   2026-07-17: lo expone el `--mcp-config` del cliente Claude, no el servidor.
+   Mitigación ya construida (wrapper sin secretos en argv + runbook:
+   `docs/operations/oauth_rotation_google_workspace.md`); la ROTACIÓN y el
+   repunte del conector siguen siendo solo tuyos.
+8. ~~Decidir 12 fuentes largas~~ — RESUELTO sin operador: era un techo de
+   salida del LLM, no una elección de proveedor (§2.3). Queda re-run mecánico.
+9. ~~Higiene docs/handoff en INDEX~~ — HECHA 2026-07-17 (commit 18af7e0c):
+   packs = `historico`, GENERATED = `vigente`, `--strict` limpio.
 10. Revisar/confiar hooks Codex en su cliente; NO publicar `refs/codex/*`.
 11. Decisiones diferidas: cuándo F2.6; spec B+C (bendecir); Hermes/VPS/
     Telegram/Neo4j en vivo (cada uno es despliegue+credencial).
