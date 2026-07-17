@@ -57,6 +57,7 @@ def collect_reality(
         "mcp": _mcp_state(root, ws),
         "autonomy": _autonomy_state(),
         "docs": _docs_state(root),
+        "provider_smoke": _provider_smoke_state(root),
         "checks": {},
     }
     report["capabilities"] = _capability_plane(report)
@@ -414,6 +415,74 @@ def _docs_state(root: Path) -> dict[str, Any]:
         "unique_test_count_claims": unique,
         "status": "stale" if stale else "ok",
         "reason": "multiple contradictory test-count claims" if stale else "no contradictory test-count claims detected",
+    }
+
+
+def _provider_smoke_state(root: Path) -> dict[str, Any]:
+    """Proyecta el último resultado del smoke diario de proveedores
+    (``ProviderChainSmoke``, ver maintenance_facade.maintenance_provider_smoke_tick)
+    sin disparar ninguna llamada de red: solo lee el fichero de estado que
+    ya escribió el daemon. Fichero ausente o ilegible -> ``never_ran`` con
+    razón honesta, jamás una excepción (mismo principio fail-honesto que
+    ``_mcp_state``)."""
+    path = root / "workspace" / "self_build" / "provider_smoke_state.json"
+    never_ran: dict[str, Any] = {
+        "status": "never_ran",
+        "last_run_date": None,
+        "ok": [],
+        "dead": [],
+        "skipped": [],
+    }
+    if not path.is_file():
+        return {
+            **never_ran,
+            "reason": (
+                "no provider_smoke_state.json found; set ATLAS_PROVIDER_SMOKE=1 "
+                "to enable the daily provider smoke"
+            ),
+        }
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {
+            **never_ran,
+            "reason": f"provider_smoke_state.json unreadable: {type(exc).__name__}",
+        }
+    if not isinstance(raw, dict):
+        return {
+            **never_ran,
+            "reason": "provider_smoke_state.json is not a JSON object",
+        }
+    last_run_date = raw.get("last_run_date")
+    results = raw.get("last_results")
+    if not isinstance(results, list):
+        results = []
+
+    def _names(outcome: str) -> list[str]:
+        return [
+            entry["provider_name"]
+            for entry in results
+            if isinstance(entry, dict)
+            and isinstance(entry.get("provider_name"), str)
+            and entry.get("outcome") == outcome
+        ]
+
+    ok = _names("ok")
+    dead = _names("failed")
+    skipped = _names("skipped")
+    if dead:
+        reason = f"{len(dead)} provider(s) dead: {', '.join(dead)}"
+    elif not results:
+        reason = "provider_smoke_state.json present but empty (no results recorded)"
+    else:
+        reason = "all probed providers ok or skipped"
+    return {
+        "status": "ran",
+        "last_run_date": last_run_date,
+        "ok": ok,
+        "dead": dead,
+        "skipped": skipped,
+        "reason": reason,
     }
 
 
