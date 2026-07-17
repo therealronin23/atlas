@@ -8,7 +8,7 @@ Reglas que estos tests fijan:
 
 - **Default intacto:** sin el flag, la conducta es la de siempre (DELEGATED +
   encolado en OfflineQueue).
-- **Takeover solo con mock:** el flag NO secuestra un Hermes REST real.
+- **Takeover solo con mock:** el flag NO secuestra un adapter Hermes real (kanban).
 - **Auditoría:** el reruteo deja ``hermes.local_takeover`` en Merkle.
 """
 
@@ -78,12 +78,14 @@ class TestTakeover:
         actions = [r.to_dict()["action"] for r in orch._merkle.tail(10)]
         assert "hermes.local_takeover" in actions
 
-    def test_flag_does_not_hijack_real_rest_adapter(
+    def test_flag_does_not_hijack_real_kanban_adapter(
         self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("ATLAS_HERMES_LOCAL", "1")
-        # Simular un adapter REST real: el takeover NO debe aplicar
-        from atlas.hermes.hermes import HermesRestAdapter
+        # Simular un adapter Hermes real (kanban, ADR-028): el takeover NO debe
+        # aplicar. El canal REST legado que este caso cubria antes fue retirado
+        # en ADR-070 — HermesKanbanAdapter es ahora el unico adapter real.
+        from atlas.hermes.hermes import HermesKanbanAdapter
 
-        orch._hermes = HermesRestAdapter.__new__(HermesRestAdapter)
+        orch._hermes = HermesKanbanAdapter.__new__(HermesKanbanAdapter)
         assert orch._hermes_local_takeover() is False

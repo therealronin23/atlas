@@ -69,7 +69,8 @@ def test_autonomous_scripts_never_source_dotenv_as_shell_code() -> None:
         "update-knowledge-graph.sh",
         "update-knowledge-graph-rag.sh",
         "run-graphify-quality-pipeline.sh",
-        "hermes_local.sh",
+        # hermes_local.sh salió de la lista al retirarse (ADR-070): el stub
+        # exit-64 ya no arranca nada ni necesita cargar .env.
     )
     for name in names:
         raw = (REPO / "scripts" / name).read_text(encoding="utf-8")

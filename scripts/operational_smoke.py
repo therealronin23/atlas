@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""Smoke histórico del contrato REST Hermes y del bot propio de Atlas.
+"""Smoke operacional: estado del orchestrator, aprobación CLI y bot de Telegram.
 
-NO prueba el Hermes-Agent oficial ni su Telegram. Puede mutar la cola REST,
-aprobar una escritura aislada y, si no se omite, enviar un mensaje real desde
-el bot propio de Atlas. No se ejecuta desde la auditoría autónoma.
+ADR-070 retiró el canal REST legado de Hermes (HermesRestAdapter); este
+script YA NO ejercita ningún contrato REST (ver
+docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md). El estado de
+Hermes se sigue comprobando de forma generica sobre el adapter que este
+configurado (kanban o mock).
+
+NO prueba el Hermes-Agent oficial ni su Telegram. Puede aprobar una escritura
+aislada y, si no se omite, enviar un mensaje real desde el bot propio de
+Atlas. No se ejecuta desde la auditoría autónoma.
 
 Uso:
     PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
@@ -16,11 +22,10 @@ Opciones:
     --workspace PATH      Usar ATLAS_HOME existente (default: directorio temporal)
 
 Comprueba:
-  1) Variables HERMES_* presentes
-  2) Orchestrator.status: governance + Merkle + Hermes reachable
-  3) Hermes REST: health, enqueue, cancel
-  4) (opcional) CLI approval: task -> pending -> approve -> done
-  5) (opcional) Telegram outbound sendMessage
+  1) Orchestrator.status: governance + Merkle + Hermes reachable (adapter que
+     este configurado — kanban o mock)
+  2) (opcional) CLI approval: task -> pending -> approve -> done
+  3) (opcional) Telegram outbound sendMessage
 """
 
 from __future__ import annotations
@@ -34,17 +39,7 @@ from pathlib import Path
 
 from atlas.core.contracts import TaskStatus
 from atlas.core.orchestrator import Orchestrator
-from atlas.hermes.hermes import DelegationBuilder, HermesError, HermesRestAdapter
 from atlas.interfaces.telegram_bot import TelegramAPIError, TelegramClient
-
-
-def _check_env() -> dict[str, str]:
-    base = os.environ.get("HERMES_BASE_URL", "").strip()
-    secret = os.environ.get("HERMES_API_KEY", "").strip()
-    if not base or not secret:
-        print("ERROR: HERMES_BASE_URL y HERMES_API_KEY requeridos.")
-        sys.exit(2)
-    return {"HERMES_BASE_URL": base, "HERMES_API_KEY": "***"}
 
 
 def _check_orchestrator_status(workspace: Path) -> dict:
@@ -68,33 +63,8 @@ def _check_orchestrator_status(workspace: Path) -> dict:
     if not hermes.reachable:
         print(f"ERROR Hermes no reachable: {result}")
         sys.exit(1)
-    print(f"[2/5] orchestrator OK: {json.dumps(result)}")
+    print(f"[1/3] orchestrator OK: {json.dumps(result)}")
     return result
-
-
-def _check_hermes_rest() -> None:
-    base = os.environ["HERMES_BASE_URL"].strip()
-    secret = os.environ["HERMES_API_KEY"].strip()
-    adapter = HermesRestAdapter(base_url=base, shared_secret=secret, max_retries=2)
-    status = adapter.health_check()
-    if not status.reachable:
-        print("ERROR: Hermes health_check not reachable")
-        sys.exit(1)
-    payload = DelegationBuilder.build(
-        task_id="operational-smoke",
-        intent="operational smoke echo",
-        priority=1,
-    )
-    try:
-        receipt = adapter.enqueue_task(payload)
-    except HermesError as exc:
-        print(f"ERROR enqueue: {exc}")
-        sys.exit(1)
-    adapter.cancel_task(receipt.delegation_id)
-    print(
-        f"[3/5] hermes REST OK: mode={status.mode} "
-        f"delegation_id={receipt.delegation_id}"
-    )
 
 
 def _check_cli_approval(workspace: Path) -> str:
@@ -127,7 +97,7 @@ def _check_cli_approval(workspace: Path) -> str:
         if not out_file.exists() or "hello operational" not in out_file.read_text():
             print("ERROR: editor write did not create expected file")
             sys.exit(1)
-        print(f"[4/5] CLI approval OK: task_id={task.id}")
+        print(f"[2/3] CLI approval OK: task_id={task.id}")
         return task.id
     finally:
         if previous_decider is None:
@@ -140,7 +110,7 @@ def _check_telegram_outbound() -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if not token or not chat:
-        print("[5/5] telegram SKIP (faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID)")
+        print("[3/3] telegram SKIP (faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID)")
         return
     client = TelegramClient(token)
     try:
@@ -151,7 +121,7 @@ def _check_telegram_outbound() -> None:
     except TelegramAPIError as exc:
         print(f"ERROR telegram: {exc}")
         sys.exit(1)
-    print(f"[5/5] telegram outbound OK: chat_id={chat}")
+    print(f"[3/3] telegram outbound OK: chat_id={chat}")
 
 
 def main() -> int:
@@ -161,9 +131,6 @@ def main() -> int:
     parser.add_argument("--send-telegram", action="store_true")
     parser.add_argument("--workspace", type=Path, default=None)
     args = parser.parse_args()
-
-    env_summary = _check_env()
-    print(f"[1/5] env OK: {json.dumps(env_summary)}")
 
     if args.workspace is not None:
         workspace = args.workspace.expanduser().resolve()
@@ -176,15 +143,14 @@ def main() -> int:
 
     try:
         _check_orchestrator_status(workspace)
-        _check_hermes_rest()
         if not args.skip_cli_approval:
             _check_cli_approval(workspace)
         else:
-            print("[4/5] CLI approval SKIP")
+            print("[2/3] CLI approval SKIP")
         if args.send_telegram and not args.skip_telegram:
             _check_telegram_outbound()
         else:
-            print("[5/5] telegram SKIP (use --send-telegram for an external message)")
+            print("[3/3] telegram SKIP (use --send-telegram for an external message)")
     finally:
         if cleanup:
             import shutil

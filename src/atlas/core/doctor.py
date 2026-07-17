@@ -82,6 +82,9 @@ def _check_env() -> Check:
     keys = [
         "HERMES_KANBAN_TRANSPORT",
         "HERMES_SSH_HOST",
+        # HERMES_API_KEY/HERMES_BASE_URL: the REST channel they configured was
+        # retired in ADR-070. Kept here only so the operator can see they are
+        # still set in .env (inert; no code path consumes them anymore).
         "HERMES_API_KEY",
         "HERMES_BASE_URL",
         "HERMES_MODEL_PROVIDER",

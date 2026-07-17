@@ -32,7 +32,6 @@ from atlas.hermes.hermes import (
     HermesAdapter,
     HermesKanbanAdapter,
     HermesMockAdapter,
-    HermesRestAdapter,
     OfflineQueue,
 )
 from atlas.logging.merkle_logger import MerkleLogger
@@ -1672,7 +1671,7 @@ class Orchestrator:
         Con el VPS dado de baja, las tareas DELEGATE_HERMES se pudrían en la
         OfflineQueue (nadie la consume). Con el flag activo y el adapter en
         mock, la delegación se convierte en ejecución local. Solo aplica al
-        mock: si hay un Hermes REST real configurado, se delega normal."""
+        mock: si hay un adapter real configurado (kanban), se delega normal."""
         if os.environ.get("ATLAS_HERMES_LOCAL", "").strip().lower() not in (
             "1",
             "true",
@@ -1713,14 +1712,6 @@ class Orchestrator:
             signed_payload = payload
             mode_note = f"Hermes kanban ({self._hermes.transport})"
             merkle_action = "hermes.kanban_delegated"
-        elif isinstance(self._hermes, HermesRestAdapter):
-            signed_payload = self._hermes._sign_payload(payload)
-            mode_note = f"Hermes REST ({os.environ.get('HERMES_BASE_URL', '').rstrip('/')})"
-            merkle_action = "hermes.delegated"
-            entry_cls = __import__(
-                "atlas.hermes.hermes", fromlist=["QueueEntry"]
-            ).QueueEntry
-            self._offline_queue.enqueue(entry_cls(delegation=signed_payload))
         else:
             signed_payload = payload
             mode_note = "Hermes adapter desconocido"
@@ -1908,7 +1899,7 @@ class Orchestrator:
             self._approved_patterns,
         )
 
-        # Hermes (REST si HERMES_BASE_URL + HERMES_API_KEY en .env)
+        # Hermes (kanban si HERMES_KANBAN_TRANSPORT en .env; REST legado retirado, ADR-070)
         self._offline_queue = OfflineQueue(self._workspace / "memory")
         self._hermes = self._build_hermes_adapter()
 
@@ -2034,7 +2025,10 @@ class Orchestrator:
         """Compatibilidad tests: cola in-memory solo con mock."""
         if isinstance(self._hermes, HermesMockAdapter):
             return self._hermes
-        raise TypeError("HermesMockAdapter no activo — usa HermesRestAdapter (HERMES_BASE_URL)")
+        raise TypeError(
+            "HermesMockAdapter no activo — deja HERMES_KANBAN_TRANSPORT sin definir "
+            "para caer al mock (el canal REST legado fue retirado, ver ADR-070)"
+        )
 
     def _build_hermes_adapter(self) -> HermesAdapter:
         kanban_transport = os.environ.get("HERMES_KANBAN_TRANSPORT", "").strip().lower()
@@ -2046,17 +2040,17 @@ class Orchestrator:
         base_url = os.environ.get("HERMES_BASE_URL", "").strip()
         api_key = os.environ.get("HERMES_API_KEY", "").strip()
         if base_url and api_key:
-            _log.info("Hermes: REST -> %s", base_url)
-            return HermesRestAdapter(
-                base_url=base_url,
-                shared_secret=api_key,
-                offline_queue=self._offline_queue,
+            _log.warning(
+                "HERMES_BASE_URL/HERMES_API_KEY estan definidas pero el canal REST "
+                "legado fue retirado (ADR-070): se usa el adapter mock. Configure "
+                "HERMES_KANBAN_TRANSPORT para el canal Hermes canonico."
             )
-        _log.warning(
-            "Hermes no configurado: se usa el adapter mock. Configure un "
-            "HERMES_KANBAN_TRANSPORT explícito (y HERMES_SSH_HOST para SSH) o "
-            "el contrato REST legado; ninguna configuración implica evidencia viva."
-        )
+        else:
+            _log.warning(
+                "Hermes no configurado: se usa el adapter mock. Configure un "
+                "HERMES_KANBAN_TRANSPORT explícito (y HERMES_SSH_HOST para SSH); "
+                "ninguna configuración implica evidencia viva."
+            )
         return HermesMockAdapter()
 
     @staticmethod
