@@ -266,6 +266,71 @@ def test_capabilities_cli_json(monkeypatch, tmp_path: Path) -> None:
     assert "browser.computer_use" in names
 
 
+def test_provider_smoke_state_never_ran_without_file(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state = reality._provider_smoke_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["last_run_date"] is None
+    assert state["ok"] == []
+    assert state["dead"] == []
+    assert state["skipped"] == []
+    assert "ATLAS_PROVIDER_SMOKE" in state["reason"]
+
+
+def test_provider_smoke_state_projects_last_run_with_dead_provider(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_smoke_state.json").write_text(
+        json.dumps(
+            {
+                "last_run_date": "2026-07-17",
+                "last_results": [
+                    {"provider_name": "groq_llama_70b", "outcome": "ok"},
+                    {"provider_name": "openrouter_qwen3_coder_free", "outcome": "failed"},
+                    {"provider_name": "together_free", "outcome": "skipped"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    state = reality._provider_smoke_state(tmp_path)
+
+    assert state["status"] == "ran"
+    assert state["last_run_date"] == "2026-07-17"
+    assert state["ok"] == ["groq_llama_70b"]
+    assert state["dead"] == ["openrouter_qwen3_coder_free"]
+    assert state["skipped"] == ["together_free"]
+    assert "openrouter_qwen3_coder_free" in state["reason"]
+
+
+def test_provider_smoke_state_never_ran_on_corrupt_json(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_smoke_state.json").write_text("{not valid json", encoding="utf-8")
+
+    state = reality._provider_smoke_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["ok"] == []
+    assert "unreadable" in state["reason"]
+
+
+def test_collect_reality_wires_provider_smoke_section(tmp_path: Path) -> None:
+    root = _mini_repo(tmp_path)
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["provider_smoke"]["status"] == "never_ran"
+    assert "ATLAS_PROVIDER_SMOKE" in report["provider_smoke"]["reason"]
+
+
 def test_playwright_chromium_executable_stops_manager(monkeypatch, tmp_path: Path) -> None:
     from atlas.core import reality
 
