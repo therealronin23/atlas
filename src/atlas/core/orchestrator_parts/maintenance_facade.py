@@ -12,11 +12,26 @@ import de ``Orchestrator`` se hace bajo ``TYPE_CHECKING`` para evitar ciclos.
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from atlas.core.contracts import EventType
+
+_log = logging.getLogger(__name__)
+
+
+def _isolated_cycle(name: str, tick: Callable[[], object]) -> None:
+    """Ejecuta un ciclo de mantenimiento aislado: un fallo no tumba el
+    scheduler, pero JAMÁS desaparece en silencio — se loguea con traceback.
+    (Lección 2026-07-17: el tick del grafo llevaba horas fallando/arrastrándose
+    y el `except: pass` original no dejaba ni una línea de rastro; el
+    diagnóstico exigió py-spy sobre el daemon vivo.)"""
+    try:
+        tick()
+    except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
+        _log.exception("ciclo de mantenimiento %r falló (aislado, el scheduler sigue)", name)
 
 if TYPE_CHECKING:
     from atlas.core.orchestrator import Orchestrator
@@ -257,41 +272,26 @@ class MaintenanceFacade:
             def _self_build_cycle() -> None:
                 # Autoconstrucción: ver maintenance_self_build_tick (extraído a
                 # método para que el preflight y el gating sean testeables).
-                try:
-                    self.maintenance_self_build_tick()
-                except Exception:  # noqa: BLE001 — un item malo no tumba el tick del scheduler
-                    pass
+                _isolated_cycle("self_build", self.maintenance_self_build_tick)
 
             def _research_cycle() -> None:
                 # Investigación abierta: ver maintenance_research_tick. Aislado
                 # como los demás ciclos — un fallo de red/parseo no tumba el
                 # scheduler ni bloquea self-build/dep/batch.
-                try:
-                    self.maintenance_research_tick()
-                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
-                    pass
+                _isolated_cycle("research", self.maintenance_research_tick)
 
             def _provider_smoke_cycle() -> None:
                 # Smoke de cadena: ver maintenance_provider_smoke_tick. Aislado
                 # igual que los demás ciclos.
-                try:
-                    self.maintenance_provider_smoke_tick()
-                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
-                    pass
+                _isolated_cycle("provider_smoke", self.maintenance_provider_smoke_tick)
 
             def _knowledge_ingest_cycle() -> None:
                 # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
-                try:
-                    self.maintenance_knowledge_ingest_tick()
-                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
-                    pass
+                _isolated_cycle("knowledge_ingest", self.maintenance_knowledge_ingest_tick)
 
             def _project_graph_cycle() -> None:
                 # Grafo vivo automático: ver maintenance_project_graph_tick.
-                try:
-                    self.maintenance_project_graph_tick()
-                except Exception:  # noqa: BLE001 — una pasada rota no tumba el scheduler
-                    pass
+                _isolated_cycle("project_graph", self.maintenance_project_graph_tick)
 
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).

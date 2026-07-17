@@ -587,3 +587,22 @@ class TestProjectGraphTick:
             orch.maintenance_project_graph_tick()
 
         assert not db.exists()
+
+
+def test_isolated_cycle_logs_failures_instead_of_swallowing(caplog) -> None:
+    """Un ciclo que revienta no tumba el scheduler PERO deja traceback en el
+    log — el `except: pass` original hizo invisible un tick del grafo roto
+    durante horas (lección 2026-07-17, diagnóstico vía py-spy)."""
+    import logging
+
+    from atlas.core.orchestrator_parts.maintenance_facade import _isolated_cycle
+
+    def _boom() -> None:
+        raise RuntimeError("kaboom-controlado")
+
+    with caplog.at_level(logging.ERROR, logger="atlas.core.orchestrator_parts.maintenance_facade"):
+        _isolated_cycle("grafo", _boom)  # no debe propagar
+
+    assert any(
+        "grafo" in rec.message and rec.exc_info for rec in caplog.records
+    ), "el fallo del ciclo debe quedar logueado con traceback"
