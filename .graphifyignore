@@ -43,3 +43,10 @@ docs/outreach/paper/paper_subject_enforced_completeness.pdf
 # Graveyard: contenido declarado muerto en la cuarentena de 2026-06-21;
 # extraerlo re-inyecta ruido histórico al grafo semántico (misma ola).
 docs/archive/_graveyard/
+
+# Pack de sucesión GENERADO: proyección de fuentes que YA se ingieren por
+# separado (AGENTS.md, master plan, actor_roles, bloque WHERE del ledger).
+# Ingerirlo duplica conceptos en el grafo semántico — mismo criterio que los
+# derivados del paper — y sus copias íntegras topan el límite de salida del
+# LLM. La fuente semántica es el original; el pack es su proyección.
+docs/handoff/GENERATED/
