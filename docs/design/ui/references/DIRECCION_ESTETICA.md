@@ -64,3 +64,18 @@ ya existe. La distancia no es de backend, es de carácter visual y motion.
   corriendo, una misión cambiando de estado), no ambiente permanente.
 - Pantalla completa, sin chrome de navegador: apps DEDICADAS (plan T2.1
   reformulado; una web no — orden del operador).
+
+## Corrección del operador (2026-07-17, en vivo sobre la PoC v2) — MANDA sobre lo anterior
+
+1. **NO es "un solo acento cian": es una GRAMÁTICA de color semántica** (definida
+   por el operador en el chat fundacional, líneas ~860-908 del export):
+   azul=interacción · cian=IA pensando · verde=verificado · ámbar=pendiente ·
+   rojo=error · morado=memoria/IA externa · gris=sistema · naranja(calor)=riesgo/
+   conflicto/fricción. "Que cada color tenga un significado. No solo decoración."
+2. **Surface Lifecycle Model** (export ~53904-54120): Atlas no expone pantallas;
+   tiene superficies perennes (consola/composer/inspector), EFÍMERAS (gate cards,
+   avisos que aparecen, se resuelven y DESAPARECEN), contextuales (Research/
+   Coding/Gate/RAG se abren cuando la tarea entra ahí), sectoriales (lentes),
+   diagnósticas y procesos invisibles-pero-observables ("oculto por defecto,
+   observable por impacto, auditable siempre"). La UX excepcional ES este modelo.
+3. **Cuadrícula de espaciado 8px** (8/16/24/32/48); las tarjetas no van pegadas.
