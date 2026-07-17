@@ -1116,6 +1116,21 @@ class SqliteMemoryIndex:
         row = cur.fetchone()
         return row[0] if row else None
 
+    def ids_by_prefix(self, prefix: str) -> list[str]:
+        """Ids VIGENTES (valid_until_ns IS NULL) del tenant actual cuyo id
+        empieza por `prefix`, orden alfabético. Opera sobre la columna `id` en
+        claro (no descifra texto) — para el contenido usar `text_of` por id.
+        Usada por `atlas handoff` para enumerar memorias migradas del harness
+        (`ids_by_prefix("harness:")`) sin depender de `record_type`, que no se
+        persiste en el schema SQL."""
+        escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        rows = self._conn.execute(
+            "SELECT id FROM records WHERE tenant=? AND valid_until_ns IS NULL "
+            "AND id LIKE ? ESCAPE '\\' ORDER BY id",
+            (self._tenant, escaped + "%"),
+        ).fetchall()
+        return [str(row[0]) for row in rows]
+
     def text_of(self, record_id: str) -> str | None:
         """Texto descifrado de un id.
 
