@@ -663,6 +663,63 @@ def reality(run_checks: bool, include_browser: bool, as_json: bool, strict: bool
         raise click.exceptions.Exit(1)
 
 
+def _handoff_repo_root() -> Path:
+    import os  # noqa: PLC0415
+
+    return Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
+
+
+def _handoff_db_path() -> Path:
+    # Mismo contrato que maintenance_facade.knowledge_ingest: BD del tronco
+    # MCP en ~/atlas-mcp/memory.db salvo override ATLAS_MEMORY_DB (tests /
+    # entornos alternativos NO deben tocar la BD de producción real).
+    import os  # noqa: PLC0415
+
+    db_env = os.environ.get("ATLAS_MEMORY_DB", "").strip()
+    return Path(db_env).expanduser() if db_env else Path.home() / "atlas-mcp" / "memory.db"
+
+
+@cli.command()
+@click.option("--check", "check_only", is_flag=True, help="No escribe: compara MANIFEST.json con HEAD y sale 1 si está obsoleto.")
+@click.option("--out-dir", type=click.Path(path_type=Path), default=None, help="Dir de salida (default docs/handoff/GENERATED/).")
+def handoff(check_only: bool, out_dir: Path | None) -> None:
+    """Pack de sucesión GENERADO desde el sustrato (WORK_LEDGER, AGENTS,
+    actor_roles, master plan, memoria harness migrada) — nunca a mano."""
+    from atlas.core.handoff import generate_handoff, head_sha  # noqa: PLC0415
+
+    repo_root = _handoff_repo_root()
+    resolved_out_dir = out_dir if out_dir is not None else repo_root / "docs" / "handoff" / "GENERATED"
+
+    if check_only:
+        manifest_path = resolved_out_dir / "MANIFEST.json"
+        if not manifest_path.is_file():
+            console.print("[yellow]atlas handoff: nunca generado (usa 'atlas handoff' para generarlo)[/yellow]")
+            return
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        current_head = head_sha(repo_root)
+        if manifest.get("head_sha") != current_head:
+            console.print(
+                f"[bold red]STALE: el pack de handoff en {resolved_out_dir} no refleja HEAD "
+                f"({current_head}); regenera con 'atlas handoff'[/bold red]"
+            )
+            raise click.exceptions.Exit(1)
+        console.print(f"[green]atlas handoff: al día con HEAD ({current_head})[/green]")
+        return
+
+    db_path = _handoff_db_path()
+    index = None
+    if db_path.is_file():
+        from atlas.mcp.memory_server import build_gated_index  # noqa: PLC0415
+
+        index = build_gated_index(db_path)
+    try:
+        files = generate_handoff(repo_root, index, resolved_out_dir)
+    finally:
+        if index is not None:
+            index.close()
+    console.print(f"[green]atlas handoff: {len(files)} ficheros generados en {resolved_out_dir}[/green]")
+
+
 def _load_completeness_demo_module() -> Any:
     demo_path = Path(__file__).resolve().parents[3] / "docs" / "demo" / "completeness_demo.py"
     spec = importlib.util.spec_from_file_location("atlas_completeness_demo", demo_path)
