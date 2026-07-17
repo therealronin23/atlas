@@ -1,127 +1,104 @@
-# T2.1 — La UX REAL de Atlas (plan de arranque para sesión fresca)
+# T2.1 — La UX real de Atlas: APLICACIONES DEDICADAS multi-plataforma
 
-## LEE ESTO PRIMERO — readback aceptado por el operador (2026-07-17)
+**Para el driver que lea esto**: plan reformulado ÍNTEGRO el 2026-07-17 por
+orden directa del operador. Sustituye todo encuadre anterior de esta ola.
 
-El operador vio la consola y fue literal: *"es una puta mierda, no se parece
-en nada a lo que yo quiero, es súper genérica y se ve que está generada por
-IA… buscaba algo definitivo y profesional, pero no sé el que, habría que
-investigar"*.
+## La intención del operador, literal (NO reinterpretar)
 
-**No es un fallo de ejecución: es una decisión.** `ui/atlas-shell/README.md`
-declara D11 — *"el shell actual es arnés de validación, no la UX final"* — y
-`docs/continuation/NEXT_AI_INSTRUCTIONS.md:37` registra que el **pedido de
-rediseño JARVIS del operador quedó "SUPERSEDED por el pack de producto antes
-de escribirse código"**. La UX final NUNCA se construyó. Se ve generada por
-IA porque literalmente es un andamio sin dirección estética.
+1. *"es una puta mierda, no se parece en nada a lo que yo quiero. es súper
+   genérica y se ve que está generada por ia"* — sobre la consola actual.
+2. *"buscaba algo definitivo y profesional, pero no sé el que, habría que
+   investigar"*.
+3. Convivencia: **"donde yo esté, incluido el móvil"**.
+4. Carácter: **"cinematográfico (JARVIS, mis 9 mockups)"**.
+5. **"quiero que funcione en cualquier plataforma, pero con aplicación
+   dedicada comunicada entre ellas, una web no"** — dicho DESPUÉS de que el
+   driver defendiera la base web; el operador la descartó explícitamente.
 
-**D11 QUEDA REABIERTA por el operador** (2026-07-17, es N3: alcance de
-producto). El shell deja de ser arnés: pasa a ser la UX real.
+## Decisiones N3 que el operador tomó aquí (registradas, no re-litigar)
 
-**Intención capturada (respuestas del operador, NO reinterpretar):**
-1. *Convivencia*: **"Donde yo esté, incluido el móvil"** — necesita alcanzar
-   Atlas desde el sofá/la calle, no solo desde el portátil.
-2. *Carácter*: **"Cinematográfico (JARVIS, tus 9 mockups)"** — presencia,
-   movimiento, que se sienta vivo; impresiona al verlo, no solo al usarlo.
+- **D11 REABIERTA**: el shell deja de ser "arnés de validación"; la UX real
+  se construye por fin.
+- **"UI = evolución de la Mission Console (no reescritura)" — decisión
+  sellada del plan maestro §4 — QUEDA SUPERSEDED por el operador**
+  (2026-07-17): la UX final son aplicaciones dedicadas, no la web actual.
+- **ADR-059 ("UI web-first") queda superseded para la UX final** — la ola
+  debe formalizarlo en un ADR corto (ADR-071 propuesto) al arrancar.
 
-**Consecuencia de encuadre (criterio del driver, revisable):** "es una web"
-era el SÍNTOMA, no la causa. Con el móvil como requisito duro, la base web
-(ADR-059) se CONFIRMA — reescribir en Tauri daría la misma pantalla genérica
-y además mataría el móvil. Lo que falta es dirección estética + presencia
-(PWA instalable a pantalla completa, motion real, densidad elegida). La
-investigación debe VALIDAR o TUMBAR esto con evidencia, no asumirlo.
+## Lo que significa (interpretación del driver — confirmar barato al arrancar)
 
-**BLOQUEANTE #1 — los 9 mockups NO EXISTEN en el repo** (verificado
-2026-07-17: cero imágenes bajo `docs/`; los hits de "jarvis" son proyectos
-ajenos del vault). Vivieron en un chat y se perdieron: "estilo JARVIS" ha
-sido una referencia fantasma que ningún modelo pudo ver — por eso nadie la
-ejecutó. **Primera acción de la ola: pedir al operador que los deposite en
-`docs/design/ui/references/`** (o cualquier referencia visual que le guste:
-capturas, apps, vídeos). Sin imagen, "cinematográfico" es una palabra y la
-IA volverá a inventar genérico. Esto es T0.5-en-vivo: la intención del
-operador debe quedar en el sustrato, no en un chat.
+- **"Aplicación dedicada"**: icono propio, se instala, arranca sola, se
+  siente nativa. NO una pestaña, NO una PWA, NO "abre el navegador".
+- **"Comunicadas entre ellas"**: el mismo Atlas vivo en todas — apruebas una
+  misión en el móvil y el escritorio lo refleja al instante. Todas hablan con
+  el núcleo Atlas (hoy: el portátil). Fuera de casa: canal privado (el
+  proyecto ya conoce Tailscale, ver playbook Hermes) — ley de elasticidad:
+  "si delega fuera, privacidad siempre".
+- **"Cualquier plataforma"**: mínimo duro = Linux desktop (el portátil del
+  operador) + su móvil. PREGUNTA PENDIENTE (una sola, al arrancar): ¿qué
+  móvil — Android, iPhone, ambos?
+- **Matiz honesto que la investigación debe poner sobre la mesa**: hay stacks
+  de "app dedicada" que por dentro renderizan con webview (Tauri) y stacks de
+  render 100% nativo (Flutter, Qt). Si la investigación acaba recomendando
+  uno con webview, decirlo SIN esconderlo y mostrar que no se siente web —
+  el operador rechazó la experiencia-web, y la frontera exacta la marca él
+  viendo prototipos, no leyendo specs.
 
-## Investigación OBLIGATORIA antes de tocar píxeles (el operador la pidió)
+## BLOQUEANTE #1 — la dirección estética sigue sin existir en el repo
 
-Manía registrada (investigar-antes-de-decidir): barrer el SOTA y comparar,
-con enjambre + Cónclave, no con la opinión de una sesión. Preguntas a
-responder CON EVIDENCIA (demos/capturas, no prosa):
-- ¿Cómo consiguen presencia cinematográfica los productos que se sienten
-  definitivos? (motion design, densidad, tipografía, sonido, latencia
-  percibida). Referencias reales, no adjetivos.
-- ¿Qué stack sostiene "una superficie, escritorio + móvil, sensación nativa"?
-  (PWA instalable, Capacitor, React Native, Tauri móvil…) — medir, no opinar.
-- ¿Qué hacen las UIs de agentes del SOTA y qué se siente genérico en ellas
-  (para NO copiarlo)?
-Entregable: 2-3 direcciones REALES que el operador pueda MIRAR y comparar
-(prototipo navegable > documento). El operador elige carácter; el driver
-elige tecnología (regla de oro: al operador jamás el CÓMO técnico).
+Los 9 mockups JARVIS NO están en el repo (verificado 2026-07-17: cero
+imágenes bajo docs/). Vivieron en un chat y se perdieron: por eso todo lo
+construido salió genérico — ningún modelo pudo VER jamás la referencia.
+**Operador: deposítalos en `docs/design/ui/references/`** (o capturas/vídeos/
+enlaces de lo que te guste). Sin imagen, "cinematográfico" volverá a salir
+genérico, con cualquier stack.
 
----
+## Investigación OBLIGATORIA antes de elegir stack (el operador la pidió)
 
-## (Contexto previo — inventario del andamio actual)
+Manía investigar-antes-de-decidir: barrer SOTA con enjambre + Cónclave.
+Requisitos duros que filtran candidatos (Flutter, Tauri v2, Qt/QML, Kotlin
+Multiplatform/Compose, React Native, …):
 
-**Para el driver que lea esto**: el operador quiere ponerse a fondo con la
-UI/UX. Esta es la ola. NO hay dependencias pendientes: T0 está cerrado
-(sucesión viva), el daemon produce misiones/receipts reales, y el grafo se
-re-sella solo. La secuencia "T2 después de T1" del plan maestro §5 se
-adelanta por criterio de la doctrina §2.5 (el operador NO programa: cada
-semana sin consola es él pegando textos entre 200 IAs) — cambio de secuencia,
-no de alcance.
+1. Linux desktop de primera clase + móvil de primera clase.
+2. Capacidad cinematográfica REAL: motion 60fps, shaders/efectos, tipografía
+   fina, latencia percibida nula. (Aquí Flutter y Qt suelen brillar; medir.)
+3. Un solo código para todas las plataformas (economía: el operador no
+   programa y el mantenimiento lo harán IAs — dos codebases = deriva doble).
+4. Comunicación con el núcleo: el bridge 7341 read-only + ruta dorada para
+   aprobar (la aprobación JAMÁS abre el bridge a escritura — N2/Cónclave al
+   diseñar ese camino; receipt en Merkle).
+5. Sincronía entre dispositivos (estado de misiones en vivo; WebSocket/
+   event-stream ya existe en el API server).
 
-## Lo que YA existe (verificado 2026-07-17, no asumir que falta)
+**Entregable de la investigación: 2-3 prototipos INSTALABLES** (aunque sean
+20 pantallas falsas con motion real) que el operador pueda abrir en SU
+portátil y SU móvil y comparar. El operador elige carácter y sensación; el
+driver elige tecnología con benchmark, no con opinión (regla de oro: al
+operador jamás el CÓMO técnico).
 
-- `ui/atlas-shell/` — Vite/React (ADR-059), **1.930 líneas de TSX reales**,
-  `node_modules` instalado, scripts `dev`/`build`/`preview`.
-- Componentes: `MissionConsole.tsx` (458), `LivingGraph.tsx` (465),
-  `AutobuildLedger` (236), `HarnessPanel` (195), `UniversalBar`,
-  `RealityPanel`, `MemoryVault`, `Timeline`, `EventInspector`,
-  `ExecutionPipeline`, `App.tsx` (291).
-- **No son mocks**: `src/core/api.ts` hace `fetch` real contra la API
-  (`api.health/graph/events/reality/memorySummary/connectors/permissions`) y
-  `connectEventsWs` abre WebSocket de eventos.
-- Backend: `src/atlas/api/server.py` (bridge read-only 7341 — JAMÁS meter el
-  Orchestrator dentro: corrompe Merkle, memoria atlas-os-foundation).
+## Qué pasa con lo ya construido
 
-## Lo que NO se sabe (primer trabajo de la ola: MEDIR, no suponer)
+- `ui/atlas-shell/` (1.930 líneas TSX cableadas al API real) **vuelve a su
+  rol D11 original: arnés de validación del backend**. No se invierte ni un
+  minuto más en su estética. Su valor real: el contrato de datos
+  (`src/core/api.ts` — health/graph/events/reality/memoria + WS) es el mapa
+  de qué expone ya el núcleo; las apps dedicadas consumirán eso mismo.
+- El backend NO cambia por esta ola: API server + eventos ya existen.
 
-El API server no estaba corriendo el 2026-07-17, así que **nadie ha visto esta
-UI viva recientemente**. Antes de diseñar nada:
+## El corte de la ola (evidencia observable, sin cambios)
 
-1. Arrancar API + `npm run dev` (vía preview_start, jamás Bash para servers).
-2. Inventario honesto por componente: ¿pinta datos reales, vacío, o revienta?
-   Tabla `componente → estado → causa` con evidencia (consola/red/captura).
-3. Solo entonces decidir qué se arregla, qué se rehace y qué sobra.
+**El operador aprueba una misión real de la ruta dorada desde una app
+dedicada** (idealmente desde el móvil, en el sofá), y el receipt queda en
+Merkle. Ni más features ni menos.
 
-Regla: es EVOLUCIÓN de la consola existente, no reescritura (decisión sellada,
-plan maestro §4). Si un componente estorba, se jubila con motivo escrito.
+## Estándares y economía (sellados, sin cambios)
 
-## El objetivo de la ola (evidencia observable)
-
-**El operador aprueba una misión real de la ruta dorada desde la pantalla**,
-sin tocar texto ni terminal, y el receipt queda en Merkle. Ese es el corte:
-ni más features ni menos.
-
-## Estándar obligatorio (doble skill, sellado)
-
-- `frontend-design:frontend-design` — dirección estética con carácter; los 9
-  mockups JARVIS del operador son la referencia. Nada de "AI slop".
-- `agent-skills:frontend-ui-engineering` — composición, WCAG 2.1 AA, estados
-  loading/empty/error, responsive 320-1440.
-- Implementación: Sonnet (economía sellada). Fable/Opus: criterio y auditoría.
-
-## Riesgos conocidos (premortem corto)
-
-- **Reescribir por impulso estético**: 1.930 líneas funcionando valen más que
-  un lienzo en blanco bonito. Medir primero (§"Lo que NO se sabe").
-- **UI que miente**: si un panel no tiene datos reales, debe decir "sin datos"
-  — jamás pintar un placeholder que parezca vivo. Es la disciplina de
-  honestidad del proyecto aplicada a píxeles.
-- **Meter escritura en el bridge read-only**: la aprobación necesita un camino
-  de escritura; diseñarlo por la ruta dorada (aprobación registrada), NO
-  abriendo el bridge. Decisión N2 → Cónclave al llegar ahí.
+Doble estándar `frontend-design:frontend-design` (carácter, nada de AI slop)
++ `agent-skills:frontend-ui-engineering` (estados, accesibilidad, responsive).
+Implementación Sonnet; criterio/auditoría en el modelo caro. Cónclave para
+la elección final de stack (es N2 con coste real de dependencia nueva).
 
 ## Después de esta ola
 
-T2.2 (Knowledge view sobre el grafo Kuzu: comunidades navegables — las tools
-`graph_communities`/`graph_semantic_neighbors` ya existen) y T2.3 (Visual
-Orchestrator, ADR-066).
+T2.2 Knowledge view (grafo Kuzu navegable) y T2.3 Visual Orchestrator
+(ADR-066) — sobre el MISMO stack que salga elegido aquí.

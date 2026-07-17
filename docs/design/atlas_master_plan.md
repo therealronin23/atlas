@@ -106,9 +106,15 @@ monitor graphify RETIRADO (vía única: quality wrapper foreground) · sustrato
 aprobación humana obligatoria en la ruta dorada (Merkle antes de actuar) ·
 TDD + mypy --strict + worktrees efímeros · delegación por coste (criterio en
 modelo caro, implementación en barato) · Claude Code es un plus, no una
-dependencia · UI = evolución de la Mission Console (no reescritura), con
-doble estándar frontend-design + frontend-ui-engineering y los 9 mockups
-JARVIS como referencia · autonomía de updates de dependencias BLOQUEADA hasta
+dependencia · ~~UI = evolución de la Mission Console (no reescritura)~~
+**SUPERSEDED por el OPERADOR 2026-07-17** (vio la consola: "genérica,
+generada por IA, una web no"): la UX final = **aplicaciones DEDICADAS
+multi-plataforma comunicadas entre sí** (plan
+docs/superpowers/plans/2026-07-17-t21-mission-console-viva.md; atlas-shell
+vuelve a su rol D11 de arnés; doble estándar frontend-design +
+frontend-ui-engineering y los 9 mockups JARVIS como referencia SIGUEN
+vigentes — los mockups deben depositarse en docs/design/ui/references/) ·
+autonomía de updates de dependencias BLOQUEADA hasta
 condición medible (N≥10 lotes/M≥6 semanas/cero reversiones).
 
 ## 5. El plan por tramos (orden con porqué)
