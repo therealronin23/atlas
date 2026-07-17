@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Guard: jamás publicar refs internos de sesiones Codex (refs/codex/*).
+# Contienen snapshots/checkpoints de turnos locales (audit 2026-07-16,
+# decisión "NO publicar refs/codex/*"). Un push normal no los toca, pero
+# `git push --mirror` o un refspec explícito sí — este hook corta eso.
+set -euo pipefail
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/codex/*)
+      echo "pre-push: BLOQUEADO — $remote_ref es un ref interno de sesión Codex y no se publica (audit 2026-07-16)." >&2
+      exit 1
+      ;;
+  esac
+done
+
+exit 0

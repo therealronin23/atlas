@@ -34,3 +34,12 @@ docs/outreach/paper/paper_subject_enforced_completeness.pdf
 # `scripts/graphify_failure_guard.py` solo propone candidaturas cuando un
 # fichero acumula 3+ fallos. Añadir una exclusión exige revisión humana y
 # `--apply-ignore`; la salida de un LLM nunca cambia cobertura por defecto.
+
+# Scratch de sesión SDD (no-tracked, churn por turno): no es conocimiento del
+# repo — su extracción fallaba por longitud y jamás cachearía estable
+# (exclusión deliberada, ola bootstrap 2026-07-17).
+.superpowers/
+
+# Graveyard: contenido declarado muerto en la cuarentena de 2026-06-21;
+# extraerlo re-inyecta ruido histórico al grafo semántico (misma ola).
+docs/archive/_graveyard/
