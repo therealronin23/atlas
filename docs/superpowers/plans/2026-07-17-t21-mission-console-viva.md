@@ -44,14 +44,15 @@ orden directa del operador. Sustituye todo encuadre anterior de esta ola.
   el operador rechazó la experiencia-web, y la frontera exacta la marca él
   viendo prototipos, no leyendo specs.
 
-## BLOQUEANTE #1 — la dirección estética sigue sin existir en el repo
+## ~~BLOQUEANTE #1~~ — RESUELTO: la dirección estética YA vive en el repo
 
-Los 9 mockups JARVIS NO están en el repo (verificado 2026-07-17: cero
-imágenes bajo docs/). Vivieron en un chat y se perdieron: por eso todo lo
-construido salió genérico — ningún modelo pudo VER jamás la referencia.
-**Operador: deposítalos en `docs/design/ui/references/`** (o capturas/vídeos/
-enlaces de lo que te guste). Sin imagen, "cinematográfico" volverá a salir
-genérico, con cualquier stack.
+El operador depositó los 9 mockups el 2026-07-17 (mismo día):
+`docs/design/ui/references/mockup-01..09.{png,jpg}` + destilado textual en
+`docs/design/ui/references/DIRECCION_ESTETICA.md` (lenguaje visual, mapa
+mockup→backend real, reglas anti-genérico). Caveat del operador: *"falta
+pulir muchísimo el ux"* — los mockups dan CARÁCTER, no spec (son concept-art
+con pseudo-texto). Lo primero que hace un implementador de UI: MIRAR los 9
+mockups; el destilado es para quien no renderice imágenes.
 
 ## Investigación OBLIGATORIA antes de elegir stack (el operador la pidió)
 
