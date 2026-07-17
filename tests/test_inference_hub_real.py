@@ -631,6 +631,29 @@ class TestRetry:
         assert resp.success is False
         assert calls["n"] == 1          # 404 = config, NO se reintenta
 
+    def test_completion_receives_request_timeout(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Cada llamada lleva timeout duro: un proveedor colgado no puede
+        bloquear al caller indefinidamente (Cónclave colgado >20min, 2026-07-17)."""
+        from atlas.core.inference_hub import INFER_REQUEST_TIMEOUT_S
+
+        providers = [_providers_with_keys(monkeypatch)[0]]
+        seen: dict[str, Any] = {}
+
+        def capture(**kwargs: Any) -> Any:
+            seen.update(kwargs)
+            return _ok_completion("ok")
+
+        monkeypatch.setattr(litellm, "completion", capture)
+        hub = InferenceHub(
+            providers=providers, mode="live", sleep_fn=lambda _s: None
+        )
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is True
+        assert seen.get("timeout") == INFER_REQUEST_TIMEOUT_S
+
     def test_transient_exhausts_retries_then_fails(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
