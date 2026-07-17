@@ -330,6 +330,54 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: IssunDB/graph-benchmarks
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/IssunDB/graph-benchmarks
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
+    - name: njfio/rust-synaptic
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/njfio/rust-synaptic
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
+    - name: visterion/HiveMem
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/visterion/HiveMem
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:2
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
   datos:
     label: Datos
     entries:
@@ -1909,6 +1957,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-16T13:57:27.382864+00:00'
+    - name: lockasumsahm/ISIL
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/lockasumsahm/ISIL
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:time aware reasoning
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
   infraestructura:
     label: Infraestructura
     entries:
@@ -2852,6 +2916,38 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: Randsw/validation-webhook
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Randsw/validation-webhook
+      install: ''
+      status: candidato
+      tags:
+      - infraestructura
+      evidence:
+      - tema:repository mutation
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
+    - name: cran/mSigPlot
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/cran/mSigPlot
+      install: ''
+      status: candidato
+      tags:
+      - infraestructura
+      evidence:
+      - tema:repository mutation
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
   investigacion:
     label: Investigación
     entries:
@@ -3895,6 +3991,22 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: keshave1999/-AI-Agent-Workflow-with-n8n
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/keshave1999/-AI-Agent-Workflow-with-n8n
+      install: ''
+      status: candidato
+      tags:
+      - productividad
+      evidence:
+      - tema:time aware reasoning
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
   programacion:
     label: Programación
     entries:
@@ -5698,6 +5810,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: MrHackerCharlie/Mutating-Viruses
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/MrHackerCharlie/Mutating-Viruses
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-17T00:41:21.940994+00:00'
   uncategorized:
     label: uncategorized
     entries:

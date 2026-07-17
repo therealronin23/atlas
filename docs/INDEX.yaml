@@ -200,8 +200,7 @@ entries:
   type: historia
   status: historico
   verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria
-    de Atlas.md
+- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria de Atlas.md
   type: historia
   status: historico
   verified: null
@@ -909,8 +908,7 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build
-    (misión absorb_harness_patterns)
+  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build (misión absorb_harness_patterns)
 - path: docs/design/atlas_ecosystem_map.md
   type: design
   status: vigente
@@ -971,8 +969,7 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido
-    con OK del operador 2026-07-09
+  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido con OK del operador 2026-07-09
 - path: docs/design/ideas/2026-07-02-vision-atlas-microkernel-universal.md
   type: design
   status: vigente
@@ -3346,8 +3343,7 @@ entries:
   type: conocimiento
   status: propuesto
   verified: null
-  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al
-    sustrato 2026-07-16'
+  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al sustrato 2026-07-16'
 - path: docs/membrana/OSM-000_membrana.md
   type: compliance
   status: vigente
@@ -3500,3 +3496,8 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/knowledge/research_2026-07-17.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
