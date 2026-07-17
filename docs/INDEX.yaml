@@ -1089,6 +1089,10 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/design/ui/references/README.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/governance/CAPABILITIES.md
   type: norma
   status: vigente
