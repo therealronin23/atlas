@@ -73,7 +73,13 @@ def test_load_bitemporal_into_kuzu_no_drift(tiny_repo: tuple[Path, list[str]], t
     metrics_2 = load_bitemporal_into_kuzu(repo, db_path, shas, embedder=embedder)
 
     assert metrics_1["nodes"] > 0
-    assert metrics_1 == metrics_2
+    # Los TOTALES son estables entre pasadas; el trabajo hecho no (la segunda
+    # pasada no crea nada — ingesta incremental 2026-07-17).
+    assert metrics_2["nodes"] == metrics_1["nodes"]
+    assert metrics_2["imports_edges"] == metrics_1["imports_edges"]
+    assert metrics_2["evolves_edges"] == metrics_1["evolves_edges"]
+    assert metrics_1["nodes_created"] == metrics_1["nodes"]
+    assert metrics_2["nodes_created"] == 0
 
     db = kuzu.Database(str(db_path))
     conn = kuzu.Connection(db)
@@ -128,3 +134,46 @@ def _drain(result: object) -> list[tuple]:
     while result.has_next():  # type: ignore[attr-defined]
         rows.append(tuple(result.get_next()))  # type: ignore[attr-defined]
     return rows
+
+
+class _CountingEmbedder(StubEmbedder):
+    """StubEmbedder que cuenta llamadas — mide el TRABAJO de embedding real,
+    no el estado final (la regresión 2026-07-17: re-embeber ~29k nodos ya
+    presentes convertía cada tick del grafo en horas de ONNX en CPU)."""
+
+    def __init__(self, dim: int = 8) -> None:
+        super().__init__(dim=dim)
+        self.calls = 0
+
+    def embed(self, text: str) -> list[float]:
+        self.calls += 1
+        return super().embed(text)
+
+
+def test_reingest_embeds_nothing_and_incremental_embeds_only_delta(
+    tiny_repo: tuple[Path, list[str]], tmp_path: Path
+) -> None:
+    """El coste de re-ingerir es proporcional al DELTA de commits nuevos:
+    (1) re-pasada idéntica → 0 embeds; (2) añadir 1 commit → solo los módulos
+    de ese commit se embeben; los totales de métricas siguen reflejando el
+    grafo completo (no el trabajo hecho)."""
+    repo, shas = tiny_repo
+    db_path = tmp_path / "graphs.kuzu"
+
+    emb = _CountingEmbedder()
+    m1 = load_bitemporal_into_kuzu(repo, db_path, shas[:2], embedder=emb)
+    assert emb.calls == m1["nodes"] > 0
+    assert m1["nodes_created"] == m1["nodes"]
+
+    emb.calls = 0
+    m2 = load_bitemporal_into_kuzu(repo, db_path, shas[:2], embedder=emb)
+    assert emb.calls == 0, "re-pasada idéntica no debe recomputar embeddings"
+    assert m2["nodes_created"] == 0
+    assert m2["nodes"] == m1["nodes"]
+
+    emb.calls = 0
+    m3 = load_bitemporal_into_kuzu(repo, db_path, shas, embedder=emb)
+    # c3 congela atlas.a y atlas.b -> exactamente 2 módulos nuevos
+    assert emb.calls == 2
+    assert m3["nodes_created"] == 2
+    assert m3["nodes"] == m1["nodes"] + 2
