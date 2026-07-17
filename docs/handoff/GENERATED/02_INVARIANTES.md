@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-17T11:03:58.255703+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-17T11:37:00.105489+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # ATLAS CORE — Operating Context For Agents
 
