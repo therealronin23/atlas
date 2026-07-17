@@ -228,11 +228,11 @@ def _hermes_state() -> dict[str, Any]:
             configured = False
             reason = f"unsupported HERMES_KANBAN_TRANSPORT={kanban_transport!r}"
     elif base_url and api_key:
-        mode = "configured"
-        configured = True
+        mode = "legacy_rest_unsupported"
+        configured = False
         reason = (
-            "legacy HermesRestAdapter variables are set; only the legacy REST smoke "
-            "can verify that compatibility endpoint"
+            "HERMES_BASE_URL/HERMES_API_KEY are set but the legacy REST channel was "
+            "retired (ADR-070); use HERMES_KANBAN_TRANSPORT instead"
         )
     elif local_takeover:
         mode = "local_takeover"

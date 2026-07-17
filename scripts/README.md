@@ -46,9 +46,16 @@ respectivas pruebas reales y actuales.
 
 ## Compatibilidad, no despliegue nativo
 
-- `hermes_smoke.py`, `operational_smoke.py` y `hermes_local.sh` ejercitan el
-  antiguo contrato REST `HermesRestAdapter`. No verifican el Hermes-Agent
-  oficial ni deben usarse como evidencia del twin nativo.
+- `hermes_smoke.py` está retirado (termina con código 64): ejercitaba el
+  antiguo contrato REST `HermesRestAdapter`, eliminado en ADR-070. Ver
+  `docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md`.
+- `operational_smoke.py` ya no ejercita ningún contrato REST (el subcheck
+  correspondiente se retiró junto con `HermesRestAdapter`, ADR-070); sigue
+  cubriendo estado del orchestrator, aprobación CLI y Telegram outbound.
+- `hermes_local.sh` está retirado (termina con código 64): gestionaba
+  `hermes_agent_stub/`, el servidor REST de pruebas para `HermesRestAdapter`,
+  eliminados ambos en ADR-070. Para delegación local usa
+  `HERMES_KANBAN_TRANSPORT=local` (canal canónico, ADR-028).
 - `hermes_skill_atlas_audit/` es un envoltorio de compatibilidad que delega en
   `hermes_skill_atlas_twin/`; no es una segunda implementación del transporte.
 

@@ -1,63 +1,35 @@
 #!/usr/bin/env python3
-"""Smoke de compatibilidad del HermesRestAdapter legado.
+"""Retirado — smoke del canal REST legado de Hermes (HermesRestAdapter).
 
-NO prueba el Hermes-Agent oficial, la skill atlas-twin, un proveedor ni
-Telegram. Este script muta la cola REST creando y cancelando una tarea.
+ADR-070 retiro HermesRestAdapter (ver
+docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md): el VPS Hermes REST
+esta dado de baja desde mayo 2026 y el canal canonico es el Kanban bridge
+(HermesKanbanAdapter, ADR-028) operado por las skills atlas-twin/atlas-audit.
+Este script mutaba la cola REST creando y cancelando una tarea contra un
+endpoint que ya no existe.
 
-Uso:
-    PYTHONPATH=src .venv/bin/python scripts/safe_dotenv.py .env -- \
-      .venv/bin/python scripts/hermes_smoke.py
-
-Comprueba:
-  1) health_check responde
-  2) enqueue_task acepta una tarea trivial
-  3) get_queue_status devuelve depth coherente
-  4) cancel_task limpia la tarea creada
+Reemplazo: no hay smoke equivalente para el canal kanban porque su
+reachability ya se reporta en `atlas doctor` (check hermes_twin) y en
+`atlas reality` (report["hermes"]).
 """
 
 from __future__ import annotations
 
-import os
 import sys
-
-from atlas.hermes.hermes import DelegationBuilder, HermesError, HermesRestAdapter
 
 
 def main() -> int:
-    base_url = os.environ.get("HERMES_BASE_URL")
-    secret = os.environ.get("HERMES_API_KEY")
-    if not base_url or not secret:
-        print("ERROR: HERMES_BASE_URL y HERMES_API_KEY deben estar en el entorno.")
-        return 2
-
-    adapter = HermesRestAdapter(base_url=base_url, shared_secret=secret, max_retries=2)
-
-    print(f"[1/4] health_check {base_url} ...")
-    status = adapter.health_check()
-    print(f"      reachable={status.reachable} mode={status.mode} version={status.version}")
-    if not status.reachable:
-        print("ERROR: Hermes no es alcanzable.")
-        return 1
-
-    print("[2/4] enqueue_task echo ...")
-    payload = DelegationBuilder.build(task_id="smoke-1", intent="echo smoke", priority=1)
-    try:
-        receipt = adapter.enqueue_task(payload)
-    except HermesError as exc:
-        print(f"ERROR enqueue: {exc}")
-        return 1
-    print(f"      accepted={receipt.accepted} delegation_id={receipt.delegation_id}")
-
-    print("[3/4] get_queue_status ...")
-    qs = adapter.get_queue_status()
-    print(f"      depth={qs.depth} next={qs.next_task_id}")
-
-    print("[4/4] cancel_task ...")
-    ok = adapter.cancel_task(receipt.delegation_id)
-    print(f"      cancelled={ok}")
-
-    print("OK")
-    return 0
+    print(
+        "ERROR: hermes_smoke.py is retired.\n\n"
+        "It exercised the legacy Hermes REST channel (HermesRestAdapter), "
+        "which was retired in ADR-070 — the VPS REST endpoint no longer "
+        "exists. The canonical channel is the Kanban bridge "
+        "(HermesKanbanAdapter, ADR-028); check its reachability with "
+        "`atlas doctor` (hermes_twin check) or `atlas reality`.\n\n"
+        "See docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md.",
+        file=sys.stderr,
+    )
+    return 64
 
 
 if __name__ == "__main__":
