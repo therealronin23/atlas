@@ -33,8 +33,19 @@ de escribir: `atlas reality --json`.
   reality limpio. F2.6 PENDIENTE con prompt listo
   (docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md — la ola
   llegó con >50% de presupuesto consumido, regla bootstrap).
-  **Próxima acción:** decisiones del operador (secret OAuth, 12 fuentes largas,
-  F2.6) + siguiente ola: T2.1 consola mínima ∥ T0.5b digestión.
+  EXTENSIÓN misma ola (orden operador "haz todos"): 52822e86 (trabajo daemon
+  commiteado) + 18af7e0c (higiene INDEX: 500 handoff→historico, --strict
+  limpio) + aa2f8adc (wrapper OAuth sin secretos en argv + runbook — la
+  ROTACIÓN queda para el operador) + cf5ce30b (ciclos scheduler loguean
+  fallos con traceback) + 6a533d05 (12-fuentes: Groq NO —413 TPM medido—,
+  Gemini free SÍ, 12 exclusiones deliberadas, cobertura 98.3%→99.3%, quedan
+  5 grandes re-intentables al reset del cupo; + guard pre-push refs/codex/*).
+  F2.6 INTENTADA en real: 401 token revocado → prerequisito operador
+  `claude setup-token` (doc F2.6 actualizado).
+  **Próxima acción:** operador: rotar secret OAuth (runbook
+  docs/operations/oauth_rotation_google_workspace.md) + claude setup-token
+  (desbloquea F2.6) + re-run 5 fuentes al reset (comando en ledger campaña).
+  Siguiente ola: T2.1 consola mínima ∥ T0.5b digestión.
 - **F3 CERRADA → PLAN TOASTY F1-F5 COMPLETO (2026-07-16 noche)** — últimas
   piezas: tools `graph_communities()` y `graph_semantic_neighbors(note)` en el
   tronco (graph_server + RootSpec; la semántica graphify — comunidades con
