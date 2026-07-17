@@ -332,3 +332,223 @@ def test_cli_handoff_check_exits_1_stale_after_new_commit(
     check = runner.invoke(cli, ["handoff", "--check"])
     assert check.exit_code == 1
     assert "STALE" in check.output
+
+
+def test_cli_handoff_respects_explicit_out_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Hallazgo Minor (cobertura de tests) de la revisión final T0: la opción
+    --out-dir nunca se había ejercitado vía CliRunner (todos los tests pasaban
+    out_dir directo a generate_handoff), así que el plumbing click.Path ->
+    resolved_out_dir del comando real quedaba sin probar."""
+    from click.testing import CliRunner
+
+    from atlas.interfaces.cli import cli
+
+    repo = _make_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+    monkeypatch.setenv("ATLAS_MEMORY_DB", str(tmp_path / "no-such-dir" / "memory.db"))
+    explicit_out_dir = tmp_path / "custom_out"
+
+    result = CliRunner().invoke(cli, ["handoff", "--out-dir", str(explicit_out_dir)])
+
+    assert result.exit_code == 0, result.output
+    assert (explicit_out_dir / "MANIFEST.json").is_file()
+    for name in _MD_NAMES:
+        assert (explicit_out_dir / name).is_file()
+    # el default (docs/handoff/GENERATED) NO debe tocarse cuando se pasa --out-dir explícito
+    assert not (repo / "docs" / "handoff" / "GENERATED" / "MANIFEST.json").exists()
+
+
+# ---------------------------------------------------------------------------
+# CLI: build_gated_index() falla -> degradar a index=None, NO reventar
+# (hallazgo Important de la revisión final T0)
+# ---------------------------------------------------------------------------
+
+
+def test_cli_handoff_build_gated_index_failure_still_generates_file_based_pack(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Si build_gated_index() lanza (embedder no cacheado, BD bloqueada/corrupta),
+    'atlas handoff' NO debe reventar: captura la excepción, degrada a index=None
+    (03_MEMORIA_CLAVE.md lleva FUENTE NO DISPONIBLE: sustrato) y el resto del
+    pack (los 4 ficheros basados en el repo) SE GENERA igual."""
+    from click.testing import CliRunner
+
+    import atlas.mcp.memory_server as memory_server
+    from atlas.interfaces.cli import cli
+
+    repo = _make_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+    db_path = tmp_path / "existe-pero-falla.db"
+    db_path.write_bytes(b"")  # is_file() == True -> el CLI intenta abrir el índice
+    monkeypatch.setenv("ATLAS_MEMORY_DB", str(db_path))
+
+    def _boom(_db_path: Path) -> SqliteMemoryIndex:
+        raise RuntimeError("embedder no cacheado (simulado)")
+
+    monkeypatch.setattr(memory_server, "build_gated_index", _boom)
+
+    result = CliRunner().invoke(cli, ["handoff"])
+
+    assert result.exit_code == 0, result.output
+    out_dir = repo / "docs" / "handoff" / "GENERATED"
+    assert (out_dir / "MANIFEST.json").is_file()
+    for name in _MD_NAMES:
+        assert (out_dir / name).is_file()
+    assert "FUENTE NO DISPONIBLE: sustrato" in (out_dir / "03_MEMORIA_CLAVE.md").read_text(encoding="utf-8")
+    assert "embedder no cacheado" in result.output
+
+
+# ---------------------------------------------------------------------------
+# CLI --check: MANIFEST.json corrupto -> mensaje limpio + exit 1, jamás traceback
+# (hallazgo Minor de la revisión final T0)
+# ---------------------------------------------------------------------------
+
+
+def test_cli_handoff_check_manifest_invalid_json_fails_clean(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from click.testing import CliRunner
+
+    from atlas.interfaces.cli import cli
+
+    repo = _make_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+    out_dir = repo / "docs" / "handoff" / "GENERATED"
+    out_dir.mkdir(parents=True)
+    (out_dir / "MANIFEST.json").write_text('{"head_sha": "abc123", truncado', encoding="utf-8")
+
+    result = CliRunner().invoke(cli, ["handoff", "--check"])
+
+    assert result.exit_code == 1
+    assert not isinstance(result.exception, json.JSONDecodeError)
+    assert "MANIFEST.json" in result.output
+
+
+def test_cli_handoff_check_manifest_not_a_dict_fails_clean(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from click.testing import CliRunner
+
+    from atlas.interfaces.cli import cli
+
+    repo = _make_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+    out_dir = repo / "docs" / "handoff" / "GENERATED"
+    out_dir.mkdir(parents=True)
+    (out_dir / "MANIFEST.json").write_text("[1, 2, 3]", encoding="utf-8")
+
+    result = CliRunner().invoke(cli, ["handoff", "--check"])
+
+    assert result.exit_code == 1
+    assert "MANIFEST.json" in result.output
+
+
+# ---------------------------------------------------------------------------
+# head_sha: saneado de entorno git heredado (hallazgo Minor de la revisión
+# final T0) — mismo patrón que _clean_git_env, pero aquí probamos que la
+# PROPIA función limpia el env del subproceso, no solo el test.
+# ---------------------------------------------------------------------------
+
+
+def test_head_sha_ignores_inherited_git_env_vars(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from atlas.core.handoff import head_sha
+
+    repo = _make_repo(tmp_path, name="target_repo")
+    expected = _git(repo, "rev-parse", "HEAD")
+
+    # Simula un proceso padre (hook pre-commit, git anidado) que exporta estas
+    # env vars apuntando a OTRO repo: head_sha(repo) no debe filtrarse a través
+    # de ellas y devolver el HEAD del repo ajeno.
+    other_repo = tmp_path / "other_repo"
+    other_repo.mkdir()
+    _git(other_repo, "init", "-q")
+    (other_repo / "f.txt").write_text("x", encoding="utf-8")
+    _git(other_repo, "add", "-A")
+    _git(other_repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "other")
+
+    monkeypatch.setenv("GIT_DIR", str(other_repo / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(other_repo))
+
+    assert head_sha(repo) == expected
+
+
+# ---------------------------------------------------------------------------
+# extract_where_block: <2 entradas "- **" (hallazgo Minor de calidad de tests
+# de la revisión final T0) — la rama else (0 o 1 entrada) no tenía ningún
+# test dedicado; corta en el siguiente '## ' o al final del texto.
+# ---------------------------------------------------------------------------
+
+
+def test_extract_where_block_zero_entries_cuts_at_next_header() -> None:
+    from atlas.core.handoff import extract_where_block
+
+    text = (
+        "# Ledger\n"
+        "\n"
+        "## WHERE\n"
+        "\n"
+        "sin entradas todavía, solo texto libre.\n"
+        "\n"
+        "## OTRA SECCION\n"
+        "contenido de otra sección que NO debe aparecer.\n"
+    )
+
+    block = extract_where_block(text)
+
+    assert block is not None
+    assert "sin entradas todavía" in block
+    assert "OTRA SECCION" not in block
+    assert "NO debe aparecer" not in block
+
+
+def test_extract_where_block_zero_entries_cuts_at_end_of_text() -> None:
+    from atlas.core.handoff import extract_where_block
+
+    text = (
+        "# Ledger\n"
+        "\n"
+        "## WHERE\n"
+        "\n"
+        "sin entradas, y sin más secciones después.\n"
+    )
+
+    block = extract_where_block(text)
+
+    assert block is not None
+    assert block.endswith("sin entradas, y sin más secciones después.")
+
+
+def test_extract_where_block_one_entry_cuts_at_next_header() -> None:
+    from atlas.core.handoff import extract_where_block
+
+    text = (
+        "## WHERE\n"
+        "\n"
+        "- **ÚNICA ENTRADA (2026-07-17)** — con una línea de\n"
+        "  continuación indentada.\n"
+        "\n"
+        "## OTRA SECCION\n"
+        "no debe aparecer.\n"
+    )
+
+    block = extract_where_block(text)
+
+    assert block is not None
+    assert "ÚNICA ENTRADA" in block
+    assert "continuación indentada" in block
+    assert "OTRA SECCION" not in block
+
+
+def test_extract_where_block_one_entry_cuts_at_end_of_text() -> None:
+    from atlas.core.handoff import extract_where_block
+
+    text = "## WHERE\n\n- **ÚNICA ENTRADA (2026-07-17)** — sin sección posterior.\n"
+
+    block = extract_where_block(text)
+
+    assert block is not None
+    assert block.rstrip("\n").endswith("sin sección posterior.")

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -46,6 +47,14 @@ _MD_FILENAMES = (
     "04_PLAN.md",
 )
 
+# GIT_DIR/GIT_INDEX_FILE/GIT_WORK_TREE heredadas de un proceso padre (hook
+# pre-commit, git anidado) desvían "git -C <repo_root>" hacia OTRO repo —
+# verificado en vivo: con GIT_DIR apuntando a un repo ajeno, `git -C x
+# rev-parse HEAD` ignora `-C` y devuelve el HEAD del repo ajeno. head_sha()
+# pasa siempre un env saneado (mismo vector que tests/test_handoff.py::_clean_git_env
+# blinda en los tests).
+_GIT_ENV_LEAK_VARS = ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE")
+
 
 def _fuente_no_disponible(cual: str) -> str:
     return f"FUENTE NO DISPONIBLE: {cual}"
@@ -60,6 +69,7 @@ def _read_or_none(path: Path) -> str | None:
 def head_sha(repo_root: Path) -> str:
     """SHA completo de HEAD de `repo_root`; "unknown" si no es un repo git o
     git falla — nunca lanza (usado también por `atlas handoff --check`)."""
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_ENV_LEAK_VARS}
     try:
         proc = subprocess.run(
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
@@ -67,6 +77,7 @@ def head_sha(repo_root: Path) -> str:
             text=True,
             timeout=5,
             check=False,
+            env=env,
         )
     except Exception:
         return "unknown"
