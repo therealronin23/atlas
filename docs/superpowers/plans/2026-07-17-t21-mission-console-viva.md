@@ -1,4 +1,64 @@
-# T2.1 — Mission Console fase VIVA (plan de arranque para sesión fresca)
+# T2.1 — La UX REAL de Atlas (plan de arranque para sesión fresca)
+
+## LEE ESTO PRIMERO — readback aceptado por el operador (2026-07-17)
+
+El operador vio la consola y fue literal: *"es una puta mierda, no se parece
+en nada a lo que yo quiero, es súper genérica y se ve que está generada por
+IA… buscaba algo definitivo y profesional, pero no sé el que, habría que
+investigar"*.
+
+**No es un fallo de ejecución: es una decisión.** `ui/atlas-shell/README.md`
+declara D11 — *"el shell actual es arnés de validación, no la UX final"* — y
+`docs/continuation/NEXT_AI_INSTRUCTIONS.md:37` registra que el **pedido de
+rediseño JARVIS del operador quedó "SUPERSEDED por el pack de producto antes
+de escribirse código"**. La UX final NUNCA se construyó. Se ve generada por
+IA porque literalmente es un andamio sin dirección estética.
+
+**D11 QUEDA REABIERTA por el operador** (2026-07-17, es N3: alcance de
+producto). El shell deja de ser arnés: pasa a ser la UX real.
+
+**Intención capturada (respuestas del operador, NO reinterpretar):**
+1. *Convivencia*: **"Donde yo esté, incluido el móvil"** — necesita alcanzar
+   Atlas desde el sofá/la calle, no solo desde el portátil.
+2. *Carácter*: **"Cinematográfico (JARVIS, tus 9 mockups)"** — presencia,
+   movimiento, que se sienta vivo; impresiona al verlo, no solo al usarlo.
+
+**Consecuencia de encuadre (criterio del driver, revisable):** "es una web"
+era el SÍNTOMA, no la causa. Con el móvil como requisito duro, la base web
+(ADR-059) se CONFIRMA — reescribir en Tauri daría la misma pantalla genérica
+y además mataría el móvil. Lo que falta es dirección estética + presencia
+(PWA instalable a pantalla completa, motion real, densidad elegida). La
+investigación debe VALIDAR o TUMBAR esto con evidencia, no asumirlo.
+
+**BLOQUEANTE #1 — los 9 mockups NO EXISTEN en el repo** (verificado
+2026-07-17: cero imágenes bajo `docs/`; los hits de "jarvis" son proyectos
+ajenos del vault). Vivieron en un chat y se perdieron: "estilo JARVIS" ha
+sido una referencia fantasma que ningún modelo pudo ver — por eso nadie la
+ejecutó. **Primera acción de la ola: pedir al operador que los deposite en
+`docs/design/ui/references/`** (o cualquier referencia visual que le guste:
+capturas, apps, vídeos). Sin imagen, "cinematográfico" es una palabra y la
+IA volverá a inventar genérico. Esto es T0.5-en-vivo: la intención del
+operador debe quedar en el sustrato, no en un chat.
+
+## Investigación OBLIGATORIA antes de tocar píxeles (el operador la pidió)
+
+Manía registrada (investigar-antes-de-decidir): barrer el SOTA y comparar,
+con enjambre + Cónclave, no con la opinión de una sesión. Preguntas a
+responder CON EVIDENCIA (demos/capturas, no prosa):
+- ¿Cómo consiguen presencia cinematográfica los productos que se sienten
+  definitivos? (motion design, densidad, tipografía, sonido, latencia
+  percibida). Referencias reales, no adjetivos.
+- ¿Qué stack sostiene "una superficie, escritorio + móvil, sensación nativa"?
+  (PWA instalable, Capacitor, React Native, Tauri móvil…) — medir, no opinar.
+- ¿Qué hacen las UIs de agentes del SOTA y qué se siente genérico en ellas
+  (para NO copiarlo)?
+Entregable: 2-3 direcciones REALES que el operador pueda MIRAR y comparar
+(prototipo navegable > documento). El operador elige carácter; el driver
+elige tecnología (regla de oro: al operador jamás el CÓMO técnico).
+
+---
+
+## (Contexto previo — inventario del andamio actual)
 
 **Para el driver que lea esto**: el operador quiere ponerse a fondo con la
 UI/UX. Esta es la ola. NO hay dependencias pendientes: T0 está cerrado
