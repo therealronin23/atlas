@@ -695,7 +695,22 @@ def handoff(check_only: bool, out_dir: Path | None) -> None:
         if not manifest_path.is_file():
             console.print("[yellow]atlas handoff: nunca generado (usa 'atlas handoff' para generarlo)[/yellow]")
             return
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        # Fail-cerrado: si MANIFEST.json está corrupto/truncado no se puede
+        # verificar frescura -> mensaje limpio + exit 1, jamás traceback.
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            console.print(
+                f"[bold red]atlas handoff --check: {manifest_path} ilegible ({exc}); "
+                "regenera con 'atlas handoff'[/bold red]"
+            )
+            raise click.exceptions.Exit(1) from exc
+        if not isinstance(manifest, dict):
+            console.print(
+                f"[bold red]atlas handoff --check: {manifest_path} tiene una estructura "
+                "inesperada (se esperaba un objeto JSON); regenera con 'atlas handoff'[/bold red]"
+            )
+            raise click.exceptions.Exit(1)
         current_head = head_sha(repo_root)
         if manifest.get("head_sha") != current_head:
             console.print(
@@ -711,7 +726,18 @@ def handoff(check_only: bool, out_dir: Path | None) -> None:
     if db_path.is_file():
         from atlas.mcp.memory_server import build_gated_index  # noqa: PLC0415
 
-        index = build_gated_index(db_path)
+        # Fail-CERRADO sin reventar: si el sustrato no se puede abrir (embedder
+        # no cacheado en máquina nueva, BD bloqueada/corrupta), el pack de los
+        # 4 ficheros basados en el repo debe generarse igual — degradamos a
+        # index=None (03_MEMORIA_CLAVE.md llevará FUENTE NO DISPONIBLE: sustrato).
+        try:
+            index = build_gated_index(db_path)
+        except Exception as exc:  # noqa: BLE001
+            console.print(
+                f"[yellow]atlas handoff: no se pudo abrir el sustrato en {db_path} "
+                f"({exc}); 03_MEMORIA_CLAVE.md llevará FUENTE NO DISPONIBLE: sustrato[/yellow]"
+            )
+            index = None
     try:
         files = generate_handoff(repo_root, index, resolved_out_dir)
     finally:

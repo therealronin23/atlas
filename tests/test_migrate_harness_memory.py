@@ -15,6 +15,8 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 from atlas.mcp.memory_trunk import MemoryTrunk
 from atlas.memory.embeddings import StubEmbedder
 from atlas.memory.memory_index import SqliteMemoryIndex
@@ -229,13 +231,28 @@ def test_cli_dry_run_does_not_touch_the_db(tmp_path: Path) -> None:
     assert not db.exists(), "sin --apply el CLI no debe escribir nada en disco"
 
 
-def test_cli_apply_writes_to_the_given_db(tmp_path: Path) -> None:
+def test_cli_apply_writes_to_the_given_db(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     mem = tmp_path / "memory"
     mem.mkdir()
     _write_fixture_memories(mem)
     db = tmp_path / "real.db"
+    # El CLI real abre el índice vía build_gated_index() -> default_embedder(),
+    # que por defecto es FastEmbedEmbedder (ONNX real). Forzamos el stub barato
+    # (hash, no semántico) para no depender del modelo cacheado en la máquina
+    # que corre el test — mismo patrón que _test_index().
+    monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
 
     rc = _mod().main(["--memory-dir", str(mem), "--db", str(db), "--apply"])
 
     assert rc == 0
     assert db.exists()
+
+    # db.exists() no basta: SqliteMemoryIndex.__init__ ya crea el fichero vía
+    # CREATE TABLE IF NOT EXISTS aunque migrate() no llegara a escribir ningún
+    # registro. Reabrimos el índice (mismo StubEmbedder, para no chocar con el
+    # guard de dimensión) y comprobamos que el cableado CLI->migrate() escribió
+    # de verdad registros harness:* — los ids están en claro, no leemos texto.
+    index = _test_index(db)
+    assert index.ids_by_prefix("harness:") != []
