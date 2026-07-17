@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-17T00:36:10.181894+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-17T05:34:00.881786+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ---
 title: "ATLAS — Plan Maestro de Implantación"
@@ -214,8 +214,14 @@ Porqué: los sentidos de Atlas — "saber cuál es la corriente e ir más rápid
 ### T5 — Cadena de proveedores robusta (el cuello real de Atlas)
 Porqué: sin esto, T1 se para cuando un proveedor muere (ya pasó: 3 modelos
 muertos, ollama mal apuntado, NVIDIA con límites).
-- T5.1 Smoke diario de cadena (pendiente desde 2026-07-08). Evidencia: el
-  daemon detecta un modelo muerto antes que un humano.
+- T5.1 Smoke diario de cadena — CERRADA 2026-07-17 (bootstrap). El recon
+  descubrió que YA existía desde 2026-07-09 (ProviderChainSmoke + tick opt-in
+  ATLAS_PROVIDER_SMOKE=1, cadencia 24h, Merkle) — "pendiente desde 2026-07-08"
+  era una afirmación caducada (trampa doctrina §3). El gap real era
+  visibilidad: cerrado proyectando el último smoke en `atlas reality --json`
+  (sección provider_smoke, fail-honesta). Evidencia: el smoke de 2026-07-17
+  detectó openrouter_qwen3_coder_free muerto (429 upstream) y reality lo
+  aflora sin red. Mini-plan: docs/superpowers/plans/2026-07-17-t51-provider-smoke-surfacing.md.
 - T5.2 Fuentes largas de graphify: resolver las 12 pendientes (Groq
   openai-compatible primero; si no, ignore deliberado). Evidencia:
   quality-report con status verde o exclusión documentada.
