@@ -148,3 +148,17 @@ def test_add_without_gate_works_as_before(tmp_path: Path) -> None:
     rid = trunk.add("sin gate funciona igual")
     hits = trunk.recall("gate funciona")
     assert hits and hits[0].record_id == rid
+
+
+def test_build_gated_index_uses_measured_semantic_threshold(tmp_path: Path) -> None:
+    """La ruta semántica de producción usa el umbral MEDIDO 0.5, no el default
+    0.8 del índice (que marcaba matched=False en el 100% de aciertos reales —
+    medición 2026-07-17, ver comentario de _SEMANTIC_MATCH_THRESHOLD)."""
+    from atlas.mcp.memory_server import _SEMANTIC_MATCH_THRESHOLD, build_gated_index
+
+    index = build_gated_index(tmp_path / "thr.db")
+    try:
+        assert _SEMANTIC_MATCH_THRESHOLD == 0.5
+        assert index._threshold == _SEMANTIC_MATCH_THRESHOLD
+    finally:
+        index.close()
