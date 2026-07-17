@@ -1,8 +1,12 @@
 # F2.6 — Test de sucesión (PENDIENTE de ejecución; prompt listo)
 
-**Estado**: PENDIENTE. La ola bootstrap 2026-07-17 llegó aquí con >50% del
-presupuesto consumido (regla del bootstrap: en ese caso se deja el prompt
-escrito, no se ejecuta a medias). Ejecutarlo es barato en una sesión fresca.
+**Estado**: PENDIENTE — **bloqueado por credencial (N3)**. Intento real
+2026-07-17 08:3x: `claude -p --model sonnet` devolvió `401 OAuth access token
+has been revoked` (también con env limpio: las credenciales guardadas de la
+CLI están revocadas). Prerequisito del OPERADOR: en una terminal interactiva,
+`claude setup-token` (o `claude login`) para refrescar la credencial de la
+CLI — el mismo bloqueo ya documentado en la memoria desktop-control
+2026-07-03. Después, cualquier driver puede correr el comando de abajo.
 
 **Qué es**: la métrica (d) del plan maestro §2.9 — un Sonnet FRÍO en sesión
 real debe poder operar Atlas 6/6. Rúbrica original: plan toasty F2.6

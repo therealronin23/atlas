@@ -3441,6 +3441,10 @@ entries:
   type: operacion
   status: vigente
   verified: null
+- path: docs/operations/oauth_rotation_google_workspace.md
+  type: operacion
+  status: vigente
+  verified: null
 - path: docs/operations/operational_runbook.md
   type: operacion
   status: vigente
