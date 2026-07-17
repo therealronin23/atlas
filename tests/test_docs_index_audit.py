@@ -99,3 +99,55 @@ class TestWriteAndValidate:
 
         expired = m.validate(docs)["expired"]
         assert len(expired) == 1 and "docs/design/plan.md" in expired[0]
+
+
+class TestHandoffHygiene:
+    """docs/handoff = packs de sucesión: snapshots HISTÓRICOS salvo el pack
+    vivo GENERATED (regenerable con `atlas handoff`). Sin esto, ~555 entradas
+    heredaban el default 'vigente' y caducarían en masa bajo --strict
+    (hallazgo de campaña 2026-07-16, decidido en la ola bootstrap 2026-07-17)."""
+
+    def test_handoff_packs_infer_historico_but_generated_is_vigente(
+        self, tmp_path: Path
+    ) -> None:
+        m = _mod()
+        docs = _make_docs(tmp_path)
+        (docs / "handoff" / "viejo_pack").mkdir(parents=True)
+        (docs / "handoff" / "viejo_pack" / "estado.md").write_text("x", encoding="utf-8")
+        (docs / "handoff" / "GENERATED").mkdir()
+        (docs / "handoff" / "GENERATED" / "00_ESTADO.md").write_text("y", encoding="utf-8")
+        m.write_index(docs)
+        index = m.load_index(docs)
+        assert index["docs/handoff/viejo_pack/estado.md"]["status"] == "historico"
+        assert index["docs/handoff/GENERATED/00_ESTADO.md"]["status"] == "vigente"
+
+    def test_rewrite_upgrades_defaulted_vigente_to_historico_under_handoff(
+        self, tmp_path: Path
+    ) -> None:
+        """Migración: el 'vigente' que era default del generador cede ante la
+        nueva inferencia 'historico'; los status curados a mano (propuesto,
+        superseded…) se conservan SIEMPRE."""
+        m = _mod()
+        docs = _make_docs(tmp_path)
+        (docs / "handoff" / "pack").mkdir(parents=True)
+        (docs / "handoff" / "pack" / "a.md").write_text("a", encoding="utf-8")
+        (docs / "handoff" / "pack" / "b.md").write_text("b", encoding="utf-8")
+        m.write_index(docs)
+        index = m.load_index(docs)
+        # Simula el estado legado editando el YAML directo (no hay save_index):
+        # default viejo 'vigente' + una curada a mano 'propuesto'
+        index_path = docs / "INDEX.yaml"
+        raw = index_path.read_text(encoding="utf-8")
+        raw = raw.replace(
+            "- path: docs/handoff/pack/a.md\n  type: conocimiento\n  status: historico",
+            "- path: docs/handoff/pack/a.md\n  type: conocimiento\n  status: vigente",
+        ).replace(
+            "- path: docs/handoff/pack/b.md\n  type: conocimiento\n  status: historico",
+            "- path: docs/handoff/pack/b.md\n  type: conocimiento\n  status: propuesto",
+        )
+        index_path.write_text(raw, encoding="utf-8")
+        assert m.load_index(docs)["docs/handoff/pack/a.md"]["status"] == "vigente"
+        m.write_index(docs)
+        index2 = m.load_index(docs)
+        assert index2["docs/handoff/pack/a.md"]["status"] == "historico"
+        assert index2["docs/handoff/pack/b.md"]["status"] == "propuesto"
