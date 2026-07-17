@@ -192,23 +192,46 @@ def load_bitemporal_into_kuzu(
         for ddl in _SCHEMA:
             conn.execute(ddl)
 
+        # Ingesta INCREMENTAL (2026-07-17): la identidad `path@commit_sha` es
+        # inmutable (contenido congelado por commit), así que un id ya presente
+        # no necesita re-embed ni re-MERGE. Sin este skip, cada regen re-embebía
+        # el histórico ENTERO (~29k llamadas ONNX en CPU a ~120 commits
+        # ingeridos) y el tick del daemon tardaba HORAS — el grafo quedaba
+        # perpetuamente STALE bajo flujo de commits. El coste ahora es
+        # proporcional al delta de commits nuevos.
+        existing_ids: set[str] = set()
+        res: Any = conn.execute("MATCH (n:FileVersion) RETURN n.id")
+        while res.has_next():
+            existing_ids.add(str(res.get_next()[0]))
+
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         nodes = 0
+        nodes_created = 0
+        shas_with_new_nodes: set[str] = set()
         for pos, (sha, graph) in enumerate(snapshots.items()):
             # ingested_at con offset por POSICIÓN del commit (viejo→nuevo):
             # con un único `now` para toda la pasada, max(ingested_at) de
             # _latest_sha empataba entre commits y Kuzu devolvía un sha
             # arbitrario — graph_importers respondía a veces sobre el commit
             # viejo (flaky real: test_project_graph cayó así el 2026-07-10).
+            # Los nodos ya presentes CONSERVAN su ingested_at original: un
+            # `now` posterior siempre es mayor, así que el invariante
+            # "el commit más nuevo tiene max(ingested_at)" se mantiene.
             ts = now + timedelta(milliseconds=pos)
             for module, info in graph.items():
+                nodes += 1
+                fid = f"{module}@{sha}"
+                if fid in existing_ids:
+                    continue
+                shas_with_new_nodes.add(sha)
+                nodes_created += 1
                 text = f"{module} imports: {','.join(sorted(info['imports']))}"
                 conn.execute(
                     "MERGE (n:FileVersion {id: $id}) "
                     "SET n.path = $path, n.hash = $hash, n.commit_sha = $sha, "
                     "n.ingested_at = $ts, n.embedding = $emb",
                     {
-                        "id": f"{module}@{sha}",
+                        "id": fid,
                         "path": module,
                         "hash": info["hash"],
                         "sha": sha,
@@ -216,35 +239,51 @@ def load_bitemporal_into_kuzu(
                         "emb": embedder.embed(text),
                     },
                 )
-                nodes += 1
 
+        # Aristas: los contadores reflejan el grafo COMPLETO de los shas
+        # pedidos (contrato de métricas estable entre pasadas); el trabajo de
+        # MERGE solo se ejecuta para shas con nodos nuevos (los snapshots ya
+        # publicados llevan sus aristas — el swap solo publica corridas
+        # completas, y el MERGE idempotente cubre una corrida a medias).
         edges = 0
         for sha, graph in snapshots.items():
+            merge_edges = sha in shas_with_new_nodes
             for module, info in graph.items():
                 for imported in info["imports"]:
                     if imported not in graph:
                         continue  # arista solo dentro del snapshot congelado
+                    edges += 1
+                    if not merge_edges:
+                        continue
                     conn.execute(
                         "MATCH (a:FileVersion {id: $a}), (b:FileVersion {id: $b}) "
                         "MERGE (a)-[:IMPORTS {commit_sha: $sha}]->(b)",
                         {"a": f"{module}@{sha}", "b": f"{imported}@{sha}", "sha": sha},
                     )
-                    edges += 1
 
         evolves = 0
         for diff in bg["diffs"]:
             prev_sha, cur_sha = diff["from"], diff["to"]
+            merge_evolves = prev_sha in shas_with_new_nodes or cur_sha in shas_with_new_nodes
             prev, cur = snapshots[prev_sha], snapshots[cur_sha]
             for module in set(prev) & set(cur):
+                evolves += 1
+                if not merge_evolves:
+                    continue
                 change_type = "modified" if prev[module]["hash"] != cur[module]["hash"] else "unchanged"
                 conn.execute(
                     "MATCH (a:FileVersion {id: $a}), (b:FileVersion {id: $b}) "
                     "MERGE (a)-[:EVOLVES_TO {change_type: $ct}]->(b)",
                     {"a": f"{module}@{prev_sha}", "b": f"{module}@{cur_sha}", "ct": change_type},
                 )
-                evolves += 1
 
-        return {"nodes": nodes, "imports_edges": edges, "evolves_edges": evolves, "diffs": bg["diffs"]}
+        return {
+            "nodes": nodes,
+            "nodes_created": nodes_created,
+            "imports_edges": edges,
+            "evolves_edges": evolves,
+            "diffs": bg["diffs"],
+        }
     finally:
         conn.close()
         db.close()

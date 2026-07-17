@@ -20,8 +20,14 @@ de escribir: `atlas reality --json`.
   openrouter_qwen3_coder_free muerto), 5b2300a1 (umbral matched 0.8→0.5 MEDIDO:
   positivos 0.533-0.774 vs ruido 0.303-0.449; chunking de docs largos → T0.5b),
   6f08e972 (ADR-070: HermesRestAdapter retirado con evidencia de cero callers,
-  -909 líneas; canal canónico = Kanban/atlas-twin). 4bis-1: tick del grafo
-  diagnosticado SIN bug (horario, gating por HEAD, fail-closed correcto).
+  -909 líneas; canal canónico = Kanban/atlas-twin). 4bis-1 CORREGIDO en la
+  misma ola: el primer veredicto "sin bug" era incompleto — el mecanismo del
+  tick es correcto pero load_bitemporal_into_kuzu re-embebía el histórico
+  ENTERO (~29k llamadas ONNX CPU) en cada regen → ticks de HORAS, grafo
+  perpetuamente STALE bajo flujo de commits (cazado en vivo con py-spy:
+  scheduler 5h dentro de embed()). Arreglado con ingesta incremental por
+  id path@commit_sha (re-pasada = 0 embeds, delta-only; test con embedder
+  contador) — el re-sello FRESH ocurre solo tras el restart del daemon.
   4bis-4: .venv-scraping reconstruido (crawl4ai 0.9.2), marcador real
   success=200 vía SSRF bridge. Re-verificación: 183 tests dirigidos verdes +
   reality limpio. F2.6 PENDIENTE con prompt listo
