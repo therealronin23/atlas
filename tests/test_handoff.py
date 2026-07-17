@@ -552,3 +552,37 @@ def test_extract_where_block_one_entry_cuts_at_end_of_text() -> None:
 
     assert block is not None
     assert block.rstrip("\n").endswith("sin sección posterior.")
+
+
+def test_manifest_records_source_hashes_and_hook_uses_them(tmp_path: Path) -> None:
+    """El MANIFEST registra el sha256 de cada fuente de repo (contrato de
+    frescura por CONTENIDO: el pack se proyecta del árbol de trabajo, así que
+    comparar shas de git marcaba desfasado un pack recién generado). El hook
+    de sesión debe leer esas "sources" del manifest en vez de hardcodear la
+    lista — si vuelve a duplicarla, este test lo caza."""
+    from atlas.core.handoff import REPO_SOURCES, source_hashes
+
+    repo = _make_repo(tmp_path)
+    generate_handoff(repo, None, tmp_path / "out")
+    manifest = json.loads((tmp_path / "out" / "MANIFEST.json").read_text(encoding="utf-8"))
+    assert set(manifest["sources"]) == set(REPO_SOURCES)
+    assert manifest["sources"] == source_hashes(repo)
+
+    hook = (
+        Path(__file__).resolve().parent.parent / "scripts" / "handoff_freshness_hook.sh"
+    ).read_text(encoding="utf-8")
+    assert 'manifest["sources"]' in hook
+    for source in REPO_SOURCES:
+        assert f'"{source}"' not in hook, (
+            f"el hook hardcodea {source}: debe leer las fuentes del MANIFEST"
+        )
+
+
+def test_source_hashes_marks_absent_source_as_missing(tmp_path: Path) -> None:
+    """Una fuente ausente se registra MISSING (no se omite): así el aviso de
+    frescura ve el cambio cuando reaparece, y el pack ya la declara como
+    FUENTE NO DISPONIBLE."""
+    from atlas.core.handoff import source_hashes
+
+    hashes = source_hashes(tmp_path)
+    assert set(hashes.values()) == {"MISSING"}

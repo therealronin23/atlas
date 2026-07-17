@@ -47,6 +47,35 @@ _MD_FILENAMES = (
     "04_PLAN.md",
 )
 
+# Ficheros del REPO de los que se proyecta el pack (03_MEMORIA_CLAVE viene del
+# sustrato, que no está en git y por eso no aparece aquí).
+REPO_SOURCES: tuple[str, ...] = (
+    "AGENTS.md",
+    "WORK_LEDGER.md",
+    "docs/design/actor_roles.md",
+    "docs/design/atlas_master_plan.md",
+)
+
+
+def source_hashes(repo_root: Path) -> dict[str, str]:
+    """sha256 del contenido de cada fuente de repo en el momento de generar
+    (o "MISSING" si no existe — el pack ya lo declara como FUENTE NO
+    DISPONIBLE, y el aviso de frescura debe verlo reaparecer).
+
+    Va al MANIFEST para que la frescura se decida por CONTENIDO y no por
+    commits: el pack se proyecta del árbol de trabajo, así que su `head_sha`
+    es siempre el commit ANTERIOR al que lo publica — comparar shas de git
+    marcaba desfasado un pack recién generado (autorreferencia). Con esto,
+    `scripts/handoff_freshness_hook.sh` re-hashea las fuentes que el propio
+    MANIFEST lista: cero falsos positivos y sin duplicar la lista."""
+    hashes: dict[str, str] = {}
+    for rel in REPO_SOURCES:
+        path = repo_root / rel
+        hashes[rel] = (
+            hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else "MISSING"
+        )
+    return hashes
+
 # GIT_DIR/GIT_INDEX_FILE/GIT_WORK_TREE heredadas de un proceso padre (hook
 # pre-commit, git anidado) desvían "git -C <repo_root>" hacia OTRO repo —
 # verificado en vivo: con GIT_DIR apuntando a un repo ajeno, `git -C x
@@ -202,6 +231,7 @@ def generate_handoff(
         "head_sha": head_sha(repo_root),
         "generated_at": generated_at,
         "files": files_sha,
+        "sources": source_hashes(repo_root),
     }
     (out_dir / "MANIFEST.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
