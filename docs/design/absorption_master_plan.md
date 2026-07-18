@@ -2,16 +2,134 @@
 
 **Source material:** distilled from `grok.md`.
 **Status:** planning document, not a Gate seal.
-**Rule:** absorb patterns, not uncontrolled dependencies.
+**Rule:** absorb patterns AND real code — smart fork, not blind vendoring and
+not clone-inspect-delete.
 
 `grok.md` is a raw research dump. It should not be committed as canonical
 documentation: it contains exported chat UI, obsolete status, repeated advice,
 and personal metadata. This file is the cleaned plan.
 
+## CORRECCIÓN del barrido de abajo — el operador tenía razón (2026-07-18, mismo día)
+
+El operador desconfió del veredicto "ya cubierto" de la tabla de abajo
+("no se forkeó bien ninguna, quítame la razón si puedes") y pidió verificar
+otra vez, más a fondo. Se hizo, con grep real de callers (no solo "¿existe
+el fichero y está wireado en algún sitio?"):
+
+- **Checkpoints (Cline)**: FALSO que sea redundante. `_timetravel.record_step()`
+  solo graba ETIQUETAS DE ESTADO DEL PIPELINE ("blocked_governance",
+  "awaiting_approval") — nunca contenido de ficheros. No hay NINGÚN caller de
+  `TimeTravel`/`CheckpointStore` en `atlas_coder.py`/`tool_coder.py`/
+  `parallel_coder.py`/`incremental_coder.py` (verificado con grep, cero
+  resultados). Cline SÍ resuelve "deshacer los cambios de fichero que hizo el
+  agente" — Atlas no tenía nada equivalente. **Corregido**: implementado
+  `src/atlas/core/git_checkpoint.py` (ver más abajo).
+- **Focus Chain (Cline)**: FALSO que esté cubierto por "task tooling del
+  harness" — ese tooling es de Claude Code (esta sesión), no de Atlas. Cero
+  rastro de un checklist auto-mantenido dentro del Orchestrator real
+  (verificado con grep). Gap real, **no resuelto todavía** — queda como
+  siguiente pieza concreta, nombrada explícitamente, no enterrada.
+- **Sandboxing (OpenHands)**: más débil de lo que se dijo. `BwrapJail` solo
+  se usa en `lesson_runner.py` y `cold_update_manager.py` — NO en los
+  motores de codificación reales. Lo que `tool_coder.py` llama "sandbox" es
+  aislamiento de RUTA (copia en directorio temporal), no aislamiento de
+  proceso/red. La comparación con el runtime de OpenHands (que sí aísla
+  ejecución) no se sostiene igual de bien — queda marcado como reabierto,
+  sin resolver en esta pasada.
+- **Repo-map (Aider) y Memory Bank (Cline)**: se sostienen, confirmado de
+  nuevo (repo_map.py cita a Aider en su propio docstring; Memory Bank de
+  Cline sigue siendo solo convención de ficheros sin código que comparar).
+
+**Lección**: la primera pasada de esta misma sesión confirmó "¿existe y está
+wireado en algún sitio?" pero no "¿está wireado PARA EL MISMO PROPÓSITO que
+lo que se compara?" — el mismo error de rigor, dos veces en el mismo día.
+
+## Git Checkpoint Manager — IMPLEMENTADO 2026-07-18 (corrección del hallazgo de arriba)
+
+`src/atlas/core/git_checkpoint.py` — absorbido fiel de
+`cline/sdk/packages/core/src/session/checkpoint-restore.ts`: mismo mecanismo
+(commit o stash de git real, etiquetado por turno de agente, `restore()` =
+`git reset --hard` + `git clean -fd` + aplicar el ref, mismo orden exacto de
+comandos). Diferencia deliberada más segura: pensado para operar SOLO dentro
+de los git worktrees efímeros que `ParallelCoder`/`ToolCoder` ya crean por
+tarea (`git worktree add --detach`), nunca en el repo real — a diferencia de
+Cline, que opera sobre el directorio de trabajo real del usuario. 7 tests
+con un repo git REAL en tmp_path (no mocks — para algo destructivo, se
+probó el mecanismo de extremo a extremo, no solo que se llamara a subprocess
+con los argumentos correctos). Bug real cazado durante el testeo: `checkpoint()`
+sobre un working tree limpio hacía `git stash push` vacío, que git rechaza
+("no local changes to save") — arreglado con fallback a `kind='commit'`
+sobre HEAD cuando no hay nada que stashear. mypy limpio.
+
+**Límite honesto, deliberado**: `restore()` es DESTRUCTIVO (borra todo lo no
+checkpointeado) — auditado en Merkle con `risk_level="critical"`, pero **NO
+está wireado en el loop agéntico todavía**. Exponerlo como tool requeriría
+diseñar el gate de aprobación humana con el mismo cuidado que el resto de
+tools mutate/HITL de hoy — no se apresura ese diseño al final de una sesión
+ya muy larga. El módulo es real, probado y usable desde código Python; la
+integración con aprobación explícita queda como siguiente paso nombrado.
+
+## Cline/Aider/OpenHands — barrido de backend, CERRADO 2026-07-18 (ver corrección arriba — 2 de 5 hallazgos eran erróneos)
+
+El operador pidió fork completo de los tres tras clonarlos
+(`~/proyectos/atlas-forks/{cline,aider,openhands}`). Antes de forkear a
+ciegas, se auditaron las 5 características de backend más señaladas de los
+tres — mismo método que la auditoría de Hermes (verificar código real, no
+asumir). Resultado: **las 5 ya existen en Atlas**, casi siempre más rigurosas:
+
+| Candidato | Origen | Ya en Atlas | Veredicto |
+|---|---|---|---|
+| Checkpoints git-based (rewind de estado) | Cline | `src/atlas/core/checkpoint.py` + `timetravel.py` (ADR-021) — encadenado hash de integridad + fork contrafactual + auditoría Merkle, cableado en `orchestrator.py`, 25 tests | Atlas es MÁS riguroso (Cline solo hace snapshot de git, sin cadena de integridad ni ramas) |
+| Memory Bank (markdown persistente entre sesiones) | Cline | LessonStore + block memory + embeddings semánticos, auditado en Merkle | Memory Bank de Cline es solo convención de ficheros .md sin código real detrás — Atlas ya lo supera |
+| Focus Chain (checklist `- [ ]` de progreso) | Cline | Task tooling del propio harness + Mission Console | Redundante, patrón muy simple (77 líneas en Cline) |
+| Repo-map (PageRank sobre símbolos) | Aider | `src/atlas/core/repo_map.py` — **el propio docstring dice "técnica #14, patrón Aider"** — ya absorbido, con `ast` en vez de tree-sitter (razón: repo 100% Python) | Ya absorbido explícitamente, con razón documentada de la diferencia |
+| Runtime sandboxed (ejecución del agente aislada) | OpenHands | `BwrapJail` (invariante dura en `ColdUpdateManager`) | Ya cubierto — el barrido OSS anterior (2026-07-02) ya marcó OpenHands como SKIP con esta misma razón |
+
+**Conclusión honesta**: el backend/algoritmos de Cline/Aider/OpenHands NO
+necesita fork completo — Atlas ya está por delante ahí (mismo patrón que la
+comparación previa contra Codex CLI/Claude Agent SDK/Cursor: "Atlas's
+orchestration/memory/deliberation layer is architecturally ahead of every
+reference tool surveyed so far"). Lo que SÍ tiene valor real y sigue sin
+explorar: el **FRONTEND** de Cline (componentes React del webview — chat,
+diff-view, checkpoint picker) como referencia directa para el panel de IA
+del Atlas IDE (Void), que es un tipo de trabajo distinto (UI, no backend) y
+conecta con la ola T2.1 ya en marcha, no con este documento de absorción de
+backend. Los tres repos quedan clonados en `~/proyectos/atlas-forks/` por si
+hace falta revisar algo puntual, pero un fork completo activo de las tres
+apps no está justificado por lo encontrado.
+
+## Política revisada 2026-07-18 (operador, sesión T2.1 IDE) — "fork inteligente"
+
+La política original de abajo ("clone into /tmp... then delete the clone; do
+not vendor or keep full forks") queda **corregida**: el operador señaló que
+esto contradice lo que realmente conviene — todo este código es open source y
+usarlo a nuestro favor de verdad (no solo "estudiar y borrar") es el camino
+más rápido y más beneficioso para hacer crecer Atlas exponencialmente. La
+corrección explícita del operador: *"a lo mejor el planteamiento no es el
+académicamente correcto, pero es el camino más rápido y beneficioso... es
+código que podemos usar a nuestro favor"*.
+
+**Fork inteligente** = poseer el código real en el árbol de Atlas cuando algo
+tiene valor real y sostenido (no un plugin/extensión/webhook externo del que
+dependemos, no una reimplementación desde cero que deja cascarón vacío) —
+pero de forma SELECTIVA: se disecciona el repo real, se decide qué partes
+tienen valor genuino, se adapta a la arquitectura de Atlas, y NUNCA se baja
+la barra de gobernanza al integrarlo. No es "clonar todo un repo sin
+criterio"; es tampoco "clonar, inspeccionar, borrar". Precedente ya sentado
+hoy mismo: Void (fork completo, no extensión de VS Code) y Zed (fork
+completo, no cliente) para el "Atlas IDE"; el mismo criterio aplica ahora a
+Hermes-Agent, Cline, Aider, OpenHands y al MCP adapter de Vercel.
+
+Las reglas de gobernanza de abajo (capability tokens, AST Guard, MerkleLogger,
+nunca bajar la barra al envolver algo externo) **siguen aplicando sin
+excepción** — "fork inteligente" cambia CUÁNTO código se posee, no bajo qué
+reglas se ejecuta.
+
 ## Strategy
 
-Atlas should study external projects as references, then reimplement only the
-parts that fit the existing architecture:
+Atlas should study external projects as references, then absorb the parts
+that fit the existing architecture — as real, owned code when the value is
+substantial and lasting, not just as a studied pattern:
 
 - Governance L0 stays above every imported idea.
 - External-effect actions go through capability tokens and AtlasExecutor.
@@ -19,9 +137,13 @@ parts that fit the existing architecture:
 - Important actions are logged through MerkleLogger.
 - New dependencies require explicit ADR or Gate-level approval.
 - No runtime dependency on Anthropic/Codex/OpenAI APIs.
-- External repositories are temporary research inputs: clone into `/tmp` or an
-  isolated worktree, inspect the concrete pattern, record the absorbed lesson,
-  then delete the clone. Do not vendor or keep full forks as dormant source.
+- External repositories with substantial, lasting value get a real fork under
+  Atlas's own tree/org (see `~/proyectos/atlas-forks/`, `~/proyectos/
+  atlas-ide`, `~/proyectos/atlas-editor-zed`) — inspected, adapted, and
+  integrated deliberately, never dumped wholesale and never left as a dormant
+  unintegrated clone. Small, single-pattern references can still be a
+  throwaway `/tmp` clone when a full fork isn't warranted — use judgment, not
+  a blanket rule either way.
 
 ## Categories
 
@@ -59,13 +181,19 @@ parts that fit the existing architecture:
 
 ## Non-Goals
 
-- No full forks copied into `src/atlas/`.
-- No long-lived local clone kept just because it was useful once; keep notes,
-  tests, and reimplemented Atlas-native code instead.
+- No unintegrated fork kept "just in case" — a fork earns its place in
+  `~/proyectos/atlas-forks/` (or its own sibling project) only when there's a
+  concrete absorption plan being executed, not as a permanent dormant copy.
+- No lowering Atlas's governance bar to make an absorbed capability easier to
+  wire — capability tokens, AST Guard, sandbox policy, and MerkleLogger apply
+  to anything absorbed, exactly as much as to Atlas-native code.
 - No self-AST patching.
 - No direct command execution outside AtlasExecutor.
 - No public network exposure of dashboards or agents by default.
 - No large framework dependency unless an ADR justifies it empirically.
+- No fusing an external project's own IDENTITY into Atlas's (e.g. Hermes's
+  multi-platform gateway stays a peer, per the trio verdict below) — absorb
+  CAPABILITIES, never absorb a second orchestrator/decider/identity.
 
 ## Hermes Agent — deep audit (2026-07-02, code-level, not doc-level)
 
@@ -96,13 +224,54 @@ anything from Atlas's side. Study → assimilate → wrap, never fork wholesale.
    `claude-in-chrome` MCP is a *client-side* tool, not something Atlas itself carries).
 3. **Vision/image/video generation** (FAL.ai, xAI video). Atlas's voice module
    (Whisper/Piper) covers audio; no image/video generation exists.
-4. **Smart home** (`homeassistant_tool.py`). Aligns directly with the founding
-   principle in MEMORY `feedback-atlas-core-is-elasticity-not-crypto` ("cualquier
-   hardware, se adapta") — a natural fit if/when pursued.
-5. **ACP adapter** (`acp_adapter/`) — lets Hermes be invoked as a sub-agent by
-   external ACP clients (Claude Code, etc.). Interesting less as "a tool to absorb"
-   and more as a possible protocol Atlas itself could expose or consume, decoupled
-   from adopting Hermes's own agent loop.
+1b. **Generación de imagen — IMPLEMENTADO 2026-07-18.** `ImageGenTool`
+   (`src/atlas/tools/image_gen_tool.py`) absorbe el patrón real de
+   `hermes-agent/agent/image_gen_provider.py` (backend fal.ai) pero NO su
+   arquitectura de plugins/registro — Atlas empieza con un único backend
+   fal.ai directo, vía el SDK oficial `fal_client` (instalado tras verificar
+   con `pip install --dry-run` que no colisiona con nada del venv principal
+   — httpx/msgpack/websockets ya satisfechos, solo suma aiofiles+asyncstdlib).
+   Misma disciplina de gobernanza que `StirlingPdfTool`: output_path por
+   `ExternalFsBridge`, credencial explícita (`FAL_KEY`, falla con error claro
+   si falta — sin llamar nunca a la API sin credencial), auditoría Merkle.
+   Cableado completo como tool `image_generate` del loop agéntico (mutate/
+   HITL, igual que `manipulate_pdf`): `GateFExecutor.run_image_generate`,
+   `Orchestrator._run_image_generate`, dispatch en `agentic_executor.py`,
+   clasificación en `AGENTIC_MUTATING_TOOLS` + schema en `agentic_helpers.py`.
+   8 tests nuevos (`tests/test_image_gen_tool.py`, SDK mockeado — nunca llama
+   a la API real, cuesta dinero) + 140/140 tests de orchestrator/agentic
+   verdes + mypy limpio. **Límite honesto**: no verificado contra la API real
+   de fal.ai (no hay `FAL_KEY` configurada) — el wiring es real, la llamada
+   en vivo queda pendiente de que el operador aporte la credencial.
+4. **Smart home — IMPLEMENTADO 2026-07-18.** `HomeAssistantTool`
+   (`src/atlas/tools/home_assistant_tool.py`) absorbe fiel la lógica de
+   seguridad real de `hermes-agent/tools/homeassistant_tool.py`: lista de
+   dominios de servicio BLOQUEADOS (`shell_command`/`command_line`/
+   `python_script`/`pyscript`/`hassio`/`rest_command` — HA no tiene control
+   de acceso por servicio, la seguridad va en esta capa) + validación de
+   entity_id/service contra path traversal. Dos tools del loop agéntico:
+   `smart_home_query` (lectura, inline) y `smart_home_control` (mutate/HITL).
+   Sin SSRFBridge (a diferencia de CrawlerTool: el destino LAN es el
+   propósito, no un pivote) — credencial explícita (`HASS_TOKEN`), auditoría
+   Merkle. 16 tests (compartidos con video-gen) + mypy limpio.
+5. **ACP adapter — IMPLEMENTADO 2026-07-18** (adaptador fino, NO el bucle
+   agéntico completo de Hermes de ~5000 líneas — tal como sugería el punto
+   original). `AtlasACPAgent` (`src/atlas/acp/server.py`) sobre el SDK
+   oficial `agent-client-protocol` (PyPI, import `acp` — el mismo que usa
+   Hermes, verificado sin conflicto de deps). Expone Atlas como agente
+   invocable por cualquier cliente ACP — **Zed lo habla nativamente**,
+   conecta directo con la ola T2.1 del Atlas IDE. Reutiliza el
+   `InferenceHub` real (mismo camino que `atlas.api.coding_server`, forma
+   ACP en vez de OpenAI). Comando `atlas acp`. Verificado real de extremo a
+   extremo: handshake JSON-RPC/stdio real (`python -m atlas.acp.server` +
+   petición `initialize` real → respuesta real con `agentCapabilities`),
+   no solo mocks — bug real encontrado y arreglado en el proceso (faltaba
+   el guard `if __name__ == "__main__"`, el proceso moría en silencio sin
+   servir nada). 12 tests + mypy limpio. Límite honesto: solo chat de texto
+   v1, sin tool-calling/edit-approval todavía, streaming de un solo chunk
+   (mismo límite ya documentado en coding_server.py) — el bucle agéntico
+   propio de Hermes (session-fork, slash commands, MCP registration) queda
+   fuera a propósito.
 6. **Skill curator lifecycle** (`curator.py`): active→stale→archived based on usage
    telemetry, never auto-deletes, umbrella-consolidation opt-in. Atlas's `LessonStore`/
    `LessonPromoter` has corroboration thresholds but no analogous stale/archive
@@ -466,10 +635,18 @@ auto-borra, consolidación por solapamiento opcional) mapea limpio a un futuro i
 corroboración relativa) que NUNCA borra, solo re-etiqueta — coherente con la disciplina ya existente
 de `_graveyard`/`WHY.md` del repo (nunca destruir, marcar y archivar).
 
-**No implementado a propósito** — esto queda como estudio de patrón (lo que pidió el usuario),
-no como código nuevo. Se implementaría solo cuando el volumen real de lecciones lo justifique (hoy
-son pocas, seedeadas a mano — ver `scripts/seed_lessons.py`); antes de esa masa crítica, el
-lifecycle sería sobre-ingeniería sin datos reales que gestionar.
+**Implementado 2026-07-18** (giro de política "fork inteligente" — ver arriba, el operador pidió
+absorber código real, no solo patrones): `Lesson` gana `recall_count`/`last_recalled_at`/`state`
+(active|stale|archived, defaults retrocompatibles). `LessonStore.record_recall()` incrementa uso
+real (mismo patrón `replace()`+rewrite que `record_recurring()`); `LessonRecaller.recall()` lo
+invoca SOLO en un match real (`matched=True`), no en cada consulta — evidencia de uso, no de
+intento. `LessonStore.apply_lifecycle_transitions()` porta el algoritmo determinista de
+`~/proyectos/atlas-forks/hermes-agent/agent/curator.py::apply_automatic_transitions` (grace floor
+para lecciones nunca usadas + jóvenes, reactivación al volver a usarse, JAMÁS borra el fichero —
+archived es solo una etiqueta recuperable). Nueva `tests/test_lesson_lifecycle.py` (9 tests) +
+suite completa de lecciones (58 tests) verde; mypy limpio en ambos ficheros tocados. Primer
+entregable concreto del giro "fork inteligente": código real absorbido de un repo real, no un
+resumen de patrón.
 
 ## Front C — embedder local por defecto (2026-07-03)
 

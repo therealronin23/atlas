@@ -31,7 +31,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import asdict, dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -75,6 +75,15 @@ class Lesson:
     # leen como occurrence_count=1, last_seen_at="" (mismo patrón que created_at).
     occurrence_count: int = 1
     last_seen_at: str = ""
+    # Ciclo de vida por USO real (absorbido de Hermes-Agent curator.py,
+    # 2026-07-18 — patrón determinista active→stale→archived, nunca borra).
+    # recall_count/last_recalled_at se incrementan SOLO en un match real de
+    # LessonRecaller.recall() (ver LessonStore.record_recall), no en cada
+    # consulta — evidencia de uso, no de intento. Defaults retrocompatibles:
+    # lecciones existentes se leen como recall_count=0, state="active".
+    recall_count: int = 0
+    last_recalled_at: str = ""
+    state: str = "active"  # active | stale | archived — nunca se borra el fichero
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -98,6 +107,9 @@ class Lesson:
             created_at=data.get("created_at", ""),
             occurrence_count=data.get("occurrence_count", 1),
             last_seen_at=data.get("last_seen_at", ""),
+            recall_count=data.get("recall_count", 0),
+            last_recalled_at=data.get("last_recalled_at", ""),
+            state=data.get("state", "active"),
         )
 
 
@@ -251,6 +263,86 @@ class LessonStore:
             source_refs=source_refs,
             corroborated=True,
             tags=(*tags, dedup_tag),
+        )
+
+    def record_recall(self, lesson_id: str) -> Lesson | None:
+        """Registra un recall REAL (match, no cada consulta): incrementa
+        recall_count, marca last_recalled_at y reactiva si estaba `stale`.
+        Mismo patrón replace()+rewrite que record_recurring(). None si el id
+        no existe (no lanza — el caller no debe caerse por una lección ya
+        purgada a mano)."""
+        lesson = self.get(lesson_id)
+        if lesson is None:
+            return None
+        updated = replace(
+            lesson,
+            recall_count=lesson.recall_count + 1,
+            last_recalled_at=datetime.now(timezone.utc).isoformat(),
+            state="active" if lesson.state == "stale" else lesson.state,
+        )
+        file = self._path / f"{updated.id}.json"
+        file.write_text(
+            json.dumps(updated.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        return updated
+
+    def apply_lifecycle_transitions(
+        self,
+        *,
+        now: datetime | None = None,
+        stale_after_days: int = 30,
+        archive_after_days: int = 90,
+    ) -> dict[str, int]:
+        """Ciclo de vida determinista por inactividad — patrón absorbido de
+        Hermes-Agent (`agent/curator.py::apply_automatic_transitions`,
+        2026-07-18): active→stale tras `stale_after_days` sin recall,
+        stale→archived tras `archive_after_days`, reactiva si vuelve a haber
+        recall. NUNCA borra el fichero — `archived` es solo una etiqueta,
+        recuperable (misma disciplina de `_graveyard`/WHY.md del repo: marcar
+        y archivar, no destruir). Ancla el reloj en `last_recalled_at` si
+        existe, si no en `created_at` — una lección recién creada sin recall
+        aún no se marca stale por eso solo (grace floor, igual que Hermes:
+        ausencia de evidencia no es evidencia de obsolescencia).
+
+        Devuelve un contador de qué cambió, igual que la función de Hermes."""
+        if now is None:
+            now = datetime.now(timezone.utc)
+        stale_cutoff = now - timedelta(days=stale_after_days)
+        archive_cutoff = now - timedelta(days=archive_after_days)
+
+        counts = {"marked_stale": 0, "archived": 0, "reactivated": 0, "checked": 0}
+
+        for lesson in self.all():
+            counts["checked"] += 1
+            anchor_raw = lesson.last_recalled_at or lesson.created_at
+            try:
+                anchor = datetime.fromisoformat(anchor_raw)
+            except ValueError:
+                continue  # timestamp corrupto: no se toca, no se rompe el pase
+            if anchor.tzinfo is None:
+                anchor = anchor.replace(tzinfo=timezone.utc)
+
+            never_recalled = lesson.recall_count == 0
+            if never_recalled and anchor > stale_cutoff:
+                continue  # grace floor: demasiado joven para juzgarla
+
+            if anchor <= archive_cutoff and lesson.state != "archived":
+                self._set_state(lesson, "archived")
+                counts["archived"] += 1
+            elif anchor <= stale_cutoff and lesson.state == "active":
+                self._set_state(lesson, "stale")
+                counts["marked_stale"] += 1
+            elif anchor > stale_cutoff and lesson.state == "stale":
+                self._set_state(lesson, "active")
+                counts["reactivated"] += 1
+
+        return counts
+
+    def _set_state(self, lesson: Lesson, state: str) -> None:
+        updated = replace(lesson, state=state)
+        file = self._path / f"{updated.id}.json"
+        file.write_text(
+            json.dumps(updated.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
     def stats(self) -> dict[str, Any]:

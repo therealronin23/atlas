@@ -560,3 +560,338 @@ pre.inspector {
   border-radius: 2px; padding: 1px 6px; background: var(--bg);
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Command Center — la nebulosa 3D como superficie cinematográfica.
+   El organismo ocupa todo; controles e inspector flotan en cristal y
+   aparecen/desaparecen como superficies efímeras (Surface Lifecycle).
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cc-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: radial-gradient(ellipse 70% 60% at 50% 48%, #070b14 0%, #05070c 70%);
+}
+
+.nebula-mount {
+  position: absolute;
+  inset: 0;
+}
+.nebula-mount canvas { width: 100% !important; height: 100% !important; }
+
+.nebula-tip {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.14s;
+  background: color-mix(in srgb, var(--bg-panel) 82%, transparent);
+  border: 1px solid var(--border-bright);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 7px 11px;
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 260px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+}
+.nebula-tip b { color: var(--text); font-family: var(--font-display); letter-spacing: 0.04em; }
+.nebula-tip s { display: block; text-decoration: none; color: var(--text-dim); font-size: 10px; margin-top: 2px; }
+
+.nebula-legend {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+.nebula-legend .nlrow { display: flex; align-items: center; gap: 6px; }
+.nebula-legend i { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+.nebula-legend b { color: var(--text); font-weight: 600; margin-left: 2px; opacity: 0.75; }
+
+/* conmutador de modos */
+.cc-modes {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+.cc-mode {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.cc-mode:hover { color: var(--text); }
+.cc-mode.on {
+  color: #041016;
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* telemetría flotante en cristal */
+.cc-telemetry {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  width: 288px;
+  max-width: 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100% - 28px);
+  overflow: auto;
+}
+.glass-card {
+  background: color-mix(in srgb, var(--bg-panel) 70%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+}
+.glass-card h5 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* inspector contextual del nodo real */
+.cc-inspector {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  z-index: 7;
+  width: 300px;
+  max-width: 44%;
+  padding: 16px 18px 18px;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--bg-raised) 92%, transparent), color-mix(in srgb, var(--bg-panel) 88%, transparent));
+  border: 1px solid var(--border-bright);
+  border-top: 2px solid currentColor;
+  border-radius: var(--radius);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  animation: ci-in 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes ci-in {
+  from { opacity: 0; transform: translateX(-14px) scale(0.97); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.ci-close {
+  position: absolute; top: 10px; right: 10px;
+  appearance: none; border: 0; background: transparent;
+  color: var(--text-dim); cursor: pointer; font-size: 13px; line-height: 1;
+}
+.ci-close:hover { color: var(--text); }
+.ci-mod { font-family: var(--font-display); font-size: 10px; letter-spacing: 0.18em; font-weight: 700; }
+.cc-inspector h4 {
+  margin: 5px 0 8px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  word-break: break-word;
+}
+.ci-deps { margin: 0 0 12px; color: var(--text-dim); font-size: 11px; }
+.ci-deps b { color: var(--text); font-size: 13px; }
+.ci-merkle {
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ci-merkle b { color: var(--text); font-family: var(--font-mono); }
+
+.cc-hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  pointer-events: none;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Honestidad del organismo — estado real explícito + salud del grafo.
+   Arregla: "veo luces pero Atlas está apagado" / "es decorativo".
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cc-activity {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  color: var(--text-dim);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-activity .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--text-dim); }
+.cc-activity.live { color: var(--text); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.cc-activity.live .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: brand-blink 1.6s ease-in-out infinite; }
+
+.cc-health-btn {
+  position: absolute;
+  top: 14px;
+  right: 310px;
+  z-index: 6;
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  backdrop-filter: blur(10px);
+}
+.cc-health-btn:hover { border-color: var(--border-bright); }
+.cc-health-warn {
+  color: #041016;
+  background: var(--warn);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-weight: 700;
+}
+
+.cc-health-panel {
+  position: absolute;
+  top: 52px;
+  right: 14px;
+  z-index: 8;
+  width: 300px;
+  max-width: 44%;
+  max-height: calc(100% - 70px);
+  overflow: auto;
+  padding: 16px 18px;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--bg-raised) 92%, transparent), color-mix(in srgb, var(--bg-panel) 88%, transparent));
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  animation: ci-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cc-health-panel h5 {
+  margin: 12px 0 6px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.cc-health-panel h5:first-child { margin-top: 0; }
+.cc-health-stat { margin: 0 0 4px; font-size: 11px; color: var(--text-dim); }
+.cc-health-stat b { color: var(--text); font-size: 13px; }
+.cc-orphan-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.cc-orphan-list li {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 6px 8px; border-radius: var(--radius);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-left: 2px solid var(--danger);
+}
+.cc-orphan-list b { font-size: 11px; }
+.cc-orphan-list span { font-size: 9px; color: var(--text-dim); font-family: var(--font-mono); }
+.cc-rel-types { display: flex; flex-wrap: wrap; gap: 6px; }
+.cc-rel-types span {
+  font-size: 10px; color: var(--text-dim);
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 9px;
+}
+.cc-rel-types b { color: var(--text); margin-left: 4px; }
+
+.ci-file {
+  margin: -4px 0 10px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  word-break: break-all;
+}
+.ci-orphan {
+  font-size: 11px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-left: 2px solid var(--danger);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  margin: 0;
+}
+.ci-conn-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+}
+.ci-conn-list li {
+  font-size: 11px;
+  color: var(--text);
+  padding: 5px 8px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.ci-rel {
+  display: inline-block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-right: 6px;
+}

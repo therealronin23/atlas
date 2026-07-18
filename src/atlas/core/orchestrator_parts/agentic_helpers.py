@@ -18,7 +18,8 @@ from typing import Any
 AGENTIC_MUTATING_TOOLS: frozenset[str] = frozenset({
     "editor_write", "editor_apply_diff", "editor_run",
     "browser_navigate", "browser_click", "browser_fill",
-    "invoke_claude_code", "manipulate_pdf",
+    "invoke_claude_code", "manipulate_pdf", "image_generate", "video_generate",
+    "smart_home_control", "acp_invoke",
 })
 
 
@@ -202,6 +203,64 @@ def tool_specs() -> list[dict[str, Any]]:
                 "params": {"type": "object"},
             },
             ["operation", "input_path", "output_path"],
+        ),
+        fn(
+            "image_generate",
+            "Genera una imagen a partir de un prompt de texto vía fal.ai (modelo por "
+            "defecto fal-ai/flux/dev). MUTA el host (escribe output_path): requiere "
+            "aprobación humana inline. output_path acotado por ExternalFsBridge. "
+            "Requiere FAL_KEY en el entorno — si falta, falla con error claro sin "
+            "llamar a la API.",
+            {
+                "prompt": {"type": "string"},
+                "output_path": {"type": "string"},
+                "model": {"type": "string"},
+                "aspect_ratio": {"type": "string"},
+            },
+            ["prompt", "output_path"],
+        ),
+        fn(
+            "smart_home_query",
+            "Consulta entidades/estado de Home Assistant (luces, sensores, etc.). Solo "
+            "lectura, corre inline sin aprobación. action='list_entities' (con domain/area "
+            "opcionales) o action='get_state' (con entity_id). Requiere HASS_TOKEN.",
+            {
+                "action": {"type": "string"},
+                "domain": {"type": "string"},
+                "area": {"type": "string"},
+                "entity_id": {"type": "string"},
+            },
+            ["action"],
+        ),
+        fn(
+            "smart_home_control",
+            "Ejecuta un servicio de Home Assistant (enciende luces, mueve persianas, etc.). "
+            "MUTA el mundo real: requiere aprobación humana inline. Dominios peligrosos "
+            "(shell_command/command_line/python_script/pyscript/hassio/rest_command) están "
+            "BLOQUEADOS por diseño — HA no tiene control de acceso por servicio, la "
+            "seguridad va en esta capa. Requiere HASS_TOKEN.",
+            {
+                "domain": {"type": "string"},
+                "service": {"type": "string"},
+                "entity_id": {"type": "string"},
+                "data": {"type": "object"},
+            },
+            ["domain", "service"],
+        ),
+        fn(
+            "video_generate",
+            "Genera un vídeo a partir de un prompt de texto vía fal.ai (modelo por "
+            "defecto fal-ai/ltx-2.3-22b/text-to-video, más ligero/barato). MUTA el host "
+            "(escribe output_path): requiere aprobación humana inline. output_path "
+            "acotado por ExternalFsBridge. Requiere FAL_KEY en el entorno. Generación "
+            "de vídeo es LENTA (hasta 5 min) y cara — usar con criterio.",
+            {
+                "prompt": {"type": "string"},
+                "output_path": {"type": "string"},
+                "model": {"type": "string"},
+                "aspect_ratio": {"type": "string"},
+            },
+            ["prompt", "output_path"],
         ),
         fn(
             "read_external_file",

@@ -1119,6 +1119,29 @@ def os_bridge(host: str, port: int) -> None:
     serve(host=host, port=port)
 
 
+@cli.command("coding-bridge")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind address (solo localhost por seguridad).")
+@click.option("--port", default=7342, show_default=True, type=int, help="Puerto del coding bridge.")
+def coding_bridge(host: str, port: int) -> None:
+    """Arranca el Atlas Coding Bridge: /v1/chat/completions OpenAI-compatible
+    sobre el InferenceHub real, para conectar VS Code/Continue u otro cliente
+    OpenAI-compatible a Atlas. Proceso separado del os-bridge (read-only)."""
+    from atlas.api.coding_server import serve  # noqa: PLC0415
+    console.print(f"\n[bold cyan]Atlas Coding Bridge[/bold cyan] → http://{host}:{port}/v1")
+    console.print("[dim]Ctrl+C para detener. Modelos: atlas-chat / atlas-edit / atlas-apply.[/dim]\n")
+    serve(host=host, port=port)
+
+
+@cli.command("acp")
+def acp_serve() -> None:
+    """Arranca Atlas como servidor ACP (Agent Client Protocol) sobre stdio —
+    invocable desde clientes ACP como Zed. Absorbido de Hermes-Agent
+    (adaptador fino sobre agent-client-protocol + InferenceHub real, sin el
+    bucle agéntico completo de Hermes)."""
+    from atlas.acp.server import serve  # noqa: PLC0415
+    serve()
+
+
 def _repo_root() -> Path:
     from atlas.runtime_paths import atlas_data_root  # noqa: PLC0415
 
