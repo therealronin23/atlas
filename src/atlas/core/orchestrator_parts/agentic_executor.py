@@ -266,6 +266,11 @@ class AgenticExecutor:
                 return host._stringify_tool_result(host._run_web_crawl(args["url"]))
             if name == "read_external_file":
                 return host._stringify_tool_result(host._run_read_external_file(args["path"]))
+            if name == "smart_home_query":
+                return host._stringify_tool_result(host._run_smart_home_query(
+                    args.get("action", "list_entities"), domain=args.get("domain", ""),
+                    area=args.get("area", ""), entity_id=args.get("entity_id", ""),
+                ))
             # ADR-035: tools de servers MCP.
             if name.startswith("mcp__") and host._mcp.knows(name):
                 return host._mcp.dispatch(name, args)
@@ -505,6 +510,26 @@ class AgenticExecutor:
                 result = host._run_manipulate_pdf(
                     args["operation"], args["input_path"], args["output_path"],
                     **(args.get("params") or {}),
+                )
+                return host._stringify_tool_result(result)
+            if name == "image_generate":
+                result = host._run_image_generate(
+                    args["prompt"], args["output_path"],
+                    model=args.get("model", "fal-ai/flux/dev"),
+                    aspect_ratio=args.get("aspect_ratio", "landscape"),
+                )
+                return host._stringify_tool_result(result)
+            if name == "video_generate":
+                result = host._run_video_generate(
+                    args["prompt"], args["output_path"],
+                    model=args.get("model", "fal-ai/ltx-2.3-22b/text-to-video"),
+                    aspect_ratio=args.get("aspect_ratio", "16:9"),
+                )
+                return host._stringify_tool_result(result)
+            if name == "smart_home_control":
+                result = host._run_smart_home_control(
+                    args["domain"], args["service"],
+                    entity_id=args.get("entity_id", ""), data=args.get("data"),
                 )
                 return host._stringify_tool_result(result)
             if tool == "editor":

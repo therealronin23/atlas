@@ -54,6 +54,9 @@ class GateFExecutor:
         self._fs_bridge: Any | None = None
         self._claude_code_tool: Any | None = None
         self._stirling_pdf_tool: Any | None = None
+        self._image_gen_tool: Any | None = None
+        self._video_gen_tool: Any | None = None
+        self._home_assistant_tool: Any | None = None
 
     # ------------------------------------------------------------------ tools
     def attach(
@@ -368,6 +371,77 @@ class GateFExecutor:
             "output_path": result.output_path, "success": result.success,
             "bytes_written": result.bytes_written, "error": result.error,
         }
+
+    def get_image_gen_tool(self) -> Any:
+        if self._image_gen_tool is None:
+            from atlas.tools.image_gen_tool import ImageGenTool  # noqa: PLC0415
+
+            self._image_gen_tool = ImageGenTool(
+                fs_bridge=self.get_fs_bridge_tool(), merkle=self._merkle,
+            )
+        return self._image_gen_tool
+
+    def run_image_generate(
+        self, prompt: str, output_path: str, *, model: str = "fal-ai/flux/dev",
+        aspect_ratio: str = "landscape",
+    ) -> dict[str, Any]:
+        result = self.get_image_gen_tool().generate(
+            prompt, output_path, model=model, aspect_ratio=aspect_ratio,
+        )
+        return {
+            "prompt": result.prompt, "model": result.model,
+            "output_path": result.output_path, "success": result.success,
+            "image_url": result.image_url, "bytes_written": result.bytes_written,
+            "error": result.error,
+        }
+
+    def get_video_gen_tool(self) -> Any:
+        if self._video_gen_tool is None:
+            from atlas.tools.video_gen_tool import VideoGenTool  # noqa: PLC0415
+
+            self._video_gen_tool = VideoGenTool(
+                fs_bridge=self.get_fs_bridge_tool(), merkle=self._merkle,
+            )
+        return self._video_gen_tool
+
+    def run_video_generate(
+        self, prompt: str, output_path: str, *,
+        model: str = "fal-ai/ltx-2.3-22b/text-to-video", aspect_ratio: str = "16:9",
+    ) -> dict[str, Any]:
+        result = self.get_video_gen_tool().generate(
+            prompt, output_path, model=model, aspect_ratio=aspect_ratio,
+        )
+        return {
+            "prompt": result.prompt, "model": result.model,
+            "output_path": result.output_path, "success": result.success,
+            "video_url": result.video_url, "bytes_written": result.bytes_written,
+            "error": result.error,
+        }
+
+    def get_home_assistant_tool(self) -> Any:
+        if self._home_assistant_tool is None:
+            from atlas.tools.home_assistant_tool import HomeAssistantTool  # noqa: PLC0415
+
+            self._home_assistant_tool = HomeAssistantTool(merkle=self._merkle)
+        return self._home_assistant_tool
+
+    def run_smart_home_query(
+        self, action: str, *, domain: str = "", area: str = "", entity_id: str = "",
+    ) -> dict[str, Any]:
+        tool = self.get_home_assistant_tool()
+        if action == "get_state":
+            result = tool.get_state(entity_id)
+        else:
+            result = tool.list_entities(domain or None, area or None)
+        return {"action": result.action, "success": result.success, "data": result.data, "error": result.error}
+
+    def run_smart_home_control(
+        self, domain: str, service: str, *, entity_id: str = "", data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        result = self.get_home_assistant_tool().call_service(
+            domain, service, entity_id=entity_id or None, data=data,
+        )
+        return {"action": result.action, "success": result.success, "data": result.data, "error": result.error}
 
     def run_read_external_file(self, path: str) -> dict[str, Any]:
         decision = self.get_fs_bridge_tool().check(path)

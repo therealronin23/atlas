@@ -1524,6 +1524,36 @@ class Orchestrator:
     ) -> dict[str, Any]:
         return self._gate_f_exec.run_manipulate_pdf(operation, input_path, output_path, **params)
 
+    def _run_image_generate(
+        self, prompt: str, output_path: str, *, model: str = "fal-ai/flux/dev",
+        aspect_ratio: str = "landscape",
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_image_generate(
+            prompt, output_path, model=model, aspect_ratio=aspect_ratio,
+        )
+
+    def _run_video_generate(
+        self, prompt: str, output_path: str, *,
+        model: str = "fal-ai/ltx-2.3-22b/text-to-video", aspect_ratio: str = "16:9",
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_video_generate(
+            prompt, output_path, model=model, aspect_ratio=aspect_ratio,
+        )
+
+    def _run_smart_home_query(
+        self, action: str, *, domain: str = "", area: str = "", entity_id: str = "",
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_smart_home_query(
+            action, domain=domain, area=area, entity_id=entity_id,
+        )
+
+    def _run_smart_home_control(
+        self, domain: str, service: str, *, entity_id: str = "", data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_smart_home_control(
+            domain, service, entity_id=entity_id, data=data,
+        )
+
     def _get_editor_tool(self) -> Any:
         return self._gate_f_exec.get_editor_tool()
 

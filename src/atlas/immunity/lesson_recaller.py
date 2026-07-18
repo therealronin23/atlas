@@ -188,10 +188,16 @@ class LessonRecaller:
                 best_id = lesson_id
 
         assert best_id is not None  # _index no vacío → al menos un item
+        matched = best_score >= self._threshold
+        if matched:
+            # Telemetría de USO real (no de cada consulta) — alimenta
+            # LessonStore.apply_lifecycle_transitions (patrón absorbido de
+            # Hermes-Agent curator.py, 2026-07-18).
+            self._store.record_recall(best_id)
         return RecallResult(
             lesson_id=best_id,
             score=best_score,
-            matched=best_score >= self._threshold,
+            matched=matched,
         )
 
     def recall_all(self, attack_text: str, k: int = 5) -> list[RecallResult]:

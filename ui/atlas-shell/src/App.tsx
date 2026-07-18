@@ -4,7 +4,6 @@ import { initialState, reduce } from "./core/event-reducer";
 import type {
   ConnectorSpec,
   GateSpec,
-  GraphNode,
   HealthInfo,
   MemorySummary,
   OsEvent,
@@ -17,7 +16,7 @@ import { MissionConsole } from "./components/MissionConsole";
 import { EventInspector } from "./components/EventInspector";
 import { HarnessPanel } from "./components/HarnessPanel";
 import { ExecutionPipeline } from "./components/ExecutionPipeline";
-import { GraphLegend, LivingGraph } from "./components/LivingGraph";
+import { NebulaGraph, type GraphHealth, type NebulaHandle, type NodePick } from "./components/NebulaGraph";
 import { MemoryVault } from "./components/MemoryVault";
 import { RealityPanel } from "./components/RealityPanel";
 import { Timeline } from "./components/Timeline";
@@ -41,6 +40,16 @@ type View =
 
 const PREFS_KEY = "atlas-os-preferences";
 
+const VIEWS = [
+  "missions", "command", "timeline", "memory", "fabric",
+  "permissions", "security", "personalization", "harness", "autobuild",
+] as const;
+
+function initialView(): View {
+  const q = new URLSearchParams(location.search).get("view");
+  return (VIEWS as readonly string[]).includes(q ?? "") ? (q as View) : "missions";
+}
+
 function loadPrefs(): Preferences {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
@@ -54,7 +63,7 @@ export default function App() {
   const [state, dispatch] = useReducer(reduce, initialState);
   // Mission Console es el centro mental del shell (Foundry v0, ADR-069):
   // se abre en la superficie de decisión, no en el dashboard.
-  const [view, setView] = useState<View>("missions");
+  const [view, setView] = useState<View>(initialView);
   const [connected, setConnected] = useState(false);
   const [prefs, setPrefs] = useState<Preferences>(loadPrefs);
   const [health, setHealth] = useState<HealthInfo | null>(null);
@@ -63,7 +72,12 @@ export default function App() {
   const [connectors, setConnectors] = useState<ConnectorSpec[]>([]);
   const [gates, setGates] = useState<GateSpec[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<OsEvent | null>(null);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [nebulaMode, setNebulaMode] = useState<"command" | "exec" | "memory">("command");
+  const [pickedHub, setPickedHub] = useState<NodePick | null>(null);
+  const [graphHealth, setGraphHealth] = useState<GraphHealth | null>(null);
+  const [lastActivity, setLastActivity] = useState<OsEvent | null>(null);
+  const [showHealth, setShowHealth] = useState(false);
+  const nebulaRef = useRef<NebulaHandle | null>(null);
   const loadedRef = useRef(false);
 
   // Preferencias → efecto real inmediato en el documento + persistencia.
@@ -101,7 +115,13 @@ export default function App() {
   // smoke con preview: el guard dejaba la app permanentemente "sin bridge").
   useEffect(
     () =>
-      connectEventsWs((event) => dispatch({ kind: "event", event }), setConnected),
+      connectEventsWs((event) => {
+        dispatch({ kind: "event", event });
+        // Cada evento REAL del bridge dispara una reacción viva en la nebulosa:
+        // enciende el hub del módulo, lanza tokens por dependencias reales,
+        // pulsa el reactor y suena (synapse/success/error/surface).
+        if (event.visible !== false) nebulaRef.current?.react(event);
+      }, setConnected),
     [],
   );
 
@@ -111,6 +131,11 @@ export default function App() {
     const t = setInterval(() => dispatch({ kind: "decay" }), 1500);
     return () => clearInterval(t);
   }, [prefs.animations]);
+
+  // El modo de la nebulosa (Command/Execution/Memory) morfea el organismo 3D.
+  useEffect(() => {
+    nebulaRef.current?.setMode(nebulaMode);
+  }, [nebulaMode]);
 
   // Refresco perezoso de memoria cuando llegan memory.updated.
   useEffect(() => {
@@ -173,26 +198,96 @@ export default function App() {
             </div>
           )}
           {view === "command" && (
-            <div className="content">
-              <div className="panel" style={{ flex: 2.2, display: "flex" }}>
-                <header>
-                  Living Knowledge Graph
-                  <span className="badge sim">FIXTURE</span>
-                </header>
-                <LivingGraph
-                  graph={state.graph}
-                  onSelect={(n) => {
-                    setSelectedNode(n);
-                    setSelectedEvent(null);
-                  }}
-                />
-                <div style={{ padding: "6px 14px" }}>
-                  <GraphLegend />
-                </div>
+            <div className="cc-stage">
+              {/* La nebulosa 3D real: 4206 ficheros reales del grafo de
+                  dependencias, orbitable y con zoom. Solo se anima cuando
+                  llega un evento REAL del bridge — en reposo no simula
+                  actividad que no existe. */}
+              <NebulaGraph
+                ref={nebulaRef}
+                onPick={setPickedHub}
+                onHealth={setGraphHealth}
+                onActivity={setLastActivity}
+              />
+
+              {/* Estado real explícito: reposo vs última actividad real —
+                  arregla la confusión "veo luces pero Atlas está apagado". */}
+              <div className={`cc-activity ${lastActivity ? "live" : "idle"}`}>
+                <span className="dot" />
+                {lastActivity
+                  ? `actividad real · ${lastActivity.type} · ${lastActivity.summary}`
+                  : "sin actividad real — Atlas en reposo"}
               </div>
-              <div style={{ flex: 1.3, display: "flex", flexDirection: "column", minWidth: 300 }}>
-                <div className="panel" style={{ flex: 1 }}>
-                  <header>Reality / System</header>
+
+              {/* Conmutador de modos — morfea el organismo (superficie efímera). */}
+              <div className="cc-modes">
+                {(
+                  [
+                    ["command", "◈ Command"],
+                    ["exec", "⧗ Execution"],
+                    ["memory", "◇ Memory"],
+                  ] as const
+                ).map(([m, label]) => (
+                  <button
+                    key={m}
+                    className={`cc-mode ${nebulaMode === m ? "on" : ""}`}
+                    onClick={() => setNebulaMode(m)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Botón de salud del grafo — su función PRINCIPAL: verificar
+                  qué está bien conectado y qué no, con datos reales. */}
+              {graphHealth && (
+                <button className="cc-health-btn" onClick={() => setShowHealth((v) => !v)}>
+                  ⬡ {graphHealth.total - graphHealth.orphanCount}/{graphHealth.total} conectados
+                  {graphHealth.orphanCount > 0 && (
+                    <span className="cc-health-warn">{graphHealth.orphanCount} huérfanos</span>
+                  )}
+                </button>
+              )}
+              {showHealth && graphHealth && (
+                <div className="cc-health-panel">
+                  <button className="ci-close" onClick={() => setShowHealth(false)}>
+                    ✕
+                  </button>
+                  <h5>Salud del grafo de dependencias</h5>
+                  <p className="cc-health-stat">
+                    <b>{graphHealth.total}</b> ficheros reales · <b>{graphHealth.edgeCount}</b> dependencias reales
+                  </p>
+                  <p className="cc-health-stat">
+                    <b style={{ color: graphHealth.orphanCount ? "var(--danger)" : "var(--ok)" }}>
+                      {graphHealth.orphanCount}
+                    </b>{" "}
+                    ficheros con 0 conexiones detectadas
+                  </p>
+                  {graphHealth.orphanCount > 0 && (
+                    <ul className="cc-orphan-list">
+                      {graphHealth.orphanFiles.map((o) => (
+                        <li key={o.file}>
+                          <b>{o.label}</b>
+                          <span>{o.file}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <h5>Tipos de relación reales</h5>
+                  <div className="cc-rel-types">
+                    {Object.entries(graphHealth.relTypes).map(([rel, n]) => (
+                      <span key={rel}>
+                        {rel} <b>{n}</b>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Telemetría flotante en cristal — no tapa el organismo. */}
+              <aside className="cc-telemetry">
+                <div className="glass-card">
+                  <h5>Reality · System</h5>
                   <RealityPanel
                     health={health}
                     reality={reality}
@@ -200,14 +295,48 @@ export default function App() {
                     memoryUpdates={state.memoryUpdates}
                   />
                 </div>
-                <div className="panel" style={{ flex: 1 }}>
-                  <header>Execution Pipeline</header>
+                <div className="glass-card">
+                  <h5>Execution Pipeline</h5>
                   <ExecutionPipeline pipelines={state.pipelines} />
                 </div>
-                <div className="panel" style={{ flex: 1.2 }}>
-                  <header>Event / Node Inspector</header>
-                  <EventInspector event={selectedEvent} node={selectedNode} />
+              </aside>
+
+              {/* Inspector del nodo — superficie CONTEXTUAL: aparece al pinchar
+                  un fichero real, con sus conexiones reales (relación real:
+                  uses/calls/imports/inherits...). Sin datos inventados. */}
+              {pickedHub && (
+                <div className="cc-inspector" key={pickedHub.label + pickedHub.file}>
+                  <button className="ci-close" onClick={() => setPickedHub(null)}>
+                    ✕
+                  </button>
+                  <span className="ci-mod" style={{ color: pickedHub.color }}>
+                    {pickedHub.mod.toUpperCase()}
+                  </span>
+                  <h4>{pickedHub.label}</h4>
+                  <p className="ci-file">{pickedHub.file}</p>
+                  {pickedHub.orphan ? (
+                    <p className="ci-orphan">⚠ 0 conexiones reales — nodo huérfano en el grafo</p>
+                  ) : (
+                    <>
+                      <p className="ci-deps">
+                        <b>{pickedHub.deg}</b> conexiones reales
+                      </p>
+                      {pickedHub.connections.length > 0 && (
+                        <ul className="ci-conn-list">
+                          {pickedHub.connections.map((c, i) => (
+                            <li key={i}>
+                              <span className="ci-rel">{c.relation}</span> {c.label}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  )}
                 </div>
+              )}
+
+              <div className="cc-hint">
+                arrastra para orbitar · rueda para acercarte · pincha cualquier nodo
               </div>
             </div>
           )}
@@ -221,10 +350,7 @@ export default function App() {
                 <Timeline
                   events={state.events}
                   prefs={prefs}
-                  onSelect={(e) => {
-                    setSelectedEvent(e);
-                    setSelectedNode(null);
-                  }}
+                  onSelect={setSelectedEvent}
                 />
               </div>
               <div className="panel" style={{ flex: 1 }}>

@@ -12,6 +12,12 @@
       "runtimeExecutable": ".venv/bin/atlas",
       "runtimeArgs": ["os-bridge"],
       "port": 7341
+    },
+    {
+      "name": "coding-bridge",
+      "runtimeExecutable": ".venv/bin/atlas",
+      "runtimeArgs": ["coding-bridge"],
+      "port": 7342
     }
   ]
 }
