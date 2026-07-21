@@ -1,0 +1,167 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+active_phase: DOC-0A
+mode: converge_existing_system_not_greenfield_rewrite
+phases:
+- id: DOC-0A
+  name: RC2 adoption and authority bootstrap
+  depends_on: []
+  exit_criteria:
+  - ADR-072 accepted
+  - canon audit passes
+  - patch validated in isolated worktree
+- id: DOC-0B
+  name: Authority and identity source absorption
+  depends_on:
+  - DOC-0A
+  exit_criteria:
+  - root, synthesis, ADR-067/072, Honest Specs and chat source classified
+- id: DOC-0C
+  name: Architecture and ADR absorption
+  depends_on:
+  - DOC-0B
+  exit_criteria:
+  - all architecture docs and ADRs have atomic claim outcomes
+- id: DOC-0D
+  name: Roadmap, continuation and pack absorption
+  depends_on:
+  - DOC-0C
+  exit_criteria:
+  - historical phase schemes and 565 pack items have semantic outcomes
+- id: DOC-0E
+  name: Product, UX, Osmosis, memory and self-build absorption
+  depends_on:
+  - DOC-0D
+  exit_criteria:
+  - design, OSM, product and knowledge source waves classified
+- id: DOC-0F
+  name: Archive closure and traceability
+  depends_on:
+  - DOC-0E
+  exit_criteria:
+  - every reviewed source has unclassified_claims empty
+  - normal boot no longer needs historical handoffs
+- id: H00
+  name: Current-system anatomy and authority reality map
+  depends_on:
+  - DOC-0F
+  exit_criteria:
+  - all target components and callers mapped from live graph and code
+- id: H01
+  name: Hosted constitution and µCore boundary
+  depends_on:
+  - H00
+  exit_criteria:
+  - µCore boundary ADR accepted
+  - hard mechanisms separated from service semantics
+- id: H02
+  name: Foundation contracts
+  depends_on:
+  - H01
+  exit_criteria:
+  - TaskEnvelope, CapabilityRequest, PolicyDecision, InvocationReceipt and KernelEvent versioned
+- id: H03
+  name: Event and Evidence Plane
+  depends_on:
+  - H02
+  exit_criteria:
+  - EventBus, OsEventStore and transparency evidence correlated without duplicate authority
+- id: H04
+  name: Task and Mission Service
+  depends_on:
+  - H03
+  exit_criteria:
+  - durable task state has one owner
+  - Mission projection converges with task authority
+- id: H05
+  name: Capability and Runtime Fabric
+  depends_on:
+  - H04
+  exit_criteria:
+  - descriptor registry, leases, sandbox and invocation lifecycle have explicit owners
+- id: H06
+  name: Identity, Policy, Gate, Secrets and Osmosis boundaries
+  depends_on:
+  - H05
+  exit_criteria:
+  - legacy evaluator convergence plan complete
+  - secret references and evidence boundaries enforced
+- id: H07
+  name: Model and Resource Service
+  depends_on:
+  - H05
+  exit_criteria:
+  - InferenceHub behind Atlas contracts
+  - budgets and provider health explicit
+- id: H08
+  name: Memory and Knowledge Fabric
+  depends_on:
+  - H03
+  - H07
+  exit_criteria:
+  - ADR-057 use-case authorities preserved
+  - promotion, provenance and graph confidence explicit
+- id: H09
+  name: Research Fabric
+  depends_on:
+  - H08
+  exit_criteria:
+  - research findings cannot silently become capability
+- id: H10
+  name: Domain Intelligence
+  depends_on:
+  - H04
+  - H06
+  - H08
+  exit_criteria:
+  - business and sector applications consume core contracts without owning core state
+- id: H11
+  name: Agent Fabric
+  depends_on:
+  - H04
+  - H05
+  - H07
+  - H09
+  exit_criteria:
+  - agents coordinate through tasks/capabilities and cannot bypass policy
+- id: H12
+  name: Update Service and Hosted Guardian
+  depends_on:
+  - H03
+  - H05
+  - H06
+  - H11
+  exit_criteria:
+  - proposal, validation, canary, promotion and rollback authorities separated
+- id: H13
+  name: Dedicated Linux and Android Surfaces
+  depends_on:
+  - H04
+  - H06
+  - H08
+  - H12
+  exit_criteria:
+  - stack selected by measured prototypes
+  - apps consume stable surface contracts
+- id: H14
+  name: Atlas Hosted 1.0
+  depends_on:
+  - H03
+  - H04
+  - H05
+  - H06
+  - H07
+  - H08
+  - H09
+  - H10
+  - H11
+  - H12
+  - H13
+  exit_criteria:
+  - completeness, recovery, portability, security and operator-use gates pass
+- id: N00
+  name: Atlas Native research gate
+  depends_on:
+  - H14
+  exit_criteria:
+  - operator explicitly opens Native program after Hosted evidence

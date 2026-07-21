@@ -1,0 +1,179 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+rule: Each mutable state has exactly one current authority and one target authority; split authority must be eliminated through
+  an explicit migration phase.
+states:
+- id: STATE-TASK-DURABLE
+  state: durable task lifecycle
+  current_authority: src/atlas/core/orchestrator_parts/task_persistence.py + Orchestrator
+  target_authority: Task Service
+  condition: split_authority
+  migration_phase: H04
+- id: STATE-MISSION
+  state: mission and self-construction route
+  current_authority: src/atlas/missions/golden_route.py + src/atlas/api/missions.py + proposal ledger
+  target_authority: Mission Service / Task Service boundary
+  condition: partially_converged
+  migration_phase: H04
+- id: STATE-POLICY-CAPABILITY
+  state: policy decisions for known capabilities
+  current_authority: src/atlas/fabric/policy.py::PolicyEngine
+  target_authority: Policy Service
+  condition: existing_authority
+  migration_phase: H06
+- id: STATE-POLICY-LEGACY
+  state: legacy action permission decisions
+  current_authority: legacy /permissions/evaluate path in src/atlas/api/server.py
+  target_authority: Policy Service compatibility adapter
+  condition: split_authority
+  migration_phase: H06
+- id: STATE-GATE-TICKET
+  state: human gate ticket lifecycle
+  current_authority: src/atlas/fabric/gates.py::GateEngine
+  target_authority: Gate Service
+  condition: existing_authority
+  migration_phase: H06
+- id: STATE-CAP-DESCRIPTOR
+  state: capability descriptors
+  current_authority: src/atlas/fabric/capabilities.py + src/atlas/security/authorization.py
+  target_authority: Capability Registry
+  condition: split_authority
+  migration_phase: H05
+- id: STATE-CAP-LEASE
+  state: active capability grants or leases
+  current_authority: src/atlas/security/capabilities.py::CapabilityIssuer
+  target_authority: Trunk µCore lease table
+  condition: target_requires_contract
+  migration_phase: H05
+- id: STATE-RUNTIME-INVOCATION
+  state: process and invocation lifecycle
+  current_authority: Orchestrator executors + src/atlas/runtime/service_runner.py + sandbox/executor modules
+  target_authority: Runtime Service
+  condition: split_authority
+  migration_phase: H05
+- id: STATE-PROVIDER-ROUTING
+  state: model/provider routing and health
+  current_authority: src/atlas/core/inference_hub.py::InferenceHub
+  target_authority: Model Service
+  condition: existing_component_target_service
+  migration_phase: H07
+- id: STATE-MCP-CATALOG
+  state: MCP server catalog and adoption state
+  current_authority: src/atlas/mcp/registry.py::McpRegistry and catalog modules
+  target_authority: Capability/Provider Registry adapters
+  condition: existing_authority
+  migration_phase: H05
+- id: STATE-CONNECTOR-CATALOG
+  state: connector descriptors and integrity
+  current_authority: src/atlas/fabric/registry.py::ConnectorRegistry
+  target_authority: Connector Registry
+  condition: existing_authority
+  migration_phase: H05
+- id: STATE-EVENT-CORE
+  state: core in-process event stream
+  current_authority: src/atlas/core/event_bus.py::EventBus
+  target_authority: Event Service input adapter
+  condition: existing_legacy_authority
+  migration_phase: H03
+- id: STATE-EVENT-OS
+  state: durable OS event log and replay
+  current_authority: src/atlas/events/store.py::OsEventStore
+  target_authority: Event Service
+  condition: existing_authority
+  migration_phase: H03
+- id: STATE-EVIDENCE-MERKLE
+  state: append-only audit and transparency evidence
+  current_authority: src/atlas/transparency/*
+  target_authority: Evidence Service
+  condition: existing_authority
+  migration_phase: H03
+- id: STATE-UPDATE-CANDIDATE
+  state: cold-update proposal, validation and application state
+  current_authority: src/atlas/core/cold_update_manager.py::ColdUpdateManager
+  target_authority: Update Service
+  condition: existing_authority
+  migration_phase: H12
+- id: STATE-SELFBUILD-RADAR
+  state: read-only self-build findings and mission projection
+  current_authority: src/atlas/api/missions.py
+  target_authority: Mission projection; non-authoritative cache
+  condition: projection
+  migration_phase: H04
+- id: STATE-MEMORY-RECORD
+  state: record/retrieval memory
+  current_authority: src/atlas/memory/memory_index.py::SqliteMemoryIndex
+  target_authority: Memory Service record class
+  condition: existing_authority
+  migration_phase: H08
+- id: STATE-MEMORY-SEMANTIC-NICHE
+  state: Gate-D pattern/failure/evidence vector index
+  current_authority: src/atlas/memory/vector_store.py::KuzuVectorStore
+  target_authority: Memory Service semantic niche
+  condition: existing_authority
+  migration_phase: H08
+- id: STATE-MEMORY-BLOCK
+  state: always-in-context core blocks
+  current_authority: src/atlas/memory/block_memory.py::BlockMemory
+  target_authority: Memory Service block class
+  condition: existing_authority
+  migration_phase: H08
+- id: STATE-LESSON
+  state: lessons and lifecycle
+  current_authority: src/atlas/core/lesson_store.py::LessonStore + memory lesson index
+  target_authority: Knowledge/Memory Service
+  condition: split_or_underused
+  migration_phase: H08
+- id: STATE-PROJECT-GRAPH
+  state: structural project graph
+  current_authority: src/atlas/memory/project_graph.py and graph tooling
+  target_authority: Structural Graph Service
+  condition: existing_authority
+  migration_phase: H08
+- id: STATE-SEMANTIC-GRAPH
+  state: semantic Graphify/GraphRAG publication
+  current_authority: scripts/run-graphify-quality-pipeline.sh and generated stores
+  target_authority: Knowledge Service hypothesis projection
+  condition: existing_pipeline
+  migration_phase: H08
+- id: STATE-BUSINESS-CORE
+  state: business entities and activation state
+  current_authority: src/atlas/business/core_engine.py
+  target_authority: Business domain service
+  condition: existing_domain_authority
+  migration_phase: H10
+- id: STATE-SECTOR
+  state: sector registry
+  current_authority: src/atlas/business/registries.py::SectorRegistry
+  target_authority: Business domain registry
+  condition: existing_domain_authority
+  migration_phase: H10
+- id: STATE-OBJECTIVE
+  state: objective registry
+  current_authority: src/atlas/business/registries.py::ObjectiveRegistry
+  target_authority: Business domain registry
+  condition: existing_domain_authority
+  migration_phase: H10
+- id: STATE-SECRET-REFERENCE
+  state: credential references and secret resolution
+  current_authority: src/atlas/fabric/auth_broker.py plus environment/runtime conventions
+  target_authority: Secrets Service
+  condition: partial_current_boundary
+  migration_phase: H06
+- id: STATE-REALITY
+  state: live readiness and operational facts
+  current_authority: src/atlas/core/reality.py and CLI reality command
+  target_authority: Reality Service / evidence probes
+  condition: existing_authority
+  migration_phase: H03
+- id: STATE-SURFACE-SESSION
+  state: surface-local view/session state
+  current_authority: each surface implementation
+  target_authority: Surface-local only; never domain authority
+  condition: allowed_local_projection
+  migration_phase: H13
+- id: STATE-CANON
+  state: accepted direction and precedence
+  current_authority: docs/canon after ADR-072 adoption
+  target_authority: Canon Registry
+  condition: candidate
+  migration_phase: DOC-0A

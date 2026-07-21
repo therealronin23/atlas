@@ -3,6 +3,20 @@
 Operational context, not marketing copy. If this conflicts with live evidence,
 live evidence wins.
 
+## CANONICAL PROJECT ENTRYPOINT
+
+After ADR-072 is accepted, `ATLAS.md` and `docs/canon/` govern intended
+direction. This file remains the operating protocol. Reality, tests and the
+fresh structural graph govern present-state claims. Historical handoffs, packs
+and continuation snapshots do not grant authority.
+
+Canonical boot:
+
+1. Read `ATLAS.md` and the affected claims.
+2. Run `python scripts/canon_audit.py --strict`.
+3. Run Reality and query the structural graph.
+4. Read only linked ADR/design/source documents.
+
 ## OPERATING LOOP
 
 Pre-flight, cheap and factual:
@@ -21,6 +35,7 @@ Pre-flight, cheap and factual:
    build -> incremental implementation, bug -> debugging, review -> code review,
    cleanup -> simplification, ADR/doc -> documentation.
 5. Preserve the single authority model:
+   - `ATLAS.md` + `docs/canon/` = intended direction after ADR-072 adoption.
    - `WORK_LEDGER.md` = live WHERE/status and next action only.
    - `docs/design/atlas_ecosystem_map.md` = canonical ecosystem map.
    - Design docs = HOW/detail/checklists.

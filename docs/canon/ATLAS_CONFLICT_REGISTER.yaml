@@ -1,0 +1,235 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+allowed_statuses:
+- resolved
+- resolved_method
+- resolved_target
+- resolved_boundary
+- resolved_with_changes
+- resolved_by_proposed_adr
+- accepted_transition
+- open_migration
+- open_experiment
+- open_evidence
+- deferred
+- deferred_with_guardrail
+- parked
+- resolved_process
+conflicts:
+- id: CON-001
+  scope: identity
+  conflict: runtime local vs cognitive OS vs native OS
+  status: resolved
+  resolution: Atlas is the product; Hosted is current runtime profile; Native is future research.
+  claims:
+  - ATL-IDENTITY-001
+  - ATL-STRATEGY-001
+- id: CON-002
+  scope: authority
+  conflict: distributed constitution under ADR-067 vs one canonical registry
+  status: resolved_by_proposed_adr
+  resolution: ADR-072 supersedes ADR-067 after adoption.
+  claims:
+  - ATL-DOC-001
+- id: CON-003
+  scope: architecture
+  conflict: multiple documents call Event, Governance, Execution and Memory separate kernels
+  status: resolved_target
+  resolution: Retain current modules but classify them as services/adapters under one Trunk model.
+  claims:
+  - ATL-ARCH-001
+  - ATL-ARCH-004
+- id: CON-004
+  scope: task
+  conflict: Orchestrator, TaskPersistence, mission and update ledgers share work-state responsibilities
+  status: open_migration
+  resolution: H04 creates a durable Task/Mission authority boundary.
+  claims:
+  - ATL-TASK-001
+  - ATL-MISSION-001
+- id: CON-005
+  scope: policy
+  conflict: PolicyEngine and legacy action evaluator coexist
+  status: accepted_transition
+  resolution: ADR-062 remains the compatibility plan; H06 completes convergence.
+  claims:
+  - ATL-POLICY-001
+- id: CON-006
+  scope: memory
+  conflict: SQLite, Kuzu and BlockMemory appeared to compete
+  status: resolved_current
+  resolution: ADR-057 makes each canonical by use case; future fabric coordinates without premature fusion.
+  claims:
+  - ATL-ARCH-012
+- id: CON-007
+  scope: ui
+  conflict: web-first final UX vs dedicated apps
+  status: resolved
+  resolution: ADR-071 supersedes ADR-059 for final UX; web remains harness.
+  claims:
+  - ATL-SURFACE-001
+  - ATL-SURFACE-002
+- id: CON-008
+  scope: ui_stack
+  conflict: Flutter vs Compose vs Qt/QML
+  status: open_experiment
+  resolution: Measured prototypes decide; no stack is canonical yet.
+  claims:
+  - ATL-SURFACE-003
+- id: CON-009
+  scope: visual_orchestrator
+  conflict: parked generic visual territory vs self-construction control surface
+  status: resolved_with_changes
+  resolution: ADR-068 reframes it and ADR-069 delivers first slices.
+  claims:
+  - ATL-PRODUCT-002
+- id: CON-010
+  scope: coding_research
+  conflict: generic product territory vs core self-construction surface
+  status: resolved_with_changes
+  resolution: ADR-068/069 make it a Foundry surface, not a business vertical.
+  claims:
+  - ATL-PRODUCT-003
+- id: CON-011
+  scope: business
+  conflict: Product OS pack could make Business Core the architecture center
+  status: resolved
+  resolution: Business remains a domain application over the common core.
+  claims:
+  - ATL-PRODUCT-004
+- id: CON-012
+  scope: osmosis
+  conflict: compliance corpus could redefine all of Atlas
+  status: resolved_boundary
+  resolution: Osmosis is a fabric and possible separate product/standard.
+  claims:
+  - ATL-PRODUCT-005
+- id: CON-013
+  scope: roadmap
+  conflict: multiple historical phase numbering schemes
+  status: resolved_method
+  resolution: Historical IDs remain historical; new roadmap uses DOC/H IDs.
+  claims:
+  - ATL-DOC-005
+- id: CON-014
+  scope: pack_closure
+  conflict: 565 pack items classified as implemented/read/parked was mistaken for semantic absorption
+  status: resolved_method
+  resolution: Implementation and semantic ledgers remain separate.
+  claims:
+  - ATL-DOC-005
+- id: CON-015
+  scope: reality
+  conflict: live code/tests could be mistaken for product direction
+  status: resolved_method
+  resolution: Reality governs current-state facts only.
+  claims:
+  - ATL-DOC-002
+  - ATL-DOC-006
+- id: CON-016
+  scope: document_status
+  conflict: new docs defaulted to vigente and most were never verified
+  status: resolved_tooling
+  resolution: New docs become proposed; unverified vigente debt is reported separately.
+  claims:
+  - ATL-DOC-003
+- id: CON-017
+  scope: selfbuild
+  conflict: proposer, validator and promoter can collapse into one loop
+  status: resolved_invariant
+  resolution: Authorities remain separate and evidence-linked.
+  claims:
+  - ATL-SELFBUILD-001
+  - ATL-SELFBUILD-003
+- id: CON-018
+  scope: provider
+  conflict: InferenceHub and MCP could be mistaken for Atlas core identity
+  status: resolved_boundary
+  resolution: Providers and protocols are replaceable adapters/services.
+  claims:
+  - ATL-ARCH-006
+- id: CON-019
+  scope: graphs
+  conflict: semantic inferred graph vs structural source graph
+  status: resolved
+  resolution: Separate authority and confidence.
+  claims:
+  - ATL-ARCH-011
+- id: CON-020
+  scope: native
+  conflict: seL4/Genode work could enter Hosted roadmap
+  status: resolved
+  resolution: Native is a gated future research program.
+  claims:
+  - ATL-STRATEGY-003
+  - ATL-NATIVE-001
+- id: CON-021
+  scope: secrets
+  conflict: credential references, environment and AuthBroker do not yet form one service
+  status: open_migration
+  resolution: H06 creates explicit Secrets Service boundary.
+  claims:
+  - ATL-SECURITY-002
+- id: CON-022
+  scope: event_evidence
+  conflict: EventBus, OsEventStore and transparency logs are separate
+  status: open_migration
+  resolution: H03 correlates them without flattening record types.
+  claims:
+  - ATL-ARCH-009
+- id: CON-023
+  scope: capabilities
+  conflict: descriptor, authorization enum and issued grants are split
+  status: open_migration
+  resolution: H05 separates descriptor registry from leases and enforcement.
+  claims:
+  - ATL-CAP-001
+- id: CON-024
+  scope: handoffs
+  conflict: old continuation files can re-enter agent boot
+  status: resolved_method
+  resolution: AGENTS and ATLAS are boot sources; handoffs are historical/time-bounded.
+  claims:
+  - ATL-DOC-006
+- id: CON-025
+  scope: title_authority
+  conflict: FINAL/MASTER/BIBLE/CANONICAL filenames imply authority
+  status: resolved_method
+  resolution: Authority is explicit registry state, never a title.
+  claims:
+  - ATL-DOC-003
+- id: CON-026
+  scope: commercial_model
+  conflict: open core vs commercial products
+  status: deferred
+  resolution: Does not block Hosted architecture or DOC-0.
+  claims:
+  - ATL-IDENTITY-002
+- id: CON-027
+  scope: high_risk_autonomy
+  conflict: human gate requirement vs future learned decider
+  status: deferred_with_guardrail
+  resolution: Current Hosted policy remains human-gated until separate evidence-backed ADR.
+  claims:
+  - ATL-POLICY-002
+- id: CON-028
+  scope: liquid_software
+  conflict: product vision vs absent runtime
+  status: parked
+  resolution: Not a Hosted 1.0 completion requirement.
+  claims:
+  - ATL-PRODUCT-006
+- id: CON-029
+  scope: source_completeness
+  conflict: repo snapshot cannot prove external/local-only source completeness
+  status: open_evidence
+  resolution: Coverage registry keeps external and pending families visible.
+  claims:
+  - ATL-DOC-008
+- id: CON-030
+  scope: canon_adoption
+  conflict: RC2 content could appear authoritative merely by being generated
+  status: resolved_process
+  resolution: RC2 remains candidate until ADR-072 is accepted and merged.
+  claims:
+  - ATL-DOC-001

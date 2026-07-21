@@ -1,0 +1,58 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+decisions:
+- id: DEC-001
+  topic: Adopt canonical governance
+  status: ready_for_operator_review
+  decision: Accept ADR-072 and merge RC2 after isolated validation.
+  blocks:
+  - DOC-0.B
+- id: DEC-002
+  topic: Exact µCore lease boundary
+  status: phase_bound
+  decision: null
+  owner_phase: H01/H05
+- id: DEC-003
+  topic: Task Service vs Mission Service split
+  status: phase_bound
+  decision: null
+  owner_phase: H02/H04
+- id: DEC-004
+  topic: Dedicated app stack
+  status: experiment_required
+  decision: null
+  owner_phase: H13
+  candidates:
+  - Flutter
+  - Compose Multiplatform
+  - Qt/QML
+- id: DEC-005
+  topic: Secrets Service implementation
+  status: phase_bound
+  decision: null
+  owner_phase: H06
+- id: DEC-006
+  topic: Osmosis deployment guarantees and optional standalone product
+  status: deferred
+  decision: null
+  owner_phase: H06
+- id: DEC-007
+  topic: Future human-on-loop relaxation
+  status: deferred_with_guardrail
+  decision: No relaxation under current Hosted policy.
+  owner_phase: future ADR
+- id: DEC-008
+  topic: Atlas Native start gate
+  status: parked
+  decision: Do not start before H14 gates pass.
+  owner_phase: N00
+- id: DEC-009
+  topic: Open-source/commercial model
+  status: deferred
+  decision: null
+  owner_phase: product strategy
+- id: DEC-010
+  topic: Full semantic absorption of 929 docs and external sources
+  status: active_program
+  decision: Execute source waves A-F with checkpoint per source.
+  owner_phase: DOC-0.B through DOC-0.F

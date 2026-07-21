@@ -95,7 +95,12 @@ class TestApplyPlan:
         entry = idx.load_index(docs)["docs/decisions/adr/adr_099_nueva.md"]
         assert entry["status"] == "propuesto"  # jamás nace 'vigente'
         # y el índice queda consistente con el árbol:
-        assert idx.validate(docs) == {"missing": [], "orphans": [], "expired": []}
+        assert idx.validate(docs) == {
+            "missing": [],
+            "orphans": [],
+            "expired": [],
+            "unverified": [],
+        }
 
     def test_hold_stays_in_inbox(self, tmp_path: Path) -> None:
         idx, triage = _mods()

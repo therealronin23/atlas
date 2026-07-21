@@ -1,0 +1,236 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+target_base_commit: d01d4b931fd7f02af81a32c63c889d35f574fcab
+allowed_layers:
+- HOSTED_GUARDIAN
+- TRUNK_MICROCORE
+- TRUNK_SYSTEM_SERVICES
+- ATLAS_COGNITION
+- PROVIDERS
+- SURFACES
+- ADAPTER
+components:
+- id: CMP-ORCHESTRATOR
+  name: Orchestrator
+  current_paths:
+  - src/atlas/core/orchestrator.py
+  - src/atlas/core/orchestrator_parts/*
+  target_layer: ATLAS_COGNITION
+  disposition: decompose
+  migration_phase: H04
+  notes: Currently coordinates too many responsibilities; retain cognition/planning and migrate operational ownership.
+- id: CMP-TASK-PERSISTENCE
+  name: TaskPersistence
+  current_paths:
+  - src/atlas/core/orchestrator_parts/task_persistence.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: promote_to_service
+  migration_phase: H04
+  notes: Seed for durable Task Service.
+- id: CMP-INFERENCE-HUB
+  name: InferenceHub
+  current_paths:
+  - src/atlas/core/inference_hub.py
+  target_layer: PROVIDERS
+  disposition: wrap_as_model_service
+  migration_phase: H07
+  notes: Provider routing remains replaceable behind Atlas model contracts.
+- id: CMP-EVENT-BUS
+  name: EventBus
+  current_paths:
+  - src/atlas/core/event_bus.py
+  target_layer: ADAPTER
+  disposition: bridge_then_retire_authority
+  migration_phase: H03
+  notes: In-process legacy event authority.
+- id: CMP-OS-EVENTS
+  name: OsEventStore and event bridge
+  current_paths:
+  - src/atlas/events/*
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: converge
+  migration_phase: H03
+  notes: Durable event/replay plane.
+- id: CMP-TRANSPARENCY
+  name: Transparency and Merkle evidence
+  current_paths:
+  - src/atlas/transparency/*
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: converge
+  migration_phase: H03
+  notes: Evidence authority and paper-backed transparency mechanisms.
+- id: CMP-POLICY
+  name: PolicyEngine
+  current_paths:
+  - src/atlas/fabric/policy.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: converge
+  migration_phase: H06
+  notes: Capability policy authority with legacy compatibility path.
+- id: CMP-GATES
+  name: GateEngine
+  current_paths:
+  - src/atlas/fabric/gates.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: promote_to_service
+  migration_phase: H06
+  notes: Auditable human decision ceremonies.
+- id: CMP-CAP-ISSUER
+  name: CapabilityIssuer
+  current_paths:
+  - src/atlas/security/capabilities.py
+  target_layer: TRUNK_MICROCORE
+  disposition: split_descriptor_and_lease
+  migration_phase: H05
+  notes: Current grant mechanism; lease boundary requires explicit contract.
+- id: CMP-MCP-REGISTRY
+  name: McpRegistry and trunk
+  current_paths:
+  - src/atlas/mcp/*
+  target_layer: PROVIDERS
+  disposition: adapter_registry
+  migration_phase: H05
+  notes: MCP is an interoperability/provider surface, not the core.
+- id: CMP-CONNECTORS
+  name: Integration Fabric
+  current_paths:
+  - src/atlas/fabric/*
+  - fixtures/connection_recipes/*
+  - fixtures/connector_packs/*
+  target_layer: PROVIDERS
+  disposition: retain_domain_adapters
+  migration_phase: H05
+  notes: Connector registry, packs, health and auth references.
+- id: CMP-RUNTIME
+  name: Runtime and executors
+  current_paths:
+  - src/atlas/runtime/*
+  - src/atlas/security/executor.py
+  - src/atlas/security/sandbox.py
+  - src/atlas/security/bwrap_jail.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: converge
+  migration_phase: H05
+  notes: Target process/sandbox/cancellation authority.
+- id: CMP-MEMORY-RECORD
+  name: SqliteMemoryIndex
+  current_paths:
+  - src/atlas/memory/memory_index.py
+  - src/atlas/memory/lesson_index.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: retain_use_case_authority
+  migration_phase: H08
+  notes: Canonical record/retrieval memory under ADR-057.
+- id: CMP-MEMORY-KUZU
+  name: KuzuVectorStore
+  current_paths:
+  - src/atlas/memory/vector_store.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: retain_niche_then_measure
+  migration_phase: H08
+  notes: Semantic niche; bridge remains deferred until data threshold.
+- id: CMP-BLOCK-MEMORY
+  name: BlockMemory
+  current_paths:
+  - src/atlas/memory/block_memory.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: retain_use_case_authority
+  migration_phase: H08
+  notes: Always-in-context core memory.
+- id: CMP-PROJECT-GRAPH
+  name: Structural project graph
+  current_paths:
+  - src/atlas/memory/project_graph.py
+  - scripts/code_graph.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: retain_structural_authority
+  migration_phase: H08
+  notes: Facts about current code structure tied to source state.
+- id: CMP-GRAPHIFY
+  name: Semantic knowledge graph pipeline
+  current_paths:
+  - scripts/run-graphify-quality-pipeline.sh
+  - scripts/graphify_semantic_resume.py
+  - scripts/update-knowledge-graph-rag.sh
+  target_layer: PROVIDERS
+  disposition: retain_as_hypothesis_pipeline
+  migration_phase: H08
+  notes: Semantic hypotheses never override structural facts.
+- id: CMP-MISSIONS
+  name: Mission Layer and Golden Route
+  current_paths:
+  - src/atlas/missions/*
+  - src/atlas/api/missions.py
+  - schemas/mission.schema.json
+  - schemas/mission_receipt.schema.json
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: converge_with_task_service
+  migration_phase: H04
+  notes: Current self-construction semantic unit.
+- id: CMP-COLD-UPDATE
+  name: ColdUpdateManager
+  current_paths:
+  - src/atlas/core/cold_update_manager.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: promote_to_update_service
+  migration_phase: H12
+  notes: Candidate/worktree/validation/apply/rollback machinery.
+- id: CMP-REALITY
+  name: Reality kernel
+  current_paths:
+  - src/atlas/core/reality.py
+  - src/atlas/interfaces/cli.py
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: retain_and_expand_probes
+  migration_phase: H03
+  notes: Authority for live readiness facts.
+- id: CMP-API-BRIDGE
+  name: Atlas API bridge
+  current_paths:
+  - src/atlas/api/*
+  target_layer: SURFACES
+  disposition: retain_as_read_projection_and_contract
+  migration_phase: H13
+  notes: Read-oriented bridge; mutation path remains policy/gate constrained.
+- id: CMP-ACP
+  name: ACP server
+  current_paths:
+  - src/atlas/acp/*
+  target_layer: PROVIDERS
+  disposition: retain_protocol_adapter
+  migration_phase: H11
+  notes: External agent interoperability.
+- id: CMP-BUSINESS
+  name: Business Core
+  current_paths:
+  - src/atlas/business/*
+  target_layer: ATLAS_COGNITION
+  disposition: retain_as_domain_application
+  migration_phase: H10
+  notes: Domain territory, not kernel.
+- id: CMP-OSMOSIS
+  name: Osmosis/Membrane implementation and research
+  current_paths:
+  - src/atlas/transparency/*
+  - src/atlas/security/*
+  - docs/membrana/*
+  target_layer: TRUNK_SYSTEM_SERVICES
+  disposition: separate_fabric_boundaries
+  migration_phase: H06
+  notes: Security, compliance and provenance fabric.
+- id: CMP-WEB-HARNESS
+  name: Web validation shell
+  current_paths:
+  - ui/atlas-shell/*
+  target_layer: SURFACES
+  disposition: retain_harness_only
+  migration_phase: H13
+  notes: Explicitly not final UX under ADR-071.
+- id: CMP-DEDICATED-APPS
+  name: Dedicated Linux and Android apps
+  current_paths:
+  - docs/design/ui/research/*
+  target_layer: SURFACES
+  disposition: prototype_then_select_stack
+  migration_phase: H13
+  notes: Target final UX; no accepted implementation stack yet.

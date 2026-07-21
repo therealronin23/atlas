@@ -12,6 +12,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import yaml
+
 
 def _load(name: str):
     repo_root = Path(__file__).resolve().parent.parent
@@ -38,7 +40,24 @@ def _make_docs(tmp_path: Path) -> Path:
     (docs / "membrana" / "OSM-007_privacy.md").write_text("# OSM-007", encoding="utf-8")
     (docs / "design" / "suelto.md").write_text("sin enlaces", encoding="utf-8")
     (docs / "archive" / "viejo.md").write_text("[[tampoco-existe]]", encoding="utf-8")
-    _load("docs_index_audit").write_index(docs)
+    index_module = _load("docs_index_audit")
+    index_module.write_index(docs)
+
+    # RC2 contract: new documents begin as `propuesto`. Promote one isolated
+    # document explicitly so this fixture still exercises the graph's
+    # "vigente without links" orphan rule rather than relying on old defaults.
+    index_path = docs / "INDEX.yaml"
+    payload = yaml.safe_load(index_path.read_text(encoding="utf-8"))
+    entry = next(
+        item for item in payload["entries"]
+        if item["path"] == "docs/design/suelto.md"
+    )
+    entry["status"] = "vigente"
+    entry["verified"] = "2026-07-21"
+    index_path.write_text(
+        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
     return docs
 
 

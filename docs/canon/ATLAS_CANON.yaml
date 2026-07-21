@@ -1,0 +1,104 @@
+canon_version: 1.0.0-rc2
+updated: '2026-07-21'
+target_base_commit: d01d4b931fd7f02af81a32c63c889d35f574fcab
+status: candidate_until_adr_072_is_accepted_and_merged
+active_program: DOC-0 Canon Recovery
+human_entrypoint: ATLAS.md
+operator_identity: human_owner
+machine_sources:
+  claims: docs/canon/ATLAS_CLAIMS.yaml
+  precedence: docs/canon/ATLAS_PRECEDENCE.yaml
+  sources: docs/canon/ATLAS_SOURCE_LEDGER.yaml
+  authority: docs/canon/ATLAS_AUTHORITY_LEDGER.yaml
+  components: docs/canon/ATLAS_COMPONENT_REGISTRY.yaml
+  roadmap: docs/canon/ATLAS_ROADMAP.yaml
+  coverage: docs/canon/ATLAS_COVERAGE.yaml
+accepted_claims:
+- ATL-IDENTITY-001
+- ATL-IDENTITY-002
+- ATL-IDENTITY-003
+- ATL-IDENTITY-004
+- ATL-PURPOSE-001
+- ATL-PURPOSE-002
+- ATL-PURPOSE-003
+- ATL-PURPOSE-004
+- ATL-STRATEGY-001
+- ATL-STRATEGY-002
+- ATL-STRATEGY-003
+- ATL-STRATEGY-004
+- ATL-STRATEGY-005
+- ATL-ARCH-001
+- ATL-ARCH-002
+- ATL-ARCH-004
+- ATL-ARCH-005
+- ATL-ARCH-006
+- ATL-ARCH-007
+- ATL-ARCH-009
+- ATL-ARCH-010
+- ATL-ARCH-011
+- ATL-ARCH-012
+- ATL-ARCH-013
+- ATL-MISSION-001
+- ATL-CAP-001
+- ATL-POLICY-001
+- ATL-POLICY-002
+- ATL-POLICY-003
+- ATL-EVIDENCE-001
+- ATL-EVIDENCE-002
+- ATL-SECURITY-001
+- ATL-SECURITY-002
+- ATL-SECURITY-003
+- ATL-SECURITY-004
+- ATL-SELFBUILD-001
+- ATL-SELFBUILD-002
+- ATL-SELFBUILD-003
+- ATL-DOC-001
+- ATL-DOC-002
+- ATL-DOC-003
+- ATL-DOC-004
+- ATL-DOC-005
+- ATL-DOC-006
+- ATL-DOC-007
+- ATL-DOC-008
+- ATL-PRODUCT-001
+- ATL-PRODUCT-002
+- ATL-PRODUCT-003
+- ATL-PRODUCT-004
+- ATL-PRODUCT-005
+- ATL-SURFACE-001
+- ATL-SURFACE-002
+- ATL-NATIVE-002
+proposed_claims:
+- ATL-ARCH-003
+- ATL-ARCH-008
+- ATL-TASK-001
+- ATL-TASK-002
+- ATL-RUNTIME-001
+- ATL-SURFACE-003
+parked_claims:
+- ATL-PRODUCT-006
+- ATL-NATIVE-001
+identity:
+  product: Atlas
+  active_profile: Atlas Hosted
+  category: sovereign cognitive operating-system product
+  implementation_form: local-first persistent runtime on an existing host operating system
+architecture_layers:
+- HOSTED_GUARDIAN
+- TRUNK_MICROCORE
+- TRUNK_SYSTEM_SERVICES
+- ATLAS_COGNITION
+- PROVIDERS
+- SURFACES
+golden_route:
+- Intent
+- Context
+- Mission_or_Task
+- CapabilityRequest
+- PolicyDecision
+- GateDecision_when_required
+- Execution
+- Evidence_and_Receipt
+- Artifact
+- Memory_and_Evaluation
+boot_rule: Read canon for intended direction; run Reality and query the structural graph for current state.

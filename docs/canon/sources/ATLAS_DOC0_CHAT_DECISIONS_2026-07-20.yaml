@@ -1,0 +1,71 @@
+version: 1.0.0-rc2
+date_range:
+- '2026-07-20'
+- '2026-07-21'
+source_type: operator_conversation_distillation
+raw_conversation_included: false
+purpose: Preserve decisions, constraints, parked ideas and cautions from the DOC-0 architecture conversation without treating
+  assistant recommendations as operator decisions.
+operator_decisions:
+- id: CHAT-D-001
+  statement: Complete Atlas Hosted before beginning Atlas Native.
+  confidence: explicit
+- id: CHAT-D-002
+  statement: Use Linux as the initial reference host for Atlas Hosted.
+  confidence: explicit
+- id: CHAT-D-003
+  statement: Apply hosted microkernel discipline without replacing Linux, Windows or macOS in the current program.
+  confidence: explicit
+- id: CHAT-D-004
+  statement: Separate authority, cognition, execution, persistence, policy, evidence, providers and surfaces.
+  confidence: explicit
+- id: CHAT-D-005
+  statement: Treat Complete Trunk as Trunk µCore plus Trunk System Services.
+  confidence: explicit
+- id: CHAT-D-006
+  statement: Assign one authoritative owner to every mutable state.
+  confidence: explicit
+- id: CHAT-D-007
+  statement: Migrate progressively through observation, contract, adapter, shadow comparison, consumer migration and retirement
+    of old authority; do not perform a total rewrite.
+  confidence: explicit
+- id: CHAT-D-008
+  statement: Recover the project canon before major architectural reconstruction.
+  confidence: explicit
+- id: CHAT-D-009
+  statement: Preserve every relevant idea with provenance and explicit status rather than concatenating all documents into
+    a new monolith.
+  confidence: explicit
+- id: CHAT-D-010
+  statement: Separate intended truth from live operational reality.
+  confidence: explicit
+- id: CHAT-D-011
+  statement: Do not delete or archive a source until its claims have been classified and unclassified_claims is empty.
+  confidence: explicit
+- id: CHAT-D-012
+  statement: Keep Osmosis as a security, compliance and provenance fabric rather than allowing it to redefine all of Atlas.
+  confidence: explicit
+- id: CHAT-D-013
+  statement: Keep Business Core, CRM, ERP and sectors as product/domain applications rather than kernel responsibilities.
+  confidence: explicit
+- id: CHAT-D-014
+  statement: Keep seL4 and Atlas Native as a future research horizon with explicit gates.
+  confidence: explicit
+accepted_method:
+- sources -> atomic claims -> conflicts -> decisions -> canon -> contracts -> roadmap -> tasks -> code -> tests -> evidence
+- new documents default to proposed until classified
+- handoffs, prompts and packs preserve provenance but do not grant authority
+- implementation accounting and semantic absorption are separate
+- canon direction does not override live evidence about current state
+parked_or_preserved_ideas:
+- Living Knowledge Graph
+- Dynamic Workflow Control Surface / Visual Orchestrator lineage
+- Coding + Research Workbench for self-construction
+- Connected Accounts and external conversation import
+- Software Líquido and Post-App UX
+- Atlas Native, seL4 and native compatibility research
+- Osmosis as a possible independent product or standard
+not_operator_decisions:
+- Any assistant-only recommendation that was not explicitly confirmed by the operator
+- A generic Coding+Research product vertical as the first product; the live repository instead records Foundry/self-construction
+  and dedicated apps decisions

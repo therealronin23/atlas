@@ -1,0 +1,193 @@
+document_count: 955
+source_entry_count: 56
+uncovered_count: 0
+uncovered_documents: []
+multiply_classified_count: 50
+multiply_classified_documents:
+  docs/continuation/phase_recovery/CURRENT_CHECKPOINT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/F15_F16_DEPENDENCY_AUDIT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/F15_F16_RECONCILIATION_REPORT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/GRAPH_MEMORY_DOCS_SYNC_AUDIT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/NEXT_AI_INSTRUCTIONS_AFTER_RECOVERY.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PACK_LOCATION_REPORT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PACK_MANIFEST_atlas_fable5_handoff_v1.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PACK_MANIFEST_atlas_os_build_pack_v1.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PACK_MANIFEST_atlas_product_os_liquid_ui_pack_v1.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PHASE_1_14_BACKFILL_PLAN.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PHASE_1_16_COVERAGE_MATRIX.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PHASE_RECOVERY_FINAL_VERDICT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PHASE_SOURCE_INDEX.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/PROMPT_TASK_ASSIMILATION_REPORT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/phase_recovery/backfill/PHASE_5_6_BACKFILL_REPORT.md:
+  - SRC-CONTINUATION
+  - SRC-PHASE-RECOVERY
+  docs/continuation/zip_closure/CANONICAL_WORK_ORDER_AFTER_ZIPS.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/CROSS_ZIP_CONFLICT_TABLE.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/CURRENT_CHECKPOINT.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/FINAL_ZIP_CLOSURE_VERDICT.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/GRAPH_MEMORY_DOC_SYNC_CLOSURE.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/ZIP1_ATLAS_OS_BUILD_PACK_CLOSURE.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/ZIP2_FABLE5_HANDOFF_CLOSURE.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/ZIP3_PRODUCT_OS_LIQUID_UI_CLOSURE.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/ZIP_AUTHORITY_ORDER.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/continuation/zip_closure/ZIP_BACKFILL_REPORT.md:
+  - SRC-CONTINUATION
+  - SRC-ZIP-CLOSURE
+  docs/decisions/adr/adr_057_memory_canonical_by_use_case.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-057
+  docs/decisions/adr/adr_058_atlas_os_event_kernel_bridge.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-058
+  docs/decisions/adr/adr_059_atlas_os_ui_stack_web_first.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-059
+  docs/decisions/adr/adr_062_policy_engine_convergence.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-062
+  docs/decisions/adr/adr_063_gate_engine.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-063
+  docs/decisions/adr/adr_066_visual_orchestrator_and_territories_parked.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-066
+  docs/decisions/adr/adr_067_atlas_constitution_authority.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-067
+  docs/decisions/adr/adr_068_f5_f6_reframed_self_construction_not_verticals.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-068
+  docs/decisions/adr/adr_069_mission_layer_v0_foundry.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-069
+  docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-070
+  docs/decisions/adr/adr_071_dedicated_apps_supersede_web_first_ux.md:
+  - SRC-ADR-ALL
+  - SRC-ADR-071
+  docs/design/atlas_ecosystem_map.md:
+  - SRC-ECOSYSTEM
+  - SRC-DESIGN-REST
+  docs/design/atlas_synthesis_2026-06-26.md:
+  - SRC-SYNTHESIS
+  - SRC-DESIGN-REST
+  docs/design/mission_layer_self_construction_spec.md:
+  - SRC-MISSION-SPEC
+  - SRC-DESIGN-REST
+  docs/design/ui/research/DECISION_STACK_T21.md:
+  - SRC-UI-STACK-T21
+  - SRC-DESIGN-REST
+  docs/design/ui/research/research-flutter.md:
+  - SRC-UI-STACK-T21
+  - SRC-DESIGN-REST
+  docs/design/ui/research/research-kmp-qt-slint.md:
+  - SRC-UI-STACK-T21
+  - SRC-DESIGN-REST
+  docs/design/ui/research/research-tauri-rn.md:
+  - SRC-UI-STACK-T21
+  - SRC-DESIGN-REST
+  docs/design/ui/void_fork_ux_fusion_inventory_2026-07-18.md:
+  - SRC-UI-STACK-T21
+  - SRC-DESIGN-REST
+  docs/outreach/paper/paper_subject_enforced_completeness.bbl:
+  - SRC-PAPER
+  - SRC-OUTREACH
+  docs/outreach/paper/paper_subject_enforced_completeness.bib:
+  - SRC-PAPER
+  - SRC-OUTREACH
+  docs/outreach/paper/paper_subject_enforced_completeness.html:
+  - SRC-PAPER
+  - SRC-OUTREACH
+  docs/outreach/paper/paper_subject_enforced_completeness.md:
+  - SRC-PAPER
+  - SRC-OUTREACH
+  docs/outreach/paper/paper_subject_enforced_completeness.pdf:
+  - SRC-PAPER
+  - SRC-OUTREACH
+  docs/outreach/paper/paper_subject_enforced_completeness.tex:
+  - SRC-PAPER
+  - SRC-OUTREACH
+semantic_absorption_incomplete_count: 35
+semantic_absorption_incomplete_sources:
+- SRC-WORK-LEDGER
+- SRC-MEMORY
+- SRC-ARCHITECTURE
+- SRC-ADR-ALL
+- SRC-GATES
+- SRC-UI-STACK-T21
+- SRC-ECOSYSTEM
+- SRC-DESIGN-REST
+- SRC-CONTINUATION
+- SRC-PACK-1
+- SRC-PACK-2
+- SRC-PACK-3
+- SRC-HANDOFF-GENERATED
+- SRC-MEMBRANE
+- SRC-AUDITS
+- SRC-OPERATIONS
+- SRC-RISKS
+- SRC-KNOWLEDGE
+- SRC-IMPROVEMENT
+- SRC-INBOX
+- SRC-COMPLIANCE
+- SRC-GOVERNANCE
+- SRC-OUTREACH
+- SRC-SKILLS
+- SRC-DEMO
+- SRC-ARCHIVE
+- SRC-BACKLOG
+- SRC-SCHEMAS
+- SRC-CODE
+- SRC-TESTS
+- SRC-CONFIG
+- SRC-EXTERNAL-HONEST-SPECS
+- SRC-EXPERIMENTS
+- SRC-SCRIPT-DOCS
+- SRC-WORKSPACE-LESSONS

@@ -1,0 +1,542 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+items:
+- claim: ATL-IDENTITY-001
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  - SRC-SYNTHESIS
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-IDENTITY-002
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-SYNTHESIS
+  - SRC-PAPER
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-IDENTITY-003
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-IDENTITY-004
+  sources:
+  - SRC-AGENTS
+  - SRC-PACK-1
+  - SRC-SYNTHESIS
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PURPOSE-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  - SRC-PAPER
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PURPOSE-002
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-SYNTHESIS
+  - SRC-PACK-1
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PURPOSE-003
+  sources:
+  - SRC-AGENTS
+  - SRC-MEMBRANE
+  - SRC-CHAT-DOC0
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PURPOSE-004
+  sources:
+  - SRC-ADR-068
+  - SRC-ADR-069
+  - SRC-CHAT-DOC0
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-STRATEGY-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-STRATEGY-002
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-AGENTS
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-STRATEGY-003
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-STRATEGY-004
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-STRATEGY-005
+  sources:
+  - SRC-ADR-068
+  - SRC-ADR-069
+  - SRC-CHAT-DOC0
+  phase: DOC-0B
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ARCHITECTURE
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-002
+  sources:
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-003
+  sources:
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-004
+  sources:
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-005
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-AGENTS
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-006
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-007
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-058
+  - SRC-ADR-071
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-008
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-009
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-058
+  - SRC-PAPER
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-010
+  sources:
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-011
+  sources:
+  - SRC-AGENTS
+  - SRC-ECOSYSTEM
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-012
+  sources:
+  - SRC-ADR-057
+  - SRC-CHAT-DOC0
+  phase: H01
+  components:
+  - CMP-MEMORY-RECORD
+  - CMP-MEMORY-KUZU
+  - CMP-BLOCK-MEMORY
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-ARCH-013
+  sources:
+  - SRC-ADR-071
+  - SRC-CHAT-DOC0
+  phase: H01
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-TASK-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-CODE
+  phase: H04
+  components:
+  - CMP-ORCHESTRATOR
+  - CMP-TASK-PERSISTENCE
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-TASK-002
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  phase: H04
+  components:
+  - CMP-ORCHESTRATOR
+  - CMP-TASK-PERSISTENCE
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-MISSION-001
+  sources:
+  - SRC-ADR-069
+  - SRC-MISSION-SPEC
+  phase: H04
+  components:
+  - CMP-MISSIONS
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-CAP-001
+  sources:
+  - SRC-AGENTS
+  - SRC-CODE
+  - SRC-CHAT-DOC0
+  phase: H05
+  components:
+  - CMP-CAP-ISSUER
+  - CMP-MCP-REGISTRY
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-POLICY-001
+  sources:
+  - SRC-ADR-062
+  phase: H06
+  components:
+  - CMP-POLICY
+  - CMP-GATES
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-POLICY-002
+  sources:
+  - SRC-AGENTS
+  - SRC-ADR-063
+  phase: H06
+  components:
+  - CMP-POLICY
+  - CMP-GATES
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-POLICY-003
+  sources:
+  - SRC-ADR-063
+  phase: H06
+  components:
+  - CMP-POLICY
+  - CMP-GATES
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-RUNTIME-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-CODE
+  phase: H05
+  components:
+  - CMP-RUNTIME
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-EVIDENCE-001
+  sources:
+  - SRC-AGENTS
+  - SRC-PAPER
+  - SRC-ADR-069
+  phase: H03
+  components:
+  - CMP-OS-EVENTS
+  - CMP-TRANSPARENCY
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-EVIDENCE-002
+  sources:
+  - SRC-WORK-LEDGER
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  phase: H03
+  components:
+  - CMP-OS-EVENTS
+  - CMP-TRANSPARENCY
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SECURITY-001
+  sources:
+  - SRC-AGENTS
+  phase: H06
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SECURITY-002
+  sources:
+  - SRC-AGENTS
+  - SRC-CODE
+  - SRC-CHAT-DOC0
+  phase: H06
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SECURITY-003
+  sources:
+  - SRC-AGENTS
+  - SRC-CODE
+  phase: H06
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SECURITY-004
+  sources:
+  - SRC-AGENTS
+  - SRC-MEMBRANE
+  phase: H06
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SELFBUILD-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  phase: H12
+  components:
+  - CMP-MISSIONS
+  - CMP-COLD-UPDATE
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SELFBUILD-002
+  sources:
+  - SRC-ADR-069
+  - SRC-WORK-LEDGER
+  phase: H12
+  components:
+  - CMP-MISSIONS
+  - CMP-COLD-UPDATE
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SELFBUILD-003
+  sources:
+  - SRC-ADR-069
+  - SRC-CHAT-DOC0
+  phase: H12
+  components:
+  - CMP-MISSIONS
+  - CMP-COLD-UPDATE
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-067
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-002
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-003
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-DOC-INDEX
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-004
+  sources:
+  - SRC-CHAT-DOC0
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-005
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ZIP-CLOSURE
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-006
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-007
+  sources:
+  - SRC-CHAT-DOC0
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-DOC-008
+  sources:
+  - SRC-CHAT-DOC0
+  phase: DOC-0A
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PRODUCT-001
+  sources:
+  - SRC-PACK-3
+  - SRC-CHAT-DOC0
+  - SRC-ADR-068
+  phase: H10
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PRODUCT-002
+  sources:
+  - SRC-ADR-066
+  - SRC-ADR-068
+  - SRC-ADR-069
+  phase: H10
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PRODUCT-003
+  sources:
+  - SRC-ADR-066
+  - SRC-ADR-068
+  - SRC-ADR-069
+  phase: H10
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PRODUCT-004
+  sources:
+  - SRC-PACK-3
+  - SRC-CHAT-DOC0
+  - SRC-ADR-068
+  phase: H10
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PRODUCT-005
+  sources:
+  - SRC-MEMBRANE
+  - SRC-PAPER
+  - SRC-CHAT-DOC0
+  phase: H10
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SURFACE-001
+  sources:
+  - SRC-ADR-071
+  phase: H13
+  components:
+  - CMP-WEB-HARNESS
+  - CMP-DEDICATED-APPS
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SURFACE-002
+  sources:
+  - SRC-ADR-059
+  - SRC-ADR-071
+  phase: H13
+  components:
+  - CMP-WEB-HARNESS
+  - CMP-DEDICATED-APPS
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-SURFACE-003
+  sources:
+  - SRC-UI-STACK-T21
+  - SRC-ADR-071
+  phase: H13
+  components:
+  - CMP-WEB-HARNESS
+  - CMP-DEDICATED-APPS
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-PRODUCT-006
+  sources:
+  - SRC-PACK-3
+  - SRC-EXTERNAL-HONEST-SPECS
+  - SRC-CHAT-DOC0
+  phase: H10
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-NATIVE-001
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  phase: N00
+  components: []
+  verification:
+  - scripts/canon_audit.py
+- claim: ATL-NATIVE-002
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  phase: N00
+  components: []
+  verification:
+  - scripts/canon_audit.py

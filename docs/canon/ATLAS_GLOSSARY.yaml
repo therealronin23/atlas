@@ -1,0 +1,77 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+terms:
+- term: Atlas
+  definition: The complete sovereign cognitive operating-system product.
+- term: Atlas Hosted
+  definition: Current profile running as a persistent runtime on an existing host OS.
+- term: Atlas Native
+  definition: Future profile with a more independent native substrate; not the current roadmap.
+- term: Hosted Guardian
+  definition: Proposed non-cognitive supervisor for boot, safe mode, update promotion and rollback.
+- term: Trunk
+  definition: Trunk µCore plus Trunk System Services.
+- term: Trunk µCore
+  definition: Minimal mechanisms and hard enforcement; exact boundary remains a proposed H01 decision.
+- term: Trunk System Services
+  definition: Deterministic services for task, policy, runtime, event/evidence, memory, models, secrets and updates.
+- term: Atlas Cognition
+  definition: Planning, reasoning, research, deliberation and agent coordination that cannot directly own privileged effects.
+- term: Provider
+  definition: Replaceable model, protocol, tool, connector, MCP server or execution backend.
+- term: Surface
+  definition: Dedicated app, harness, CLI or integration that projects state and requests governed actions.
+- term: Mission
+  definition: Semantic unit joining intent, plan, work, validation, gate, decision and receipt for self-construction.
+- term: TaskEnvelope
+  definition: Proposed immutable identity and versioned input envelope for governed work.
+- term: Capability
+  definition: Declared action contract subject to policy and enforcement.
+- term: Capability lease
+  definition: Proposed short-lived grant owned by the µCore or its hard enforcement boundary.
+- term: PolicyDecision
+  definition: Deterministic record authorizing, denying or requiring a gate.
+- term: GateTicket
+  definition: Auditable human decision object with open, approved or rejected lifecycle.
+- term: InvocationReceipt
+  definition: Evidence record describing an attempted or completed invocation and its outcome.
+- term: Reality
+  definition: Fresh operational probes and evidence about what is available now.
+- term: Structural graph
+  definition: Source-derived import/dependency graph treated as factual for its indexed commit.
+- term: Semantic graph
+  definition: Inferred knowledge graph treated as hypotheses with confidence and provenance.
+- term: Canon
+  definition: Accepted intended direction and precedence after ADR adoption.
+- term: Source ledger
+  definition: Registry of documentary and implementation sources with absorption status.
+- term: Semantic absorption
+  definition: Classification of every relevant claim in a source.
+- term: Implementation accounting
+  definition: Whether a source item was implemented, read, copied, parked or superseded; not the same as semantic absorption.
+- term: Foundry
+  definition: Atlas self-construction program built around Mission Layer and Golden Route.
+- term: Dynamic Workflow Control Surface
+  definition: Reframed Visual Orchestrator lineage for observing and governing workflows Atlas already executes.
+- term: Coding + Research Workbench
+  definition: Self-construction surface for repository, diffs, tests, evidence, delegation and research.
+- term: Osmosis
+  definition: Narrative alias for the security, compliance and provenance fabric and research corpus.
+- term: Software Líquido
+  definition: Parked future runtime/UX horizon, not a Hosted 1.0 requirement.
+legacy_terms:
+- term: Event Kernel
+  replacement: Event Service / Event-Evidence Plane
+  status: legacy architecture name
+- term: Execution Kernel
+  replacement: Task, Runtime and Cognition boundaries
+  status: legacy mixed authority
+- term: Governance Kernel
+  replacement: Policy, Gate, Secrets and Evidence services
+  status: legacy mixed authority
+- term: Memory OS
+  replacement: Memory and Knowledge Fabric
+  status: legacy product-layer name
+- term: Visual Orchestrator
+  replacement: Dynamic Workflow Control Surface
+  status: reframed by ADR-068

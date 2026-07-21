@@ -1,0 +1,624 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+target_base_commit: d01d4b931fd7f02af81a32c63c889d35f574fcab
+rule: A source remains visible until every relevant claim is accepted, modified, parked, rejected, superseded or explicitly
+  unresolved.
+allowed_absorption_states:
+- complete
+- partial
+- pending
+sources:
+- id: SRC-CHAT-DOC0
+  kind: operator_decision_input
+  locator:
+  - docs/canon/sources/ATLAS_DOC0_CHAT_DECISIONS_2026-07-20.yaml
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/canon/sources/ATLAS_DOC0_CHAT_DECISIONS_2026-07-20.yaml
+    sha256: 37c83e47c9fb61931f00fd4d9d0b52040082a6fdb0de66a5e57e905aad51f70e
+  notes: Distilled current conversation; raw chat intentionally excluded.
+- id: SRC-ROOT-README
+  kind: entrypoint_legacy
+  locator:
+  - README.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: README.md
+    sha256: 0c3003672e9b9868957b9e4d52906a98228e9379e8a2dc19bfa06ac461bafffa
+  notes: Current root entrypoint is nearly empty and is replaced by this proposal.
+- id: SRC-AGENTS
+  kind: operating_protocol
+  locator:
+  - AGENTS.md
+  - agents.md
+  matched_file_count_at_base: 2
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: AGENTS.md
+    sha256: 43000b14fa57dcf962a63a448609efc54e7d62533d7047252d12a6aeb79cf944
+  - path: agents.md
+    sha256: 0ce9fadf8d06face158364e1b405aca5efc164831cc6297f6bfb05c6eb9921ef
+  notes: Current boot protocol and operating invariants.
+- id: SRC-WORK-LEDGER
+  kind: live_status_history
+  locator:
+  - WORK_LEDGER.md
+  matched_file_count_at_base: 1
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: WORK_LEDGER.md
+    sha256: 432c6071ab253ce64cf719ee59f3a0863dbddd9629bf128c69bb6e3fe34918b0
+  notes: High-value operational evidence; not atomized line by line in RC2.
+- id: SRC-MEMORY
+  kind: lessons_and_preferences
+  locator:
+  - MEMORY.md
+  - feedback-*.md
+  - memory/system_context/**/*
+  matched_file_count_at_base: 7
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: MEMORY.md
+    sha256: 126c1035c08c4e27f5db3ffefa5e94b55a3e55d222018a51f3dd3693d0da1da0
+  notes: Lessons inform proposals but do not directly amend architecture.
+- id: SRC-DOC-INDEX
+  kind: document_inventory
+  locator:
+  - docs/INDEX.yaml
+  - scripts/docs_index_audit.py
+  - tests/test_docs_index_audit.py
+  matched_file_count_at_base: 3
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/INDEX.yaml
+    sha256: d9644f0355cd6c09d346633543cc9cb620fcf2651c911709ed0b660d9d3ac08a
+  - path: scripts/docs_index_audit.py
+    sha256: 71d18b384c1c3f55e11a6e252c1a121377d88e04363e7c90cb63589c30b3ac9e
+  - path: tests/test_docs_index_audit.py
+    sha256: bb4a84c824d17c1fb343bfd2c65f10619d1b859f3a190ab2f89f283d474c3ba4
+  notes: Structural inventory, not semantic authority.
+- id: SRC-ARCHITECTURE
+  kind: architecture_snapshots
+  locator:
+  - docs/architecture/**/*
+  matched_file_count_at_base: 8
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Eight architecture documents; target taxonomy is reconciled but every paragraph remains to be atomized.
+- id: SRC-ADR-ALL
+  kind: accepted_and_historical_decisions
+  locator:
+  - docs/decisions/adr/**/*
+  matched_file_count_at_base: 49
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: 49 ADR files at the target commit; key ADRs are individually represented below.
+- id: SRC-GATES
+  kind: historical_gates
+  locator:
+  - docs/decisions/gates/**/*
+  matched_file_count_at_base: 16
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Sixteen gate documents; phase history and evidence, not current roadmap authority.
+- id: SRC-ADR-057
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_057_memory_canonical_by_use_case.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_057_memory_canonical_by_use_case.md
+    sha256: 98a6dcef560cef6462edc9df4448f69c98406e9c8d6262f208ad547cef68e711
+  notes: Memory authority by use case.
+- id: SRC-ADR-058
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_058_atlas_os_event_kernel_bridge.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_058_atlas_os_event_kernel_bridge.md
+    sha256: dd4e299be793be90ee011fdb25d6b50f2afbc51acf6068ce948e5c073d1f42e1
+  notes: Event bridge and read-only bridge boundary.
+- id: SRC-ADR-059
+  kind: superseded_for_final_ux
+  locator:
+  - docs/decisions/adr/adr_059_atlas_os_ui_stack_web_first.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_059_atlas_os_ui_stack_web_first.md
+    sha256: 5b447c5240f6c8d562b91eff4e3d445d399181fdbbbef646f88c321947c48752
+  notes: Retained for the web harness only after ADR-071.
+- id: SRC-ADR-062
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_062_policy_engine_convergence.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_062_policy_engine_convergence.md
+    sha256: 69cbd29934fdabfe9f8e9489cc3c6cf47526ca8039b4edb6ecba640dcf9a988b
+  notes: Incremental convergence of capability policy and legacy evaluator.
+- id: SRC-ADR-063
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_063_gate_engine.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_063_gate_engine.md
+    sha256: eb27f5284bbbf9140b3f4a3ed3f3ac157d8f93031d37edb51be2cd460bb01af7
+  notes: Human-resolved auditable GateTicket lifecycle.
+- id: SRC-ADR-066
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_066_visual_orchestrator_and_territories_parked.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_066_visual_orchestrator_and_territories_parked.md
+    sha256: 1ae03908f39191956b356f5ea99719ec03f8343b92f93e76174246781c029baf
+  notes: Parking decision retained where not amended.
+- id: SRC-ADR-067
+  kind: accepted_decision_to_supersede
+  locator:
+  - docs/decisions/adr/adr_067_atlas_constitution_authority.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_067_atlas_constitution_authority.md
+    sha256: 2c4749c995a6496aa66619d3f54439bb4ba23783ad7cfb6c80970bb6a1d7362a
+  notes: Distributed constitution model to be superseded by ADR-072.
+- id: SRC-ADR-068
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_068_f5_f6_reframed_self_construction_not_verticals.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_068_f5_f6_reframed_self_construction_not_verticals.md
+    sha256: f04687824dbeaa107c4c008dec717bbd3021dcc0b9342ca8fb2dc83587a9a3c4
+  notes: F5/F6 reframed as self-construction surfaces; first real slices exist.
+- id: SRC-ADR-069
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_069_mission_layer_v0_foundry.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_069_mission_layer_v0_foundry.md
+    sha256: dd08b95043af98f6f03f23f814245b2c3a07f3f4bb0d29b0062de7e9ef8f1ce3
+  notes: Mission Layer and Golden Route form the current self-construction center.
+- id: SRC-ADR-070
+  kind: accepted_decision
+  locator:
+  - docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_070_retire_hermes_rest_adapter.md
+    sha256: dc4eec8cf0170117d3e14ea630c28979f90a7a52717de92cd5955164c3769504
+  notes: Retires legacy Hermes REST adapter.
+- id: SRC-ADR-071
+  kind: accepted_operator_decision
+  locator:
+  - docs/decisions/adr/adr_071_dedicated_apps_supersede_web_first_ux.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/decisions/adr/adr_071_dedicated_apps_supersede_web_first_ux.md
+    sha256: 354b9931cc63ac793b570dff80d4dc76cf68d22799650c03ff8ef6e617fd6fc0
+  notes: Final UX is dedicated Linux and Android applications; web shell remains harness.
+- id: SRC-UI-STACK-T21
+  kind: active_research
+  locator:
+  - docs/design/ui/research/**/*
+  - docs/design/ui/void_fork_ux_fusion_inventory_2026-07-18.md
+  matched_file_count_at_base: 5
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/design/ui/void_fork_ux_fusion_inventory_2026-07-18.md
+    sha256: 6e6f881a158e7a60addd219d861f1b9913835d872c039afd648690b3df41c8f4
+  notes: Three stack prototypes selected; final stack is not decided.
+- id: SRC-ECOSYSTEM
+  kind: ecosystem_catalog
+  locator:
+  - docs/design/atlas_ecosystem_map.md
+  matched_file_count_at_base: 1
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/design/atlas_ecosystem_map.md
+    sha256: 9643361f2a7ff5da332f1c0f41edfe6e2d5555dafc15188dd8d127f6b43764c9
+  notes: Classification and current evidence; not a feature roadmap.
+- id: SRC-SYNTHESIS
+  kind: historical_synthesis
+  locator:
+  - docs/design/atlas_synthesis_2026-06-26.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/design/atlas_synthesis_2026-06-26.md
+    sha256: d8460344d1cfb3661728877992db32d59b19a1b3e51b869d566fa1be57441182
+  notes: Records original purpose and multiple pivots.
+- id: SRC-MISSION-SPEC
+  kind: active_design
+  locator:
+  - docs/design/mission_layer_self_construction_spec.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files:
+  - path: docs/design/mission_layer_self_construction_spec.md
+    sha256: 980a30fbd4349cf47e4e9c3e72ef16cc4b59100b677c65a805149bf3d8c8de70
+  notes: Current self-construction semantic unit and surface requirements.
+- id: SRC-DESIGN-REST
+  kind: design_family
+  locator:
+  - docs/design/**/*
+  matched_file_count_at_base: 37
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Design family excluding individually listed key files.
+- id: SRC-CONTINUATION
+  kind: time_bounded_history
+  locator:
+  - docs/continuation/**/*
+  matched_file_count_at_base: 9
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: 45 files; active boot authority remains AGENTS and WORK_LEDGER.
+- id: SRC-PHASE-RECOVERY
+  kind: historical_reconciliation
+  locator:
+  - docs/continuation/phase_recovery/**/*
+  matched_file_count_at_base: 14
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files: []
+  notes: Reconciles incompatible phase schemes.
+- id: SRC-ZIP-CLOSURE
+  kind: implementation_accounting
+  locator:
+  - docs/continuation/zip_closure/**/*
+  matched_file_count_at_base: 10
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files: []
+  notes: Closes pack accounting, not semantic absorption.
+- id: SRC-PACK-1
+  kind: historical_pack
+  locator:
+  - docs/handoff/atlas_build_pack/**/*
+  matched_file_count_at_base: 1
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/handoff/atlas_build_pack/README.md
+    sha256: f12e0398e07c52cc51ea2215c50cbcbf3b625b7d31f294b9a77487ca3ca86d7d
+  notes: 45 classified source items; semantic atomization remains partial.
+- id: SRC-PACK-2
+  kind: historical_pack
+  locator:
+  - docs/handoff/atlas_fable5_handoff_v1/**/*
+  matched_file_count_at_base: 1
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/handoff/atlas_fable5_handoff_v1/README_USE_THIS_FIRST.md
+    sha256: 308111a9c515698233977e16cc180aaff888ae620dcdd10b5fed9f068d4c88f0
+  notes: 14 classified source items; implementation context.
+- id: SRC-PACK-3
+  kind: historical_pack
+  locator:
+  - docs/handoff/atlas_product_os_liquid_ui_pack_v1/**/*
+  matched_file_count_at_base: 4
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: 506 classified source items; semantic atomization remains incomplete.
+- id: SRC-HANDOFF-GENERATED
+  kind: generated_handoff
+  locator:
+  - docs/handoff/GENERATED/**/*
+  matched_file_count_at_base: 6
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Regenerated continuation snapshot; time-bounded and never canonical.
+- id: SRC-MEMBRANE
+  kind: compliance_research_and_proposals
+  locator:
+  - docs/membrana/**/*
+  matched_file_count_at_base: 13
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: 13 documents; OSM registry and promotion path require full atomization.
+- id: SRC-PAPER
+  kind: research_and_protocol
+  locator:
+  - docs/outreach/paper/**/*
+  matched_file_count_at_base: 9
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files: []
+  notes: Subject-enforced completeness and bilateral transparency.
+- id: SRC-AUDITS
+  kind: evidence
+  locator:
+  - docs/audits/**/*
+  matched_file_count_at_base: 26
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Present-state and historical evidence.
+- id: SRC-OPERATIONS
+  kind: operations
+  locator:
+  - docs/operations/**/*
+  matched_file_count_at_base: 6
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Operational runbooks and evidence.
+- id: SRC-RISKS
+  kind: risk_register
+  locator:
+  - docs/risks/**/*
+  matched_file_count_at_base: 1
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/risks/RISK_REGISTER.md
+    sha256: a24d794898210b7cb99a5bcb24c85d2cbd60fd54992cad97dd0b531e2fa607e8
+  notes: Risk evidence and proposals.
+- id: SRC-KNOWLEDGE
+  kind: knowledge_sources
+  locator:
+  - docs/knowledge/**/*
+  - knowledge-src/**/*
+  matched_file_count_at_base: 8
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: knowledge-src/preferencias
+    sha256: 87e9625c93097b7bc037c3e3f5646a2f0497fa0ddd89bb1ee114c11b48c741d9
+  notes: Knowledge corpus and raw preferences require source-level treatment.
+- id: SRC-IMPROVEMENT
+  kind: improvement_design
+  locator:
+  - docs/improvement/**/*
+  matched_file_count_at_base: 1
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/improvement/IMPROVEMENT_DOCTRINE.md
+    sha256: f00cf7d255e99b29f7c2e7c0182441814c0c0ac02dcbe1da092bb690915a1765
+  notes: Improvement doctrine and candidates.
+- id: SRC-INBOX
+  kind: untriaged_input
+  locator:
+  - docs/inbox/**/*
+  matched_file_count_at_base: 1
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/inbox/graphiti_dissection_2026-07-10.md
+    sha256: f6635334056897797c20c07daecb3f66413c92b92a5448b740864cf2de49e690
+  notes: Inbox is intentionally untriaged.
+- id: SRC-COMPLIANCE
+  kind: compliance_docs
+  locator:
+  - docs/compliance/**/*
+  matched_file_count_at_base: 5
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Compliance documents outside Membrana.
+- id: SRC-GOVERNANCE
+  kind: governance_docs
+  locator:
+  - docs/governance/**/*
+  matched_file_count_at_base: 2
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Governance documentation outside ADRs.
+- id: SRC-OUTREACH
+  kind: outreach_and_publication
+  locator:
+  - docs/outreach/**/*
+  matched_file_count_at_base: 2
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Includes paper and public material.
+- id: SRC-SKILLS
+  kind: agent_workflow_sources
+  locator:
+  - docs/skills/**/*
+  - docs/superpowers/**/*
+  matched_file_count_at_base: 3
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Skills and plans guide work but do not grant architecture authority.
+- id: SRC-DEMO
+  kind: demonstration
+  locator:
+  - docs/demo/**/*
+  matched_file_count_at_base: 2
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Demonstration material.
+- id: SRC-ARCHIVE
+  kind: historical_archive
+  locator:
+  - docs/archive/**/*
+  matched_file_count_at_base: 0
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: 74 files preserved; excluded from normal boot.
+- id: SRC-BACKLOG
+  kind: work_queue
+  locator:
+  - docs/backlog.yaml
+  matched_file_count_at_base: 1
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: docs/backlog.yaml
+    sha256: 23e06382c9a576058a84c7035e4bc51ca2ebb4ad9b6378cea54d7b5433a6bdd5
+  notes: Task source only; may be stale or generated.
+- id: SRC-SCHEMAS
+  kind: runtime_contracts
+  locator:
+  - schemas/**/*
+  matched_file_count_at_base: 29
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Current JSON schemas are implementation contracts, not complete target contracts.
+- id: SRC-CODE
+  kind: live_implementation
+  locator:
+  - src/atlas/**/*
+  matched_file_count_at_base: 3
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Current implementation authority only for present-state facts.
+- id: SRC-TESTS
+  kind: verification_evidence
+  locator:
+  - tests/**/*
+  matched_file_count_at_base: 298
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Current tests verify covered behavior, not architectural completeness.
+- id: SRC-CONFIG
+  kind: runtime_configuration
+  locator:
+  - config/**/*
+  - pyproject.toml
+  matched_file_count_at_base: 3
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files:
+  - path: pyproject.toml
+    sha256: e384692b140631f97eaceee34d6e4f578d6b0efd1e2152da6246aa8c53e27e30
+  notes: Configuration and package/test conventions.
+- id: SRC-EXTERNAL-HONEST-SPECS
+  kind: external_historical_source
+  locator:
+  - external:ATLAS_CORE_SPECIFICATION_v2.docx
+  - external:ATLAS_OS_SPECIFICATION_v2.docx
+  matched_file_count_at_base: 0
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Previously reviewed but not present in target commit; preserved as external provenance.
+- id: SRC-EXPERIMENTS
+  kind: research_experiments
+  locator:
+  - atlas-experiments/README.md
+  matched_file_count_at_base: 1
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Experiment area documentation.
+- id: SRC-SCRIPT-DOCS
+  kind: operational_script_docs
+  locator:
+  - scripts/README.md
+  - scripts/**/*.md
+  matched_file_count_at_base: 4
+  semantic_absorption: partial
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: README and skill docs associated with operational scripts.
+- id: SRC-UI-HARNESS-DOC
+  kind: surface_documentation
+  locator:
+  - ui/atlas-shell/README.md
+  matched_file_count_at_base: 1
+  semantic_absorption: complete
+  unclassified_claims: []
+  resolved_single_files: []
+  notes: Current web harness boundary.
+- id: SRC-WORKSPACE-LESSONS
+  kind: operational_lessons
+  locator:
+  - workspace/lessons/**/*
+  matched_file_count_at_base: 20
+  semantic_absorption: pending
+  unclassified_claims:
+  - PENDING_SOURCE_LEVEL_EXTRACTION
+  resolved_single_files: []
+  notes: Runtime lesson artifacts; evidence/lessons, not direct canon.

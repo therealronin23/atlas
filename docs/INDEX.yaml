@@ -2,11 +2,15 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-17'
+generated: '2026-07-21'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
   status: vigente
+  verified: null
+- path: docs/architecture/ATLAS_HOSTED_REFERENCE_ARCHITECTURE.md
+  type: design
+  status: propuesto
   verified: null
 - path: docs/architecture/CAPABILITY_FABRIC.md
   type: conocimiento
@@ -333,10 +337,6 @@ entries:
   type: historia
   status: historico
   verified: null
-- path: docs/audit_complete_latest.json
-  type: conocimiento
-  status: vigente
-  verified: null
 - path: docs/audits/audit_adr051_052_premortem_2026-06-15.md
   type: evidencia
   status: vigente
@@ -428,6 +428,66 @@ entries:
 - path: docs/backlog.yaml
   type: conocimiento
   status: vigente
+  verified: null
+- path: docs/canon/ATLAS_AUTHORITY_LEDGER.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_CANON.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_CLAIMS.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_COMPONENT_REGISTRY.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_CONFLICT_REGISTER.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_COVERAGE.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_DECISION_QUEUE.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_GLOSSARY.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_INVENTORY_REPORT.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_PRECEDENCE.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_ROADMAP.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_SOURCE_LEDGER.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/ATLAS_TRACEABILITY.yaml
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/README.md
+  type: canon
+  status: propuesto
+  verified: null
+- path: docs/canon/sources/ATLAS_DOC0_CHAT_DECISIONS_2026-07-20.yaml
+  type: canon
+  status: propuesto
   verified: null
 - path: docs/compliance/compliance_gateway_carta.md
   type: compliance
@@ -821,6 +881,16 @@ entries:
   type: decision
   status: vigente
   verified: null
+- path: docs/decisions/adr/adr_071_dedicated_apps_supersede_web_first_ux.md
+  type: decision
+  status: vigente
+  verified: '2026-07-21'
+  notes: Accepted operator decision, ADR-071.
+- path: docs/decisions/adr/adr_072_canonical_governance_and_hosted_convergence.md
+  type: decision
+  status: propuesto
+  verified: '2026-07-21'
+  notes: RC2 candidate; becomes active only after operator acceptance and merge.
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
@@ -1096,6 +1166,26 @@ entries:
 - path: docs/design/ui/references/README.md
   type: design
   status: vigente
+  verified: null
+- path: docs/design/ui/research/DECISION_STACK_T21.md
+  type: design
+  status: propuesto
+  verified: null
+- path: docs/design/ui/research/research-flutter.md
+  type: design
+  status: propuesto
+  verified: null
+- path: docs/design/ui/research/research-kmp-qt-slint.md
+  type: design
+  status: propuesto
+  verified: null
+- path: docs/design/ui/research/research-tauri-rn.md
+  type: design
+  status: propuesto
+  verified: null
+- path: docs/design/ui/void_fork_ux_fusion_inventory_2026-07-18.md
+  type: design
+  status: propuesto
   verified: null
 - path: docs/governance/CAPABILITIES.md
   type: norma
@@ -3492,6 +3582,10 @@ entries:
 - path: docs/risks/RISK_REGISTER.md
   type: conocimiento
   status: vigente
+  verified: null
+- path: docs/roadmap/ATLAS_HOSTED_1_0.md
+  type: plan
+  status: propuesto
   verified: null
 - path: docs/skills/atlas-coding-discipline.md
   type: conocimiento

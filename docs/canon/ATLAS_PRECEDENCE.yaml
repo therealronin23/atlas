@@ -1,0 +1,39 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+adoption_status: candidate
+rules:
+- rank: 1
+  authority: accepted_claims_in_ATLAS_CLAIMS
+  answers: What Atlas must be and must not violate.
+- rank: 2
+  authority: accepted_ADR_that_updates_or_interprets_claims
+  answers: Why a binding technical choice was made.
+- rank: 3
+  authority: runtime_contracts_and_schemas
+  answers: What behavior and data shape current implementations promise.
+- rank: 4
+  authority: code_tests_reality_and_fresh_structural_graph
+  answers: What exists and works now.
+- rank: 5
+  authority: active_roadmap_and_WORK_LEDGER
+  answers: What is active and what happens next.
+- rank: 6
+  authority: active_design_documents
+  answers: How an accepted direction may be implemented.
+- rank: 7
+  authority: audits_risks_and_evidence
+  answers: What was observed, measured or failed.
+- rank: 8
+  authority: proposals_research_and_inbox
+  answers: What may be adopted later.
+- rank: 9
+  authority: handoffs_prompts_packs_and_continuation_snapshots
+  answers: Historical context and provenance.
+- rank: 10
+  authority: archive_and_graveyard
+  answers: What existed historically.
+tie_breakers:
+- Live evidence wins only for present-state assertions, not product identity or future architecture.
+- A newer document does not automatically supersede an older accepted claim or ADR.
+- A filename does not grant authority.
+- Conflicts remain explicit until an operator or accepted ADR resolves them.

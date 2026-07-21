@@ -1,0 +1,42 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+target_base_commit: d01d4b931fd7f02af81a32c63c889d35f574fcab
+baseline:
+  repository_files: 1799
+  docs_files: 929
+  docs_markdown_files: 666
+  docs_index_entries: 885
+  docs_index_statuses:
+    historico: 577
+    vigente: 246
+    propuesto: 62
+  docs_index_missing: 6
+  docs_index_orphans: 1
+  vigente_without_verified: 243
+  adr_files: 49
+  membrane_osm_files: 13
+  handoff_files: 571
+  continuation_files: 45
+  archive_files: 74
+semantic_state:
+  key_sources_fully_absorbed: 21
+  source_entries_partial: 28
+  source_entries_pending: 7
+  full_repository_line_by_line_absorption_complete: false
+  claim_registry_complete_for_known_high_authority_decisions: true
+limitations:
+- The snapshot contains committed HEAD only; external Honest Specs remain external provenance.
+- Semantic absorption of all 929 docs is a DOC-0B through DOC-0F program, not something RC2 falsely claims complete.
+- Runtime callers and live readiness must be refreshed using atlas reality and the structural graph after application.
+post_rc2_inventory:
+  document_count: 955
+  source_entry_count: 56
+  uncovered_document_paths: 0
+  multiply_classified_document_paths: 50
+  note: Overlaps are intentional scoped source families, not uncovered files.
+validation_limits:
+- RC2 documentation tests pass in isolation from repository-wide test fixtures.
+- The full repository test suite was not executable in the build container because the optional kuzu dependency
+  is absent; this is a baseline environment limitation, not an RC2 runtime change.
+- Runtime callers and live readiness must be refreshed with atlas reality and the structural graph in the operator
+  environment.

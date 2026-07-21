@@ -50,6 +50,9 @@ _TYPE_BY_DIR = {
     "superpowers": "design",
     "demo": "difusion",
     "archive": "historia",
+    "architecture": "design",
+    "canon": "canon",
+    "roadmap": "plan",
 }
 
 _DOC_SUFFIXES = {".md", ".yaml", ".yml", ".json", ".txt", ".html", ".bib", ".bbl", ".py"}
@@ -78,16 +81,15 @@ def _infer_type(rel: Path) -> str:
 
 def _infer_status(rel: Path) -> str:
     if not rel.parts:
-        return "vigente"
+        return "propuesto"
     if rel.parts[0] == "archive":
         return "historico"
-    # docs/handoff = packs de sucesión: snapshots congelados (historia), SALVO
-    # el pack vivo GENERATED, que se regenera con `atlas handoff` y lleva su
-    # propio MANIFEST con head_sha (decisión ola bootstrap 2026-07-17: sin
-    # esto ~555 entradas heredaban 'vigente' y caducarían en masa).
+    # docs/handoff = packs de sucesión: snapshots congelados (historia).
+    # GENERATED es el handoff regenerable actual, pero una regeneración no le
+    # concede autoridad por sí misma: entra como propuesta hasta verificación.
     if rel.parts[0] == "handoff" and (len(rel.parts) < 2 or rel.parts[1] != "GENERATED"):
         return "historico"
-    return "vigente"
+    return "propuesto"
 
 
 def scan_tree(docs_dir: Path | None = None) -> list[Path]:
@@ -162,12 +164,14 @@ def validate(docs_dir: Path | None = None, *, today: date | None = None) -> dict
     missing = sorted(tree - set(index))
     orphans = sorted(set(index) - tree)
     expired: list[str] = []
+    unverified: list[str] = []
     for key, entry in index.items():
         if entry.get("status") != "vigente" or key not in tree:
             continue
         verified = entry.get("verified")
         if verified is None:
-            continue  # nunca verificado: señal aparte, no caducidad
+            unverified.append(key)
+            continue
         try:
             vdate = date.fromisoformat(str(verified))
         except ValueError:
@@ -175,13 +179,14 @@ def validate(docs_dir: Path | None = None, *, today: date | None = None) -> dict
             continue
         if (today - vdate).days > VERIFY_MAX_DAYS:
             expired.append(f"{key} (verified {verified}, >{VERIFY_MAX_DAYS}d)")
-    return {"missing": missing, "orphans": orphans, "expired": expired}
+    return {"missing": missing, "orphans": orphans, "expired": expired, "unverified": sorted(unverified)}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true", help="(re)genera el índice")
-    parser.add_argument("--strict", action="store_true", help="exit 1 si hay desviaciones")
+    parser.add_argument("--strict", action="store_true", help="exit 1 si hay faltas, huérfanas o caducadas")
+    parser.add_argument("--require-verified", action="store_true", help="incluye vigentes nunca verificadas como fallo")
     args = parser.parse_args()
 
     if args.write:
@@ -195,6 +200,7 @@ def main() -> int:
         ("missing", "Docs SIN entrada en el índice (clasificar o triage)"),
         ("orphans", "Entradas HUÉRFANAS (doc movido/borrado; actualizar índice)"),
         ("expired", "Vigentes con verificación CADUCADA (re-verificar o degradar)"),
+        ("unverified", "Vigentes NUNCA verificadas (deuda visible; --require-verified para fallar)"),
     ):
         items = report[section]
         print(f"\n## {title}")
@@ -203,8 +209,10 @@ def main() -> int:
                 print(f"  - {item}")
         else:
             print("  ✓ ninguna")
-    dirty = any(report.values())
-    return 1 if (args.strict and dirty) else 0
+    blocking = any(report[key] for key in ("missing", "orphans", "expired"))
+    if args.require_verified and report["unverified"]:
+        blocking = True
+    return 1 if (args.strict and blocking) else 0
 
 
 if __name__ == "__main__":

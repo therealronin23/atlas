@@ -1,0 +1,672 @@
+version: 1.0.0-rc2
+updated: '2026-07-21'
+target_base_commit: d01d4b931fd7f02af81a32c63c889d35f574fcab
+adoption_status: candidate_until_adr_072_is_accepted_and_merged
+allowed_statuses:
+- accepted
+- accepted_with_changes
+- proposed
+- parked
+- rejected
+- superseded
+- historical
+- unresolved
+claims:
+- id: ATL-IDENTITY-001
+  status: accepted
+  type: definition
+  statement: Atlas is a sovereign cognitive operating-system product; Atlas Hosted is the current implementation profile running
+    on an existing host OS.
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  - SRC-SYNTHESIS
+  decision_basis: operator_decision_plus_live_identity
+  implications: []
+  conflicts_with: []
+- id: ATL-IDENTITY-002
+  status: accepted
+  type: principle
+  statement: Atlas is governed for the user and preserves user control over data, memory, providers, capabilities and evidence.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-SYNTHESIS
+  - SRC-PAPER
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-IDENTITY-003
+  status: accepted_with_changes
+  type: principle
+  statement: Atlas is local-first, not necessarily local-only; sovereignty means explicit control, portability, policy and
+    graceful provider replacement.
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-IDENTITY-004
+  status: accepted
+  type: non_goal
+  statement: Atlas is not merely a chatbot, dashboard, IDE wrapper, model router or framework integration.
+  sources:
+  - SRC-AGENTS
+  - SRC-PACK-1
+  - SRC-SYNTHESIS
+  decision_basis: existing_vision
+  implications: []
+  conflicts_with: []
+- id: ATL-PURPOSE-001
+  status: accepted
+  type: objective
+  statement: Atlas transforms user intent and context into governed, reversible and auditable work.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  - SRC-PAPER
+  decision_basis: operator_decision_plus_existing_route
+  implications: []
+  conflicts_with: []
+- id: ATL-PURPOSE-002
+  status: accepted
+  type: objective
+  statement: Atlas preserves operational continuity so relevant context, decisions, memory, artifacts and evidence survive
+    sessions and provider changes.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-SYNTHESIS
+  - SRC-PACK-1
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-PURPOSE-003
+  status: accepted
+  type: objective
+  statement: External knowledge becomes maintained capability only through verification, testing, maintenance review and explicit
+    sanction.
+  sources:
+  - SRC-AGENTS
+  - SRC-MEMBRANE
+  - SRC-CHAT-DOC0
+  decision_basis: existing_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-PURPOSE-004
+  status: accepted
+  type: objective
+  statement: Atlas must progressively improve its ability to inspect, build, validate and safely evolve itself.
+  sources:
+  - SRC-ADR-068
+  - SRC-ADR-069
+  - SRC-CHAT-DOC0
+  decision_basis: accepted_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-STRATEGY-001
+  status: accepted
+  type: decision
+  statement: Atlas Hosted 1.0 precedes Atlas Native.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-STRATEGY-002
+  status: accepted
+  type: decision
+  statement: Linux is the initial reference host for Atlas Hosted.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-AGENTS
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-STRATEGY-003
+  status: accepted
+  type: decision
+  statement: seL4, Genode, NT compatibility, driver mesh and native WASM capsules are a separate future research program.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-STRATEGY-004
+  status: accepted
+  type: principle
+  statement: Atlas evolves by progressive migration and selective assimilation, not a total rewrite or external-system clone.
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision_plus_operating_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-STRATEGY-005
+  status: accepted_with_changes
+  type: decision
+  statement: Foundry and the Mission/Golden Route are the first end-to-end validation path for the Hosted core; broad business-sector
+    expansion does not lead the architecture.
+  sources:
+  - SRC-ADR-068
+  - SRC-ADR-069
+  - SRC-CHAT-DOC0
+  decision_basis: accepted_adr_reconciled_with_chat
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-001
+  status: accepted
+  type: decision
+  statement: Atlas Hosted uses hosted microkernel discipline and separates Guardian, Trunk µCore, Trunk System Services, Cognition,
+    Providers and Surfaces.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ARCHITECTURE
+  decision_basis: operator_decision_target_architecture
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-002
+  status: accepted
+  type: definition
+  statement: Complete Trunk means Trunk µCore plus Trunk System Services.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-003
+  status: proposed
+  type: invariant
+  statement: Trunk µCore should own only technical identities, handles, channels, capability leases, hard budgets, deadlines,
+    cancellation and mandatory event emission.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: target_boundary_requires_H01_validation
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-004
+  status: accepted
+  type: decision
+  statement: Deterministic operational semantics belong in System Services outside the µCore.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-005
+  status: accepted
+  type: invariant
+  statement: Atlas Cognition cannot perform privileged external effects directly.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-AGENTS
+  decision_basis: operator_decision_plus_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-006
+  status: accepted
+  type: invariant
+  statement: Providers, protocols and frameworks are replaceable and untrusted by default.
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  decision_basis: operating_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-007
+  status: accepted
+  type: invariant
+  statement: Surfaces request actions and project state but do not own operational truth.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-058
+  - SRC-ADR-071
+  decision_basis: operator_decision_reconciled_with_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-008
+  status: proposed
+  type: invariant
+  statement: Hosted Guardian is non-cognitive and should own boot supervision, safe mode, update promotion and rollback.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  decision_basis: target_boundary_requires_H12_validation
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-009
+  status: accepted_with_changes
+  type: decision
+  statement: Events, decisions, invocations, artifacts and receipts form one correlated evidence plane while retaining distinct
+    record types and owners.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-058
+  - SRC-PAPER
+  decision_basis: operator_decision_reconciled_with_existing_event_store
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-010
+  status: accepted
+  type: invariant
+  statement: Exactly one authoritative owner exists for every mutable state; projections and caches declare themselves non-authoritative.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-011
+  status: accepted
+  type: decision
+  statement: Structural graphs, semantic graphs and evidence graphs have separate authority and confidence semantics.
+  sources:
+  - SRC-AGENTS
+  - SRC-ECOSYSTEM
+  - SRC-CHAT-DOC0
+  decision_basis: existing_operating_rule
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-012
+  status: accepted_with_changes
+  type: decision
+  statement: Memory remains canonical by use case under ADR-057 now and may converge into a coordinated fabric without erasing
+    those use-case boundaries.
+  sources:
+  - SRC-ADR-057
+  - SRC-CHAT-DOC0
+  decision_basis: accepted_adr_plus_target_direction
+  implications: []
+  conflicts_with: []
+- id: ATL-ARCH-013
+  status: accepted
+  type: decision
+  statement: The Hosted core exposes contracts usable by multiple dedicated surfaces without allowing a surface stack to redefine
+    domain authority.
+  sources:
+  - SRC-ADR-071
+  - SRC-CHAT-DOC0
+  decision_basis: accepted_operator_ux_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-TASK-001
+  status: proposed
+  type: authority
+  statement: A dedicated Task Service should become the sole authority for durable task state and transitions; current ownership
+    is split across Orchestrator, TaskPersistence and mission/update ledgers.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-CODE
+  decision_basis: target_convergence
+  implications: []
+  conflicts_with: []
+- id: ATL-TASK-002
+  status: proposed
+  type: contract
+  statement: Every governed unit of work should have an immutable TaskEnvelope identity with versioned inputs and explicit
+    parentage.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  decision_basis: target_contract
+  implications: []
+  conflicts_with: []
+- id: ATL-MISSION-001
+  status: accepted
+  type: definition
+  statement: Mission is the semantic unit that connects intent, plan, proposal, worktree, tests, risk, gate, decision, apply/park
+    outcome and receipt for self-construction.
+  sources:
+  - SRC-ADR-069
+  - SRC-MISSION-SPEC
+  decision_basis: accepted_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-CAP-001
+  status: accepted_with_changes
+  type: authority
+  statement: Current capability descriptors and issuers remain authoritative for their existing scopes; target convergence
+    separates descriptor registry from short-lived capability leases.
+  sources:
+  - SRC-AGENTS
+  - SRC-CODE
+  - SRC-CHAT-DOC0
+  decision_basis: current_fact_plus_target_proposal
+  implications: []
+  conflicts_with: []
+- id: ATL-POLICY-001
+  status: accepted_with_changes
+  type: authority
+  statement: PolicyEngine is authoritative for known capabilities while the legacy action evaluator remains a compatibility
+    authority until all legacy actions are mapped.
+  sources:
+  - SRC-ADR-062
+  decision_basis: accepted_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-POLICY-002
+  status: accepted
+  type: invariant
+  statement: High-sensitivity effects require explicit human approval or denial under the current Hosted policy.
+  sources:
+  - SRC-AGENTS
+  - SRC-ADR-063
+  decision_basis: existing_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-POLICY-003
+  status: accepted
+  type: invariant
+  statement: GateTicket resolution is a human decision ceremony with an auditable open-to-approved-or-rejected lifecycle.
+  sources:
+  - SRC-ADR-063
+  decision_basis: accepted_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-RUNTIME-001
+  status: proposed
+  type: authority
+  statement: A Runtime Service should own process, sandbox, timeout, cancellation and invocation lifecycle state instead of
+    allowing cognition or surfaces to own it.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-CODE
+  decision_basis: target_convergence
+  implications: []
+  conflicts_with: []
+- id: ATL-EVIDENCE-001
+  status: accepted
+  type: invariant
+  statement: Every privileged or external mutation produces Merkle-linked evidence that identifies task or mission, policy
+    decision, provider, invocation and artifacts where applicable.
+  sources:
+  - SRC-AGENTS
+  - SRC-PAPER
+  - SRC-ADR-069
+  decision_basis: existing_invariant_plus_target_completeness
+  implications: []
+  conflicts_with: []
+- id: ATL-EVIDENCE-002
+  status: accepted
+  type: principle
+  statement: Designed, simulated, implemented, unit-tested, wired, activated and live-verified are distinct states.
+  sources:
+  - SRC-WORK-LEDGER
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  decision_basis: operational_lesson
+  implications: []
+  conflicts_with: []
+- id: ATL-SECURITY-001
+  status: accepted
+  type: invariant
+  statement: config/governance.json is immutable to agents and runtime instructions.
+  sources:
+  - SRC-AGENTS
+  decision_basis: existing_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-SECURITY-002
+  status: accepted_with_changes
+  type: invariant
+  statement: Secrets remain references or dedicated secure state and never become cognitive memory, prompt content, evidence
+    payload or provider-catalog data.
+  sources:
+  - SRC-AGENTS
+  - SRC-CODE
+  - SRC-CHAT-DOC0
+  decision_basis: existing_practice_plus_target_boundary
+  implications: []
+  conflicts_with: []
+- id: ATL-SECURITY-003
+  status: accepted
+  type: invariant
+  statement: Sandboxed execution fails closed when the required isolation mechanism is unavailable.
+  sources:
+  - SRC-AGENTS
+  - SRC-CODE
+  decision_basis: existing_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-SECURITY-004
+  status: accepted
+  type: invariant
+  statement: External MCP servers, tools, skills, prompts and repositories are untrusted and require explicit adoption, consent
+    where relevant and reversible integration.
+  sources:
+  - SRC-AGENTS
+  - SRC-MEMBRANE
+  decision_basis: existing_invariant
+  implications: []
+  conflicts_with: []
+- id: ATL-SELFBUILD-001
+  status: accepted
+  type: invariant
+  statement: A self-build proposer cannot be the sole validator or promoter of its own candidate.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-069
+  decision_basis: operator_decision_plus_existing_route
+  implications: []
+  conflicts_with: []
+- id: ATL-SELFBUILD-002
+  status: accepted
+  type: contract
+  statement: Self-build candidates use isolated worktrees or equivalent disposable environments and produce reproducible validation
+    evidence.
+  sources:
+  - SRC-ADR-069
+  - SRC-WORK-LEDGER
+  decision_basis: existing_route
+  implications: []
+  conflicts_with: []
+- id: ATL-SELFBUILD-003
+  status: accepted
+  type: invariant
+  statement: Update promotion requires validated candidate evidence, appropriate policy/gate approval and rollback metadata.
+  sources:
+  - SRC-ADR-069
+  - SRC-CHAT-DOC0
+  decision_basis: existing_route_plus_operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-001
+  status: accepted
+  type: authority
+  statement: Atlas has one human entrypoint and one machine-readable canonical registry while remaining modular.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ADR-067
+  decision_basis: operator_decision_supersedes_distributed_model
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-002
+  status: accepted
+  type: principle
+  statement: Canonical direction and live operational state are separate classes of truth.
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-003
+  status: accepted
+  type: invariant
+  statement: New documents default to proposed until explicitly classified; filenames such as FINAL, MASTER, BIBLE or CANONICAL
+    do not grant authority.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-DOC-INDEX
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-004
+  status: accepted
+  type: principle
+  statement: Historical sources are consolidated through atomic claims with provenance, not concatenated into another master
+    document.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-005
+  status: accepted
+  type: invariant
+  statement: Implementation accounting and semantic absorption are separate ledgers.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-ZIP-CLOSURE
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-006
+  status: accepted
+  type: precedence
+  statement: Accepted canon claims outrank roadmaps, designs, handoffs, prompts and filenames; live evidence outranks documentation
+    only for present-state assertions.
+  sources:
+  - SRC-AGENTS
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-007
+  status: accepted
+  type: process
+  statement: Architectural changes link claim, ADR or approved exception, component, tests and evidence in the same change.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-DOC-008
+  status: accepted
+  type: process
+  statement: A source cannot be retired as absorbed while it retains unclassified claims.
+  sources:
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-PRODUCT-001
+  status: accepted_with_changes
+  type: boundary
+  statement: Coding, Research, Personal Operations, Business, Compliance, Security and Connected Accounts are territories
+    or surfaces over the common Hosted core.
+  sources:
+  - SRC-PACK-3
+  - SRC-CHAT-DOC0
+  - SRC-ADR-068
+  decision_basis: reconciled_product_boundary
+  implications: []
+  conflicts_with: []
+- id: ATL-PRODUCT-002
+  status: accepted_with_changes
+  type: boundary
+  statement: The former Visual Orchestrator is reframed as a Dynamic Workflow Control Surface for workflows Atlas already
+    executes; it is partially sliced but not complete.
+  sources:
+  - SRC-ADR-066
+  - SRC-ADR-068
+  - SRC-ADR-069
+  decision_basis: accepted_adr_sequence
+  implications: []
+  conflicts_with: []
+- id: ATL-PRODUCT-003
+  status: accepted_with_changes
+  type: boundary
+  statement: Coding + Research Workbench is a self-construction surface, not a generic business vertical; substantial scope
+    remains to be specified and built.
+  sources:
+  - SRC-ADR-066
+  - SRC-ADR-068
+  - SRC-ADR-069
+  decision_basis: accepted_adr_sequence
+  implications: []
+  conflicts_with: []
+- id: ATL-PRODUCT-004
+  status: accepted
+  type: boundary
+  statement: Business Core, CRM, ERP and sector packs are domain applications, not kernel or µCore responsibilities.
+  sources:
+  - SRC-PACK-3
+  - SRC-CHAT-DOC0
+  - SRC-ADR-068
+  decision_basis: operator_decision_reconciled_with_existing_product
+  implications: []
+  conflicts_with: []
+- id: ATL-PRODUCT-005
+  status: accepted_with_changes
+  type: boundary
+  statement: Osmosis is a Security, Compliance and Provenance Fabric and may separately become a product or standard.
+  sources:
+  - SRC-MEMBRANE
+  - SRC-PAPER
+  - SRC-CHAT-DOC0
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-SURFACE-001
+  status: accepted
+  type: decision
+  statement: The final Atlas UX uses dedicated applications, with Linux desktop and Android as minimum first-class platforms.
+  sources:
+  - SRC-ADR-071
+  decision_basis: accepted_operator_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-SURFACE-002
+  status: accepted
+  type: boundary
+  statement: ui/atlas-shell remains a backend validation harness and is not the final product UX.
+  sources:
+  - SRC-ADR-059
+  - SRC-ADR-071
+  decision_basis: accepted_adr
+  implications: []
+  conflicts_with: []
+- id: ATL-SURFACE-003
+  status: proposed
+  type: experiment
+  statement: Flutter, Compose Multiplatform and Qt/QML remain prototype candidates; the final stack is selected only after
+    measured prototypes on the operator hardware.
+  sources:
+  - SRC-UI-STACK-T21
+  - SRC-ADR-071
+  decision_basis: active_research_not_final_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-PRODUCT-006
+  status: parked
+  type: horizon
+  statement: Software Líquido and Post-App UX remain future runtime and experience horizons, not Hosted 1.0 completion requirements.
+  sources:
+  - SRC-PACK-3
+  - SRC-EXTERNAL-HONEST-SPECS
+  - SRC-CHAT-DOC0
+  decision_basis: parked_horizon
+  implications: []
+  conflicts_with: []
+- id: ATL-NATIVE-001
+  status: parked
+  type: horizon
+  statement: Atlas Native begins only after Hosted 1.0 passes explicit completeness, stability, recovery, portability and
+    security gates.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  decision_basis: operator_decision
+  implications: []
+  conflicts_with: []
+- id: ATL-NATIVE-002
+  status: accepted
+  type: invariant
+  statement: Running Atlas components on seL4 would not by itself make Atlas formally verified.
+  sources:
+  - SRC-CHAT-DOC0
+  - SRC-EXTERNAL-HONEST-SPECS
+  decision_basis: technical_invariant
+  implications: []
+  conflicts_with: []
