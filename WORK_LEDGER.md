@@ -8,6 +8,68 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **Sesión post-MAXIMUS — los 3 frentes de Cycle 14 EJECUTADOS en paralelo
+  (2026-07-22 23:20)** — el operador pidió correr F2.6/Taxonomía/T0.5b-paso3
+  a la vez, auditando (autobuild), con trabajo pesado en subagentes de fondo
+  para no reventar la ventana de contexto. Los tres, cerrados:
+  - **F2.6 (código real, vía `/autobuild`, 4 tareas T1-T4 en orden estricto,
+    verificado por mí antes de cada avance, nunca solo confiando en el
+    subagente)**: `atlas f26 run` construido — lee la rúbrica del propio doc
+    PENDIENTE en runtime (fail-closed si el doc cambia de forma), dispara
+    `claude -p --model sonnet --output-format stream-json --verbose`
+    (dispatcher sustituible), guarda transcript JSONL. Grading estructurado
+    nuevo (`f26_grading.py`): los 6 ítems evaluados por separado, 3
+    deterministas sobre la secuencia real de `tool_use` (grafo-antes-que-grep,
+    GoldenRoute-antes-que-Edit, sin `git add -A`/push), 3 heurísticos de texto
+    documentados como tal. Auto-registro (`record_f26_run`) cableado dentro de
+    `run_f26`, con regla dura 6/6=pass sin aprobado parcial, y NUNCA se
+    registra si el dispatch falló (probado explícito). Notificación:
+    `f26_gate_notification()` genera title/tldr/prompt listos para
+    `spawn_task`, cableada en `atlas f26 status`/`atlas reality` — respeta que
+    `spawn_task` es una tool intra-sesión-agente (el código nunca la invoca
+    él mismo); propuesta de paso 1b en AGENTS.md dejada en
+    `docs/inbox/2026-07-22-agents-md-f26-notification-proposal.md`, NO
+    aplicada (política: docs raíz los cura el operador). Auditoría final
+    agregada (autobuild-auditor, Opus): **PASS, 0 correcciones**, 71/71 tests,
+    mypy limpio. **Estado real**: la infraestructura está completa y probada;
+    el gate SIGUE `due` porque ejecutar la rúbrica de verdad requiere una
+    sesión `claude -p` con credencial viva — el 401 documentado desde
+    2026-07-17 sigue abierto, no resuelto por esta sesión (requiere
+    `claude setup-token` del operador). Archivos:
+    `src/atlas/core/self_maintenance/{f26_gate.py,f26_grading.py}`,
+    `src/atlas/interfaces/cli.py`, `tests/test_f26_{gate,run,grading}.py`.
+  - **Taxonomía (subagente único, verificación de valor ANTES de clasificar,
+    tal y como pedía el diseño)**: resultado NEGATIVO con evidencia real
+    contra el mapa (no intuición) — de las 51 líneas de tabla de
+    `atlas_ecosystem_map.md`, 14 no son piezas clasificables (otras tablas con
+    esquema propio) y de las 37 reales, `Tramo` es mecánicamente derivable de
+    la columna `Taxonomy` existente; el único contraejemplo real ya está mejor
+    resuelto por `Relationship to Atlas`. Vocabulario árbol
+    (raíz/tronco/rama/hoja/savia) descartado formalmente en
+    `docs/superpowers/specs/2026-07-15-succession-ecosystem-design.md` §5;
+    `atlas_ecosystem_map.md` NO se tocó.
+  - **T0.5b paso 3 (multi-agente: 4 divisiones + 4 auditores rotados + síntesis
+    NO delegada, hecha por mí)**: 708/708 docs clasificados (corpus_inventory
+    regenerado con `--write`, subió de 707 a 708). Auditoría cruzada real: de
+    191 registros revisados, 17 corregidos (8.9%) — incluye 2 falsos "gap" de
+    la División A que ya estaban implementados en código (verificado por
+    grep), evitando que entraran al plan v2. Síntesis en
+    `docs/design/2026-07-22-t05b-paso3-sintesis.md`: 50 gaps reales agrupados
+    en 4 clusters (el mayor, ~29 docs: Osmosis/Compliance Gateway — código +
+    ADRs + papers + outreach real, CERO representación en T0-T6, decisión N3
+    explícita dejada para el operador, no tomada por esta sesión), 43
+    contradicciones (la mayoría ya resueltas o auto-corregidas en el propio
+    corpus — p.ej. ADR-059→071 NO es contradicción activa), lista explícita de
+    "revisado y descartado". Datos crudos permanentes en
+    `docs/knowledge/t05b_paso3/` (antes solo en /tmp, efímero). **Cierre
+    honesto**: la parte mecanizable (clasificación+auditoría) 100% cerrada; la
+    decisión N3 sobre Osmosis queda explícitamente pendiente del operador, con
+    la evidencia ya reunida.
+  - **Próxima acción real**: ninguna urgente. Si el operador quiere avanzar:
+    (a) `claude setup-token` para desbloquear una ejecución REAL de F2.6, (b)
+    decidir la disposición de Osmosis/Compliance Gateway (síntesis T0.5b §1.1/
+    §4), (c) revisar/aplicar la propuesta de AGENTS.md paso 1b. Nada de esto
+    bloquea nada más.
 - **MAXIMUS Cycle 14 — cierre de sesión: F2.6/taxonomía "hecho bien" diseñados
   (no parcheados) + brief T0.5b paso 3 redactado (2026-07-22 21:56)** — el
   operador cerró explícitamente el "vamos al lío" con una instrucción clara:
