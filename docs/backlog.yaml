@@ -800,3 +800,795 @@ items:
     priority: 3
     status: pending
     test_cmd: ["python3", "-m", "pytest", "tests/test_memory_index.py", "-x", "-q"]
+
+  # === T0.5b paso 3 (2026-07-23, sesión maratón) — T1 — Autoconstrucción a pleno pulmón ===
+
+  - id: t1-golden-route-vocabulary
+    title: "Ampliar el vocabulario de GoldenRoute más allá de append-doc (T1.1)"
+    why: >
+      GoldenRoute (src/atlas/missions/golden_route.py, ADR-069) es la ruta pública real
+      de autoconstrucción (request→plan→worktree→diff→aprobación→apply→receipt), pero
+      su propio docstring dice: "v0 es DELIBERADAMENTE acotada: solo cambios
+      documentation-only (append de una línea a un fichero bajo docs/)... Ampliar el
+      vocabulario de peticiones es trabajo futuro explícito." Verificado en código:
+      plan_from_request/UnsupportedRequestError solo reconocen el patrón de apéndice a
+      doc. ColdUpdateManager (el motor que envuelve) ya soporta parches de código
+      arbitrarios — el hueco es de VOCABULARIO/parsing de la petición, no del motor.
+      Es el ítem T1.1 explícito del plan maestro.
+    targets:
+      - "src/atlas/missions/golden_route.py"
+    acceptance: >
+      plan_from_request reconoce al menos un segundo patrón determinista de petición
+      que produce un cambio de código acotado (p.ej. "renombra X a Y en <fichero>" o
+      "añade un test para <función>" con `allowed_paths` restringido al fichero
+      citado) sin usar LLM libre; peticiones fuera del vocabulario siguen rechazándose
+      con UnsupportedRequestError (honestidad, no improvisación); test E2E sobre repo
+      fixture demuestra plan→worktree→diff→aprobación→apply→receipt para el nuevo
+      patrón, igual que el existente para append-doc; suite verde.
+    priority: 2
+    status: pending
+
+  - id: t1-soul-devil-advocate
+    title: "Primera soul ejecutable (devil_advocate) sobre el contrato soul_manifest"
+    why: >
+      schemas/soul_manifest.schema.json existe (ADR-069, Fase A: contrato del catálogo
+      de souls) pero NINGUNA soul se ejecuta todavía — verificado: grep de
+      'devil_advocate'/'SoulManifest' en src/atlas/ no devuelve nada. El propio ADR-069
+      lo dice explícito: "ninguna soul se ejecuta todavía — la primera será
+      devil_advocate". Es el ítem T1.2 explícito del plan maestro: una primera soul
+      real que revise/rete una misión con registro, no solo el contrato vacío.
+    targets:
+      - "src/atlas/missions/"
+      - "schemas/soul_manifest.schema.json"
+    acceptance: >
+      Un manifiesto devil_advocate concreto (system prompt + modelo preferente +
+      tools permitidas=ninguna mutante + schema de salida) que se invoca sobre AL
+      MENOS un punto de la ruta dorada (p.ej. antes de `approve()` en GoldenRoute o
+      sobre una misión con `risk` alto en missions_payload) y registra su veredicto
+      (reto/objeción o sin objeción) en el receipt/Merkle; test de integración
+      demuestra una misión rechazada o marcada con objeción por la soul, con
+      registro verificable; nunca auto-aprueba ni auto-aplica — solo informa al
+      humano (draft-first, invariante D2 intacta).
+    priority: 2
+    status: pending
+
+  - id: t1-radar-missions-draft
+    title: "Radar→misiones: generar misiones propuestas desde hallazgos, no solo señalar propuestas existentes"
+    why: >
+      radar_findings() (src/atlas/api/missions.py) hoy PROYECTA hallazgos (repeated/
+      stale/validation_missing/gate_pending) únicamente sobre proposals YA existentes
+      de ColdUpdateManager — el radar señala, nunca actúa, y nunca crea una misión
+      nueva a partir de un patrón detectado que no sea ya una propuesta abierta (p.ej.
+      un hallazgo de ecosystem_drift, provider_smoke fallido o research_digest con
+      señal accionable). Es el ítem T1.3 explícito: "los hallazgos del radar generan
+      misiones propuestas (draft-first, jamás auto-aprobadas)". Hoy ese lazo no existe
+      — el radar es de solo-lectura sobre datos que ya eran misiones.
+    targets:
+      - "src/atlas/api/missions.py"
+      - "src/atlas/core/self_maintenance/ecosystem_drift.py"
+    acceptance: >
+      Al menos una fuente de hallazgo NO derivada de proposals existentes (p.ej.
+      ecosystem_drift o provider_smoke) puede generar una ColdUpdateProposal en
+      estado draft/pending vía el mismo seam del decisor (nunca auto-aprobada); test
+      demuestra que un hallazgo sintético produce una misión nueva visible en
+      `GET /missions` con `human_action_required=true`; ninguna ruta nueva aplica
+      cambios sin aprobación humana explícita.
+    priority: 2
+    status: pending
+
+  - id: t1-daemon-control-surface
+    title: "Superficie de control operativo del daemon de autoconstrucción (pause/resume/kill-switch)"
+    why: >
+      Hoy el daemon de self-build corre dentro de `atlas serve` (proceso foreground);
+      la única forma de detenerlo es matar el proceso entero (Ctrl+C/kill), lo que
+      también apaga el resto de servicios (dashboard, API, MCP). Verificado: no existe
+      ningún flag/comando 'pause'/'resume'/'kill-switch' para el self-build daemon en
+      scheduler.py ni en cli.py (grep sin resultados). El brief de investigación
+      (docs/knowledge/research_atlas_foundry_v0_2026-07-15.md, hueco #4 de 8) lo nombra
+      explícito: "el daemon autónomo necesita superficie de control (registry, runs,
+      owner, scope, kill switch, pause/resume)". Sin esto, un operador que quiera
+      detener SOLO la autoconstrucción durante una sesión de desarrollo no puede
+      hacerlo sin apagar todo `atlas serve`.
+    targets:
+      - "src/atlas/core/self_maintenance/scheduler.py"
+      - "src/atlas/interfaces/cli.py"
+    acceptance: >
+      Mecanismo de pausa (archivo de estado o flag en memoria, p.ej.
+      `atlas selfbuild pause|resume|status`) que el tick del self-build daemon respeta
+      (no consume el siguiente item del backlog mientras está en pausa) SIN afectar
+      dashboard/API/MCP; test demuestra que con pause activo el tick es no-op y con
+      resume vuelve a procesar; el estado de pausa es visible (`atlas reality` o
+      comando dedicado); no requiere matar el proceso.
+    priority: 2
+    status: pending
+
+  - id: t1-plugin-contribution-consumers
+    title: "Wire prompt/rule/command de plugins activados a un consumidor real (hoy solo skill tiene uno)"
+    why: >
+      PluginManifest v1 (ADR-073, docs/design/plugin_manifest_v1.md) admite 4 tipos de
+      contribución: skill, prompt, rule, command. Verificado en el propio doc (2026-07-22,
+      última actualización): "`prompt`/`rule`/`command` se siguen aplicando
+      mecánicamente sin que nada los lea — sin consumidor propio todavía, honesto." Solo
+      `skill` tiene consumidor real (SkillStore vía `plugins_active_root`). Un plugin
+      activado con una `rule` o un `command` hoy se materializa como symlink pero NINGÚN
+      componente de Atlas lo lee ni lo aplica — capacidad sin cablear (wire-before-claim,
+      mismo patrón que f2-7/f2-8 en memoria).
+    targets:
+      - "src/atlas/mcp/plugin_activator.py"
+      - "src/atlas/mcp/trunk_server.py"
+    acceptance: >
+      Al menos UNO de los tres tipos restantes (prompt|rule|command) gana un consumidor
+      real que lee `<active_root>/<plugin_id>/<kind>/*.md` de forma análoga a como
+      SkillStore ya lee `skill` (mismo patrón de namespacing `plugin:<plugin_id>/<id>`,
+      mismo ATLAS_HOME); test de integración demuestra que activar un plugin con ese tipo
+      de contribución cambia observablemente el comportamiento del consumidor (p.ej. una
+      `rule` se inyecta en el contexto del loop agéntico, o un `command` aparece listado
+      para invocación); los otros dos tipos quedan honestamente documentados como
+      "aplicados mecánicamente, sin consumidor" si no se cablean en este ítem.
+    priority: 3
+    status: pending
+
+  - id: t1-governance-fixture-to-real
+    title: "Atlas OS: bridge de gobernanza lee gates reales en vez de fixture, aprobaciones van a la cola HITL real"
+    why: >
+      docs/architecture/GOVERNANCE_KERNEL.md documenta 3 pasos de 'camino a real' que
+      siguen sin ejecutar. Verificado en código: `default_policy_engine`
+      (src/atlas/fabric/policy.py) construye el PolicyEngine leyendo SIEMPRE
+      `fixtures/governance/gates.json` (no hay ruta alternativa a la governance real de
+      `config/governance.json`), y `/permissions/evaluate` (src/atlas/api/server.py)
+      sigue devolviendo `{"simulated": True, ...}` incondicionalmente. La Permissions
+      Matrix y el Security Center del shell (F15/F16) muestran por tanto datos de
+      fixture, no el estado real de governance/CapabilityIssuer del núcleo — un
+      operador que abra esa vista no ve gates reales ni puede aprobar nada de verdad
+      desde ahí (approval.granted/denied de la UI no ejecuta nada, por diseño v1, pero
+      hoy tampoco hay camino documentado para que SÍ lo haga).
+    targets:
+      - "src/atlas/fabric/policy.py"
+      - "src/atlas/api/server.py"
+    acceptance: >
+      El bridge puede construirse en un modo que lea `config/governance.json`/gates
+      reales del core en vez del fixture (read-only, sin escribir governance desde el
+      bridge — invariante 3 intacta); `/permissions/evaluate` refleja `simulated=False`
+      cuando corre en ese modo; aprobaciones disparadas desde la UI se enrutan a la cola
+      HITL real (`atlas pending`/`approve_pending`) en vez de ser un no-op; test de
+      integración demuestra un gate real evaluado end-to-end; el modo fixture sigue
+      disponible para desarrollo/tests (no se rompe nada existente).
+    priority: 3
+    status: pending
+
+  - id: t1-irreversible-action-verifier
+    title: "Verificación adversarial para acciones irreversibles del mundo real (ADR-047, propuesto sin código)"
+    why: >
+      ADR-047 (estado: propuesto, sin código, 2026-06-13) señala un hueco real que
+      sigue abierto: `AdversarialPanel`/`ArtifactKind` (src/atlas/core/verify.py) solo
+      cubren artefactos con rollback (CODE/PATCH/CLAIM/...) — verificado: el enum
+      ArtifactKind NO tiene ningún valor para 'acción irreversible' (enviar un mensaje,
+      publicar algo, hacer una oferta). El panel adversarial ya construido (ADR-048,
+      Fase A, `adversarial_panel.py`) gatea patches/código, no actos externos sin
+      deshacer. Sin esto, una mutación de host irreversible (p.ej. tool de envío real)
+      no tiene el mismo nivel de escrutinio adversarial que un patch de código.
+    targets:
+      - "src/atlas/core/verify.py"
+      - "src/atlas/core/adversarial_panel.py"
+    acceptance: >
+      Nuevo `ArtifactKind.IRREVERSIBLE_ACTION` (o equivalente) cuyo verificador no es
+      un test sino el `AdversarialPanel` con prompts de disenso obligatorio ("por qué
+      esto es un error", "qué asume el plan que podría ser falso", "qué se rompe en el
+      peor caso"); consenso → procede con evidencia de disenso adjunta; sin consenso →
+      escala al humano (nunca auto-aprueba); test demuestra una acción irreversible
+      sintética bloqueada por disenso y otra que pasa con evidencia adjunta; ninguna
+      acción irreversible existente pierde su gate HITL actual (aditivo, no relajación).
+    priority: 3
+    status: pending
+
+  - id: t1-focus-chain-tracker
+    title: "Checklist auto-mantenido de progreso para tareas agénticas largas (patrón Focus Chain de Cline)"
+    why: >
+      docs/design/absorption_master_plan.md (corrección 2026-07-18, verificado con
+      grep real de callers) señala explícito: "Focus Chain (Cline)... Gap real, no
+      resuelto todavía — queda como siguiente pieza concreta, nombrada
+      explícitamente, no enterrada." Verificado de nuevo en esta revisión: no existe
+      ningún rastro de checklist auto-mantenido (`- [ ]`) dentro del Orchestrator real
+      (grep de 'focus_chain'/'FocusChain' en src/atlas/ sin resultados). Para tareas
+      agénticas largas (loop suspendible ADR-032/033), el modelo no tiene forma de
+      declarar/actualizar un plan de sub-pasos visible al humano mientras trabaja.
+    targets:
+      - "src/atlas/core/orchestrator.py"
+    acceptance: >
+      El loop agéntico admite una tool de solo-escritura `update_focus_chain(steps)`
+      que el modelo puede invocar para declarar/marcar sub-pasos (`- [ ]`/`- [x]`) de
+      la tarea en curso; el estado se persiste junto al `agentic_state` existente
+      (ADR-032) y se expone en `task.result`/progreso (reusa `AGENTIC_PROGRESS` de
+      ADR-033, sin superficie nueva); test demuestra que el checklist sobrevive a una
+      suspensión/reanudación del loop; no es mutante (no requiere aprobación HITL).
+    priority: 3
+    status: pending
+
+  - id: t1-git-checkpoint-agentic-wiring
+    title: "Exponer GitCheckpointManager.restore() en el loop agéntico con aprobación HITL explícita"
+    why: >
+      src/atlas/core/git_checkpoint.py (absorción fiel de Cline, 2026-07-18) está
+      construido y probado (7 tests con repo git real) pero, según su propio
+      absorption_master_plan.md: "restore() es DESTRUCTIVO... pero NO está wireado en
+      el loop agéntico todavía. Exponerlo como tool requeriría diseñar el gate de
+      aprobación humana con el mismo cuidado que el resto de tools mutate/HITL". Sigue
+      sin caller: grep de 'git_checkpoint'/'GitCheckpoint' en orchestrator.py no
+      devuelve nada. Hoy el módulo solo es usable desde Python directo, no desde el
+      loop de autoconstrucción real.
+    targets:
+      - "src/atlas/core/orchestrator.py"
+      - "src/atlas/core/git_checkpoint.py"
+    acceptance: >
+      `restore()` se expone como tool mutante del loop agéntico (ADR-032/033: clasificada
+      como mutante, nunca auto-aprobada por allowlist dado su riesgo `critical`),
+      solo operable dentro de los worktrees efímeros que ya usa (nunca sobre el repo
+      real); test E2E demuestra suspensión→aprobación humana→restore ejecutado→auditado
+      en Merkle con `risk_level="critical"`; una denegación dejar el worktree intacto.
+    priority: 3
+    status: pending
+
+  - id: t1-toolcoder-process-sandbox
+    title: "ToolCoder: aislamiento real de proceso/red (BwrapJail), no solo aislamiento de ruta"
+    why: >
+      absorption_master_plan.md (corrección 2026-07-18) señala: "Sandboxing (OpenHands)
+      más débil de lo que se dijo. BwrapJail solo se usa en lesson_runner.py y
+      cold_update_manager.py — NO en los motores de codificación reales. Lo que
+      tool_coder.py llama 'sandbox' es aislamiento de RUTA (copia en directorio
+      temporal), no aislamiento de proceso/red." Verificado en código:
+      `ToolCoder._create_sandbox` (src/atlas/core/tool_coder.py) hace
+      `tempfile.mkdtemp` + copia de ficheros — cero invocación de BwrapJail/
+      execute_in_jail. Código generado por el motor de codificación corre con acceso
+      de red/proceso completo del host, a diferencia de lesson_runner/cold_update.
+    targets:
+      - "src/atlas/core/tool_coder.py"
+    acceptance: >
+      La ejecución de tests/validación dentro del sandbox de ToolCoder pasa por
+      BwrapJail (mismo rootfs mínimo que tech-9, sin red por defecto) en vez de un
+      subprocess directo sobre el directorio temporal; test (mockeando subprocess como
+      los tests existentes de BwrapJail) demuestra que la invocación pasa por el jail;
+      si el riesgo de romper ejecuciones reales es alto, entregar como flag opt-in con
+      default actual documentado como deuda explícita, no relajar en silencio.
+    priority: 2
+    status: pending
+
+  - id: t1-error-registry-lesson-promotion
+    title: "Cerrar el lazo ErrorRegistry → LessonPromoter: quién marca promoted_to_lesson_id"
+    why: >
+      docs/design/backlog.md (Capa 4, 2026-06-14) nombra este hueco explícito:
+      "Cableado ErrorRegistry → LessonPromoter (quién setea promoted_to_lesson_id)".
+      Verificado en esta revisión que sigue abierto: `ErrorRegistry`
+      (src/atlas/memory/memory_system.py) tiene el campo `promoted_to_lesson_id` pero
+      grep confirma que NADA en el repo lo asigna; `LessonPromoter.promote_failure`
+      (src/atlas/core/lesson_store.py) crea la Lesson pero no vuelve a tocar la entrada
+      de ErrorRegistry que la originó. ErrorRegistry SÍ está vivo (usado en
+      orchestrator.py, dashboard.py, gate_h.py) — no es código dormido, es un lazo de
+      trazabilidad a medio cerrar.
+    targets:
+      - "src/atlas/memory/memory_system.py"
+      - "src/atlas/core/lesson_store.py"
+    acceptance: >
+      Tras una promoción exitosa (`promote_failure` devuelve una Lesson, no None), la
+      entrada de ErrorRegistry correspondiente a `failure_id` queda marcada con
+      `promoted_to_lesson_id=<id de la lesson>`; test de integración demuestra el
+      round-trip completo (fallo registrado → promovido → entrada de ErrorRegistry
+      referencia la lección); una promoción fallida (prove-it no PASS) no toca
+      ErrorRegistry.
+    priority: 3
+    status: pending
+
+  # === T0.5b paso 3 (2026-07-23, sesión maratón) — T2 — UI/UX viva ===
+
+  - id: t2-1-micropoc-flutter
+    title: "T2.1 micro-PoC medida: Flutter (P1) en GTX 960M + Android del operador"
+    why: >
+      ADR-071 obliga apps dedicadas Linux+Android; DECISION_STACK_T21.md (veredicto
+      Cónclave 2026-07-17, corrigiendo el plan original que iba a prototipar sin medir)
+      exige medir ANTES de construir ~20 pantallas, no decidir por sensación. Flutter es
+      P1 (SDK ya instalado, mejor loop de sucesión de modelo según research-flutter.md).
+      Verificado: no existe ningún proyecto Flutter en el repo — la medición no se ha
+      hecho todavía.
+    targets:
+      - "prototypes/atlas_ui/flutter_micropoc/"
+    acceptance: >
+      Pantalla única instalable (binario Linux desktop + APK Android) con shader de
+      glow + partículas + un nodo de grafo mínimo, objetivo 60fps. Se mide y registra
+      en un informe (docs/design/ui/research/): fps real en la GTX 960M del portátil y
+      en el móvil Android del operador, pico de RAM durante el build de release (vs
+      techo earlyoom de 7.5GB/proceso), tiempo de build limpio, arranque en frío, y un
+      WebSocket vivo recibiendo al menos un evento real del bridge 127.0.0.1:7341.
+      Veredicto explícito por criterio (PASA / PASA-CON-MATIZ / FALLA), no solo prosa.
+    priority: 1
+    status: pending
+
+  - id: t2-1-micropoc-compose
+    title: "T2.1 micro-PoC medida: Compose Multiplatform (P2)"
+    why: >
+      Segundo candidato del veredicto Cónclave: mejor equilibrio general (Kotlin
+      mainstream, Ktor HTTP/WS multiplataforma, mejor carta de sucesión de modelo según
+      research-kmp-qt-slint.md), pero con riesgo de build documentado (heap de
+      Gradle/Kotlin daemon grande en proyectos combinados Android+Desktop) justo contra
+      el techo earlyoom de esta máquina — hay que medirlo, no asumirlo. Ningún proyecto
+      Compose existe hoy en el repo.
+    targets:
+      - "prototypes/atlas_ui/compose_micropoc/"
+    acceptance: >
+      Misma pantalla de referencia (glow + partículas + nodo de grafo, objetivo 60fps),
+      con heap de Gradle/Kotlin daemon explícitamente capado en la config del proyecto.
+      Se mide fps en Linux+Android del operador, pico de RAM de build (¿roza los 7.5GB
+      con IDE abierto en paralelo?), tiempo de build, arranque en frío (coste JVM), y WS
+      vivo contra 127.0.0.1:7341. Informe de medición registrado junto al de Flutter
+      para comparación directa por los mismos criterios.
+    priority: 1
+    status: pending
+
+  - id: t2-1-micropoc-qt
+    title: "T2.1 micro-PoC medida: Qt6/QML (P3), gateada a que compile en esta máquina"
+    why: >
+      Candidato con mejor R2 (cinematográfico: MultiEffect con benchmark propio de
+      120fps/12 efectos, Qt Quick Effect Maker, partículas nativas, QuickQanava para
+      grafos de nodos) según research-kmp-qt-slint.md — el único de los tres sin
+      matiz en esa dimensión. Contrapartida real: licencia LGPL que exige linking
+      dinámico disciplinado (el módulo QML builtins de Qt 6 SIEMPRE enlaza estático y
+      tiene su propia trampa legal) y peor puntuación esperada en sucesión de modelo
+      (Qt mismo publica el benchmark QML100 precisamente porque los LLM lo escriben
+      peor que Kotlin). El Cónclave lo gateó explícitamente a que su micro-PoC
+      compile y rinda en esta máquina concreta antes de invertir más.
+    targets:
+      - "prototypes/atlas_ui/qt_micropoc/"
+    acceptance: >
+      Pantalla de referencia con MultiEffect/glow + partículas QML + un nodo de grafo.
+      Se confirma PRIMERO que compila y arranca en esta máquina (16GB RAM, GTX 960M)
+      sin exceder el techo earlyoom; si compila, se miden fps, RAM de build, tiempo de
+      build, arranque en frío y WS vivo contra 127.0.0.1:7341; se documenta
+      explícitamente el modo de linking (dinámico) elegido para no violar LGPL. Si no
+      compila o no rinde, se registra FALLA con evidencia (log de build, medición
+      real), no se descarta a priori por opinión.
+    priority: 2
+    status: pending
+
+  - id: t2-1-stack-decision-conclave
+    title: "T2.1 — elección final de stack de UI dedicada (Cónclave con datos de esta máquina)"
+    why: >
+      DECISION_STACK_T21.md exige que la elección final la hagan los NÚMEROS
+      (fps/jank, RAM, arranque, tamaño de APK/binario, benchmark de sucesión de
+      modelo) medidos en ESTA máquina, no research genérico ni opinión — y que el
+      operador elija CARÁCTER viendo los prototipos instalados en su propio portátil
+      y su Android, nunca leyendo specs. Depende de que existan los informes de
+      medición de los 3 ítems anteriores (Tauri y React Native ya quedaron
+      descalificados en el enjambre — research-tauri-rn.md — y no se remiden).
+    targets:
+      - "docs/decisions/adr/"
+      - "docs/design/ui/research/"
+    acceptance: >
+      Con los informes de medición de t2-1-micropoc-flutter/compose/qt (o menos, si
+      alguno queda descalificado por no compilar o no rendir), corre un Cónclave con
+      tabla comparativa fps/RAM/build/arranque/benchmark-de-sucesión; el operador abre
+      los prototipos instalados en su portátil y su Android y elige carácter; se
+      registra un ADR nuevo (siguiente número libre) con el stack ganador, los números
+      que lo sustentan, y qué stacks quedaron fuera y por qué.
+    priority: 1
+    status: pending
+
+  - id: t2-1-mission-console-dedicated-app
+    title: "T2.1 — Mission Console real como app dedicada (Linux + Android)"
+    why: >
+      Es el corte de la ola T2.1 (ADR-071, docs/superpowers/plans/2026-07-17-t21-mission-console-viva.md):
+      hoy la Mission Console SOLO existe en ui/atlas-shell (web), degradada
+      explícitamente a arnés de validación por D11/ADR-071 — "no se invierte ni un
+      minuto más en su estética". El operador debe poder aprobar una misión real de la
+      ruta dorada desde una app dedicada, idealmente el móvil, con el receipt quedando
+      en Merkle. El backend (bridge 7341 read-only, /missions*, /missions/radar, WS de
+      eventos, GoldenRoute) ya existe (Mission Layer v0, ADR-069) — este ítem es SOLO
+      el cliente nativo; cero cambios de backend.
+    targets:
+      - "prototypes/atlas_ui/"
+    acceptance: >
+      Sobre el stack elegido en t2-1-stack-decision-conclave: app instalada en Linux
+      desktop y Android que consume GET /missions, /missions/{id}, /missions/radar y el
+      WS de eventos del bridge 7341 (read-only, sin instanciar Orchestrator); permite
+      aprobar/aparcar una misión real de la ruta dorada mediante el mismo mecanismo de
+      aprobación humana explícita que ya usa la CLI (el bridge sigue sin abrirse a
+      escritura general); el receipt resultante es verificable contra el Merkle real.
+      Sigue el lenguaje de docs/design/ui/references/DIRECCION_ESTETICA.md (gramática
+      de color semántica, Surface Lifecycle Model, grid de 8px) y pasa
+      docs/design/UI_QUALITY_GATE.md (las 8 preguntas respondidas, ninguna señal de
+      rechazo de la lista).
+    priority: 2
+    status: pending
+
+  - id: t2-ui-quality-gate-checklist
+    title: "Checklist UI_QUALITY_GATE aplicado y registrado por prototipo/app de T2"
+    why: >
+      UI_QUALITY_GATE.md ya es criterio de aceptación adoptado (fuente:
+      00_ATLAS_UX_CONSTITUTION.md, handoff pack) para cualquier superficie de producto
+      real de Atlas, pero hoy no se aplica a nada real: el propio documento exime
+      explícitamente a ui/atlas-shell por ser arnés, y el único fixture de referencia
+      (docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/ui/ui_quality_gate_results.json)
+      es un demo de 2 líneas ({"passed": false, "reason": "demo fixture..."}), no un
+      formato usado por ningún test ni prototipo real. Sin esto, "cinematográfico" y
+      "no genérico" son palabras del plan, no un gate verificable.
+    targets:
+      - "docs/design/UI_QUALITY_GATE.md"
+      - "prototypes/atlas_ui/"
+    acceptance: >
+      Checklist ejecutable (script o rúbrica manual documentada con evidencia
+      adjunta — capturas/notas) que, para cada micro-PoC/prototipo/app de T2.1+,
+      produce un ui_quality_gate_results.json real: passed (bool), reason, y qué
+      pregunta de las 8 ("¿dónde estoy?"... "¿puedo ver evidencia y auditoría?") o
+      qué criterio de rechazo falla si aplica. Se aplica al menos una vez sobre un
+      prototipo o app real (no el demo) antes de dar T2.1 por cerrada.
+    priority: 2
+    status: pending
+
+  - id: t2-2-knowledge-view-native
+    title: "T2.2 — Knowledge view nativa: grafo Kuzu navegable en la app dedicada"
+    why: >
+      Master plan §5 T2.2 y el propio plan t21-mission-console-viva.md ("Después de
+      esta ola") nombran esto como el siguiente paso, sobre el MISMO stack que gane
+      T2.1. Hoy el grafo navegable YA existe pero solo en el arnés web
+      (ui/atlas-shell/src/components/LivingGraph.tsx y NebulaGraph.tsx, SVG+d3-force
+      por decisión v1 de ADR-059) — las tools graph_communities()/
+      graph_semantic_neighbors() ya están cableadas y expuestas por MCP
+      (src/atlas/mcp/graph_server.py). Falta el cliente nativo; no hace falta tocar
+      backend.
+    targets:
+      - "prototypes/atlas_ui/"
+    acceptance: >
+      Sobre el stack elegido en t2-1-stack-decision-conclave: vista nativa donde click
+      en una comunidad semántica muestra sus miembros reales y click en un miembro
+      abre el doc/nodo correspondiente (mismo dato servido por graph_communities/
+      graph_semantic_neighbors vía MCP o el bridge 7341, nunca inventado); reusa el
+      lenguaje visual de DIRECCION_ESTETICA.md (el grafo como protagonista, glow para
+      actividad viva) en vez de reimplementar un layout genérico desde cero.
+    priority: 3
+    status: pending
+
+  - id: t2-3-visual-orchestrator-reopen-scope
+    title: "T2.3 — Visual Orchestrator: alcance de reapertura de ADR-066 (Cónclave)"
+    why: >
+      ADR-066 parkeó formalmente Fase 5 (Visual Orchestrator, canvas tipo n8n sobre
+      Dynamic Workflows) y Fase 6 (Coding+Research Territories) en 2026-07-11
+      explícitamente POR SECUENCIA, no por rechazo de concepto: "cuando exista la
+      superficie nativa... son candidatos legítimos a reabrir" — y exige que la
+      reapertura se registre como decisión explícita, "no reinterpretarse en
+      silencio". El master plan §5 T2.3 ya la reabre aquí, condicionada al stack de
+      T2.1 ("N2: alcance exacto vía Cónclave al llegar"). Verificado: no existe
+      código de canvas de workflows (sin react-flow/monaco en ui/ ni src/), tal como
+      el propio ADR-066 documentó en su momento — sigue sin cambiar.
+    targets:
+      - "docs/decisions/adr/"
+    acceptance: >
+      Con el stack de T2.1 ya elegido (t2-1-stack-decision-conclave cerrado), un
+      Cónclave (N2: dependencia nueva de librería de canvas) fija el alcance exacto de
+      Visual Orchestrator sobre ese stack y sobre los Dynamic Workflows existentes; se
+      registra un ADR nuevo que supersede a ADR-066 explícitamente (mencionándolo por
+      número, no en silencio) — con el alcance acordado, o con la decisión razonada de
+      seguir parkeado y una nueva condición/fecha de revisión.
+    priority: 3
+    status: pending
+
+  # === T0.5b paso 3 (2026-07-23, sesión maratón) — T3 — Capacidad universal de operación ===
+
+  - id: t3-1-universal-gui-operator
+    title: "Operador universal de aplicaciones: planner sobre computer-control-mcp"
+    why: >
+      T3.1 del plan maestro (atlas_master_plan.md §5) exige un planner que, dado
+      "abre X y haz Y", descomponga en acciones GUI ejecutables sobre CUALQUIER
+      aplicación, con evidencia obligatoria de ≥2 apps distintas sin una línea de
+      código específica por app. Verificado contra el código real: Gate F (sellado,
+      docs/gate_f_seal.md + docs/decisions/gates/gate_f_plan.md + ADR-013b) SOLO
+      cubre BrowserTool (Playwright/navegador), EditorTool (ficheros de proyecto) y
+      VisionLoop (screenshot -> stub description -> ProposedAction SIN ejecución
+      autónoma; ADR-013b lo difiere explícitamente: "Autonomous multi-step visual
+      action loops" queda en Deferred). `computer-control-mcp` (15 tools GUI
+      mouse/keyboard/OCR contra Xvfb :99, prove-it OK 2026-07-02, status
+      "verificado" en docs/design/mcp_catalog.yaml) existe como servidor MCP
+      catalogado pero NINGÚN código en src/atlas/ lo invoca ni lo planifica: no
+      hay planner, no hay routing en el Orchestrator, no hay wiring en
+      gate_f_executor.py/gate_f_parser.py (que solo rutan "browser"/"editor"/
+      "vision"). "Funciona con Cursor" (el caso que da nombre a T3) NO cierra
+      este ítem según el propio plan maestro. Es el gap central de la sección T3,
+      no cubierto por ningún otro ítem de docs/backlog.yaml (verificado: 0
+      entradas "t3-*" antes de esta reposición).
+    targets:
+      - "src/atlas/core/orchestrator_parts/gate_f_executor.py"
+      - "src/atlas/core/orchestrator_parts/gate_f_parser.py"
+      - "src/atlas/tools/computer_use/"
+    acceptance: >
+      Un planner (nuevo módulo bajo src/atlas/tools/computer_use/) que reciba una
+      instrucción tipo "abre <app> y haz <tarea>", invoque computer-control-mcp
+      vía trunk_invoke (HITL por defecto, igual que cualquier MCP untrusted) para
+      observar (screenshot/OCR/list_windows) y proponer una secuencia de acciones
+      GUI tipadas (mismo patrón ProposedAction que VisionLoop, con
+      requires_approval=True por defecto); el Orchestrator gana una ruta explícita
+      (p.ej. "desktop") junto a browser/editor/vision. Evidencia OBLIGATORIA (la
+      que exige el plan maestro): un test/demo de extremo a extremo que ejecute la
+      MISMA lógica del planner sobre ≥2 aplicaciones de escritorio distintas (p.ej.
+      un editor de texto Y una app de oficina/calculadora) contra Xvfb :99, sin
+      ninguna rama de código condicionada al nombre de la app. mypy limpio; suite
+      verde; ningún cambio de comportamiento en browser/editor/vision existentes.
+    priority: 1
+    status: pending
+
+  - id: t3-2-gui-recipe-library
+    title: "Biblioteca de recetas GUI aprendidas: secuencias de acciones reutilizables"
+    why: >
+      T3.2 del plan maestro pide que las secuencias GUI que funcionan se guarden
+      como lecciones reutilizables con procedencia, y que una segunda ejecución de
+      una tarea similar use la receta y tarde menos. Verificado: el LessonStore/
+      LessonRunner existente (g0.1/g0.2, docs backlog f2-*) versiona lecciones de
+      CÓDIGO (patches, coseno sobre texto), y `src/atlas/fabric/recipes.py` versiona
+      recetas de CONEXIÓN a servicios (ConnectionRecipe: qué ruta/permiso usar para
+      un conector), no secuencias de ACCIONES GUI (clicks/OCR/coordenadas) sobre
+      apps de escritorio. No existe ningún módulo que capture "estos N pasos de
+      computer-control-mcp lograron la tarea X" y lo reutilice. Depende
+      estructuralmente de t3-1-universal-gui-operator (no hay receta que grabar
+      sin que exista primero el planner que genera y ejecuta la secuencia).
+    targets:
+      - "src/atlas/tools/computer_use/"
+      - "src/atlas/core/self_maintenance/"
+    acceptance: >
+      Tras una ejecución exitosa del planner de t3-1, la secuencia de acciones
+      (con procedencia: app objetivo, pasos, resultado) se persiste como receta
+      reutilizable (formato análogo a ConnectionRecipe/LessonStore: id, pasos,
+      hash de procedencia). Test que demuestre: 1ª ejecución de una tarea similar
+      genera+guarda la receta; 2ª ejecución la reutiliza y el planner mide/reporta
+      un tiempo (o número de pasos de exploración OCR) estrictamente menor que la
+      1ª. Sin dependencias nuevas; mypy limpio.
+    priority: 2
+    status: pending
+
+  # --- Adapter contract: describir CUALQUIER capacidad con un contrato único ---
+  - id: t3-3-harness-adapter-contract-registry
+    title: "Registro que valida adapters (MCP/tools) contra schemas/adapter.schema.json"
+    why: >
+      docs/architecture/CAPABILITY_FABRIC.md y
+      docs/handoff/atlas_build_pack/docs/atlas-bible/11_HARNESS_ADAPTER_CONTRACT.md
+      describen el mismo contrato: TODO adapter (Model/Tool/Workspace/Coding/
+      Research/System/MCP/Automation) debe declarar risk_profile, permisos,
+      sandbox_required, failure_modes, etc., y "una integración sin contrato no
+      entra en Atlas". Verificado: `schemas/adapter.schema.json` YA EXISTE en el
+      repo (promovido del handoff pack) con el schema completo, pero NINGÚN código
+      en src/atlas/ lo carga ni lo valida (grep confirma que solo
+      src/atlas/api/models.py usa schemas/connector.schema.json; adapter.schema.json
+      no tiene consumidor). El catálogo MCP real (docs/design/mcp_catalog.yaml +
+      src/atlas/mcp/) describe servers con su propio formato ad-hoc (trust/status/
+      read_only_tools), no con este contrato — son dos formatos paralelos sin
+      puente. Es el mismo patrón "wire-before-claim" que ya cerró varios ítems f2-*:
+      el contrato existe en disco pero no protege nada todavía.
+    targets:
+      - "src/atlas/mcp/"
+      - "schemas/adapter.schema.json"
+    acceptance: >
+      Un validador puro (pydantic, espejo del schema como en
+      src/atlas/fabric/models.py) que, dado un adapter declarado (dict o modelo),
+      lo valide contra adapter.schema.json y rechace uno sin failure_modes/
+      risk_profile/sandbox_required; wiring mínimo hacia el catálogo MCP real: al
+      menos un entry existente del catálogo (p.ej. computer-control-mcp) expresado
+      como AtlasAdapter y validado por el registro. Test que demuestre rechazo de
+      un adapter incompleto y aceptación de uno completo. NO requiere migrar todo
+      el catálogo de una vez (documentar el resto como deuda). mypy limpio.
+    priority: 3
+    status: pending
+
+  # --- OpenAPI -> capacidad: onboarding automático de APIs REST ---
+  - id: t3-4-openapi-to-capability-compiler
+    title: "Compilador OpenAPI -> capacidad Fabric (con policy y test scaffolds)"
+    why: >
+      docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/OPENAPI_TO_CAPABILITY_COMPILER.md
+      (spec de una línea, sin detalle) pide compilar operaciones de una spec
+      OpenAPI en capacidades Atlas con policy y andamiaje de tests. Verificado
+      contra el código real: `RouteType.OPENAPI_REST` YA existe como peldaño de la
+      Connectivity Ladder (src/atlas/fabric/models.py + ladder.py, con riesgo LOW,
+      por delante de MCP/desktop_automation/computer_use — API-first), pero hoy
+      TODA receta de conector (src/atlas/fabric/recipes.py, fixtures como
+      conn_gmail) se escribe A MANO; no existe código que, dada una URL/fichero
+      OpenAPI, genere automáticamente un ConnectionRecipe + CapabilitySpec +
+      PolicyRule + test scaffold. Es un gap real pero de alcance especulativo (el
+      propio doc fuente no detalla contrato); prioridad baja porque el catálogo
+      manual actual (Gmail real + 4 mocks) cubre el uso real de hoy sin fricción
+      urgente.
+    targets:
+      - "src/atlas/fabric/recipes.py"
+      - "src/atlas/fabric/models.py"
+    acceptance: >
+      Función pura `compile_openapi_to_recipe(spec: dict) -> ConnectionRecipe` que,
+      dada una spec OpenAPI 3.x mínima (paths+operations+security scheme), derive
+      un ConnectionRecipe válido (recommended_route=OPENAPI_REST, capabilities
+      derivadas de los métodos HTTP expuestos, safe_defaults sin outbound
+      peligroso por defecto) que pase validate_recipe() sin RecipeProblem; test
+      con una spec sintética pequeña (2-3 endpoints) que demuestre el compilado y
+      su aceptación por el RecipeEngine existente. No requiere red real ni
+      dependencias nuevas (parseo de dict ya cargado, no un cliente HTTP).
+    priority: 3
+    status: pending
+
+  # === T0.5b paso 3 (2026-07-23, sesión maratón) — T4 — Vigilancia serendípica del ecosistema ===
+
+  - id: t4-sentinel-tool-coherence
+    title: "SentinelGate: coherencia descripción↔schema en tools adoptadas (capa 4 diferida, ADR-038)"
+    why: >
+      ADR-038 (docs/decisions/adr/adr_038_atlas_sentinel_gate.md) implementó 3 de 4 capas de
+      vetting de adopción MCP (identidad+snapshot anti rug-pull, IOC/coherencia de comando,
+      tiering read/write/shell_net/credential — las tres ✅ en sentinel_gate.py) pero dejó
+      diferida la capa 4: "¿lo que el tool AFIRMA que hace (description) coincide con lo que
+      PIDE (paths/endpoints/permisos de su inputSchema)?". Verificado contra código real
+      (sentinel_gate.py:28, comentario "Diferido... coherencia AST profunda (reusar
+      ast_guard)"): la capa 4 NO existe (solo _vet_tool con IOC de superficie, no comparación
+      semántica descripción-vs-schema). Es el hueco real que le falta al pipeline T4.2
+      (candidata→diseccionada→absorbida industrializado) para vetar candidatos MCP cuya
+      descripción miente sobre lo que su schema realmente permite — el vector exacto de
+      "tool poisoning" que ADR-036 cataloga como amenaza #1.
+      Nota de investigación: la propia anotación del código dice "reusar ast_guard", pero
+      `src/atlas/security/ast_guard.py` es un lint de AST de CÓDIGO Python (imports/calls
+      bloqueados en codegen), no un comparador description↔schema de tools MCP — decide-con-
+      hechos antes de construir: puede que aplique como inspiración de patrón (AST sobre el
+      JSON del schema) pero no como reuso directo. Investigar primero, documentar la decisión,
+      luego construir.
+    targets:
+      - "src/atlas/security/sentinel_gate.py"
+    acceptance: >
+      Nota de investigación corta (en el propio módulo o en un comentario de diseño) que
+      decide si ast_guard aplica adaptado o si hace falta lógica nueva, y por qué. Capa de
+      coherencia (`_vet_tool` o método nuevo) que detecte al menos un caso concreto de
+      discrepancia: p.ej. una tool cuya `description` se declara "solo lectura" pero su
+      `inputSchema` acepta parámetros de comando/escritura/URL arbitraria fuera de lo que la
+      descripción sugiere → clasificada como discrepancia bloqueante (o `review` si la
+      señal es débil, coherente con el resto de SentinelGate que ya usa fail-closed para
+      `credential`). Test con un fixture de tool "maliciosa" (description benigna +
+      inputSchema peligroso) que demuestre el veto, y un fixture de tool coherente que NO
+      se bloquee (evitar falsos positivos que rompan la adopción normal); suite verde.
+    priority: 3
+    status: pending
+
+  # === T0.5b paso 3 (2026-07-23, sesión maratón) — T5 — Cadena de proveedores robusta ===
+
+  - id: t5-mcp-installer-e2e-wiring
+    title: "Ensamblar el instalador automático del catálogo MCP en un camino invocable end-to-end"
+    why: >
+      docs/design/mcp_catalog.md (sección "Automatización de instalación") describe un instalador
+      que (1) lee el catálogo, (2) resuelve cada item verificado a su comando, (3) verifica que
+      existe, (4) instala en el destino correcto, (5) reporta — y lo marca "NO construido aún".
+      Verificado CONTRA EL CÓDIGO (2026-07-23): las piezas SÍ existen por separado y con tests
+      propios — atlas.mcp.catalog.load_catalog (fuente), atlas.mcp.installer.plan_install/
+      vet_action/execute (planifica+veta+ejecuta solo lo `verificado`, SentinelGate pre-spawn),
+      atlas.mcp.trial_gate (progresión candidato→probado-en-jaula) — pero NINGÚN caller de
+      producción las encadena: no hay comando CLI ni función que llame plan_install() y reporte.
+      `grep` confirma: plan_install/InstallAction solo se importan desde tests y desde
+      trial_gate.vet_action (una pieza, no el flujo completo). Hoy el catálogo tiene 5 entradas
+      `verificado` reales (docs/design/mcp_catalog.yaml) que un instalador ensamblado ya podría
+      procesar — no es trabajo especulativo, hay datos vivos que lo ejercitarían. Mismo patrón
+      wire-before-claim que tech-4/f2-7/f2-11 de este backlog: capacidad construida y testeada
+      pieza-a-pieza pero no cableada al camino real = vapor hasta que se ensambla.
+    targets:
+      - "src/atlas/mcp/installer.py"
+      - "src/atlas/interfaces/cli.py"
+    acceptance: >
+      Existe un punto de entrada invocable (comando CLI `atlas mcp install` o función pública
+      equivalente) que: carga el catálogo real (mcp_catalog.yaml), llama plan_install() sobre las
+      entradas `verificado`, pasa cada acción por vet_action()/SentinelGate, y para las que pasan
+      el veto invoca execute() con un runner real (o deja explícito por qué execute() sigue
+      fail-closed si el ejecutor de admisión aún no existe — no fingir instalación real sin él).
+      Reporta un resumen (instaladas/vetadas/omitidas) en texto u JSON. Test de integración con un
+      catálogo sintético (2-3 entradas verificado/candidato mixtas) demuestra que el camino
+      completo se ejecuta sin excepción y que lo NO-verificado nunca se toca. mypy limpio; suite
+      dirigida verde (no toda la suite).
+    priority: 3
+    status: pending
+    test_cmd: ["python3", "-m", "pytest", "tests/test_mcp_installer_exec.py", "-q"]
+
+  # === T0.5b paso 3 (2026-07-23, sesión maratón) — T6 — Twin real y elasticidad multi-hardware ===
+
+  - id: t6-workload-benchmark-harness
+    title: "Benchmark de workloads locales para decidir el cuello de botella del Atlas Box"
+    why: >
+      docs/operations/atlas_box_architecture.md (destilado del chat Gemini, "concept note,
+      not a purchase recommendation") pide, en su sección "Next Validation", 4 pasos antes de
+      comprar cualquier hardware: (1) definir workloads objetivo (clasificación, destilación
+      de memoria, tareas de browser, generación de código, voz, dashboard), (2) benchmarkear
+      el HP Omen actual, (3) benchmarkear una ruta SLM barata vía Ollama, (4) decidir si el
+      cuello es latencia/throughput/VRAM/RAM/térmico/complejidad de setup. Verificado por grep:
+      no existe ningún harness de benchmark de estos workloads en scripts/ ni src/atlas/ (solo
+      existe src/atlas/thermal/watchdog.py, que vigila térmico en caliente, no benchmarkea).
+      Esto NO requiere comprar nada ni desplegar infraestructura: usa el hardware que ya existe
+      (HP Omen) y Ollama ya instalado (ver memoria ollama-fix-2026-07-09.md). Es la pieza que
+      falta para que cualquier decisión de compra futura (Profile A/B/C/D del propio doc) esté
+      basada en medición real, no en "marketing numbers" — exactamente lo que el doc pide evitar.
+    targets:
+      - "scripts/benchmark_workload.py"
+      - "docs/operations/atlas_box_architecture.md"
+    acceptance: >
+      Script que ejecuta los 6 workloads objetivo (o un subconjunto documentado si alguno no
+      aplica hoy) contra el hardware actual y contra una ruta SLM local vía Ollama, midiendo
+      latencia/throughput y reportando uso de VRAM/RAM/temperatura donde sea posible; salida
+      JSON reproducible; el informe identifica explícitamente cuál es el cuello de botella
+      real (no una recomendación de compra); cero llamadas de red de pago, cero aprovisionamiento
+      de infraestructura nueva.
+    priority: 2
+    status: pending
+
+  - id: t6-atlas-box-hardware-profile
+    title: "Decisión de perfil de hardware Atlas Box (three-node topology) — compra real"
+    why: >
+      docs/operations/atlas_box_architecture.md propone 4 perfiles candidatos (A: workstation
+      existente, B: SBC/mini-PC de bajo consumo, C: nodo SFF con GPU dedicada, D: swarm local
+      distribuido) para separar Atlas en roles (UI / gobierno+memoria soberana / cómputo
+      pesado) — el patrón "tri-tier Zero-Trust AI Gateway". El propio doc dice explícitamente
+      "Do not buy hardware before a workload benchmark defines the bottleneck" (ver
+      t6-workload-benchmark-harness, prerequisito) y "Do not make hardware anti-tamper
+      destructive behavior part of Atlas without a dedicated security ADR and legal review".
+      Cualquier avance real aquí implica gastar dinero (SBC/mini-PC/GPU node) y/o desplegar un
+      nuevo nodo físico — decisión N3 del operador, no ejecutable de forma autónoma esta noche.
+    targets:
+      - "docs/operations/atlas_box_architecture.md"
+    acceptance: >
+      REQUIERE DECISIÓN N3 DEL OPERADOR (dinero/credenciales): elegir perfil A/B/C/D con
+      presupuesto real, basado en los resultados de t6-workload-benchmark-harness; solo tras
+      esa decisión se abre un ítem de implementación con targets concretos (aprovisionamiento,
+      hardening, migración de gobierno/memoria al nodo elegido).
+    priority: 3
+    status: deferred  # requiere decisión N3 del operador (dinero/credenciales) — no autónomo
+
+  - id: t6-hermes-redeploy-execute
+    title: "Re-despliegue real de Hermes-Agent en VPS con el playbook ya verificado"
+    why: >
+      Verificado contra código real: TODA la arquitectura twin descrita en
+      docs/decisions/adr/adr_026_hermes_twin_architecture.md (pares Atlas/Hermes con autoridad
+      asimétrica), adr_027_exec_api_endpoint.md (canal firmado /api/exec/*), adr_028_twin_kanban.md
+      (puente kanban saliente) y adr_029_audit_search_and_reverse_audit.md (búsqueda FTS5 +
+      recibo inverso) YA ESTÁ IMPLEMENTADA: src/atlas/hermes/hermes.py (HermesKanbanAdapter,
+      HermesMockAdapter; HermesRestAdapter confirmado retirado por adr_070, solo queda un
+      comentario histórico), src/atlas/hermes/kanban_bridge.py, src/atlas/interfaces/exec_api.py
+      (rutas /api/exec/health|intent|shell|file|browser|audit con HMAC+nonce+timestamp),
+      src/atlas/core/audit_search.py (FTS5). El playbook operativo completo está en
+      docs/operations/operational_runbook.md §4-6 (scripts/deploy_hermes_vps_oneshot.sh,
+      scripts/verify_twin_pairing.sh, scripts/twin_e2e_smoke.py — los tres existen en scripts/).
+      docs/handoff/.../references/tailscale_headscale_wireguard.md confirma que el transporte
+      SSH/Tailscale privado ya es parte del diseño (nada nuevo que absorber ahí; la matriz de
+      asimilación ya decidió "Wrap possible" para Tailscale/Headscale/WireGuard hace tiempo).
+      Memoria de sesión (hermes-vps-deployment-playbook-2026-05.md): Hermes YA funcionó un mes
+      real como gemelo de Atlas; el VPS se dio de baja por decisión de ALCANCE, no por fallo.
+      Lo único que falta es EJECUTAR: eso es gasto real (VPS) + credenciales reales (proveedor,
+      Telegram) → decisión N3, exactamente como dice atlas_master_plan.md §5 T6.
+    targets:
+      - "docs/operations/operational_runbook.md"
+      - "scripts/deploy_hermes_vps_oneshot.sh"
+      - "scripts/verify_twin_pairing.sh"
+    acceptance: >
+      REQUIERE DECISIÓN N3 DEL OPERADOR (dinero/credenciales): aprobar gasto de VPS +
+      credenciales de proveedor/Telegram. Tras la aprobación, ejecutar exactamente el runbook
+      §4 (deploy_hermes_vps_oneshot.sh) → §5 (verify_twin_pairing.sh, todo verde) → promoción a
+      ACTIVO con una inferencia real + entrega Telegram real, registrando evidencia según la
+      plantilla del runbook §9. Ningún código nuevo: es ejecución de infraestructura ya construida
+      y verificada en aislamiento (scripts/twin_e2e_smoke.py).
+    priority: 2
+    status: deferred  # requiere decisión N3 del operador (dinero/credenciales) — no autónomo
+
+  - id: t6-node-identity-module
+    title: "NodeIdentity: módulo local de identidad de nodo (keypair + heartbeat firmado)"
+    why: >
+      docs/design/fleet_security_plan.md ("future architecture note", explícitamente NO
+      Kubernetes/consenso Byzantine/override remoto en esta fase) propone como "First Practical
+      Step" un módulo NodeIdentity: generar un keypair de nodo, exportar un documento de
+      identidad pública y firmar recibos de heartbeat/auditoría. Verificado por grep: no existe
+      ningún módulo de identidad de nodo, comandos firmados de control-plane, ni agregación de
+      raíces Merkle multi-nodo en src/atlas/. A diferencia de t6-atlas-box-hardware-profile y
+      t6-hermes-redeploy-execute, ESTE paso concreto no gasta dinero ni despliega infraestructura
+      real: es criptografía local (generar/exportar claves, firmar payloads) ejecutable y
+      testeable sin ningún nodo remoto. Precaución wire-before-claim: hoy no hay un segundo nodo
+      real (Hermes VPS de baja desde mayo) que consuma esta identidad, así que el alcance debe
+      quedar estrictamente en el módulo aislado + tests, sin fingir integración con una flota que
+      no existe todavía.
+    targets:
+      - "src/atlas/security/node_identity.py"
+      - "tests/test_node_identity.py"
+    acceptance: >
+      Módulo puro que genera un keypair de nodo (Ed25519 o equivalente ya usado en el repo),
+      exporta un documento de identidad pública (JSON con clave pública + metadata del nodo),
+      y firma un payload de heartbeat/recibo con verificación local; test de round-trip
+      firma→verificación y test de rechazo ante firma alterada; CERO integración con transporte
+      remoto o control-plane real (eso queda para cuando exista un segundo nodo real, ver
+      t6-hermes-redeploy-execute); documentar explícitamente en el módulo que es standalone sin
+      consumidor todavía (evitar wire-before-claim).
+    priority: 3
+    status: pending

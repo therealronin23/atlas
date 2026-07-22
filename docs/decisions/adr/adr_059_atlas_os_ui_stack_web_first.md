@@ -1,6 +1,11 @@
 # ADR-059 — Atlas OS UI: web-first (Vite+React+TS), Tauri diferido
 
-- Estado: aceptado (2026-07-10), enmendado (2026-07-16)
+- Estado: aceptado (2026-07-10), enmendado (2026-07-16); **SUPERSEDED por
+  ADR-071** (2026-07-17) para la UX FINAL de Atlas — el operador decidió
+  aplicaciones dedicadas (Linux+Android), no web. `ui/atlas-shell/` sigue
+  vigente como arnés de validación del backend (rol D11 original); esta
+  decisión ya no gobierna la UX de producto. Ver
+  `docs/decisions/adr/adr_071_dedicated_apps_supersede_web_first_ux.md`.
 - Contexto original: el build pack (su ADR-0005) proponía Tauri+React desde
   v1. La máquina tenía Node 18.19.1, por lo que Vite 5 permitía entregar el
   shell reactivo sin introducir el upgrade de Node ni la presión de compilar
