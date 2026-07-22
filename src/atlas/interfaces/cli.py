@@ -316,11 +316,13 @@ def plugin() -> None:
 def plugin_materialize(
     source: Path, plugin_id: str | None, staging_root: Path | None
 ) -> None:
-    """Materializa un árbol LOCAL a staging y lo somete al gate de admisión."""
+    """Materializa un árbol LOCAL a staging, lo somete al gate de admisión
+    y — si no fue bloqueado — emite un recibo (A3.2) vía el broker."""
     from atlas.mcp.plugin_materializer import PluginMaterializer
 
+    orch = get_orchestrator()
     if staging_root is None:
-        staging_root = Path(get_orchestrator().status().workspace) / "plugins" / "staging"
+        staging_root = Path(orch.status().workspace) / "plugins" / "staging"
     result = PluginMaterializer(staging_root=staging_root).materialize_local(
         source.absolute(), expected_plugin_id=plugin_id
     )
@@ -332,15 +334,74 @@ def plugin_materialize(
     console.print(f"[green]staged[/green] {result.staged_root}")
     if result.provenance is not None:
         console.print(f"  tree_sha256={result.provenance.tree_sha256}")
-    if result.admission.status == "admit":
+    if result.admission.status == "block":
+        codes = ", ".join(result.admission.reason_codes)
+        console.print(f"[yellow]admisión: block[/yellow] {codes}")
+        raise SystemExit(1)
+
+    receipt = orch.plugin_receipts().request(result)
+    console.print(f"  recibo={receipt.receipt_id} status={receipt.status}")
+    if receipt.status == "issued":
         console.print(
-            "[green]admisión: admit[/green] "
-            "(evidencia, no permiso de activación — A3.3 pendiente)"
+            "[green]issued[/green] (evidencia, no permiso de activación — "
+            "A3.3 pendiente)"
         )
-        return
-    codes = ", ".join(result.admission.reason_codes)
-    console.print(f"[yellow]admisión: {result.admission.status}[/yellow] {codes}")
-    raise SystemExit(1)
+    elif receipt.status == "pending_approval":
+        console.print(
+            "[yellow]pending_approval[/yellow] — "
+            f"atlas plugin receipt approve {receipt.receipt_id}"
+        )
+    else:
+        console.print(f"[red]{receipt.status}[/red]")
+
+
+@plugin.group("receipt")
+def plugin_receipt() -> None:
+    """Recibos A3.2 — resolución humana explícita de plugins en `review`."""
+
+
+@plugin_receipt.command("show")
+@click.argument("receipt_id")
+def plugin_receipt_show(receipt_id: str) -> None:
+    receipt = get_orchestrator().plugin_receipts().get(receipt_id)
+    if receipt is None:
+        console.print(f"[red]recibo no encontrado: {receipt_id}[/red]")
+        raise SystemExit(1)
+    console.print_json(receipt.model_dump_json())
+
+
+@plugin_receipt.command("list")
+def plugin_receipt_list() -> None:
+    for receipt in get_orchestrator().plugin_receipts().list():
+        console.print(
+            f"{receipt.receipt_id}  {receipt.status:<17} "
+            f"{receipt.plugin_id}  {receipt.admission_status}"
+        )
+
+
+@plugin_receipt.command("approve")
+@click.argument("receipt_id")
+def plugin_receipt_approve(receipt_id: str) -> None:
+    """Resolución humana explícita — fuera del decisor, igual que
+    `atlas update approve` para ColdUpdate."""
+    try:
+        receipt = get_orchestrator().plugin_receipts().approve(receipt_id)
+    except (KeyError, RuntimeError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    console.print(f"[green]{receipt.status}[/green] {receipt.receipt_id}")
+
+
+@plugin_receipt.command("decline")
+@click.argument("receipt_id")
+@click.option("--reason", default="", help="motivo de la denegación")
+def plugin_receipt_decline(receipt_id: str, reason: str) -> None:
+    try:
+        receipt = get_orchestrator().plugin_receipts().decline(receipt_id, reason=reason)
+    except (KeyError, RuntimeError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    console.print(f"[yellow]{receipt.status}[/yellow] {receipt.receipt_id}")
 
 
 @cli.group("gate-h")

@@ -168,6 +168,7 @@ class Orchestrator:
     _observability: Any
     _cold_update_manager: Any
     _golden_route: Any
+    _plugin_receipt_broker: Any
     _self_audit_runner: Any
     _swarm_cycle: Any
     _knowledge_cve_proposer: Any
@@ -555,6 +556,22 @@ class Orchestrator:
 
             self._golden_route = GoldenRoute(self.cold_update(), self._merkle)
         return self._golden_route
+
+    def plugin_receipts(self) -> Any:
+        """ADR-073 A3.2 — PluginReceiptBroker sobre el MISMO Merkle y decisor
+        que el resto del orquestador (`self._merkle`/`self._decider`): un
+        recibo `review` se suspende bajo `HumanDecider` y se deniega bajo
+        `AutonomousDecider`, igual que cualquier otra acción `sensitivity="high"`
+        del sistema — ningún camino especial para plugins."""
+        if self._plugin_receipt_broker is None:
+            from atlas.mcp.plugin_receipt_broker import PluginReceiptBroker
+
+            self._plugin_receipt_broker = PluginReceiptBroker(
+                merkle=self._merkle,
+                store_dir=self._workspace / "plugins" / "receipts",
+                decider=self._decider,
+            )
+        return self._plugin_receipt_broker
 
     def advance_cold_update(self, proposal_id: str) -> str:
         """Avanza una propuesta de ColdUpdate bajo veredicto del decisor (ADR-040).
@@ -1879,6 +1896,7 @@ class Orchestrator:
         )
         self._cold_update_manager = None
         self._golden_route = None
+        self._plugin_receipt_broker = None
         self._swarm_cycle = None
         self._self_audit_runner = None
         self._knowledge_cve_proposer = None

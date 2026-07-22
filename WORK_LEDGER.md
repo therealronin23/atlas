@@ -8,6 +8,43 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 3 — A3.2: recibo Merkle + broker de aprobación humana para
+  plugins staged (2026-07-22 16:10)** — segunda loncha de A3 (ADR-073),
+  continuación directa de A3.1 (Cycle 2). `atlas.mcp.plugin_receipt_broker.
+  PluginReceiptBroker`: liga `record_id`+`manifest_sha256`+`provenance`
+  (tree-hash)+`staged_root`+decisión en un `PluginReceipt` pydantic estricto,
+  persistido + logueado en la cadena Merkle real (`plugin.receipt_issued/
+  pending_approval/denied/approved/declined`). **Decisión de diseño clave:
+  NO se reinventó HITL** — un veredicto `review` de A2 se traduce 1:1 a
+  `sensitivity="high"` sobre el `Decider` protocol YA existente (ADR-040,
+  `atlas.core.decider`): `HumanDecider` lo suspende siempre (regla
+  constitucional #4), `AutonomousDecider` lo deniega siempre (invariante 2)
+  — un `review` nunca se promueve solo porque nadie miró, bajo NINGÚN modo de
+  decisor, sin lógica de aprobación ad-hoc. Un `admit` emite recibo `issued`
+  de inmediato bajo cualquier decisor (`mutating=False`: emitir evidencia no
+  otorga capacidad; la activación real de A3.3 consultará el decisor de
+  nuevo con su propio `mutating=True` y su propio undo). Un `block` nunca
+  llega al broker — `request()` rechaza explícito, nada que aprobar.
+  Resolución humana (`approve`/`decline`) vive DELIBERADAMENTE fuera del
+  seam del decisor, mismo patrón que `atlas update approve` para ColdUpdate.
+  Wire-before-claim: `Orchestrator.plugin_receipts()` (mismo `_merkle`/
+  `_decider` que `golden_route()`/`cold_update()`, patrón idéntico) + `atlas
+  plugin materialize` ahora emite recibo automáticamente + CLI nueva `atlas
+  plugin receipt show/list/approve/decline`. TDD real (RED import → GREEN,
+  1 bug de fixture propio cazado en el camino — `expected_plugin_id` no
+  coincidía con el `plugin_id` del manifest, no un bug del broker); 21 tests
+  nuevos (15 unitarios + 6 CLI end-to-end), 86 verdes en toda el área
+  golden-route+CLI+plugins, 236 verdes en el barrido orchestrator+decider
+  completo (nada regresionado por el campo nuevo en `Orchestrator`). mypy
+  canónico limpio. Prove-it EN VIVO fuera del arnés: `atlas plugin
+  materialize` → recibo `issued` real, `atlas plugin receipt list` en un
+  proceso NUEVO lo encuentra (persistencia real en disco), cadena Merkle
+  real verificada íntegra tras las escrituras (`verify_chain() == (True,
+  "OK")`). ADR-073 y design doc actualizados con el estado real.
+  **Próxima acción:** A3.3 — activador reversible que consuma SOLO un
+  recibo `issued` (nunca re-decide, solo re-verifica árbol vs
+  provenance.tree_sha256 antes de aplicar contribuciones declarativas) +
+  revocación/limpieza de staging.
 - **MAXIMUS Cycle 2 — A3.1: materializador de plugins a staging inmutable
   (2026-07-22 15:15)** — primera loncha de A3 (ADR-073, la "próxima acción"
   declarada de Cycle 10). `atlas.mcp.plugin_materializer.PluginMaterializer`:

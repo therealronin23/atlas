@@ -1,6 +1,8 @@
 # ADR-073 — PluginManifest v1 es declarativo, staged y no ejecutable
 
-- **Estado**: aceptado (A2; sin activador runtime por diseño)
+- **Estado**: aceptado (A2 hecho; A3.1 materializador + A3.2 recibo/broker
+  hechos 2026-07-22, ver docs/design/plugin_manifest_v1.md; A3.3 activador
+  runtime sigue sin existir por diseño)
 - **Fecha**: 2026-07-20
 - **Contexto previo**: ADR-063 Gate Engine; ADR-072 escaneo de admisión;
   invariantes 1, 4, 6 y 8 de `AGENTS.md`.

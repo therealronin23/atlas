@@ -4,8 +4,11 @@
   construido y cableado (2026-07-22): materializador de fuente LOCAL
   (`atlas.mcp.plugin_materializer`, CLI `atlas plugin materialize`) con
   procedencia medida (tree-hash antes/después de copiar, sidecar fuera del
-  árbol) y re-escaneo post-copia vía el gate A2. Fuentes remotas, recibo
-  Merkle (A3.2) y activador reversible (A3.3) siguen sin existir por diseño.
+  árbol) y re-escaneo post-copia vía el gate A2. A3.2 construido y cableado
+  (2026-07-22): `atlas.mcp.plugin_receipt_broker.PluginReceiptBroker`, sobre
+  `Orchestrator.plugin_receipts()` (mismo Merkle/decisor que el resto del
+  sistema — sin camino especial para plugins). Fuentes remotas y activador
+  reversible (A3.3) siguen sin existir por diseño.
 - Autoridad: [ADR-073](../decisions/adr/adr_073_declarative_plugin_manifest_v1.md).
 
 ## Contrato mínimo
@@ -72,7 +75,19 @@ simbólico bloquean. `review` no se promociona automáticamente.
 2. Reescaneo tras materializar y tras cualquier validación que toque bytes.
    — HECHO para el flujo del materializador (admisión ligada al árbol staged).
 3. Recibo Merkle que ligue `record_id`, manifest, procedencia y decisión; broker
-   de aprobación humana para `review` o sensibilidad alta.
+   de aprobación humana para `review` o sensibilidad alta. — HECHO
+   (2026-07-22, `plugin_receipt_broker.py`): NO reinventa HITL — un veredicto
+   `review` de A2 se traduce a `sensitivity="high"` sobre el `Decider`
+   protocol ya existente (ADR-040). `HumanDecider` lo suspende siempre
+   (`pending_approval`, resuelto por `atlas plugin receipt approve/decline`,
+   fuera del seam — mismo patrón que `atlas update approve`);
+   `AutonomousDecider` lo deniega siempre (invariante 2, regla constitucional
+   #4) — un `review` nunca se promueve solo porque nadie miró, bajo ningún
+   modo de decisor. Un `admit` emite recibo `issued` de inmediato bajo
+   cualquier decisor (emitir un recibo no otorga capacidad: `mutating=False`,
+   la activación real de A3.3 consultará el decisor de nuevo con su propio
+   `mutating=True`). Un `block` nunca llega al broker: `request()` rechaza
+   explícito.
 4. Activador reversible que consuma sólo ese recibo, aplique contribuciones
    declarativas y permita revocar/borrar staging sin tocar el árbol principal.
 5. Los tipos ejecutables requieren un ADR posterior con sandbox/AST Guard y no

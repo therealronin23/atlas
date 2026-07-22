@@ -205,7 +205,9 @@ def test_cli_plugin_materialize_end_to_end(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0, result.output
-    assert "admit" in result.output
+    # A3.2: materialize ahora también emite un recibo vía el broker.
+    assert "issued" in result.output
+    assert "recibo=" in result.output
     assert list(staging.glob("demo-plugin-*")) != []
 
 
