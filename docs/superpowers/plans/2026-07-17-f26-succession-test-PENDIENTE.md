@@ -1,5 +1,48 @@
 # F2.6 — Test de sucesión (PENDIENTE de ejecución; prompt listo)
 
+## Estado 2026-07-22 (MAXIMUS Cycle 12) — mitad barata construida, NO es la
+## solución definitiva; diseño real para sesión futura, abajo
+
+Construido y en producción: `atlas.core.self_maintenance.f26_gate` —
+detección determinista y gratis de "¿está debido un run?" (ADR nuevo desde
+el último run REGISTRADO), wireada en `atlas reality` y `atlas f26 status`.
+Esto es infraestructura real (TDD, fail-honesto), no un parche — pero es
+solo la mitad barata. La EJECUCIÓN de la rúbrica sigue siendo manual de
+principio a fin: alguien tiene que acordarse de mirar el estado, decidir
+correrla, lanzarla a mano, leer el transcript él mismo, y acordarse de
+`atlas f26 record-run` después. Ese es exactamente el patrón de "medio
+construir para salir del paso" que el operador pidió explícitamente NO
+repetir aquí — así que la otra mitad se deja diseñada, no parcheada:
+
+**Lo que hace falta para que sea definitivo, no otro parche:**
+
+1. **`atlas f26 run`** — comando real que DISPARA la ejecución (hoy no
+   existe ninguno). Construye el prompt de la rúbrica desde ESTE MISMO doc
+   (fuente única, nunca copiado a mano) y despacha una sesión fría. El
+   mecanismo validado en PRIME Cycle 6 (subagente Sonnet vía Agent tool,
+   `model=sonnet`, cero contexto de la sesión lanzadora) es hoy más fiable
+   que `claude -p` — ver bloqueador abajo.
+2. **Grading estructurado del transcript**, no impresión humana de memoria:
+   un segundo paso (barato/determinista donde se pueda) que evalúe cada uno
+   de los 6 ítems CONTRA el transcript real y produzca veredicto por ítem,
+   no un "6/6" recordado de cabeza.
+3. **Auto-registro**: `atlas f26 run` debe llamar `record_f26_run()` él
+   mismo al terminar. Hoy es un paso manual separado — ahí es exactamente
+   donde se pierde en la práctica (se corre, nadie teclea el `record-run`,
+   el gate queda "due" para siempre pese a que sí se corrió).
+4. **Notificación accionable cuando está "due"** — la pieza final, no la
+   primera: dado que disparar una sesión LLM real sigue siendo
+   deliberadamente caro y nunca automático, encaja con el patrón `spawn_task`
+   ya disponible en este entorno (chip visible, un gesto humano lo lanza).
+   Construir esto ANTES que 1-3 sería precisamente el parche a evitar.
+
+**Bloqueador abierto, no resuelto por esta sesión**: `claude -p --model
+sonnet` sigue dando 401 (credencial revocada) desde 2026-07-17 — requiere
+`claude setup-token` del operador en terminal interactiva. El sustituto
+(subagente Sonnet vía Agent tool) ya está VALIDADO como equivalente
+funcional (PRIME Cycle 6: 6/6 en comportamiento) si el bloqueo persiste.
+
+
 **Estado**: PENDIENTE — **bloqueado por credencial (N3)**. Intento real
 2026-07-17 08:3x: `claude -p --model sonnet` devolvió `401 OAuth access token
 has been revoked` (también con env limpio: las credenciales guardadas de la

@@ -35,6 +35,38 @@ del operador): wirear F2.6 como gate automático tras cambios grandes; detector
 de deriva ecosystem-map↔disco; reconciliar o abandonar formalmente la taxonomía
 árbol de esta spec en favor de la ya construida.
 
+**Decisión del operador (2026-07-22, cierre de sesión MAXIMUS)**: la taxonomía
+raíces/tronco/ramas/hojas/savia de la Sección 5 queda **formalmente SUPERSEDED**
+por la taxonomía real construida en `atlas_ecosystem_map.md` (Core/Capability/
+Adapter/MCP Surface/etc. + SELLADO/ACTIVO/PENDIENTE/PARK/VAPOR/MURO) — no se
+migra ni se abandona el mapa real; se abandona SOLO el vocabulario árbol de
+esta spec, que nunca se implementó y ya no debe usarse como referencia viva.
+El detector de deriva de Cycle 13 (`ecosystem_map_drift`, ver arriba) SÍ
+implementa el espíritu de "pieza sin fila en el mapa" que esta sección pedía
+— pero contra el mapa real, no contra un árbol paralelo.
+
+Esto fue el arreglo rápido decidido explícitamente por el operador ("algo
+rápido ahora, dejo apuntado para la sesión que lo haga bien") en vez de la
+reconciliación completa, que es trabajo de ingeniería real y se deja
+diseñado, no ejecutado, para una sesión futura dedicada:
+
+**Diseño de la reconciliación completa (para sesión futura, NO ejecutar aquí
+con presión de cierre)**:
+1. Añadir una columna `Tramo` (raíz/tronco/rama/hoja/savia) a cada una de las
+   51 filas de `atlas_ecosystem_map.md` — mapeo humano, no automatizable
+   (requiere juicio: ¿el Decider protocol es tronco o savia? ¿MerkleLogger es
+   savia o rama?). Estimado: 1-2h de trabajo de clasificación real, no de
+   código.
+2. Verificar que el mapeo produce una partición útil (cada Tramo debe agrupar
+   piezas con blast-radius/ciclo-de-vida similar — si `Tramo` no predice nada
+   que las columnas existentes ya no digan, es vocabulario decorativo y debe
+   descartarse formalmente en vez de mantenerse a medias).
+3. Solo si (2) confirma valor real: extender `ecosystem_drift.py` para poder
+   filtrar/agrupar por Tramo (p.ej. "deriva solo en ramas", útil para priorizar
+   qué auditar primero cuando el radar encuentra muchos hallazgos a la vez).
+4. Actualizar esta spec (Sección 5) para apuntar al mapa real con Tramo en vez
+   de describir un árbol que nunca existió como artefacto independiente.
+
 ## Contexto y decisiones previas
 
 - Miedo nº1 del operador: sucesión de modelo — cuando Fable no esté, ningún driver
