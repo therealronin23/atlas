@@ -19,6 +19,10 @@ docs/self_audit_latest.json
 # 115KB — índice máquina de docs/, dato tabular puro (ver docs/INDEX.yaml).
 docs/INDEX.yaml
 
+# Inventario del corpus (T0.5b paso 1, ATLAS PRIME Cycle 4, 2026-07-22):
+# lista de ~700 docs con bucket heurístico, dato tabular puro, sin prosa.
+docs/knowledge/corpus_inventory.json
+
 # Raw private ChatGPT export (1.7MB) already distilled into the canonical
 # Foundry note. Ingesting it duplicated stale UI alternatives and signed URLs.
 Diseño UI Atlas.md
