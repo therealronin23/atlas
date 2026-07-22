@@ -5,6 +5,23 @@ date: 2026-07-17
 verify_by: 2026-07-31
 ---
 
+## Estado (2026-07-22)
+
+Paso 3 EJECUTADO: `~/.claude.json` (proyecto `atlas-core`, conector
+`google-workspace`) reconfigurado para lanzar via
+`scripts/google_workspace_mcp_wrapper.sh --tool-tier core` con `env: {}` —
+verificado: cero coincidencias de `GOCSPX`/`344051770277` en el fichero tras
+el cambio; wrapper probado en aislado (secreto se inyecta vía
+`safe_dotenv.py`, nunca en argv). Efectivo desde el PRÓXIMO arranque del
+conector (las sesiones ya vivas siguen con el argv viejo hasta reiniciarse).
+
+Paso 1 (revocar el secreto viejo en Google Cloud Console): el operador
+reporta haber cambiado el client ID — **pendiente de confirmación explícita**
+de que el secreto expuesto (`GOCSPX-[REDACTED-2026-07-22-scrubbed-from-history]`,
+client `344051770277-...`) quedó invalidado en la consola, no solo
+sustituido en `~/.config/atlas/google-oauth.env` (que ya tiene el par nuevo,
+client `228819788474-...`, permisos 0600 correctos).
+
 # Rotación del secreto OAuth de Google Workspace (hallazgo abierto del audit 2026-07-16)
 
 ## Qué pasó (verificado en vivo 2026-07-17 08:2x)
