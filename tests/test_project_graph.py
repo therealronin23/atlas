@@ -300,3 +300,73 @@ def test_resolve_graph_embedder_fastembed_without_loading_model(monkeypatch: pyt
     embedder = resolve_graph_embedder()
     assert embedder is not None
     assert embedder.dim == 384
+
+
+# ---------------------------------------------------------------------------
+# graph_freshness — helper read-only compartido por graph_server y `atlas reality`
+
+
+def test_graph_freshness_no_db(tmp_path: Path) -> None:
+    from atlas.memory.project_graph import graph_freshness
+
+    state = graph_freshness(tmp_path / "missing.kuzu", repo_root=tmp_path)
+    assert state["status"] == "NO_DB"
+    assert state["db_path"] == str(tmp_path / "missing.kuzu")
+
+
+def test_graph_freshness_fresh_dirty_stale(tiny_repo: Path, tmp_path: Path) -> None:
+    from atlas.memory.project_graph import build_project_graph, graph_freshness
+
+    db_path = tmp_path / "pg.kuzu"
+    build_project_graph(tiny_repo, db_path, commits=10)
+
+    state = graph_freshness(db_path, repo_root=tiny_repo)
+    assert state["status"] == "FRESH"
+    assert state["graph_commit_sha"] == _git(tiny_repo, "rev-parse", "HEAD")
+    assert state["source_tree_dirty"] is False
+
+    # Editar src/atlas sin commitear -> DIRTY (el grafo no representa el árbol vivo).
+    (tiny_repo / "src" / "atlas" / "a.py").write_text("X = 2\n")
+    assert graph_freshness(db_path, repo_root=tiny_repo)["status"] == "DIRTY"
+
+    # Commit nuevo no ingerido -> STALE.
+    _git(tiny_repo, "add", ".")
+    _git(tiny_repo, "-c", "user.email=t@t.t", "-c", "user.name=t", "commit", "-q", "-m", "c3")
+    stale = graph_freshness(db_path, repo_root=tiny_repo)
+    assert stale["status"] == "STALE"
+    assert stale["head_sha"] == _git(tiny_repo, "rev-parse", "HEAD")
+
+
+def test_graph_freshness_server_sha_semantics(tiny_repo: Path, tmp_path: Path) -> None:
+    """None = sin server en juego (reality); '' = server sin sha; distinto = SERVER_STALE."""
+    from atlas.memory.project_graph import build_project_graph, graph_freshness
+
+    db_path = tmp_path / "pg.kuzu"
+    build_project_graph(tiny_repo, db_path, commits=10)
+    head = _git(tiny_repo, "rev-parse", "HEAD")
+
+    assert (
+        graph_freshness(db_path, repo_root=tiny_repo, server_started_head_sha=head)["status"]
+        == "FRESH"
+    )
+    assert (
+        graph_freshness(db_path, repo_root=tiny_repo, server_started_head_sha="")["status"]
+        == "UNKNOWN"
+    )
+    assert (
+        graph_freshness(db_path, repo_root=tiny_repo, server_started_head_sha="deadbeef")["status"]
+        == "SERVER_STALE"
+    )
+
+
+def test_graph_freshness_empty_db(tiny_repo: Path, tmp_path: Path) -> None:
+    """BD kuzu existente pero sin FileVersion ingerido -> EMPTY, no excepción."""
+    db_path = tmp_path / "empty.kuzu"
+    db = kuzu.Database(str(db_path))
+    kuzu.Connection(db).close()
+    del db
+
+    from atlas.memory.project_graph import graph_freshness
+
+    state = graph_freshness(db_path, repo_root=tiny_repo)
+    assert state["status"] == "EMPTY"

@@ -356,3 +356,25 @@ def test_playwright_chromium_executable_stops_manager(monkeypatch, tmp_path: Pat
     assert path == expected
     assert error == ""
     assert stopped == [True]
+
+
+def test_graph_state_no_db(tmp_path: Path, monkeypatch) -> None:
+    from atlas.core import reality
+
+    monkeypatch.setenv("ATLAS_GRAPH_DB", str(tmp_path / "missing.kuzu"))
+    state = reality._graph_state(tmp_path)
+    assert state["status"] == "NO_DB"
+    assert state["db_path"] == str(tmp_path / "missing.kuzu")
+
+
+def test_collect_reality_wires_graph_section(tmp_path: Path, monkeypatch) -> None:
+    root = _mini_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_GRAPH_DB", str(tmp_path / "missing.kuzu"))
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["graph"]["status"] == "NO_DB"
+    graph_caps = [c for c in report["capabilities"] if c["name"] == "graph.project"]
+    assert len(graph_caps) == 1
+    assert graph_caps[0]["status"] == "degraded"
+    assert "NO_DB" in graph_caps[0]["evidence"]

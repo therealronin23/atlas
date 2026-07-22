@@ -14,7 +14,6 @@ SDK `mcp` opcional, import diferido, sin lógica de dominio aquí.
 from __future__ import annotations
 
 import os
-import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -22,8 +21,7 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 from atlas.core.graphs import QUERIES
-from atlas.core.git_env import clean_git_env
-from atlas.memory.project_graph import DEFAULT_GRAPH_DB
+from atlas.memory.project_graph import DEFAULT_GRAPH_DB, graph_freshness, graph_head_sha
 
 
 def _rows(result: Any) -> list[tuple[Any, ...]]:
@@ -58,57 +56,12 @@ def build_graph_server(
             conn.close()
             db.close()
 
-    def _head_sha() -> str:
-        if repo_root is None:
-            return ""
-        try:
-            return subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                cwd=repo_root,
-                env=clean_git_env(),
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout.strip()
-        except (OSError, subprocess.CalledProcessError):
-            return ""
-
     # A stdio MCP process imports its implementation once. The project graph
     # can be atomically rebuilt underneath it, but that must not make an old
     # server binary look current after HEAD advances. Capture the deployment
     # revision and require a process restart before serving present-tense
     # dependency answers for a newer checkout.
-    server_started_head_sha = _head_sha()
-
-    def _source_tree_dirty() -> bool | None:
-        """Whether committed graph inputs differ from the working tree.
-
-        The project graph is intentionally built from ``git show`` snapshots of
-        ``src/atlas``.  Matching HEAD alone is therefore insufficient while an
-        agent is editing source files: those edits are not represented in Kuzu.
-        ``None`` means the check itself could not be trusted.
-        """
-        if repo_root is None:
-            return None
-        try:
-            result = subprocess.run(
-                [
-                    "git",
-                    "status",
-                    "--porcelain=v1",
-                    "--untracked-files=all",
-                    "--",
-                    "src/atlas",
-                ],
-                cwd=repo_root,
-                env=clean_git_env(),
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-        except (OSError, subprocess.CalledProcessError):
-            return None
-        return bool(result.stdout.strip())
+    server_started_head_sha = graph_head_sha(repo_root)
 
     def _latest_snapshot() -> tuple[str, int, Any] | None:
         rows = _query(
@@ -121,23 +74,17 @@ def build_graph_server(
         return str(rows[0][0]), int(rows[0][1]), rows[0][2]
 
     def _freshness() -> tuple[str, str, str, bool | None]:
-        latest = _latest_snapshot()
-        graph_sha = latest[0] if latest else ""
-        head_sha = _head_sha()
-        source_dirty = _source_tree_dirty()
-        if not graph_sha:
-            return "EMPTY", graph_sha, head_sha, source_dirty
-        if not head_sha or source_dirty is None:
-            return "UNKNOWN", graph_sha, head_sha, source_dirty
-        if graph_sha != head_sha:
-            return "STALE", graph_sha, head_sha, source_dirty
-        if source_dirty:
-            return "DIRTY", graph_sha, head_sha, source_dirty
-        if not server_started_head_sha:
-            return "UNKNOWN", graph_sha, head_sha, source_dirty
-        if server_started_head_sha != head_sha:
-            return "SERVER_STALE", graph_sha, head_sha, source_dirty
-        return "FRESH", graph_sha, head_sha, source_dirty
+        state = graph_freshness(
+            db_path,
+            repo_root=repo_root,
+            server_started_head_sha=server_started_head_sha,
+        )
+        return (
+            str(state["status"]),
+            str(state["graph_commit_sha"]),
+            str(state["head_sha"]),
+            state["source_tree_dirty"],
+        )
 
     def _require_fresh_sha() -> str:
         status, graph_sha, head_sha, source_dirty = _freshness()

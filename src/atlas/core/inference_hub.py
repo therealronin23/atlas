@@ -228,23 +228,11 @@ DEFAULT_PROVIDERS: list[Provider] = [
     # 2026-07-08: openrouter_liquid (liquid/lfm-2.5-1.2b-instruct:free) RETIRADO
     # — NotFound verificado en vivo (OpenRouter eliminó el endpoint); dejarlo
     # quemaba una llamada fallida por pasada del fallback.
-    # 2026-06-27: Qwen3-Coder-480B, el mismo modelo que solo teníamos vía NIM de
-    # pago (nvidia_qwen3_coder), disponible GRATIS en OpenRouter. Prove-it en vivo:
-    # OK, pero rate-limited upstream con frecuencia ("temporarily rate-limited
-    # upstream") — modelo muy demandado. Se mantiene nvidia_qwen3_coder como
-    # fallback de pago si este falla.
-    Provider(
-        name="openrouter_qwen3_coder_free",
-        level=InferenceLevel.L1,
-        base_url="https://openrouter.ai/api/v1",
-        model_id="qwen/qwen3-coder:free",
-        litellm_model="openrouter/qwen/qwen3-coder:free",
-        api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
-        rpm_limit=20,
-        context_tokens=262144,
-        roles=("edit",),  # coding-específico, agéntico, purpose-built
-    ),
+    # 2026-06-27: Qwen3-Coder-480B gratis en OpenRouter (roles edit); ya entonces
+    # "temporarily rate-limited upstream" con frecuencia.
+    # 2026-07-22: openrouter_qwen3_coder_free RETIRADO — el provider smoke diario
+    # lo marca dead (429 upstream persistente; última corrida 2026-07-17, único
+    # failed de 14). Quemaba una llamada fallida por pasada del fallback de edit.
     # 2026-06-27: Nemotron-3-Ultra 550B gratis en OpenRouter. Prove-it en vivo: OK.
     Provider(
         name="openrouter_nemotron_ultra",
@@ -308,8 +296,9 @@ DEFAULT_PROVIDERS: list[Provider] = [
     # HTTP 410 Gone: "The model 'qwen/qwen3-coder-480b-a35b-instruct' has
     # reached its end of life on 2026-06-11T00:00:00Z". Estaba MUERTO desde
     # antes de que lo "verificáramos" el 2026-06-26 (esa verificación no hizo
-    # una llamada real, o el modelo murió justo después). openrouter_qwen3_coder_free
-    # sigue siendo el único acceso vivo a este modelo (vía OpenRouter, no NIM).
+    # una llamada real, o el modelo murió justo después). El acceso vía OpenRouter
+    # (openrouter_qwen3_coder_free) también cayó — retirado 2026-07-22 (429
+    # upstream persistente): Qwen3-Coder-480B ya no tiene acceso vivo en la cadena.
     #
     # L2 — NVIDIA NIM (meta/llama-3.3-70b-instruct, pool 2 cuentas). Prove-it 2026-06-22:
     # en este tier responden modelos 70B; 405b/deepseek/nemotron dan 404/410. Aporta

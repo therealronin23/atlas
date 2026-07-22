@@ -58,6 +58,7 @@ def collect_reality(
         "autonomy": _autonomy_state(),
         "docs": _docs_state(root),
         "provider_smoke": _provider_smoke_state(root),
+        "graph": _graph_state(root),
         "checks": {},
     }
     report["capabilities"] = _capability_plane(report)
@@ -308,6 +309,29 @@ def _autonomy_state() -> dict[str, Any]:
     }
 
 
+def _graph_state(root: Path) -> dict[str, Any]:
+    """Frescura del grafo vivo Kuzu (proyección read-only, sin arrancar el
+    server MCP). Mismo principio fail-honesto que ``_provider_smoke_state``:
+    nunca lanza; si kuzu/el módulo no están disponibles lo dice y sigue.
+    ``ATLAS_GRAPH_DB`` permite apuntar a otra BD (tests/ops)."""
+    base: dict[str, Any] = {
+        "status": "UNAVAILABLE",
+        "db_path": None,
+        "graph_commit_sha": "",
+        "head_sha": "",
+        "source_tree_dirty": None,
+    }
+    try:
+        from atlas.memory.project_graph import DEFAULT_GRAPH_DB, graph_freshness
+    except Exception as exc:  # noqa: BLE001
+        return {**base, "reason": f"project_graph import failed: {type(exc).__name__}"}
+    db_path = Path(os.environ.get("ATLAS_GRAPH_DB") or DEFAULT_GRAPH_DB).expanduser()
+    try:
+        return graph_freshness(db_path, repo_root=root)
+    except Exception as exc:  # noqa: BLE001
+        return {**base, "db_path": str(db_path), "reason": type(exc).__name__}
+
+
 def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
     """Static capability inventory with honest readiness labels."""
     browser = report["browser"]
@@ -316,6 +340,7 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
     mcp = report["mcp"]
     merkle = report["workspace"]["merkle"]
     autonomy = report["autonomy"]
+    graph = report["graph"]
     bwrap_available = shutil.which("bwrap") is not None
     return [
         {
@@ -375,6 +400,16 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
                 f"enabled_servers={mcp['enabled_count']}; unregister cannot undo "
                 "effects performed by third-party code"
             ),
+        },
+        {
+            "name": "graph.project",
+            # FRESH es el único estado en que las respuestas del grafo hablan
+            # del presente; todo lo demás (STALE/DIRTY/NO_DB/...) degrada.
+            "status": "ready" if graph.get("status") == "FRESH" else "degraded",
+            "trusted": True,
+            "mutating": False,
+            "reversible": False,
+            "evidence": f"freshness={graph.get('status')}: {graph.get('reason', '')}",
         },
         {
             "name": "self_improvement.cold_update",

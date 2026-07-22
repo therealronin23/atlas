@@ -8,6 +8,27 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **ATLAS PRIME Cycle 1 — daemon rearrancado + frescura del grafo en reality +
+  proveedor muerto retirado (2026-07-22)** — el daemon llevaba PARADO desde el
+  2026-07-17 12:21 (stop limpio vía systemctl, nunca rearrancado; la guarda
+  SessionStart avisó y se actuó): `active` de nuevo. Gap de honestidad cerrado:
+  `atlas reality` ahora aflora la frescura del grafo Kuzu — `graph_freshness()`
+  en project_graph.py como FUENTE ÚNICA del vocabulario FRESH/DIRTY/STALE/
+  SERVER_STALE/EMPTY/UNKNOWN/NO_DB/UNAVAILABLE; graph_server MCP ahora DELEGA
+  en él (fin de la lógica duplicada), sección `graph` + capability
+  `graph.project` en reality (fail-honesto estilo provider_smoke, seam
+  ATLAS_GRAPH_DB). Verificado en vivo: reporta DIRTY con el árbol sucio de esta
+  misma sesión — exactamente la verdad. openrouter_qwen3_coder_free RETIRADO
+  del hub (smoke diario: dead, 429 upstream persistente, único failed de 14;
+  patrón comentario fechado; Qwen3-Coder-480B queda sin acceso vivo en la
+  cadena). TDD real (RED visto), 149 tests dirigidos verdes, mypy --strict
+  limpio en los 4 ficheros. Journal: persisten 2 stop-sigterm timeout→SIGKILL
+  (12-jul y 17-jul 07:47) — el apagado se cuelga ~90s; sospecha
+  cgroup/hijos (unit sin KillMode/TimeoutStopSec explícitos) — ciclo propio.
+  **Próxima acción:** Cycle 2 — watchdog de vida del daemon (de aviso a acción,
+  con opt-out documentado para parking deliberado) + fix ventana SIGTERM +
+  TimeoutStopSec en el unit; después GoldenRoute wiring (implementado+probado
+  pero huérfano de callers) y T0.5b digestión.
 - **OLA BOOTSTRAP COMPLETA — T0 núcleo de sucesión + T5.1 + cola de auditoría
   (2026-07-17)** — 8 commits: c0f2b72f/2852e132/68ff22f6 (T0: migración de 58
   memorias harness + 2 doctrinas al sustrato con procedencia, recall verificado
