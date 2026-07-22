@@ -52,7 +52,12 @@ def test_tool_overhead_is_small_anti_kitchen_sink() -> None:
     from atlas.mcp.trunk_manifest import tool_overhead
 
     # Superficie PEQUEÑA: las 4 raíces juntas exponen pocas tools (no 200).
-    assert tool_overhead() <= 23
+    # 25 desde d39782c8 (2026-07-16, F3 cerrada): graph_communities +
+    # graph_semantic_neighbors añadidas a atlas-graph (9->11 tools), commit
+    # que olvidó subir este umbral — quedó roto en silencio 6 días hasta que
+    # F2.6 corrió la suite completa (2026-07-22). Cada tool nueva real debe
+    # subir este número A PROPÓSITO, en el mismo commit que la añade.
+    assert tool_overhead() <= 25
 
 
 # ---------------------------------------------------------------------------
