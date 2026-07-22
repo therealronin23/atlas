@@ -18,12 +18,15 @@
 # atlas-core.service esté vivo para ejecutarse.
 #
 # Testabilidad: systemctl se resuelve vía PATH (mockeable) — ver
-# tests/test_daemon_idle_guard.py, que antepone un `systemctl` falso al PATH
-# en vez de tocar el daemon real. Nunca se hace start/stop/restart aquí.
+# tests/test_daemon_idle_guard.py. La acción (start) ocurre solo si NO hay
+# un marcador `~/.atlas/daemon_idle_parked` (opt-out del operador — tócalo para
+# aparcar deliberadamente, p.ej. durante mantenimiento).
 set -euo pipefail
 
 UNIT="${DAEMON_IDLE_GUARD_UNIT:-atlas-core.service}"
 THRESHOLD_SECONDS="${DAEMON_IDLE_GUARD_THRESHOLD_SECONDS:-86400}"
+PARKED_FLAG="${DAEMON_IDLE_PARKED_FLAG:-${HOME:-.}/.atlas/daemon_idle_parked}"
+ACTION_DELAY_SECONDS="${DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS:-300}"  # 5 min after warn
 
 if ! [[ "$THRESHOLD_SECONDS" =~ ^[0-9]+$ ]]; then
   THRESHOLD_SECONDS=86400
@@ -65,9 +68,24 @@ idle_seconds=$(( now_epoch - inactive_epoch ))
 if [ "$idle_seconds" -gt "$THRESHOLD_SECONDS" ]; then
   idle_hours=$(( idle_seconds / 3600 ))
   if [ "$timestamp_source" = "journal" ]; then
-    echo "### AVISO: ${UNIT} lleva sin actividad registrada ~${idle_hours}h (última evidencia: journal). Si esperabas el daemon vivo: systemctl --user start ${UNIT}"
+    msg="### AVISO: ${UNIT} lleva sin actividad registrada ~${idle_hours}h (última evidencia: journal). Si esperabas el daemon vivo: systemctl --user start ${UNIT}. Para aparcar deliberadamente: touch $PARKED_FLAG"
   else
-    echo "### AVISO: ${UNIT} lleva inactivo ~${idle_hours}h (desde ${inactive_ts_raw}). Si esperabas el daemon vivo: systemctl --user start ${UNIT}"
+    msg="### AVISO: ${UNIT} lleva inactivo ~${idle_hours}h (desde ${inactive_ts_raw}). Si esperabas el daemon vivo: systemctl --user start ${UNIT}. Para aparcar deliberadamente: touch $PARKED_FLAG"
+  fi
+  echo "$msg"
+
+  # Si el operador no aparó deliberadamente, rearranca en background tras demora
+  # (permite al operador tocar el parked flag si no quiere el auto-restart).
+  if [ ! -f "$PARKED_FLAG" ]; then
+    (
+      sleep "$ACTION_DELAY_SECONDS"
+      # Verificación final: si sigue parado Y sin parked flag, arranca
+      if [ "$(systemctl --user is-active "$UNIT" 2>/dev/null || true)" != "active" ] && \
+         [ ! -f "$PARKED_FLAG" ]; then
+        systemctl --user start "$UNIT" >/dev/null 2>&1 || true
+      fi
+    ) &
+    disown 2>/dev/null || true
   fi
 fi
 

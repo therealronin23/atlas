@@ -25,9 +25,10 @@ UNIT = "atlas-core.service"
 
 _MOCK_SYSTEMCTL_TEMPLATE = """\
 #!/usr/bin/env bash
-# Mock de systemctl para tests de daemon_idle_guard.sh — solo entiende
-# `is-active` y `show -p InactiveEnterTimestamp --value`, ambos read-only.
+# Mock de systemctl para tests de daemon_idle_guard.sh — entiende is-active,
+# is-enabled, show (read-only) + start (escritura, registrada en un fichero).
 set -euo pipefail
+CALLS_FILE="{calls_file}"
 if [ "$1" = "--user" ] && [ "$2" = "is-active" ]; then
   echo "{state}"
   exit 0
@@ -38,6 +39,10 @@ if [ "$1" = "--user" ] && [ "$2" = "is-enabled" ]; then
 fi
 if [ "$1" = "--user" ] && [ "$2" = "show" ]; then
   echo "{inactive_ts}"
+  exit 0
+fi
+if [ "$1" = "--user" ] && [ "$2" = "start" ]; then
+  echo "start atlas-core.service" >> "$CALLS_FILE"
   exit 0
 fi
 echo "unexpected mock systemctl invocation: $*" >&2
@@ -62,9 +67,12 @@ def _install_mock_systemctl(
 ) -> Path:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
+    calls_file = tmp_path / "systemctl_calls.txt"
     mock = bin_dir / "systemctl"
     mock.write_text(
-        _MOCK_SYSTEMCTL_TEMPLATE.format(state=state, inactive_ts=inactive_ts),
+        _MOCK_SYSTEMCTL_TEMPLATE.format(
+            state=state, inactive_ts=inactive_ts, calls_file=str(calls_file)
+        ),
         encoding="utf-8",
     )
     mock.chmod(0o755)
@@ -146,7 +154,7 @@ class TestInactiveOver24hWarns:
         bin_dir = _install_mock_systemctl(
             tmp_path, state="inactive", inactive_ts=inactive_ts
         )
-        result = _run(bin_dir)
+        result = _run(bin_dir, DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS="0")
         assert result.returncode == 0, result.stderr
         lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
         assert len(lines) == 1, (
@@ -161,7 +169,11 @@ class TestInactiveOver24hWarns:
         bin_dir = _install_mock_systemctl(
             tmp_path, state="inactive", inactive_ts=inactive_ts
         )
-        result = _run(bin_dir, DAEMON_IDLE_GUARD_THRESHOLD_SECONDS="3600")
+        result = _run(
+            bin_dir,
+            DAEMON_IDLE_GUARD_THRESHOLD_SECONDS="3600",
+            DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS="0",
+        )
         assert result.returncode == 0, result.stderr
         lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
         assert len(lines) == 1, (
@@ -193,7 +205,80 @@ class TestNeverActiveIsSilent:
             inactive_ts="",
             journal_epoch=journal_epoch,
         )
-        result = _run(bin_dir)
+        result = _run(bin_dir, DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS="0")
         assert result.returncode == 0, result.stderr
         assert UNIT in result.stdout
         assert "journal" in result.stdout
+
+
+class TestAutoRestartWithOptOut:
+    def test_auto_restarts_after_idle_threshold_without_parked_flag(
+        self, tmp_path: Path
+    ) -> None:
+        """Inactivo >24h + sin parked flag → auto-start tras ACTION_DELAY."""
+        inactive_ts = _timestamp_hours_ago(25)
+        bin_dir = _install_mock_systemctl(
+            tmp_path, state="inactive", inactive_ts=inactive_ts
+        )
+        atlas_dir = tmp_path / ".atlas"
+        atlas_dir.mkdir()
+        result = _run(
+            bin_dir,
+            HOME=str(tmp_path),
+            DAEMON_IDLE_GUARD_THRESHOLD_SECONDS="3600",  # 1h
+            DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS="0",  # 0 = inmediato
+        )
+        assert result.returncode == 0, result.stderr
+        assert "AVISO" in result.stdout
+        # El background job debe haber sido disparado; esperar a que complete.
+        import time
+        time.sleep(0.5)
+        calls_file = tmp_path / "systemctl_calls.txt"
+        assert calls_file.exists(), "systemctl start no fue llamado"
+        calls = calls_file.read_text(encoding="utf-8")
+        assert "start atlas-core.service" in calls
+
+    def test_respects_parked_flag(self, tmp_path: Path) -> None:
+        """Inactivo >24h + parked flag EXISTS → aviso pero NO auto-start."""
+        inactive_ts = _timestamp_hours_ago(25)
+        bin_dir = _install_mock_systemctl(
+            tmp_path, state="inactive", inactive_ts=inactive_ts
+        )
+        atlas_dir = tmp_path / ".atlas"
+        atlas_dir.mkdir()
+        parked_flag = atlas_dir / "daemon_idle_parked"
+        parked_flag.touch()
+        result = _run(
+            bin_dir,
+            HOME=str(tmp_path),
+            DAEMON_IDLE_GUARD_THRESHOLD_SECONDS="3600",
+            DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS="0",
+        )
+        assert result.returncode == 0, result.stderr
+        assert "AVISO" in result.stdout
+        import time
+        time.sleep(0.5)
+        calls_file = tmp_path / "systemctl_calls.txt"
+        if calls_file.exists():
+            calls = calls_file.read_text(encoding="utf-8")
+            assert "start atlas-core.service" not in calls, (
+                "parked flag debe prevenir auto-start"
+            )
+
+    def test_warning_mentions_parked_flag(self, tmp_path: Path) -> None:
+        """Aviso debe documentar cómo aparcar (touch $PARKED_FLAG)."""
+        inactive_ts = _timestamp_hours_ago(25)
+        bin_dir = _install_mock_systemctl(
+            tmp_path, state="inactive", inactive_ts=inactive_ts
+        )
+        result = _run(
+            bin_dir,
+            HOME=str(tmp_path),
+            DAEMON_IDLE_GUARD_THRESHOLD_SECONDS="3600",
+            DAEMON_IDLE_GUARD_ACTION_DELAY_SECONDS="0",
+        )
+        assert result.returncode == 0, result.stderr
+        assert "AVISO" in result.stdout
+        assert "daemon_idle_parked" in result.stdout, (
+            "el aviso debe decir cómo aparcar"
+        )
