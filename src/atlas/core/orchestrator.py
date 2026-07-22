@@ -169,6 +169,7 @@ class Orchestrator:
     _cold_update_manager: Any
     _golden_route: Any
     _plugin_receipt_broker: Any
+    _plugin_activator: Any
     _self_audit_runner: Any
     _swarm_cycle: Any
     _knowledge_cve_proposer: Any
@@ -572,6 +573,22 @@ class Orchestrator:
                 decider=self._decider,
             )
         return self._plugin_receipt_broker
+
+    def plugin_activator(self) -> Any:
+        """ADR-073 A3.3 — PluginActivator sobre el MISMO Merkle/decisor y el
+        MISMO broker de `plugin_receipts()`: consume solo recibos `issued`
+        emitidos por ese broker, nunca reconstruye uno propio."""
+        if self._plugin_activator is None:
+            from atlas.mcp.plugin_activator import PluginActivator
+
+            self._plugin_activator = PluginActivator(
+                broker=self.plugin_receipts(),
+                merkle=self._merkle,
+                active_root=self._workspace / "plugins" / "active",
+                store_dir=self._workspace / "plugins" / "activations",
+                decider=self._decider,
+            )
+        return self._plugin_activator
 
     def advance_cold_update(self, proposal_id: str) -> str:
         """Avanza una propuesta de ColdUpdate bajo veredicto del decisor (ADR-040).
@@ -1897,6 +1914,7 @@ class Orchestrator:
         self._cold_update_manager = None
         self._golden_route = None
         self._plugin_receipt_broker = None
+        self._plugin_activator = None
         self._swarm_cycle = None
         self._self_audit_runner = None
         self._knowledge_cve_proposer = None

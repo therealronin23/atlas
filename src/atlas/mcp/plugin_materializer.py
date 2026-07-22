@@ -202,6 +202,27 @@ def _tree_sha256(files: list[tuple[str, str, int]]) -> str:
     return hashlib.sha256("\n".join(entries).encode("utf-8")).hexdigest()
 
 
+def compute_tree_sha256(root: Path) -> str:
+    """Re-verificación independiente del MISMO algoritmo que `_tree_sha256`
+    sobre un árbol ya en disco (no una lista de tuplas ya caminada). Usado
+    por `plugin_activator` para comprobar, en el momento de activar, que un
+    árbol staged no mutó desde que se emitió el recibo — TOCTOU entre
+    materializar/emitir recibo y activar. Symlinks o ficheros irregulares
+    hacen fallar con ValueError: un árbol supuestamente inmutable con eso
+    dentro ya no es de fiar, con independencia del hash resultante."""
+    entries: list[str] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise ValueError(f"symlink en árbol staged: {path}")
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            raise ValueError(f"fichero irregular en árbol staged: {path}")
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        entries.append(f"{path.relative_to(root).as_posix()}\0{digest}")
+    return hashlib.sha256("\n".join(entries).encode("utf-8")).hexdigest()
+
+
 def _safe_name(name: str) -> str:
     cleaned = _SAFE_NAME.sub("-", name.lower()).strip("-")
     return cleaned or "plugin"

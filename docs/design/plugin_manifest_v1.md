@@ -7,8 +7,20 @@
   árbol) y re-escaneo post-copia vía el gate A2. A3.2 construido y cableado
   (2026-07-22): `atlas.mcp.plugin_receipt_broker.PluginReceiptBroker`, sobre
   `Orchestrator.plugin_receipts()` (mismo Merkle/decisor que el resto del
-  sistema — sin camino especial para plugins). Fuentes remotas y activador
-  reversible (A3.3) siguen sin existir por diseño.
+  sistema — sin camino especial para plugins). A3.3 construido y cableado
+  (2026-07-22): `atlas.mcp.plugin_activator.PluginActivator` sobre
+  `Orchestrator.plugin_activator()` — aplica contribuciones vía symlink
+  (fuente única, nunca copia bytes) y revoca/borra staging. **Camino A
+  (ADR-072/073) cerrado de punta a punta para fuente LOCAL.** Fuentes
+  remotas y tipos ejecutables (condición 5) siguen sin existir por diseño.
+  **Honestidad de alcance**: el activador aplica los 4 `kind` del manifest
+  (`skill`/`prompt`/`rule`/`command`) de forma uniforme bajo
+  `<workspace>/plugins/active/<plugin_id>/<kind>/`, pero solo `skill` tiene
+  HOY un consumidor runtime real (`atlas.mcp.skills_store.SkillStore`, que
+  sirve `docs/skills/`, NO el árbol de plugins activos) — `SkillStore` no
+  fue extendido para descubrir plugins activados; eso es trabajo aparte, no
+  reclamado aquí. `prompt`/`rule`/`command` se aplican mecánicamente sin que
+  nada los lea todavía.
 - Autoridad: [ADR-073](../decisions/adr/adr_073_declarative_plugin_manifest_v1.md).
 
 ## Contrato mínimo
@@ -90,5 +102,19 @@ simbólico bloquean. `review` no se promociona automáticamente.
    explícito.
 4. Activador reversible que consuma sólo ese recibo, aplique contribuciones
    declarativas y permita revocar/borrar staging sin tocar el árbol principal.
+   — HECHO (2026-07-22, `plugin_activator.py`): re-verifica `tree_sha256` Y
+   `manifest_sha256` del recibo contra el árbol staged EN CADA punto de
+   confianza (`activate()` y de nuevo en `approve_activation()` — dos
+   ventanas TOCTOU distintas), nunca confía en el recibo como cheque en
+   blanco. Aplica cada contribución como symlink dentro de
+   `<workspace>/plugins/active/<plugin_id>/<kind>/<contribution_id>.md`
+   (fuente única, igual que `SkillStore`: nunca copia bytes). Activar
+   consulta el `Decider` de nuevo (`mutating=True, requires_approval=True`,
+   propio de `approve_activation()`/`revoke()` — NO reutiliza el veredicto
+   del recibo: un `admit`/aprobación de A2 fue evidencia, nunca permiso de
+   instalación). `revoke()` NO consulta al decisor (retirar capacidad no
+   necesita permiso) y por defecto borra staging (`--keep-staging` para no
+   hacerlo); nunca toca nada fuera de `active_root`/`staged_root`
+   (verificado con un canario en los tests).
 5. Los tipos ejecutables requieren un ADR posterior con sandbox/AST Guard y no
    entran como extensión de este contrato.

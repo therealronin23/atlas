@@ -8,6 +8,58 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 4 — A3.3: activador reversible, CAMINO A (ADR-072/073)
+  CERRADO de punta a punta para fuente LOCAL (2026-07-22 16:50)** — última
+  loncha de A3, continuación directa de A3.2 (Cycle 3). `atlas.mcp.
+  plugin_activator.PluginActivator`: consume EXCLUSIVAMENTE un
+  `PluginReceipt.status=="issued"` (nunca el `MaterializationResult`
+  original), re-verifica de forma independiente (`compute_tree_sha256`,
+  extraído de `plugin_materializer.py` con test de guardia anti-deriva) que
+  el árbol staged sigue siendo BYTE-A-BYTE el que el recibo describe — dos
+  veces: en `activate()` y de nuevo en `approve_activation()`, porque son
+  dos ventanas TOCTOU distintas (staging no está fs-locked, solo protegido
+  por convención + re-verificación en cada punto de confianza, mismo
+  principio que A2/A3.1). Aplica cada contribución como symlink bajo
+  `<workspace>/plugins/active/<plugin_id>/<kind>/<contribution_id>.md`
+  (fuente única — nunca copia bytes, mismo principio explícito del propio
+  `SkillStore`). **Decisión de diseño**: activar consulta el `Decider` DE
+  NUEVO (`mutating=True, requires_approval=True`) en vez de heredar el
+  veredicto del recibo — un `admit`/aprobación de A2 fue evidencia, nunca
+  permiso de instalación (promesa hecha explícita en la CLI desde Cycle 2,
+  honrada aquí). `revoke()` NO consulta al decisor (retirar capacidad no
+  necesita permiso, mismo principio que `ColdUpdateManager.rollback_applied`/
+  `reject()`) y por defecto BORRA staging (`--keep-staging` para no
+  hacerlo) — nunca toca nada fuera de `active_root`/`staged_root` (fijado
+  con un canario en los tests). Wire-before-claim:
+  `Orchestrator.plugin_activator()` (mismo patrón, reusa el MISMO
+  `plugin_receipts()` — nunca reconstruye un broker propio) + CLI `atlas
+  plugin activate` + `atlas plugin activation show/list/approve/revoke`;
+  corregido de paso un mensaje de CLI ya obsoleto ("A3.3 pendiente") que
+  Cycle 2 dejó en `plugin materialize` — ya no lo está. TDD real (RED
+  import → GREEN, 1 bug propio de fixture cazado — misma fuente reusada dos
+  veces en un test de reactivación, no un bug del activador; 1 colisión real
+  de mypy documentada y resuelta: un método público `.list()` sombreaba el
+  builtin `list` para anotaciones posteriores en la misma clase —
+  independiente del orden textual, por cómo `from __future__ import
+  annotations` resuelve strings contra el namespace completo de la clase;
+  fix con alias a nivel de módulo, sin renombrar la API pública). 21 tests
+  nuevos (19 unitarios + 2 CLI end-to-end), 108 verdes en toda el área
+  plugins+golden-route+CLI, 238 verdes en el barrido orchestrator+decider
+  completo. mypy canónico limpio. **Prove-it EN VIVO fuera del arnés,
+  cadena completa**: materialize (ATLAS_DECIDER=autonomous) → recibo
+  issued → activate → symlink real verificado apuntando a staging
+  (`readlink -f` confirma fuente única, contenido servido real) → revoke →
+  active_root Y staging ambos confirmados borrados → cadena Merkle real
+  verificada íntegra al final (`verify_chain() == (True, "OK")`).
+  ADR-073 y design doc actualizados con el estado real y una nota de
+  alcance honesta: el activador aplica los 4 `kind` uniformemente pero solo
+  `skill` tiene HOY un consumidor runtime (`SkillStore`, que sirve
+  `docs/skills/`, NO el árbol de plugins activos — no extendido, no
+  reclamado); `prompt`/`rule`/`command` se aplican sin que nada los lea aún.
+  **Próxima acción real (no A3, ese camino está cerrado):** extender
+  `SkillStore` para descubrir `<workspace>/plugins/active/*/skill/*.md` (el
+  gap de consumidor que este cycle documentó en vez de ocultar), o volver a
+  T0.5b paso 2 / las decisiones toasty / el master plan PRIME.
 - **MAXIMUS Cycle 3 — A3.2: recibo Merkle + broker de aprobación humana para
   plugins staged (2026-07-22 16:10)** — segunda loncha de A3 (ADR-073),
   continuación directa de A3.1 (Cycle 2). `atlas.mcp.plugin_receipt_broker.

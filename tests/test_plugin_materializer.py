@@ -230,6 +230,20 @@ def test_cli_plugin_materialize_block_exits_nonzero(tmp_path: Path) -> None:
     assert "block" in result.output
 
 
+def test_compute_tree_sha256_matches_provenance_no_drift(tmp_path: Path) -> None:
+    # Guardia anti-deriva: plugin_activator re-verifica con compute_tree_sha256
+    # de forma INDEPENDIENTE del algoritmo interno del materializador. Si
+    # algún día divergen, este test lo detecta antes que un falso-positivo
+    # "staged_tree_mutated_since_receipt" en producción.
+    from atlas.mcp.plugin_materializer import compute_tree_sha256
+
+    source = _source(tmp_path / "src" / "demo-plugin")
+    result = PluginMaterializer(staging_root=tmp_path / "staging").materialize_local(source)
+
+    assert result.provenance is not None
+    assert compute_tree_sha256(Path(result.staged_root)) == result.provenance.tree_sha256
+
+
 def test_module_has_no_network_or_process_surface() -> None:
     # ADR-073: "sin hooks ni red implícita" — por construcción, no por promesa.
     import atlas.mcp.plugin_materializer as module

@@ -344,7 +344,7 @@ def plugin_materialize(
     if receipt.status == "issued":
         console.print(
             "[green]issued[/green] (evidencia, no permiso de activación — "
-            "A3.3 pendiente)"
+            f"atlas plugin activate {receipt.receipt_id})"
         )
     elif receipt.status == "pending_approval":
         console.print(
@@ -402,6 +402,83 @@ def plugin_receipt_decline(receipt_id: str, reason: str) -> None:
         console.print(f"[red]{exc}[/red]")
         raise SystemExit(1) from exc
     console.print(f"[yellow]{receipt.status}[/yellow] {receipt.receipt_id}")
+
+
+@plugin.command("activate")
+@click.argument("receipt_id")
+def plugin_activate(receipt_id: str) -> None:
+    """ADR-073 A3.3 — activa las contribuciones de un recibo `issued`
+    (re-verifica el árbol staged contra el recibo antes de aplicar nada)."""
+    try:
+        record = get_orchestrator().plugin_activator().activate(receipt_id)
+    except (KeyError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    console.print(f"  activacion={record.activation_id} status={record.status}")
+    if record.status == "activated":
+        console.print(f"[green]activated[/green] {record.active_root}")
+    elif record.status == "pending_approval":
+        console.print(
+            "[yellow]pending_approval[/yellow] — "
+            f"atlas plugin activation approve {record.activation_id}"
+        )
+    else:
+        console.print(f"[red]{record.status}[/red] {', '.join(record.reason_codes)}")
+
+
+@plugin.group("activation")
+def plugin_activation() -> None:
+    """Activaciones A3.3 — resolución humana y revocación reversible."""
+
+
+@plugin_activation.command("show")
+@click.argument("activation_id")
+def plugin_activation_show(activation_id: str) -> None:
+    record = get_orchestrator().plugin_activator().get(activation_id)
+    if record is None:
+        console.print(f"[red]activación no encontrada: {activation_id}[/red]")
+        raise SystemExit(1)
+    console.print_json(record.model_dump_json())
+
+
+@plugin_activation.command("list")
+def plugin_activation_list() -> None:
+    for record in get_orchestrator().plugin_activator().list():
+        console.print(
+            f"{record.activation_id}  {record.status:<17} "
+            f"{record.plugin_id}  active_root={record.active_root}"
+        )
+
+
+@plugin_activation.command("approve")
+@click.argument("activation_id")
+def plugin_activation_approve(activation_id: str) -> None:
+    try:
+        record = get_orchestrator().plugin_activator().approve_activation(activation_id)
+    except (KeyError, RuntimeError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    if record.status != "activated":
+        console.print(f"[red]{record.status}[/red] {', '.join(record.reason_codes)}")
+        raise SystemExit(1)
+    console.print(f"[green]activated[/green] {record.active_root}")
+
+
+@plugin_activation.command("revoke")
+@click.argument("activation_id")
+@click.option(
+    "--keep-staging", is_flag=True, default=False,
+    help="no borrar el staging del recibo (por defecto SÍ se borra)",
+)
+def plugin_activation_revoke(activation_id: str, keep_staging: bool) -> None:
+    try:
+        record = get_orchestrator().plugin_activator().revoke(
+            activation_id, keep_staging=keep_staging
+        )
+    except (KeyError, RuntimeError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    console.print(f"[yellow]revoked[/yellow] {record.activation_id}")
 
 
 @cli.group("gate-h")
