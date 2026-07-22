@@ -43,3 +43,75 @@ def test_service_runner_start_stop(orch: Orchestrator, monkeypatch: pytest.Monke
     assert orch._offline_monitor is not None
     runner.stop()
     assert not runner._running
+
+
+# ---------------------------------------------------------------------------
+# Ventana SIGTERM en run_forever (ATLAS PRIME Cycle 5, 2026-07-22) — start()
+# lanza varios threads/servers y puede tardar; si los handlers de señal se
+# instalan DESPUÉS de start() (como antes), un SIGTERM/SIGINT llegado durante
+# el arranque cae en la acción por defecto del sistema (mata el proceso sin
+# pasar por stop(), sin limpieza, sin el log service.stopped).
+
+
+def test_run_forever_installs_signal_handlers_before_start(
+    orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Prueba la causa raíz directamente: el orden de instalación, no la
+    entrega real de la señal (frágil/no determinista en tests)."""
+    import signal
+
+    runner = AtlasServiceRunner(orch)
+    call_order: list[str] = []
+    monkeypatch.setattr(runner, "start", lambda: call_order.append("start"))
+    monkeypatch.setattr(runner, "stop", lambda: call_order.append("stop"))
+
+    original_signal = signal.signal
+
+    def _record_signal(signalnum: int, handler: object) -> object:
+        call_order.append(f"signal:{signalnum}")
+        return original_signal(signalnum, handler)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(signal, "signal", _record_signal)
+
+    # start() mockeado no toca _running (queda False del __init__): el bucle
+    # while no se ejecuta y run_forever vuelve enseguida — sin eso el test
+    # colgaría en un bucle infinito.
+    runner.run_forever(poll_interval_s=0.001)
+
+    start_index = call_order.index("start")
+    signal_indices = [i for i, c in enumerate(call_order) if c.startswith("signal:")]
+    assert signal_indices, call_order
+    assert all(i < start_index for i in signal_indices), (
+        f"las señales deben instalarse ANTES de start(): {call_order}"
+    )
+
+
+def test_stop_cleans_up_even_if_running_flag_was_cleared_before_stop_call(
+    orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Modela la carrera real: start() fija `_running=True` en mitad de su
+    ejecución (linea ~335); si una señal llega justo después y limpia
+    `_running` a False ANTES de que `stop()` corra, el guard viejo
+    (`if not self._running: return`) trataba eso como 'nunca arrancó' y
+    saltaba TODA la limpieza (offline monitor, telegram, log service.stopped
+    nunca se escribía) — sin lanzar, sin avisar. `stop()` ahora debe basar el
+    guard en que `start()` completó, no en el valor de `_running` en ese
+    instante."""
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("ATLAS_PROMETHEUS", raising=False)
+    monkeypatch.delenv("ATLAS_SERVE_DASHBOARD", raising=False)
+    monkeypatch.delenv("ATLAS_THERMAL_MONITOR", raising=False)
+    runner = AtlasServiceRunner(orch)
+    runner.start()
+    assert orch._offline_monitor is not None
+    monitor = orch._offline_monitor
+
+    # Simula la señal llegando justo tras start(), antes de stop().
+    runner._running = False
+
+    runner.stop()
+
+    # Si la limpieza real corrió: el orquestador soltó la referencia (stop_offline_monitor
+    # la pone a None) y el propio monitor quedó parado de verdad.
+    assert orch._offline_monitor is None
+    assert monitor._running is False

@@ -33,6 +33,12 @@ class AtlasServiceRunner:
     def __init__(self, orchestrator: Orchestrator) -> None:
         self._orch = orchestrator
         self._running = False
+        # Independiente de `_running` (que start() puede reescribir a mitad de
+        # su propia ejecución — línea ~335 más abajo): marca si start()
+        # completó, para que stop() decida limpiar en base a eso y no al
+        # valor de `_running` en el instante exacto en que se le llama (ver
+        # test_stop_cleans_up_even_if_running_flag_was_cleared_before_stop_call).
+        self._started = False
         self._dashboard_thread: threading.Thread | None = None
         self._self_audit_thread: threading.Thread | None = None
         self._swarm_thread: threading.Thread | None = None
@@ -344,10 +350,12 @@ class AtlasServiceRunner:
             risk_level="safe",
             payload={"version": self._orch.VERSION},
         )
+        self._started = True
 
     def stop(self) -> None:
-        if not self._running:
+        if not self._started:
             return
+        self._started = False
         self._running = False
         self._orch.stop_telegram_bot()
         self._orch.stop_offline_monitor()
@@ -398,18 +406,31 @@ class AtlasServiceRunner:
         return cancelled
 
     def run_forever(self, poll_interval_s: float = 1.0) -> None:
-        self.start()
+        # `threading.Event` propio, independiente de `_running`: start()
+        # reescribe `_running=True` a mitad de su propia ejecución (línea
+        # ~335 arriba), así que una señal llegada ANTES de ese punto quedaría
+        # silenciosamente sobrescrita si usáramos `_running` para decidir si
+        # saltar el bucle. `stop_requested` no lo toca nadie más que aquí.
+        stop_requested = threading.Event()
 
         def _handle_sig(_signum: int, _frame: Any) -> None:
             _log.info("Senal de parada recibida")
+            stop_requested.set()
             self._running = False
 
+        # Instalados ANTES de start(): start() lanza varios threads/servers y
+        # puede tardar; con los handlers instalados después (como antes), un
+        # SIGTERM/SIGINT durante el arranque caía en la acción por defecto
+        # del sistema — mataba el proceso sin pasar por stop(), sin log
+        # service.stopped, sin limpieza de telegram/offline monitor/etc.
         signal.signal(signal.SIGINT, _handle_sig)
         signal.signal(signal.SIGTERM, _handle_sig)
 
         try:
-            while self._running:
-                self.tick()
-                time.sleep(poll_interval_s)
+            self.start()
+            if not stop_requested.is_set():
+                while self._running:
+                    self.tick()
+                    time.sleep(poll_interval_s)
         finally:
             self.stop()
