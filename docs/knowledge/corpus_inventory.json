@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-22T14:11:08.724991+00:00",
+  "generated_at": "2026-07-22T20:41:22.784640+00:00",
   "repo_root": "/home/ronin/proyectos/atlas-core",
-  "total_docs": 705,
+  "total_docs": 708,
   "buckets": {
-    "sin_clasificar": 461,
+    "sin_clasificar": 459,
     "historico": 48,
     "alimenta_item": 52,
     "candidata": 1,
-    "alimenta_item_semantico": 143
+    "alimenta_item_semantico": 148
   },
   "docs": [
     {
@@ -40,7 +40,7 @@
     },
     {
       "path": "WORK_LEDGER.md",
-      "word_count": 8958,
+      "word_count": 12803,
       "bucket": "sin_clasificar",
       "semantic_score": 0.3946,
       "semantic_match": "T5"
@@ -1319,7 +1319,7 @@
     },
     {
       "path": "docs/design/atlas_ecosystem_map.md",
-      "word_count": 2485,
+      "word_count": 2508,
       "bucket": "alimenta_item_semantico",
       "semantic_score": 0.6809,
       "semantic_match": "T4"
@@ -1597,37 +1597,51 @@
     },
     {
       "path": "docs/handoff/GENERATED/00_ESTADO.md",
-      "word_count": 285,
+      "word_count": 487,
       "bucket": "alimenta_item_semantico",
-      "semantic_score": 0.5428,
-      "semantic_match": "T4"
+      "semantic_score": 0.5614,
+      "semantic_match": "T5"
     },
     {
       "path": "docs/handoff/GENERATED/01_QUIEN_ES_QUIEN.md",
       "word_count": 503,
-      "bucket": "sin_clasificar",
-      "semantic_score": 0.4994,
+      "bucket": "alimenta_item_semantico",
+      "semantic_score": 0.5237,
       "semantic_match": "T3"
     },
     {
       "path": "docs/handoff/GENERATED/02_INVARIANTES.md",
       "word_count": 1812,
       "bucket": "alimenta_item_semantico",
-      "semantic_score": 0.6069,
+      "semantic_score": 0.5995,
       "semantic_match": "T4"
     },
     {
       "path": "docs/handoff/GENERATED/03_MEMORIA_CLAVE.md",
       "word_count": 2026,
       "bucket": "alimenta_item_semantico",
-      "semantic_score": 0.5331,
+      "semantic_score": 0.5332,
       "semantic_match": "T3"
     },
     {
       "path": "docs/handoff/GENERATED/04_PLAN.md",
       "word_count": 2374,
-      "bucket": "sin_clasificar",
-      "semantic_score": 0.4951,
+      "bucket": "alimenta_item_semantico",
+      "semantic_score": 0.5016,
+      "semantic_match": "T3"
+    },
+    {
+      "path": "docs/handoff/GENERATED/05_ECOSISTEMA.md",
+      "word_count": 78,
+      "bucket": "alimenta_item_semantico",
+      "semantic_score": 0.607,
+      "semantic_match": "T3"
+    },
+    {
+      "path": "docs/handoff/GENERATED/06_PRIMEROS_10_MINUTOS.md",
+      "word_count": 180,
+      "bucket": "alimenta_item_semantico",
+      "semantic_score": 0.5899,
       "semantic_match": "T3"
     },
     {
@@ -4234,7 +4248,7 @@
     },
     {
       "path": "docs/knowledge/research_2026-07-10.md",
-      "word_count": 5720,
+      "word_count": 5634,
       "bucket": "sin_clasificar",
       "semantic_score": 0.487,
       "semantic_match": "T0"
@@ -4381,9 +4395,9 @@
     },
     {
       "path": "docs/operations/oauth_rotation_google_workspace.md",
-      "word_count": 359,
+      "word_count": 474,
       "bucket": "sin_clasificar",
-      "semantic_score": 0.3743,
+      "semantic_score": 0.3958,
       "semantic_match": "T4"
     },
     {
@@ -4605,9 +4619,9 @@
     },
     {
       "path": "docs/self_audit_2026-07-22.md",
-      "word_count": 197,
+      "word_count": 391,
       "bucket": "sin_clasificar",
-      "semantic_score": 0.3366,
+      "semantic_score": 0.3308,
       "semantic_match": "T1"
     },
     {
@@ -4661,10 +4675,10 @@
     },
     {
       "path": "docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md",
-      "word_count": 417,
-      "bucket": "sin_clasificar",
-      "semantic_score": 0.4812,
-      "semantic_match": "T6"
+      "word_count": 821,
+      "bucket": "alimenta_item_semantico",
+      "semantic_score": 0.5356,
+      "semantic_match": "T0"
     },
     {
       "path": "docs/superpowers/plans/2026-07-17-t21-mission-console-viva.md",
@@ -4679,6 +4693,13 @@
       "bucket": "alimenta_item_semantico",
       "semantic_score": 0.7629,
       "semantic_match": "T5"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-22-t05b-paso3-parallel-digestion-BRIEF.md",
+      "word_count": 1318,
+      "bucket": "sin_clasificar",
+      "semantic_score": 0.4802,
+      "semantic_match": "T0"
     },
     {
       "path": "docs/superpowers/specs/2026-06-24-council-v2.0-trio-reliability-design.md",
@@ -4717,9 +4738,9 @@
     },
     {
       "path": "docs/superpowers/specs/2026-07-15-succession-ecosystem-design.md",
-      "word_count": 857,
+      "word_count": 1447,
       "bucket": "alimenta_item_semantico",
-      "semantic_score": 0.6241,
+      "semantic_score": 0.6314,
       "semantic_match": "T0"
     },
     {

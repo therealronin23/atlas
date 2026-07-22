@@ -1,0 +1,614 @@
+[
+  {
+    "path": "docs/architecture/ARCHITECTURE_MAP.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Mapea capas OS reales (Governance Kernel, Capability/Integration Fabric, Easy Connection Layer+PolicyEngine ADR-060 Fase15, Business Core+Question Engine ADR-061 Fase15, Improvement Engine) contra módulos del repo. Varias de estas piezas EXISTENTES (PolicyEngine, Business Core, Easy Connection Layer) no tienen ítem propio en ninguna sección T0-T6 del plan maestro actual."
+  },
+  {
+    "path": "docs/architecture/CAPABILITY_FABRIC.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Describe el MCP trunk + adapter.schema.json vigentes; base directa para T3 (capacidad universal de operación)."
+  },
+  {
+    "path": "docs/architecture/CONTROL_PLANE.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Documenta el Control Plane YA construido en ui/atlas-shell (arnés). Útil como inventario de features a replicar en las apps dedicadas de T2.1, pero el propio shell quedó degradado a arnés (D11), no es la UX final."
+  },
+  {
+    "path": "docs/architecture/DECISION_REVIEW.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "D4 (librería de grafo, SVG+d3-force v1 / investigar Sigma-WebGL cuando >300 nodos) alimenta directamente T2.2 Knowledge view; D3/D11 documentan el historial de decisiones de stack UI que preceden a T2.1."
+  },
+  {
+    "path": "docs/audits/self_audit_loop.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Loop de auditoría fría/ColdUpdate; se relaciona con T1 (autoconstrucción, ruta dorada) pero no está citado por su nombre en ningún ítem T0-T6."
+  },
+  {
+    "path": "docs/continuation/OPEN_QUESTIONS.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Preguntas abiertas: librería de grafo (T2.2), Tauri sí/no (T2.1), import de conversaciones externas (T0.2), convergencia PolicyEngine (subsistema no cubierto en T0-T6, ver ARCHITECTURE_MAP.md)."
+  },
+  {
+    "path": "docs/continuation/phase_recovery/NEXT_AI_INSTRUCTIONS_AFTER_RECOVERY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Instrucciones de continuidad fechadas 2026-07-11, previas al plan maestro (2026-07-16); su rol de protocolo de arranque quedó superado por AGENTS.md + docs/handoff/GENERATED (ver GENERATED/01_QUIEN_ES_QUIEN.md que declara NEXT_AI_INSTRUCTIONS.md 'SUPERSEDED, histórico F15/F16')."
+  },
+  {
+    "path": "docs/decisions/gates/gate_f_plan.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "BrowserTool/EditorTool/VisionLoop (Gate F, completo/sellado) son exactamente el stack citado por T3.1 (computer-control-mcp + Playwright + ExternalFsBridge) sobre el que se construye el planner universal."
+  },
+  {
+    "path": "docs/design/UI_QUALITY_GATE.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Cita 'la superficie de producto real (nativa, Slint/wgpu o equivalente) queda diferida' como dirección native asumida; la investigación posterior de stack (docs/design/ui/research/research-flutter.md y research-tauri-rn.md, 2026-07-17) evalúa Flutter y Tauri/RN y no menciona Slint/wgpu en ningún momento — no hay documento que reconcilie el cambio de candidato.",
+    "confidence": "alta",
+    "note": "Adoptado explícitamente como criterio real de aceptación de UI (fuente: pack product_os_liquid_ui). Sigue vigente para cualquier superficie de producto futura, incluidas las apps dedicadas de T2.1."
+  },
+  {
+    "path": "docs/design/atlas_max_capability_roadmap.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Roadmap de 5 pilares (motor de programación experto, lab de ciberseguridad defensiva, contención, conocimiento, verdad operativa). El Pilar 1 solapa parcialmente T1.5 (Coding Territory/absorción Aider-OpenHands), pero los pilares 2-4 (SAST/fuzzing/vuln research/disclosure) no tienen hogar en ningún ítem T0-T6 vigente."
+  },
+  {
+    "path": "docs/design/direction_2026-06-12_construir_hacia_arriba.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Plan de 4 capas (verificador universal, cascada con routing, enjambre sobre blackboard, LessonStore). Estas mismas piezas aparecen como PENDIENTE en el mapa del ecosistema (docs/handoff/GENERATED/05_ECOSISTEMA.md: 'Universal verifier ADR-041', 'Cascade routing ADR-042', 'Swarm/worker backend ADR-045/046') pero ninguna sección T0-T6 del plan maestro las posee explícitamente."
+  },
+  {
+    "path": "docs/design/mission_layer_self_construction_spec.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Spec de alcance de la Mission Console (schemas mission/mission_receipt/soul_manifest, radar de detectores, endpoints /missions) — antecedente directo y detallado de T2.1."
+  },
+  {
+    "path": "docs/design/ui/references/DIRECCION_ESTETICA.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Destilación de los 9 mockups JARVIS citados literalmente en T2.1 ('los 9 mockups JARVIS como dirección estética')."
+  },
+  {
+    "path": "docs/design/ui/references/README.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Explica el origen/depósito de los mockups de referencia estética que T2.1 usa como dirección."
+  },
+  {
+    "path": "docs/design/ui/research/research-flutter.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Investigación de stack (2026-07-17) que no considera Slint/wgpu, pese a que docs/design/UI_QUALITY_GATE.md y docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/02_UI_TECH_DECISION_REPORT.md fijaban Slint+wgpu como candidatos nativos primarios para la superficie de producto real.",
+    "confidence": "alta",
+    "note": "Investigación SOTA obligatoria para la elección de stack de T2.1 (apps dedicadas multi-plataforma)."
+  },
+  {
+    "path": "docs/design/ui/research/research-tauri-rn.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Misma nota que research-flutter.md: evalúa Tauri v2 y React Native como candidatos pero no contempla Slint/wgpu, que otros docs del propio corpus (UI_QUALITY_GATE.md, 02_UI_TECH_DECISION_REPORT.md) señalaban como la apuesta nativa primaria.",
+    "confidence": "alta",
+    "note": "Segunda mitad de la investigación SOTA obligatoria de T2.1; concluye que ni Tauri ni RN pasan limpio el requisito de rendimiento cinematográfico en Linux."
+  },
+  {
+    "path": "docs/handoff/GENERATED/01_QUIEN_ES_QUIEN.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Artefacto GENERADO por 'atlas handoff' — es la evidencia observable exigida por T0.1 (pack regenerable desde el sustrato)."
+  },
+  {
+    "path": "docs/handoff/GENERATED/03_MEMORIA_CLAVE.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Mismo pack GENERADO por 'atlas handoff'; evidencia de T0.1/T0.2 (memoria migrada al sustrato con procedencia)."
+  },
+  {
+    "path": "docs/handoff/GENERATED/04_PLAN.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Copia regenerada (2026-07-22) del propio atlas_master_plan.md vía 'atlas handoff' — es en sí misma la prueba de que T0.1 funciona (pack regenerable)."
+  },
+  {
+    "path": "docs/handoff/GENERATED/05_ECOSISTEMA.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Resumen GENERADO del mapa del ecosistema; evidencia de T0.4 (mapa-árbol del ecosistema) y del pack de T0.1."
+  },
+  {
+    "path": "docs/handoff/GENERATED/06_PRIMEROS_10_MINUTOS.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Secuencia de arranque en frío GENERADA; evidencia directa de T0.3 (onboarding ejecutable)."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/README.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Meta-instrucciones del primer pack de handoff (Fable5 Atlas Build), copiado a docs/handoff/ como propuesta histórica (DECISION_REVIEW.md D10)."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/00_MANIFESTO.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Principios de identidad de producto ('no es chatbot/dashboard/n8n/clon') todavía ecoados en la dirección estética actual (rechazo a lo genérico), aunque el pack en sí es material histórico (D10)."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/01_NON_GOALS.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Non-goals genéricos aún compatibles con la doctrina anti-genérico vigente (DIRECCION_ESTETICA.md), aunque el pack es histórico."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/07_FRONTEND_ARCHITECTURE.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Prescribe 'Frontend Shell v1: Tauri + React + TypeScript'; DECISION_REVIEW.md D3 ya cambió esto a web-first Vite+React (ADR-059), y T2.1 luego reabre la decisión de stack de cero (Flutter/Tauri/Qt) sin dar por buena esta arquitectura Tauri original.",
+    "confidence": "alta",
+    "note": "Arquitectura frontend del pack original, superada dos veces (D3 en 2026-07-10, T2.1 en 2026-07-17)."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/11_HARNESS_ADAPTER_CONTRACT.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "CAPABILITY_FABRIC.md confirma explícitamente que 'schemas/adapter.schema.json (del pack, revisado)' proviene de este documento — fuente directa de la capability fabric real citada por T3."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/15_FRAMEWORK_BOUNDARIES.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Fija 'Tauri = shell desktop' y 'React = renderer v1' como límites de framework; contradicho por D3 (web-first) y por la reapertura completa de la decisión de stack en T2.1 (Flutter/Tauri/Qt/Compose, sin Tauri como asumido).",
+    "confidence": "media",
+    "note": "Principio de antiacoplamiento sigue siendo válido en espíritu; los frameworks concretos listados ya no son la decisión vigente."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/16_ADR_INDEX.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Índice de ADR-0001..0010 en el esquema del pack; DECISION_REVIEW.md D6 declara explícitamente 'Los 10 ADR-000x del pack quedan en docs/handoff/ como propuestas históricas' y rechaza el path docs/adr/ paralelo al real docs/decisions/adr/.",
+    "confidence": "alta",
+    "note": "Esquema de numeración de ADR ya sustituido por el real del repo (docs/decisions/adr/adr_NNN)."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0001-atlas-cognitive-operating-environment.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "DECISION_REVIEW.md D6 declara los ADR-000x del pack como 'propuestas históricas', no ADRs reales del repo (los reales viven en docs/decisions/adr/adr_NNN).",
+    "confidence": "alta",
+    "note": "Definición de identidad de producto ('entorno operativo cognitivo'), formalmente histórica per D6."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0005-tauri-react-renderer-v1.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Decisión 'Tauri + React + TypeScript' contradicha por D3 (MODIFY a web-first Vite+React, ADR-059) y por D6 (ADR-000x del pack = históricos); además T2.1 reabre la elección de stack sin asumir Tauri.",
+    "confidence": "alta",
+    "note": "ADR histórico del pack, ya sustituido dos veces por decisiones posteriores del repo real."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/prompts/PROMPT_FABLE5_ATLAS_BUILD.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Prompt de construcción que asume Tauri+React+TS y rutas docs/atlas-bible/*, ambos ya sustituidos (D3 web-first; D6 rechaza el árbol de docs paralelo).",
+    "confidence": "alta",
+    "note": "Prompt maestro histórico del primer pack, superado por decisiones posteriores del repo real."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/ARCHITECTURE_MAP.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Comparte nombre EXACTO con el docs/architecture/ARCHITECTURE_MAP.md real y vigente del repo, pero describe una arquitectura distinta y ya superada (Cognitive Kernel/Agent Society Layer/Memory OS de 9 subtipos, Tauri implícito) — riesgo real de confundir ambos documentos por nombre idéntico.",
+    "confidence": "alta",
+    "note": "Segunda generación del handoff pack (fable5_handoff_v1), material de referencia histórico per D10."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/CONTINUATION_PROTOCOL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Protocolo de continuidad (CONTINUATION_STATE.md, NEXT_AI_INSTRUCTIONS.md, etc.) declarado SUPERSEDED por GENERATED/01_QUIEN_ES_QUIEN.md ('docs/continuation/NEXT_AI_INSTRUCTIONS.md está SUPERSEDED... histórico F15/F16')."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/QUALITY_GATES.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Define un esquema de Gates A-G distinto (Architecture Coherence/Event First/Cognitive Surface/Control Plane/Governance/Continuation/No Prototype Trap) que coexiste sin reconciliar con el docs/design/UI_QUALITY_GATE.md realmente adoptado (criterio de rechazo por lista de síntomas) — dos 'quality gates' de UI con nombre parecido y contenido distinto.",
+    "confidence": "media",
+    "note": "Gates del segundo pack de handoff, no el criterio de aceptación vigente hoy."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/SOTA_RESEARCH_PROTOCOL.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Protocolo de investigación externa (SOURCE→PRIMITIVE→LIMITATION→REINTERPRETATION→SUPERIORITY→IMPLEMENTATION) alineado con el espíritu de T4.2/T4.3 (disección adopt-real, digestión→catálogo), aunque el doc en sí es del pack histórico."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/UIUX_FINAL_SPEC.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Prescribe Living Knowledge Graph + Control Plane web como 'UI/UX final-compatible'; superado por la decisión sellada del operador 2026-07-17 (plan maestro §4: 'UI = evolución de la Mission Console' queda SUPERSEDED — la UX final son apps dedicadas multi-plataforma, no una evolución del shell web).",
+    "confidence": "alta",
+    "note": "Spec de UI/UX de un pack de handoff anterior a la decisión de apps dedicadas."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/prompts/PROMPT_FABLE5_BUILD_ALL.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Prescribe stack 'Tauri + React + TypeScript + Tailwind' como recomendado; contradicho por D3 (web-first sin Tauri) y por la reapertura completa de la decisión de stack en T2.1 (2026-07-17, sin asumir Tauri ni Tailwind).",
+    "confidence": "alta",
+    "note": "Prompt extenso de construcción del segundo pack de handoff, superado por decisiones posteriores."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/prompts/PROMPT_WEAKER_AI_CONTINUE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Prompt de continuidad para IA más débil, referenciando rutas (docs/atlas-master/*) que no existen en el repo real; protocolo sustituido por AGENTS.md + docs/handoff/GENERATED."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/PROMPT_CONTINUATION_FOR_WEAKER_AI.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Prompt de continuidad del tercer pack (product_os_liquid_ui), referencia rutas (product/00_ATLAS_PRODUCT_CONSTITUTION.md, etc.) internas al propio ZIP; protocolo de arranque sustituido por AGENTS.md."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/PROMPT_FABLE_PHASE_15.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Este prompt SÍ se ejecutó: dio lugar a Integration Fabric + PolicyEngine + Business Core draft-first + Adaptive Question Engine (confirmado EXISTENTE en docs/architecture/ARCHITECTURE_MAP.md, Fase 15/ADR-060/061). Esos sistemas construidos y vigentes no tienen ítem propio en T0-T6 del plan maestro actual."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/README_USE_THIS_FIRST.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "README del pack que ganó la decisión D11 y disparó Fase 15 (Integration Fabric/Business Core, ver ARCHITECTURE_MAP.md); esos entregables reales no están representados en ninguna sección T0-T6."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/04_ATLAS_SHEET_ENGINE.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "baja",
+    "note": "Stub de 1 línea sobre un 'Sheet Engine' (celdas/evidencia/validación/auditoría); no hay evidencia de que exista en el repo ni un ítem T0-T6 que lo cubra. Confianza baja por ser un stub mínimo, posible idea abandonada."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/OPENAPI_TO_CAPABILITY_COMPILER.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Stub de 1 línea; concepto emparentado con RecipeEngine/PackEngine (Fase 15, EXISTENTE per ARCHITECTURE_MAP.md), que a su vez alimenta la idea de T3 de operar cualquier capacidad de forma generalizada."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/context/CHAT_DECISIONS_SINCE_LAST_ZIP.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "baja",
+    "note": "Lista de 16 decisiones de chat mezclando ideas construidas (Integration Fabric, Business Core) con otras nunca confirmadas como reales (Presence Engine, Cognitive Physics, Secure Personal Mesh) — estado mixto, no verificable ítem por ítem sin más evidencia de código."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/context/WHAT_WE_REJECT_FROM_FABLE.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Lista de rechazos (dashboard genérico, UI sin constitución, integraciones sin capabilities) coherente con la doctrina anti-genérico vigente en DIRECCION_ESTETICA.md/UI_QUALITY_GATE.md."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/00_ATLAS_UX_CONSTITUTION.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Lista de 10 preguntas que toda pantalla debe responder, casi idéntica a las 8 preguntas de docs/design/UI_QUALITY_GATE.md (que cita este mismo pack como fuente adoptada) — material fuente directo del gate de calidad UI vigente."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/02_PRESENCE_ENGINE.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Anomalía de contenido: el fichero 02_PRESENCE_ENGINE.md contiene literalmente el texto de 'Atlas Product Constitution' (idéntico byte a byte a product/00_ATLAS_PRODUCT_CONSTITUTION.md, incluida la frase final 'Presence Engine converts events into visible behavior. See research 10.'), no una spec del Presence Engine en sí — parece un error de copiado en el propio pack fuente.",
+    "confidence": "baja",
+    "note": "El concepto 'Presence Engine' (eventos→comportamiento visible) no tiene spec real recuperable en este fichero ni evidencia de estar construido; ningún ítem T0-T6 lo cubre."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/MANUAL_TOKEN_WIZARD_UX.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "UX de alta manual de credenciales; emparentado con AuthBroker ('solo referencias', Fase 15 EXISTENTE per ARCHITECTURE_MAP.md), parte de la capacidad universal de conexión de T3."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/00_ATLAS_PRODUCT_CONSTITUTION.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Contenido idéntico byte a byte a design/02_PRESENCE_ENGINE.md dentro del mismo pack (ver nota en esa entrada) — duplicación/errata de origen, no dos documentos independientes.",
+    "confidence": "baja",
+    "note": "Constitución de producto ('Objective→Sector→Data→Liquid Workbench→Validation→Governed Action→Memory'); el modelo Sector/Liquid Workbench no aparece citado en el plan maestro T0-T6 vigente, aunque PolicyEngine/Business Core (leyes 7-8) sí se construyeron."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/08_DEVICE_APP_CONTROL_FABRIC.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Coordinación PC/móvil/servidor/navegador/reloj vía capabilities. No es lo mismo que T3.1 (planner GUI de una sola máquina) ni que T6 (twin/elasticidad laptop-VPS); el control multi-dispositivo gobernado no tiene ítem propio en T0-T6."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/09_CROSS_DEVICE_ATLAS.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Continuidad de objetivo/audit-trace entre escritorio/móvil/reloj; concepto emparentado pero no idéntico a T2.1 ('comunicadas entre ellas') ni a T6; sin item T0-T6 que lo posea explícitamente."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/11_SOFTWARE_LIQUIDO_LONG_TERM_OS.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "baja",
+    "note": "Visión norte a largo plazo, muy general ('Atlas construye su propia capa operativa'); demasiado vaga para mapear a un ítem T0-T6 concreto."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/30_ATLAS_BUSINESS_CORE.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Business Core (clientes/facturas/stock/tareas/etc., draft-first) está confirmado EXISTENTE en docs/architecture/ARCHITECTURE_MAP.md ('Atlas Business Core + Question Engine → src/atlas/business/ [NUEVO, ADR-061, Fase 15]'), pero ninguna sección T0-T6 del plan maestro lo menciona ni lo posee."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/31_ATLAS_NATIVE_CRM.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "baja",
+    "note": "Extensión del Business Core (30_ATLAS_BUSINESS_CORE.md, EXISTENTE); no hay evidencia específica de que el módulo CRM nativo diferenciado ('entiende relación/contexto/intención/riesgo') esté construido más allá del Business Core genérico."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/01_PERSONAL_AI_SYSTEMS_STUDY.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Estudio de sistemas de IA personal (OpenJarvis, HuggingGPT, Odysseus, Jarvis Desktop, Obsidian Skills) que fijó la identidad de producto de Atlas; referencia de trasfondo, no ligado a un ítem T0-T6 específico."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/02_UI_TECH_DECISION_REPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": true,
+    "contradiction_note": "Recomienda Slint (shell nativo) + wgpu (Cognitive Surface) como candidatos primarios y Tauri solo como fallback; la investigación de stack real de T2.1 (research-flutter.md, research-tauri-rn.md, 2026-07-17) evalúa Flutter y Tauri/RN sin mencionar Slint/wgpu en absoluto — divergencia real entre lo decidido antes y lo investigado después, sin documento que la reconcilie.",
+    "confidence": "alta",
+    "note": "Decisión de stack nativo de un pack anterior, aparentemente abandonada sin registro explícito."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/08_DEVICE_APP_CONTROL_SECURE_MESH_STUDY.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Secure Personal Mesh + Device/App Control Fabric con clases de riesgo R0-R6 para comandos remotos; mismo concepto no cubierto que product/08_DEVICE_APP_CONTROL_FABRIC.md y product/09_CROSS_DEVICE_ATLAS.md — ningún ítem T0-T6 lo posee."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/13_CONNECTIVITY_LADDER.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "'API-first, computer-use last' — el Connection Ladder está confirmado EXISTENTE (ARCHITECTURE_MAP.md: 'Connection Ladder (12 peldaños, API-first)', Fase 15); usa el mismo computer-use que T3.1 como última vía, dato relevante para el planner universal."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_CONNECTION_ONBOARDING_STUDY.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "UX de onboarding de conexiones (ConnectionConcierge, Fase 15 EXISTENTE per ARCHITECTURE_MAP.md); parte de la capacidad universal de conexión de T3."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/license/AGPL_POLICY.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Política de licencias (AGPL fuera del núcleo sin ADR legal) directamente relevante para T1.5 (absorción adopt-real de Aider/OpenHands, que exige revisión de licencia)."
+  },
+  {
+    "path": "docs/operations/USAGE.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Guía operativa transversal (CLI, env vars, pipeline Gate D) vigente y detallada; no pertenece a un ítem T0-T6 concreto, es referencia de fondo para cualquier tramo."
+  },
+  {
+    "path": "docs/operations/atlas_box_architecture.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T6",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Nota de concepto (no recomendación de compra) sobre topología tri-nodo (terminal usuario / Atlas Box / cómputo Hermes) — directamente relevante para T6 (twin real y elasticidad multi-hardware)."
+  },
+  {
+    "path": "docs/operations/operational_runbook.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T6",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Runbook vigente (revisado 2026-07-16) para desplegar y verificar el twin Hermes — es el 'playbook existente' que T6.1 cita explícitamente para el re-despliegue."
+  },
+  {
+    "path": "docs/skills/atlas-coding-discipline.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Máximas operativas transversales (wire-before-claim, prove-it, TDD); doctrina de trabajo ya absorbida en la práctica del repo, no ligada a un ítem T0-T6 concreto."
+  },
+  {
+    "path": "docs/skills/deliberation_council_portable.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media",
+    "note": "Versión portable/degradada (sin trío) del Cónclave para usar fuera de atlas-core; herramienta de apoyo transversal, no ligada a un ítem T0-T6 específico."
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-16-t0-succession-core.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Plan de implementación TDD explícito para T0.1 (atlas handoff) y T0.2 (migración de memoria); cita T0.3 y T2.1 como siguientes planes."
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-17-t21-mission-console-viva.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Es literalmente el plan reformulado de T2.1 (apps dedicadas multi-plataforma) — registra la decisión N3 del operador que supera 'UI=evolución de la Mission Console' y ADR-059 web-first para la UX final."
+  },
+  {
+    "path": "feedback-absorb-without-cloning.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta",
+    "note": "Fuente de la manía 'adopt-real, no cascarón' (principio #3, §2 del plan maestro), operacionalizada en T1.5 (disección Aider/OpenHands) y T4.2 (pipeline candidata→diseccionada→absorbida)."
+  }
+]

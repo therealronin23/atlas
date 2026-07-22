@@ -1,0 +1,254 @@
+[
+  {
+    "path": "docs/architecture/ARCHITECTURE_MAP.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Confirma que PolicyEngine, Business Core y Easy Connection Layer aparecen listados como capas [NUEVO, ADR-060/061, Fase 15] sin que T0-T6 del plan maestro tenga un ítem que los posea por nombre. Veredicto gap correcto."
+  },
+  {
+    "path": "docs/design/atlas_max_capability_roadmap.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (5 pilares: Expert Programming Engine, Defensive Cybersecurity Lab, Containment, Knowledge/Training, Operational Truth). Pilar 1 sí solapa con T1.5 (Coding Territory); Pilares 2-4 (SAST/fuzzing/vuln research/disclosure) efectivamente no tienen hogar en T0-T6. Confirmado."
+  },
+  {
+    "path": "docs/design/direction_2026-06-12_construir_hacia_arriba.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Las 4 capas (verificador universal, cascada con routing, enjambre sobre blackboard, LessonStore) no aparecen como ítem propio en ninguna sección T0-T6 del plan maestro actual (revisado §5 completo). Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/PROMPT_FABLE_PHASE_15.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Pide explícitamente construir Integration Fabric, Easy Connection Layer, Atlas Native Business Core y Adaptive Question Engine — confirmado que se ejecutaron (ARCHITECTURE_MAP.md los lista EXISTENTE, Fase 15/ADR-060/061) y no tienen ítem T0-T6. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/README_USE_THIS_FIRST.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Es el README que definió 'Atlas = Cognitive OS orientado a objetivos/sectores/workbenches líquidos' y disparó la Fase 15 (D11 en DECISION_REVIEW.md). Los entregables reales de esa fase no están en T0-T6. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/04_ATLAS_SHEET_ENGINE.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo: es literalmente 1 línea ('Atlas Sheet Engine manages cells, evidence, validation, history, permissions and audit'). Confianza baja del digest justificada — stub mínimo sin evidencia de construcción. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/02_PRESENCE_ENGINE.md",
+    "original_verdict": "gap",
+    "audit_result": "corregido",
+    "corrected_verdict": "gap",
+    "note": "El veredicto (gap) se mantiene, pero la contradiction_note es factualmente incorrecta: hice diff+md5sum contra product/00_ATLAS_PRODUCT_CONSTITUTION.md y los ficheros NO son idénticos byte a byte (md5 distintos: 951c70... vs e8832a...). Comparten las primeras 36 líneas (título, identidad de producto, 10 leyes), pero DIVERGEN en las líneas finales: 02_PRESENCE_ENGINE.md termina con 'Presence Engine converts events into visible behavior. See research 10.' mientras que product/00 termina con una sección '## Improvement law' distinta — es justo la frase que el digest afirmaba compartida la que en realidad NO aparece en el otro fichero. La observación de fondo (este fichero no contiene una spec real del Presence Engine, es una errata de copiado del pack fuente) sigue siendo válida, pero la nota debe decir 'casi duplicado, diverge en la sección final' en vez de 'idéntico byte a byte'."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/08_DEVICE_APP_CONTROL_FABRIC.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Coordinación PC/móvil/servidor/navegador/reloj vía capabilities, distinto de T3.1 (planner GUI una sola máquina) y T6 (twin/elasticidad). Sin ítem T0-T6 propio. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/09_CROSS_DEVICE_ATLAS.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (5 líneas): continuidad de objetivo/audit-trace entre escritorio/móvil/reloj. Emparentado pero no idéntico a T2.1 ni T6, sin ítem propio. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/30_ATLAS_BUSINESS_CORE.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Contenido (clientes/facturas/stock/tareas draft-first) coincide con lo que ARCHITECTURE_MAP.md confirma EXISTENTE en src/atlas/business/ [ADR-061, Fase 15]; ninguna sección T0-T6 lo menciona. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/08_DEVICE_APP_CONTROL_SECURE_MESH_STUDY.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (9 líneas): Secure Personal Mesh + Device/App Control Fabric, clases de riesgo R0-R6. Mismo concepto no cubierto que las otras dos entradas 08/09 de product/. Confirmado."
+  },
+  {
+    "path": "docs/design/UI_QUALITY_GATE.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Contiene literalmente la frase citada: 'La superficie de producto real (nativa, Slint/wgpu o equivalente) queda diferida'. Verifiqué con grep que research-flutter.md y research-tauri-rn.md NO mencionan Slint ni wgpu en ningún punto (0 matches) — la contradicción señalada es real y verificada."
+  },
+  {
+    "path": "docs/design/ui/research/research-flutter.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "grep -in 'slint|wgpu' sobre el fichero completo (203 líneas) da 0 resultados. Confirma la contradicción: evalúa Flutter sin mencionar el candidato nativo primario fijado antes (Slint/wgpu)."
+  },
+  {
+    "path": "docs/design/ui/research/research-tauri-rn.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "grep -in 'slint|wgpu' sobre el fichero completo (122 líneas) da 0 resultados. Misma contradicción confirmada que research-flutter.md."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/07_FRONTEND_ARCHITECTURE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Dice literalmente 'Frontend Shell v1: Tauri + React + TypeScript'. Confirmado contra DECISION_REVIEW.md D3 (MODIFY a web-first Vite+React, ADR-059) — la contradicción es real y verificada."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/15_FRAMEWORK_BOUNDARIES.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Fija literalmente 'Tauri = shell desktop' y 'React = renderer v1'. Contradicho por D3 y por T2.1 (reapertura completa de stack). Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/16_ADR_INDEX.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (índice ADR-0001..0010 del pack). Confirmado contra DECISION_REVIEW.md D6, que declara literalmente 'Los 10 ADR-000x del pack quedan en docs/handoff/ como propuestas históricas'."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0001-atlas-cognitive-operating-environment.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo, status 'Accepted' dentro del pack. Confirmado como histórico per D6 (ver arriba)."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0005-tauri-react-renderer-v1.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo: 'El primer shell usa Tauri + React + TypeScript'. Doblemente superado (D3 web-first + D6 ADR histórico). Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/prompts/PROMPT_FABLE5_ATLAS_BUILD.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "grep confirma 'Tauri + React + TypeScript' (línea 65) y referencias a rutas 'docs/atlas-bible/*' (líneas 33-36) tal como cita el digest. Ambas ya sustituidas (D3, D6). Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/ARCHITECTURE_MAP.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Nombre idéntico al ARCHITECTURE_MAP.md real de docs/architecture/, pero describe arquitectura distinta (Cognitive Kernel/Agent Society Layer/Memory OS de 9 subtipos) ya superada. Riesgo de confusión por nombre real y verificado."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/QUALITY_GATES.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (Gates A-G: Architecture Coherence/Event First/Cognitive Surface/Control Plane/Governance/Continuation/No Prototype Trap). Esquema distinto y sin reconciliar con docs/design/UI_QUALITY_GATE.md (criterio de rechazo por síntomas). Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/docs/UIUX_FINAL_SPEC.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo: 'La home no es un chat. Es el Living Knowledge Graph' — prescribe Living Knowledge Graph + Control Plane web como UX final. Confirmado superado por T2.1 (plan 2026-07-17-t21-mission-console-viva.md), que declara SUPERSEDED exactamente esa decisión."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/prompts/PROMPT_FABLE5_BUILD_ALL.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "grep confirma línea 203: 'Tauri + React + TypeScript + Tailwind'. Contradicho por D3 y por la reapertura de stack en T2.1. Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/00_ATLAS_PRODUCT_CONSTITUTION.md",
+    "original_verdict": "candidata",
+    "audit_result": "corregido",
+    "corrected_verdict": "candidata",
+    "note": "Mismo problema que design/02_PRESENCE_ENGINE.md: diff+md5sum muestran que los dos ficheros NO son idénticos byte a byte (difieren en las últimas ~3 líneas: este tiene '## Improvement law' + texto, el otro tiene la frase del Presence Engine). El veredicto candidata se mantiene razonable, pero la nota debe corregirse de 'idéntico byte a byte' a 'casi duplicado, diverge en la sección final'."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/02_UI_TECH_DECISION_REPORT.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (19 líneas). Confirma literalmente: 'Slint is primary candidate for native shell/control/workbench frames' y 'wgpu is primary candidate for Living Core / Cognitive Surface', 'Tauri is fallback'. Verificado por grep que research-flutter.md/research-tauri-rn.md no mencionan estos candidatos — divergencia real sin documento de reconciliación. Confirmado."
+  },
+  {
+    "path": "docs/architecture/CAPABILITY_FABRIC.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído completo: describe MCP trunk + adapter.schema.json vigentes tal como dice la nota. Veredicto razonable para T3."
+  },
+  {
+    "path": "docs/decisions/gates/gate_f_plan.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído completo: BrowserTool/EditorTool/VisionLoop status 'complete', Gate F sellado por docs/gate_f_seal.md. Conexión con T3.1 (planner GUI universal) es razonable aunque el propio documento no cita 'computer-control-mcp' ni 'ExternalFsBridge' textualmente — es una inferencia razonable del digestor, no un error."
+  },
+  {
+    "path": "docs/handoff/GENERATED/04_PLAN.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Cabecera confirma: 'GENERADO por atlas handoff 2026-07-22T19:57:27...NO EDITAR A MANO'; contenido es copia fiel del plan maestro real. Evidencia directa de T0.1 (pack regenerable). Confirmado."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/11_HARNESS_ADAPTER_CONTRACT.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído completo: define el Adapter Contract JSON (id/provider_type/risk_profile/failure_modes...) citado por CAPABILITY_FABRIC.md como fuente de schemas/adapter.schema.json. Coherente con T3."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/13_CONNECTIVITY_LADDER.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído completo (7 líneas): 'API-first. Computer-use last.' Confirmado que ARCHITECTURE_MAP.md real cita 'Connection Ladder (12 peldaños, API-first)' como EXISTENTE en Fase 15. Coherente con T3."
+  },
+  {
+    "path": "docs/operations/atlas_box_architecture.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído (primeras 40 líneas): 'Status: concept note, not a purchase recommendation', topología tri-nodo (terminal usuario/Atlas Box/Hermes compute). Coherente con T6 (twin/elasticidad multi-hardware)."
+  },
+  {
+    "path": "docs/operations/operational_runbook.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído (primeras 40 líneas): 'Revisado: 2026-07-16', procedimientos de preflight/salud local relevantes para redespliegue de Hermes. Coherente con T6.1."
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-17-t21-mission-console-viva.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído (primeras 50 líneas): título literal 'T2.1 — La UX real de Atlas: APLICACIONES DEDICADAS multi-plataforma', declara explícitamente SUPERSEDED la decisión 'UI=evolución de la Mission Console' y ADR-059 web-first para la UX final. Coincide exactamente con la nota del digest."
+  },
+  {
+    "path": "feedback-absorb-without-cloning.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído completo: 'Atlas mejora absorbiendo trabajo externo útil, no copiando identidades de otros productos.' Es la fuente directa de la manía adopt-real citada. Coherente con T4/T1.5."
+  },
+  {
+    "path": "docs/operations/USAGE.md",
+    "original_verdict": "candidata",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo (no flag). Leído (primeras 50 de 420 líneas): guía operativa de CLI/env vars/workspace. Es referencia transversal de fondo, no ligada a un ítem T0-T6 concreto, tal como dice la nota."
+  }
+]

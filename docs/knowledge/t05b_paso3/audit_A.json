@@ -1,0 +1,100 @@
+[
+  {
+    "path": "docs/continuation/phase15/PHASE_15_EXECUTION_PLAN.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el doc real y contra el código actual. El grueso del doc (pasos 1-6 de F15) ya se ejecutó y está cerrado -- sería 'historico' si se juzgara solo por eso. Pero la sección '## Qué queda explícitamente FUERA' lista ítems reales que siguen sin construir y que NINGUNA sección T0-T6 del master plan cubre hoy: vault de secretos (grep 'vault' en src/atlas/fabric/*.py -> 0 resultados), Presence Engine / Atlas Sheet / Liquid App Runtime (solo existen como specs en docs/handoff/, cero código en src/), Sector Registry completo (verificado: solo 5/22 sectores en fixtures/sectors/), gestoría vertical completa, e ingesta de BusinessEntity candidates al índice canónico de memoria. Esos ítems SÍ cumplen la definición de 'gap' del brief ('describe algo real y vigente que ninguna sección T0-T6 cubre'). El veredicto es correcto pero su justificación real está en esa sección concreta, no en el documento completo -- el sintetizador debería citar 'queda fuera' como la parte que alimenta el gap, no el plan de ejecución ya completado."
+  },
+  {
+    "path": "docs/continuation/phase15/RECOMMENDED_PHASE_16.md",
+    "original_verdict": "gap",
+    "audit_result": "corregido",
+    "corrected_verdict": "historico (parcialmente superseded; solo 2 de 8 recomendaciones siguen siendo gap real)",
+    "note": "El digestor etiquetó el documento entero como 'gap' sin verificar contra el código actual, y la mayoría de sus 8 recomendaciones YA ESTÁN IMPLEMENTADAS: (1) PolicyEngine converge con /permissions/evaluate -- confirmado en src/atlas/api/server.py:698-715, usa PolicyEngine directamente; (2) Gate Engine real -- confirmado, docs/decisions/adr/adr_063_gate_engine.md + src/atlas/fabric/gates.py; (4) primer conector real Gmail -- confirmado, src/atlas/fabric/connectors/gmail.py; (5) Sector/Objective Registry formal -- confirmado, src/atlas/business/registries.py + fixtures/sectors/*.json (no son solo strings sueltos); (7) Legal/ToS registry -- confirmado, src/atlas/fabric/legal.py + schemas/platform_terms.schema.json; (8) campo personal_channel -- confirmado, schemas/connection_recipe.schema.json + src/atlas/fabric/policy.py. Solo quedan sin construir: (3) persistencia de OnboardingSession a disco (grep en src/atlas/business/*.py no encuentra save/load para OnboardingSession, solo para BusinessCore/BusinessEntity) y (6) UI de producto mínima sobre /connections y /business (no existe nada bajo ui/ con esos nombres). Verdict correcto sería 'historico' (la mayoría del contenido ya se resolvió, documentado en ADRs/memoria de Fase 16) con nota de que 2 ítems residuales sí son gap real no cubierto por T0-T6."
+  },
+  {
+    "path": "docs/continuation/phase_recovery/GRAPH_MEMORY_DOCS_SYNC_AUDIT.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. El contenido real coincide con la nota de contradicción: la tabla del documento clasifica F5 (Visual Orchestrator) y F6 (Coding+Research Territories) como 'propuesto'/nunca ejecutadas, candidatas a parking conjunto. Verificado independientemente que el master plan §5 SÍ reabre ambas piezas por separado (T2.3 cita 'ADR-066, reabre aquí' para Visual Orchestrator; T1.5 cita '(ADR-068: F6 es núcleo, no negocio)' para Coding Territory pero luego describe la adopción adopt-real de Aider/OpenHands, un objeto distinto). Contradicción real y bien fundamentada. Hallazgo adicional no capturado por el digestor: el ADR-068 real (docs/decisions/adr/adr_068_f5_f6_reframed_self_construction_not_verticals.md) NO habla de Aider/OpenHands en absoluto -- reencuadra F5/F6 como 'Dynamic Workflow Control Surface' y 'Coding + Research Workbench para autoconstrucción'. Es decir, la cita 'ADR-068' del master plan T1.5 para la pieza Aider/OpenHands no corresponde al contenido real de ese ADR; hay una capa de discrepancia adicional dentro del propio master plan que merece señalarse en la síntesis final."
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PHASE_1_14_BACKFILL_PLAN.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Confirma decisión explícita 'PARK, no implementar' para F5/F6 vía un único ADR-066 propuesto (luego materializado tal cual en adr_066_visual_orchestrator_and_territories_parked.md, verificado). La nota de contradicción del digestor es correcta en cuanto a que el master plan reabre y separa ambas piezas después. Mismo patrón que el registro anterior -- ver esa nota para el hallazgo adicional sobre el desajuste de contenido de ADR-068."
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PHASE_1_16_COVERAGE_MATRIX.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (233 líneas). La matriz marca F5 y F6 explícitamente como 'Status: PENDING' con recomendación 'PARK con razón explícita, no implementar'. Coincide con la nota de contradicción. Adicionalmente el documento distingue con cuidado F6 ('Coding Territory' Monaco/diff UI) del motor de investigación autónoma real de Atlas (panorama_scout/topic_expander) para que no se confundan como si uno fuera evidencia del otro -- una distinción que refuerza por qué el riesgo de colisión de nombres que señala la nota es real y no hipotético."
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PROMPT_TASK_ASSIMILATION_REPORT.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Confirma recomendación de parkear Epic 5 (Visual Orchestrator) y Epic 6 (Governance/Coding+Research Territories) del pack 1 con ADR de parking explícito. Documento también expone un patrón más amplio de colisión de numeración (tres documentos con tres numeraciones de Fase 5/6 distintas dentro de los propios packs de origen, antes incluso de llegar al master plan) -- refuerza que el riesgo de confusión de nombres que señala la nota de contradicción es un patrón sistémico del corpus, no un caso aislado."
+  },
+  {
+    "path": "docs/continuation/zip_closure/GRAPH_MEMORY_DOC_SYNC_CLOSURE.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Reafirma F5/F6 como PARKED vía ADR-066 (parqueo conjunto), consistente con la nota. Confirma también que ningún concepto de F5/F6 llegó nunca a memoria/grafo/código -- solo existen en el ZIP original y en docs/handoff. La separación posterior del master plan (ADR-066 vs ADR-068, alcances distintos) es real, tal como reportan los otros 4 registros de este mismo grupo."
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-25-f2-6-personal-factual-design.md",
+    "original_verdict": "candidata",
+    "audit_result": "corregido",
+    "corrected_verdict": "historico",
+    "note": "La colisión de nomenclatura que reporta la nota es real y verificada: este spec es el backlog item 'f2-6-personalization-vs-contamination' (separación memory_class personal/factual + TTL en SqliteMemoryIndex), con Definition of Done que declara explícitamente 'f2-6 status: done'. El master plan T0.3 y docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md usan 'F2.6' para el TEST DE SUCESIÓN, un concepto sin relación. Contradicción bien fundamentada -- confirmada. Pero el verdict 'candidata' es incorrecto: 'candidata' implica un ítem aún no decidido/incorporado, y este spec describe una pieza YA CERRADA (status: done) cuyo diseño (memory_class personal/factual) está activamente en uso hoy en el código (grep confirma uso real en src/atlas/memory/knowledge_ingest.py, src/atlas/memory/memory_index.py, src/atlas/mcp/memory_trunk.py, src/atlas/core/decider/memory_decision_sink.py). El verdict correcto es 'historico' (decisión ya tomada y ejecutada, con procedencia relevante para el sustrato actual), igual que otros specs cerrados del corpus (p.ej. mcp_six_primitives_audit.md, gate_d_seal.md)."
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-25-recording-decider-design.md",
+    "original_verdict": "gap",
+    "audit_result": "corregido",
+    "corrected_verdict": "historico",
+    "note": "El digestor clasificó este spec (RecordingDecider slice 1 del arco 'copia-digital para reducir HITL') como 'gap' asumiendo -- correctamente, a fecha del propio doc (2026-06-25) -- que TwinDecider/shadow-eval/MemoryDecisionSink NO estaban construidos ('NO (registrado, no construido): TwinDecider, shadow-eval, métrica de divergencia...'). Pero verificado contra el código actual: TODO el arco ya existe -- src/atlas/core/decider/recording_decider.py (slice 1), src/atlas/core/decider/memory_decision_sink.py (slice 1b, el sink de producción cifrado/shredeable descrito como pendiente), y src/atlas/core/decider/twin_decider.py (el TwinDecider shadow explícitamente listado como 'slice posterior' en el spec, con MIN_CORPUS_SIZE=30, ShadowAccuracyLog, predicción por mayoría sobre features públicas -- coincide con el diseño del propio spec). TwinDecider está exportado en el __init__.py del paquete decider (uso real, no solo existencia del fichero). Esto significa que la pieza que el spec dejaba 'fuera de alcance, para después' ya se construyó -- el arco NO es un gap del plan actual, es trabajo ya completado. El verdict correcto es 'historico' (diseño ejecutado), no 'gap'. Ningún T0-T6 del master plan menciona explícitamente este arco de todos modos, así que si el sintetizador prefiere no perder la señal, el hallazgo real a reportar es 'trabajo completado no reflejado en el master plan actual', que es distinto de 'trabajo pendiente que el plan no cubre'."
+  },
+  {
+    "path": "MEMORY.md",
+    "original_verdict": "candidata",
+    "audit_result": "corregido",
+    "corrected_verdict": "alimenta_item (T1)",
+    "note": "Leído completo. Es el registro vivo de lecciones operativas del repo (dependency-floor-honesty, graph-rebuild-single-writer, semantic-full-scan-before-publish, cost-ledger-is-not-billing, etc.) -- casi todas atadas directamente a los mecanismos de autoconstrucción (Graphify/GraphRAG, ColdUpdate, swarm producer) que son el corazón de T1. No es un ítem 'candidato' a decisión futura: son reglas YA vigentes que constriñen el comportamiento actual del sistema de autoconstrucción (equivalente en función a docs/design/backlog.md, que el mismo digestor SÍ clasificó como 'alimenta_item T1' con un razonamiento idéntico). Para ser consistente con ese criterio, MEMORY.md debería llevar el mismo verdict: 'alimenta_item', T1 -- no 'candidata'."
+  },
+  {
+    "path": "docs/audits/reports/immune_intent_vs_topic_contrastive.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Es un reporte de experimento cerrado (ataque contrastive por prototipos contra el muro intención-vs-tema; veredicto honesto 'el muro se movió, no cayó', ~33% FP persistente). Documento correctamente historico: describe un experimento ya concluido, no una pieza de trabajo pendiente. Nota adicional: SÍ es citado como prior-art activo por docs/superpowers/specs/2026-06-25-f2-6-personal-factual-design.md ('mismo problema... aquí tampoco'), pero eso es consistente con 'historico' -- un experimento cerrado que sigue siendo evidencia citable, no un ítem vigente en sí mismo."
+  },
+  {
+    "path": "docs/design/backlog.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (256 líneas). Cubre bugs reales + Capa 1-4 (verificador/cascada/enjambre/LessonStore) + ADR-043/049/051/052/054 propuestos -- todo directamente relacionado con T1 (autoconstrucción, VerifiedProducer, swarm, ColdUpdate). El verdict alimenta_item/T1 es correcto para el grueso del contenido. Observación menor (no ameritа corrección): la sección 'Organismo de conocimiento (ADR-049)' encaja también, y quizá mejor, con T4 (vigilancia serendípica del ecosistema) -- el digestor solo pudo citar una sección y eligió razonablemente la dominante (T1), pero el sintetizador final debería tener presente que este doc alimenta más de un tramo."
+  },
+  {
+    "path": "docs/governance/REPO_STANDARD.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo. Estándar de gobernanza de layout/ciclo de vida/saneamiento del repo, cita directamente CAPABILITIES.md (ya clasificado alimenta_item/T0 por el mismo digestor) y scripts/sanitation_audit.py. Encaja bien con T0.5c ('Lint de la capa de autoridad y CORRECCIÓN: discrepancias entre docs... Docs del operador → diff propuesto'). Verdict y confianza alta correctos."
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Leído completo (era necesario para verificar el registro #31 de todos modos). Es literalmente la especificación del test de sucesión F2.6 citado 1:1 en el master plan T0.3 ('test de sucesión F2.6 como gate recurrente... Sonnet frío 6/6'). Match directo y verificado -- confianza alta bien justificada."
+  }
+]

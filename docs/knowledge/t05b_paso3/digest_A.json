@@ -1,0 +1,266 @@
+[
+  {
+    "path": "MEMORY.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/architecture/MEMORY_OS.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/audit_postmortem_memory_substrate_2026-06-21.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/reports/frontier_debate_report.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/reports/immune_generalization_curve.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/reports/immune_intent_vs_topic_contrastive.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/reports/immune_transfer_experiment.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase15/PHASE_15_EXECUTION_PLAN.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase15/RECOMMENDED_PHASE_16.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/GRAPH_MEMORY_DOCS_SYNC_AUDIT.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": true,
+    "contradiction_note": "Este audit (sesión 2026-07-11) documenta F5 (Visual Orchestrator) y F6 (Coding+Research Territories) como PENDING/nunca ejecutadas y candidatas a parking bajo un futuro ADR-066 único. El plan maestro (§5, redactado despues, con enmienda 2026-07-17) reabre ambas piezas por separado y con alcance reinterpretado: T2.3 cita 'ADR-066, reabre aquí' para Visual Orchestrator, y T1.5 cita 'ADR-068: F6 es núcleo, no negocio' para Coding Territory -- pero T1.5 redefine 'Coding Territory' como adopcion adopt-real de Aider/OpenHands para el MOTOR de codigo de Atlas, no la superficie UI Monaco/diff que este audit describe como F6. Mismo nombre, dos objetos distintos entre este documento y el plan maestro; riesgo real de confusion si no se distingue explicitamente.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PHASE_1_14_BACKFILL_PLAN.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": true,
+    "contradiction_note": "Este plan (sesión Phase Recovery, ~2026-07-11) decide explicitamente 'PARK, no implementar' F5 (Visual Orchestrator) y F6 (Coding+Research Territories) via un unico ADR-066 propuesto. El plan maestro §5 posterior reabre ambas piezas por separado (T2.3 Visual Orchestrator 'ADR-066, reabre aqui'; T1.5 Coding Territory via ADR-068 con alcance distinto: adopt-real de Aider/OpenHands como motor de codigo, no la UI Monaco que este documento describe). El parking de este documento quedo parcialmente revertido/reinterpretado, no mencionado aqui porque es anterior en el tiempo.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PHASE_1_16_COVERAGE_MATRIX.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": true,
+    "contradiction_note": "Esta matriz clasifica F5 (Visual Orchestrator) y F6 (Coding+Research Territories) como Status: PENDING y recomienda 'PARK con razon explicita, no implementar'. El plan maestro (§5, T1.5 y T2.3) reabre ambas piezas despues (ADR-068 para Coding Territory con alcance de motor adopt-real Aider/OpenHands, distinto del F6 'Monaco/diff/tests UI' que esta matriz describe; ADR-066 para Visual Orchestrator). El estado PENDING/parkear de esta matriz no refleja la reapertura posterior.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PROMPT_TASK_ASSIMILATION_REPORT.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": true,
+    "contradiction_note": "Este informe recomienda parkear el Epic 5 (Visual Orchestrator) y Epic 6 (Governance/Coding+Research Territories) del pack 1, con ADR de parking explicito. El plan maestro §5 reabre despues Coding Territory (T1.5, ADR-068) con un objetivo distinto (adopt-real de Aider/OpenHands como motor de codigo de Atlas) del Epic 6 original que este informe describe (UI de Monaco/diff/tests + arbol de investigacion). Mismo rotulo, objetos distintos entre este documento y el plan maestro vigente.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/zip_closure/GRAPH_MEMORY_DOC_SYNC_CLOSURE.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": true,
+    "contradiction_note": "Este cierre reafirma F5 y F6 como PARKED via ADR-066 (parqueo conjunto de Visual Orchestrator y Coding+Research Territories). El plan maestro §5 posterior separa y reabre ambas piezas con ADRs y alcances distintos (T2.3 Visual Orchestrator sigue bajo ADR-066 'reabre aqui'; T1.5 Coding Territory pasa a ADR-068 con alcance de adopcion adopt-real de Aider/OpenHands, no la superficie UI que este documento y sus fuentes describian como F6).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/CLOSURE_governance_2026-06-21.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/gate_d_seal.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/architectural_patterns_matrix_2026-07-08.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/backlog.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/design/design_catalog_enrichment.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/design_verifiable_memory.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/design/mcp_sector_architecture_audit.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/design/mcp_six_primitives_audit.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/plan_orchestrator_decomposition.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/governance/CAPABILITIES.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/governance/REPO_STANDARD.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/10_MEMORY_AND_CONTINUITY.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/MEMORY_POISONING_DEFENSE.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/membrana/OSM-007_privacy_dp_log_crypto_shredding.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-17-bootstrap-fable-autonomo.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-25-f2-6-personal-factual-design.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T0",
+    "contradiction_flag": true,
+    "contradiction_note": "Colision de nomenclatura: este documento es el backlog item 'f2-6-personalization-vs-contamination' (memory_class personal/factual + TTL, cerrado como DONE). 'F2.6' en docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md y en el plan maestro (T0.3) es el TEST DE SUCESION (rubrica 6 items, sesion Sonnet fria) -- un concepto completamente distinto que comparte el mismo codigo corto 'f2-6/F2.6'. Riesgo real de que una sesion futura confunda ambos al buscar 'f2.6' en el repo.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-25-recording-decider-design.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/superpowers/specs/2026-07-15-succession-ecosystem-design.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  }
+]

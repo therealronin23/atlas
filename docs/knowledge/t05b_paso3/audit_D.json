@@ -1,0 +1,667 @@
+[
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/32_ATLAS_NATIVE_ERP_CORE.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/00_BACKEND_CAPABILITY_MAP.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_ATLAS_NATIVE_BUSINESS_CORE_REQUIRED.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/audits/reports/pyrit_crescendo_report.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/audits/reports/redteam_campaign_report.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/operations/security_usage.md",
+    "original_verdict": "gap",
+    "audit_result": "corregido",
+    "corrected_verdict": "historico",
+    "note": "CORREGIDO: la nota llama a Antivirus/Membrane/ContentFilter en atlas.security 'módulos de código reales', pero NO existen en src/atlas/security/ actual (verificado: grep -rn 'class Antivirus|class Membrane|class ContentFilter' src/ no devuelve nada; solo viven en docs/archive/vscode_session_2026-06-17/code/). El propio docs/archive/vscode_session_2026-06-17/README.md documenta que ese Membrane/Antivirus se ARCHIVÓ el 2026-06-17 por colisión de nombre con el significado canónico de 'membrana' (admission gate, docs/membrana/OSM-000), cita alucinada a ADR-054, e imports rotos nunca usados. security_usage.md se creó/movió a docs/operations/ (docs/operations/, ruta 'viva') el 2026-07-10 -- casi un mes DESPUES del archivado -- durante la reorg masiva de docs (commit 3793c9c), sin que nadie detectara que documentaba una API ya descartada. Verdict correcto: 'historico' (documenta diseño superado, no una capacidad real sin representar en T0-T6) en vez de 'gap'. Es exactamente el tipo de 'afirmación caducada' que T0.5.c (lint doctrina §3) debería cazar."
+  },
+  {
+    "path": "docs/design/future_work_ideas.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/demo/README.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/continuation/phase15/WHAT_WAS_NOT_IMPLEMENTED.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-026_doble_copia_merkle.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-024_osmosis_filter_server_side.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-025_certificado_device_bound.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-029_nucleo_rendimiento_rust.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-038_token_kyc_residencia.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-040_protocolo_red_race_conditions.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/continuation/phase15/NEW_GAPS_FOUND.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/outreach/outreach_emails.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-054_behavioral_drift_detection.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/compliance/eu_ai_act_gaps_2026-06-18.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-027_bucle_apelacion_falsos_positivos.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-028_inspeccion_por_causa_metadata_first.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-030_posicionamiento_escudo_legal.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/compliance/eu_ai_act_mapping.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/compliance/technical_file_annex_iv.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/outreach/lesswrong_completeness_post.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/compliance/compliance_gateway_carta.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/compliance/compliance_gateway_carta_en.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-042_shadow_model_active_defense.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/membrana/OSM-000_membrana.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado leyendo el doc completo: OSM-000 define un pipeline maduro y real (Suspensión->Difusión->En membrana->Absorbida/Rechazada, 5 criterios de compuerta, 40+ OSM registradas, varias ya Absorbidas con código real en src/atlas/security/ y src/atlas/transparency/ y ADR-053/054). T4.2 del plan maestro (\"Pipeline candidata->diseccionada->absorbida industrializado... Primera víctima: cipher\") describe una estructura equivalente sin citar esta membrana ya existente -- riesgo real de duplicación/deriva de diseño, tal como señala la nota. plan_section_cited T4 es razonable (es la sección más afín) pero el propio note dice bien que no está referenciada explícitamente -- consistente."
+  },
+  {
+    "path": "docs/outreach/paper/paper_subject_enforced_completeness.md",
+    "original_verdict": "gap",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Verificado contra el documento real y (cuando aplica) el codigo/ADR citado; el veredicto y la nota de contradiccion del digestor son correctos."
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/README_USE_THIS_FIRST.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/15_LOCAL_FIRST_SYNC_STRATEGY.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/RAW_SOURCE_STORE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-15.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: self_audit_*.md muestreados son casi identicos entre si -- misma estructura 'Status/Profile/Started/Finished/Cycles' + hallazgos repetidos ('Tracked worktree changes present', '.claude directory is untracked') linea tras linea. Homogeneidad real, no pereza del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_EASY_CONNECTION_LAYER.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/19_SECURE_PERSONAL_MESH.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/REDUCED_MOTION_AND_ACCESSIBILITY.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/AI_PROVIDER_REGISTRY.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/continuation/phase_recovery/F15_F16_RECONCILIATION_REPORT.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/INCIDENT_RECORDER.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/17_PHASES_ROADMAP.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/design/absorption_note_template.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/03_LIQUID_APP_RUNTIME.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/07_RETAIL_COMERCIO.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/06_SECTOR_TAXONOMY_STUDY.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ASYNCAPI_EVENT_CONNECTOR.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ADAPTIVE_QUESTION_ENGINE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/API_SPEC_IMPORTER.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/CONTINUATION_STATE_TEMPLATE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/15_LIQUID_APP_GENERATOR.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/self_audit_2026-07-03.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: self_audit_*.md muestreados son casi identicos entre si -- misma estructura 'Status/Profile/Started/Finished/Cycles' + hallazgos repetidos ('Tracked worktree changes present', '.claude directory is untracked') linea tras linea. Homogeneidad real, no pereza del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/FABLE_EXECUTION_ORDER.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/WEBHOOK_MANAGER.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/17_UI_QUALITY_GATE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/06_LIQUID_WORKBENCH_UX.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/design/actor_roles.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/04_EVENT_CANON.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/02_ARCHITECTURE_MAP.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/12_ASSIMILATION_WRAP_FORK_POLICY.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/IMPROVEMENT_PROPOSALS_TEMPLATE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/DATA_ASSEMBLY_SCREEN.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/04_EDUCACION.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/LIVING_GRAPH_BEHAVIOR.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/superpowers/plans/2026-06-25-f2-6-personal-factual.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/external_thought/obsidian_vault_sample/README.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/continuation/zip_closure/ZIP_AUTHORITY_ORDER.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-09_inbox.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/BUSINESS_SETUP_WORKBENCH_UX.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/self_audit_2026-07-22.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: self_audit_*.md muestreados son casi identicos entre si -- misma estructura 'Status/Profile/Started/Finished/Cycles' + hallazgos repetidos ('Tracked worktree changes present', '.claude directory is untracked') linea tras linea. Homogeneidad real, no pereza del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CRM_ERP_ABSTRACTIONS_REQUIRED.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/FISCAL_DATA_MODEL.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "agents.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-12.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: self_audit_*.md muestreados son casi identicos entre si -- misma estructura 'Status/Profile/Started/Finished/Cycles' + hallazgos repetidos ('Tracked worktree changes present', '.claude directory is untracked') linea tras linea. Homogeneidad real, no pereza del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CONNECTOR_RECIPES_REQUIRED.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_NO_REAL_FILING_IN_DEMO.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CRM_CONNECTOR_ABSTRACTION.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_INTEGRATION_FABRIC_REQUIRED.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_DEVICE_CONTROL_CAPABILITY_BASED.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/08_RESTAURACION_HOSTELERIA.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/15_ADAPTIVE_BUSINESS_ONBOARDING.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/superpowers/plans/2026-06-24-council-v2.0-trio-reliability.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CRM_CORE_ENGINE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/audits/reports/longmemeval_s_analysis_2026-06-26.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/FISCAL_ATLAS_SHEET_SCREEN.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0002-event-canon-source-of-truth.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/SIGNATURE_FILING_GATE.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_NO_HIDDEN_REMOTE_CONTROL.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/MANUAL_SECRET_CAPTURE_FLOW.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/12_PRODUCT_ROADMAP_PHASED.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/09_PROMPT_INJECTION_THREAT_MODEL.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-16.md",
+    "original_verdict": "alimenta_item",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/DO_NOT_DO.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/decisions/gates/gate_i_plan.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Muestreo: contenido leído (cabecera/completo según tamaño) y coincide con el verdict 'historico'/'alimenta_item' del digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_LEGACY_SYSTEM_LINK_BEFORE_REPLACEMENT.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/13_VENTAS_CRM.md",
+    "original_verdict": "historico",
+    "audit_result": "confirmado",
+    "corrected_verdict": null,
+    "note": "Confirmado: pack de diseño repetitivo. Contenido efectivamente casi-plantilla (p.ej. los ADR_* de este pack son textualmente identicos salvo el titulo: 'Status: Accepted for Phase 15 planning / Decision: ... / Consequences: ...'; los ficheros de sectors/*.md comparten estructura identica Domain objects/Frequent workflows/Liquid workbenches/Gates/Business Core mapping/Question pack requirement con solo los sustantivos cambiados). No se encontró contenido escondido distinto al patrón declarado por el digestor."
+  }
+]

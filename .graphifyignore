@@ -23,6 +23,13 @@ docs/INDEX.yaml
 # lista de ~700 docs con bucket heurístico, dato tabular puro, sin prosa.
 docs/knowledge/corpus_inventory.json
 
+# T0.5b paso 3 (2026-07-22): digest/auditoría crudos por división, 708
+# registros JSON por doc (verdict/plan_section_cited/etc.), dato tabular
+# puro. La síntesis en prosa vive en
+# docs/design/2026-07-22-t05b-paso3-sintesis.md — eso sí es lo semántico.
+docs/knowledge/t05b_paso3/corpus_digest_consolidated.json
+docs/knowledge/t05b_paso3/digest_D.json
+
 # Raw private ChatGPT export (1.7MB) already distilled into the canonical
 # Foundry note. Ingesting it duplicated stale UI alternatives and signed URLs.
 Diseño UI Atlas.md

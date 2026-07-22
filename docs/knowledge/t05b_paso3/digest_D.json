@@ -1,0 +1,3674 @@
+[
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/security/malicious_github_issue.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/external_thought/codex_log_sample.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/external_thought/cursor_session_sample.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/external_thought/obsidian_vault_sample/README.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/security/prompt_injection_indirect_email.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CANONICALITY_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTOR_PERMISSION_EXPLAINER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/SECTOR_QUESTION_PACK_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/security/memory_poisoning_attempt.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/SOURCE_TRUST_CLASSIFIER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "README.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/BUSINESS_MODEL_BUILDER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/RAW_SOURCE_STORE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/WEBHOOK_MANAGER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/GATE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ADAPTIVE_QUESTION_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ASYNCAPI_EVENT_CONNECTOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/BUSINESS_CORE_ACTIVATION_GATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CAPABILITY_ANALYZER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTOR_PACK_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTOR_RECIPE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTOR_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CRM_CORE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/SANDBOX_EXECUTOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/fixtures/external_thought/claude_pasted_conversation_sample.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/16_SECURITY_BOUNDARIES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/BUSINESS_CORE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTION_TEST_RUNNER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CROSS_PROJECT_REUSE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ENTITY_CANDIDATE_EXTRACTOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/FISCAL_EVIDENCE_LINKER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/LEGACY_LINK_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/MCP_GATEWAY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/PROVIDER_AUTH_GUIDE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/09_DOCUMENT_REVIEW_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/07_CONNECTOR_BACKEND_STRATEGY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/COMPUTER_USE_ADAPTER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/DATABASE_CONNECTOR_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ERP_CORE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/EXTERNAL_SOURCE_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/MANUAL_SECRET_CAPTURE_FLOW.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/MCP_REGISTRY_SECURITY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/KNOWN_RISKS_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/01_DOMAIN_SCHEMA_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/03_LIQUID_APP_RUNTIME.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/10_DEVICE_CONTROL_BACKEND.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/13_SIGNATURE_AND_FILING_GATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/API_SPEC_IMPORTER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/APP_CONTROL_PROFILE_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CRM_CONNECTOR_ABSTRACTION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/DATA_MAPPING_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/ERP_CONNECTOR_ABSTRACTION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/INCIDENT_RECORDER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/INTEGRATION_HEALTH_MONITOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/THOUGHT_EXTRACTION_PIPELINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/10_CASE_BOARD_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/09_DOCUMENT_AND_INVOICE_PARSING.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/15_LOCAL_FIRST_SYNC_STRATEGY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/AUTH_BROKER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/DESKTOP_AUTOMATION_ADAPTER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/FILE_IMPORT_EXPORT_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/OUTPUT_VALIDATOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/POLICY_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/SIGNATURE_FILING_GATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/SYNC_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/TOOL_REGISTRY_SECURITY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/LEGACY_IMPORT_REVIEW_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/02_SECTOR_OBJECTIVE_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/08_DATABASE_CONNECTOR_STRATEGY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/11_REMOTE_COMMAND_BACKEND.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/12_DEVICE_MESH_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/AI_PROVIDER_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/BROWSER_EXTENSION_BRIDGE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/12_SUBMISSION_CEREMONY_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/13_MOBILE_COMPANION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/ERP_GENERATION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/06_LANGGRAPH_ADAPTER_STRATEGY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTOR_DISCOVERY_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/CONNECTOR_TESTING_HARNESS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/FISCAL_DATA_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/AI_PROVIDER_CONNECTION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/BUSINESS_SETUP_WORKBENCH_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/license/SOURCE_AVAILABLE_POLICY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/FISCAL_VALIDATION_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/PROMPT_PROVENANCE_TRACKER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/OPEN_QUESTIONS_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/BUSINESS_CORE_PREVIEW_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/CONNECTOR_SETUP_WIZARD_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/14_AUDIT_AND_REPLAY_BACKEND.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/GESTORIA_CAPABILITY_MAP.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/CONNECTION_CONCIERGE_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/CONNECTOR_PACKS_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/CRM_GENERATION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/05_WORKFLOW_ENGINE_STRATEGY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/TESTING_STATUS_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/07_ATLAS_SHEET_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/16_ACTION_REACTION_SPEC.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/ERP_CONNECTION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/WHATSAPP_CONNECTION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/CRM_CONNECTION_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/license/NO_LICENSE_POLICY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/06_LIQUID_WORKBENCH_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/14_WATCH_GATE_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/COMMAND_PALETTE_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/CONNECTION_STORE_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/license/N8N_SUL_RISK.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/templates/ADR_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/templates/RESEARCH_DIGEST_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/NEXT_AI_INSTRUCTIONS_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/ACCESSIBILITY_REQUIREMENTS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "agents.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/CONTINUATION_STATE_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/continuation/IMPROVEMENT_PROPOSALS_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/15_ICONOGRAPHY_SYSTEM.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/REDUCED_MOTION_AND_ACCESSIBILITY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/PRESENCE_ENGINE_RENDERER_REQUIREMENTS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/license/DEPENDENCY_LICENSE_RISK_CLASSES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/11_EXTERNAL_THOUGHT_IMPORT_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/QUICKLINK_DEEPLINK_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/15_LIQUID_APP_GENERATOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/13_API_FIRST_AGENTIC_INTEGRATION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/context/DECISION_INDEX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/03_COGNITIVE_PHYSICS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/05_SEMANTIC_ZOOM_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/08_WORKFLOW_CANVAS_UX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/19_SECURE_PERSONAL_MESH.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/UI_STATE_SYSTEM.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/29_PROVIDER_CONNECTION_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/ATLAS_CORE_VISUAL_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/MOTION_GRAMMAR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/10_LOCAL_CLOUD_MESH_POLICY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/16_SIGNATURE_AND_FILING_CEREMONY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/04_STATE_TO_VISUAL_GRAMMAR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/27_CRM_CONNECTOR_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/15_BUSINESS_CORE_CANONICALITY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/15_ADAPTIVE_BUSINESS_ONBOARDING.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/23_CONNECTOR_MARKETPLACE_CATALOG.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/13_PLATFORM_TERMS_BOUNDARY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_COMMUNICATION_CONNECTORS_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_AI_PROVIDER_CONNECTION_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_EASY_CONNECTION_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/DEPENDENCY_INTAKE_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/LIVING_GRAPH_BEHAVIOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/15_BUSINESS_QUESTION_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/15_LEGACY_TO_ATLAS_MIGRATION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/28_ERP_CONNECTOR_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/13_BACKEND_CAPABILITY_MAP.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/14_DOMAIN_MODEL_IMPORTER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/21_CONNECTOR_DISCOVERY_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/33_BUSINESS_SETUP_WORKBENCH.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/09_PROMPT_INJECTION_THREAT_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/templates/CONNECTOR_SPEC_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/01_GLOBAL_APP_ANATOMY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/context/WHAT_WE_KEEP_FROM_FABLE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/02_OBJECTIVE_DRIVEN_OS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/32_ATLAS_NATIVE_ERP_CORE.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Business Core / CRM / ERP Core (Fase 15, parcialmente construido per docs/continuation/phase15/WHAT_WAS_IMPLEMENTED.md) no tiene representacion en ninguna seccion T0-T6 del plan maestro vigente — capacidad real sin tramo.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/11_UI_UX_CONCRETE_MODEL_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/REPO_INTAKE_REGISTRY_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/backend/00_BACKEND_CAPABILITY_MAP.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Business Core / CRM / ERP Core (Fase 15, parcialmente construido per docs/continuation/phase15/WHAT_WAS_IMPLEMENTED.md) no tiene representacion en ninguna seccion T0-T6 del plan maestro vigente — capacidad real sin tramo.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_ADAPTIVE_QUESTION_ENGINE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_API_FIRST_COMPUTER_USE_LAST.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_ASSIMILATION_POLICY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_ATLAS_CAN_GENERATE_CRM_ERP_FROM_CONTEXT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_ATLAS_NATIVE_BUSINESS_CORE_REQUIRED.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Business Core / CRM / ERP Core (Fase 15, parcialmente construido per docs/continuation/phase15/WHAT_WAS_IMPLEMENTED.md) no tiene representacion en ninguna seccion T0-T6 del plan maestro vigente — capacidad real sin tramo.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_ATLAS_SHEET_FIRST_CLASS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_AUTH_BROKER_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_BROWSER_ASSIST_NOT_SILENT_AUTOMATION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_BUSINESS_CORE_STARTS_AS_DRAFT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CANONICALITY_MUST_BE_EXPLICIT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_COGNITIVE_PHYSICS_DRIVES_VISUAL_BEHAVIOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_COMMAND_PALETTE_ACCELERATES_BUT_NEVER_BYPASSES_GATES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_COMPUTER_USE_IS_HIGH_RISK_FALLBACK.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CONNECTION_CONCIERGE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CONNECTION_STORE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CONNECTOR_CAPABILITIES_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CONNECTOR_RECIPES_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CONNECTOR_TESTING_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_CRM_ERP_ABSTRACTIONS_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_DESKTOP_MOBILE_WATCH_HAVE_DISTINCT_SURFACES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_DEVICE_CONTROL_CAPABILITY_BASED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_EASY_SETUP_WITH_STRICT_ACTION_GATES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_EXTERNAL_RESEARCH_REPOS_ISOLATED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_FAIL_CLOSED_FOR_HIGH_RISK_ACTIONS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_GESTORIA_VERTICAL_SLICE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_GLOBAL_APP_ANATOMY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_INSPECTOR_AND_TIMELINE_ALWAYS_PRESENT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_INTEGRATION_FABRIC_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_LANGGRAPH_ADAPTER_NOT_KERNEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_LEGACY_SYSTEM_LINK_BEFORE_REPLACEMENT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_LIVING_GRAPH_NOT_DECORATION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_LOCKDOWN_MODE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_MANUAL_API_KEYS_ARE_GUIDED_NOT_RAW.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_MEMORY_WRITES_REQUIRE_REVIEW.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_MODEL_IS_NOT_SECURITY_BOUNDARY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_N8N_ASSIMILATE_NOT_FORK.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_NO_FORK_WITHOUT_LICENSE_REVIEW.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_NO_HIDDEN_REMOTE_CONTROL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_NO_REAL_FILING_IN_DEMO.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_NO_SILENT_OUTBOUND.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_OBJECTIVE_DRIVEN_OS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_OBJECTIVE_REGISTRY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_PLATFORM_TERMS_BOUNDARY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_POLICY_ENGINE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_PRESENCE_ENGINE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_REDUCED_MOTION_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_REMOTE_COMMAND_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_SECTOR_LENS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_SECTOR_OPERATING_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_SECURE_PERSONAL_MESH.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_SEMANTIC_ZOOM_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_SIGNATURE_FILING_GATE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_STUDY_ASSIMILATE_WRAP_NATIVIZE_FORK_ORDER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_TOOL_REGISTRY_SECURITY_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_TRUE_LIQUID_SOFTWARE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/adr/ADR_UI_QUALITY_GATE_REQUIRED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/05_TRUE_LIQUID_SOFTWARE_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/22_AI_PROVIDER_FABRIC.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/12_ASSIMILATION_WRAP_FORK_POLICY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/15_ATLAS_NATIVE_CRM_ERP_CORE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/06_SECTOR_TAXONOMY_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_CRM_ERP_CONNECTOR_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/03_SECTOR_OPERATING_MODEL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/TEXTURE_AND_COLOR_SEMANTICS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/25_CONNECTION_CONCIERGE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/34_ADAPTIVE_QUESTION_ENGINE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/09_MCP_TOOL_SECURITY_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/36_LEGACY_LINK_LAYER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/07_GESTORIA_DEEP_DIVE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/13_COMPUTER_USE_FALLBACK_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/01_GESTORIA_FISCAL_CONTABLE_DEEP_DIVE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/10_PRESENCE_ENGINE_COGNITIVE_PHYSICS_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/AUDIT_RESULT_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/DATA_ASSEMBLY_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/DOCUMENT_REVIEW_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/MISSING_EVIDENCE_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/OBJECTIVE_INTAKE_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/SUBMISSION_CEREMONY_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/26_CONNECTOR_PACKS_BY_SECTOR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/FISCAL_ATLAS_SHEET_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/gestoria/TAX_FILING_WORKBENCH_SCREEN.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/24_CONNECTION_STORE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/06_ATLAS_SHEET.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/prompts/PROMPT_CODEX_IMPLEMENT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/13_INTEGRATION_FABRIC_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/07_EXTERNAL_THOUGHT_IMPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-06-22.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-11.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-13.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-14.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-17.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-18.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-19.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-20.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-21.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-21.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-24.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-25.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-26.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-30.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-01.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-02.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-03.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-04.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-07.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-08.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-09.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/35_SECTOR_QUESTION_PACKS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/20_INTEGRATION_FABRIC.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/01_TRUE_LIQUID_SOFTWARE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/CONTINUOUS_IMPROVEMENT_PROTOCOL.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/gate_i_seal.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/00_SECTOR_SPEC_TEMPLATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0006-renderer-abstraction.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0010-final-compatible-not-prototype.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/04_EXTERNAL_THOUGHT_IMPORT_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0007-atlas-kernel-not-langgraph.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0008-adapter-contract-required.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0002-event-canon-source-of-truth.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0009-connected-accounts-differentiator.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0004-visual-orchestrator-territory.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/09_AGENTIC_WORKFLOW_SECURITY_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/adr/ADR-0003-living-graph-home.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/design/absorption_note_template.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Plantilla del método adopt-real; feeds T4.2 (pipeline candidata->diseccionada->absorbida) y T1.5.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/GAP_DETECTION_REGISTER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/04_SECTOR_TAXONOMY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/12_PRODUCT_ROADMAP_PHASED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/05_LIQUID_WORKBENCHES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/00_RESEARCH_INDEX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-06-23.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/03_N8N_LANGGRAPH_WORKFLOW_STUDY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/design/17_UI_QUALITY_GATE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/14_BUSINESS_SYSTEMS_CATALOG.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/15_RRHH.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/06_INMOBILIARIA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/10_LOGISTICA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/12_SERVICIOS_TECNICOS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/09_ECOMMERCE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/11_INDUSTRIA_FABRICACION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/13_VENTAS_CRM.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/14_MARKETING_REDES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/16_FINANZAS_SEGUROS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/19_ESCRITURA_CREATIVO.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/20_DISENO_MULTIMEDIA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/21_ADMIN_PUBLICA_ONG.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/04_EDUCACION.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/07_RETAIL_COMERCIO.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/05_CONSTRUCCION_ARQUITECTURA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/18_SOFTWARE_IT_SEGURIDAD.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/22_VIDA_PERSONAL_FAMILIA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/03_SANIDAD_CLINICAS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/MANIFEST.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/FABLE_EXECUTION_ORDER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/08_RESTAURACION_HOSTELERIA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/20_IMPLEMENTATION_MAP.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/02_LEGAL_DESPACHO.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/prompts/PROMPT_CLAUDE_CODE_IMPLEMENT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/sectors/01_GESTORIA_FISCAL_CONTABLE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-07-17.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "feedback-adversarial-audit-no-assumptions.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Manía operativa citable en T0.5.c (lint de la capa de autoridad / manías mal redactadas).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/decisions/gates/gate_i_plan.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/08_BACKEND_BRIDGE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-16.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-06.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/context/FABLE_LAST_OUTPUT_ANALYSIS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/DO_NOT_DO.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/ACCEPTANCE_CRITERIA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-09.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Digest de investigacion (TopicExpander); feeds T4.1 (descubrimiento abierto).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/tasks/PHASE_15_TASKS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "feedback-semantic-checkpoint-per-source.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Manía operativa citable en T0.5.c.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-11.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/README_USE_THIS_FIRST.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_product_os_liquid_ui_pack_v1/research/01_REFERENCE_ASSIMILATION_MATRIX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/14_TECH_STACK_DECISIONS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/18_ACCEPTANCE_CRITERIA.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/CONTEXT_LEDGER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/04_EVENT_CANON.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/06_MOTION_GRAMMAR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/05_VISUAL_GRAMMAR.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/gate_h_mvp_scope.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/13_GRAPH_RENDERING_STRATEGY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase15/PHASE_15_FILES_TO_CREATE_OR_MODIFY.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de cierre/estado de Fase 15 (Product OS), ya completada y auditada.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/03_RULES.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/architecture/GOVERNANCE_KERNEL.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "Gates/permission evaluator sobre governance real; feeds T1 (ruta dorada/guardas).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/reports/pyrit_crescendo_report.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte real de red-team (PyRIT) sobre el gateway Osmosis — cluster sin tramo T0-T6.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase15/TESTING_STATUS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de cierre/estado de Fase 15 (Product OS), ya completada y auditada.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/architecture/INTEGRATION_FABRIC.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T3",
+    "contradiction_flag": false,
+    "contradiction_note": "Contrato de conectores Atlas OS; feeds T3 (operador universal / conectores).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/architecture/EVENT_KERNEL.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Sustrato de eventos Atlas OS (ADR-058), proyección del EventBus real; feeds T0 (sucesión/sustrato).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/reports/redteam_campaign_report.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte real de red-team (Garak) sobre el gateway Osmosis — cluster sin tramo T0-T6.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/gate_g_operational_readiness.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/tickets/EPICS_AND_TASKS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_fable5_handoff_v1/tickets/TICKETS_PHASE_0_TO_4.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/17_PHASES_ROADMAP.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-07-10.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/product_strategy_notes.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Notas de posicionamiento producto/mercado destiladas de un chat externo; temática conecta con el cluster Osmosis/compliance gateway (ningún tramo T0-T6 cubre estrategia de producto/mercado).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/backfill/PHASE_5_6_BACKFILL_REPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/decisions/gates/gate_e_seal.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/decisions/gates/gate_g_seal.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-25-mcp-close-primitives-design.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T5",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase15/WHAT_WAS_IMPLEMENTED.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de cierre/estado de Fase 15 (Product OS), ya completada y auditada.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/operations/security_usage.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Documenta módulos de código reales (Antivirus/Membrane/ContentFilter en atlas.security) del cluster Osmosis/membrana — sin representación en T0-T6.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase15/PHASE_15_RISK_REVIEW.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de cierre/estado de Fase 15 (Product OS), ya completada y auditada.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/future_work_ideas.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Ideas de literatura (SCITT/COSE, Sello notarized agents, Aegon attestation) para el paper de completeness/Osmosis — todo el cluster Osmosis/membrana/compliance-gateway (docs/membrana/, docs/compliance/, docs/outreach/, docs/demo/) no tiene representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-07-16.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/fleet_security_plan.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T6",
+    "contradiction_flag": false,
+    "contradiction_note": "Plan de seguridad multi-nodo; feeds T6 (twin real y elasticidad multi-hardware).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-07-22.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/zip_closure/ZIP_BACKFILL_REPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/handoff/atlas_build_pack/docs/atlas-bible/02_ARCHITECTURE_MAP.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Fichero fuente del pack de diseño Fase 15/Atlas OS/Fable5 handoff, ya cerrado (CLOSED_WITH_PARKED_ITEMS, ver docs/continuation/zip_closure/).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-07-12.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/decisions/gates/gate_f_seal.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/TESTING_STATUS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/gate_c_seal.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase15/IMPROVEMENT_PROPOSALS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de cierre/estado de Fase 15 (Product OS), ya completada y auditada.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/operations/oauth_rotation_google_workspace.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T5",
+    "contradiction_flag": false,
+    "contradiction_note": "Runbook de rotación OAuth Google Workspace, trabajo reciente 2026-07-22 (ver commits recientes); feeds T5 (robustez de proveedores).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/actor_roles.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Define quién-es-quién para sucesión de modelo; citado explícitamente para T0.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/ui/research/DECISION_STACK_T21.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "Decisión de qué prototipar para T2.1 (ADR-071, apps dedicadas).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/demo/README.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Implementación de referencia reproducible del paper subject-enforced-completeness (cluster Osmosis); sin representación en T0-T6.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/decisions/gates/gate_f_real_world_readiness.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/supply_chain_admission_scan.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "Scanner de admisión de supply-chain (ADR-072); guarda de seguridad para autoconstrucción T1.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/audit_postmortem_2026-06-13.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase15/WHAT_WAS_NOT_IMPLEMENTED.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Lista honesta de huecos reales de Fase 15 (Business/CRM/ERP Core, conectores reales, gates conectados) que no tienen hogar en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/risks/RISK_REGISTER.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "Riesgos vivos de Atlas OS (bridge/Orchestrator/eventos/UI); relacionado con gates/governance T1.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/skills/deliberation_council.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Spec del skill Cónclave, ya construido y activo (disponible como skill deliberation_council).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-026_doble_copia_merkle.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/reports/longmemeval_s_analysis_2026-06-26.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Analisis de retrieval LongMemEval_S, medicion citada en memoria del programa de memoria; feeds T0.2 (migracion de memoria).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-25-catalog-resources-design.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T5",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-06-29.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/audit_postmortem_2026-06-12.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/F15_F16_RECONCILIATION_REPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/operating_loop_premortem.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-15.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/decisions/gates/gate_h_resilience_plan.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/postmortem_2026-05-29.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-024_osmosis_filter_server_side.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/CURRENT_CHECKPOINT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/zip_closure/CURRENT_CHECKPOINT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase15/PHASE_15_COMPLETION_REPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de cierre/estado de Fase 15 (Product OS), ya completada y auditada.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-025_certificado_device_bound.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/F15_F16_DEPENDENCY_AUDIT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-029_nucleo_rendimiento_rust.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/membrana/OSM-038_token_kyc_residencia.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/audits/audit_context_premortem_2026-07-07.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PACK_LOCATION_REPORT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/zip_closure/ZIP_AUTHORITY_ORDER.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-040_protocolo_red_race_conditions.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/decisions/gates/gate_h_action_plan.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Gate seal/plan de un hito de programa ya sellado (tags v0.8-gate-*).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/audits/self_audit_2026-06-12.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auto-generado (self-audit) o auditoria/postmortem ya resuelta.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/zip_closure/ZIP1_ATLAS_OS_BUILD_PACK_CLOSURE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/plugin_manifest_v1.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T1",
+    "contradiction_flag": false,
+    "contradiction_note": "Extensiones declarativas staged con receipts/Merkle (A3.x, construido 2026-07-22); amplía vocabulario ruta dorada T1.1.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-27.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/self_audit_2026-06-28.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/project_needs_inventory.md",
+    "verdict": "candidata",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/zip_closure/CANONICAL_WORK_ORDER_AFTER_ZIPS.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase15/NEW_GAPS_FOUND.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Lista honesta de huecos reales de Fase 15 (Business/CRM/ERP Core, conectores reales, gates conectados) que no tienen hogar en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/zip_closure/CROSS_ZIP_CONFLICT_TABLE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/outreach/outreach_emails.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Paquete de envio real (AESIA + Anthropic) para el Compliance/Osmosis Gateway — cluster completo sin representacion en T0-T6.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/mcp_catalog.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T5",
+    "contradiction_flag": false,
+    "contradiction_note": "Catálogo de skills/tools/MCP candidatos (fuente humana; YAML es la fuente máquina); feeds T5 (cadena de proveedores/herramientas).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/membrana/OSM-054_behavioral_drift_detection.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/compliance/eu_ai_act_gaps_2026-06-18.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Mapeo/documentacion de cumplimiento EU AI Act para el Compliance/Osmosis Gateway — iniciativa real y activa sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/zip_closure/ZIP2_FABLE5_HANDOFF_CLOSURE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PHASE_RECOVERY_FINAL_VERDICT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-027_bucle_apelacion_falsos_positivos.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/membrana/OSM-028_inspeccion_por_causa_metadata_first.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/self_audit_2026-07-05.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Reporte auto-generado diario (self-audit), boilerplate identico entre corridas.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/zip_closure/ZIP3_PRODUCT_OS_LIQUID_UI_CLOSURE.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/design_deliberation_council.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Diseño de Cónclave v1, ya construido y mergeado (ver memoria); mecanismo transversal usado en la ejecución de todos los tramos pero no representado como ítem propio en T0-T6.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/membrana/OSM-030_posicionamiento_escudo_legal.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/zip_closure/FINAL_ZIP_CLOSURE_VERDICT.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro del cierre de los 3 ZIPs fuente (2026-07-11), CLOSED_WITH_PARKED_ITEMS (ver memoria atlas-os-zip-closure).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/IMPLEMENTATION_LOG.md",
+    "verdict": "historico",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Log append-only de sesiones de implementacion de Atlas OS (Fase 16); historico pero relacionado con sustrato T0.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/compliance/eu_ai_act_mapping.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Mapeo/documentacion de cumplimiento EU AI Act para el Compliance/Osmosis Gateway — iniciativa real y activa sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-07-22-t05b-paso3-parallel-digestion-BRIEF.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Es el brief que originó esta propia tarea de digestión T0.5.b paso 3.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/compliance/technical_file_annex_iv.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Mapeo/documentacion de cumplimiento EU AI Act para el Compliance/Osmosis Gateway — iniciativa real y activa sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/superpowers/specs/2026-06-24-council-v2.0-trio-reliability-design.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Cónclave v2 ya construido/corregido (ver memoria).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/audit_addendum_2026-07-17.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Addendum de auditoría ya integrado en la campaña toasty (ver memoria toasty-campaign-status).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PHASE_SOURCE_INDEX.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/mcp_trunk_portable.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Tronco MCP portable, infraestructura viva (herramientas mcp__atlas-trunk__* disponibles); agrega memoria/lecciones/backlog para sucesión.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/ui/void_fork_ux_fusion_inventory_2026-07-18.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "Inventario propuesto, no decisión tomada, para fusión Void->Atlas IDE bajo T2.1.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/outreach/lesswrong_completeness_post.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Borrador de post LessWrong/Alignment Forum sobre completeness de logs de inspección — parte del cluster Osmosis/paper sin tramo T0-T6 propio.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-09_inbox.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/compliance/compliance_gateway_carta.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Mapeo/documentacion de cumplimiento EU AI Act para el Compliance/Osmosis Gateway — iniciativa real y activa sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/compliance/compliance_gateway_carta_en.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Mapeo/documentacion de cumplimiento EU AI Act para el Compliance/Osmosis Gateway — iniciativa real y activa sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/membrana/OSM-042_shadow_model_active_defense.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Propuesta concreta en la membrana (docs/membrana/), cluster Osmosis/seguridad/compliance real y activo sin representación en ninguna sección T0-T6 del plan maestro.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-06-24-council-v2.0-trio-reliability.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-06-25-f2-6-personal-factual.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "Diseño del test de sucesión F2.6, citado directamente en T0.3.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/plan_mcp_y_murallas_defensivas.md",
+    "verdict": "candidata",
+    "plan_section_cited": "T5",
+    "contradiction_flag": false,
+    "contradiction_note": "Ciclo MCP cerrado 2026-05-31 pero murallas P1/P2 (egress full, Merkle anchoring, confused-deputy) siguen abiertas — candidata para robustez de proveedores T5.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PACK_MANIFEST_atlas_os_build_pack_v1.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PACK_MANIFEST_atlas_fable5_handoff_v1.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/plan_deliberation_council_v1.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Plan de implementación de Cónclave v1, ya ejecutado.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/design/ui/research/research-kmp-qt-slint.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "Dossier Compose/Qt/Slint para apps dedicadas T2.1.",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/membrana/OSM-000_membrana.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": true,
+    "contradiction_note": "Meta-doc que define el mecanismo de osmosis (ideas externas -> capacidad del núcleo), vivo desde 2026-06-17. T4.2 propone \"industrializar\" un pipeline candidata->diseccionada->absorbida sin citar esta membrana ya existente y madura (12 OSM concretas) — posible duplicación/deriva de diseño entre el plan maestro y trabajo previo real.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/continuation/phase_recovery/PACK_MANIFEST_atlas_product_os_liquid_ui_pack_v1.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Registro de la Phase Recovery F1-F16 (2026-07-11), ya cerrada (ver memoria atlas-os-phase-recovery).",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-22.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Digest de investigacion (TopicExpander); feeds T4.1 (descubrimiento abierto).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-17.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Digest de investigacion (TopicExpander); feeds T4.1 (descubrimiento abierto).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/design/audit_premortem_postmortem_2026-07-16.md",
+    "verdict": "historico",
+    "plan_section_cited": null,
+    "contradiction_flag": false,
+    "contradiction_note": "Auditoría integral ya sellada dentro de la campaña toasty.",
+    "confidence": "alta"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-16.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Digest de investigacion (TopicExpander); feeds T4.1 (descubrimiento abierto).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-11.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Digest de investigacion (TopicExpander); feeds T4.1 (descubrimiento abierto).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/knowledge/research_2026-07-10.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T4",
+    "contradiction_flag": false,
+    "contradiction_note": "Digest de investigacion (TopicExpander); feeds T4.1 (descubrimiento abierto).",
+    "confidence": "media"
+  },
+  {
+    "path": "docs/outreach/paper/paper_subject_enforced_completeness.md",
+    "verdict": "gap",
+    "plan_section_cited": null,
+    "contradiction_flag": true,
+    "contradiction_note": "Paper completo (~10k palabras, muestreado no leído íntegro) sobre gateway de completeness sujeto-operador; ancla de todo el cluster Osmosis/membrana/compliance — ninguna sección T0-T6 lo referencia ni lo agenda.",
+    "confidence": "media"
+  },
+  {
+    "path": "WORK_LEDGER.md",
+    "verdict": "alimenta_item",
+    "plan_section_cited": "T0",
+    "contradiction_flag": false,
+    "contradiction_note": "",
+    "confidence": "alta"
+  },
+  {
+    "path": "Diseño UI Atlas.md",
+    "verdict": "historico",
+    "plan_section_cited": "T2",
+    "contradiction_flag": false,
+    "contradiction_note": "Export crudo de ChatGPT (1.6MB, ~223k palabras, muestreado no leído íntegro); ya distilado en docs/inbox/atlas_foundry_v0_destilado_2026-07-15.md por sesión previa (ver memoria foundry-distillation-2026-07-15); 3 decisiones del operador siguen pendientes sobre esa destilación.",
+    "confidence": "media"
+  }
+]
