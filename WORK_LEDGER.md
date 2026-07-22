@@ -6,6 +6,8 @@ Disciplina: entradas nuevas ARRIBA, una línea de estado por frente, ledger cort
 (≤40 entradas; al superar, plegar lo viejo a `docs/archive/`). Verificar antes
 de escribir: `atlas reality --json`.
 
+## WHERE
+
 - **ATLAS PRIME Cycle 8 — F2.6 CERRADO de verdad, por la ruta dorada
   (2026-07-22 13:15, commits 810f969d/0a364d9a/07795a04)** — plan aprobado
   por el operador ("haz una lista y ejecútalo"): cerrar los 3 gaps que F2.6
