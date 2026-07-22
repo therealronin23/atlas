@@ -265,6 +265,36 @@ def memory(layer: str) -> None:
         console.print_json(json.dumps(result, ensure_ascii=False, default=str))
 
 
+@cli.group("golden-route")
+def golden_route() -> None:
+    """ADR-069 GoldenRoute — petición en texto libre → patch → propuesta,
+    sobre el mismo ledger que `atlas update`. v0 solo sabe añadir líneas a
+    docs existentes; aprobar/aplicar sigue exactamente el camino humano de
+    `atlas update validate/approve/apply` (misma propuesta, mismo ledger)."""
+
+
+@golden_route.command("request")
+@click.argument("text")
+def golden_route_request(text: str) -> None:
+    """Traduce una petición en texto libre a una propuesta ColdUpdate real."""
+    from atlas.missions.golden_route import UnsupportedRequestError
+
+    orch = get_orchestrator()
+    try:
+        session = orch.golden_route().request(text)
+    except UnsupportedRequestError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    console.print(
+        f"[green]Proposal {session.proposal_id}[/green] "
+        f"path={session.plan['path']!r} line={session.plan['line']!r}"
+    )
+    console.print(
+        "  Siguiente paso: atlas update validate "
+        f"{session.proposal_id}   # y luego approve/apply"
+    )
+
+
 @cli.group("gate-h")
 def gate_h() -> None:
     """Comandos de Gate H para resiliencia y reconstruccion."""

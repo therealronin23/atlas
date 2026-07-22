@@ -167,6 +167,7 @@ class Orchestrator:
     _vector_store: KuzuVectorStore | None
     _observability: Any
     _cold_update_manager: Any
+    _golden_route: Any
     _self_audit_runner: Any
     _swarm_cycle: Any
     _knowledge_cve_proposer: Any
@@ -540,6 +541,20 @@ class Orchestrator:
                 ),
             )
         return self._cold_update_manager
+
+    def golden_route(self) -> Any:
+        """ADR-069 GoldenRoute — petición en texto libre → patch → propuesta,
+        sobre el MISMO ColdUpdateManager/Merkle que ``cold_update()``. Nunca
+        ``GoldenRoute.for_repo()`` aquí: esa fábrica crea un store aislado
+        (documentado como "tests/fixture repos y uso directo"), lo que
+        dejaría las propuestas de la ruta dorada invisibles a
+        `atlas update status`/validate/approve/apply — dos ledgers
+        desconectados del mismo trabajo."""
+        if self._golden_route is None:
+            from atlas.missions.golden_route import GoldenRoute
+
+            self._golden_route = GoldenRoute(self.cold_update(), self._merkle)
+        return self._golden_route
 
     def advance_cold_update(self, proposal_id: str) -> str:
         """Avanza una propuesta de ColdUpdate bajo veredicto del decisor (ADR-040).
@@ -1863,6 +1878,7 @@ class Orchestrator:
             MerkleLogger(self._workspace / "memory" / "audit")
         )
         self._cold_update_manager = None
+        self._golden_route = None
         self._swarm_cycle = None
         self._self_audit_runner = None
         self._knowledge_cve_proposer = None
