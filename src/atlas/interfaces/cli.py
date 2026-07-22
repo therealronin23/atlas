@@ -1033,7 +1033,16 @@ def completeness_demo(as_json: bool) -> None:
     default=None,
     help="Guarda el reporte JSON en esta ruta (p.ej. docs/knowledge/corpus_inventory.json).",
 )
-def corpus_inventory_cmd(as_json: bool, write_path: Path | None) -> None:
+@click.option(
+    "--semantic", "semantic", is_flag=True,
+    help=(
+        "T0.5b paso 2 — reclasifica 'sin_clasificar' por similitud coseno "
+        "contra las secciones T0-T6 del plan maestro (embedder local, "
+        "ATLAS_EMBEDDER). Doc largo entero puede seguir honestamente "
+        "sin_clasificar (dilución de señal, ver corpus_semantic_classifier.py)."
+    ),
+)
+def corpus_inventory_cmd(as_json: bool, write_path: Path | None, semantic: bool) -> None:
     """T0.5b paso 1 — inventario determinista del corpus (recuento + bucket
     heurístico por convención de ruta). NO es clasificación semántica contra
     el master plan — eso es trabajo de sesiones futuras; lo que no encaja en
@@ -1044,6 +1053,15 @@ def corpus_inventory_cmd(as_json: bool, write_path: Path | None) -> None:
 
     root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
     report = inventory_corpus(root)
+    if semantic:
+        from atlas.knowledge.corpus_semantic_classifier import (
+            classify_corpus_semantically,
+        )
+        from atlas.memory.embeddings import default_embedder
+
+        report = classify_corpus_semantically(
+            report, repo_root=root, embedder=default_embedder()
+        )
     if write_path is not None:
         write_path.parent.mkdir(parents=True, exist_ok=True)
         write_path.write_text(
@@ -1053,7 +1071,8 @@ def corpus_inventory_cmd(as_json: bool, write_path: Path | None) -> None:
         console.print_json(json.dumps(report, ensure_ascii=False))
         return
     console.print(f"[bold]Corpus: {report['total_docs']} docs[/bold]")
-    table = Table(title="Buckets (heurística por ruta)")
+    title = "Buckets (heurística de ruta + semántica)" if semantic else "Buckets (heurística por ruta)"
+    table = Table(title=title)
     table.add_column("bucket", style="cyan")
     table.add_column("count", justify="right")
     for bucket, count in sorted(report["buckets"].items(), key=lambda kv: -kv[1]):
@@ -1061,10 +1080,16 @@ def corpus_inventory_cmd(as_json: bool, write_path: Path | None) -> None:
     console.print(table)
     unclassified = report["buckets"].get("sin_clasificar", 0)
     pct = 100 * unclassified / report["total_docs"] if report["total_docs"] else 0
+    label = "sin_clasificar tras semántica" if semantic else "sin_clasificar"
     console.print(
-        f"[yellow]sin_clasificar: {unclassified}/{report['total_docs']} "
-        f"({pct:.0f}%) — heurística de ruta, no juicio semántico[/yellow]"
+        f"[yellow]{label}: {unclassified}/{report['total_docs']} "
+        f"({pct:.0f}%)[/yellow]"
     )
+    if semantic:
+        console.print(
+            f"  umbral coseno={report['semantic_threshold']} — doc largo entero puede "
+            "seguir honestamente sin_clasificar (dilución de señal, sin chunking)"
+        )
     if write_path is not None:
         console.print(f"Guardado en {write_path}")
 

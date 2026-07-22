@@ -8,6 +8,58 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 6 — T0.5b paso 2: clasificador semántico del corpus,
+  mecanismo construido y corrido en vivo (2026-07-22 18:10)** — el operador
+  pidió "a y b por orden"; (b) investigado antes de elegir (igual que
+  Cycle 2): las "decisiones toasty" resultaron mayormente operator-gated
+  (rotación de secret OAuth, revisión de spec B+C — no son mías de
+  ejecutar) y F2.6 ya estaba resuelto (PRIME Cycle 8); T0.5b paso 2 (86% del
+  corpus `sin_clasificar` tras paso 1) era el único candidato genuinamente
+  accionable — y, verificado, usa `fastembed` LOCAL (sin coste de API ni
+  cupo, contra la suposición inicial de que necesitaba "presupuesto propio").
+  `atlas.knowledge.corpus_semantic_classifier`: `extract_plan_sections()`
+  parsea T0-T6 de `atlas_master_plan.md §5` (acotado a esa sección, nunca se
+  cuela contenido de `## 6`/`## 7`); `classify_corpus_semantically()`
+  compara cada doc `sin_clasificar` contra las 7 secciones por coseno,
+  reusando `_cosine_similarity` de `lesson_recaller` (mismo patrón de import
+  cross-módulo que ya usa `memory_index.py`) y el umbral **0.5 YA MEDIDO**
+  en la ola bootstrap del 2026-07-17 (no re-derivado). Solo toca
+  `sin_clasificar` — nunca reinterpreta un bucket de paso 1; un doc bajo el
+  umbral queda `sin_clasificar` con el score igual registrado (nunca
+  confianza inventada). Límite heredado de esa misma medición documentado,
+  no oculto: docs largos enteros diluyen la señal (~0.45) — el chunking que
+  lo arreglaría es su propio trabajo, deliberadamente fuera de esta loncha.
+  **Bug real cazado en el diseño de mis propios tests antes de correrlos**:
+  un `_FakeEmbedder` de 1 dimensión no puede distinguir direcciones — el
+  coseno es invariante a escala, dos escalares positivos cualesquiera dan
+  1.0 siempre; rediseñado a vectores one-hot multi-dimensión. CLI `--semantic`
+  en `atlas corpus-inventory` (wire-before-claim), embedder resuelto vía
+  `atlas.memory.embeddings.default_embedder()` (mismo selector que memoria
+  del tronco, gobernado por `ATLAS_EMBEDDER`). TDD real (RED → arreglo de mi
+  propio bug de test → GREEN); 14 tests nuevos (incluye 2 CLI end-to-end),
+  142 verdes en el área corpus+knowledge+recall+memory_index, mypy canónico
+  limpio. **Corrida real en vivo sobre los 705 docs actuales del repo**
+  (local, `ATLAS_EMBEDDER` default=fastembed, ~24s, cero llamadas de red):
+  **sin_clasificar 86%→65%** (604→461; 143 docs reclasificados: T3=49,
+  T4=43, T0=32, T2=15, T5=4). Spot-check manual de los 8 mejores y 5 peores
+  matches: plausibles en los dos extremos (p.ej. `t51-provider-smoke-
+  surfacing.md`→T5, `atlas_ecosystem_map.md`→T4, `f2_6_personal_factual_
+  design.md`→T0 — todas defendibles). `docs/knowledge/corpus_inventory.json`
+  (artefacto trackeado de PRIME Cycle 4, referenciado en INDEX.yaml)
+  regenerado con el resultado real; `docs_index_drift`/`docs_graph_drift`
+  verificados limpios (el drift de enlaces preexistente es idéntico al de
+  Cycle 1, no mío). **Honestidad de alcance — T0.5b NO está cerrado**: el
+  ítem T0.5.b del master plan pide, además de la clasificación, lista de
+  GAPS + lista de CONTRADICCIONES + "plan v2 con fuentes citadas" — eso es
+  síntesis/juicio real (no mecánico), explícitamente fuera de esta loncha;
+  esta es la pieza algorítmica (paso 2), no T0.5.b completo. No toqué el
+  texto vivo del master plan (`§7. Estado y próxima acción` es para cierre
+  de TRAMO completo, no de un sub-paso; y `atlas_master_plan.md` es terreno
+  del operador, no mío por diff directo).
+  **Próxima acción:** paso 3 de T0.5b (síntesis de gaps/contradicciones/plan
+  v2 — sesión de investigación propia, juicio real, no delegable a un
+  ciclo MAXIMUS) — o volver a las decisiones toasty cuando el operador
+  quiera resolverlas él (rotación OAuth, revisión spec B+C).
 - **MAXIMUS Cycle 5 — SkillStore descubre plugins activados: cierra el gap
   real que Cycle 4 documentó (2026-07-22 17:20)** — el operador pidió "a y b
   por orden" tras el cierre de A3; (a) = este ciclo. `atlas.mcp.skills_store.
