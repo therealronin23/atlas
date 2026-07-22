@@ -8,6 +8,32 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **ATLAS PRIME Cycle 9 — ColdUpdate apply() ya no hace `git add -A` a ciegas
+  (2026-07-22 13:40, commit be97eb0e)** — investigado a petición del
+  operador tras el hallazgo de cierre de Cycle 8 (commit automático
+  `5a889529 cold_update: apply 8eed7466-c47` arrastró `WORK_LEDGER.md`/
+  `docs/INDEX.yaml`/`docs/knowledge/research_2026-07-22.md`; legítimo del
+  daemon esta vez, pero el mecanismo era el problema). Verificado: **cero
+  colisión con Codex hoy** (0 commits de Codex en `main`; el único worktree
+  con cambios sin commitear — `atlas-core-engine-program`, supply-chain
+  admission scan — tiene timestamps del 2026-07-20, no concurrentes,
+  señalado aparte, NO tocado). Pero el riesgo es real, no hipotético: el
+  repo tiene precedente documentado de sesiones Codex concurrentes sobre
+  este mismo checkout. `_commit_with_evidence()` hacía `git add -A` — el
+  commit de evidencia de CUALQUIER apply() arrastraba todo lo sucio en el
+  árbol bajo un mensaje que solo describe esa propuesta, el mismo
+  anti-patrón que el repo prohíbe explícitamente en otros sitios. Fix:
+  `_patch_touched_paths()` nuevo parsea las cabeceras del patch; el commit
+  ahora hace `git add -- <rutas>` escopado; sin rutas parseables, falla
+  explícito a forensics en vez de caer a `-A`. TDD real (RED con un fichero
+  ajeno colándose en el commit, GREEN tras el fix). 34/34 + 64/64 en el
+  área relacionada, mypy --strict limpio.
+  **Hallazgo aparte, no tocado:** `atlas-core-engine-program` tiene ~2 días
+  de trabajo sin commitear (12 ficheros, feature de supply-chain admission
+  scan, toca `WORK_LEDGER.md`/`MEMORY.md`) — decisión del operador si
+  recuperarlo, revisarlo o descartarlo.
+  **Próxima acción:** T0.5b paso 2, las 4 decisiones toasty, o decidir sobre
+  el worktree abandonado de arriba.
 - **ATLAS PRIME Cycle 8 — F2.6 CERRADO de verdad, por la ruta dorada
   (2026-07-22 13:15, commits 810f969d/0a364d9a/07795a04)** — plan aprobado
   por el operador ("haz una lista y ejecútalo"): cerrar los 3 gaps que F2.6
