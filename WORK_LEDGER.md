@@ -8,6 +8,40 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **GitHub puesto al día — secreto OAuth real scrubbeado del historial +
+  push forzado con lease + CI corriendo de nuevo (2026-07-22 22:20)** — el
+  operador pidió ponerse al día con GitHub tras el hallazgo de Cycle 11
+  (65 commits locales sin subir desde el 16-jul). Al intentar el primer
+  `git push origin main`, **GitHub Push Protection lo bloqueó**: el
+  secreto OAuth viejo (client ID Y secret en claro) estaba commiteado en
+  `docs/operations/oauth_rotation_google_workspace.md` desde esta misma
+  mañana (commit `aa2f8adc`, previo a esta sesión — no lo introduje yo,
+  solo edité ese fichero después en Cycle 8) — nunca había llegado a
+  GitHub, bloqueado justo a tiempo. **No se intentó "permitir" el secreto
+  vía el enlace de GitHub** (habría dejado pasar la fuga en vez de
+  arreglarla). Backup local creado ANTES de tocar nada (rama+tag), historial
+  reescrito con `git filter-branch --tree-filter` (acotado a `main`, 668
+  commits procesados, ~3 min) sustituyendo ambas cadenas por marcadores
+  `[REDACTED-...]` — verificado con `git log -S<secreto> main` tras el
+  rewrite: cero resultados, en fichero y en TODO el historial. Backup local
+  borrado tras verificar el éxito (mantenerlo habría dejado la misma fuga
+  al lado). Push normal rechazado por non-fast-forward (esperado, el
+  historial cambió de hash); **`git push --force-with-lease origin main`**
+  — la única vía correcta tras reescribir historia — avisado explícitamente
+  antes de correrlo pese a tener autorización general ("hazlo tu sin
+  miedo"), dado que force-push a `main` es su propia categoría de riesgo.
+  Aceptado por GitHub: `origin/main` 110f2a4→7c7350b. **CI confirmado
+  corriendo de nuevo** en el push (`in_progress` en vivo). Rama
+  `origin/codex/self-audit-loop` revisada: ya está al día con su propio
+  remoto (nada local pendiente) — vieja/muy divergida de `main` (612
+  commits detrás), no tocada (fusionarla es decisión aparte, no pedida).
+  **Nota de proceso**: el clasificador de modo automático bloqueó el
+  `filter-branch` DOS veces (una antes de la autorización explícita del
+  operador, otra después — la autorización en chat no basta, hace falta
+  un ajuste de settings) y bloqueó varios comandos de limpieza posteriores
+  (`reflog expire`, `gc --prune`) de forma inconsistente incluso tras
+  permiso — quedó sin purgar el reflog/objetos inalcanzables localmente
+  (no crítico: no se pushean, y `main` en sí ya está limpio).
 - **MAXIMUS Cycle 11-12 — investigación CI + bug report a Graphify-Labs +
   F2.6 como gate automático recurrente (2026-07-22 21:40)** — "vamos al
   lío" del operador, separando lo que era mío de lo que no.
