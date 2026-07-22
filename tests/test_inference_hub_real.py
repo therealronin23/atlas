@@ -905,3 +905,97 @@ class TestRateLimitWait:
         resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
 
         assert resp.success is False  # all_failed, sin re-caminata
+
+
+class TestRequestPolicyOverrides:
+    """2026-07-22: overrides por-request de timeout/retries (promoción medida
+    de las constantes de módulo — el smoke diario colgó 18 min en un solo
+    proveedor heredando la política de producción 120s × 3 intentos)."""
+
+    def test_timeout_override_reaches_litellm(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        captured: dict[str, Any] = {}
+
+        def fake_completion(**kwargs: Any) -> Any:
+            captured.update(kwargs)
+            return _ok_completion()
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=providers, mode="live")
+        hub.probe_provider(
+            providers[0],
+            InferenceRequest(prompt="ping", level=InferenceLevel.L1, timeout_s=30.0),
+        )
+
+        assert captured["timeout"] == 30.0
+
+    def test_default_timeout_unchanged_without_override(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from atlas.core.inference_hub import INFER_REQUEST_TIMEOUT_S
+
+        providers = _providers_with_keys(monkeypatch)
+        captured: dict[str, Any] = {}
+
+        def fake_completion(**kwargs: Any) -> Any:
+            captured.update(kwargs)
+            return _ok_completion()
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+        hub = InferenceHub(providers=providers, mode="live")
+        hub.probe_provider(
+            providers[0],
+            InferenceRequest(prompt="ping", level=InferenceLevel.L1),
+        )
+
+        assert captured["timeout"] == INFER_REQUEST_TIMEOUT_S
+
+    def test_max_retries_zero_disables_transient_retry(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        calls: list[int] = []
+
+        class FakeTimeout(Exception):
+            """type(exc).__name__ contiene 'Timeout' → clasificado transitorio."""
+
+        def always_timeout(**kwargs: Any) -> Any:
+            calls.append(1)
+            raise FakeTimeout("hang")
+
+        monkeypatch.setattr(litellm, "completion", always_timeout)
+        hub = InferenceHub(providers=providers, mode="live", sleep_fn=lambda _s: None)
+        resp = hub.probe_provider(
+            providers[0],
+            InferenceRequest(prompt="ping", level=InferenceLevel.L1, max_retries=0),
+        )
+
+        assert resp.success is False
+        assert len(calls) == 1, "max_retries=0 debe significar UN intento, sin reintentos"
+
+    def test_default_retries_unchanged_without_override(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from atlas.core.inference_hub import INFER_MAX_RETRIES
+
+        providers = _providers_with_keys(monkeypatch)
+        calls: list[int] = []
+
+        class FakeTimeout(Exception):
+            pass
+
+        def always_timeout(**kwargs: Any) -> Any:
+            calls.append(1)
+            raise FakeTimeout("hang")
+
+        monkeypatch.setattr(litellm, "completion", always_timeout)
+        hub = InferenceHub(providers=providers, mode="live", sleep_fn=lambda _s: None)
+        resp = hub.probe_provider(
+            providers[0],
+            InferenceRequest(prompt="ping", level=InferenceLevel.L1),
+        )
+
+        assert resp.success is False
+        assert len(calls) == INFER_MAX_RETRIES + 1

@@ -29,6 +29,13 @@ from atlas.core.inference_hub import (
 
 _PROBE_PROMPT = "ping"
 _PROBE_MAX_TOKENS = 8
+# 2026-07-22: política de probe acotada. El smoke heredaba la política de
+# producción del hub (120s × 3 intentos, Timeout=transitorio) y un proveedor
+# colgado retuvo la pasada 18 minutos medidos (nvidia_mistral_medium,
+# latency_ms=1087936). Un probe responde "¿vive?" en segundos; si un proveedor
+# necesita >30s para un ping de 8 tokens, ese dato ES el resultado del smoke.
+_PROBE_TIMEOUT_S = 30.0
+_PROBE_MAX_RETRIES = 0
 
 
 @dataclass
@@ -73,6 +80,8 @@ class ProviderChainSmoke:
                 level=provider.level,
                 max_tokens=_PROBE_MAX_TOKENS,
                 task_id="provider_smoke.probe",
+                timeout_s=_PROBE_TIMEOUT_S,
+                max_retries=_PROBE_MAX_RETRIES,
             )
             response = self._hub.probe_provider(provider, request)
             if response.mode == "auto-skip":

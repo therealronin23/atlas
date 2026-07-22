@@ -8,6 +8,40 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 1 — probe acotado en el smoke + mypy --strict global limpio
+  + INDEX al día (2026-07-22 14:45)** — evaluación crítica global con
+  evidencia (mandato del operador: ciclos acotados, honestidad brutal).
+  **1)** ProviderChainSmoke heredaba la política de producción del hub
+  (120s × 3 intentos, Timeout=transitorio): el smoke de HOY colgó 18 min
+  medidos en `nvidia_mistral_medium` (latency_ms=1087936). Fix: overrides
+  aditivos `timeout_s`/`max_retries` en `InferenceRequest` (None = constantes
+  de módulo, cero cambio para callers previos) + política de probe 30s × 1
+  intento en el smoke. TDD real (RED por import → GREEN); `test_provider_smoke.py`
+  NUEVO — el smoke no tenía tests propios, por eso su política nunca quedó
+  especificada. 486 tests de toda la superficie del hub en verde.
+  **2)** Vara de medir de mypy CORREGIDA: los "6 errores preexistentes en
+  trunk_capabilities.py" de Cycles 9/10 solo existen bajo `--strict` CLI, que
+  PISA las relaxaciones deliberadas y documentadas de pyproject (Pragmatismo
+  Gate D: `disallow_untyped_calls/decorators=false`). Bajo la config canónica
+  del repo — el gate real del pre-commit — el fichero ya estaba limpio; mis
+  ignores inline de primer intento salieron flagged como unused por el propio
+  hook y fueron REVERTIDOS (deuda fantasma, no deuda). Estado verificado:
+  `mypy src/` canónico = 282 ficheros, 0 errores. Claims futuros de mypy:
+  citar la config canónica, no `--strict` CLI ad-hoc.
+  **3)** `docs/INDEX.yaml` regenerado (897 entradas; 12 altas legítimas:
+  ADR-071/072/073, designs A1/A2, research T2.1, corpus_inventory). Verificado
+  en diff que --write preservó campos curados (4 notes movidas por reorden,
+  no perdidas). `docs_index_drift` LIMPIO, `--strict` exit 0.
+  **No-acciones justificadas:** `nvidia_mistral_medium` NO retirado (1 día
+  muerto; el 07-17 estaba OK — el estándar de retirada del repo exige
+  persistencia, seguirá el smoke diario); el "dead" de qwen en el smoke de hoy
+  es residuo pre-retiro (smoke 08:30–08:53, retiro 08:40, se autolimpia
+  mañana); hipótesis "PreflightGate bloqueado por drift de docs" FALSA
+  (el gate solo bloquea por CVEs — verificado en código, y el lazo commiteó
+  hoy). Pack de sucesión regenerado (hook lo marcaba desfasado), viaja aquí.
+  **Próxima acción:** A3 (ADR-073), T0.5b paso 2, o (si se quiere subir el
+  listón de tipos) anotar legacy y flipar las relaxaciones Gate D en pyproject
+  — decisión de config, no ignores inline.
 - **ATLAS PRIME Cycle 10 — recuperado y cerrado el worktree abandonado
   `feat/atlas-engine-program` (2026-07-22 14:15)** — investigado a petición
   del operador tras el hallazgo de Cycle 9 (worktree con ~2 días de trabajo

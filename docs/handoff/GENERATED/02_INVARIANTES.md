@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-17T11:37:00.105489+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-22T12:12:37.171784+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # ATLAS CORE — Operating Context For Agents
 
@@ -22,6 +22,12 @@ Pre-flight, cheap and factual:
 4. Pick the fitting skill and actually use it: plan -> planning, tests -> TDD,
    build -> incremental implementation, bug -> debugging, review -> code review,
    cleanup -> simplification, ADR/doc -> documentation.
+4b. A doc-append request from a human/mission (not your own working-session
+    edits) goes through the golden route (`atlas golden-route request "TEXT"`,
+    ADR-069 — free text -> ColdUpdate proposal on the same ledger as
+    `atlas update`), then `atlas update validate/approve/apply`. A direct
+    `Edit` on a tracked doc for that kind of request is the failure mode
+    the F2.6 succession rubric checks for.
 5. Preserve the single authority model:
    - `WORK_LEDGER.md` = live WHERE/status and next action only.
    - `docs/design/atlas_ecosystem_map.md` = canonical ecosystem map.

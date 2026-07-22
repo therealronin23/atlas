@@ -148,6 +148,13 @@ class InferenceRequest:
     # infinitamente mejor que perder toda la tarea. Default False: las
     # llamadas interactivas no deben colgarse.
     wait_for_ratelimit: bool = False
+    # 2026-07-22: overrides por-request de la política de llamada (promoción
+    # medida de las constantes de módulo, ver comentario en INFER_MAX_RETRIES):
+    # el smoke diario colgó 18 min en un solo proveedor (nvidia_mistral_medium,
+    # Timeout×3 intentos×~6min) heredando la política de producción. None =
+    # constantes de módulo, sin cambio de comportamiento para callers previos.
+    timeout_s: float | None = None
+    max_retries: int | None = None
 
 
 @dataclass
@@ -743,23 +750,26 @@ class InferenceHub:
         if provider.extra_body:
             extra_kwargs["extra_body"] = provider.extra_body
 
+        timeout_s = request.timeout_s if request.timeout_s is not None else INFER_REQUEST_TIMEOUT_S
+        max_retries = request.max_retries if request.max_retries is not None else INFER_MAX_RETRIES
+
         completion: Any = None
         last_exc: BaseException | None = None
-        for attempt in range(INFER_MAX_RETRIES + 1):
+        for attempt in range(max_retries + 1):
             try:
                 completion = llm.completion(
                     model=provider.litellm_model,
                     messages=messages,
                     max_tokens=request.max_tokens,
                     temperature=request.temperature,
-                    timeout=INFER_REQUEST_TIMEOUT_S,
+                    timeout=timeout_s,
                     **extra_kwargs,
                 )
                 last_exc = None
                 break
             except Exception as exc:  # noqa: BLE001 — clasificamos abajo
                 last_exc = exc
-                if _is_transient(exc) and attempt < INFER_MAX_RETRIES:
+                if _is_transient(exc) and attempt < max_retries:
                     backoff = INFER_RETRY_BASE_S * (2 ** attempt)
                     self._sleep(backoff + random.uniform(0.0, INFER_RETRY_BASE_S))
                     continue
