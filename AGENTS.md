@@ -8,6 +8,15 @@ live evidence wins.
 Pre-flight, cheap and factual:
 
 1. Run `PYTHONPATH=src atlas reality --json` before making claims about Atlas state.
+1b. If that output shows `f26_gate.status == "due"` (or
+    `atlas f26 status --json` does), use the `f26_gate.notification` field
+    (or `atlas f26 status --json`'s own `notification` field — same shape)
+    to call `spawn_task` with that exact `title`/`tldr`/`prompt`. Do not run
+    `atlas f26 run` yourself without flagging it first — it dispatches a
+    real, expensive LLM session (a cold Sonnet run of the succession
+    rubric), not a cheap deterministic check. `spawn_task` puts a visible
+    chip in front of a human instead of silently burning a session or
+    silently doing nothing.
 2. Structure = graph first: answer "who imports X / blast radius / churn /
    dependencies" from the live project graph (MCP trunk → `trunk_invoke_readonly`
    with `graph_importers`, `graph_blast_radius`, `graph_imports_of`,

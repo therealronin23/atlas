@@ -1097,8 +1097,9 @@ def corpus_inventory_cmd(as_json: bool, write_path: Path | None, semantic: bool)
 @cli.group("f26")
 def f26() -> None:
     """F2.6 (spec B+C §4) — gate de sucesión. `status` es determinista y
-    gratis (¿hay ADRs nuevos desde el último run?); la rúbrica misma sigue
-    siendo una sesión LLM real, deliberada, nunca disparada por este CLI."""
+    gratis (¿hay ADRs nuevos desde el último run?). `run` SÍ dispara la
+    sesión LLM real de la rúbrica (deliberado, nunca automático — un humano
+    invoca el comando) y ahora también gradea y auto-registra el resultado."""
 
 
 @f26.command("status")
@@ -1119,6 +1120,69 @@ def f26_status(as_json: bool) -> None:
         console.print("  ADRs nuevos:")
         for adr in status.new_adrs_since:
             console.print(f"    - {adr}")
+
+
+@f26.command("run")
+@click.option(
+    "--doc-path", default=None,
+    help="Doc fuente de la rúbrica (default: docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON completa del resultado.")
+def f26_run(doc_path: str | None, as_json: bool) -> None:
+    """Dispara F2.6: construye el prompt LEYENDO el doc fuente (nunca copiado
+    a mano) y lanza una sesión fría (`claude -p --model sonnet --output-format
+    stream-json --verbose`, hoy 401 por credencial revocada — fallo conocido,
+    se reporta estructurado, no se esconde). Guarda el transcript crudo
+    (JSONL) y, si el dispatch tuvo éxito, gradea la rúbrica
+    (`grade_f26_transcript`) y se AUTO-REGISTRA vía `record_f26_run` —
+    ya no hace falta un `atlas f26 record-run` manual después. Si el
+    dispatch falló, no hay transcript válido: no se gradea ni se registra
+    nada (falsearía un resultado que nunca ocurrió)."""
+    import os
+
+    from atlas.core.self_maintenance.f26_gate import F26PromptExtractionError, run_f26
+
+    root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
+    doc = Path(doc_path).expanduser() if doc_path else None
+    try:
+        record = run_f26(root, doc_path=doc)
+    except F26PromptExtractionError as exc:
+        console.print(f"[red]no se pudo construir el prompt de F2.6[/red]: {exc}")
+        raise SystemExit(1) from exc
+
+    if as_json:
+        console.print_json(json.dumps(record, ensure_ascii=False))
+        return
+    if record["success"]:
+        console.print(f"[green]F2.6 disparado[/green] — transcript en {record['transcript_path']}")
+        grading = record.get("grading")
+        overall = record.get("overall_result")
+        if grading is not None:
+            console.print(f"  score: {grading['score']}")
+            verdict_color = "green" if overall == "pass" else "red"
+            console.print(f"  veredicto: [{verdict_color}]{overall}[/{verdict_color}]")
+            failed_items = [k for k in (
+                "item_1", "item_2", "item_3", "item_4", "item_5", "item_6"
+            ) if grading[k] == "fail"]
+            if failed_items:
+                console.print(f"  ítems fallidos: {', '.join(failed_items)}")
+        if record.get("recorded"):
+            f26_record = record.get("f26_record") or {}
+            console.print(
+                f"[green]registrado[/green] automáticamente (record_f26_run) — "
+                f"sha={f26_record.get('last_run_sha')} result={overall}"
+            )
+        else:
+            console.print("[yellow]no registrado[/yellow]: sin grading disponible.")
+    else:
+        console.print(f"[red]F2.6 falló al disparar[/red]: {record['error']}")
+        if record.get("stderr"):
+            console.print(f"  stderr: {record['stderr']}")
+        console.print(f"  metadata en {record['meta_path']}")
+        console.print(
+            "[yellow]no se registró nada[/yellow]: el dispatch falló, no hay "
+            "transcript válido para gradear."
+        )
 
 
 @f26.command("record-run")

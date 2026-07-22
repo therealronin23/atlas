@@ -17,7 +17,12 @@ from pathlib import Path
 
 import pytest
 
-from atlas.core.self_maintenance.f26_gate import f26_gate_status, record_f26_run
+from atlas.core.self_maintenance.f26_gate import (
+    F26GateStatus,
+    f26_gate_notification,
+    f26_gate_status,
+    record_f26_run,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -276,3 +281,137 @@ class TestRealityWiring:
 
         assert report["f26_gate"]["status"] == "due"
         assert report["f26_gate"]["new_adrs_since"]
+
+
+class TestNotification:
+    """Punto 4 del diseño (docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md):
+    la notificación NUNCA llama a spawn_task ella misma (esa tool solo existe
+    dentro de una sesión agente MCP) — solo prepara el dict con los mismos
+    campos que esa tool espera, para que CUALQUIER sesión agente que vea
+    status=='due' pueda invocarla."""
+
+    def _due_status(self, new_adrs: list[str]) -> F26GateStatus:
+        return F26GateStatus(
+            status="due",
+            last_run_sha="abc123",
+            last_run_at="2026-07-20T00:00:00+00:00",
+            last_result="pass",
+            new_adrs_since=new_adrs,
+            reason=f"{len(new_adrs)} ADR(s) nuevo(s) desde el último run",
+        )
+
+    def test_due_status_returns_dict_with_three_fields(self) -> None:
+        status = self._due_status(["docs/decisions/adr/adr_002_second.md"])
+
+        notification = f26_gate_notification(status)
+
+        assert notification is not None
+        assert set(notification.keys()) == {"title", "tldr", "prompt"}
+        assert isinstance(notification["title"], str)
+        assert isinstance(notification["tldr"], str)
+        assert isinstance(notification["prompt"], str)
+
+    def test_title_under_60_chars_and_imperative(self) -> None:
+        status = self._due_status(["docs/decisions/adr/adr_002_second.md"])
+
+        notification = f26_gate_notification(status)
+
+        assert notification is not None
+        assert len(notification["title"]) < 60
+        assert "f26" in notification["title"].lower() or "F2.6" in notification["title"]
+
+    def test_adr_count_cited_in_title_and_tldr(self) -> None:
+        status = self._due_status([
+            "docs/decisions/adr/adr_002_second.md",
+            "docs/decisions/adr/adr_003_third.md",
+        ])
+
+        notification = f26_gate_notification(status)
+
+        assert notification is not None
+        assert "2" in notification["title"]
+        assert "2" in notification["tldr"]
+
+    def test_prompt_mentions_atlas_f26_run_and_is_self_contained(self) -> None:
+        status = self._due_status(["docs/decisions/adr/adr_002_second.md"])
+
+        notification = f26_gate_notification(status)
+
+        assert notification is not None
+        assert "atlas f26 run" in notification["prompt"]
+        assert "docs/decisions/adr/adr_002_second.md" in notification["prompt"]
+
+    @pytest.mark.parametrize("status_value", ["current", "never_run", "unknown"])
+    def test_non_due_status_returns_none(self, status_value: str) -> None:
+        status = F26GateStatus(
+            status=status_value,
+            last_run_sha=None,
+            last_run_at=None,
+            last_result=None,
+            new_adrs_since=[],
+            reason="da igual",
+        )
+
+        assert f26_gate_notification(status) is None
+
+    def test_to_dict_includes_notification_null_when_not_due(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path)
+        record_f26_run(repo, result="pass")
+
+        status = f26_gate_status(repo)
+
+        assert status.status == "current"
+        assert status.to_dict()["notification"] is None
+
+    def test_to_dict_includes_notification_dict_when_due(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path)
+        record_f26_run(repo, result="pass")
+        (repo / "docs" / "decisions" / "adr" / "adr_002_second.md").write_text(
+            "# ADR-002\n", encoding="utf-8"
+        )
+        _commit_all(repo, "feat: ADR-002")
+
+        status = f26_gate_status(repo)
+        notification = status.to_dict()["notification"]
+
+        assert status.status == "due"
+        assert notification is not None
+        assert notification["title"]
+
+    def test_cli_f26_status_json_exposes_notification(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from click.testing import CliRunner
+
+        from atlas.interfaces.cli import cli
+
+        repo = _make_repo(tmp_path)
+        record_f26_run(repo, result="pass")
+        (repo / "docs" / "decisions" / "adr" / "adr_002_second.md").write_text(
+            "# ADR-002\n", encoding="utf-8"
+        )
+        _commit_all(repo, "feat: ADR-002")
+        monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+        runner = CliRunner()
+
+        result = runner.invoke(cli, ["f26", "status", "--json"])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["notification"] is not None
+        assert "atlas f26 run" in payload["notification"]["prompt"]
+
+    def test_reality_json_exposes_f26_notification_when_due(self, tmp_path: Path) -> None:
+        from atlas.core.reality import collect_reality
+
+        repo = _make_repo(tmp_path)
+        record_f26_run(repo, result="pass")
+        (repo / "docs" / "decisions" / "adr" / "adr_002_second.md").write_text(
+            "# ADR-002\n", encoding="utf-8"
+        )
+        _commit_all(repo, "feat: ADR-002")
+
+        report = collect_reality(repo_root=repo)
+
+        assert report["f26_gate"]["notification"] is not None
+        assert report["f26_gate"]["notification"]["title"]
