@@ -58,6 +58,17 @@ _AUTONOMY_ENV_KEYS = (
     "ATLAS_MAINTENANCE_POLL_S",
 )
 
+# Guardia anti-recursión (041f3972, 2026-07-09): puesta en el entorno real
+# cuando ESTA suite corre dentro del propio lazo de auto-build. Un test que
+# ejercite self_build_tick/similares con fakes, sin limpiarla, ve un corte
+# silencioso (status=nested_run_guard) en vez del comportamiento que espera
+# — gap real que dejó 2 tests rotos en silencio 6 días (ver
+# tests/test_maintenance_autoloop.py, fixture `orch`). Limpia por defecto
+# aquí; un test que SÍ quiera probar el guard puede seguir haciendo su
+# propio monkeypatch.setenv("ATLAS_NESTED_TEST_RUN", "1") en el cuerpo del
+# test (corre después de este autouse).
+_NESTED_TEST_RUN_ENV_KEYS = ("ATLAS_NESTED_TEST_RUN",)
+
 
 @pytest.fixture(autouse=True)
 def _isolate_git_hook_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -72,6 +83,7 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         *_HERMES_ENV_KEYS,
         *_MODE_OVERRIDES,
         *_AUTONOMY_ENV_KEYS,
+        *_NESTED_TEST_RUN_ENV_KEYS,
     ):
         monkeypatch.delenv(key, raising=False)
     # Pending approvals HMAC (tests; no secretos reales)

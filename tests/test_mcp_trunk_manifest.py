@@ -92,7 +92,7 @@ def test_every_root_in_unified_config_launches_and_exposes_its_tools(tmp_path: P
     declared = {r.name: set(r.tools) for r in native_roots()}
 
     async def _tools_of(name: str) -> set[str]:
-        spec = cfg[name]  # type: ignore[index]
+        spec = cfg[name]
         params = StdioServerParameters(command=spec["command"], args=spec["args"])
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:

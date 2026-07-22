@@ -40,6 +40,11 @@ from atlas.runtime.service_runner import AtlasServiceRunner
 def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
     monkeypatch.delenv("ATLAS_PIPELINE_GATE_D", raising=False)
+    # ATLAS_NESTED_TEST_RUN: ahora cubierta por el autouse de conftest.py
+    # (_isolate_external_api_keys). Antes de eso, esta fixture no la limpiaba
+    # y dos tests de esta clase quedaban en silencio si el entorno real la
+    # traía puesta (041f3972, 2026-07-09) — gap cerrado en el ciclo ATLAS
+    # PRIME 2026-07-22 (ver conftest.py).
     # ATLAS_CORE_ROOT: _project_root() (maintenance_facade.py) cae a Path.cwd()
     # si esto no está seteado — sin esto, cualquier extra_cycle del scheduler
     # (self-build, batch) que se dispare de verdad en un test opera sobre el
