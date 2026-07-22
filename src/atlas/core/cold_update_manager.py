@@ -73,6 +73,28 @@ def _is_tipo1_diff(diff_text: str) -> bool:
     return has_hunk
 
 
+def _patch_touched_paths(patch: Path) -> list[str]:
+    """Rutas que un patch unificado toca, leídas de sus cabeceras
+    `--- a/<path>` / `+++ b/<path>` — sin aplicar nada. `/dev/null` (fichero
+    nuevo o borrado en ese lado) se ignora; orden estable, sin duplicados.
+    Vive aquí porque `_commit_with_evidence` la usa para escopar `git add` a
+    SOLO lo que la propuesta tocó, nunca al árbol entero."""
+    paths: list[str] = []
+    seen: set[str] = set()
+    try:
+        text = patch.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return paths
+    for line in text.splitlines():
+        for prefix in ("--- a/", "+++ b/"):
+            if line.startswith(prefix):
+                candidate = line[len(prefix):].strip()
+                if candidate and candidate not in seen:
+                    seen.add(candidate)
+                    paths.append(candidate)
+    return paths
+
+
 @dataclass
 class ColdUpdateProposal:
     id: str
@@ -663,6 +685,16 @@ class ColdUpdateManager:
         Genera un commit con mensaje de evidencia (verdict, checks, origin,
         proposal_id). Si el root no es git o el commit falla, se registra el
         fallo en forensics y apply() sigue devolviendo status 'applied'.
+
+        Staging ESCOPADO a los ficheros que el patch de ESTA propuesta toca
+        (nunca `git add -A`): el repo tiene precedente real de sesiones
+        concurrentes sobre el mismo checkout (Codex trabajando en paralelo a
+        Fable, ver WORK_LEDGER) — `-A` barrería cualquier cosa sucia en el
+        árbol en ese instante bajo un mensaje que solo describe esta
+        propuesta. Hallado en vivo 2026-07-22 (ATLAS PRIME Cycle 9): no
+        causó pérdida esa vez (lo barrido eran artefactos legítimos del
+        propio daemon), pero es el mismo anti-patrón que el repo prohíbe
+        explícitamente en otros sitios.
         """
         if not self._is_git_repo():
             return
@@ -679,8 +711,14 @@ class ColdUpdateManager:
         )
         env = clean_git_env()
         try:
+            touched = _patch_touched_paths(Path(proposal.patch_path))
+            if not touched:
+                raise RuntimeError(
+                    f"no se pudo determinar qué ficheros toca el patch de "
+                    f"{proposal.id}; me niego a hacer 'git add -A' a ciegas"
+                )
             add = subprocess.run(
-                ["git", "add", "-A"],
+                ["git", "add", "--", *touched],
                 cwd=self._root,
                 env=env,
                 capture_output=True,
@@ -689,7 +727,7 @@ class ColdUpdateManager:
                 timeout=60,
             )
             if add.returncode != 0:
-                raise RuntimeError(f"git add -A failed: {add.stderr[:500]}")
+                raise RuntimeError(f"git add failed: {add.stderr[:500]}")
             commit = subprocess.run(
                 ["git", "commit", "-m", msg],
                 cwd=self._root,

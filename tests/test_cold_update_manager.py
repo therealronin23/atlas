@@ -633,6 +633,56 @@ def test_commit_with_evidence_advances_head(tmp_path: Path) -> None:
     assert proposal.id in commit_msg
 
 
+def test_commit_with_evidence_does_not_sweep_unrelated_dirty_files(tmp_path: Path) -> None:
+    """`git add -A` barrería cualquier cosa sucia en el árbol en ese instante.
+
+    El repo tiene precedente real de sesiones concurrentes (Codex trabajando
+    en paralelo a Fable sobre el mismo checkout, ver WORK_LEDGER — commits
+    'sesión Codex concurrente'). El commit de evidencia de un apply() debe
+    contener SOLO lo que el patch de esa propuesta tocó — nunca el
+    trabajo-en-curso de otra sesión que estuviera sucio en el árbol en ese
+    instante, aunque llegue con un mensaje que solo describe la propuesta."""
+    import subprocess
+
+    from atlas.core.git_env import clean_git_env
+
+    root, mgr = _make_git_repo_for_apply(tmp_path)
+    env = clean_git_env()
+
+    # Simula una sesión concurrente con trabajo en curso sin commitear.
+    (root / "docs").mkdir(exist_ok=True)
+    (root / "docs" / "unrelated_wip.md").write_text(
+        "trabajo en curso de otra sesión\n", encoding="utf-8"
+    )
+
+    patch = tmp_path / "ev2.patch"
+    patch.write_text(
+        "--- /dev/null\n+++ b/src/atlas/evidence2.txt\n@@ -0,0 +1 @@\n+evidence\n",
+        encoding="utf-8",
+    )
+    proposal = mgr.propose("test scoped commit", patch, origin="self_audit", risk="low")
+    mgr.validate(proposal.id)
+    mgr.approve(proposal.id)
+    mgr.apply(proposal.id)
+
+    committed_files = subprocess.run(
+        ["git", "show", "--name-only", "--pretty=format:", "HEAD"],
+        cwd=root, env=env, capture_output=True, text=True, check=True,
+    ).stdout.split()
+    assert "src/atlas/evidence2.txt" in committed_files
+    assert "docs/unrelated_wip.md" not in committed_files
+
+    # El fichero ajeno sigue sin commitear — ni perdido, ni engullido en silencio.
+    # (git status --porcelain colapsa un directorio nuevo entero a "?? docs/";
+    # el fichero real, en disco y sin trackear, es la prueba que importa.)
+    assert (root / "docs" / "unrelated_wip.md").is_file()
+    tracked = subprocess.run(
+        ["git", "ls-files", "docs/unrelated_wip.md"], cwd=root, env=env,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert tracked.strip() == ""
+
+
 def test_commit_skipped_for_non_git_root(tmp_path: Path) -> None:
     """Root sin .git → commit omitido, apply sigue devolviendo 'applied'."""
     from atlas.core.validation_runner import ValidationReport
