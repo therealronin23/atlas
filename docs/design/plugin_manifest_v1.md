@@ -1,7 +1,11 @@
 # PluginManifest v1 — extensiones declarativas staged
 
-- Estado: A2 construido y conectado opcionalmente a `TrialGate`; sin activador
-  runtime ni materializador remoto por defecto.
+- Estado: A2 construido y conectado opcionalmente a `TrialGate`. A3.1
+  construido y cableado (2026-07-22): materializador de fuente LOCAL
+  (`atlas.mcp.plugin_materializer`, CLI `atlas plugin materialize`) con
+  procedencia medida (tree-hash antes/después de copiar, sidecar fuera del
+  árbol) y re-escaneo post-copia vía el gate A2. Fuentes remotas, recibo
+  Merkle (A3.2) y activador reversible (A3.3) siguen sin existir por diseño.
 - Autoridad: [ADR-073](../decisions/adr/adr_073_declarative_plugin_manifest_v1.md).
 
 ## Contrato mínimo
@@ -62,8 +66,11 @@ simbólico bloquean. `review` no se promociona automáticamente.
 ## A3 — condiciones antes de activación
 
 1. Materializador explícito a un directorio nuevo bajo staging, sin hooks ni
-   red implícita después de fijar revisión/contenido.
+   red implícita después de fijar revisión/contenido. — HECHO para fuente
+   LOCAL (2026-07-22, `plugin_materializer.py`; sin red/subprocess por
+   construcción, test lo fija). Fetchers remotos: ADR posterior.
 2. Reescaneo tras materializar y tras cualquier validación que toque bytes.
+   — HECHO para el flujo del materializador (admisión ligada al árbol staged).
 3. Recibo Merkle que ligue `record_id`, manifest, procedencia y decisión; broker
    de aprobación humana para `review` o sensibilidad alta.
 4. Activador reversible que consuma sólo ese recibo, aplique contribuciones

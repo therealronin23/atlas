@@ -8,6 +8,33 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 2 — A3.1: materializador de plugins a staging inmutable
+  (2026-07-22 15:15)** — primera loncha de A3 (ADR-073, la "próxima acción"
+  declarada de Cycle 10). `atlas.mcp.plugin_materializer.PluginMaterializer`:
+  fuente LOCAL → directorio NUEVO bajo staging, fail-closed en cada paso
+  (symlinks, ficheros irregulares, solapamiento fuente/staging, colisión de
+  destino, límites de `ScanLimits` reutilizados del scanner); tree-hash
+  medido ANTES y DESPUÉS de copiar (mutación durante copia = fail + limpieza
+  del parcial); procedencia MEDIDA (revision=sha256 del árbol, no asertada)
+  en sidecar `<dest>.provenance.json` FUERA del árbol staged — los bytes
+  escaneados son exactamente los admitidos; re-escaneo post-copia vía
+  `PluginAdmissionGate` (A2): la admisión queda ligada al árbol STAGED.
+  Sin red/subprocess POR CONSTRUCCIÓN (test fija los imports prohibidos).
+  Fronteras deliberadas: solo fuente local (fetchers remotos = ADR propio);
+  un admit es evidencia, NO permiso de activación (A3.3); block no borra el
+  árbol (revocación = dominio del activador/operador). wire-before-claim:
+  CLI `atlas plugin materialize` (patrón golden-route), exit 0 solo con
+  materialized+admit. TDD real (RED import → RED CLI → GREEN); 10 tests
+  nuevos; 58 verdes en área plugins+CLI completa; mypy canónico limpio;
+  prove-it EN VIVO fuera del arnés (admit + sidecar reales). Design doc
+  actualizado (A3.1-2 HECHO para local; A3.2/A3.3 sin existir por diseño).
+  **Hilo estale cerrado de paso:** la "regresión tool_overhead" de Cycle 6 ya
+  estaba resuelta (umbral 25 con causa raíz fechada en el propio test:
+  graph_communities+graph_semantic_neighbors del 07-16, d39782c8) — el
+  "próxima acción: investigar" de esa entrada queda obsoleto.
+  **Próxima acción:** A3.2 (recibo Merkle + broker de aprobación humana
+  ligando record_id+manifest+procedencia+decisión), luego A3.3 (activador
+  reversible que consuma solo ese recibo).
 - **MAXIMUS Cycle 1 — probe acotado en el smoke + mypy --strict global limpio
   + INDEX al día (2026-07-22 14:45)** — evaluación crítica global con
   evidencia (mandato del operador: ciclos acotados, honestidad brutal).

@@ -295,6 +295,54 @@ def golden_route_request(text: str) -> None:
     )
 
 
+@cli.group("plugin")
+def plugin() -> None:
+    """ADR-073 A3.1 — staging gobernado de plugins declarativos.
+
+    Materializa (copia inmutable + procedencia medida) y re-escanea vía el
+    gate de admisión A2. La ACTIVACIÓN no existe todavía por diseño (A3.3):
+    un admit aquí es evidencia, no permiso de instalación."""
+
+
+@plugin.command("materialize")
+@click.argument("source", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--plugin-id", default=None, help="plugin_id esperado del manifest")
+@click.option(
+    "--staging-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="raíz de staging (default: <workspace>/plugins/staging)",
+)
+def plugin_materialize(
+    source: Path, plugin_id: str | None, staging_root: Path | None
+) -> None:
+    """Materializa un árbol LOCAL a staging y lo somete al gate de admisión."""
+    from atlas.mcp.plugin_materializer import PluginMaterializer
+
+    if staging_root is None:
+        staging_root = Path(get_orchestrator().status().workspace) / "plugins" / "staging"
+    result = PluginMaterializer(staging_root=staging_root).materialize_local(
+        source.absolute(), expected_plugin_id=plugin_id
+    )
+    if result.status != "materialized" or result.admission is None:
+        console.print(
+            f"[red]materialización fallida: {', '.join(result.reason_codes)}[/red]"
+        )
+        raise SystemExit(1)
+    console.print(f"[green]staged[/green] {result.staged_root}")
+    if result.provenance is not None:
+        console.print(f"  tree_sha256={result.provenance.tree_sha256}")
+    if result.admission.status == "admit":
+        console.print(
+            "[green]admisión: admit[/green] "
+            "(evidencia, no permiso de activación — A3.3 pendiente)"
+        )
+        return
+    codes = ", ".join(result.admission.reason_codes)
+    console.print(f"[yellow]admisión: {result.admission.status}[/yellow] {codes}")
+    raise SystemExit(1)
+
+
 @cli.group("gate-h")
 def gate_h() -> None:
     """Comandos de Gate H para resiliencia y reconstruccion."""
