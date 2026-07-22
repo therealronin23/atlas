@@ -8,6 +8,53 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **ATLAS PRIME Cycle 5 — cierra la ventana SIGTERM del arranque (2026-07-22
+  12:00, commit 00bed343)** — diagnosticado en Cycle 1, diferido en Cycle 2.
+  `run_forever()` instalaba los signal handlers DESPUÉS de `start()` (varios
+  threads/servers, puede tardar); un SIGTERM en esa ventana caía en la acción
+  por defecto del sistema — proceso muerto sin `stop()`, sin log
+  `service.stopped`, sin limpiar telegram/offline monitor. Fix: handlers
+  antes de `start()` + `threading.Event` propio (`stop_requested`,
+  independiente de `_running` que `start()` reescribe a mitad de su propia
+  ejecución) + `stop()` ahora guarda con `_started` (fijado al final de
+  `start()`), no con `_running` — el guard viejo trataba "`_running` ya en
+  False por una señal" como "nunca arrancó" y saltaba TODA la limpieza sin
+  avisar. 2 tests dirigidos (TDD real), 72/74 verdes en el área (2 fallos
+  preexistentes en test_maintenance_autoloop.py, confirmados sin relación vía
+  git stash). Verificado en vivo: `systemctl restart atlas-core.service` paró
+  en <1s (antes: 90s timeout → SIGKILL, visto el 12-jul y 17-jul). **Cierra
+  el backlog de robustez del daemon abierto en Cycles 1-2.**
+- **ATLAS PRIME Cycle 4 — T0.5b paso 1: inventario del corpus (2026-07-22
+  11:50, commit b91a0573)** — T0.5b (master plan §T0.5.b) pedía clasificar
+  666/701 docs contra el plan (alimenta-ítem/candidata/histórico/GAP) con
+  evidencia de cobertura; SPEC-ONLY, nada empezado. La clasificación
+  semántica completa no cabe en un ciclo (692 docs de contenido real, juicio
+  no mecanizable) — este ciclo construye la línea base medible:
+  `atlas.knowledge.corpus_inventory.inventory_corpus()` + CLI
+  `atlas corpus-inventory`, bucket heurístico por convención de ruta, todo lo
+  no reconocido = `sin_clasificar` (nunca inventa confianza). Corrida en
+  vivo: **701 docs, 86% sin_clasificar** — guardado en
+  docs/knowledge/corpus_inventory.json. 9 tests dirigidos, mypy --strict
+  limpio. **Próxima acción:** paso 2 de T0.5b (clasificación semántica del
+  86% restante, probablemente vía embeddings/graphify contra secciones del
+  master plan — trabajo de investigación real, mejor con presupuesto propio
+  o delegado) — o retomar F2.6/decisiones toasty cuando el operador lo diga.
+- **ATLAS PRIME Cycle 3 — GoldenRoute wiring (2026-07-22 11:20, commit
+  ec0d122a)** — cerrado el gap "implementado+5 tests E2E pero CERO callers de
+  producción" (hallado por Explore en Cycle 1). `Orchestrator.golden_route()`
+  reusa el MISMO ColdUpdateManager/Merkle que `cold_update()` (nunca
+  `GoldenRoute.for_repo()` — esa fábrica es para tests, usarla en producción
+  crearía un segundo ledger desconectado e invisible a `atlas update status`).
+  CLI nuevo: `atlas golden-route request TEXT` traduce texto libre a propuesta
+  real; validate/approve/apply siguen siendo EXACTAMENTE `atlas update
+  validate/approve/apply` — cero atajo al camino humano (norma del spec
+  mission_layer_self_construction). TDD real (RED: "No such command
+  'golden-route'"), 5 tests nuevos + 94 verdes en el gate de commit, mypy
+  --strict limpio. **Próxima acción:** Cycle 4 — T0.5b digestión del corpus
+  (666 docs vs master plan) o F2.6 cuando el operador retome el token 401.
+- **ATLAS PRIME Cycle 2 — watchdog daemon + TimeoutStopSec (2026-07-22 10:50)**
+  — TimeoutStopSec=30 en atlas-core.service (limita stop-sigterm hang de 90s a 30s). daemon_idle_guard.sh mejorado: auto-rearranca si inactivo >24h (salvaguarda: toque ~/.atlas/daemon_idle_parked para aparcar deliberadamente si la parada fue intencional). 11 tests dirigidos verdes. Ventana SIGTERM fija (handlers instalan DESPUÉS de start(), linea 401-408 en service_runner.py) diferida — bajo investigación abierta, ciclo propio. F2.6 test de sucesión SIGUE BLOQUEADO — intentado 2026-07-22 con token nuevo (setup-token corrido dos veces) y aún 401 "Invalid authentication credentials"; no es un problema de formato del token, algo más profundo en la credencial de cuenta. Diferido, operador decide cuándo retomar. OAuth google-workspace rotado (nuevo client ID: 228819788474-u6ts3hamsjplf307tifmqob3oon1jv2u; secret guardado fuera del repo en ~/.config/atlas/google-oauth.env, inyectado por wrapper vía safe_dotenv). **Próxima acción:** F2.6 execution (operador o Sonnet con presupuesto) + Cycle 3 GoldenRoute wiring.
+- **Desbloqueos operador (2026-07-22 09:30)** — Anthropic token renovado (sk-ant-oat01-..., válido 1 año); F2.6 test de sucesión EJECUTABLE ahora con `claude -p`. OAuth google-workspace rotado (228819788474-k5s30lhsop9e7rcspg503p7qsc607blt; secret en ~/.config/atlas/google-oauth.env 0600, fuera del repo, inyectado por wrapper vía safe_dotenv — argv limpio de credenciales ahora). Pending: F2.6 execution (operador o Sonnet con presupuesto) + 4 decisiones toasty (spec B+C, monitor graphify, higiene handoff INDEX).
 - **ATLAS PRIME Cycle 1 — daemon rearrancado + frescura del grafo en reality +
   proveedor muerto retirado (2026-07-22)** — el daemon llevaba PARADO desde el
   2026-07-17 12:21 (stop limpio vía systemctl, nunca rearrancado; la guarda
