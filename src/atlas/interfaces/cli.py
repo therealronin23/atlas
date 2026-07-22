@@ -1094,6 +1094,50 @@ def corpus_inventory_cmd(as_json: bool, write_path: Path | None, semantic: bool)
         console.print(f"Guardado en {write_path}")
 
 
+@cli.group("f26")
+def f26() -> None:
+    """F2.6 (spec B+C §4) — gate de sucesión. `status` es determinista y
+    gratis (¿hay ADRs nuevos desde el último run?); la rúbrica misma sigue
+    siendo una sesión LLM real, deliberada, nunca disparada por este CLI."""
+
+
+@f26.command("status")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON completa.")
+def f26_status(as_json: bool) -> None:
+    import os
+
+    from atlas.core.self_maintenance.f26_gate import f26_gate_status
+
+    root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
+    status = f26_gate_status(root)
+    if as_json:
+        console.print_json(json.dumps(status.to_dict(), ensure_ascii=False))
+        return
+    color = {"due": "yellow", "never_run": "yellow", "unknown": "red", "current": "green"}
+    console.print(f"[{color.get(status.status, 'white')}]{status.status}[/] — {status.reason}")
+    if status.new_adrs_since:
+        console.print("  ADRs nuevos:")
+        for adr in status.new_adrs_since:
+            console.print(f"    - {adr}")
+
+
+@f26.command("record-run")
+@click.option("--result", type=click.Choice(["pass", "fail"]), required=True)
+@click.option("--notes", default="", help="Notas de la corrida (ej. '6/6', gaps encontrados).")
+@click.option(
+    "--at-sha", default=None,
+    help="SHA real donde ocurrió la corrida, si no es HEAD actual (backfill honesto).",
+)
+def f26_record_run(result: str, notes: str, at_sha: str | None) -> None:
+    import os
+
+    from atlas.core.self_maintenance.f26_gate import record_f26_run
+
+    root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
+    record = record_f26_run(root, result=result, notes=notes, at_sha=at_sha)
+    console.print(f"[green]registrado[/green] sha={record['last_run_sha']} result={result}")
+
+
 @cli.command("capabilities")
 @click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
 def capabilities(as_json: bool) -> None:

@@ -8,6 +8,42 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 11-12 — investigación CI + bug report a Graphify-Labs +
+  F2.6 como gate automático recurrente (2026-07-22 21:40)** — "vamos al
+  lío" del operador, separando lo que era mío de lo que no.
+  **CI investigado** (no era un problema de GitHub): `origin/main` seguía
+  exactamente en `110f2a40` (el último commit del 16-jul) porque **nadie
+  había hecho `git push` en 6 días** — `main` local quedó 65 commits por
+  delante (todo PRIME 1-10 + MAXIMUS 1-10). Trigger de CI, permisos de
+  Actions, todo correcto — simplemente nunca recibió un push. Repo es
+  PÚBLICO en GitHub; hacer push queda señalado para el operador, no
+  decisión mía.
+  **Bug de graphify/eCryptfs reportado** (autorizado explícitamente):
+  github.com/Graphify-Labs/graphify#2109 — encontrado el issue previo
+  relacionado (#1094, ya cerrado, que introdujo el cap de 200 bytes);
+  el mío es el caso que ese fix no cubre (el cap asume NAME_MAX=255
+  universal). Root cause + repro + fix sugerido (`os.pathconf` en vez de
+  hardcodear), sin exponer contenido real del repo (ejemplo sintético).
+  **F2.6 como gate automático** (spec B+C §4): `atlas.core.self_maintenance.
+  f26_gate` — determinista, sin red ni LLM, mismo principio que
+  `PreflightGate`: la rúbrica de 6 ítems sigue siendo una sesión LLM real,
+  cara, deliberada — NUNCA se dispara sola. Lo que se automatiza es la
+  DETECCIÓN de cuándo está debida: "cambio grande" (spec) = ADR nuevo desde
+  el último run REGISTRADO (`atlas f26 record-run --result pass|fail
+  [--at-sha SHA]`, el flag `--at-sha` es para backfill honesto de corridas
+  pasadas). `f26_gate_status()` fail-honesto (git que falla nunca dice
+  'current' por defecto). Wireado en `atlas reality` (`f26_gate` section,
+  mismo patrón que `graph`/`provider_smoke`) y en `atlas f26 status`.
+  17 tests nuevos TDD, mypy canónico 287 ficheros 0 errores.
+  **Backfill real hecho, no cosmético**: registrada la corrida REAL de F2.6
+  (PRIME Cycle 6: 6/6 vía subagente Sonnet frío; PRIME Cycle 8: ceremonia
+  golden-route completa en Merkle, commit `07795a04`) como línea base —
+  sin esto, `atlas reality` habría alarmado falsamente con "51 ADRs nunca
+  revisados". Resultado en vivo, exacto: `due — 2 ADR(s) nuevo(s)` →
+  ADR-072 y ADR-073 (los añadidos DESPUÉS de esa corrida real, durante la
+  recuperación del worktree en PRIME Cycle 10) — ni de más ni de menos.
+  **Próxima acción:** Cycle 13 — detector de deriva mapa-del-ecosistema↔disco
+  (spec B+C §5), en curso.
 - **MAXIMUS Cycle 10 — graphify restaurado con procedencia real; hook de
   producción confirmado ILESO al bug encontrado (2026-07-22 21:10)** —
   cierra el hallazgo bloqueado al final de Cycle 7 (el operador dio la

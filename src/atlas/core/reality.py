@@ -59,6 +59,7 @@ def collect_reality(
         "docs": _docs_state(root),
         "provider_smoke": _provider_smoke_state(root),
         "graph": _graph_state(root),
+        "f26_gate": _f26_gate_state(root),
         "checks": {},
     }
     report["capabilities"] = _capability_plane(report)
@@ -330,6 +331,20 @@ def _graph_state(root: Path) -> dict[str, Any]:
         return graph_freshness(db_path, repo_root=root)
     except Exception as exc:  # noqa: BLE001
         return {**base, "db_path": str(db_path), "reason": type(exc).__name__}
+
+
+def _f26_gate_state(root: Path) -> dict[str, Any]:
+    """Proyección read-only del estado del gate F2.6 (spec B+C §4): ¿hay
+    ADRs nuevos desde el último run registrado? Determinista, sin red ni
+    LLM — mismo principio fail-honesto que ``_graph_state``: nunca lanza."""
+    try:
+        from atlas.core.self_maintenance.f26_gate import f26_gate_status
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "unknown", "reason": f"f26_gate import failed: {type(exc).__name__}"}
+    try:
+        return f26_gate_status(root).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "unknown", "reason": type(exc).__name__}
 
 
 def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
