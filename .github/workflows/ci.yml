@@ -102,8 +102,13 @@ jobs:
           test "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = "1"
           bwrap --unshare-all --ro-bind / / /bin/true
 
+      # mcp/acp: tests/test_graph_server_communities.py y tests/test_acp_server.py
+      # importan estos paquetes SIN guarda (a diferencia de fal-client, que sí
+      # se degrada con gracia) — hallazgo 2026-07-22 al verificar el primer push
+      # real en 6 días: este sync solo traía --extra dev, así que CI fallaba en
+      # limpio con ModuleNotFoundError pese a que local siempre los tenía.
       - name: Sync exact core and development dependencies
-        run: uv sync --frozen --extra dev --python "${{ matrix.python-version }}"
+        run: uv sync --frozen --extra dev --extra mcp --extra acp --python "${{ matrix.python-version }}"
 
       - name: Pytest core (computer-use excluded explicitly)
         env:
@@ -112,14 +117,14 @@ jobs:
           ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
         run: uv run --frozen pytest tests/ -q --tb=line -m "not computer_use"
 
-      # mypy necesita las extras cuyos paquetes se importan perezosamente en
-      # src/atlas/ (acp/server.py -> agent-client-protocol, tools/*_gen_tool.py
-      # -> fal-client) para resolver tipos reales en vez de degradar a `Any`
-      # silenciosamente (hallazgo 2026-07-22: ambos paquetes vivían solo en un
-      # venv local, sin declarar en pyproject.toml — ausentes aquí también).
+      # mypy necesita ADEMÁS media-gen (fal-client) para resolver tipos reales
+      # en tools/*_gen_tool.py en vez de degradar a `Any` silenciosamente
+      # (hallazgo 2026-07-22). uv sync --frozen SUSTITUYE el venv a las extras
+      # dadas — omitir aquí mcp/acp (ya presentes del paso anterior) los
+      # BORRARÍA de nuevo antes de mypy, mismo error que ya se cometió en local.
       - name: Sync mypy-only extras (lazy-imported deps need real types)
         if: matrix.python-version == '3.12'
-        run: uv sync --frozen --extra dev --extra acp --extra media-gen --python "3.12"
+        run: uv sync --frozen --extra dev --extra mcp --extra acp --extra media-gen --python "3.12"
 
       - name: mypy strict
         if: matrix.python-version == '3.12'
