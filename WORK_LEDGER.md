@@ -6,8 +6,38 @@ Disciplina: entradas nuevas ARRIBA, una línea de estado por frente, ledger cort
 (≤40 entradas; al superar, plegar lo viejo a `docs/archive/`). Verificar antes
 de escribir: `atlas reality --json`.
 
-## WHERE
-
+- **ATLAS PRIME Cycle 8 — F2.6 CERRADO de verdad, por la ruta dorada
+  (2026-07-22 13:15, commits 810f969d/0a364d9a/07795a04)** — plan aprobado
+  por el operador ("haz una lista y ejecútalo"): cerrar los 3 gaps que F2.6
+  había dejado abiertos y completar el ciclo hasta el final.
+  **8a** (`810f969d`): `TestSelfBuildCycleWiring` (2 tests) — causa raíz
+  exacta vía Explore: la fixture `orch` de `tests/test_maintenance_autoloop.py`
+  (2026-07-04) nunca se actualizó cuando el guard anti-recursión
+  `ATLAS_NESTED_TEST_RUN` aterrizó (041f3972, 2026-07-09); si el entorno real
+  lo traía puesto, los tests veían `calls==[]` en silencio. Fix puntual +
+  hardening de raíz: `ATLAS_NESTED_TEST_RUN` ahora se limpia en el autouse
+  global de `conftest.py` — ningún test futuro puede repetir el gap.
+  **8b** (`0a364d9a`): `test_real_executor_can_inspect_authorized_external_git_repo`
+  — usaba `Path(__file__).resolve().parent.parent` como "repo externo
+  autorizado", que deja de ser el checkout principal dentro de un worktree
+  efímero de ColdUpdate (el `.git` del worktree apunta a metadata FUERA de
+  sí mismo, invisible al sandbox bwrap). Reproducido de forma aislada
+  (`git worktree add` manual + pytest directo) antes de tocar nada — TDD
+  real. Fix: el test crea su propio repo git desechable en `tmp_path`.
+  **Suite completa: 3652 passed, 0 failed** — primera vez en toda la sesión.
+  **F2.6 aplicado de verdad** (`07795a04`): propuesta `8eed7466-c47` —
+  `atlas golden-route request` → `validate` (passed=True, 3651 tests+mypy)
+  → `approve` → `apply`, ceremonia completa en Merkle. La línea
+  "F2.6 ejecutado" está en `docs/continuation/CONTINUATION_STATE.md`, vía
+  el camino correcto, no un Edit directo.
+  Ítem E del plan (fila de `inference_hub` en `atlas_ecosystem_map.md`)
+  **descartado tras revisión**: ese doc es un inventario de componentes
+  arquitectónicos (Mission Layer, GoldenRoute, BwrapJail...), no una tabla
+  de fan-in por módulo — ni `orchestrator.py` ni `merkle_logger.py` (más
+  centrales aún) tienen fila. El hallazgo del subagente F2.6 fue una
+  confusión de categoría, no un gap real; no se tocó el doc.
+  **Próxima acción:** T0.5b paso 2 (clasificación semántica, sesión propia)
+  o las 4 decisiones toasty pendientes de juicio del operador.
 - **ATLAS PRIME Cycle 6 — F2.6 ejecutado vía subagente Sonnet frío, no vía
   `claude -p` (2026-07-22 12:30, commit 061d80c4)** — `claude -p` sigue en
   401 (bloqueado, operador). Corrí el rubric F2.6 dos veces con un subagente
