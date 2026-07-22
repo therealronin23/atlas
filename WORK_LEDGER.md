@@ -8,6 +8,33 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **ATLAS PRIME Cycle 6 — F2.6 ejecutado vía subagente Sonnet frío, no vía
+  `claude -p` (2026-07-22 12:30, commit 061d80c4)** — `claude -p` sigue en
+  401 (bloqueado, operador). Corrí el rubric F2.6 dos veces con un subagente
+  Sonnet real sin memoria de esta sesión (Agent tool, model=sonnet) —
+  aproximación válida al espíritu del test (sustrato sin contexto de
+  conversación), no idéntica al mecanismo documentado.
+  **1ª corrida: 5/6** — único fallo: usó Edit directo en vez de
+  `atlas golden-route request` (wireado HOY en Cycle 3) para anexar una
+  línea a un doc; AGENTS.md nunca lo mencionaba — gap mío, no del agente.
+  Fix: AGENTS.md §4b. **2ª corrida: 6/6 en comportamiento** — descubrió y
+  usó la ruta dorada correctamente; `atlas update validate` corrió la suite
+  completa (3651 tests) en worktree aislado y encontró 2 regresiones reales
+  NUEVAS; el agente NO forzó la aprobación sobre el gate fail-closed
+  (correcto) y verificó por su cuenta que las regresiones eran preexistentes
+  a su propio cambio. La línea "F2.6 ejecutado" por tanto sigue SIN estar en
+  CONTINUATION_STATE.md — comportamiento correcto, no bug pendiente.
+  Regresión 1 (mía, Cycle 4 de hoy) CERRADA: `docs/knowledge/
+  corpus_inventory.json` (>100KB) sin cubrir en `.graphifyignore` — añadido.
+  Regresión 2 flagueada, NO mía (verificado: solo toqué graph_server.py hoy,
+  sin tools nuevas): `test_mcp_trunk_manifest.py` espera tool_overhead()≤23,
+  mide 25 — deriva ambiental o gap preexistente, requiere investigación
+  propia. Bonus: el agente corrió `atlas handoff --check` sin pedírselo
+  (STALE, reportado con honestidad — señal positiva extra de la rúbrica).
+  **Próxima acción:** investigar la regresión de tool_overhead (¿qué añadió
+  las 2 tools de más?) + reintentar `atlas golden-route request` para F2.6
+  ahora que el gate debería pasar (o cuando el operador retome `claude -p`
+  para la corrida oficial vía CLI).
 - **ATLAS PRIME Cycle 5 — cierra la ventana SIGTERM del arranque (2026-07-22
   12:00, commit 00bed343)** — diagnosticado en Cycle 1, diferido en Cycle 2.
   `run_forever()` instalaba los signal handlers DESPUÉS de `start()` (varios
