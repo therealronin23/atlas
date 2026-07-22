@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/supply_chain_report.schema.json",
+  "title": "Atlas Supply Chain Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scan_id",
+    "record_id",
+    "root",
+    "catalog_digest",
+    "status",
+    "verdict",
+    "started_at",
+    "completed_at",
+    "summary",
+    "files",
+    "packages",
+    "dependencies",
+    "findings",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "scan_id": { "type": "string", "minLength": 1 },
+    "record_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "root": { "type": "string", "minLength": 1 },
+    "catalog_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["complete", "partial", "failed"] },
+    "verdict": { "enum": ["admit", "review", "block"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "summary": { "$ref": "#/$defs/scan_summary" },
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/file_record" }
+    },
+    "packages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/package_record" }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependency_record" }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "$defs": {
+    "file_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size_bytes"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "size_bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "package_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ecosystem", "name", "version", "source_manifest"],
+      "properties": {
+        "ecosystem": { "type": "string" },
+        "name": { "type": "string" },
+        "version": { "type": ["string", "null"] },
+        "source_manifest": { "type": "string" }
+      }
+    },
+    "dependency_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ecosystem", "name", "requested_version", "scope", "source_manifest"],
+      "properties": {
+        "ecosystem": { "type": "string" },
+        "name": { "type": "string" },
+        "requested_version": { "type": "string" },
+        "scope": { "type": "string" },
+        "source_manifest": { "type": "string" }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "detail", "severity", "indicator_id", "package_name"],
+      "properties": {
+        "code": { "type": "string" },
+        "path": { "type": "string" },
+        "detail": { "type": "string" },
+        "severity": { "enum": ["info", "low", "medium", "high", "critical"] },
+        "indicator_id": { "type": ["string", "null"] },
+        "package_name": { "type": ["string", "null"] }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "detail", "blocking"],
+      "properties": {
+        "code": { "type": "string" },
+        "detail": { "type": "string" },
+        "blocking": { "type": "boolean" }
+      }
+    },
+    "scan_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files_hashed", "skipped_entries", "terminal"],
+      "properties": {
+        "files_hashed": { "type": "integer", "minimum": 0 },
+        "skipped_entries": { "type": "integer", "minimum": 0 },
+        "terminal": { "const": true }
+      }
+    }
+  }
+}

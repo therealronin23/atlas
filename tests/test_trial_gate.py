@@ -92,9 +92,125 @@ def test_trial_gate_mcp_vets_install_argv() -> None:
             install="npx -y @modelcontextprotocol/server-everything",
         )
     )
+    assert result.passed is False
+    assert result.skipped is True
+    assert result.suggested_status is None
+    assert "staging" in result.reason.lower()
+
+
+def test_trial_gate_plugin_requires_local_staging_admission() -> None:
+    gate = TrialGate()
+    result = gate.trial(
+        _entry(
+            kind="plugin",
+            mode="installed",
+            name="remote-plugin",
+            install="npx -y remote-plugin",
+        )
+    )
+
+    assert result.passed is False
+    assert result.skipped is True
+    assert result.suggested_status is None
+    assert "staging" in result.reason.lower()
+
+
+def test_trial_gate_does_not_promote_remote_static_or_executable_kinds_without_staging() -> None:
+    gate = TrialGate()
+    remote_skill = gate.trial(
+        _entry(
+            kind="skill",
+            mode="served",
+            name="remote-skill",
+            install="npx -y remote-skill",
+        )
+    )
+    remote_hook = gate.trial(
+        _entry(
+            kind="hook",
+            mode="installed",
+            name="remote-hook",
+            install="npx -y remote-hook",
+        )
+    )
+
+    for result in (remote_skill, remote_hook):
+        assert result.passed is False
+        assert result.skipped is True
+        assert result.suggested_status is None
+        assert "staging" in result.reason.lower()
+
+
+def test_trial_gate_does_not_promote_unstaged_local_third_party_mcp() -> None:
+    gate = TrialGate()
+    result = gate.trial(
+        _entry(
+            kind="mcp",
+            mode="connected",
+            name="local-third-party",
+            install="python -m third_party_mcp",
+        )
+    )
+
+    assert result.passed is False
+    assert result.skipped is True
+    assert result.suggested_status is None
+    assert "staging" in result.reason.lower()
+
+
+def test_trial_gate_promotes_only_an_explicitly_admitted_staged_plugin(
+    tmp_path: Path,
+) -> None:
+    import json
+
+    from atlas.mcp.plugin_admission import PluginAdmissionGate
+
+    staging = tmp_path / "staging"
+    root = staging / "demo-plugin"
+    root.mkdir(parents=True)
+    (root / "atlas-plugin.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "plugin_id": "demo-plugin",
+                "display_name": "Demo plugin",
+                "version": "1.0.0",
+                "source": {
+                    "origin": "local://test/demo-plugin",
+                    "revision": "fixture-1",
+                    "license": "Apache-2.0",
+                },
+                "activation": "declarative",
+                "permissions": [],
+                "contributions": [
+                    {
+                        "contribution_id": "demo-skill",
+                        "kind": "skill",
+                        "path": "skills/demo.md",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "skills").mkdir()
+    (root / "skills" / "demo.md").write_text(
+        "# Demo\n\nKeep diffs small, verify tests, and ask before external effects.\n",
+        encoding="utf-8",
+    )
+    gate = TrialGate(
+        plugin_admission_gate=PluginAdmissionGate(staging_root=staging),
+        plugin_root_resolver=lambda _entry: root,
+    )
+
+    result = gate.trial(
+        _entry(kind="plugin", mode="installed", name="demo-plugin")
+    )
+
     assert result.passed is True
+    assert result.skipped is False
     assert result.suggested_status == "probado-en-jaula"
-    assert "argv OK" in result.reason
+    assert "admitido" in result.reason.lower()
 
 
 def test_trial_gate_rejects_install_with_shell_metachar() -> None:

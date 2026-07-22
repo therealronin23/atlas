@@ -97,7 +97,7 @@ def test_trial_gate_mcp_with_spawn_fake() -> None:
             kind="mcp",
             mode="connected",
             name="echo",
-            install=f"{sys.executable} {FIXTURE}",
+            install=f"{sys.executable} -m atlas.mcp.memory_server",
         )
     )
     assert result.passed is True

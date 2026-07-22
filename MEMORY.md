@@ -1,5 +1,11 @@
 # MEMORY
 
+- `staged-artifact-is-not-an-argv`: un comando remoto sin contenido local no
+  es evidencia de trial; un manifest declarativo debe quedar dentro de
+  staging, ligado a sus hashes, y seguir sin activar hasta recibo Merkle/HITL
+  explícito. `TrialGate` no confía en un argv "limpio" de un módulo de
+  terceros solo porque no dispara `requires_network_bootstrap` — sin spawn
+  probe real, exige staging igual que un install remoto (ADR-072/073).
 - `ci-isolated-imports-are-explicit`: los jobs aislados incluyen la raíz en
   `PYTHONPATH` y declaran paquetes auxiliares importados por tests.
 - `vault-and-trunk-wiring-is-tested`: las rutas de producción deben pasar el

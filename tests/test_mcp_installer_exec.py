@@ -85,6 +85,25 @@ def test_execute_vets_place_skill_before_running() -> None:
     assert "VETADO" in out
 
 
+def test_execute_never_runs_clean_third_party_command_without_future_admission_executor() -> None:
+    """A2 retira el atajo: argv limpio no acredita bytes ni aprobación humana."""
+    from atlas.mcp.installer import InstallAction, execute
+
+    ran: list[list[str]] = []
+    clean = InstallAction(
+        name="remote-plugin",
+        mode="installed",
+        action="place_skill",
+        command=["npx", "-y", "remote-plugin"],
+        note="",
+    )
+
+    out = execute(clean, runner=ran.append)
+
+    assert ran == []
+    assert "BLOQUEADO" in out
+
+
 def test_real_catalog_plan_only_proven_and_vetted() -> None:
     """Invariante: toda acción connect del catálogo real tiene command no-None
     y pasa el veto SentinelGate (vet_action is None)."""

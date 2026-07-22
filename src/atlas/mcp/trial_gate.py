@@ -10,7 +10,6 @@ Diseño: docs/design/design_catalog_enrichment.md (Pieza 2).
 
 from __future__ import annotations
 
-import re
 import shlex
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,28 +17,18 @@ from typing import Callable
 
 from atlas.mcp.catalog import CatalogEntry
 from atlas.mcp.installer import InstallAction, vet_action
-from atlas.mcp.spawn_trial import SpawnTrial, graduated_quarantine
-
-# Metacaracteres de argv smuggling — NO incluir newline (normal en markdown).
-_SHELL_METACHARS: tuple[str, ...] = (";", "|", "$(", "`", "&&", "||", ">", "<")
-
-# Patrones de exfil/ejecución frecuentes en skills maliciosos (contenido, no argv).
-_SUSPICIOUS_PATTERNS: tuple[tuple[str, str], ...] = (
-    (r"\beval\s*\(", "eval() en contenido"),
-    (r"\bexec\s*\(", "exec() en contenido"),
-    (r"__import__\s*\(", "__import__() en contenido"),
-    (r"\bos\.system\s*\(", "os.system() en contenido"),
-    (r"\bsubprocess\.", "subprocess en contenido"),
-    (r"\bcurl\s+", "curl en contenido estático"),
-    (r"\bwget\s+", "wget en contenido estático"),
-    (r"base64\.(?:b64decode|decode)", "decodificación base64 en contenido"),
+from atlas.mcp.plugin_admission import PluginAdmissionGate
+from atlas.mcp.spawn_trial import (
+    SpawnTrial,
+    catalog_entry_to_cmd,
+    graduated_quarantine,
+    is_atlas_native_module,
+    requires_network_bootstrap,
 )
-
-MAX_CONTENT_BYTES = 256_000
-MIN_CONTENT_CHARS = 40
+from atlas.security.static_content import scan_static_content
 
 _TRIALABLE_STATIC_KINDS = frozenset({"skill", "prompt", "command", "rule"})
-_INSTALL_TRIALABLE_KINDS = frozenset({"mcp", "plugin", "subagent", "tool", "workflow", "hook"})
+_INSTALL_TRIALABLE_KINDS = frozenset({"mcp", "subagent", "tool", "workflow", "hook"})
 
 
 def vet_install_command(name: str, install: str) -> str | None:
@@ -87,20 +76,7 @@ class TrialResult:
 
 def scan_content(text: str) -> str | None:
     """Escaneo estático de contenido. Devuelve razón de veto o None si admisible."""
-    if len(text.strip()) < MIN_CONTENT_CHARS:
-        return f"contenido demasiado corto (<{MIN_CONTENT_CHARS} chars)"
-    if len(text.encode("utf-8")) > MAX_CONTENT_BYTES:
-        return f"contenido demasiado grande (>{MAX_CONTENT_BYTES} bytes)"
-
-    for char in _SHELL_METACHARS:
-        if char in text:
-            return f"metacaracter de shell detectado: {char!r}"
-
-    for pattern, label in _SUSPICIOUS_PATTERNS:
-        if re.search(pattern, text, flags=re.IGNORECASE):
-            return label
-
-    return None
+    return scan_static_content(text)
 
 
 def promote_after_trial(current_status: str, passed: bool) -> str | None:
@@ -137,11 +113,15 @@ class TrialGate:
         agents_skill_root: Path | None = None,
         content_resolver: Callable[[CatalogEntry], str | None] | None = None,
         spawn_trial: SpawnTrial | None = None,
+        plugin_admission_gate: PluginAdmissionGate | None = None,
+        plugin_root_resolver: Callable[[CatalogEntry], Path | None] | None = None,
     ) -> None:
         self._skill_root = skill_root
         self._agents_skill_root = agents_skill_root
         self._content_resolver = content_resolver
         self._spawn_trial = spawn_trial
+        self._plugin_admission_gate = plugin_admission_gate
+        self._plugin_root_resolver = plugin_root_resolver
 
     def trial(self, entry: CatalogEntry) -> TrialResult:
         if entry.status not in {"candidato", "probado-en-jaula"}:
@@ -158,7 +138,7 @@ class TrialGate:
             content = self._resolve_content(entry)
             if content is None:
                 if entry.install.strip():
-                    return self._trial_install_argv(entry, note="sin contenido local")
+                    return self._requires_staging(entry, note="sin contenido local")
                 return TrialResult(
                     name=entry.name,
                     kind=entry.kind,
@@ -169,10 +149,13 @@ class TrialGate:
                 )
             return trial_static_content(entry, content)
 
+        if entry.kind == "plugin":
+            return self._trial_staged_plugin(entry)
+
         if entry.kind in _INSTALL_TRIALABLE_KINDS and entry.install.strip():
             if entry.kind == "mcp":
                 return self._trial_mcp_install(entry)
-            return self._trial_install_argv(entry)
+            return self._requires_staging(entry)
 
         if entry.kind == "mcp" and entry.mode == "connected":
             return TrialResult(
@@ -207,12 +190,55 @@ class TrialGate:
             suggested_status=suggested,
         )
 
+    def _requires_staging(self, entry: CatalogEntry, *, note: str = "") -> TrialResult:
+        """Do not mistake a clean download command for inspected third-party bytes."""
+
+        veto = vet_install_command(entry.name, entry.install)
+        if veto is not None:
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=False,
+                skipped=False,
+                reason=veto,
+                suggested_status=None,
+            )
+        suffix = f" ({note})" if note else ""
+        return TrialResult(
+            name=entry.name,
+            kind=entry.kind,
+            passed=False,
+            skipped=True,
+            reason=f"requiere staging local + escaneo antes de trial{suffix}",
+            suggested_status=None,
+        )
+
     def _trial_mcp_install(self, entry: CatalogEntry) -> TrialResult:
         argv_result = self._trial_install_argv(entry)
         if not argv_result.passed:
             return argv_result
+        cmd = catalog_entry_to_cmd(entry)
+        if requires_network_bootstrap(cmd):
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=False,
+                skipped=True,
+                reason="MCP remoto requiere staging local + escaneo antes de trial",
+                suggested_status=None,
+            )
         if self._spawn_trial is None:
-            return argv_result
+            # staged-artifact-is-not-an-argv: sin spawn probe real, un argv
+            # local "limpio" solo es evidencia de trial para código propio
+            # (atlas.mcp.*, ya confiable); un módulo de terceros sin bytes
+            # locales inspeccionados sigue necesitando staging, aunque su
+            # argv no dispare requires_network_bootstrap (p.ej. `python -m
+            # third_party_mcp` no es npx/uvx pero tampoco es nuestro).
+            if is_atlas_native_module(cmd):
+                return argv_result
+            return self._requires_staging(
+                entry, note="sin verificación de spawn para módulo de terceros"
+            )
         spawn = self._spawn_trial.probe_entry(entry)
         if spawn.skipped:
             return TrialResult(
@@ -243,6 +269,57 @@ class TrialGate:
             skipped=False,
             reason=spawn.reason,
             suggested_status=argv_result.suggested_status,
+        )
+
+    def _trial_staged_plugin(self, entry: CatalogEntry) -> TrialResult:
+        if self._plugin_admission_gate is None or self._plugin_root_resolver is None:
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=False,
+                skipped=True,
+                reason="plugin requiere staging local + PluginManifest + escaneo de admisión",
+                suggested_status=None,
+            )
+        root = self._plugin_root_resolver(entry)
+        if root is None:
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=False,
+                skipped=True,
+                reason="plugin sin raíz de staging resoluble",
+                suggested_status=None,
+            )
+        admission = self._plugin_admission_gate.admit(
+            root,
+            expected_plugin_id=entry.name,
+        )
+        if admission.status == "admit":
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=True,
+                skipped=False,
+                reason="plugin staged admitido; activación sigue pendiente de Merkle/HITL",
+                suggested_status=promote_after_trial(entry.status, True),
+            )
+        if admission.status == "review":
+            return TrialResult(
+                name=entry.name,
+                kind=entry.kind,
+                passed=False,
+                skipped=False,
+                reason="plugin staged requiere revisión humana",
+                suggested_status=None,
+            )
+        return TrialResult(
+            name=entry.name,
+            kind=entry.kind,
+            passed=False,
+            skipped=False,
+            reason=f"plugin staged bloqueado: {', '.join(admission.reason_codes)}",
+            suggested_status=None,
         )
 
     def _resolve_content(self, entry: CatalogEntry) -> str | None:

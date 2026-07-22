@@ -68,14 +68,19 @@ def execute(
     runner: Callable[[list[str]], None],
     sentinel: SentinelGate | None = None,
 ) -> str:
-    """Ejecuta una acción. `connect` se VETA antes de correr; `noop` no hace nada;
-    `place_skill` se delega al runner. Devuelve un estado legible."""
+    """Fail closed until a future admission executor binds staging to Merkle/HITL.
+
+    An argv that passes ``SentinelGate`` proves only that it lacks known command
+    smuggling patterns. It does not prove which bytes a package manager will
+    fetch or that a human approved their activation, so direct execution is
+    intentionally disabled in A2.
+    """
     if action.action == "noop":
         return f"{action.name}: served (nada que instalar)"
     veto = vet_action(action, sentinel)
     if veto is not None:
         return f"{action.name}: VETADO ({veto})"
-    if action.command is None:
-        return f"{action.name}: sin comando — omitido"
-    runner(action.command)
-    return f"{action.name}: {action.action} OK"
+    return (
+        f"{action.name}: BLOQUEADO (instalación directa deshabilitada; "
+        "requiere staging + admisión + Merkle/HITL)"
+    )
