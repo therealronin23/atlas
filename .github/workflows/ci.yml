@@ -112,6 +112,15 @@ jobs:
           ATLAS_PENDING_HMAC_KEY: ci-test-pending-hmac
         run: uv run --frozen pytest tests/ -q --tb=line -m "not computer_use"
 
+      # mypy necesita las extras cuyos paquetes se importan perezosamente en
+      # src/atlas/ (acp/server.py -> agent-client-protocol, tools/*_gen_tool.py
+      # -> fal-client) para resolver tipos reales en vez de degradar a `Any`
+      # silenciosamente (hallazgo 2026-07-22: ambos paquetes vivían solo en un
+      # venv local, sin declarar en pyproject.toml — ausentes aquí también).
+      - name: Sync mypy-only extras (lazy-imported deps need real types)
+        if: matrix.python-version == '3.12'
+        run: uv sync --frozen --extra dev --extra acp --extra media-gen --python "3.12"
+
       - name: mypy strict
         if: matrix.python-version == '3.12'
         env:

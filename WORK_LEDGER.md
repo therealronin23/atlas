@@ -8,6 +8,61 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 7 — 4 CVEs reales eliminadas + 2 dependencias huérfanas de
+  producción declaradas correctamente (2026-07-22 19:30)** — a petición del
+  operador ("hazlo todo sin pausa"), tras el hallazgo del audit previo:
+  `pip-audit` (el mismo gate que `PreflightGate` corre antes de cualquier
+  auto-mejora) mostró 4 CVEs en 2 paquetes. `mcp==1.28.0` (CVE-2026-59950,
+  fix 1.28.1): upgrade directo, dependencia real y activa. `gitpython==3.1.50`
+  (3 CVEs, fix 3.1.51): investigado de dónde venía — lo traía
+  `opentimestamps-client`, un paquete **sin una sola referencia en todo el
+  repo** (ni en `pyproject.toml` ni importado en ningún `.py`) — huérfano de
+  verdad, invisible al `vapor_audit` existente porque ese solo escanea
+  `src/`, no paquetes instalados. Retirada la cadena completa
+  (opentimestamps-client + opentimestamps + gitpython + gitdb + smmap).
+  `pip-audit` limpio: 0 vulnerabilidades.
+  **Error propio cometido y corregido en el camino, con evidencia completa**:
+  al verificar consistencia con `uv.lock`, corrí `uv sync --frozen --extra
+  mcp --extra dev` sin pensar en qué extras tenía el venv REALMENTE — `uv
+  sync --frozen` sincroniza el venv EXACTO a los extras dados, así que
+  borró paquetes de extras que no pasé: `fastembed` (extra `embeddings`) y
+  `playwright` (extra `computer-use`), ambos en uso real esta sesión.
+  Detectado por chequeo de imports post-sync (no por casualidad), corregido
+  con `uv sync --frozen --extra dev --extra computer-use --extra embeddings
+  --extra mcp` (el set real). **Lección**: nunca correr `uv sync --frozen`
+  con un subconjunto de extras sin verificar antes qué tenía instalado el
+  venv — pasa de "arreglar un CVE" a "borrar media suite" en un comando.
+  **Hallazgo mayor, no planeado, surgido de mi propio error**: el resync
+  correcto reveló que `mypy` ganó 3 errores nuevos que no existían minutos
+  antes (`acp/server.py`, `tools/video_gen_tool.py`, `tools/image_gen_tool.py`
+  — todos "Returning Any"/"cannot subclass has type Any"). Investigado a
+  fondo: dos paquetes REALES, con imports perezosos marcados `# noqa:
+  PLC0415` en código de producción SÍ WIREADO (CLI `atlas acp`,
+  `image_gen_tool.py`/`video_gen_tool.py`), llevaban meses viviendo como
+  instalaciones manuales sin declarar — `agent-client-protocol` (paquete
+  `acp`, absorción Hermes-Agent 2026-07-18) y `fal-client` — **ninguno de
+  los dos existía en `pyproject.toml` ni en `uv.lock`**. Barrido sistemático
+  de TODOS los imports perezosos `# noqa: PLC0415` del repo (no solo los que
+  mypy señaló) para no dejar un tercero suelto: `crawl4ai` confirmado
+  correctamente aislado por diseño (venv separado, documentado); `playwright`/
+  `uvicorn` ya declarados. Solo `acp`/`fal_client` eran el gap real.
+  Corregido con `uv add --optional acp agent-client-protocol` + `uv add
+  --optional media-gen fal-client` (no un `pip install` suelto — habría
+  recreado el mismo anti-patrón que acabo de limpiar). CI (`ci.yml`)
+  actualizado en paralelo: su job de `mypy strict` nunca sincronizó estas
+  extras tampoco (solo `--extra dev`) — mismo gap, mismo root cause; añadido
+  un paso de sync adicional con `--extra acp --extra media-gen` antes de
+  mypy. **Hallazgo aparte, NO perseguido esta vuelta** (fuera del alcance
+  pedido): CI no ha corrido en `main` desde 2026-07-16 — ninguno de los 9
+  commits de hoy (PRIME+MAXIMUS) disparó un run; causa raíz desconocida
+  (posible config de trigger/permisos de GitHub Actions, no diagnosticable
+  solo con el repo local) — señalado para que el operador decida si
+  investigar.
+  **Verificación final, todo limpio**: `pip-audit` 0 vulnerabilidades, mypy
+  canónico 286 ficheros 0 errores, suite completa 3765 passed/1 skipped/0
+  failed (corrida 3 veces durante el proceso, siempre estable).
+  **Próxima acción:** Cycle 8 (conector google-workspace) + Cycle 9
+  (auditoría spec B+C), ya en curso sin pausa.
 - **MAXIMUS Cycle 6 — T0.5b paso 2: clasificador semántico del corpus,
   mecanismo construido y corrido en vivo (2026-07-22 18:10)** — el operador
   pidió "a y b por orden"; (b) investigado antes de elegir (igual que
