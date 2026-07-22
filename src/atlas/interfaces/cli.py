@@ -838,6 +838,51 @@ def completeness_demo(as_json: bool) -> None:
         raise click.exceptions.Exit(1)
 
 
+@cli.command("corpus-inventory")
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON completa (para pipes/CI).")
+@click.option(
+    "--write",
+    "write_path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Guarda el reporte JSON en esta ruta (p.ej. docs/knowledge/corpus_inventory.json).",
+)
+def corpus_inventory_cmd(as_json: bool, write_path: Path | None) -> None:
+    """T0.5b paso 1 — inventario determinista del corpus (recuento + bucket
+    heurístico por convención de ruta). NO es clasificación semántica contra
+    el master plan — eso es trabajo de sesiones futuras; lo que no encaja en
+    una regla de ruta se etiqueta honestamente 'sin_clasificar'."""
+    import os
+
+    from atlas.knowledge.corpus_inventory import inventory_corpus
+
+    root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
+    report = inventory_corpus(root)
+    if write_path is not None:
+        write_path.parent.mkdir(parents=True, exist_ok=True)
+        write_path.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    if as_json:
+        console.print_json(json.dumps(report, ensure_ascii=False))
+        return
+    console.print(f"[bold]Corpus: {report['total_docs']} docs[/bold]")
+    table = Table(title="Buckets (heurística por ruta)")
+    table.add_column("bucket", style="cyan")
+    table.add_column("count", justify="right")
+    for bucket, count in sorted(report["buckets"].items(), key=lambda kv: -kv[1]):
+        table.add_row(bucket, str(count))
+    console.print(table)
+    unclassified = report["buckets"].get("sin_clasificar", 0)
+    pct = 100 * unclassified / report["total_docs"] if report["total_docs"] else 0
+    console.print(
+        f"[yellow]sin_clasificar: {unclassified}/{report['total_docs']} "
+        f"({pct:.0f}%) — heurística de ruta, no juicio semántico[/yellow]"
+    )
+    if write_path is not None:
+        console.print(f"Guardado en {write_path}")
+
+
 @cli.command("capabilities")
 @click.option("--json", "as_json", is_flag=True, help="Salida JSON cruda.")
 def capabilities(as_json: bool) -> None:
