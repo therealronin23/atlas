@@ -8,6 +8,45 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 5 — SkillStore descubre plugins activados: cierra el gap
+  real que Cycle 4 documentó (2026-07-22 17:20)** — el operador pidió "a y b
+  por orden" tras el cierre de A3; (a) = este ciclo. `atlas.mcp.skills_store.
+  SkillStore` ganó `plugins_active_root` opcional kw-only (default `None` =
+  comportamiento IDÉNTICO al de siempre, los 6 tests preexistentes intactos
+  sin tocar): descubre `<active_root>/<plugin_id>/skill/*.md` bajo namespace
+  `plugin:<plugin_id>/<contribution_id>` — evita que un plugin pueda
+  sombrear o confundirse con un skill nativo del mismo nombre (test
+  dedicado). Sirve el DESTINO del symlink (no lo rechaza como haría
+  `plugin_admission`: aquí el link ES el mecanismo, no una señal de
+  manipulación). Guardia anti path-traversal en `plugin_id`/`contribution_id`
+  (regex `^[a-z0-9][a-z0-9-]*$`, mismo charset que `_PluginId` del manifest)
+  — probado con 2 intentos de escape (`../secret.txt`, `x/../../secret.txt`).
+  Cableado en producción: `trunk_server.py` construye el store con
+  `ATLAS_HOME/plugins/active` — el MISMO patrón de resolución que
+  `adopted_servers_path()` y ~15 sitios más del repo (no inventé un nuevo
+  helper compartido; seguí la convención existente, aunque duplicada, para
+  no forzar un refactor de 15+ ficheros fuera de alcance de este ciclo).
+  Único constructor de producción de `SkillStore` en todo el repo — cero
+  otros call-sites que actualizar. TDD real (RED → GREEN); 10 tests nuevos
+  (incluida una integración real con `PluginActivator`, no un doble), 16
+  verdes en `test_mcp_skills_store.py`, 52 verdes en todo el área
+  trunk_server+skills+capabilities+manifest (incluido el guard de
+  `tool_overhead<=25`, intacto — no se añadió ninguna tool MCP nueva). mypy
+  canónico limpio. **Prove-it EN VIVO fuera del arnés**: reconstruí el
+  `SkillStore` con la MISMA construcción exacta de `trunk_server.py`
+  (mismo `ATLAS_HOME`), materialicé+activé un plugin real, y `list_skills()`/
+  `get()` lo sirvieron con contenido real sin reiniciar ningún proceso;
+  revocado y limpiado al terminar, cadena Merkle real verificada íntegra.
+  **Honestidad de alcance señalada, no nueva**: el registro de cada skill
+  como MCP `Prompt` nativo sigue baked-in al arranque (propiedad preexistente
+  del bucle de `trunk_server.py`, no algo que este ciclo rompiera ni
+  arreglara) — un plugin activado necesita reiniciar el tronco para el
+  descubrimiento vía Prompt, no para `get_skill`/`list_skills` (ya vivo).
+  El tronco MCP corriendo en PID vivo hoy NO se reinició (acción de estado
+  fuera de alcance de un ciclo de mejora; decisión del operador cuándo).
+  **Próxima acción: (b)** — T0.5b paso 2 / las decisiones toasty / el master
+  plan de ciclos PRIME (watchdog daemon, etc. — verificar cuáles siguen
+  pendientes antes de elegir, varios PRIME Cycles 2-10 ya los cerraron).
 - **MAXIMUS Cycle 4 — A3.3: activador reversible, CAMINO A (ADR-072/073)
   CERRADO de punta a punta para fuente LOCAL (2026-07-22 16:50)** — última
   loncha de A3, continuación directa de A3.2 (Cycle 3). `atlas.mcp.

@@ -13,14 +13,25 @@
   (fuente única, nunca copia bytes) y revoca/borra staging. **Camino A
   (ADR-072/073) cerrado de punta a punta para fuente LOCAL.** Fuentes
   remotas y tipos ejecutables (condición 5) siguen sin existir por diseño.
-  **Honestidad de alcance**: el activador aplica los 4 `kind` del manifest
-  (`skill`/`prompt`/`rule`/`command`) de forma uniforme bajo
-  `<workspace>/plugins/active/<plugin_id>/<kind>/`, pero solo `skill` tiene
-  HOY un consumidor runtime real (`atlas.mcp.skills_store.SkillStore`, que
-  sirve `docs/skills/`, NO el árbol de plugins activos) — `SkillStore` no
-  fue extendido para descubrir plugins activados; eso es trabajo aparte, no
-  reclamado aquí. `prompt`/`rule`/`command` se aplican mecánicamente sin que
-  nada los lea todavía.
+  **Consumidor real (2026-07-22, mismo día)**: `SkillStore` extendido
+  (`plugins_active_root` opcional, kw-only, `None` = comportamiento idéntico
+  al de siempre) para descubrir `<active_root>/<plugin_id>/skill/*.md` bajo
+  el namespace `plugin:<plugin_id>/<contribution_id>` — anti-colisión con
+  skills nativos del mismo nombre, sirve el DESTINO del symlink (fuente
+  única, igual que el resto de la cadena). Cableado en producción en
+  `trunk_server.py` (mismo patrón `ATLAS_HOME` que `adopted_servers_path()`
+  y ~15 sitios más del repo). `get_skill`/`list_skills` ven plugins
+  activados EN VIVO (llaman al store en cada invocación); el registro de
+  cada skill como MCP `Prompt` nativo sigue baked-in al arranque del
+  servidor (propiedad preexistente del bucle de registro, no nueva: un
+  fichero nuevo en `docs/skills/` tampoco aparece como Prompt sin reiniciar)
+  — un plugin activado necesita un reinicio del tronco para aparecer en el
+  descubrimiento de Prompts, no para `get_skill`/`list_skills`. Prove-it en
+  vivo: reconstruí el `SkillStore` EXACTAMENTE como `trunk_server.py` (mismo
+  `ATLAS_HOME`), activé un plugin real y `list_skills()`/`get()` lo sirvieron
+  sin ningún cambio de proceso. `prompt`/`rule`/`command` se siguen
+  aplicando mecánicamente sin que nada los lea — sin consumidor propio
+  todavía, honesto.
 - Autoridad: [ADR-073](../decisions/adr/adr_073_declarative_plugin_manifest_v1.md).
 
 ## Contrato mínimo

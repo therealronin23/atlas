@@ -492,7 +492,17 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     )
     from atlas.mcp.skills_store import SkillStore
 
-    store = SkillStore(Path(repo_root) / "docs" / "skills")
+    # ADR-073 A3.3: PluginActivator aplica contribuciones bajo
+    # $ATLAS_HOME/plugins/active/<id>/skill/ (mismo patrón ATLAS_HOME que
+    # adopted_servers_path() más abajo — Orchestrator._resolve_workspace()
+    # usa la misma resolución, nunca repo_root: son raíces distintas).
+    _atlas_home = Path(
+        os.environ.get("ATLAS_HOME", str(Path.home() / "atlas"))
+    ).expanduser()
+    store = SkillStore(
+        Path(repo_root) / "docs" / "skills",
+        plugins_active_root=_atlas_home / "plugins" / "active",
+    )
 
     # SP-A: mesa de trabajo compartida — fuentes reales para workbench://manifest.
     # Fail-soft por diseño: si algo falta (backlog.yaml ausente, DB de memoria
