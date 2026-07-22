@@ -276,3 +276,4 @@ un daemon de autoconstrucción vivo contra este repo** — antes de escribir
 código nuevo, comprueba `ps aux | grep ATLAS_SELF_BUILD` y `git status`
 por si ya hizo el trabajo; verifícalo (build+tests+smoke real) en vez de
 descartarlo o sobrescribirlo a ciegas.
+F2.6 ejecutado
