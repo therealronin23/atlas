@@ -8,6 +8,58 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 10 — graphify restaurado con procedencia real; hook de
+  producción confirmado ILESO al bug encontrado (2026-07-22 21:10)** —
+  cierra el hallazgo bloqueado al final de Cycle 7 (el operador dio la
+  fuente: github.com/Graphify-Labs/graphify). Verificado antes de instalar
+  nada: el paquete PyPI real es **`graphifyy`** (doble-y) — el propio
+  proyecto avisa que otros `graphify*` NO están afiliados; 93.681 estrellas,
+  MIT, mantenimiento casi diario. `0.9.11` (la versión que
+  `scripts/install-knowledge-hooks.sh` exige literal) confirmada real en
+  PyPI, publicada 2026-07-09 — coincide con la época en que este repo la
+  usaba. Instalada con `uv add --optional knowledge-graph "graphifyy==0.9.11"`
+  — extra PROPIA, no `dev`: trae ~25 parsers tree-sitter transitivos
+  (resolviendo de paso el misterio de Cycle 7 sobre esos mismos paquetes)
+  que ningún test/mypy necesita; meterlos en `dev` habría hecho más pesado
+  el job rápido de CI sin motivo. `pip-audit` limpio, mypy canónico 286
+  ficheros 0 errores, suite completa 3773 passed/0 failed (sin regresión).
+  **Investigación honesta de un bug real encontrado al verificar en vivo**:
+  `scripts/update-knowledge-graph.sh` (el pipeline COMPLETO, invocado a
+  mano) choca con `OSError: File name too long` en `graphify export
+  obsidian` — investigado a fondo, no descartado a la primera. Root cause
+  real: `$HOME` está montado sobre **eCryptfs cifrado**
+  (`stat -f` → `Longnombre: 143`), con un límite EFECTIVO de nombre de
+  fichero de 143 bytes en esta máquina — graphify asume 255 (su propio cap
+  interno, `_cap_filename`, es de 200 bytes, calculado para el límite
+  estándar). Confirmado sistémico, no un caso aislado: retirada una entrada
+  duplicada/fuera-de-tema (paper de astrofísica sobre ALMA, falso positivo
+  de las queries expandidas "repository mutation"/"document indexing" en
+  `docs/knowledge/research_2026-07-10.md`, título de 164 bytes) que
+  disparaba el crash — reintentado, y chocó con OTRO título distinto de 169
+  caracteres. Recortar contenido uno a uno NO escala contra un límite de
+  filesystem; no perseguido más allá de esa única limpieza (justificada por
+  sí sola: duplicado + fuera de tema, no un intento de arreglar el bug).
+  **Severidad real, correctamente acotada tras leer el hook con calma**:
+  `.githooks/post-commit` (lo que corre en CADA commit real) NO llama a
+  `update-knowledge-graph.sh` en absoluto — usa
+  `graphify.watch._rebuild_code()` directamente, una ruta mucho más
+  estrecha (solo `graph.json`/`GRAPH_REPORT.md`, código sin LLM) que NUNCA
+  invoca `export obsidian`/`export neo4j`. El bug de eCryptfs es real y
+  reproducible, pero solo afecta a quien corra el pipeline completo A MANO
+  — no al hook automático que de verdad importa para `atlas reality`/uso
+  diario. Confirmado con un commit real de este mismo ciclo: sin el aviso
+  "could not locate a Python with graphify installed" de antes.
+  **No perseguido, señalado para decisión futura (no es un accidente de
+  esta sesión, es una incompatibilidad genuina graphify↔eCryptfs)**: o bien
+  reportar el bug aguas arriba a Graphify-Labs (`_cap_filename` debería
+  detectar el NAME_MAX real vía `os.pathconf`, no asumir 255), o mover
+  `graphify-vault`/`graphify-out` fuera del `$HOME` cifrado si se quiere
+  volver a correr el pipeline completo con regularidad.
+  **Próxima acción:** ninguna pendiente de los 4 encargos de hoy — todos
+  cerrados (CVEs, conector Google, spec B+C, graphify). Quedan las líneas
+  ya señaladas en Cycles 7-9 (T0.5b paso 3, F2.6 gate automático, detector
+  de deriva ecosystem-map, investigar por qué CI no corre en `main` desde
+  el 16-jul) para cuando el operador las priorice.
 - **MAXIMUS Cycle 9 — auditoría spec B+C secciones 2-6 + 2 deliverables
   reales cerrados (2026-07-22 20:30)** — a petición del operador
   ("auditoría de si se puede mejorar... una vez terminado hazlo"). Auditoría

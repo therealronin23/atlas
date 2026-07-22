@@ -30,6 +30,19 @@ dev = [
     # primero). Herramienta madura envuelta, no reinventada (adopt-real-not-shell).
     "pip-audit>=2.7",
 ]
+knowledge-graph = [
+    # 2026-07-22 (MAXIMUS Cycle 10): CLI graphify (`.venv/bin/graphify`, hooks
+    # post-commit/post-checkout) llevaba meses instalado a mano, sin declarar
+    # aquí — un `uv sync --frozen` con extras distintos lo barrió sin avisar
+    # (pip-audit no lo detecta: no es una CVE, es un paquete ausente). Nombre
+    # PyPI real es `graphifyy` (doble-y) — el propio proyecto avisa que otros
+    # `graphify*` NO están afiliados (github.com/Graphify-Labs/graphify).
+    # Pin exacto porque scripts/install-knowledge-hooks.sh exige esta versión
+    # literal; subir el pin es decisión aparte, no un accidente de `uv sync`.
+    # Extra PROPIO (no `dev`): trae ~25 parsers tree-sitter transitivos que
+    # ningún test/mypy necesita — mantiene el job rápido de CI ligero.
+    "graphifyy==0.9.11",
+]
 voice = [
     "faster-whisper>=1.0",   # STT CPU — ADR-003
     "piper-tts>=1.0",        # TTS CPU — ADR-003
