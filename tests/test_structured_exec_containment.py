@@ -150,7 +150,25 @@ def test_real_executor_patch_is_limited_to_writable_cwd(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(shutil.which("bwrap") is None, reason="bwrap no disponible")
 def test_real_executor_can_inspect_authorized_external_git_repo(tmp_path: Path) -> None:
-    repo = Path(__file__).resolve().parent.parent
+    # Repo real y desechable, NO el propio checkout de atlas-core: usar
+    # Path(__file__).resolve().parent.parent hacía que "el repo externo
+    # autorizado" fuera literalmente donde vive este fichero de test — que
+    # deja de ser el checkout principal cuando la suite corre copiada dentro
+    # de un worktree efímero de ColdUpdate (git worktree: el .git del
+    # worktree apunta a metadata FUERA del propio worktree, en
+    # <repo-principal>/.git/worktrees/<nombre>, invisible para el sandbox
+    # bwrap). Encontrado en vivo por F2.6 (ATLAS PRIME 2026-07-22) al validar
+    # una propuesta real por la ruta dorada.
+    import subprocess
+
+    repo = tmp_path / "external_repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init", "--allow-empty"],
+        cwd=repo,
+        check=True,
+    )
     profile, issuer, _mock, _executor, workspace = _stack(tmp_path, git_root=repo)
     executor = AtlasExecutor(
         issuer,
