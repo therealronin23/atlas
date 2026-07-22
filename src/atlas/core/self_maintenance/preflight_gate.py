@@ -95,6 +95,7 @@ class PreflightGate:
                 # orden se defiende solo.
                 "docs_index_drift": module.docs_index_drift(),
                 "docs_graph_drift": module.docs_graph_drift(),
+                "ecosystem_map_drift": module.ecosystem_map_drift(),
             }
         except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
             return {"error": [f"sanitation_audit no pudo ejecutarse: {exc}"]}

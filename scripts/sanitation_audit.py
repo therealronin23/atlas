@@ -182,6 +182,19 @@ def docs_graph_drift() -> list[str]:
         return [f"docs_graph no pudo ejecutarse: {exc}"]
 
 
+def ecosystem_map_drift() -> list[str]:
+    """ADRs reales sin fila (ni individual ni por rango) en
+    docs/design/atlas_ecosystem_map.md — spec B+C §5. Lógica real vive en
+    atlas.core.self_maintenance.ecosystem_drift (TDD real, no un script
+    suelto); fail-open aquí, nunca rompe el radar."""
+    try:
+        from atlas.core.self_maintenance.ecosystem_drift import ecosystem_map_drift as _impl
+
+        return _impl(ROOT)
+    except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
+        return [f"ecosystem_drift no pudo ejecutarse: {exc}"]
+
+
 def _section(title: str, items: list[str], ok: str) -> None:
     print(f"\n## {title}")
     if not items:
@@ -208,6 +221,8 @@ def main() -> int:
     _section("Referencias docs/ stale en ficheros clave", stale_refs(), "ninguna")
     _section("Índice de docs (árbol↔INDEX.yaml)", docs_index_drift(), "sin desviaciones")
     _section("Grafo de docs (enlaces rotos + huérfanos)", docs_graph_drift(), "sin señales")
+    _section("Mapa del ecosistema (ADR↔fila, spec B+C §5)", ecosystem_map_drift(),
+             "todo ADR tiene fila o rango que lo cubre")
     print("\n(Radar read-only: decide KEEP/QUARANTINE/DELETE según REPO_STANDARD §3.)")
     return 0
 

@@ -118,6 +118,7 @@ def test_sanitation_findings_has_expected_keys(monkeypatch):
         "stale_refs",
         "docs_index_drift",  # 2026-07-08: el orden de docs entra al preflight
         "docs_graph_drift",  # 2026-07-08: y el grafo de enlaces también
+        "ecosystem_map_drift",  # 2026-07-22: MAXIMUS Cycle 13, spec B+C §5
     }
     for key, value in result.sanitation_findings.items():
         assert isinstance(value, list)

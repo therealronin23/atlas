@@ -8,6 +8,38 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 13 — detector de deriva mapa-del-ecosistema↔disco (spec
+  B+C §5) (2026-07-22 22:40)** — cierra el último ítem de "vamos al lío".
+  "Pieza en disco sin fila en el mapa" traducido determinista: ¿todo ADR
+  real tiene su número citado en `docs/design/atlas_ecosystem_map.md`? Los
+  ADR ya son el mecanismo establecido del repo para "decisión de
+  arquitectura", y el propio mapa ya los cita como Evidence/Authority —
+  reusar esa convención en vez de inventar un vocabulario de "pieza" nuevo.
+  `atlas.core.self_maintenance.ecosystem_drift`: soporta cita individual
+  (`ADR-072`) Y por rango inclusivo (`ADR-024..040`, cuando varios ADRs
+  contiguos comparten una fila "SELLADO" — 2 rangos reales en el mapa hoy).
+  **2 bugs propios cazados y corregidos ANTES de confiar en el resultado**:
+  (1) el número se guardaba como int y perdía el cero-relleno (`ADR-99` en
+  vez de `ADR-099`); (2) el sufijo-letra opcional (`013b`) chocaba con
+  citas por nombre de fichero completo (`adr_072_supply_chain...md` —
+  la "s" de "supply" se leía como intento de sufijo) — arreglado con
+  `(?![a-z])` (el sufijo solo cuenta si NO sigue otra minúscula).
+  **Primera corrida honesta, no maquillada**: 37 de 51 ADRs sin cita
+  aparente — investigado ANTES de aceptar el número (no es ruido de mi
+  detector: son 2 rangos reales, `ADR-024..040`/`ADR-026..029`, que
+  colapsan 14 ADRs a una sola fila). Con soporte de rango: **23 ADRs reales
+  sin fila** — verificado a mano, coincide exacto con la salida del
+  programa. Es un hallazgo real de deriva acumulada, no un bug — mismo
+  espíritu que `docs_graph_drift` (201 docs sin enlace, nunca maquillado).
+  Wireado en `scripts/sanitation_audit.py` (`ecosystem_map_drift()`,
+  fail-open) y en `PreflightGate._run_sanitation()` (nueva clave
+  `ecosystem_map_drift`, gratis en cada preflight del lazo de
+  autoconstrucción). 14 tests nuevos TDD; mypy canónico 288 ficheros 0
+  errores; prove-it en vivo: 23 hallazgos reales, conteo verificado a mano.
+  **Próxima acción real:** ninguna de las 4 tareas de "vamos al lío" queda
+  pendiente. Reconciliar los 23 ADRs sin fila (añadirlos al mapa o
+  confirmar que están cubiertos por prosa no-citable) es trabajo de
+  contenido, no de código — decisión del operador si perseguirlo.
 - **GitHub puesto al día — secreto OAuth real scrubbeado del historial +
   push forzado con lease + CI corriendo de nuevo (2026-07-22 22:20)** — el
   operador pidió ponerse al día con GitHub tras el hallazgo de Cycle 11
