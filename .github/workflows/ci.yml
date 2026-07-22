@@ -102,13 +102,15 @@ jobs:
           test "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = "1"
           bwrap --unshare-all --ro-bind / / /bin/true
 
-      # mcp/acp: tests/test_graph_server_communities.py y tests/test_acp_server.py
-      # importan estos paquetes SIN guarda (a diferencia de fal-client, que sí
-      # se degrada con gracia) — hallazgo 2026-07-22 al verificar el primer push
-      # real en 6 días: este sync solo traía --extra dev, así que CI fallaba en
-      # limpio con ModuleNotFoundError pese a que local siempre los tenía.
+      # mcp/acp/embeddings: varios tests spawnean subprocesos MCP reales
+      # (trunk/memory server) que necesitan fastembed para arrancar — sin él
+      # el subproceso muere al iniciar y el test ve "McpError: Connection
+      # closed" (síntoma indirecto, no un ModuleNotFoundError directo).
+      # computer-use NO hace falta aquí: sus tests están excluidos por marker
+      # (-m "not computer_use") más abajo. Hallazgo 2026-07-22 al verificar
+      # el primer push real en 6 días: este sync solo traía --extra dev.
       - name: Sync exact core and development dependencies
-        run: uv sync --frozen --extra dev --extra mcp --extra acp --python "${{ matrix.python-version }}"
+        run: uv sync --frozen --extra dev --extra mcp --extra acp --extra embeddings --python "${{ matrix.python-version }}"
 
       - name: Pytest core (computer-use excluded explicitly)
         env:
@@ -124,7 +126,7 @@ jobs:
       # BORRARÍA de nuevo antes de mypy, mismo error que ya se cometió en local.
       - name: Sync mypy-only extras (lazy-imported deps need real types)
         if: matrix.python-version == '3.12'
-        run: uv sync --frozen --extra dev --extra mcp --extra acp --extra media-gen --python "3.12"
+        run: uv sync --frozen --extra dev --extra mcp --extra acp --extra embeddings --extra media-gen --python "3.12"
 
       - name: mypy strict
         if: matrix.python-version == '3.12'
