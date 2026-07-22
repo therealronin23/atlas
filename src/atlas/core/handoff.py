@@ -45,6 +45,8 @@ _MD_FILENAMES = (
     "02_INVARIANTES.md",
     "03_MEMORIA_CLAVE.md",
     "04_PLAN.md",
+    "05_ECOSISTEMA.md",
+    "06_PRIMEROS_10_MINUTOS.md",
 )
 
 # Ficheros del REPO de los que se proyecta el pack (03_MEMORIA_CLAVE viene del
@@ -54,7 +56,10 @@ REPO_SOURCES: tuple[str, ...] = (
     "WORK_LEDGER.md",
     "docs/design/actor_roles.md",
     "docs/design/atlas_master_plan.md",
+    "docs/design/atlas_ecosystem_map.md",
 )
+
+_ECOSYSTEM_MAP_PATH = "docs/design/atlas_ecosystem_map.md"
 
 
 def source_hashes(repo_root: Path) -> dict[str, str]:
@@ -164,6 +169,94 @@ def plan_body(repo_root: Path) -> str:
     return text if text is not None else _fuente_no_disponible("docs/design/atlas_master_plan.md")
 
 
+def _parse_ecosystem_table_rows(text: str) -> list[tuple[str, str]]:
+    """`(item, state)` por cada fila de datos de la tabla bajo
+    `## Canonical Map` en `atlas_ecosystem_map.md` — salta cabecera y fila
+    separadora (`--- | --- | ...`). No interpreta contenido, solo lo cuenta:
+    la sección B+C §5 (`spec-B+C`) pide un resumen determinista, nunca una
+    redacción LLM del mapa."""
+    lines = text.splitlines()
+    try:
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == "## Canonical Map")
+    except StopIteration:
+        return []
+    rows: list[tuple[str, str]] = []
+    seen_header = False
+    for line in lines[start + 1:]:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            break
+        if not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if not seen_header:
+            seen_header = True
+            continue
+        if all(set(c) <= {"-"} for c in cells if c):
+            continue
+        if len(cells) >= 3 and cells[0]:
+            rows.append((cells[0], cells[2]))
+    return rows
+
+
+def ecosistema_body(repo_root: Path) -> str:
+    """Cuerpo de `05_ECOSISTEMA.md` (spec B+C §5): resumen determinista de
+    `docs/design/atlas_ecosystem_map.md` — conteo por estado + lista de
+    ítems `PENDIENTE` (los más accionables para un driver nuevo). Proyección
+    mecánica de una tabla ya existente, no una taxonomía nueva ni redacción
+    LLM."""
+    text = _read_or_none(repo_root / _ECOSYSTEM_MAP_PATH)
+    if text is None:
+        return _fuente_no_disponible(_ECOSYSTEM_MAP_PATH)
+    rows = _parse_ecosystem_table_rows(text)
+    if not rows:
+        return _fuente_no_disponible(f"{_ECOSYSTEM_MAP_PATH} (sin tabla '## Canonical Map')")
+
+    counts: dict[str, int] = {}
+    pendientes: list[str] = []
+    for item, state in rows:
+        counts[state] = counts.get(state, 0) + 1
+        if state == "PENDIENTE":
+            pendientes.append(item)
+
+    lines = ["# Mapa del ecosistema — resumen", "", "## Conteo por estado", ""]
+    lines += [f"- {state}: {count}" for state, count in sorted(counts.items(), key=lambda kv: -kv[1])]
+    lines += ["", "## Ítems PENDIENTE (más accionables para un driver nuevo)", ""]
+    lines += [f"- {item}" for item in pendientes] if pendientes else ["- (ninguno)"]
+    lines += ["", f"Fuente completa: `{_ECOSYSTEM_MAP_PATH}`."]
+    return "\n".join(lines)
+
+
+def primeros_10_minutos_body() -> str:
+    """Cuerpo de `06_PRIMEROS_10_MINUTOS.md` (spec B+C §4): secuencia EXACTA
+    de arranque en frío para un driver sin memoria de sesiones previas.
+    Estático y determinista — no lee ningún fichero; correrla de verdad
+    sigue siendo elección del driver, nunca automática."""
+    return (
+        "# Primeros 10 minutos — arranque en frío\n"
+        "\n"
+        "Secuencia mínima para orientarse sobre Atlas antes de tocar nada:\n"
+        "\n"
+        "1. Leer `AGENTS.md` completo (invariantes duros, no un resumen —\n"
+        "   ver también `02_INVARIANTES.md` de este mismo pack).\n"
+        "2. Leer `00_ESTADO.md` de este pack (bloque `## WHERE` más reciente\n"
+        "   de `WORK_LEDGER.md`) — estado vivo, no histórico.\n"
+        "3. Correr `atlas reality --json` — nunca asumir estado sin evidencia\n"
+        "   fresca (daemon vivo, grafo, proveedores, tests).\n"
+        "4. Ejecutar UNA ruta dorada de demo sobre un repo fixture (nunca el\n"
+        "   repo real la primera vez): `atlas golden-route request '<petición\n"
+        "   de texto libre>'` -> `atlas update validate <id>` -> `approve` ->\n"
+        "   `apply` — aprender la ceremonia completa (recibo en Merkle) antes\n"
+        "   de proponer nada real.\n"
+        "5. Solo entonces: proponer el primer cambio real, siempre por la ruta\n"
+        "   dorada/`atlas update`, nunca editando a mano lo que este pack ya\n"
+        "   genera (INDEX.yaml, docs/handoff/GENERATED/, etc.).\n"
+        "\n"
+        "Un fallo en cualquier paso es SEÑAL, no un obstáculo a saltar: F2.6\n"
+        "(rúbrica de sucesión) existe exactamente para capturarlo.\n"
+    )
+
+
 def _description_of(text: str) -> str:
     """Primera línea del texto migrado, sin el marcador
     `[migrado de memoria-harness <fecha>] ` (formato fijo de Task 1)."""
@@ -207,7 +300,7 @@ def generate_handoff(
 ) -> dict[str, str]:
     """Genera el pack de sucesión en `out_dir` desde el sustrato vigente.
 
-    Escribe 6 ficheros (los 5 `.md` con cabecera GENERADO + `MANIFEST.json`)
+    Escribe 8 ficheros (los 7 `.md` con cabecera GENERADO + `MANIFEST.json`)
     y devuelve `{nombre_fichero_md: sha256_del_cuerpo}` — el mismo mapa que
     queda en `MANIFEST.json["files"]`."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -219,6 +312,8 @@ def generate_handoff(
         "02_INVARIANTES.md": invariantes_body(repo_root),
         "03_MEMORIA_CLAVE.md": memoria_clave_body(index),
         "04_PLAN.md": plan_body(repo_root),
+        "05_ECOSISTEMA.md": ecosistema_body(repo_root),
+        "06_PRIMEROS_10_MINUTOS.md": primeros_10_minutos_body(),
     }
 
     files_sha: dict[str, str] = {}

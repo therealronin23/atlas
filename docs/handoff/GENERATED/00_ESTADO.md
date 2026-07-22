@@ -1,33 +1,31 @@
-<!-- GENERADO por atlas handoff 2026-07-22T12:12:37.171784+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-22T16:03:33.985559+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
-- **ATLAS PRIME Cycle 10 — recuperado y cerrado el worktree abandonado
-  `feat/atlas-engine-program` (2026-07-22 14:15)** — investigado a petición
-  del operador tras el hallazgo de Cycle 9 (worktree con ~2 días de trabajo
-  sin commitear). Diagnóstico: rama 1 commit por delante de `main`
-  (`e57744aa`) + WIP real de la fase A2 (PluginManifest declarativo +
-  admisión staged, ADR-072/073), capturada a mitad de un ciclo TDD — 59/60
-  tests, el único rojo (`test_trial_gate_does_not_promote_unstaged_local_
-  third_party_mcp`) documentaba exactamente el invariante que el propio WIP
-  añadía a `MEMORY.md` (`staged-artifact-is-not-an-argv`) pero el código aún
-  no lo aplicaba en `_trial_mcp_install()`: un módulo de terceros con argv
-  "limpio" (p.ej. `python -m third_party_mcp`, no dispara
-  `requires_network_bootstrap` por no ser npx/uvx) pasaba el trial sin
-  verificación real de spawn. Fix: `is_atlas_native_module(cmd)` distingue
-  código propio (confiable sin spawn) de terceros (exige staging). 60/60 en
-  el worktree, cerrado con commit propio en la rama (`9384cea3` en ese
-  checkout). Sin colisión con nada de hoy (verificado: `main` no tocó
-  ninguno de estos ficheros en toda la sesión). Traído a `main` limpio (11
-  ficheros del feature — `plugin_admission.py`, `plugin_manifest.py`,
-  `supply_chain.py`/`_models.py`, `static_content.py`, ADR-072/073, 2 schemas
-  nuevos, tests) sin tocar `WORK_LEDGER.md`/`MEMORY.md` de la rama (ambos
-  desactualizados frente a hoy — reescritos aquí en su lugar). **Suite
-  completa en `main` tras el merge: 3684 passed, 0 failed.** mypy --strict
-  global limpio salvo `trunk_capabilities.py` (6 errores preexistentes,
-  confirmados sin relación vía `git stash`, no tocados).
-  **Estado nuevo declarado:** Supply-chain admission scan (A1, PENDIENTE) +
-  Declarative PluginManifest v1 (A2, PENDIENTE) en
-  `docs/design/atlas_ecosystem_map.md`. **Próxima acción:** A3 (materializador
-  de procedencia inmutable + receipt Merkle/HITL + activador reversible,
-  ADR-073) — o T0.5b paso 2 / las 4 decisiones toasty.
+- **MAXIMUS Cycle 8 — conector google-workspace reconfigurado: secreto fuera
+  de argv (2026-07-22 20:00)** — corrección de un hallazgo del propio audit
+  de hoy: la memoria de PRIME Cycle 2 decía "OAuth rotado", pero verificado
+  en vivo (`ps aux | grep GOCSPX`) el secreto VIEJO seguía embebido en el
+  `--mcp-config` de 2 procesos Claude Code corriendo — solo se había
+  completado el paso 2 del runbook (guardar el secreto nuevo a salvo en
+  `~/.config/atlas/google-oauth.env`, client `228819788474-...`), nunca el
+  paso 3 (reconfigurar el conector). El operador confirmó haber rotado el
+  client ID en Google Cloud Console (paso 1, credencial suya) y pidió que el
+  paso 3 (edición de config, no manejo de credenciales) lo hiciera yo.
+  Localizado `~/.claude.json` (config MCP de Claude Code, fuera del repo,
+  fichero de texto plano — no algo oculto en UI de Electron como se
+  documentó en 2026-07-17) → proyecto `atlas-core` → `mcpServers.
+  google-workspace`. Editado: `command`/`args` apuntan ahora a
+  `scripts/google_workspace_mcp_wrapper.sh --tool-tier core`, `env: {}` —
+  el wrapper inyecta el secreto vía `safe_dotenv.py` (nunca en argv).
+  Verificado antes de tocar la config viva: wrapper probado en aislado con
+  los args reales (arranca limpio, sin ERROR de precondición). Verificado
+  después: JSON sigue válido, cero coincidencias de `GOCSPX`/
+  `344051770277` en todo el fichero. Efectivo desde el próximo arranque del
+  conector (las 2 sesiones ya vivas conservan el argv viejo hasta
+  reiniciarse — reiniciarlas no es mío, mataría sesiones activas).
+  **Pendiente, explícitamente del operador**: confirmar que el secreto
+  expuesto quedó REVOCADO en Google Cloud Console (no solo sustituido en el
+  fichero local) — sin eso, el secreto que ya estuvo en claro en argv sigue
+  siendo válido aunque ya no se use. Runbook actualizado con el estado real.
+  Memoria de PRIME Cycle 2 corregida (decía "resuelto", no lo estaba).

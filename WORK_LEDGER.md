@@ -8,6 +8,51 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **MAXIMUS Cycle 9 — auditoría spec B+C secciones 2-6 + 2 deliverables
+  reales cerrados (2026-07-22 20:30)** — a petición del operador
+  ("auditoría de si se puede mejorar... una vez terminado hazlo"). Auditoría
+  sección por sección de `docs/superpowers/specs/2026-07-15-succession-
+  ecosystem-design.md` contra el estado REAL del repo (no solo releída):
+  **§2** (`atlas handoff`) listaba 6 deliverables (a-f); solo (a)-(d)
+  existían — (e) "mapa del ecosistema resumido" y (f) "primeros 10 minutos"
+  nunca se construyeron, pese a que el pack se genera y usa activamente
+  (regenerado 3 veces hoy mismo en esta sesión). **§3** (migración de
+  memoria) verificada EN VIVO: 60 registros `harness:*`/`doctrine:*` reales
+  en `~/atlas-mcp/memory.db`, criterio de partición exacto al spec (`user`
+  excluido). **§4** (F2.6): probado 2 veces (PRIME Cycles 6/8) pero nunca
+  como gate automático recurrente — sigue siendo invocación manual; su
+  "primeros 10 minutos" es literalmente §2(f). **§5** (mapa del
+  ecosistema): existe desde 2026-07-07 (ANTES que esta spec) con una
+  taxonomía DISTINTA (Core/Capability/Adapter/... + SELLADO/ACTIVO/
+  PENDIENTE/PARK/VAPOR/MURO) a la propuesta aquí (raíces/tronco/ramas/
+  hojas/savia) — nunca reconciliadas; la real es más granular, no vale la
+  pena migrar. El "radar de deriva" (pieza en disco sin fila en el mapa)
+  que pide NO existe como detector — gap real, señalado, no perseguido.
+  **§6**: verificado tal cual, fail-cerrado real.
+  **Implementado** (los 2 deliverables reales, TDD): `ecosistema_body()` —
+  parser determinista de la tabla `## Canonical Map` (conteo por estado +
+  lista de ítems `PENDIENTE`, los más accionables para un driver nuevo;
+  NUNCA redacción LLM, mismo principio "proyección no redacción" del resto
+  de `atlas handoff`) → `05_ECOSISTEMA.md`. `primeros_10_minutos_body()` —
+  secuencia estática y determinista (AGENTS.md → `atlas reality --json` →
+  ruta dorada de demo con recibo → primer cambio real) → `06_PRIMEROS_10_
+  MINUTOS.md`. `docs/design/atlas_ecosystem_map.md` añadido a
+  `REPO_SOURCES` (contrato de frescura del manifest ahora también lo
+  cubre). De paso, corregidas las 2 filas que el propio hallazgo de hoy
+  dejó obsoletas: Supply-chain admission scan (A1) y Declarative
+  PluginManifest v1 (A2) seguían marcadas `PENDIENTE` con "A3: ..." como
+  next-action, cuando A3 completo (Cycles 2-4 de hoy) ya las cerró —
+  fusionadas en una fila `ACTIVO` con los 3 módulos reales. 8 tests nuevos
+  (parser de tabla + ambos bodies + integración con `generate_handoff`),
+  34 verdes en `test_handoff.py`, suite completa 3773 passed/0 failed
+  (+8 vs. el conteo de Cycle 7), mypy canónico 286 ficheros 0 errores.
+  Pack real regenerado 2 veces (tras el código y tras la corrección del
+  mapa) — `05_ECOSISTEMA.md` real muestra 8 PENDIENTE reales de un
+  total de 37 filas, útil de verdad para un driver nuevo. Spec B+C
+  actualizada con el resumen de esta auditoría y los gaps señalados,
+  no perseguidos: F2.6 como gate automático, detector de deriva
+  ecosystem-map↔disco, reconciliar/abandonar formalmente la taxonomía
+  árbol de la spec.
 - **MAXIMUS Cycle 8 — conector google-workspace reconfigurado: secreto fuera
   de argv (2026-07-22 20:00)** — corrección de un hallazgo del propio audit
   de hoy: la memoria de PRIME Cycle 2 decía "OAuth rotado", pero verificado

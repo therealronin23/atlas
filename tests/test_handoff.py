@@ -74,6 +74,21 @@ def _make_repo(tmp_path: Path, name: str = "repo") -> Path:
         "# Plan Maestro\n\ncontenido del plan de prueba.\n",
         encoding="utf-8",
     )
+    (repo / "docs" / "design" / "atlas_ecosystem_map.md").write_text(
+        "# Atlas Ecosystem Map\n"
+        "\n"
+        "## Canonical Map\n"
+        "\n"
+        "| Item | Taxonomy | State |\n"
+        "| --- | --- | --- |\n"
+        "| Cosa A | Core | ACTIVO |\n"
+        "| Cosa B | Governance | PENDIENTE |\n"
+        "| Cosa C | Capability | PENDIENTE |\n"
+        "\n"
+        "## Otra sección\n"
+        "no debe colarse en el conteo.\n",
+        encoding="utf-8",
+    )
     _git(repo, "init", "-q")
     _git(repo, "add", "-A")
     _git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init")
@@ -96,6 +111,8 @@ _MD_NAMES = (
     "02_INVARIANTES.md",
     "03_MEMORIA_CLAVE.md",
     "04_PLAN.md",
+    "05_ECOSISTEMA.md",
+    "06_PRIMEROS_10_MINUTOS.md",
 )
 
 
@@ -123,7 +140,7 @@ def test_ids_by_prefix_no_match_returns_empty_list(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_generate_handoff_writes_six_files(tmp_path: Path) -> None:
+def test_generate_handoff_writes_all_files(tmp_path: Path) -> None:
     repo = _make_repo(tmp_path)
     idx = _make_index(tmp_path)
     out_dir = tmp_path / "out"
@@ -230,6 +247,9 @@ def test_generate_handoff_missing_sources_fail_closed(tmp_path: Path) -> None:
     assert "FUENTE NO DISPONIBLE" in (out_dir / "02_INVARIANTES.md").read_text(encoding="utf-8")
     assert "FUENTE NO DISPONIBLE: sustrato" in (out_dir / "03_MEMORIA_CLAVE.md").read_text(encoding="utf-8")
     assert "FUENTE NO DISPONIBLE" in (out_dir / "04_PLAN.md").read_text(encoding="utf-8")
+    assert "FUENTE NO DISPONIBLE" in (out_dir / "05_ECOSISTEMA.md").read_text(encoding="utf-8")
+    # 06_PRIMEROS_10_MINUTOS.md es estático (no lee fuentes) — nunca falla cerrado.
+    assert "FUENTE NO DISPONIBLE" not in (out_dir / "06_PRIMEROS_10_MINUTOS.md").read_text(encoding="utf-8")
 
 
 def test_generate_handoff_ledger_without_where_section_fails_closed(tmp_path: Path) -> None:
@@ -576,6 +596,126 @@ def test_manifest_records_source_hashes_and_hook_uses_them(tmp_path: Path) -> No
         assert f'"{source}"' not in hook, (
             f"el hook hardcodea {source}: debe leer las fuentes del MANIFEST"
         )
+
+
+# ---------------------------------------------------------------------------
+# 05_ECOSISTEMA.md / 06_PRIMEROS_10_MINUTOS.md — spec B+C §5/§4 (auditoría
+# MAXIMUS Cycle 9: la spec listaba 6 deliverables para `atlas handoff`
+# (a-f); solo (a)-(d) existían. Estos son (e) y (f).
+# ---------------------------------------------------------------------------
+
+
+_ECOSYSTEM_FIXTURE = (
+    "# Atlas Ecosystem Map\n"
+    "\n"
+    "## Canonical Map\n"
+    "\n"
+    "| Item | Taxonomy | State |\n"
+    "| --- | --- | --- |\n"
+    "| Cosa A | Core | ACTIVO |\n"
+    "| Cosa B | Governance | PENDIENTE |\n"
+    "| Cosa C | Capability | PENDIENTE |\n"
+    "| Cosa D | Core | SELLADO |\n"
+    "\n"
+    "## Otra sección\n"
+    "| no | debe | colarse |\n"
+    "| --- | --- | --- |\n"
+    "| X | Y | Z |\n"
+)
+
+
+def test_parse_ecosystem_table_rows_skips_header_separator_and_other_sections() -> None:
+    from atlas.core.handoff import _parse_ecosystem_table_rows
+
+    rows = _parse_ecosystem_table_rows(_ECOSYSTEM_FIXTURE)
+
+    assert rows == [
+        ("Cosa A", "ACTIVO"),
+        ("Cosa B", "PENDIENTE"),
+        ("Cosa C", "PENDIENTE"),
+        ("Cosa D", "SELLADO"),
+    ]
+
+
+def test_parse_ecosystem_table_rows_no_canonical_map_returns_empty() -> None:
+    from atlas.core.handoff import _parse_ecosystem_table_rows
+
+    assert _parse_ecosystem_table_rows("# Sin tabla aquí\n") == []
+
+
+def test_ecosistema_body_counts_by_state_and_lists_pendiente(tmp_path: Path) -> None:
+    from atlas.core.handoff import ecosistema_body
+
+    (tmp_path / "docs" / "design").mkdir(parents=True)
+    (tmp_path / "docs" / "design" / "atlas_ecosystem_map.md").write_text(
+        _ECOSYSTEM_FIXTURE, encoding="utf-8"
+    )
+
+    body = ecosistema_body(tmp_path)
+
+    assert "ACTIVO: 1" in body
+    assert "PENDIENTE: 2" in body
+    assert "SELLADO: 1" in body
+    assert "Cosa B" in body
+    assert "Cosa C" in body
+    assert "Cosa A" not in body.split("PENDIENTE (más accionables")[1]  # solo PENDIENTE en esa lista
+
+
+def test_ecosistema_body_missing_file_fails_closed(tmp_path: Path) -> None:
+    from atlas.core.handoff import ecosistema_body
+
+    assert "FUENTE NO DISPONIBLE" in ecosistema_body(tmp_path)
+
+
+def test_ecosistema_body_no_table_fails_closed(tmp_path: Path) -> None:
+    from atlas.core.handoff import ecosistema_body
+
+    (tmp_path / "docs" / "design").mkdir(parents=True)
+    (tmp_path / "docs" / "design" / "atlas_ecosystem_map.md").write_text(
+        "# Sin la sección esperada\n", encoding="utf-8"
+    )
+
+    assert "FUENTE NO DISPONIBLE" in ecosistema_body(tmp_path)
+
+
+def test_ecosistema_body_no_pendiente_items_says_so(tmp_path: Path) -> None:
+    from atlas.core.handoff import ecosistema_body
+
+    (tmp_path / "docs" / "design").mkdir(parents=True)
+    (tmp_path / "docs" / "design" / "atlas_ecosystem_map.md").write_text(
+        "## Canonical Map\n\n| Item | Taxonomy | State |\n| --- | --- | --- |\n"
+        "| Cosa A | Core | ACTIVO |\n",
+        encoding="utf-8",
+    )
+
+    body = ecosistema_body(tmp_path)
+
+    assert "(ninguno)" in body
+
+
+def test_primeros_10_minutos_body_has_concrete_bootstrap_commands() -> None:
+    from atlas.core.handoff import primeros_10_minutos_body
+
+    body = primeros_10_minutos_body()
+
+    assert "atlas reality --json" in body
+    assert "AGENTS.md" in body
+    assert "golden-route request" in body
+    assert "atlas update validate" in body
+    assert "F2.6" in body
+
+
+def test_generate_handoff_ecosistema_reflects_real_fixture_table(tmp_path: Path) -> None:
+    repo = _make_repo(tmp_path)
+    idx = _make_index(tmp_path)
+    out_dir = tmp_path / "out"
+
+    generate_handoff(repo, idx, out_dir)
+
+    text = (out_dir / "05_ECOSISTEMA.md").read_text(encoding="utf-8")
+    assert "PENDIENTE: 2" in text
+    assert "Cosa B" in text
+    assert "Cosa C" in text
 
 
 def test_source_hashes_marks_absent_source_as_missing(tmp_path: Path) -> None:

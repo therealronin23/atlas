@@ -4,6 +4,37 @@ Estado: **borrador aprobado en arquitectura** (sección 1 aprobada en chat; secc
 2-6 presentadas vía este doc para ahorrar tokens de sesión — pendientes de revisión
 del operador). Enfoque elegido por el operador: **B + C** ("b y c").
 
+**Auditoría MAXIMUS Cycle 9 (2026-07-22)** — secciones 2-6 contrastadas contra el
+estado REAL del repo (no solo releídas). Resumen por sección, detalle completo en
+WORK_LEDGER.md:
+- **§2 (`atlas handoff`)**: 4/6 deliverables (a-d) ya existían; (e) mapa del
+  ecosistema resumido y (f) primeros 10 minutos NO existían — implementados hoy
+  (`05_ECOSISTEMA.md`/`06_PRIMEROS_10_MINUTOS.md`, TDD, 8 tests nuevos). Cabecera
+  `GENERADO...NO EDITAR`, determinismo y fail-cerrado: verificados, tal cual.
+- **§3 (migración de memoria)**: HECHA y verificada en vivo — 60 registros
+  `harness:*`/`doctrine:*` reales en el sustrato (`~/atlas-mcp/memory.db`),
+  criterio de partición (`user` excluido) exactamente como se especificó.
+- **§4 (onboarding + F2.6)**: F2.6 como rúbrica PROBADA dos veces (PRIME Cycles 6
+  y 8) pero NO como `atlas onboard` ni gate automático recurrente — sigue
+  siendo invocación manual. El "primeros 10 minutos" de esta sección es
+  literalmente lo que §2(f) pedía; implementado ahí, no duplicado aquí.
+- **§5 (mapa del ecosistema)**: existe (`atlas_ecosystem_map.md`, desde
+  2026-07-07, ANTES de esta spec) pero con una taxonomía DISTINTA a la
+  propuesta aquí (raíces/tronco/ramas/hojas/savia) — usa categorías
+  Core/Capability/Adapter/MCP Surface/etc. + estados SELLADO/ACTIVO/PENDIENTE/
+  PARK/VAPOR/MURO. Nunca se reconciliaron; la implementación real es más
+  granular que la propuesta y no vale la pena migrar. Dos filas corregidas hoy
+  (A1/A2 marcadas PENDIENTE cuando A3 ya cerró el camino completo). El "radar
+  de deriva" (pieza en disco sin fila en el mapa) que esta sección pide **NO
+  existe** como detector dedicado — `sanitation_audit.py` no lo cubre.
+- **§6 (testing/errores)**: verificado tal cual — `FUENTE NO DISPONIBLE`
+  fail-cerrado real, TDD real en `atlas handoff`.
+
+**No perseguido esta vuelta** (fuera del bounded cycle, señalado para decisión
+del operador): wirear F2.6 como gate automático tras cambios grandes; detector
+de deriva ecosystem-map↔disco; reconciliar o abandonar formalmente la taxonomía
+árbol de esta spec en favor de la ya construida.
+
 ## Contexto y decisiones previas
 
 - Miedo nº1 del operador: sucesión de modelo — cuando Fable no esté, ningún driver
