@@ -10,6 +10,7 @@ from atlas.missions.golden_route import (
     UnsupportedRequestError,
     plan_from_request,
     unified_patch_for_append,
+    unified_patch_for_rename,
 )
 
 
@@ -51,6 +52,50 @@ def test_plan_rejects_paths_outside_docs(path: str) -> None:
         plan_from_request(f"añade una línea al final de {path}")
 
 
+# --------------------------------------------------------- rename (T1.1 v2)
+
+def test_plan_parses_rename_request() -> None:
+    plan = plan_from_request("renombra old_name a new_name en src/atlas/demo.py")
+    assert plan["action"] == "rename_identifier"
+    assert plan["path"] == "src/atlas/demo.py"
+    assert plan["old"] == "old_name"
+    assert plan["new"] == "new_name"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "src/atlas/demo.py",
+        "tests/test_demo.py",
+        "scripts/run.py",
+        "config/app.json",
+        "docs/demo.md",
+    ],
+)
+def test_plan_rename_accepts_allowed_prefixes(path: str) -> None:
+    plan = plan_from_request(f"renombra a a b en {path}")
+    assert plan["path"] == path
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "vendor/lib.py",       # fuera de todo prefijo permitido
+        "/etc/passwd",         # absoluta
+        "src/../etc/passwd",   # escape por ..
+    ],
+)
+def test_plan_rename_rejects_paths_outside_allowed_prefixes(path: str) -> None:
+    with pytest.raises(UnsupportedRequestError):
+        plan_from_request(f"renombra old a new en {path}")
+
+
+def test_plan_rename_rejects_non_identifier_tokens() -> None:
+    # "X"/"Y" deben ser identificadores válidos, no expresiones arbitrarias
+    with pytest.raises(UnsupportedRequestError):
+        plan_from_request("renombra 1viejo a nuevo en src/atlas/demo.py")
+
+
 # -------------------------------------------------------------------- patch
 
 def test_unified_patch_appends_line() -> None:
@@ -77,3 +122,29 @@ def test_unified_patch_handles_empty_file() -> None:
     assert "@@ -0,0 +1 @@" in patch
     assert "+primera" in patch
     assert "\n-" not in patch
+
+
+def test_unified_patch_for_rename_replaces_whole_word_occurrences() -> None:
+    current = "def old_name():\n    return old_name\n"
+    patch = unified_patch_for_rename("src/atlas/demo.py", current, "old_name", "new_name")
+    assert "--- a/src/atlas/demo.py" in patch
+    assert "+++ b/src/atlas/demo.py" in patch
+    assert "-def old_name():" in patch
+    assert "+def new_name():" in patch
+    assert "-    return old_name" in patch
+    assert "+    return new_name" in patch
+
+
+def test_unified_patch_for_rename_does_not_touch_substrings() -> None:
+    # "old" no debe reescribir "old_name" (whole-word, no substring)
+    current = "old = 1\nold_name = 2\n"
+    patch = unified_patch_for_rename("src/atlas/demo.py", current, "old", "new")
+    assert "-old = 1" in patch and "+new = 1" in patch
+    assert "old_name" not in patch.replace("old_name = 2", "")  # no aparece tocada
+    assert "-old_name" not in patch
+    assert "+new_name" not in patch
+
+
+def test_unified_patch_for_rename_rejects_when_identifier_absent() -> None:
+    with pytest.raises(UnsupportedRequestError, match="no aparece"):
+        unified_patch_for_rename("src/atlas/demo.py", "def foo():\n    pass\n", "bar", "baz")

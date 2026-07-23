@@ -49,6 +49,16 @@ def fixture_repo(tmp_path: Path) -> Path:
         "# Golden Route Demo\n\nLínea base.\n", encoding="utf-8"
     )
     (repo / "docs" / "demo" / "EMPTY.md").write_text("", encoding="utf-8")
+    (repo / "src" / "demo_pkg").mkdir(parents=True)
+    (repo / "src" / "demo_pkg" / "helper.py").write_text(
+        "def old_helper() -> int:\n"
+        "    return 1\n"
+        "\n"
+        "\n"
+        "def caller() -> int:\n"
+        "    return old_helper()\n",
+        encoding="utf-8",
+    )
     _run_git(repo, "init")
     _run_git(repo, "config", "user.email", "test@atlas.local")
     _run_git(repo, "config", "user.name", "atlas-test")
@@ -192,6 +202,76 @@ def test_golden_route_appends_to_empty_doc_end_to_end(
     assert (fixture_repo / "docs" / "demo" / "EMPTY.md").read_text(
         encoding="utf-8"
     ) == "Primera\n"
+
+
+def test_golden_route_renames_identifier_end_to_end(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    """Segundo patrón del vocabulario (T1.1): 'renombra X a Y en <fichero>'
+    produce un cambio de código acotado (no documentation-only), recorriendo
+    la MISMA ceremonia completa: plan→worktree→diff→aprobación→apply→receipt."""
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
+    session = route.request("renombra old_helper a new_helper en src/demo_pkg/helper.py")
+
+    # plan mínimo antes de tocar nada
+    assert session.plan["action"] == "rename_identifier"
+    assert session.plan["path"] == "src/demo_pkg/helper.py"
+    assert session.state == "plan_proposed"
+
+    # worktree aislado, jamás el árbol principal
+    assert session.worktree_path is not None
+    assert not str(session.worktree_path).startswith(str(fixture_repo))
+    main_file = (fixture_repo / "src" / "demo_pkg" / "helper.py").read_text(
+        encoding="utf-8"
+    )
+    assert "old_helper" in main_file  # intacto
+
+    # cambio acotado + validación observable
+    session.execute()
+    assert session.state == "awaiting_human_approval"
+    assert session.diff and "helper.py" in session.diff
+    assert "-def old_helper" in session.diff
+    assert "+def new_helper" in session.diff
+    assert session.validation is not None
+    assert session.validation["pytest_exit"] is not None
+
+    # SIN aprobación no hay apply
+    with pytest.raises(PermissionError):
+        session.apply()
+    assert (fixture_repo / "src" / "demo_pkg" / "helper.py").read_text(
+        encoding="utf-8"
+    ) == main_file
+
+    # aprobación humana registrada → apply
+    session.approve(actor="operator", decision="approve")
+    assert session.state == "approved_pending_apply"
+    result = session.apply()
+
+    # el cambio llegó al árbol principal, con AMBAS ocurrencias renombradas
+    final_file = (fixture_repo / "src" / "demo_pkg" / "helper.py").read_text(
+        encoding="utf-8"
+    )
+    assert "old_helper" not in final_file
+    assert final_file.count("new_helper") == 2  # definición + llamada
+
+    # el MOTOR lo commiteó (no nosotros)
+    log = subprocess.run(
+        ["git", "log", "--oneline"], cwd=fixture_repo,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert len(log.strip().splitlines()) == 2  # base + commit del motor
+
+    # receipt verificable + auditoría Merkle
+    assert result.receipt["verifiable"] is True
+    assert result.audit_ref
+    assert session.state == "applied"
 
 
 def test_golden_route_out_of_order_approve_does_not_mark_decision(

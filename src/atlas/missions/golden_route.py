@@ -13,14 +13,24 @@ Lo que añade es lo que faltaba (export Diseño UI Atlas L45286): la ruta única
 pública, el plan acotado, la ceremonia de aprobación explícita (PermissionError
 sin decisión humana) y el receipt verificable.
 
-v0 es DELIBERADAMENTE acotada: solo cambios documentation-only (append de una
+v0 era DELIBERADAMENTE acotada: solo cambios documentation-only (append de una
 línea a un fichero bajo docs/). Sin LLM: la petición se parsea determinista;
 lo que no entiende se rechaza con honestidad (UnsupportedRequestError), no se
-improvisa. Ampliar el vocabulario de peticiones es trabajo futuro explícito.
+improvisa.
+
+T1.1 (ADR-069, plan maestro) amplía el vocabulario con un SEGUNDO patrón
+determinista de cambio de código acotado: "renombra X a Y en <fichero>"
+(reemplazo léxico whole-word de un identificador dentro de un único fichero,
+bajo los mismos prefijos que ColdUpdateManager ya acepta: src/ tests/
+scripts/ docs/ config/). Sigue sin haber LLM libre decidiendo el plan: sigue
+siendo parseo determinista + rechazo honesto (UnsupportedRequestError) para
+lo que no entra en el vocabulario. Ampliar más el vocabulario sigue siendo
+trabajo futuro.
 """
 
 from __future__ import annotations
 
+import difflib
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -39,6 +49,7 @@ __all__ = [
     "UnsupportedRequestError",
     "plan_from_request",
     "unified_patch_for_append",
+    "unified_patch_for_rename",
 ]
 
 
@@ -58,6 +69,16 @@ _DEFAULT_RE = re.compile(
     r"^añade una línea al final de (?P<path>\S+)$",
     re.IGNORECASE,
 )
+_IDENTIFIER = r"[A-Za-z_][A-Za-z0-9_]*"
+_RENAME_RE = re.compile(
+    rf"^renombra (?P<old>{_IDENTIFIER}) a (?P<new>{_IDENTIFIER}) en (?P<path>\S+)$",
+    re.IGNORECASE,
+)
+
+# Mismos prefijos que ColdUpdateManager.ALLOWED_PREFIXES (y el guard gemelo
+# de codegen_proposer._ALLOWED_PREFIXES): el motor ya sabe aplicar/commitear
+# patches de código ahí — el hueco de T1.1 era solo de vocabulario/parsing.
+_CODE_ALLOWED_PREFIXES = ("src", "tests", "scripts", "docs", "config")
 
 
 def _validate_doc_path(raw: str) -> str:
@@ -70,6 +91,23 @@ def _validate_doc_path(raw: str) -> str:
     if path.parts[:1] != ("docs",):
         raise UnsupportedRequestError(
             f"La ruta dorada v0 es documentation-only (docs/): {raw}"
+        )
+    return str(path)
+
+
+def _validate_code_path(raw: str) -> str:
+    """Patrón 'renombra': cambio de código acotado a UN fichero bajo los
+    mismos prefijos que el motor ya acepta (allowed_paths = ese único
+    fichero — el patch generado nunca toca otra ruta)."""
+    path = PurePosixPath(raw)
+    if path.is_absolute():
+        raise UnsupportedRequestError(f"Ruta absoluta no permitida: {raw}")
+    if ".." in path.parts:
+        raise UnsupportedRequestError(f"Ruta con escape no permitida: {raw}")
+    if path.parts[:1] not in {(prefix,) for prefix in _CODE_ALLOWED_PREFIXES}:
+        raise UnsupportedRequestError(
+            "La ruta dorada solo acepta cambios bajo "
+            f"{_CODE_ALLOWED_PREFIXES}: {raw}"
         )
     return str(path)
 
@@ -93,10 +131,19 @@ def plan_from_request(text: str) -> dict[str, str]:
             "path": _validate_doc_path(match.group("path")),
             "line": f"<!-- ruta dorada: línea añadida el {stamp} -->",
         }
+    match = _RENAME_RE.match(cleaned)
+    if match:
+        return {
+            "action": "rename_identifier",
+            "path": _validate_code_path(match.group("path")),
+            "old": match.group("old"),
+            "new": match.group("new"),
+        }
     raise UnsupportedRequestError(
         "La ruta dorada v0 solo sabe hacer esto: "
-        "'añade una línea al final de docs/<fichero>' o "
-        "'añade la línea \"<contenido>\" al final de docs/<fichero>'. "
+        "'añade una línea al final de docs/<fichero>', "
+        "'añade la línea \"<contenido>\" al final de docs/<fichero>' o "
+        "'renombra <X> a <Y> en <fichero>'. "
         f"Petición recibida: {text!r}"
     )
 
@@ -136,6 +183,27 @@ def unified_patch_for_append(path: str, current: str, line: str) -> str:
         out.append(f"+{context[-1]}")
         out.append(f"+{line}")
     return "\n".join(out) + "\n"
+
+
+def unified_patch_for_rename(path: str, current: str, old: str, new: str) -> str:
+    """Diff unificado (aplicable con `git apply`/`patch -p1`) que renombra un
+    identificador dentro de UN fichero: sustitución léxica whole-word (nunca
+    substring — "old" no toca "old_name"), generada con difflib para
+    soportar el multi-línea sin patch a mano como el de append."""
+    pattern = re.compile(rf"\b{re.escape(old)}\b")
+    updated, count = pattern.subn(new, current)
+    if count == 0:
+        raise UnsupportedRequestError(
+            f"'{old}' no aparece (como identificador completo) en {path}"
+        )
+    diff = difflib.unified_diff(
+        current.splitlines(keepends=True),
+        updated.splitlines(keepends=True),
+        fromfile=f"a/{path}",
+        tofile=f"b/{path}",
+        n=3,
+    )
+    return "".join(diff)
 
 
 @dataclass
@@ -319,12 +387,17 @@ class GoldenRoute:
         if not target.is_file():
             raise UnsupportedRequestError(
                 f"No existe o no es un fichero regular: {plan['path']} "
-                "(la ruta v0 solo añade líneas a docs existentes)"
+                "(la ruta dorada solo modifica ficheros ya existentes)"
             )
         current = target.read_text(encoding="utf-8")
-        patch_text = unified_patch_for_append(
-            plan["path"], current, plan["line"]
-        )
+        if plan["action"] == "rename_identifier":
+            patch_text = unified_patch_for_rename(
+                plan["path"], current, plan["old"], plan["new"]
+            )
+        else:
+            patch_text = unified_patch_for_append(
+                plan["path"], current, plan["line"]
+            )
         with NamedTemporaryFile(
             "w", suffix=".patch", delete=False, encoding="utf-8"
         ) as handle:
