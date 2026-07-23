@@ -726,7 +726,18 @@ items:
       intacto); test con vault sintético en tmp que demuestre que las notas entran en la misma BD del
       tick; respetar el patrón copia+swap ya existente.
     priority: 3
-    status: pending
+    status: done  # ya cerrado por commit 06055b1 (2026-07-16, "feat: close graph and
+      # trunk wiring gaps"); reverificado 2026-07-23 (sesión maratón) al recibir este
+      # item como tarea de autobuild — el fichero YA pasaba vault_root (comentario
+      # "Vault-wiring (F3.2, 2026-07-16)" en maintenance_facade.py). Nota: el env real
+      # implementado es ATLAS_OBSIDIAN_VAULT (no ATLAS_PROJECT_VAULT como decía este
+      # acceptance) y el default es <repo>/graphify-vault, no "deshabilitado sin var" —
+      # build_project_graph ya ignora un vault_root inexistente, así que sin vault en
+      # disco el comportamiento previo queda intacto igualmente. Ver
+      # tests/test_project_graph_vault_wiring.py (3 tests: default, override, e2e con
+      # vault sintético + Kuzu real) — los 8 tests relevantes (incluidos los -k
+      # ProjectGraph de test_self_improvement_wiring.py) y mypy sobre el fichero pasan
+      # en verde hoy.
     test_cmd: ["python3", "-m", "pytest", "tests/test_self_improvement_wiring.py", "-k", "ProjectGraph", "-q"]
 
   # --- Despiece f2-6b (2026-07-10): investigación abierta → 3 pasos mecánicos ---
