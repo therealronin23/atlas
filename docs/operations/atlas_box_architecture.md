@@ -100,3 +100,34 @@ These are architecture profiles to test, not procurement instructions.
 4. Decide whether the bottleneck is latency, throughput, VRAM, RAM, thermal or
    operator setup complexity.
 
+### Resultado real (2026-07-23, `scripts/benchmark_workload.py --fast`)
+
+Los 4 pasos de arriba están hechos con hardware real (este HP Omen, GTX 960M,
+Ollama 0.23.2 local — cero red de pago, cero infraestructura nueva). JSON
+completo en `docs/knowledge/benchmarks/workload_benchmark_2026-07-23.json`.
+
+- **Cuello de botella real: throughput de CPU, no VRAM.** `ollama ps` confirma
+  100% CPU en los dos workloads de LLM; la VRAM se mantuvo plana en ~104MiB
+  antes y después (la GPU está prácticamente idle). Es deliberado, no un bug:
+  `CUDA_VISIBLE_DEVICES` se dejó vacío a propósito porque esta GTX 960M
+  (Maxwell) no la soporta el CUDA que trae Ollama (ver memoria
+  `ollama-fix-2026-07-09`).
+- **El throughput escala mal con el tamaño del modelo**: 49.9 tok/s en
+  `qwen2.5:0.5b` vs 3.4 tok/s en `qwen2.5-coder:7b` (Q4_K_M) — ~14.6x más
+  lento. Un modelo ≥7B es más lento que lectura humana cómoda (~15-20 tok/s);
+  para respuestas largas la latencia percibida es de decenas de segundos.
+- **Térmico y RAM no fueron el límite hoy** (59°C→64°C, umbral DEGRADED=70°C;
+  RAM libre se mantuvo por encima del umbral DEGRADED todo el benchmark), pero
+  el margen térmico medido fue de solo 6°C — no es un colchón grande para
+  cargas sostenidas, a diferencia de una corrida corta como esta.
+  `memory_distillation` (CPU puro, sin LLM) y `dashboard` (FastAPI TestClient,
+  sin red real) corrieron limpio y rápido, sin fricción.
+- **`browser_tasks` no se pudo medir**: `playwright` no está instalado en este
+  venv — limitación real, documentada por el propio script (`skipped: true`,
+  no un fallo silencioso). `voice` se documenta siempre como no ejecutado, por
+  diseño del harness (dependencias reales no verificadas en este host).
+- **Conclusión para el perfil de compra (T6, decisión N3 del operador)**: si
+  el objetivo es correr modelos ≥7B con latencia razonable, el cuello real a
+  resolver es cómputo (GPU con CUDA soportado o ruta de proveedor externo),
+  no RAM ni VRAM total — información que faltaba antes de este benchmark.
+

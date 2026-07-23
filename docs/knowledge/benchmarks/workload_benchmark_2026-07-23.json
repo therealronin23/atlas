@@ -1,0 +1,298 @@
+{
+  "meta": {
+    "generated_at": "2026-07-23T10:54:55.586410+00:00",
+    "script_version": "1.0",
+    "hostname": "ronin-OMEN-by-HP-Laptop",
+    "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "python_version": "3.12.3",
+    "cpu_model": "Intel(R) Core(TM) i7-6700HQ CPU @ 2.60GHz",
+    "cpu_count": 8,
+    "ram_total_mb": 15877,
+    "ollama_version": "0.23.2",
+    "gpu_name": "NVIDIA GeForce GTX 960M"
+  },
+  "system": {
+    "gpu_name": "NVIDIA GeForce GTX 960M",
+    "before": {
+      "temperature_celsius": 59.0,
+      "ram_free_mb": 3083,
+      "operational_mode": "normal",
+      "thermal_policy": "NORMAL: 59.0C / 3083MB RAM libre. Sin restricciones.",
+      "gpu_name": "NVIDIA GeForce GTX 960M",
+      "gpu_vram_used_mb": 104.0,
+      "gpu_vram_total_mb": 4096.0,
+      "gpu_temperature_celsius": 54.0,
+      "gpu_util_pct": 11.0,
+      "sampled_at": "2026-07-23T10:54:55.712798+00:00"
+    },
+    "after": {
+      "temperature_celsius": 64.0,
+      "ram_free_mb": 3052,
+      "operational_mode": "normal",
+      "thermal_policy": "NORMAL: 64.0C / 3052MB RAM libre. Sin restricciones.",
+      "gpu_name": "NVIDIA GeForce GTX 960M",
+      "gpu_vram_used_mb": 104.0,
+      "gpu_vram_total_mb": 4096.0,
+      "gpu_temperature_celsius": 58.0,
+      "gpu_util_pct": 11.0,
+      "sampled_at": "2026-07-23T10:55:33.932333+00:00"
+    }
+  },
+  "workloads": {
+    "classification": {
+      "model": "qwen2.5:0.5b",
+      "prompts": 3,
+      "repeats_per_prompt": 1,
+      "calls": [
+        {
+          "wall_clock_s": 0.7923,
+          "total_duration_s": 0.785,
+          "load_duration_s": 0.2175,
+          "prompt_eval_count": 82,
+          "eval_count": 3,
+          "tokens_per_sec": 44.923,
+          "response_snippet": "Agenda"
+        },
+        {
+          "wall_clock_s": 0.4536,
+          "total_duration_s": 0.4493,
+          "load_duration_s": 0.2002,
+          "prompt_eval_count": 81,
+          "eval_count": 2,
+          "tokens_per_sec": 58.136,
+          "response_snippet": "bug"
+        },
+        {
+          "wall_clock_s": 0.4879,
+          "total_duration_s": 0.482,
+          "load_duration_s": 0.1907,
+          "prompt_eval_count": 82,
+          "eval_count": 3,
+          "tokens_per_sec": 46.554,
+          "response_snippet": "trivia"
+        }
+      ],
+      "latency_s": {
+        "n": 3,
+        "mean": 0.5779,
+        "median": 0.4879,
+        "min": 0.4536,
+        "max": 0.7923,
+        "p95": 0.7923,
+        "stdev": 0.1522
+      },
+      "tokens_per_sec": {
+        "n": 3,
+        "mean": 49.871,
+        "median": 46.554,
+        "min": 44.923,
+        "max": 58.136,
+        "p95": 58.136,
+        "stdev": 5.882
+      },
+      "ollama_ps_after": "NAME                ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \nqwen2.5:0.5b        a8b0c5157701    442 MB    100% CPU     4096       4 minutes from now    \nqwen2.5-coder:7b    dae161e27b0e    4.6 GB    100% CPU     4096       3 minutes from now",
+      "_wall_clock_total_s": 1.779
+    },
+    "memory_distillation": {
+      "embedder": "StubEmbedder(dim=64) — deterministico, sin red; ver nota de diseno en el docstring del script (fastembed no cacheado localmente, se evita descarga de red durante un benchmark autonomo)",
+      "corpus_size": 302,
+      "queries": 3,
+      "repeats_per_query": 5,
+      "latency_s": {
+        "n": 15,
+        "mean": 0.012,
+        "median": 0.0116,
+        "min": 0.01,
+        "max": 0.0161,
+        "p95": 0.013,
+        "stdev": 0.0013
+      },
+      "per_query_result": [
+        {
+          "query": "como se degrada el sistema por temperatura",
+          "selected_chunks": 36,
+          "discarded_count": 266,
+          "total_tokens": 800,
+          "budget": 800
+        },
+        {
+          "query": "como se audita una accion irreversible",
+          "selected_chunks": 35,
+          "discarded_count": 267,
+          "total_tokens": 785,
+          "budget": 800
+        },
+        {
+          "query": "como se decide si delegar a un proveedor externo",
+          "selected_chunks": 35,
+          "discarded_count": 267,
+          "total_tokens": 799,
+          "budget": 800
+        }
+      ],
+      "_wall_clock_total_s": 0.224
+    },
+    "browser_tasks": {
+      "skipped": true,
+      "reason": "playwright no instalado: No module named 'playwright'",
+      "_wall_clock_total_s": 0.0
+    },
+    "code_generation": {
+      "model": "qwen2.5-coder:7b",
+      "prompts": 2,
+      "repeats_per_prompt": 1,
+      "calls": [
+        {
+          "wall_clock_s": 21.6486,
+          "total_duration_s": 21.6437,
+          "load_duration_s": 0.1954,
+          "prompt_eval_count": 51,
+          "prompt_eval_tokens_per_sec": 19.95,
+          "eval_count": 62,
+          "tokens_per_sec": 3.321,
+          "response_snippet": "```python def fibonacci(n, memo={}):     if n in memo:         return memo[n]   "
+        },
+        {
+          "wall_clock_s": 13.2993,
+          "total_duration_s": 13.2953,
+          "load_duration_s": 0.2019,
+          "prompt_eval_count": 55,
+          "prompt_eval_tokens_per_sec": 19.978,
+          "eval_count": 36,
+          "tokens_per_sec": 3.526,
+          "response_snippet": "```python def is_palindrome(s):     s = ''.join(c.lower() for c in s if c.isalnu"
+        }
+      ],
+      "latency_s": {
+        "n": 2,
+        "mean": 17.4739,
+        "median": 17.4739,
+        "min": 13.2993,
+        "max": 21.6486,
+        "p95": 21.6486,
+        "stdev": 4.1746
+      },
+      "tokens_per_sec": {
+        "n": 2,
+        "mean": 3.4235,
+        "median": 3.4235,
+        "min": 3.321,
+        "max": 3.526,
+        "p95": 3.526,
+        "stdev": 0.1025
+      },
+      "ollama_ps_after": "NAME                ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \nqwen2.5-coder:7b    dae161e27b0e    4.6 GB    100% CPU     4096       4 minutes from now    \nqwen2.5:0.5b        a8b0c5157701    442 MB    100% CPU     4096       4 minutes from now",
+      "_wall_clock_total_s": 34.983
+    },
+    "dashboard": {
+      "note": "TestClient de starlette contra atlas.interfaces.dashboard:app, mismo patron que tests/test_dashboard.py — sin puerto de red real",
+      "cold_start_s": 0.1058,
+      "cold_start_status_code": 200,
+      "repeats_per_route": 1,
+      "routes": {
+        "/": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.0564,
+            "median": 0.0564,
+            "min": 0.0564,
+            "max": 0.0564,
+            "p95": 0.0564,
+            "stdev": 0.0
+          }
+        },
+        "/api/status": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.0566,
+            "median": 0.0566,
+            "min": 0.0566,
+            "max": 0.0566,
+            "p95": 0.0566,
+            "stdev": 0.0
+          }
+        },
+        "/api/health": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.1072,
+            "median": 0.1072,
+            "min": 0.1072,
+            "max": 0.1072,
+            "p95": 0.1072,
+            "stdev": 0.0
+          }
+        },
+        "/tasks": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.0333,
+            "median": 0.0333,
+            "min": 0.0333,
+            "max": 0.0333,
+            "p95": 0.0333,
+            "stdev": 0.0
+          }
+        },
+        "/memory": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.0146,
+            "median": 0.0146,
+            "min": 0.0146,
+            "max": 0.0146,
+            "p95": 0.0146,
+            "stdev": 0.0
+          }
+        },
+        "/tools": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.0084,
+            "median": 0.0084,
+            "min": 0.0084,
+            "max": 0.0084,
+            "p95": 0.0084,
+            "stdev": 0.0
+          }
+        },
+        "/providers": {
+          "status_code": 200,
+          "latency_s": {
+            "n": 1,
+            "mean": 0.013,
+            "median": 0.013,
+            "min": 0.013,
+            "max": 0.013,
+            "p95": 0.013,
+            "stdev": 0.0
+          }
+        }
+      },
+      "_wall_clock_total_s": 1.07
+    },
+    "voice": {
+      "skipped": true,
+      "real_deps_available": false,
+      "reason": "faster-whisper, piper-tts y sounddevice no estan instalados en este entorno (verificado por import real, no supuesto). src/atlas/interfaces/voice.py.REAL_DEPS_AVAILABLE == False aqui, asi que VoiceModule solo puede correr en modo 'stub' (texto fijo / print a consola), que no ejercita ningun hardware real y por tanto no produce una medicion honesta de latencia/throughput de voz. Instalar esas deps es aprovisionar dependencias nuevas -> fuera del alcance de este item ('cero aprovisionamiento de infraestructura nueva'). No se simula un numero: se documenta el hueco explicitamente, tal y como pide el brief."
+    }
+  },
+  "bottleneck_analysis": {
+    "primary_bottleneck": "throughput de CPU (VRAM de la GPU esta disponible pero sin usar por config CUDA)",
+    "findings": [
+      "Ollama corre 100% en CPU (confirmado por 'ollama ps' en vivo), no en la GTX 960M (NVIDIA GeForce GTX 960M). VRAM usada se mantuvo en ~104.0MiB antes y ~104.0MiB despues de correr ambos workloads de LLM — la GPU esta practicamente idle. Esto coincide con la memoria operativa: CUDA_VISIBLE_DEVICES se dejo vacio a proposito para esta GTX 960M (Maxwell, demasiado vieja para el CUDA que trae este Ollama). CONCLUSION: la VRAM NO es el cuello de botella actual para SLM local — el cuello es CPU.",
+      "Throughput de generacion CPU medido: 49.871 tok/s en qwen2.5:0.5b (0.5B) vs 3.4235 tok/s en qwen2.5-coder:7b (7B, Q4_K_M). El modelo grande es ~14.6x mas lento token-a-token. CONCLUSION: el throughput de CPU escala mal con el tamano del modelo en este hardware — codigo/tareas que necesiten un modelo >= 7B seran el path mas lento del sistema, no por VRAM sino por tokens/seg de CPU.",
+      "code_generation a 3.4235 tok/s es mas lento que una lectura comoda humana (~15-20 tok/s); para respuestas largas (>200 tokens) la latencia percibida sera de decenas de segundos. Este es el workload objetivo mas exigente medido hoy en CPU.",
+      "Temperatura CPU: 59.0C -> 64.0C durante todo el benchmark (umbral DEGRADED=70C, OMEGA=80C via ThermalWatchdog). Se mantuvo en modo NORMAL todo el tiempo. CONCLUSION: para las cargas medidas hoy (benchmark corto, no sostenido), termico NO fue el cuello de botella — pero el margen hasta DEGRADED fue de solo 6.0C, no es un colchon grande para cargas largas.",
+      "RAM libre: 3083MB -> 3052MB. Se mantuvo por encima del umbral DEGRADED (1024MB) todo el benchmark. CONCLUSION: RAM no fue el limitante hoy, pero los 8.8GB 'disponible' reales de esta maquina son el techo — correr el modelo de 7B (4.6GB) + Chromium + el resto de Atlas en paralelo consumiria una fraccion importante de ese margen.",
+      "Complejidad de setup verificada: Ollama en este host requiere CUDA_VISIBLE_DEVICES vacio via 'systemctl edit ollama' (ver memoria ollama-fix-2026-07-09) para no fallar contra la GTX 960M (Maxwell, arquitectura no soportada por el CUDA que trae Ollama) — la GPU existe pero requiere un workaround permanente para no romper el servicio, y ese workaround es precisamente lo que fuerza CPU-only."
+    ],
+    "gpu_offloads_llm_to_gpu": false
+  }
+}
