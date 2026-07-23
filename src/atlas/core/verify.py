@@ -33,6 +33,14 @@ class ArtifactKind(str, Enum):
     METRIC_SAMPLE = "metric_sample"
     SECURITY_FINDING_RESULT = "security_finding_result"
     KNOWLEDGE = "knowledge"
+    # ADR-047 — acción del mundo real SIN camino de rollback (enviar un
+    # mensaje, publicar algo, hacer una oferta). A diferencia de todos los
+    # kinds anteriores, no existe verificador determinista más barato posible
+    # (no hay sandbox ni test para "ya se envió"): el verificador ES el
+    # `AdversarialPanel` con disenso obligatorio — ver
+    # `adversarial_panel.IrreversibleActionVerifier`. Aditivo: no reemplaza
+    # ningún gate HITL existente (autonomous_decider/hybrid_decider).
+    IRREVERSIBLE_ACTION = "irreversible_action"
 
 
 class CostTier(IntEnum):

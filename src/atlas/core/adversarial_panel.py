@@ -26,7 +26,7 @@ from enum import IntEnum
 from typing import Protocol
 
 from atlas.router.cascade import Difficulty
-from atlas.core.verify import Check, CostTier, Evidence, Verdict
+from atlas.core.verify import Artifact, ArtifactKind, Check, CostTier, Evidence, Verdict
 
 
 class Severity(IntEnum):
@@ -129,3 +129,79 @@ class AdversarialPanel:
             total_cost=CostTier.MODEL,
             verifier_ids=("adversarial_panel",),
         )
+
+
+class IrreversibleActionVerifier:
+    """
+    t1-irreversible-action-verifier (ADR-047) — verificador de
+    `ArtifactKind.IRREVERSIBLE_ACTION`.
+
+    Para una acción del mundo real sin camino de rollback (enviar un mensaje,
+    publicar algo, hacer una oferta) no existe verificador determinista más
+    barato que su productor: no hay sandbox ni test para "ya se envió". El
+    verificador ES el `AdversarialPanel` ya existente (ADR-048), reusado tal
+    cual — no se inventa un mecanismo de deliberación nuevo — pero con
+    DISENSO OBLIGATORIO: cada reviewer recibe, además del contexto de la
+    tarea, tres preguntas fijas que debe responder ("por qué esto es un
+    error", "qué asume el plan que podría ser falso", "qué se rompe en el
+    peor caso").
+
+    Regla dura (aditiva, no relaja ningún gate HITL existente):
+    - Consenso (panel → PASS) → procede, con la evidencia de disenso (los
+      checks de cada reviewer respondiendo a las 3 preguntas) adjunta a la
+      `Evidence` que sube.
+    - Sin consenso (panel → FAIL por objeción sustantiva, o UNKNOWN por
+      diversidad insuficiente) → el veredicto NO se convierte en PASS bajo
+      ninguna circunstancia; sube tal cual para que el decisor
+      (autonomous_decider/hybrid_decider) escale al humano — nunca se
+      auto-aprueba una acción irreversible.
+    """
+
+    _DISSENT_QUESTIONS = (
+        "¿Por qué esto es un error?",
+        "¿Qué asume el plan que podría ser falso?",
+        "¿Qué se rompe en el peor caso?",
+    )
+
+    def __init__(self, panel: AdversarialPanel) -> None:
+        self._panel = panel
+
+    @property
+    def verifier_id(self) -> str:
+        return "irreversible_action_panel"
+
+    @property
+    def cost(self) -> CostTier:
+        return CostTier.MODEL
+
+    def applies_to(self, artifact: Artifact) -> bool:
+        return artifact.kind is ArtifactKind.IRREVERSIBLE_ACTION
+
+    def verify(self, artifact: Artifact) -> Evidence:
+        action = str(artifact.payload.get("action", ""))
+        context = self._dissent_context(str(artifact.payload.get("context", "")))
+        evidence = self._panel.verify(action, context)
+
+        if evidence.verdict is Verdict.PASS:
+            reason = evidence.reason
+        else:
+            # Sin consenso: nunca se auto-aprueba. El motivo deja explícito
+            # que esto escala al humano, no que se rechaza en silencio.
+            reason = (
+                evidence.reason
+                or "panel adversarial sin diversidad suficiente"
+            ) + " — escala al humano, no se auto-aprueba"
+
+        return Evidence(
+            verdict=evidence.verdict,
+            checks=evidence.checks,
+            total_cost=evidence.total_cost,
+            verifier_ids=(self.verifier_id,) + evidence.verifier_ids,
+            reason=reason,
+        )
+
+    @classmethod
+    def _dissent_context(cls, base_context: str) -> str:
+        questions = "\n".join(f"- {q}" for q in cls._DISSENT_QUESTIONS)
+        block = f"DISENSO OBLIGATORIO — responde explícitamente:\n{questions}"
+        return f"{base_context}\n\n{block}" if base_context else block
