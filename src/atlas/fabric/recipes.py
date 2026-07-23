@@ -6,13 +6,25 @@ Una receta inválida no se sirve a medias: se excluye y se reporta
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+from typing import Any
 
 from pydantic import ValidationError
 
 from atlas.fabric.capabilities import get_capability
 from atlas.fabric.ladder import ladder_violations
-from atlas.fabric.models import ConnectionRecipe
+from atlas.fabric.models import (
+    ConnectionRecipe,
+    ConnectorCategory,
+    CredentialSpec,
+    DefaultMode,
+    Difficulty,
+    PermissionsExplainer,
+    RouteType,
+    SetupStep,
+    StepKind,
+)
 
 
 class RecipeProblem(Exception):
@@ -43,6 +55,146 @@ def validate_recipe(recipe: ConnectionRecipe) -> list[str]:
         if action in {"send", "delete", "publish", "pay", "sign", "file"} and allowed:
             problems.append(f"safe_defaults.{action}=true viola no-outbound-por-defecto")
     return problems
+
+
+# -- Compilador OpenAPI -> ConnectionRecipe (t3-4) ---------------------------
+#
+# Métodos HTTP que solo leen frente a los que mutan estado. El catálogo de
+# capacidades (atlas/fabric/capabilities.py) es cerrado y NO tiene un
+# namespace por-conector para APIs REST genéricas; reusamos el par
+# files.read/files.write ya existente en el catálogo (mismo usado por otros
+# fixtures de import genérico, ver tests/test_os_fabric.py) como el bucket
+# neutro de "acceso a datos vía la API conectada" — no reinventamos ni
+# tocamos el catálogo (fuera de alcance de esta tarea).
+_READ_METHODS = {"get", "head"}
+_WRITE_METHODS = {"post", "put", "patch", "delete"}
+_HTTP_METHODS = _READ_METHODS | _WRITE_METHODS
+
+_READ_CAPABILITY = "files.read"
+_WRITE_CAPABILITY = "files.write"
+
+# openapi 3.x securitySchemes.type/scheme -> CredentialSpec.auth_mode.
+_SECURITY_AUTH_MODES: dict[tuple[str, str | None], str] = {
+    ("apiKey", None): "api_key",
+    ("http", "bearer"): "bearer_token",
+    ("http", "basic"): "basic_auth",
+    ("oauth2", None): "oauth2",
+    ("openIdConnect", None): "oauth2",
+}
+
+
+def _slugify_connector_id(title: str) -> str:
+    """Deriva un connector_id válido (pattern ^[a-z0-9_]+$) de info.title."""
+    slug = re.sub(r"[^a-z0-9]+", "_", title.strip().lower()).strip("_")
+    return slug or "openapi_connector"
+
+
+def _methods_present(spec: dict[str, Any]) -> tuple[bool, bool]:
+    """(hay_lectura, hay_escritura) barriendo paths+operations de la spec."""
+    has_read = False
+    has_write = False
+    paths = spec.get("paths") or {}
+    for path_item in paths.values():
+        if not isinstance(path_item, dict):
+            continue
+        for method in path_item:
+            m = method.lower()
+            if m in _READ_METHODS:
+                has_read = True
+            elif m in _WRITE_METHODS:
+                has_write = True
+    return has_read, has_write
+
+
+def _credential_from_security(spec: dict[str, Any]) -> CredentialSpec | None:
+    """Primer securityScheme reconocible -> CredentialSpec de referencia
+    (nunca en claro: storage siempre credential_reference_only)."""
+    schemes = (spec.get("components") or {}).get("securitySchemes") or {}
+    for scheme in schemes.values():
+        if not isinstance(scheme, dict):
+            continue
+        scheme_type = scheme.get("type")
+        scheme_variant = scheme.get("scheme")
+        if not isinstance(scheme_type, str):
+            continue
+        variant = scheme_variant if isinstance(scheme_variant, str) else None
+        auth_mode = _SECURITY_AUTH_MODES.get((scheme_type, variant)) or _SECURITY_AUTH_MODES.get(
+            (scheme_type, None)
+        )
+        if auth_mode is not None:
+            return CredentialSpec(auth_mode=auth_mode, storage="credential_reference_only")
+    return None
+
+
+def compile_openapi_to_recipe(spec: dict[str, Any]) -> ConnectionRecipe:
+    """Deriva un ConnectionRecipe a partir de una spec OpenAPI 3.x mínima.
+
+    Sin red real: `spec` es un dict ya cargado (json.load de un fichero o de
+    una respuesta ya obtenida por otra vía). No hace de cliente HTTP.
+
+    Diseño (closed-world de capacidades, ver comentario arriba de
+    _READ_METHODS): GET/HEAD conceden `files.read` de inmediato (bajo
+    riesgo); POST/PUT/PATCH/DELETE se agrupan en `files.write` pero SIEMPRE
+    vía gated_capabilities — nunca concedidas por defecto, cumpliendo
+    "safe_defaults sin outbound peligroso por defecto" con independencia de
+    cuántos endpoints mutantes tenga la spec.
+    """
+    info = spec.get("info") or {}
+    title = str(info.get("title") or "OpenAPI connector")
+    connector_id = _slugify_connector_id(title)
+
+    has_read, has_write = _methods_present(spec)
+
+    capabilities = [_READ_CAPABILITY] if has_read else []
+    gated_capabilities: dict[str, str] = {}
+    if has_write:
+        write_spec = get_capability(_WRITE_CAPABILITY)
+        gate_id = write_spec.gate_id if write_spec is not None and write_spec.gate_id else "gate_destructive_fs"
+        gated_capabilities[_WRITE_CAPABILITY] = gate_id
+
+    credential = _credential_from_security(spec)
+
+    setup_steps = [
+        SetupStep(
+            step_id="1",
+            kind=StepKind.AUTOMATIC,
+            description=f"Atlas compiló la receta desde la spec OpenAPI de {title}",
+        )
+    ]
+    if credential is not None:
+        setup_steps.append(
+            SetupStep(
+                step_id="2",
+                kind=StepKind.MANUAL_SECRET,
+                description="Introducir la credencial de la API; Atlas la guarda solo como referencia opaca",
+            )
+        )
+
+    will = []
+    will_not = ["Eliminar datos sin tu aprobación explícita"]
+    if has_read:
+        will.append(f"Leer datos vía la API de {title}")
+    if has_write:
+        will_not.insert(0, "Escribir/modificar datos vía la API sin tu aprobación explícita (gate)")
+
+    recipe = ConnectionRecipe(
+        connector_id=connector_id,
+        human_name=title,
+        category=ConnectorCategory.FILES_DOCUMENTS,
+        recommended_route=RouteType.OPENAPI_REST,
+        fallback_routes=[RouteType.WEBHOOKS, RouteType.HUMAN_MANUAL],
+        difficulty=Difficulty.TECHNICAL,
+        default_mode=DefaultMode.READ_ONLY,
+        safe_defaults={"read": has_read, "write": False, "delete": False},
+        capabilities=capabilities,
+        gated_capabilities=gated_capabilities,
+        forbidden_capabilities=[],
+        setup_steps=setup_steps,
+        permissions_explainer=PermissionsExplainer(will=will, will_not=will_not),
+        demo=False,
+        credential=credential,
+    )
+    return recipe
 
 
 class RecipeEngine:

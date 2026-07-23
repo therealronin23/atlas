@@ -17,6 +17,7 @@ __all__ = [
     "ConnectorCategory",
     "ConnectorHealth",
     "ConnectorPack",
+    "CredentialSpec",
     "DataClass",
     "DefaultMode",
     "Difficulty",
