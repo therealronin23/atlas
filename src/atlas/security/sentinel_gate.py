@@ -24,9 +24,12 @@ diferidas):
 3. **Tiering + bloqueo de credenciales.** Cada tool se clasifica en read / write /
    shell_net / credential. Las de tier ``credential`` no se adoptan (fail-closed):
    una tool que dice manejar secretos no entra sin decisión humana explícita.
+4. **Coherencia description↔inputSchema.** ¿Lo que la tool AFIRMA que hace
+   (``description``) coincide con lo que PIDE (``inputSchema``)? Ver la nota de
+   investigación bajo ``_vet_coherence`` para la decisión ast_guard-sí/no.
 
-Diferido (ver ADR-038): coherencia AST profunda (reusar ``ast_guard``), egress
-IOC runtime en cada ``tools/call``, y re-vetting atado a ColdUpdate.
+Diferido (ver ADR-038): egress IOC runtime en cada ``tools/call``, y
+re-vetting atado a ColdUpdate.
 """
 
 from __future__ import annotations
@@ -58,6 +61,34 @@ _SHELL_NET_KW: tuple[str, ...] = (
 _WRITE_KW: tuple[str, ...] = (
     "write", "create", "update", "delete", "modify", "insert", "remove",
     "edit", "send", "post", "put", "patch", "publish", "deploy", "move",
+)
+
+# Capa 4 — coherencia description↔inputSchema.
+#
+# Afirmaciones de "solo lectura" en la description que se pueden contrastar
+# contra el inputSchema. Sin una afirmación así no hay nada verificable: una
+# tool que se anuncia como de escritura/comando no dispara esta capa (no es
+# incoherencia bloquear lo que ya se declara).
+_READONLY_CLAIM_KW: tuple[str, ...] = (
+    "solo lectura", "solo-lectura", "de lectura", "read-only", "read only",
+    "readonly", "solo consulta", "no modifica", "no escribe", "no ejecuta",
+    "sin efectos secundarios", "get-only", "únicamente lee", "unicamente lee",
+    "no realiza cambios", "does not modify", "does not write",
+)
+# Nombres de parámetro en inputSchema que delatan ejecución de comando —
+# señal FUERTE de incoherencia contra una description "solo lectura".
+_COHERENCE_COMMAND_PARAM_KW: tuple[str, ...] = (
+    "cmd", "command", "shell", "script", "bash", "exec", "subprocess",
+)
+# Señal FUERTE: parámetros de escritura/borrado en el schema.
+_COHERENCE_WRITE_PARAM_KW: tuple[str, ...] = (
+    "write", "overwrite", "delete", "content", "body", "payload",
+)
+# Señal DÉBIL: parámetro de URL/endpoint arbitrario. Una tool de lectura puede
+# legítimamente pedir una URL a consultar (p.ej. "lee esta página") — no
+# bloquea sola, solo se marca para revisión humana (evita falsos positivos).
+_COHERENCE_URL_PARAM_KW: tuple[str, ...] = (
+    "url", "endpoint", "webhook", "target_url", "uri",
 )
 
 
@@ -168,6 +199,18 @@ class SentinelGate:
             self._audit("sentinel.tool_vetoed", name, ioc, "blocked")
             return ToolVerdict(name, tier="unknown", admitted=False, reason=ioc)
 
+        # Capa 4: coherencia description↔inputSchema. Señal fuerte (comando o
+        # escritura) bloquea aquí, antes de tiering; señal débil (URL) se
+        # difiere para adjuntarse como "review" solo si la tool termina admitida.
+        description = str(tool.get("description") or "")
+        schema = tool.get("inputSchema")
+        coherence_reason, strong = self._vet_coherence(
+            description, schema if isinstance(schema, dict) else {}
+        )
+        if coherence_reason is not None and strong:
+            self._audit("sentinel.tool_vetoed", name, coherence_reason, "blocked")
+            return ToolVerdict(name, tier="unknown", admitted=False, reason=coherence_reason)
+
         # Capa 3: tiering. Las de credenciales no se adoptan.
         tier = self._classify_tier(name, surface)
         if tier == "credential":
@@ -186,6 +229,12 @@ class SentinelGate:
                 reason = "hash de la tool cambió desde la adopción (drift); bloqueada"
                 self._audit("sentinel.drift_blocked", name, reason, "blocked")
                 return ToolVerdict(name, tier=tier, admitted=False, reason=reason)
+
+        if coherence_reason is not None:
+            # Señal débil que sobrevivió a las demás capas: se admite (evita
+            # falso positivo) pero se audita y reporta como revisión pendiente.
+            self._audit("sentinel.tool_review", name, coherence_reason, "review")
+            return ToolVerdict(name, tier=tier, admitted=True, reason=coherence_reason)
 
         return ToolVerdict(name, tier=tier, admitted=True, reason="ok")
 
@@ -234,6 +283,85 @@ class SentinelGate:
                 return f"superficie contiene comando IOC '{bad}'"
         return None
 
+    # ------------------------------------------------------------- coherencia
+    #
+    # NOTA DE INVESTIGACIÓN (capa 4, antes diferida) — decisión ast_guard sí/no:
+    #
+    # `ast_guard.py` (``ASTGuard``) parsea CÓDIGO PYTHON con ``ast.parse()`` y
+    # visita el árbol resultante para bloquear imports/llamadas/atributos
+    # peligrosos (``BLOCKED_IMPORTS``/``BLOCKED_CALLS``/``BLOCKED_ATTRS``). La
+    # superficie de una tool MCP (``name``/``description``/``inputSchema``) es
+    # JSON declarativo — un ``inputSchema`` es un dict de JSON Schema, no una
+    # expresión Python; no hay nada que ``ast.parse()`` pueda parsear ahí.
+    # Reusar ``ASTGuard`` DIRECTAMENTE sobre esta superficie no aplica: falta
+    # el propio objeto sobre el que opera (código fuente).
+    #
+    # Lo que sí se adopta de ``ast_guard`` es el PATRÓN, no el código: listas
+    # de keywords declarativas + veredicto fail-closed + reason string legible
+    # por violación. Esta capa aplica ese mismo patrón sobre una comparación
+    # distinta — no un AST de código, sino las AFIRMACIONES en lenguaje natural
+    # de ``description`` (p.ej. "solo lectura") contra las CAPACIDADES
+    # declaradas por los nombres de parámetro del ``inputSchema`` (comando,
+    # escritura, URL arbitraria). Decisión: lógica nueva; ``ast_guard`` no se
+    # importa ni se reusa en este módulo — solo inspira la forma.
+    def _vet_coherence(
+        self, description: str, schema: dict[str, Any]
+    ) -> tuple[str | None, bool]:
+        """¿La ``description`` afirma algo verificable (p.ej. "solo lectura")
+        que el ``inputSchema`` contradice? Devuelve ``(reason, strong)``:
+        ``reason=None`` si es coherente o si no hay afirmación que contrastar;
+        ``strong=True`` ⇒ señal fuerte (bloqueante); ``strong=False`` ⇒ señal
+        débil (se admite, pero se marca para revisión — evita falsos
+        positivos que romperían la adopción normal)."""
+        desc = description.lower()
+        if not any(kw in desc for kw in _READONLY_CLAIM_KW):
+            return None, False  # nada que la description afirme y podamos contrastar
+
+        params = self._schema_param_names(schema)
+
+        def _matches(keywords: tuple[str, ...]) -> list[str]:
+            # Nombres de PARÁMETRO reales que contienen alguna keyword de la
+            # categoría, no las keywords en sí — el reason debe señalar qué
+            # campo del schema es el culpable, no la lista de patrones.
+            return [p for p in params if any(kw in p for kw in keywords)]
+
+        hits = _matches(_COHERENCE_COMMAND_PARAM_KW) + _matches(_COHERENCE_WRITE_PARAM_KW)
+        if hits:
+            return (
+                "description afirma 'solo lectura' pero inputSchema acepta "
+                f"parámetro(s) de comando/escritura {hits!r}",
+                True,
+            )
+
+        hits = _matches(_COHERENCE_URL_PARAM_KW)
+        if hits:
+            return (
+                "description afirma 'solo lectura' pero inputSchema acepta "
+                f"parámetro(s) de URL/endpoint {hits!r} — señal débil, revisar",
+                False,
+            )
+        return None, False
+
+    @classmethod
+    def _schema_param_names(cls, schema: dict[str, Any]) -> list[str]:
+        """Nombres de parámetro (keys de ``properties``) de un ``inputSchema``,
+        recursivo sobre objetos/arrays anidados. Solo mira NOMBRES declarados,
+        no valores en runtime — coherente con que esta capa opera en tiempo de
+        adopción, antes de que la tool se llame ni una vez."""
+        names: list[str] = []
+        if not isinstance(schema, dict):
+            return names
+        props = schema.get("properties")
+        if isinstance(props, dict):
+            for key, val in props.items():
+                names.append(str(key).lower())
+                if isinstance(val, dict):
+                    names.extend(cls._schema_param_names(val))
+        items = schema.get("items")
+        if isinstance(items, dict):
+            names.extend(cls._schema_param_names(items))
+        return names
+
     @staticmethod
     def _classify_tier(name: str, surface: str) -> str:
         text = f"{name.lower()} {surface}"
@@ -279,7 +407,7 @@ class SentinelGate:
                 action=action,
                 agent="security.sentinel",
                 result=outcome,
-                risk_level="moderate" if outcome == "blocked" else "safe",
+                risk_level="moderate" if outcome in ("blocked", "review") else "safe",
                 payload={"server": server, "detail": detail[:500]},
             )
         except Exception:  # noqa: BLE001
