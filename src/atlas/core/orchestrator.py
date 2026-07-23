@@ -742,6 +742,10 @@ class Orchestrator:
         """Smoke diario de la cadena de proveedores (1 llamada mínima c/u). Delegado al facade."""
         return self._maintenance_facade.maintenance_provider_smoke_tick()
 
+    def maintenance_provider_discovery_tick(self) -> dict[str, Any]:
+        """Descubrimiento diario de catálogo servido vs model_id configurado. Delegado al facade."""
+        return self._maintenance_facade.maintenance_provider_discovery_tick()
+
     def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
         """Triage de informes de investigación + ingesta al sustrato. Delegado al facade."""
         return self._maintenance_facade.maintenance_knowledge_ingest_tick()

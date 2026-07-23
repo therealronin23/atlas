@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 from atlas.core.contracts import EventType
+from atlas.core.provider_discovery import discover_available_models
 
 _log = logging.getLogger(__name__)
 
@@ -285,6 +286,12 @@ class MaintenanceFacade:
                 # igual que los demás ciclos.
                 _isolated_cycle("provider_smoke", self.maintenance_provider_smoke_tick)
 
+            def _provider_discovery_cycle() -> None:
+                # Descubrimiento de catálogo vs model_id configurado: ver
+                # maintenance_provider_discovery_tick. Aislado igual que los
+                # demás ciclos (T6, plan 2026-07-23-t5-provider-discovery-plan.md).
+                _isolated_cycle("provider_discovery", self.maintenance_provider_discovery_tick)
+
             def _knowledge_ingest_cycle() -> None:
                 # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
                 _isolated_cycle("knowledge_ingest", self.maintenance_knowledge_ingest_tick)
@@ -343,6 +350,7 @@ class MaintenanceFacade:
                     _dep_cycle, _batch_cycle, _self_build_cycle,
                     _research_cycle, _provider_smoke_cycle,
                     _knowledge_ingest_cycle, _project_graph_cycle,
+                    _provider_discovery_cycle,
                 ),
                 **scheduler_kwargs,
             )
@@ -598,6 +606,72 @@ class MaintenanceFacade:
             payload={"ok": ok, "dead": dead, "skipped": skipped},
         )
         return {"status": "ran", "ok": ok, "dead": dead, "skipped": skipped}
+
+    def maintenance_provider_discovery_tick(self) -> dict[str, Any]:
+        """Descubrimiento diario de catálogo servido vs `model_id` configurado
+        (T5.2/T5.3, plan 2026-07-23-t5-provider-discovery-plan.md, T6).
+
+        Complementa al smoke (T5.1), no lo sustituye: ``ModelCatalogDrift``
+        (T4, ``model_catalog_drift.py``) cruza cada ``Provider.model_id`` de
+        ``DEFAULT_PROVIDERS`` contra el catálogo que ``discover_available_models``
+        (T3, ``provider_discovery.py``) confirma que el proveedor sirve AHORA
+        -- ``GET .../models``, cero llamadas de inferencia, cero tokens.
+        Predice el mismo fallo que ya mordió a la cadena (qwen3-coder 410,
+        nvidia_kimi 404, deepseek decomisionado) ANTES de gastarlo en una
+        llamada real. Un proveedor puede *listar* un modelo que su tier no
+        sirve de verdad (caso NIM histórico) -- el smoke sigue siendo
+        necesario para verificar la invocación; discovery/drift lo antecede
+        y lo abarata filtrando primero los muertos-por-catálogo.
+
+        Opt-in explícito: requiere ``ATLAS_PROVIDER_DISCOVERY=1``. Cadencia
+        propia de 24h (fichero de estado, independiente del poll del
+        scheduler) -- espejo exacto de ``maintenance_provider_smoke_tick``."""
+        # Guardia anti-recursión -- ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_PROVIDER_DISCOVERY", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "self_build" / "provider_discovery_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.self_maintenance.model_catalog_drift import ModelCatalogDrift
+
+        orch = self._orch
+        # `discover_available_models` referenciado por nombre a nivel de
+        # módulo (no reimportado aquí) para que los tests puedan
+        # monkeypatchear `maintenance_facade.discover_available_models` sin
+        # tocar red real -- mismo patrón que `_egress_fetch_text` en
+        # `maintenance_research_tick`.
+        drift = ModelCatalogDrift(discover=discover_available_models)
+        results = drift.run()
+
+        missing = [r.provider_name for r in results if r.outcome == "missing"]
+        present = [r.provider_name for r in results if r.outcome == "present"]
+        skipped = [r.provider_name for r in results if r.outcome == "skipped"]
+
+        state["last_run_date"] = today
+        state["last_results"] = [r.to_dict() for r in results]
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.provider_discovery_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={"missing": missing, "present": present, "skipped": skipped},
+        )
+        return {"status": "ran", "missing": missing, "present": present, "skipped": skipped}
 
     def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
         """Cierre del ciclo investigación→acción (2026-07-09): los informes que
