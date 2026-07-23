@@ -121,6 +121,56 @@ def parse_editor_command(
     return None
 
 
+def parse_desktop_command(action: str, rest: str) -> GateFCommand | None:
+    """t3-1-universal-gui-operator: acciones de GUI de escritorio real vía
+    computer-control-mcp (Xvfb :99, nunca el display real). observe/windows
+    son solo lectura; el resto muta la pantalla real y requiere aprobación
+    (requires_approval decidido aquí por regla estática, nunca por LLM —
+    invariante D2)."""
+    if action in {"observe", "screenshot", "observa", "captura"}:
+        return GateFCommand(
+            tool="desktop", action="observe", args={"name": rest or "desktop"},
+            requires_approval=False,
+            reason="Desktop screenshot/OCR observes the current screen only.",
+        )
+    if action in {"windows", "ventanas"}:
+        return GateFCommand(
+            tool="desktop", action="windows", args={},
+            requires_approval=False,
+            reason="Desktop list_windows is observational.",
+        )
+    if action == "click" and rest:
+        x_str, _, y_str = rest.partition(",")
+        try:
+            x, y = int(x_str.strip()), int(y_str.strip())
+        except ValueError:
+            return None
+        return GateFCommand(
+            tool="desktop", action="click", args={"x": x, "y": y},
+            requires_approval=True,
+            reason="Desktop click mutates the real screen state.",
+        )
+    if action in {"type", "escribe"} and rest:
+        return GateFCommand(
+            tool="desktop", action="type", args={"text": rest},
+            requires_approval=True,
+            reason="Desktop type mutates the real screen state.",
+        )
+    if action == "key" and rest:
+        return GateFCommand(
+            tool="desktop", action="key", args={"combo": rest},
+            requires_approval=True,
+            reason="Desktop key press mutates the real screen state.",
+        )
+    if action == "plan" and rest:
+        return GateFCommand(
+            tool="desktop", action="plan", args={"instruction": rest},
+            requires_approval=True,
+            reason="Desktop plan proposes and executes N GUI actions.",
+        )
+    return None
+
+
 def parse_vision_command(action: str, rest: str) -> GateFCommand | None:
     if action in {"propose", "proposal", "observa", "observe"}:
         return GateFCommand(
@@ -151,6 +201,12 @@ def parse_gate_f_command(
       - editor apply_diff <path> :: <unified diff>
       - editor open <path>
       - vision propose [screenshot_name]
+      - desktop observe [name]
+      - desktop windows
+      - desktop click <x>,<y>
+      - desktop type <text>
+      - desktop key <combo>
+      - desktop plan <instrucción>
     """
     text = intent.strip()
     if not text:
@@ -159,7 +215,7 @@ def parse_gate_f_command(
     if not sep:
         return None
     tool = head.lower()
-    if tool not in {"browser", "editor", "vision"}:
+    if tool not in {"browser", "editor", "vision", "desktop"}:
         return None
     action, _, rest = tail.strip().partition(" ")
     action = action.lower()
@@ -170,6 +226,8 @@ def parse_gate_f_command(
         return parse_editor_command(
             action, rest, is_generated_tool_run=is_generated_tool_run,
         )
+    if tool == "desktop":
+        return parse_desktop_command(action, rest)
     return parse_vision_command(action, rest)
 
 

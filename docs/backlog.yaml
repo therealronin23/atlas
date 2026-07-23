@@ -1393,7 +1393,28 @@ items:
       ninguna rama de código condicionada al nombre de la app. mypy limpio; suite
       verde; ningún cambio de comportamiento en browser/editor/vision existentes.
     priority: 1
-    status: pending
+    status: pending  # 2026-07-23: AVANCE PARCIAL, commits 53786f8 (tipos puros) +
+    # <pendiente de rellenar> (Gate F/PolicyEngine wiring). Investigado con 2
+    # agentes Explore + 1 Plan antes de codificar. Hecho: DesktopAction/
+    # DesktopTool/DesktopPlanner (src/atlas/tools/computer_use/), routing
+    # "desktop" en gate_f_parser.py/gate_f_executor.py (observe/windows/click/
+    # type/key), PolicyEngine instanciado en Orchestrator.__init__ y wireado
+    # (gap de wiring real que existía, pol_hard_computer_use ahora se evalúa
+    # de verdad, no solo declarado), routing end-to-end verificado con
+    # PolicyEngine REAL (no fake) en test_orchestrator_gate_f.py. mypy limpio
+    # (302 ficheros), suite dirigida verde, cero cambio de comportamiento en
+    # browser/editor/vision (regresión verificada). NO cerrado: falta la
+    # evidencia OBLIGATORIA del acceptance (test E2E con ≥2 apps de escritorio
+    # reales contra Xvfb :99) — bloqueado por infraestructura ausente en este
+    # entorno (sin Xvfb :99 ni .venv-desktop/bin/computer-control-mcp;
+    # computer-control-mcp tampoco está en ningún mcp_servers.json real
+    # todavía). Decisión explícita del operador de no instalar esa
+    # infraestructura en esta sesión. Acción "plan" del parser (desktop plan
+    # <instrucción>) queda parseada pero sin ejecutor (execute_desktop_command
+    # la rechaza honesto como "Unsupported desktop action: plan" — requiere
+    # inyectar InferenceHub/DesktopPlanner en GateFExecutor, fuera de alcance
+    # de esta sesión). Siguiente sesión con Xvfb disponible: Fase 8 (entrada
+    # real en mcp_servers.example.json) + Fase 9 (test E2E 2 apps).
 
   - id: t3-2-gui-recipe-library
     title: "Biblioteca de recetas GUI aprendidas: secuencias de acciones reutilizables"

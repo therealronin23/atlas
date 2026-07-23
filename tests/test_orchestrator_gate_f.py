@@ -45,6 +45,21 @@ class DummyVisionLoop:
         )
 
 
+class DummyDesktopTool:
+    def __init__(self) -> None:
+        self.clicked: tuple[int, int] | None = None
+
+    def click(self, x: int, y: int) -> dict[str, int]:
+        self.clicked = (x, y)
+        return {"x": x, "y": y}
+
+    def screenshot(self, name: str) -> dict[str, str]:
+        return {"name": name}
+
+    def list_windows(self) -> list[str]:
+        return []
+
+
 def test_editor_read_executes_without_approval(orch: Orchestrator) -> None:
     target = Path(orch.status().workspace) / "projects" / "note.txt"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -103,6 +118,38 @@ def test_browser_navigation_is_pending_until_approved(orch: Orchestrator) -> Non
     assert task.status == TaskStatus.DONE
     assert browser.navigated_to == "https://example.com"
     assert task.result["status_code"] == 200
+
+
+def test_desktop_click_requires_approval_then_executes(orch: Orchestrator) -> None:
+    """t3-1-universal-gui-operator, routing end-to-end: sin PolicyEngine
+    real inyectado (fixture usa la instancia por defecto de Orchestrator,
+    construida en __init__), una tarea desktop mutante pasa por
+    AWAITING_APPROVAL igual que browser/editor — mismo único punto de HITL."""
+    desktop = DummyDesktopTool()
+    orch.attach_gate_f_tools(desktop=desktop)
+
+    task = orch.handle_intent("desktop click 100,200")
+
+    assert task.status == TaskStatus.AWAITING_APPROVAL
+    assert task.route == RoutingLevel.REQUIRES_APPROVAL
+    assert task.tool_name == "desktop.click"
+    assert desktop.clicked is None
+
+    approved = orch.approve_pending(task.id, approved=True)
+
+    assert approved["status"] == TaskStatus.DONE.value
+    assert desktop.clicked == (100, 200)
+
+
+def test_desktop_observe_executes_without_approval(orch: Orchestrator) -> None:
+    orch.attach_gate_f_tools(desktop=DummyDesktopTool())
+
+    task = orch.handle_intent("desktop observe smoke")
+
+    assert task.status == TaskStatus.DONE
+    assert task.route == RoutingLevel.DETERMINISTIC_TOOL
+    assert task.tool_name == "desktop.observe"
+    assert task.result["screenshot"] == {"name": "smoke"}
 
 
 def test_vision_propose_executes_as_observation(orch: Orchestrator) -> None:

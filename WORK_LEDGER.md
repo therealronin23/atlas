@@ -9,6 +9,36 @@ de escribir: `atlas reality --json`.
 ## WHERE
 
 - **2026-07-23 (sesión siguiente, tras triage) — `t3-1-universal-gui-operator`
+  Commit 2/2: wiring real de Gate F + PolicyEngine (avance parcial, ítem NO
+  cerrado).** Sobre el Commit 1 (tipos puros): `gate_f_parser.py` gana
+  `parse_desktop_command()` (observe/windows/click/type/key/plan, ruta
+  `"desktop"` junto a browser/editor/vision); `gate_f_executor.py` gana
+  `execute_desktop_command()` + `get_desktop_tool()` lazy (falla honesto con
+  `RuntimeError` claro si no hay `desktop_invoke`/`desktop_invoke_readonly`
+  cableados, en vez de fingir que funciona). Gap de gobernanza real
+  detectado en la investigación quedó cerrado: `PolicyEngine` (D14,
+  ADR-060, `pol_hard_computer_use` ya existía en `atlas.fabric.policy` pero
+  nunca se instanciaba dentro del Orchestrator) ahora se construye en
+  `Orchestrator.__init__` vía `default_policy_engine(self._repo_root() or
+  self._workspace)` y se inyecta como callable narrow — evaluado en
+  `execute_desktop_command()` para acciones mutantes, como corroboración
+  fail-closed ADEMÁS del `requires_approval` estático del parser (único
+  punto real de HITL, sin cambio de UX). Verificado end-to-end con
+  `PolicyEngine` REAL (no fake) en `test_orchestrator_gate_f.py`: intent
+  `"desktop click 100,200"` → `AWAITING_APPROVAL` → `approve_pending` →
+  ejecuta con `GATE_APPROVED` correcto. `desktop_invoke`/
+  `desktop_invoke_readonly` de producción envuelven `McpRegistry.dispatch`
+  (namespacing `mcp__computer-control-mcp__<tool>`, ADR-035) — NO un
+  segundo cliente MCP. 32 tests nuevos entre las 3 capas (parser/
+  executor/orchestrator), suite completa verde, mypy limpio (302
+  ficheros). NO cerrado: la evidencia obligatoria del acceptance (test E2E
+  con ≥2 apps de escritorio reales contra Xvfb `:99`) sigue bloqueada por
+  infraestructura ausente en este entorno (sin Xvfb, sin
+  `.venv-desktop/bin/computer-control-mcp`, sin entrada real en
+  `mcp_servers.json`) — decisión explícita del operador de no instalarla
+  hoy. `docs/backlog.yaml` anotado con avance parcial, no `done`.
+
+- **2026-07-23 (sesión siguiente, tras triage) — `t3-1-universal-gui-operator`
   Commit 1/2: tipos puros + fakes, sin tocar Gate F todavía.** Investigado
   antes de codificar (2 agentes Explore + 1 Plan): `computer-control-mcp`
   catalogado (`verificado`) pero sin ningún caller en `src/atlas/`; patrón a

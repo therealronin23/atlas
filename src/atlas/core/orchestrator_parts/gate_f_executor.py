@@ -34,6 +34,9 @@ class GateFExecutor:
         check_gate_h_allowed: Callable[[str, str | None], str | None],
         record_receipt: Callable[..., None],
         thermal_blocks: Callable[[], str | None],
+        desktop_invoke: Callable[[str, dict[str, Any]], Any] | None = None,
+        desktop_invoke_readonly: Callable[[str, dict[str, Any]], Any] | None = None,
+        policy_evaluate: Callable[[Any], Any] | None = None,
     ) -> None:
         self._workspace = workspace
         self._executor = executor
@@ -47,9 +50,18 @@ class GateFExecutor:
         self._check_gate_h_allowed = check_gate_h_allowed
         self._record_receipt = record_receipt
         self._thermal_blocks = thermal_blocks
+        # t3-1-universal-gui-operator: narrow, no un cliente MCP propio —
+        # en producción se envuelven sobre McpRegistry.dispatch (ver
+        # Orchestrator.__init__). None por defecto: sin computer-control-mcp
+        # cableado en la config MCP real (Fase 8, no en este entorno),
+        # get_desktop_tool() falla honesto en vez de fingir que funciona.
+        self._desktop_invoke = desktop_invoke
+        self._desktop_invoke_readonly = desktop_invoke_readonly
+        self._policy_evaluate = policy_evaluate
         self._browser_tool: Any | None = None
         self._editor_tool: Any | None = None
         self._vision_loop: Any | None = None
+        self._desktop_tool: Any | None = None
         self._crawler_tool: Any | None = None
         self._fs_bridge: Any | None = None
         self._claude_code_tool: Any | None = None
@@ -66,6 +78,7 @@ class GateFExecutor:
         browser: Any | None = None,
         editor: Any | None = None,
         vision_loop: Any | None = None,
+        desktop: Any | None = None,
     ) -> None:
         if browser is not None:
             self._browser_tool = browser
@@ -73,6 +86,8 @@ class GateFExecutor:
             self._editor_tool = editor
         if vision_loop is not None:
             self._vision_loop = vision_loop
+        if desktop is not None:
+            self._desktop_tool = desktop
 
     def resolve_path(self, value: str) -> Path:
         return _resolve_gate_f_path_fn(self._workspace, value)
@@ -110,6 +125,8 @@ class GateFExecutor:
                 result = self.execute_editor_command(action, args, task=task)
             elif tool == "vision":
                 result = self.execute_vision_command(action, args)
+            elif tool == "desktop":
+                result = self.execute_desktop_command(action, args, task=task)
             else:
                 raise RuntimeError(f"Unknown Gate F tool: {tool}")
         except Exception as e:
@@ -220,6 +237,52 @@ class GateFExecutor:
                 payload=payload,
             )
         return payload
+
+    def execute_desktop_command(
+        self, action: str, args: dict[str, Any], *, task: Task | None = None,
+    ) -> dict[str, Any]:
+        """t3-1-universal-gui-operator. observe/windows son solo lectura
+        (sin PolicyEngine). click/type/key mutan la pantalla real: además
+        del requires_approval estático del parser (único punto de
+        interacción humana, sin cambio de UX), se corrobora aquí contra
+        PolicyEngine (capability computer_use.execute, pol_hard_computer_use)
+        — si por un bug de wiring esto se invocara sin aprobación previa,
+        PolicyEngine sigue en require_gate y aborta (fail-closed, defensa en
+        profundidad, no sustituye el HITL de Gate F)."""
+        desktop = self.get_desktop_tool()
+        if action == "observe":
+            return {"screenshot": desktop.screenshot(str(args.get("name") or "desktop"))}
+        if action == "windows":
+            return {"windows": desktop.list_windows()}
+
+        self._check_desktop_policy(task)
+        if action == "click":
+            return {"result": desktop.click(int(args["x"]), int(args["y"]))}
+        if action == "type":
+            return {"result": desktop.type_text(str(args["text"]))}
+        if action == "key":
+            return {"result": desktop.key(str(args["combo"]))}
+        raise RuntimeError(f"Unsupported desktop action: {action}")
+
+    def _check_desktop_policy(self, task: Task | None) -> None:
+        if self._policy_evaluate is None:
+            return
+        from atlas.fabric.models import UnlessCondition  # noqa: PLC0415
+        from atlas.fabric.policy import PolicyRequest  # noqa: PLC0415
+
+        approvals = (
+            [UnlessCondition.GATE_APPROVED]
+            if task is not None and task.route == RoutingLevel.REQUIRES_APPROVAL
+            else []
+        )
+        decision = self._policy_evaluate(
+            PolicyRequest(capability="computer_use.execute", approvals=approvals)
+        )
+        if decision.decision != "allow":
+            raise RuntimeError(
+                f"PolicyEngine denegó computer_use.execute: {decision.decision} "
+                f"— {decision.reason}"
+            )
 
     def _execute_editor_run_command(
         self,
@@ -533,3 +596,21 @@ class GateFExecutor:
                 merkle=self._merkle,
             )
         return self._vision_loop
+
+    def get_desktop_tool(self) -> Any:
+        if self._desktop_tool is None:
+            if self._desktop_invoke is None or self._desktop_invoke_readonly is None:
+                raise RuntimeError(
+                    "DesktopTool no está cableado: falta desktop_invoke/"
+                    "desktop_invoke_readonly (computer-control-mcp no está "
+                    "en la config MCP real de este entorno — Fase 8/9 de "
+                    "t3-1-universal-gui-operator, pendiente de un entorno "
+                    "con Xvfb :99 + .venv-desktop)."
+                )
+            from atlas.tools.computer_use.desktop_tool import DesktopTool  # noqa: PLC0415
+
+            self._desktop_tool = DesktopTool(
+                invoke=self._desktop_invoke,
+                invoke_readonly=self._desktop_invoke_readonly,
+            )
+        return self._desktop_tool

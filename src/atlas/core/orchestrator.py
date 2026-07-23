@@ -999,6 +999,7 @@ class Orchestrator:
         browser: Any | None = None,
         editor: Any | None = None,
         vision_loop: Any | None = None,
+        desktop: Any | None = None,
     ) -> None:
         """
         Inyecta herramientas Gate F ya construidas.
@@ -1008,8 +1009,19 @@ class Orchestrator:
         Orchestrator construye instancias conservadoras bajo demanda.
         """
         self._gate_f_exec.attach(
-            browser=browser, editor=editor, vision_loop=vision_loop,
+            browser=browser, editor=editor, vision_loop=vision_loop, desktop=desktop,
         )
+
+    def _desktop_mcp_invoke(self, tool: str, args: dict[str, Any]) -> Any:
+        """t3-1-universal-gui-operator: invoke/invoke_readonly narrow para
+        DesktopTool, montado sobre McpRegistry.dispatch (el cliente MCP real
+        que el Orchestrator ya posee — no un segundo cliente stdio propio).
+        Namespacing mcp__<server>__<tool> (ADR-035). computer-control-mcp
+        aún no está en la config MCP real de ningún entorno de esta sesión
+        (Fase 8/9, pendiente de Xvfb + .venv-desktop); si el server no está
+        registrado, McpRegistry.dispatch devuelve un string de error
+        (contrato ya fail-closed, no una excepción no controlada)."""
+        return self._mcp.dispatch(f"mcp__computer-control-mcp__{tool}", args)
 
     def start_mcp_servers(self) -> None:
         """ADR-035: arranca los servers MCP del registry (opt-in, idempotente).
@@ -2087,6 +2099,19 @@ class Orchestrator:
         self._telegram_thread = None
         self._offline_monitor = None
         self._thermal_watchdog = None
+        # t3-1-universal-gui-operator: PolicyEngine determinista (D14,
+        # ADR-060) — cierra el gap de wiring detectado en la investigación
+        # (pol_hard_computer_use ya existía en atlas.fabric.policy pero
+        # PolicyEngine nunca se instanciaba dentro del Orchestrator, solo en
+        # api/server.py). Usa el repo de CÓDIGO (git), no el workspace de
+        # runtime (~/atlas) — ahí viven fixtures/security/policies.json y
+        # fixtures/governance/gates.json; fallback a self._workspace si no
+        # hay repo git (pip no-editable) es seguro: PolicyEngine cae a
+        # soft-rules/gates vacíos, los HARD_RULES (incl. pol_hard_computer_use)
+        # siguen aplicando siempre, son constantes de módulo.
+        from atlas.fabric.policy import default_policy_engine  # noqa: PLC0415
+
+        self._policy_engine = default_policy_engine(self._repo_root() or self._workspace)
         self._gate_f_exec = GateFExecutor(
             workspace=self._workspace,
             executor=self._executor,
@@ -2098,6 +2123,9 @@ class Orchestrator:
             check_gate_h_allowed=self._check_gate_h_tool_allowed,
             record_receipt=self._record_tool_receipt,
             thermal_blocks=self._thermal_blocks_execution,
+            desktop_invoke=self._desktop_mcp_invoke,
+            desktop_invoke_readonly=self._desktop_mcp_invoke,
+            policy_evaluate=self._policy_engine.evaluate,
         )
 
         # Gate D pipeline integrado — desactivado por defecto. Se activa con

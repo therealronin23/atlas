@@ -14,6 +14,7 @@ import pytest
 from atlas.core.orchestrator_parts.gate_f_parser import (
     GateFCommand,
     parse_browser_command,
+    parse_desktop_command,
     parse_editor_command,
     parse_gate_f_command,
     parse_vision_command,
@@ -310,6 +311,79 @@ class TestParseVisionCommand:
 
 
 # ---------------------------------------------------------------------------
+# parse_desktop_command (t3-1-universal-gui-operator)
+# ---------------------------------------------------------------------------
+
+
+class TestParseDesktopCommand:
+    def test_observe_no_name(self) -> None:
+        cmd = parse_desktop_command("observe", "")
+        assert cmd is not None
+        assert cmd.tool == "desktop"
+        assert cmd.action == "observe"
+        assert cmd.args["name"] == "desktop"
+        assert cmd.requires_approval is False
+
+    def test_observe_with_name(self) -> None:
+        cmd = parse_desktop_command("observe", "my_screenshot")
+        assert cmd is not None
+        assert cmd.args["name"] == "my_screenshot"
+
+    def test_observe_aliases(self) -> None:
+        for alias in ("screenshot", "observa", "captura"):
+            cmd = parse_desktop_command(alias, "")
+            assert cmd is not None, f"alias {alias!r} falló"
+            assert cmd.requires_approval is False
+
+    def test_windows(self) -> None:
+        cmd = parse_desktop_command("windows", "")
+        assert cmd is not None
+        assert cmd.action == "windows"
+        assert cmd.requires_approval is False
+
+    def test_click_valid_coords(self) -> None:
+        cmd = parse_desktop_command("click", "100,200")
+        assert cmd is not None
+        assert cmd.action == "click"
+        assert cmd.args == {"x": 100, "y": 200}
+        assert cmd.requires_approval is True
+
+    def test_click_with_spaces_around_coords(self) -> None:
+        cmd = parse_desktop_command("click", " 100 , 200 ")
+        assert cmd is not None
+        assert cmd.args == {"x": 100, "y": 200}
+
+    def test_click_malformed_coords_returns_none(self) -> None:
+        assert parse_desktop_command("click", "not,coords") is None
+        assert parse_desktop_command("click", "100") is None
+        assert parse_desktop_command("click", "") is None
+
+    def test_type_text(self) -> None:
+        cmd = parse_desktop_command("type", "hola mundo")
+        assert cmd is not None
+        assert cmd.args == {"text": "hola mundo"}
+        assert cmd.requires_approval is True
+
+    def test_type_empty_returns_none(self) -> None:
+        assert parse_desktop_command("type", "") is None
+
+    def test_key_combo(self) -> None:
+        cmd = parse_desktop_command("key", "ctrl+c")
+        assert cmd is not None
+        assert cmd.args == {"combo": "ctrl+c"}
+        assert cmd.requires_approval is True
+
+    def test_plan_instruction(self) -> None:
+        cmd = parse_desktop_command("plan", "abre la calculadora")
+        assert cmd is not None
+        assert cmd.args == {"instruction": "abre la calculadora"}
+        assert cmd.requires_approval is True
+
+    def test_unknown_action_returns_none(self) -> None:
+        assert parse_desktop_command("execute", "") is None
+
+
+# ---------------------------------------------------------------------------
 # parse_gate_f_command (integración)
 # ---------------------------------------------------------------------------
 
@@ -344,6 +418,19 @@ class TestParseGateFCommand:
         cmd = self._parse("vision propose")
         assert cmd is not None
         assert cmd.tool == "vision"
+
+    def test_desktop_click(self) -> None:
+        cmd = self._parse("desktop click 100,200")
+        assert cmd is not None
+        assert cmd.tool == "desktop"
+        assert cmd.action == "click"
+        assert cmd.requires_approval is True
+
+    def test_desktop_observe(self) -> None:
+        cmd = self._parse("desktop observe")
+        assert cmd is not None
+        assert cmd.tool == "desktop"
+        assert cmd.requires_approval is False
 
     def test_case_insensitive_tool(self) -> None:
         cmd = self._parse("BROWSER navigate https://x.com")
