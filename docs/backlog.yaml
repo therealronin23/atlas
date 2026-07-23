@@ -756,7 +756,7 @@ items:
       text/label, determinista (misma seed = mismos pares), y CLI que escribe JSON. Test que fija
       determinismo, formato y proporción de clases.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit c78a0b5
     test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_gen_judge_pairs.py", "-q"]
 
   - id: f2-6b-2-judge-vs-baseline-runner
@@ -772,7 +772,7 @@ items:
       de ambos + por clase; CLI que lee el JSON del paso 1 y escribe resultados. Test con juez fake
       (respuestas fijadas) y baseline real.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit f92e041
     test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_vs_baseline.py", "-q"]
 
   - id: f2-6b-3-verdict-report
