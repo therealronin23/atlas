@@ -809,7 +809,7 @@ items:
       migración idempotente de columnas (patrón _migrate_temporal); recall_temporal razona
       opcionalmente sobre fact_valid_at_ns; test as_of anclado al tiempo del hecho, no al de ingesta.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit d7b2ef6
     test_cmd: ["python3", "-m", "pytest", "tests/test_memory_index.py", "-x", "-q"]
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T1 — Autoconstrucción a pleno pulmón ===
@@ -1036,7 +1036,7 @@ items:
       real); test E2E demuestra suspensión→aprobación humana→restore ejecutado→auditado
       en Merkle con `risk_level="critical"`; una denegación dejar el worktree intacto.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 1a5da66
 
   - id: t1-toolcoder-process-sandbox
     title: "ToolCoder: aislamiento real de proceso/red (BwrapJail), no solo aislamiento de ruta"
@@ -1412,7 +1412,7 @@ items:
       su aceptación por el RecipeEngine existente. No requiere red real ni
       dependencias nuevas (parseo de dict ya cargado, no un cliente HTTP).
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 334d750
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T4 — Vigilancia serendípica del ecosistema ===
 
@@ -1485,7 +1485,7 @@ items:
       completo se ejecuta sin excepción y que lo NO-verificado nunca se toca. mypy limpio; suite
       dirigida verde (no toda la suite).
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 7eca1e9
     test_cmd: ["python3", "-m", "pytest", "tests/test_mcp_installer_exec.py", "-q"]
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T6 — Twin real y elasticidad multi-hardware ===
@@ -1602,4 +1602,4 @@ items:
       t6-hermes-redeploy-execute); documentar explícitamente en el módulo que es standalone sin
       consumidor todavía (evitar wire-before-claim).
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit cb1250d
