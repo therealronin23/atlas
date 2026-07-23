@@ -80,3 +80,37 @@ de archivo) como pieza de bajo coste, independiente del veredicto de absorción.
 Ningún ítem `t1-*` de Track B duplicaba este trabajo — se verificó explícitamente
 durante la extracción de backlog que ADR-068/el dossier de OpenHands se dejaron sin
 entrada nueva porque este mismo trabajo los cubría en vivo esa noche.
+
+## CORRECCIÓN post-cierre (2026-07-23, sesión siguiente): el encuadre de este veredicto era el equivocado
+
+El operador señaló, correctamente, que este Track A nunca debió plantearse como
+"¿absorbemos Aider u OpenHands-SDK COMO MOTOR (dependencia instalada)?" — la intención
+real (consistente con `atlas-coding-discipline` y la memoria `adopt-real-not-shell`)
+era "¿qué técnicas concretas de Aider/OpenHands le faltan a AtlasCoder para igualar o
+superarlos?". Bajo el encuadre equivocado que usé, la objeción #2 del Cónclave
+("colisión real de litellm obliga a aislamiento de proceso") pesó como si fuéramos a
+instalar el paquete completo en el venv de Atlas — algo que nunca fue necesario ni
+se planteó hacer. Verificado además que esa objeción, tal como la escribí, estaba
+mal fundamentada para OpenHands: su `pyproject.toml` real declara `litellm>=1.84.1`
+(un suelo, NO un pin exacto), compatible con el suelo de atlas-core (`>=1.89.0`) — solo
+Aider tiene un pin exacto (`litellm==1.82.3`) genuinamente incompatible. Detalle en
+memoria `feedback-scope-adoption-as-extraction`.
+
+**Esto NO invierte el veredicto de "no absorber el paquete entero"** — las objeciones
+#1 (no se midió autocorrección real) y #3 (fragilidad operativa medida en vivo) siguen
+siendo válidas y no dependen del encuadre. Pero SÍ deja abierta, sin cerrar, la
+pregunta correcta que nunca se hizo: extraer como código nativo (sin nueva dependencia,
+sin colisión posible) técnicas concretas ya identificadas en la disección real:
+
+- De Aider (`aider/coders/base_coder.py`): el **bucle de autocorrección** (aplicar
+  edición → lint/test → si falla, reintentar con el error en contexto) — la brecha
+  que explica el 1/6 medido de AtlasCoder hoy.
+- De Aider (`aider/repomap.py`, 867 líneas): **repo-map con PageRank** (tree-sitter +
+  networkx) para elegir qué fragmentos de archivos no abiertos meter en contexto,
+  acotado por presupuesto de tokens.
+- De OpenHands-SDK (`agent.py::step()`): manejo explícito de
+  `LLMContextWindowExceedError`/`FunctionCallValidationError` con condensación/retry,
+  más maduro que lo que tiene hoy InferenceHub/AtlasCoder.
+
+Backlog: falta crear el ítem `t1-atlascoder-selfcorrect-loop` (o similar) para esto —
+no creado en esta sesión, queda como pendiente real explícito, no implícito.

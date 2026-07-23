@@ -1087,6 +1087,33 @@ items:
     priority: 3
     status: done  # 2026-07-23 (sesión maratón): commit 22ab6d9
 
+  # --- Corrección de encuadre T1.5 (2026-07-23, sesión siguiente): no absorción de
+  # paquete, extracción quirúrgica de técnicas — ver docs/design/2026-07-23-t15-coding-territory-veredicto.md ---
+
+  - id: t1-atlascoder-selfcorrect-loop
+    title: "AtlasCoder: bucle de autocorrección real (aplicar → verificar → reintentar con el error en contexto)"
+    why: >
+      Medido en vivo en T1.5 (docs/design/2026-07-23-t15-coding-territory-veredicto.md):
+      AtlasCoder acertó 1/6 tareas de prueba; Aider acertó 3/3 en las mismas condiciones.
+      Disección real de aider/coders/base_coder.py (código leído, no README) muestra
+      el mecanismo real: run() aplica ediciones → lint_edited()/corre tests → si falla,
+      mete el error en reflected_message y vuelve a run_one() — un reintento real con
+      el fallo concreto en contexto, no solo "generar de nuevo a ciegas". AtlasCoder
+      hoy no tiene este loop; es la extracción quirúrgica de UNA técnica (no absorción
+      del paquete Aider — sin dependencia nueva, sin colisión de litellm posible, ver
+      corrección de encuadre en el veredicto T1.5).
+    targets:
+      - "src/atlas/core/atlas_coder.py"
+    acceptance: >
+      Tras aplicar una edición, AtlasCoder corre el test/lint asociado a la tarea; si
+      falla, reintenta con el traceback/mensaje de error real incluido en el prompt del
+      siguiente intento (no el mismo prompt repetido), hasta un máximo de reintentos
+      configurable. Test con un caso sintético donde el primer intento falla de forma
+      determinista (fixture) y el segundo, con el error en contexto, corrige — demuestra
+      el diferencial real que la medición de T1.5 no logró probar.
+    priority: 2
+    status: pending
+
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T2 — UI/UX viva ===
 
   - id: t2-1-micropoc-flutter
