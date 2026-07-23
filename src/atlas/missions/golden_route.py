@@ -26,6 +26,14 @@ scripts/ docs/ config/). Sigue sin haber LLM libre decidiendo el plan: sigue
 siendo parseo determinista + rechazo honesto (UnsupportedRequestError) para
 lo que no entra en el vocabulario. Ampliar más el vocabulario sigue siendo
 trabajo futuro.
+
+T1.2 (Foundry Fase C, ADR-069): primera soul ejecutable, `devil_advocate`
+(`atlas.missions.souls.devil_advocate`), enganchada vía
+`GoldenRouteSession.soul_review()` — un paso EXPLÍCITO antes de `approve()`,
+nunca automático ni oculto. La soul solo informa (invariante D2 intacta): su
+veredicto se registra en Merkle y queda disponible en `session.soul_verdict`,
+pero `approve()` sigue exigiendo la misma ceremonia humana de siempre — un
+humano decide, informado por la objeción, no sustituido por ella.
 """
 
 from __future__ import annotations
@@ -41,6 +49,7 @@ from typing import Any, Callable, Protocol
 from atlas.api.missions import mission_receipt, proposal_to_mission
 from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
 from atlas.logging.merkle_logger import MerkleLogger
+from atlas.missions.souls.devil_advocate import DevilAdvocateVerdict, review_mission
 
 __all__ = [
     "GoldenRoute",
@@ -59,6 +68,14 @@ class UnsupportedRequestError(ValueError):
 
 class _RunnerLike(Protocol):
     def run(self, timeout_s: int = 600) -> Any: ...
+
+
+class _SoulHubLike(Protocol):
+    """Lo mínimo que `soul_review` necesita del hub de inferencia (mismo
+    patrón que `_RunnerLike`): permite dobles de test sin acoplar la ruta
+    dorada a InferenceHub completo."""
+
+    def infer_for_role(self, role: str, request: Any) -> Any: ...
 
 
 _QUOTED_RE = re.compile(
@@ -232,6 +249,7 @@ class GoldenRouteSession:
         self._proposal_id = proposal.id
         self.plan: dict[str, str] = plan
         self._approval: dict[str, str] | None = None
+        self._soul_verdict: DevilAdvocateVerdict | None = None
 
     # -- lecturas derivadas del ledger (nunca estado duplicado) -----------
 
@@ -266,12 +284,44 @@ class GoldenRouteSession:
     def validation(self) -> dict[str, Any] | None:
         return self._proposal().validation
 
+    @property
+    def soul_verdict(self) -> DevilAdvocateVerdict | None:
+        """Último veredicto de `soul_review()`, o `None` si nunca se invocó
+        (invocarla es un paso explícito de la ruta, no automático)."""
+        return self._soul_verdict
+
     # -- transiciones -------------------------------------------------------
 
     def execute(self) -> dict[str, Any]:
         """Valida el cambio en el worktree (checks observables del motor)."""
         report = self._manager.validate(self._proposal_id)
         return dict(report.to_dict())
+
+    def soul_review(self, hub: _SoulHubLike) -> DevilAdvocateVerdict:
+        """Invoca la soul `devil_advocate` (Foundry Fase C, ADR-069, T1.2)
+        sobre la misión ACTUAL, un paso explícito antes de `approve()`.
+
+        Invariante D2 intacta: la soul nunca aprueba, rechaza ni aplica nada
+        — solo informa. El veredicto se registra en Merkle de forma
+        verificable (`golden_route.soul_reviewed`) y queda expuesto en
+        `self.soul_verdict`; si luego se llama a `approve()`, el veredicto
+        viaja también en ESE registro (`payload["soul_verdict"]`) para que
+        la decisión humana y la objeción queden ligadas en una sola entrada
+        auditable."""
+        mission = proposal_to_mission(self._proposal().to_dict())
+        verdict = review_mission(mission, hub=hub)
+        self._soul_verdict = verdict
+        self._merkle.log(
+            action="golden_route.soul_reviewed",
+            agent="golden_route.soul_devil_advocate",
+            result="success",
+            risk_level="high",
+            payload={
+                "proposal_id": self._proposal_id,
+                "verdict": verdict.to_dict(),
+            },
+        )
+        return verdict
 
     def approve(self, *, actor: str, decision: str) -> None:
         """Ceremonia humana explícita, registrada en Merkle ANTES de actuar."""
@@ -287,6 +337,9 @@ class GoldenRouteSession:
                 "actor": actor,
                 "decision": decision,
                 "plan": self.plan,
+                "soul_verdict": (
+                    self._soul_verdict.to_dict() if self._soul_verdict else None
+                ),
             },
         )
         if decision == "approve":
