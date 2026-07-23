@@ -900,7 +900,7 @@ items:
       resume vuelve a procesar; el estado de pausa es visible (`atlas reality` o
       comando dedicado); no requiere matar el proceso.
     priority: 2
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 5d05600
 
   - id: t1-plugin-contribution-consumers
     title: "Wire prompt/rule/command de plugins activados a un consumidor real (hoy solo skill tiene uno)"
@@ -926,7 +926,7 @@ items:
       para invocación); los otros dos tipos quedan honestamente documentados como
       "aplicados mecánicamente, sin consumidor" si no se cablean en este ítem.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 5fb2a2f
 
   - id: t1-governance-fixture-to-real
     title: "Atlas OS: bridge de gobernanza lee gates reales en vez de fixture, aprobaciones van a la cola HITL real"
@@ -954,7 +954,7 @@ items:
       integración demuestra un gate real evaluado end-to-end; el modo fixture sigue
       disponible para desarrollo/tests (no se rompe nada existente).
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit beda790
 
   - id: t1-irreversible-action-verifier
     title: "Verificación adversarial para acciones irreversibles del mundo real (ADR-047, propuesto sin código)"
@@ -979,7 +979,7 @@ items:
       sintética bloqueada por disenso y otra que pasa con evidencia adjunta; ninguna
       acción irreversible existente pierde su gate HITL actual (aditivo, no relajación).
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 9b44e30
 
   - id: t1-focus-chain-tracker
     title: "Checklist auto-mantenido de progreso para tareas agénticas largas (patrón Focus Chain de Cline)"
@@ -1049,7 +1049,7 @@ items:
       si el riesgo de romper ejecuciones reales es alto, entregar como flag opt-in con
       default actual documentado como deuda explícita, no relajar en silencio.
     priority: 2
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 2921c3f
 
   - id: t1-error-registry-lesson-promotion
     title: "Cerrar el lazo ErrorRegistry → LessonPromoter: quién marca promoted_to_lesson_id"
@@ -1369,7 +1369,7 @@ items:
       un adapter incompleto y aceptación de uno completo. NO requiere migrar todo
       el catálogo de una vez (documentar el resto como deuda). mypy limpio.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 431324a
 
   # --- OpenAPI -> capacidad: onboarding automático de APIs REST ---
   - id: t3-4-openapi-to-capability-compiler
