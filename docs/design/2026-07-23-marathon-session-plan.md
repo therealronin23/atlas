@@ -87,7 +87,7 @@ implementación acotada (T5.2/T5.3), con TDD real.
   33 candidata triadas (31 sin acción, 2 reales disecadas y añadidas al mapa: Atlas
   IDE/Void fork PENDIENTE, atlas-editor-zed PARK). Hallazgo real: trabajo YA existente
   en disco sin documentar. 48/48 tests, commiteado (`382a8a4`).
-- Track D: PLAN CERRADO, implementación en curso. Plan en
+- Track D: **CERRADO (8/8 tareas, 5 commits: f0726a4/dad8ba3/1f6e8cd/1395050)**. Plan en
   `docs/superpowers/plans/2026-07-23-t5-provider-discovery-plan.md` — 8 tareas TDD
   (T1 provider_errors.py, T2 cablear en InferenceHub, T3 provider_discovery.py, T4
   model_catalog_drift.py, T5 provider_preflight.py, T6 tick maintenance, T7 reality,

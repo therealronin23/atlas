@@ -1,0 +1,82 @@
+# T1.5 Coding Territory — disección, medición y veredicto Cónclave (2026-07-23)
+
+Cierra `docs/design/atlas_master_plan.md` §5, T1.5 (ADR-068 + enmienda 2026-07-17 del
+operador). Ejecutado en sesión maratón autónoma, con Cónclave real convocado para el
+veredicto (no decisión solitaria de la sesión).
+
+## Proceso
+
+1. **Disección adopt-real** de Aider (Apache-2.0) y OpenHands-SDK (MIT,
+   `software-agent-sdk` — no el repo grande `All-Hands-AI/OpenHands`, que se
+   repositionó como producto SaaS "Agent Canvas" que solo consume el SDK como
+   dependencia). Informes completos:
+   `docs/knowledge/t05b_paso3/` no aplica aquí — ver referencias abajo.
+2. **Medición**: 3 tareas idénticas (TDD sintético, test ya escrito y en rojo) contra
+   AtlasCoder (motor propio), Aider y OpenHands-SDK, en worktrees efímeros, verificadas
+   con `pytest` independiente en cada caso.
+3. **Veredicto Cónclave real**: `convene_for_decision()` (`src/atlas/core/deliberation_council.py`),
+   trío vía `adversarial_panel`, `difficulty=HARD, risk="high", irreversible=True`.
+
+## Resultado de la medición (3 tareas: clamp trivial, dedupe bug-fix, formatter diseño)
+
+| Motor | Resultado | Coste total | Hallazgo real |
+|---|---|---|---|
+| AtlasCoder (propio) | 1/6 (search_replace 0/3, apply_patch 1/3) | ~$0 | Bug real en `_apply_edits`: descarta bloques SEARCH vacío para archivo nuevo pese a que el prompt lo promete |
+| Aider | 3/3 | $0.0166 | Integración de proveedores sin adaptador (mismo LiteLLM/convención que InferenceHub) |
+| OpenHands-SDK | 3/3 | ~$0.038 | Agotó cuota gratuita de Gemini a mitad de la comparación; tool-calling nativo falló con Groq en la disección previa |
+
+**Limitación honesta de la medición**: ninguna de las 3 tareas activó el loop de
+autocorrección por FALLO REAL de test en Aider/OpenHands — el modelo acertó a la
+primera en ambos. El "3/3" mide que el LLM base acertó, no necesariamente el
+diferencial real del motor. Esto es precisamente lo que el Cónclave señaló como
+objeción central.
+
+## Veredicto del Cónclave: **FAIL** a la absorción
+
+2 de 3 revisores respondieron (linaje GLM vía NVIDIA, linaje Mistral vía NVIDIA; el
+slot Gemini falló la llamada — panel con diversidad parcial, no completa). Ambos
+coincidieron, independientemente, en objeciones MAJOR:
+
+1. El 3/3 no prueba el mecanismo de autocorrección real de Aider/OpenHands — solo que
+   el modelo acertó a la primera. AtlasCoder, aunque falló, sí expuso su loop de
+   corrección; de los otros dos no hay evidencia de comportamiento bajo fallo real.
+2. La colisión de `litellm` (ambos motores fijan una versión exacta incompatible con
+   `atlas-core>=1.89.0`) obliga a aislamiento de proceso para el motor de código
+   CENTRAL de Atlas — contradice la premisa de "órgano propio", no "dependencia
+   externa aislada".
+3. Fragilidad operativa real de OpenHands (cuota agotada, tool-calling malformado con
+   Groq) — no hipotética, medida en esta misma sesión.
+4. La alternativa barata (arreglar ~15 líneas conocidas de AtlasCoder) es
+   dramáticamente más barata que absorber y mantener 20k-100k LOC ajenas.
+
+**Decisión aceptada**: NO se absorbe Aider ni OpenHands-SDK para T1.5. Se repara el
+bug real de AtlasCoder (`_apply_edits`, soporte de `search_text` vacío para creación
+de archivo) como pieza de bajo coste, independiente del veredicto de absorción.
+
+## Estado de T1.5 tras este cierre
+
+- **Absorción de Aider/OpenHands**: descartada formalmente con evidencia (no "no se
+  hizo por falta de tiempo" — se hizo la disección completa, la medición completa, y
+  el Cónclave dijo que no).
+- **AtlasCoder**: bug de `_apply_edits` reparado (ver commit correspondiente).
+- **Pendiente real, si se quiere revisitar en el futuro**: para medir de verdad la
+  capacidad de autocorrección-por-fallo-real-de-test (el diferencial que este
+  experimento NO logró medir), haría falta una tarea con un bug más sutil (no
+  inferible solo leyendo el test) o un modelo más débil que fuerce al menos una
+  iteración real de fallo→lectura de traceback→fix. No se repite esta noche — sería
+  gastar más presupuesto en un experimento cuyo diseño ya se sabe insuficiente para
+  la pregunta que importa.
+
+## Artefactos de la sesión (no permanentes, viven en /tmp — referencia si se revisita)
+
+- `dissection_aider.md`, `dissection_openhands.md` — disecciones completas.
+- `comparison_atlascoder.md`, `comparison_aider.md`, `comparison_openhands.md` —
+  mediciones completas con diffs y tablas.
+- Veredicto crudo del Cónclave (objeciones completas de los 2 revisores) preservado
+  en este documento arriba, no en un fichero aparte de `/tmp`.
+
+## Backlog relacionado (ya en `docs/backlog.yaml`)
+
+Ningún ítem `t1-*` de Track B duplicaba este trabajo — se verificó explícitamente
+durante la extracción de backlog que ADR-068/el dossier de OpenHands se dejaron sin
+entrada nueva porque este mismo trabajo los cubría en vivo esa noche.

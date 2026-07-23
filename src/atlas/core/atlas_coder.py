@@ -898,12 +898,58 @@ class AtlasCoder:
 
         for search_text, replace_text in blocks:
             if search_text == "":
-                # Bloque de creación de archivo nuevo: no hay forma de saber
-                # a qué archivo pertenece sin más contexto; se ignora con warning.
-                logger.warning(
-                    "AtlasCoder: bloque SEARCH vacío (creación de archivo) "
-                    "ignorado — no se puede determinar el destino."
-                )
+                # Bloque de creación de archivo nuevo (Hallazgo A, medición
+                # T1.5 Coding Territory 2026-07-23): el prompt SÍ documenta
+                # este formato ("usa SEARCH vacío" — ver
+                # _INSTRUCTIONS_SEARCH_REPLACE) así que hay que soportarlo, no
+                # descartarlo incondicionalmente como antes. Solo es seguro
+                # de resolver cuando hay un ÚNICO context_file candidato
+                # (mismo criterio que _try_apply_model_fallback, evita
+                # adivinar entre varios archivos); si el candidato ya existe
+                # con contenido real, un SEARCH vacío sigue siendo ambiguo
+                # (¿reemplaza todo? ¿es un error del modelo?) y se falla
+                # cerrado para no destruir código real por accidente.
+                if len(context_files) != 1:
+                    logger.warning(
+                        "AtlasCoder: bloque SEARCH vacío (creación de "
+                        "archivo) ignorado — %d archivos de contexto "
+                        "candidatos, no se puede determinar el destino sin "
+                        "ambigüedad.", len(context_files),
+                    )
+                    continue
+
+                rel_path = context_files[0]
+                # Defensa en profundidad: _is_protected_path ya se verifica
+                # sobre TODO context_files antes de llamar al modelo (ver
+                # `code()`), así que esta rama no debería alcanzarse nunca
+                # con una ruta protegida — pero se repite aquí fail-closed
+                # por si `_apply_edits` se invoca directamente.
+                if _is_protected_path(rel_path):
+                    logger.warning(
+                        "AtlasCoder: creación de archivo sobre ruta "
+                        "protegida %r ignorada (fail-closed).", rel_path,
+                    )
+                    continue
+
+                abs_path = self._repo_root / rel_path
+                try:
+                    existing = abs_path.read_text(encoding="utf-8")
+                except FileNotFoundError:
+                    existing = None
+                if existing is not None and existing.strip() != "":
+                    logger.warning(
+                        "AtlasCoder: bloque SEARCH vacío sobre %r, que ya "
+                        "tiene contenido — ignorado (fail-closed, evita "
+                        "sobreescribir código real con un SEARCH ambiguo).",
+                        rel_path,
+                    )
+                    continue
+
+                abs_path.parent.mkdir(parents=True, exist_ok=True)
+                if self._write_with_lint_gate(abs_path, rel_path, replace_text):
+                    if rel_path not in changed:
+                        changed.append(rel_path)
+                    self._last_blocks_applied += 1
                 continue
 
             applied = False
@@ -963,78 +1009,6 @@ class AtlasCoder:
                     if fallback_path not in changed:
                         changed.append(fallback_path)
                     self._last_blocks_applied += 1
-                else:
-                    logger.warning(
-                        "AtlasCoder: bloque SEARCH no encontrado en ningún archivo "
-                        "de contexto — bloque ignorado.\nSEARCH=%r", search_text[:120]
-                    )
-
-        return changed
-
-        for search_text, replace_text in blocks:
-            if search_text == "":
-                # Bloque de creación de archivo nuevo: no hay forma de saber
-                # a qué archivo pertenece sin más contexto; se ignora con warning.
-                logger.warning(
-                    "AtlasCoder: bloque SEARCH vacío (creación de archivo) "
-                    "ignorado — no se puede determinar el destino."
-                )
-                continue
-
-            applied = False
-            rejected = False
-            for rel_path in context_files:
-                abs_path = self._repo_root / rel_path
-                try:
-                    original = abs_path.read_text(encoding="utf-8")
-                except FileNotFoundError:
-                    continue
-
-                count = original.count(search_text)
-                if count == 0:
-                    tolerant = self._reindent_tolerant_match(
-                        original, search_text, replace_text
-                    )
-                    if tolerant is not None:
-                        if self._write_with_lint_gate(abs_path, rel_path, tolerant):
-                            if rel_path not in changed:
-                                changed.append(rel_path)
-                            applied = True
-                        else:
-                            rejected = True  # encontrado pero rechazado (linter); no es "not found"
-                        break
-                    continue
-                if count > 1:
-                    # Verificación pre-apply (lección SWE-agent str_replace_editor):
-                    # un match no-único es tan peligroso como uno ausente — podría
-                    # aplicarse al bloque equivocado. Fail-closed: no aplicar.
-                    rejected = True
-                    logger.warning(
-                        "AtlasCoder: bloque SEARCH ambiguo (%d ocurrencias en %s) "
-                        "— no aplicado (fail-closed, evita editar el bloque "
-                        "equivocado).\nSEARCH=%r",
-                        count, rel_path, search_text[:120],
-                    )
-                    break
-
-                new_content = original.replace(search_text, replace_text, 1)
-                if self._write_with_lint_gate(abs_path, rel_path, new_content):
-                    if rel_path not in changed:
-                        changed.append(rel_path)
-                    applied = True
-                else:
-                    rejected = True  # encontrado pero rechazado (linter); no es "not found"
-                break
-
-            if not applied and not rejected:
-                fallback_path = None
-                if use_apply_model:
-                    fallback_path = self._try_apply_model_fallback(
-                        search_text, replace_text, context_files
-                    )
-                if fallback_path is not None:
-                    if fallback_path not in changed:
-                        changed.append(fallback_path)
                 else:
                     logger.warning(
                         "AtlasCoder: bloque SEARCH no encontrado en ningún archivo "

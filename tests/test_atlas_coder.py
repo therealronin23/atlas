@@ -4,6 +4,7 @@ Tests para AtlasCoder — todo mockeado, sin red ni InferenceHub real.
 
 from __future__ import annotations
 
+import ast
 from unittest.mock import MagicMock
 
 import pytest
@@ -180,6 +181,159 @@ def test_code_applies_multiple_blocks(tmp_path):
     assert result.success is True
     assert "A_NEW" in fa.read_text()
     assert "B_NEW" in fb.read_text()
+
+
+# ---------------------------------------------------------------------------
+# Hallazgo A (medición T1.5 Coding Territory, 2026-07-23) — SEARCH vacío para
+# creación de archivo nuevo con edit_format="search_replace" (default). El
+# prompt (_INSTRUCTIONS_SEARCH_REPLACE) documenta esta capacidad; antes del
+# fix, _apply_edits descartaba el bloque incondicionalmente y CUALQUIER tarea
+# que empezara de un archivo vacío/inexistente fallaba siempre (confirmado
+# 0/3 en tareas reales de la sesión).
+# ---------------------------------------------------------------------------
+
+def test_code_creates_new_file_from_empty_search_block(tmp_path):
+    """SEARCH vacío + archivo NO existente en disco → se crea con el
+    contenido de REPLACE (reproduce la tarea 1 de la medición: clamp.py)."""
+    hub = _make_hub(_sr_block("", "def clamp(value, lo, hi):\n    return max(lo, min(value, hi))\n"))
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="crea clamp.py",
+        context_files=["clamp.py"],
+        test_cmd=["true"],
+    )
+
+    assert result.success is True
+    assert result.files_changed == ["clamp.py"]
+    content = (tmp_path / "clamp.py").read_text()
+    assert "def clamp(" in content
+
+
+def test_code_creates_new_file_from_empty_search_block_when_file_pre_exists_empty(tmp_path):
+    """SEARCH vacío + archivo YA presente en disco pero con 0 bytes → mismo
+    tratamiento que 'no existe' (0 bytes no es contenido real). Este es
+    exactamente el escenario medido en la sesión: el runner de evaluación
+    deja `clamp.py` como stub vacío antes de invocar AtlasCoder."""
+    f = tmp_path / "clamp.py"
+    f.write_text("")
+    hub = _make_hub(_sr_block("", "def clamp(value, lo, hi):\n    return max(lo, min(value, hi))\n"))
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="crea clamp.py",
+        context_files=["clamp.py"],
+        test_cmd=["true"],
+    )
+
+    assert result.success is True
+    assert "def clamp(" in f.read_text()
+
+
+def test_code_creates_new_file_in_new_subdirectory(tmp_path):
+    """El directorio padre del archivo nuevo puede no existir todavía — se
+    crea (mismo invariante que AddFileOp en patch_format.py)."""
+    hub = _make_hub(_sr_block("", "VALUE = 1\n"))
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="crea scratch/nuevo.py",
+        context_files=["scratch/nuevo.py"],
+        test_cmd=["true"],
+    )
+
+    assert result.success is True
+    # Nota: la regex _SEARCH_REPLACE_RE recorta whitespace/newlines finales
+    # del bloque REPLACE (mismo comportamiento ya existente para bloques de
+    # edición normales) — se verifica el contenido, no la newline final.
+    assert (tmp_path / "scratch" / "nuevo.py").read_text().strip() == "VALUE = 1"
+
+
+def test_code_empty_search_block_rejected_when_file_has_real_content(tmp_path):
+    """Decisión de diseño: si el archivo indicado por context_files YA existe
+    y tiene contenido real, un SEARCH vacío sigue siendo ambiguo (¿reemplaza
+    todo el archivo? ¿es un error del modelo que debía copiar SEARCH real?)
+    — se falla cerrado para no sobreescribir código real sin querer. El
+    archivo debe quedar intacto."""
+    f = tmp_path / "existing.py"
+    f.write_text("def real_function():\n    return 1\n")
+    hub = _make_hub(_sr_block("", "def replaced():\n    return 2\n"))
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="tarea con SEARCH vacío ambiguo sobre archivo con contenido",
+        context_files=["existing.py"],
+        test_cmd=["true"],
+    )
+
+    # El run en sí no falla (no hay excepción, el bloque simplemente se
+    # ignora) — lo que se verifica es que NO se tocó el archivo real.
+    assert result.success is True
+    assert f.read_text() == "def real_function():\n    return 1\n"
+    assert result.files_changed == []
+
+
+def test_code_empty_search_block_rejected_when_multiple_context_files(tmp_path):
+    """SEARCH vacío con >1 archivo de contexto candidato → ambiguo, no se
+    puede determinar a cuál de los dos pertenece la creación — se ignora."""
+    hub = _make_hub(_sr_block("", "VALUE = 1\n"))
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="crea un archivo nuevo con dos candidatos",
+        context_files=["a.py", "b.py"],
+        test_cmd=["true"],
+    )
+
+    assert result.success is True
+    assert not (tmp_path / "a.py").exists()
+    assert not (tmp_path / "b.py").exists()
+    assert result.files_changed == []
+
+
+def test_apply_edits_empty_search_block_respects_protected_path(tmp_path):
+    """Defensa en profundidad: aunque `code()` ya filtra context_files
+    protegidos ANTES de llamar al modelo, `_apply_edits` no debe crear un
+    archivo en una ruta protegida si se invoca directamente."""
+    hub = _make_hub("")
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+
+    changed = coder._apply_edits(
+        _sr_block("", "SECRET=leaked\n"), context_files=[".env"],
+    )
+
+    assert changed == []
+    assert not (tmp_path / ".env").exists()
+
+
+def test_code_empty_search_block_creates_syntactically_valid_python(tmp_path):
+    """Regresión directa de la tarea real que falló en la medición T1.5:
+    archivo vacío + SEARCH vacío + REPLACE con una función simple → el
+    archivo final contiene esa función y es sintácticamente válido."""
+    f = tmp_path / "clamp.py"
+    f.write_text("")
+    replace_text = (
+        "def clamp(value, min_value, max_value):\n"
+        "    if value < min_value:\n"
+        "        return min_value\n"
+        "    elif value > max_value:\n"
+        "        return max_value\n"
+        "    else:\n"
+        "        return value\n"
+    )
+    hub = _make_hub(_sr_block("", replace_text))
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="crea la función clamp",
+        context_files=["clamp.py"],
+        test_cmd=["true"],
+    )
+
+    assert result.success is True
+    content = f.read_text()
+    assert "def clamp(" in content
+    ast.parse(content)  # no debe lanzar SyntaxError
 
 
 # ---------------------------------------------------------------------------
