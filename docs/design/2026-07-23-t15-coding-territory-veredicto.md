@@ -105,12 +105,21 @@ sin colisión posible) técnicas concretas ya identificadas en la disección rea
 - De Aider (`aider/coders/base_coder.py`): el **bucle de autocorrección** (aplicar
   edición → lint/test → si falla, reintentar con el error en contexto) — la brecha
   que explica el 1/6 medido de AtlasCoder hoy.
-- De Aider (`aider/repomap.py`, 867 líneas): **repo-map con PageRank** (tree-sitter +
-  networkx) para elegir qué fragmentos de archivos no abiertos meter en contexto,
-  acotado por presupuesto de tokens.
 - De OpenHands-SDK (`agent.py::step()`): manejo explícito de
   `LLMContextWindowExceedError`/`FunctionCallValidationError` con condensación/retry,
   más maduro que lo que tiene hoy InferenceHub/AtlasCoder.
 
-Backlog: falta crear el ítem `t1-atlascoder-selfcorrect-loop` (o similar) para esto —
-no creado en esta sesión, queda como pendiente real explícito, no implícito.
+**Corrección sobre repo-map**: al ir a crear un ítem de backlog para "portar el
+repo-map con PageRank de Aider", verifiqué primero el código real de AtlasCoder
+(disciplina que casi me salto por segunda vez en la misma tarde) y **ya existe**:
+`src/atlas/core/repo_map.py` (211 líneas) implementa PageRank propio (sin networkx,
+por iteración de potencias) sobre símbolos extraídos vía `ast` (sin tree-sitter,
+decisión deliberada — Atlas es un proyecto Python puro), cableado en
+`AtlasCoder.plan()` vía `repo_map_files`. No se crea ítem de backlog para esto —
+ya está construido, con su propia implementación nativa, no un port de Aider.
+
+Backlog creado en esta corrección: `t1-atlascoder-selfcorrect-loop` (el bucle de
+autocorrección de Aider) y `t5-context-window-condensation-retry` (el manejo de
+contexto excedido de OpenHands, que se apoya en `classify_provider_error` ya
+construido en T5/Track D de la sesión anterior pero sin ningún consumidor que actúe
+sobre `ErrorKind.CONTEXT_LENGTH` todavía).

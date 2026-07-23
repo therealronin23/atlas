@@ -1114,6 +1114,31 @@ items:
     priority: 2
     status: pending
 
+  - id: t5-context-window-condensation-retry
+    title: "InferenceHub: condensar historia y reintentar cuando el error es CONTEXT_LENGTH"
+    why: >
+      Disección real de OpenHands-SDK (agent.py::step()) muestra manejo explícito de
+      LLMContextWindowExceedError con condensación + retry — más maduro que Atlas hoy.
+      Verificado por grep (2026-07-23): provider_errors.py (T5, Track D de esta misma
+      sesión) YA clasifica esto como ErrorKind.CONTEXT_LENGTH con retryable=False, pero
+      ningún caller de inference_hub.py hace nada con esa clasificación más allá de no
+      reintentar tal cual — no existe ningún mecanismo de condensación/truncado de
+      historia en el repo (grep de "condense"/"truncate_history"/"trim_history" en
+      inference_hub.py y atlas_coder.py: cero resultados). Es la pieza que falta para
+      que CONTEXT_LENGTH deje de ser un fallo terminal y pase a ser recuperable.
+    targets:
+      - "src/atlas/core/inference_hub.py"
+    acceptance: >
+      Cuando classify_provider_error devuelve ErrorKind.CONTEXT_LENGTH, InferenceHub
+      condensa la historia de mensajes (estrategia simple y determinista: recortar por
+      presupuesto de tokens desde el principio, preservando el system prompt y los N
+      mensajes más recientes — no requiere LLM adicional para resumir) y reintenta UNA
+      vez con la historia condensada antes de propagar el fallo. Test con una historia
+      sintética que excede el presupuesto, un fake que lanza ContextWindowExceededError
+      en el primer intento y responde normal en el segundo tras la condensación.
+    priority: 3
+    status: pending
+
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T2 — UI/UX viva ===
 
   - id: t2-1-micropoc-flutter
