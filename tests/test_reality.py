@@ -331,6 +331,105 @@ def test_collect_reality_wires_provider_smoke_section(tmp_path: Path) -> None:
     assert "ATLAS_PROVIDER_SMOKE" in report["provider_smoke"]["reason"]
 
 
+def test_provider_discovery_state_never_ran_without_file(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state = reality._provider_discovery_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["last_run_date"] is None
+    assert state["present"] == []
+    assert state["missing"] == []
+    assert state["skipped"] == []
+    assert "ATLAS_PROVIDER_DISCOVERY=1" in state["reason"]
+
+
+def test_provider_discovery_state_projects_last_run_with_missing_model(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_discovery_state.json").write_text(
+        json.dumps(
+            {
+                "last_run_date": "2026-07-23",
+                "last_results": [
+                    {
+                        "provider_name": "groq_llama_70b",
+                        "configured_model": "llama-3.3-70b-versatile",
+                        "present": True,
+                        "outcome": "present",
+                        "reason": "",
+                    },
+                    {
+                        "provider_name": "openrouter_qwen3_coder_free",
+                        "configured_model": "qwen/qwen3-coder:free",
+                        "present": False,
+                        "outcome": "missing",
+                        "reason": "qwen/qwen3-coder:free no está en el catálogo servido",
+                    },
+                    {
+                        "provider_name": "together_free",
+                        "configured_model": "some/model",
+                        "present": None,
+                        "outcome": "skipped",
+                        "reason": "discovery outcome=unreachable",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    state = reality._provider_discovery_state(tmp_path)
+
+    assert state["status"] == "ran"
+    assert state["last_run_date"] == "2026-07-23"
+    assert state["present"] == ["groq_llama_70b"]
+    assert state["missing"] == ["openrouter_qwen3_coder_free"]
+    assert state["skipped"] == ["together_free"]
+    # el reason debe nombrar el model_id ausente concreto, no un genérico
+    assert "qwen/qwen3-coder:free" in state["reason"]
+    assert "openrouter_qwen3_coder_free" in state["reason"]
+
+
+def test_provider_discovery_state_never_ran_on_corrupt_json(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_discovery_state.json").write_text("{not valid json", encoding="utf-8")
+
+    state = reality._provider_discovery_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["present"] == []
+    assert "unreadable" in state["reason"]
+
+
+def test_provider_discovery_state_never_ran_when_not_a_json_object(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_discovery_state.json").write_text("[1, 2, 3]", encoding="utf-8")
+
+    state = reality._provider_discovery_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert "JSON object" in state["reason"]
+
+
+def test_collect_reality_wires_provider_discovery_section(tmp_path: Path) -> None:
+    root = _mini_repo(tmp_path)
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert "provider_discovery" in report
+    assert report["provider_discovery"]["status"] == "never_ran"
+    assert "ATLAS_PROVIDER_DISCOVERY=1" in report["provider_discovery"]["reason"]
+
+
 def test_playwright_chromium_executable_stops_manager(monkeypatch, tmp_path: Path) -> None:
     from atlas.core import reality
 

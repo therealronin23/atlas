@@ -58,6 +58,7 @@ def collect_reality(
         "autonomy": _autonomy_state(),
         "docs": _docs_state(root),
         "provider_smoke": _provider_smoke_state(root),
+        "provider_discovery": _provider_discovery_state(root),
         "graph": _graph_state(root),
         "f26_gate": _f26_gate_state(root),
         "checks": {},
@@ -531,6 +532,80 @@ def _provider_smoke_state(root: Path) -> dict[str, Any]:
         "last_run_date": last_run_date,
         "ok": ok,
         "dead": dead,
+        "skipped": skipped,
+        "reason": reason,
+    }
+
+
+def _provider_discovery_state(root: Path) -> dict[str, Any]:
+    """Proyecta el último resultado de la deriva catálogo↔configuración
+    (``ModelCatalogDrift``, ver maintenance_facade.maintenance_provider_discovery_tick)
+    sin disparar ninguna llamada de red: solo lee el fichero de estado que
+    ya escribió el daemon. Fichero ausente o ilegible -> ``never_ran`` con
+    razón honesta, jamás una excepción (mismo principio fail-honesto que
+    ``_provider_smoke_state``)."""
+    path = root / "workspace" / "self_build" / "provider_discovery_state.json"
+    never_ran: dict[str, Any] = {
+        "status": "never_ran",
+        "last_run_date": None,
+        "present": [],
+        "missing": [],
+        "skipped": [],
+    }
+    if not path.is_file():
+        return {
+            **never_ran,
+            "reason": (
+                "no provider_discovery_state.json found; set ATLAS_PROVIDER_DISCOVERY=1 "
+                "to enable the daily model catalog drift check"
+            ),
+        }
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {
+            **never_ran,
+            "reason": f"provider_discovery_state.json unreadable: {type(exc).__name__}",
+        }
+    if not isinstance(raw, dict):
+        return {
+            **never_ran,
+            "reason": "provider_discovery_state.json is not a JSON object",
+        }
+    last_run_date = raw.get("last_run_date")
+    results = raw.get("last_results")
+    if not isinstance(results, list):
+        results = []
+
+    def _entries(outcome: str) -> list[dict[str, Any]]:
+        return [
+            entry
+            for entry in results
+            if isinstance(entry, dict)
+            and isinstance(entry.get("provider_name"), str)
+            and entry.get("outcome") == outcome
+        ]
+
+    present = [entry["provider_name"] for entry in _entries("present")]
+    missing_entries = _entries("missing")
+    missing = [entry["provider_name"] for entry in missing_entries]
+    skipped = [entry["provider_name"] for entry in _entries("skipped")]
+
+    if missing:
+        drifted = [
+            f"{entry['provider_name']}:{entry.get('configured_model', '?')}"
+            for entry in missing_entries
+        ]
+        reason = f"{len(missing)} provider(s) drifted from configured model_id: {', '.join(drifted)}"
+    elif not results:
+        reason = "provider_discovery_state.json present but empty (no results recorded)"
+    else:
+        reason = "all checked providers present or skipped"
+    return {
+        "status": "ran",
+        "last_run_date": last_run_date,
+        "present": present,
+        "missing": missing,
         "skipped": skipped,
         "reason": reason,
     }
