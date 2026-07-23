@@ -1394,7 +1394,7 @@ items:
       verde; ningún cambio de comportamiento en browser/editor/vision existentes.
     priority: 1
     status: pending  # 2026-07-23: AVANCE PARCIAL, commits 53786f8 (tipos puros) +
-    # <pendiente de rellenar> (Gate F/PolicyEngine wiring). Investigado con 2
+    # 9e4fe68 (Gate F/PolicyEngine wiring). Investigado con 2
     # agentes Explore + 1 Plan antes de codificar. Hecho: DesktopAction/
     # DesktopTool/DesktopPlanner (src/atlas/tools/computer_use/), routing
     # "desktop" en gate_f_parser.py/gate_f_executor.py (observe/windows/click/
