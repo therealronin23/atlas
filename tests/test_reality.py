@@ -477,3 +477,21 @@ def test_collect_reality_wires_graph_section(tmp_path: Path, monkeypatch) -> Non
     assert len(graph_caps) == 1
     assert graph_caps[0]["status"] == "degraded"
     assert "NO_DB" in graph_caps[0]["evidence"]
+
+
+def test_collect_reality_wires_self_build_pause_section(tmp_path: Path) -> None:
+    """t1-daemon-control-surface: el estado de pausa del self-build daemon
+    debe ser visible en `atlas reality`, no solo en `atlas selfbuild status`."""
+    root = _mini_repo(tmp_path)
+
+    not_paused = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+    assert not_paused["self_build_pause"] == {
+        "paused": False, "paused_at": None, "reason": None,
+    }
+
+    from atlas.core.self_maintenance.self_build_pause import pause
+
+    pause(root, reason="sesion de desarrollo")
+    paused = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+    assert paused["self_build_pause"]["paused"] is True
+    assert paused["self_build_pause"]["reason"] == "sesion de desarrollo"

@@ -368,7 +368,15 @@ class MaintenanceFacade:
 
         Opt-in explícito (gasta LLM): requiere ``ATLAS_SELF_BUILD=1``. Un item
         por tick acota el gasto; el resultado queda auditado en Merkle por el
-        runner y las propuestas van a ColdUpdate (HITL intacto)."""
+        runner y las propuestas van a ColdUpdate (HITL intacto).
+
+        t1-daemon-control-surface: si ``atlas selfbuild pause`` está activo
+        (fichero ``workspace/self_build/pause_state.json``, ver
+        ``self_build_pause.py``), el tick es un no-op inmediato -- NO
+        consume el siguiente item del backlog, ni corre el preflight, ni
+        gasta LLM. Es SOLO este ciclo (self_build); el resto de
+        ``atlas serve`` (dashboard/API/MCP y los demás ciclos del
+        scheduler: dep/batch/research/etc.) sigue corriendo intacto."""
         # Guardia anti-recursión (incidente 2026-07-09, EN PRODUCCIÓN): la
         # suite que el propio lazo corre en su worktree hereda el env del
         # daemon (ATLAS_SELF_BUILD=1 vía systemd EnvironmentFile) — un test
@@ -381,6 +389,11 @@ class MaintenanceFacade:
             return {"status": "nested_run_guard"}
         if os.environ.get("ATLAS_SELF_BUILD", "").strip() != "1":
             return {"status": "disabled"}
+
+        from atlas.core.self_maintenance.self_build_pause import is_paused
+
+        if is_paused(self._project_root()):
+            return {"status": "paused"}
 
         from atlas.core.self_maintenance.backlog import (
             load_backlog,

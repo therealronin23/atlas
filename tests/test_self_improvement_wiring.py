@@ -190,6 +190,103 @@ class TestSelfBuildTickPreflight:
         assert orch.maintenance_self_build_tick() == {"status": "no_pending"}
 
 
+class TestSelfBuildTickPause:
+    """t1-daemon-control-surface: pausa cooperativa vía fichero de estado
+    (``self_build_pause.py``) -- el tick debe ser un no-op auditable en
+    cuanto está pausado, SIN tocar el backlog ni gastar preflight/LLM, y
+    debe volver a procesar en cuanto se hace resume()."""
+
+    def test_paused_tick_is_a_noop_and_never_touches_backlog(
+        self,
+        orch: Orchestrator,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from atlas.core.self_maintenance.self_build_pause import pause
+
+        monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        monkeypatch.setattr(PreflightGate, "check", _passing_preflight)
+
+        backlog_dir = tmp_path / "repo" / "docs"
+        backlog_dir.mkdir(parents=True, exist_ok=True)
+        (backlog_dir / "backlog.yaml").write_text(
+            "items:\n"
+            "  - id: demo-item\n"
+            "    title: demo\n"
+            "    why: probar la pausa\n"
+            "    targets: []\n"
+            "    acceptance: n/a\n"
+            "    priority: 1\n"
+            "    status: pending\n",
+            encoding="utf-8",
+        )
+
+        ran: list[str] = []
+
+        class _FakeRunner:
+            def run_item(self, item: Any) -> dict[str, Any]:
+                ran.append(item.id)
+                return {"item_id": item.id, "status": "proposed"}
+
+        monkeypatch.setattr(
+            orch, "maintenance_self_build_runner", lambda: _FakeRunner(),
+        )
+
+        pause(tmp_path / "repo", reason="sesion de desarrollo")
+
+        result = orch.maintenance_self_build_tick()
+
+        assert result == {"status": "paused"}
+        assert ran == []  # jamas consumio el item pendiente
+
+    def test_resume_makes_the_next_tick_process_again(
+        self,
+        orch: Orchestrator,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from atlas.core.self_maintenance.self_build_pause import pause, resume
+
+        monkeypatch.setenv("ATLAS_SELF_BUILD", "1")
+        monkeypatch.setattr(PreflightGate, "check", _passing_preflight)
+
+        backlog_dir = tmp_path / "repo" / "docs"
+        backlog_dir.mkdir(parents=True, exist_ok=True)
+        (backlog_dir / "backlog.yaml").write_text(
+            "items:\n"
+            "  - id: demo-item\n"
+            "    title: demo\n"
+            "    why: probar el resume\n"
+            "    targets: []\n"
+            "    acceptance: n/a\n"
+            "    priority: 1\n"
+            "    status: pending\n",
+            encoding="utf-8",
+        )
+
+        ran: list[str] = []
+
+        class _FakeRunner:
+            def run_item(self, item: Any) -> dict[str, Any]:
+                ran.append(item.id)
+                return {"item_id": item.id, "status": "proposed"}
+
+        monkeypatch.setattr(
+            orch, "maintenance_self_build_runner", lambda: _FakeRunner(),
+        )
+
+        repo_root = tmp_path / "repo"
+        pause(repo_root, reason="temporal")
+        assert orch.maintenance_self_build_tick() == {"status": "paused"}
+        assert ran == []
+
+        resume(repo_root)
+        result = orch.maintenance_self_build_tick()
+
+        assert result["status"] == "ran"
+        assert ran == ["demo-item"]
+
+
 class TestResearchTick:
     """Fase 4 (2026-07-09): panorama_scout + topic_expander estaban completos
     y probados pero sin dueño en el scheduler (self.PARK). CERO red real: el

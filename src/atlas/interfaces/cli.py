@@ -65,7 +65,7 @@ Comandos por categoria:
   NUCLEO / DIAGNOSTICO  status, reality, doctor, health, capabilities
   TAREAS                task, code, cycle, approve, pending, sweep
   MEMORIA                memory, search, audit, blocks, insights
-  AUTOCONSTRUCCION       update, self-audit
+  AUTOCONSTRUCCION       update, self-audit, selfbuild
   ATLAS OS (F15/16)      os-bridge, connections, business, gates, gate-h
   SERVICIOS 24/7         serve, dashboard, voice
   SEGURIDAD               security-audit
@@ -824,6 +824,47 @@ def self_audit_stop() -> None:
     orch = get_orchestrator()
     orch.self_audit().stop()
     console.print("[yellow]Self-audit stop requested[/yellow]")
+
+
+@cli.group("selfbuild")
+def selfbuild() -> None:
+    """Superficie de control operativo del self-build daemon (pause/resume/status).
+
+    t1-daemon-control-surface: el self-build daemon corre DENTRO de
+    ``atlas serve`` junto a dashboard/API/MCP; antes de esto, la unica forma
+    de detenerlo era matar el proceso entero. Estos comandos escriben/leen un
+    fichero de estado (``workspace/self_build/pause_state.json``) que
+    ``maintenance_self_build_tick`` respeta en cada ciclo -- pausar NO
+    afecta a dashboard/API/MCP ni a los demas ciclos del scheduler
+    (dep/batch/research/etc.), solo al consumo del backlog de autoconstruccion.
+    """
+
+
+@selfbuild.command("pause")
+@click.option("--reason", default="", help="Motivo de la pausa (queda en el estado, solo informativo).")
+def selfbuild_pause(reason: str) -> None:
+    """Pausa el self-build daemon: el proximo tick no consume el backlog."""
+    from atlas.core.self_maintenance.self_build_pause import pause  # noqa: PLC0415
+
+    state = pause(_handoff_repo_root(), reason=reason)
+    console.print(f"[yellow]Self-build pausado[/yellow] ({state['paused_at']})")
+
+
+@selfbuild.command("resume")
+def selfbuild_resume() -> None:
+    """Reanuda el self-build daemon: el siguiente tick vuelve a procesar."""
+    from atlas.core.self_maintenance.self_build_pause import resume  # noqa: PLC0415
+
+    resume(_handoff_repo_root())
+    console.print("[green]Self-build reanudado[/green]")
+
+
+@selfbuild.command("status")
+def selfbuild_status() -> None:
+    """Estado actual de pausa del self-build daemon (JSON)."""
+    from atlas.core.self_maintenance.self_build_pause import pause_status  # noqa: PLC0415
+
+    console.print_json(json.dumps(pause_status(_handoff_repo_root()), ensure_ascii=False))
 
 
 @cli.command()

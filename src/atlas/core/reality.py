@@ -61,6 +61,7 @@ def collect_reality(
         "provider_discovery": _provider_discovery_state(root),
         "graph": _graph_state(root),
         "f26_gate": _f26_gate_state(root),
+        "self_build_pause": _self_build_pause_state(root),
         "checks": {},
     }
     report["capabilities"] = _capability_plane(report)
@@ -346,6 +347,25 @@ def _f26_gate_state(root: Path) -> dict[str, Any]:
         return f26_gate_status(root).to_dict()
     except Exception as exc:  # noqa: BLE001
         return {"status": "unknown", "reason": type(exc).__name__}
+
+
+def _self_build_pause_state(root: Path) -> dict[str, Any]:
+    """Proyección read-only del estado de pausa del self-build daemon
+    (t1-daemon-control-surface, ver ``self_build_pause.py`` y
+    ``atlas selfbuild status``). Mismo principio fail-honesto que
+    ``_f26_gate_state``: nunca lanza, aunque el módulo o el fichero de
+    estado no estén disponibles."""
+    try:
+        from atlas.core.self_maintenance.self_build_pause import pause_status
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "paused": False,
+            "reason": f"self_build_pause import failed: {type(exc).__name__}",
+        }
+    try:
+        return pause_status(root)
+    except Exception as exc:  # noqa: BLE001
+        return {"paused": False, "reason": type(exc).__name__}
 
 
 def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
