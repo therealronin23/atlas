@@ -30,6 +30,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from atlas.core.provider_errors import ErrorKind, classify_provider_error
+
 if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
     from atlas.transparency.gateway import TransparencyGateway
@@ -71,14 +73,20 @@ INFER_RETRY_BASE_S = 0.5       # backoff: intento k espera ~BASE*2**(k-1) + jitt
 INFER_REQUEST_TIMEOUT_S = 120.0  # tope duro por llamada: un proveedor colgado no
                                  # puede bloquear al caller (Cónclave >20min, 2026-07-17)
 
-# Substring del nombre de excepción litellm que SÍ se reintenta. RateLimit queda
-# fuera (ya tiene cooldown); Authentication/BadRequest/NotFound son permanentes.
-_TRANSIENT_MARKERS = ("ServiceUnavailable", "InternalServer", "Timeout", "APIConnection")
-
-
+# T5.2/T5.3 T2 (2026-07-23): fuente única de verdad para "¿esta excepción se
+# puede reintentar YA, dentro del mismo bucle de intentos?" — delega en
+# provider_errors.classify_provider_error, que lee status_code/nombre de
+# clase. Sustituye el substring-matching disperso que vivía aquí
+# (_TRANSIENT_MARKERS) y en _classify_error.
+# RATE_LIMIT es retryable=True para classify_provider_error (el request puede
+# triunfar más tarde), pero el hub lo maneja con SU PROPIO mecanismo —cooldown
+# `_rate_limited_until` + fallback a otro proveedor + `wait_for_ratelimit`—
+# en vez del backoff corto (0.5-2s) de este bucle; comportamiento previo
+# intacto (RateLimit nunca estuvo en _TRANSIENT_MARKERS, así se evita quemar
+# 3 intentos contra un 429 que va a tardar minutos en abrir).
 def _is_transient(exc: BaseException) -> bool:
-    name = type(exc).__name__
-    return any(m in name for m in _TRANSIENT_MARKERS)
+    pe = classify_provider_error(exc)
+    return pe.retryable and pe.kind is not ErrorKind.RATE_LIMIT
 
 
 class InferenceLevel(str, Enum):
@@ -174,6 +182,12 @@ class InferenceResponse:
     finish_reason: str = ""
     # Protocolo de completitud (ADR-053) — presente cuando el hub tiene gateway
     api_response: "APIResponse | None" = field(default=None, repr=False)
+    # T5.2/T5.3 T2 (2026-07-23): clasificación estructurada del error (si lo
+    # hubo), poblada desde provider_errors.classify_provider_error. Aditivos
+    # con default — no rompen construcciones existentes del dataclass.
+    error_kind: str | None = None
+    retry_after_s: float | None = None
+    retryable: bool = False
 
 
 DEFAULT_PROVIDERS: list[Provider] = [
@@ -645,6 +659,12 @@ class InferenceHub:
             latency_ms=0, success=False,
             error=last_error or "Todos los proveedores fallaron. Considera delegar a Hermes.",
             mode=final_mode,
+            # T5.2/T5.3 T2 (2026-07-23): propaga la clasificación estructurada
+            # del último fallo real (no la resetea a defaults) — el caller
+            # sigue viendo por qué murió la cadena, no solo el string plano.
+            error_kind=last_resp.error_kind if last_resp is not None else None,
+            retry_after_s=last_resp.retry_after_s if last_resp is not None else None,
+            retryable=last_resp.retryable if last_resp is not None else False,
         )
 
     def providers_status(self) -> list[dict[str, Any]]:
@@ -779,6 +799,7 @@ class InferenceHub:
             duration_ms = int((time.perf_counter() - start) * 1000)
             err_name = type(last_exc).__name__
             err_msg = f"{err_name}: {last_exc}"
+            provider_error = classify_provider_error(last_exc)
             self._classify_error(provider, last_exc)
             self._log_model_call(provider, request, success=False, error=err_msg)
             self._calls.append({
@@ -793,6 +814,9 @@ class InferenceHub:
                 text="", provider=provider.name, model=provider.model_id,
                 level=provider.level, latency_ms=duration_ms, success=False,
                 error=err_msg, mode="live",
+                error_kind=provider_error.kind.value,
+                retry_after_s=provider_error.retry_after_s,
+                retryable=provider_error.retryable,
             )
 
         duration_ms = int((time.perf_counter() - start) * 1000)
@@ -847,11 +871,19 @@ class InferenceHub:
         )
 
     def _classify_error(self, provider: Provider, exc: BaseException) -> None:
-        name = type(exc).__name__
-        if "RateLimit" in name:
+        # T5.2/T5.3 T2 (2026-07-23): delega en la fuente única de verdad
+        # (provider_errors.classify_provider_error) en vez de substring-matching
+        # propio. AUTH/NOT_FOUND son permanentes (key muerta / modelo
+        # decomisionado) -> DOWN, no se re-queman. RATE_LIMIT honra
+        # retry_after_s del proveedor (Retry-After / x-ratelimit-reset-*) si
+        # vino en la excepción; si no, cae al cooldown fijo previo
+        # (comportamiento por defecto intacto).
+        pe = classify_provider_error(exc)
+        if pe.kind == ErrorKind.RATE_LIMIT:
             provider.status = ProviderStatus.RATELIMITED
-            self._rate_limited_until[provider.name] = time.time() + RATE_LIMIT_COOLDOWN_S
-        elif "Authentication" in name or "PermissionDenied" in name:
+            cooldown = pe.retry_after_s if pe.retry_after_s is not None else RATE_LIMIT_COOLDOWN_S
+            self._rate_limited_until[provider.name] = time.time() + cooldown
+        elif pe.kind in (ErrorKind.AUTH, ErrorKind.NOT_FOUND):
             provider.status = ProviderStatus.DOWN
             provider.error_count += 1
         else:

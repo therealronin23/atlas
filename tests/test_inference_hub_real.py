@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
 
 import litellm  # type: ignore
@@ -22,7 +23,15 @@ from atlas.core.inference_hub import (
     ProviderStatus,
     RATE_LIMIT_COOLDOWN_S,
 )
+from atlas.core.provider_errors import classify_provider_error
 from atlas.logging.merkle_logger import MerkleLogger
+
+
+def _httpx_response(status_code: int, headers: dict[str, str]) -> httpx.Response:
+    return httpx.Response(
+        status_code=status_code, headers=headers,
+        request=httpx.Request("POST", "https://example.invalid"),
+    )
 
 
 def test_default_gemini_provider_uses_stable_model_id() -> None:
@@ -295,6 +304,127 @@ class TestErrorClassification:
         assert resp.success is False
         assert hub._providers[0].status == ProviderStatus.DEGRADED
         assert hub._providers[0].error_count >= 1
+
+
+class TestStructuredErrorClassification:
+    """T5.2/T5.3 T2 (2026-07-23): classify_provider_error como fuente única
+    de verdad, cableada en InferenceResponse + cooldown + _classify_error."""
+
+    def test_error_fields_populated_from_classify_provider_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def auth_fail(**kwargs: Any) -> Any:
+            raise litellm.AuthenticationError(
+                "bad key", llm_provider="groq", model="x",
+            )
+
+        monkeypatch.setattr(litellm, "completion", auth_fail)
+        hub = InferenceHub(providers=providers[:1], mode="live")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert resp.error_kind == "auth"
+        assert resp.retryable is False
+        assert resp.retry_after_s is None
+
+    def test_cooldown_uses_retry_after_header_when_present(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def rate_limit_with_header(**kwargs: Any) -> Any:
+            raise litellm.RateLimitError(
+                "rate limit hit", llm_provider="groq", model="llama-3.3-70b-versatile",
+                response=_httpx_response(429, {"retry-after": "5"}),
+            )
+
+        monkeypatch.setattr(litellm, "completion", rate_limit_with_header)
+        hub = InferenceHub(providers=providers[:1], mode="live")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert resp.error_kind == "rate_limit"
+        assert resp.retryable is True
+        assert resp.retry_after_s == 5.0
+        groq = hub._providers[0]
+        cooldown = hub._rate_limited_until[groq.name]
+        remaining = cooldown - __import__("time").time()
+        # honra el header (5s), NO el cooldown fijo (60s)
+        assert 0 < remaining <= 6
+        assert remaining < RATE_LIMIT_COOLDOWN_S
+
+    def test_cooldown_falls_back_to_fixed_value_without_header(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def rate_limit_no_header(**kwargs: Any) -> Any:
+            raise litellm.RateLimitError(
+                "rate limit hit", llm_provider="groq", model="llama-3.3-70b-versatile",
+            )
+
+        monkeypatch.setattr(litellm, "completion", rate_limit_no_header)
+        hub = InferenceHub(providers=providers[:1], mode="live")
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.retry_after_s is None
+        groq = hub._providers[0]
+        cooldown = hub._rate_limited_until[groq.name]
+        remaining = cooldown - __import__("time").time()
+        assert 0 < remaining <= RATE_LIMIT_COOLDOWN_S + 1
+
+    def test_not_found_error_marks_provider_down(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+
+        def not_found(**kwargs: Any) -> Any:
+            raise litellm.exceptions.NotFoundError(
+                message="model not found", model="m", llm_provider="p",
+            )
+
+        monkeypatch.setattr(litellm, "completion", not_found)
+        hub = InferenceHub(
+            providers=providers[:1], mode="live", sleep_fn=lambda _s: None,
+        )
+        resp = hub.infer(InferenceRequest(prompt="x", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert resp.error_kind == "not_found"
+        assert resp.retryable is False
+        assert hub._providers[0].status == ProviderStatus.DOWN
+
+    def test_is_transient_delegates_to_classify_provider_error(self) -> None:
+        from atlas.core.inference_hub import _is_transient
+
+        exc = litellm.exceptions.ServiceUnavailableError(
+            message="503", model="m", llm_provider="p",
+        )
+        assert _is_transient(exc) == classify_provider_error(exc).retryable
+        assert _is_transient(exc) is True
+
+        auth_exc = litellm.AuthenticationError(
+            "bad key", llm_provider="groq", model="x",
+        )
+        assert _is_transient(auth_exc) == classify_provider_error(auth_exc).retryable
+        assert _is_transient(auth_exc) is False
+
+    def test_classify_error_delegates_to_classify_provider_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        hub = InferenceHub(providers=providers[:1], mode="live")
+        provider = hub._providers[0]
+
+        exc = litellm.exceptions.NotFoundError(
+            message="gone", model="m", llm_provider="p",
+        )
+        hub._classify_error(provider, exc)
+
+        assert provider.status == ProviderStatus.DOWN
+        assert classify_provider_error(exc).kind.value == "not_found"
 
 
 class TestRecovery:
