@@ -826,7 +826,7 @@ items:
       fixture demuestra plan→worktree→diff→aprobación→apply→receipt para el nuevo
       patrón, igual que el existente para append-doc; suite verde.
     priority: 2
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit c4f4460
 
   - id: t1-soul-devil-advocate
     title: "Primera soul ejecutable (devil_advocate) sobre el contrato soul_manifest"
@@ -1074,7 +1074,7 @@ items:
       referencia la lección); una promoción fallida (prove-it no PASS) no toca
       ErrorRegistry.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 22ab6d9
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T2 — UI/UX viva ===
 
@@ -1439,7 +1439,7 @@ items:
       inputSchema peligroso) que demuestre el veto, y un fixture de tool coherente que NO
       se bloquee (evitar falsos positivos que rompan la adopción normal); suite verde.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 6239a2d
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T5 — Cadena de proveedores robusta ===
 
