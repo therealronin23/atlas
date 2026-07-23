@@ -850,7 +850,7 @@ items:
       registro verificable; nunca auto-aprueba ni auto-aplica — solo informa al
       humano (draft-first, invariante D2 intacta).
     priority: 2
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 633c3d6
 
   - id: t1-radar-missions-draft
     title: "Radar→misiones: generar misiones propuestas desde hallazgos, no solo señalar propuestas existentes"
@@ -874,7 +874,7 @@ items:
       `GET /missions` con `human_action_required=true`; ninguna ruta nueva aplica
       cambios sin aprobación humana explícita.
     priority: 2
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón): commit 414828d
 
   - id: t1-daemon-control-surface
     title: "Superficie de control operativo del daemon de autoconstrucción (pause/resume/kill-switch)"
