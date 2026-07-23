@@ -8,6 +8,38 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-23 (sesión siguiente, tras triage) — `t2-1-micropoc-flutter`:
+  tramo Linux desktop medido (avance parcial, tramo móvil diferido por
+  decisión del operador).** Proyecto nuevo `prototypes/atlas_ui/
+  flutter_micropoc/` (no existía nada previo). Pantalla de medición: shader
+  de glow GLSL (`dart:ui` `FragmentProgram`) + partículas orbitando
+  (`CustomPainter`) + WS real contra `127.0.0.1:7341/events` + contador de
+  fps. Dos hallazgos reales corregidos antes de poder medir (no bugs de
+  Flutter, aplican a cualquier stack nativo futuro): (1) el shader GLSL no
+  compilaba sin `#include <flutter/runtime_effect.glsl>` para
+  `FlutterFragCoord()` (el compilador de shaders de Flutter da un error
+  confuso, no dice "falta el include"); (2) el bridge rechazaba la conexión
+  WS con HTTP 403 porque `_validate_websocket_origin`
+  (`src/atlas/api/server.py`, ADR-058) exige un header `Origin` tipo CSRF
+  que ningún cliente nativo (Dart, Python `websockets`) envía por defecto —
+  resuelto con `IOWebSocketChannel.connect(uri, headers: {...})`. Medido en
+  esta máquina (GTX 960M, Linux): build release limpio 29.49s, RSS pico del
+  proceso `flutter` ~509MB (PASA vs. techo earlyoom 7.5GB, con matiz: no
+  mide subprocesos hijos agregados), arranque en frío ~1.3s, fps estable
+  58-61 (motor Skia por defecto, target 60fps — PASA, sin artefactos ni
+  crash tras resize), WS vivo recibiendo 23 eventos históricos reales al
+  conectar. **Benchmark de sucesión (preocupación nº1 del operador, ver
+  memoria `succession-proofing-priority-2026-07-15`): PASA** — un subagente
+  Sonnet independiente (sin contexto previo, sin pistas) modificó el shader
+  a dos anillos concéntricos, compiló limpio a la 1ª iteración, sin consultar
+  documentación externa; verificado independientemente por mí (no solo el
+  reporte del subagente). Informe completo:
+  `docs/design/ui/research/2026-07-23-t21-micropoc-flutter-resultados.md`.
+  `docs/backlog.yaml` anotado con avance parcial, NO `done`: falta el tramo
+  Android (dispositivo no disponible en esta sesión, decisión explícita del
+  operador vía `AskUserQuestion`) — modelo/protocolo de conexión (USB
+  debugging vs. wireless adb) sin decidir todavía.
+
 - **2026-07-23 (sesión siguiente, tras triage) — `t3-1-universal-gui-operator`
   Commit 2/2: wiring real de Gate F + PolicyEngine (avance parcial, ítem NO
   cerrado).** Sobre el Commit 1 (tipos puros): `gate_f_parser.py` gana

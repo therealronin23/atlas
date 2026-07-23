@@ -1183,7 +1183,25 @@ items:
       WebSocket vivo recibiendo al menos un evento real del bridge 127.0.0.1:7341.
       Veredicto explícito por criterio (PASA / PASA-CON-MATIZ / FALLA), no solo prosa.
     priority: 1
-    status: pending
+    status: pending  # 2026-07-23: AVANCE PARCIAL (tramo Linux desktop), tramo
+    # móvil diferido — decisión explícita del operador (Android no disponible
+    # en esta sesión). Informe completo:
+    # docs/design/ui/research/2026-07-23-t21-micropoc-flutter-resultados.md.
+    # Medido en GTX 960M/Linux: build release limpio 29.49s, RSS pico proceso
+    # flutter ~509MB (PASA vs techo earlyoom 7.5GB, con matiz: no agrega
+    # subprocesos), arranque en frío ~1.3s, fps estable 58-61 (Skia por
+    # defecto, target 60fps, PASA), sin crash tras resize, WS vivo contra
+    # 127.0.0.1:7341/events recibiendo 23 eventos históricos reales
+    # (PASA-CON-MATIZ). Benchmark de sucesión: PASA — subagente Sonnet
+    # independiente modificó el shader (2 anillos concéntricos) a la primera,
+    # sin ayuda externa, verificado por mí independientemente. Dos hallazgos
+    # reales corregidos (no bugs de Flutter en sí, aplican a cualquier stack):
+    # (1) shader GLSL necesita #include <flutter/runtime_effect.glsl> para
+    # FlutterFragCoord(); (2) el bridge exige header Origin tipo CSRF que
+    # ningún cliente nativo envía por defecto (IOWebSocketChannel con headers
+    # explícitos lo resuelve). NO cerrado: falta conectar el Android del
+    # operador (modelo/protocolo de conexión sin decidir) y repetir
+    # fps/RAM/APK size en el móvil real.
 
   - id: t2-1-micropoc-compose
     title: "T2.1 micro-PoC medida: Compose Multiplatform (P2)"
