@@ -1129,3 +1129,73 @@ class TestRequestPolicyOverrides:
 
         assert resp.success is False
         assert len(calls) == INFER_MAX_RETRIES + 1
+
+
+class TestContextWindowCondensation:
+    """t5-context-window-condensation-retry: disección de OpenHands-SDK
+    (agent.py::step()) maneja LLMContextWindowExceedError con
+    condensación+retry; Atlas clasificaba CONTEXT_LENGTH (provider_errors.py)
+    pero ningún caller actuaba sobre ello. CONTEXT_LENGTH deja de ser un
+    fallo terminal: se condensa la historia (recorte determinista por
+    presupuesto de tokens, sin LLM adicional, preservando system + últimos
+    N mensajes) y se reintenta UNA vez antes de propagar el fallo."""
+
+    def _context_exceeded_then_ok(self) -> Any:
+        state = {"calls": 0}
+
+        def fake(**kwargs: Any) -> Any:
+            state["calls"] += 1
+            if state["calls"] == 1:
+                raise litellm.ContextWindowExceededError(
+                    "context_length_exceeded", llm_provider="x", model="y",
+                )
+            return _ok_completion(text="tras condensar")
+
+        return fake
+
+    def test_condenses_history_and_retries_once(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        providers = [_providers_with_keys(monkeypatch)[0]]
+        monkeypatch.setattr(litellm, "completion", self._context_exceeded_then_ok())
+        hub = InferenceHub(providers=providers, mode="live")
+
+        # Historia sintética que excede cualquier presupuesto razonable.
+        long_messages: list[dict[str, Any]] = [
+            {"role": "system", "content": "reglas del sistema"}
+        ]
+        for i in range(20):
+            long_messages.append({"role": "user", "content": f"turno {i}: " + "x" * 500})
+            long_messages.append({"role": "assistant", "content": f"respuesta {i}: " + "y" * 500})
+
+        resp = hub.infer(InferenceRequest(
+            prompt="ignorado, se usa messages",
+            level=InferenceLevel.L1,
+            messages=long_messages,
+        ))
+
+        assert resp.success is True
+        assert resp.text == "tras condensar"
+
+    def test_propagates_failure_when_condensation_cannot_help(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Historia ya mínima (system + 1 turno): condensar no cambia nada,
+        así que no vale la pena reintentar con una petición idéntica."""
+        providers = [_providers_with_keys(monkeypatch)[0]]
+        calls: list[int] = []
+
+        def always_context_exceeded(**kwargs: Any) -> Any:
+            calls.append(1)
+            raise litellm.ContextWindowExceededError(
+                "context_length_exceeded", llm_provider="x", model="y",
+            )
+
+        monkeypatch.setattr(litellm, "completion", always_context_exceeded)
+        hub = InferenceHub(providers=providers, mode="live")
+
+        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert resp.success is False
+        assert resp.error_kind == "context"
+        assert len(calls) == 1, "sin nada que condensar, no debe reintentar a ciegas"

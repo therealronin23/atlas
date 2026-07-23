@@ -1150,7 +1150,16 @@ items:
       sintética que excede el presupuesto, un fake que lanza ContextWindowExceededError
       en el primer intento y responde normal en el segundo tras la condensación.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23: commit pendiente — _condensed_request()/_condense_messages()
+    # en inference_hub.py, enganchado en _infer_raw tras _walk_chain fallar con
+    # error_kind=="context" (recorte determinista por presupuesto de tokens
+    # aprox. por caracteres, sin tiktoken ni LLM adicional; preserva system +
+    # últimos 4 mensajes). Sin nada que condensar (historia ya mínima) no
+    # reintenta con una petición idéntica. 2 tests nuevos en
+    # tests/test_inference_hub_real.py::TestContextWindowCondensation
+    # (condensa-y-corrige + no-reintenta-si-no-ayuda). mypy limpio (299
+    # ficheros), suite dirigida verde.
+    test_cmd: ["python3", "-m", "pytest", "tests/test_inference_hub_real.py", "-k", "TestContextWindowCondensation", "-q"]
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T2 — UI/UX viva ===
 

@@ -20,10 +20,24 @@ de escribir: `atlas reality --json`.
   prompt; verificado por mutación que el test detecta la regresión si se
   desactiva la inyección). `docs/backlog.yaml` marcado `done`; corrección
   añadida a `docs/design/2026-07-23-t15-coding-territory-veredicto.md`.
-  Ver memoria `feedback-scope-adoption-as-extraction`. Siguiente: revisar
-  `t5-context-window-condensation-retry` con la misma disciplina antes de
-  tocar `inference_hub.py` — no asumir que el gap descrito en el backlog es
-  real sin grepear primero.
+  Ver memoria `feedback-scope-adoption-as-extraction`.
+  - **`t5-context-window-condensation-retry` — gap real, verificado y
+    cerrado**: a diferencia de t1, el grep (`condense`/`truncate_history`/
+    `trim_history` en inference_hub.py/atlas_coder.py: cero resultados) SÍ
+    confirmó ausencia real. `classify_provider_error` ya clasificaba
+    `ErrorKind.CONTEXT_LENGTH` pero ningún caller actuaba sobre ello más allá
+    de marcar el proveedor degradado y probar el siguiente (mismo error de
+    tamaño). Añadido a `inference_hub.py`: `_effective_messages()`/
+    `_condense_messages()`/`_condensed_request()` (recorte determinista por
+    presupuesto de tokens aprox. por caracteres, sin tiktoken ni LLM
+    adicional, preserva system + últimos 4 mensajes; `None` si condensar no
+    cambiaría nada, evita reintentar a ciegas) enganchado en `_infer_raw`
+    tras `_walk_chain` fallar con `error_kind=="context"` — condensa y
+    re-camina la cadena UNA vez. TDD real (RED confirmado antes de
+    implementar): 2 tests nuevos en
+    `test_inference_hub_real.py::TestContextWindowCondensation`. mypy limpio
+    (299 ficheros), suite dirigida verde. Ambos ítems T0.5b-paso-3/T1.5
+    Track A cerrados esta sesión.
 
 - **Sesión post-MAXIMUS — los 3 frentes de Cycle 14 EJECUTADOS en paralelo
   (2026-07-22 23:20)** — el operador pidió correr F2.6/Taxonomía/T0.5b-paso3

@@ -25,7 +25,7 @@ import time
 import importlib
 import importlib.util
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -87,6 +87,64 @@ INFER_REQUEST_TIMEOUT_S = 120.0  # tope duro por llamada: un proveedor colgado n
 def _is_transient(exc: BaseException) -> bool:
     pe = classify_provider_error(exc)
     return pe.retryable and pe.kind is not ErrorKind.RATE_LIMIT
+
+
+# T5 (2026-07-23, técnica disecada de OpenHands-SDK agent.py::step()):
+# CONTEXT_LENGTH era un fallo terminal (classify_provider_error lo marca
+# retryable=False y así debe seguir siendo dentro del bucle de intentos por
+# proveedor — reintentar el MISMO payload no ayuda). Lo que faltaba era un
+# nivel por encima: condensar la historia y reintentar UNA vez con menos
+# contexto. Recorte determinista por presupuesto de tokens (aproximado por
+# caracteres, sin tiktoken ni LLM adicional — ADR "no new deps sin
+# aprobación"): preserva mensajes de sistema y los N más recientes, descarta
+# los más antiguos primero.
+_CONTEXT_CONDENSE_KEEP_LAST = 4
+_CONTEXT_CONDENSE_TOKEN_BUDGET = 4000
+
+
+def _approx_tokens(text: str) -> int:
+    return max(1, len(text) // 4)
+
+
+def _effective_messages(request: "InferenceRequest") -> list[dict[str, Any]]:
+    """Misma construcción prompt/context->messages que _call_provider_real
+    (ADR-031): si el caller ya trae `messages`, se usan tal cual."""
+    if request.messages is not None:
+        return list(request.messages)
+    messages: list[dict[str, Any]] = [{"role": "user", "content": request.prompt}]
+    if request.context:
+        messages.insert(0, {"role": "system", "content": request.context})
+    return messages
+
+
+def _condense_messages(
+    messages: list[dict[str, Any]],
+    *,
+    budget_tokens: int = _CONTEXT_CONDENSE_TOKEN_BUDGET,
+    keep_last: int = _CONTEXT_CONDENSE_KEEP_LAST,
+) -> list[dict[str, Any]]:
+    system = [m for m in messages if m.get("role") == "system"]
+    rest = [m for m in messages if m.get("role") != "system"]
+    protected_tail = rest[-keep_last:] if len(rest) > keep_last else rest
+    droppable = rest[: len(rest) - len(protected_tail)]
+
+    def _total(msgs: list[dict[str, Any]]) -> int:
+        return sum(_approx_tokens(str(m.get("content", ""))) for m in msgs)
+
+    while droppable and _total(system + droppable + protected_tail) > budget_tokens:
+        droppable.pop(0)  # descarta el más antiguo primero
+
+    return system + droppable + protected_tail
+
+
+def _condensed_request(request: "InferenceRequest") -> "InferenceRequest | None":
+    """None si condensar no cambiaría nada (historia ya mínima) — evita
+    reintentar con una petición idéntica que fallará igual."""
+    messages = _effective_messages(request)
+    condensed = _condense_messages(messages)
+    if condensed == messages:
+        return None
+    return replace(request, messages=condensed)
 
 
 class InferenceLevel(str, Enum):
@@ -574,9 +632,18 @@ class InferenceHub:
                 return resp
             wait = self._earliest_ratelimit_wait()
             if wait is None:
-                return resp
+                break
             self._sleep(min(wait, 120.0) + 1.0)
             resp = self._walk_chain(request)
+
+        # T5 (2026-07-23): CONTEXT_LENGTH ya no es terminal — condensa la
+        # historia (recorte determinista, sin LLM) y reintenta la cadena UNA
+        # vez antes de propagar el fallo. Sin nada que condensar (historia ya
+        # mínima), no reintenta con una petición idéntica.
+        if not resp.success and resp.error_kind == ErrorKind.CONTEXT_LENGTH.value:
+            condensed = _condensed_request(request)
+            if condensed is not None:
+                resp = self._walk_chain(condensed)
         return resp
 
     def _walk_chain(self, request: InferenceRequest) -> InferenceResponse:
@@ -739,12 +806,7 @@ class InferenceHub:
 
         # ADR-031: si el caller provee `messages` (continuación multi-turno del
         # loop agéntico) se usan tal cual; si no, se construyen desde prompt/context.
-        if request.messages is not None:
-            messages = list(request.messages)
-        else:
-            messages = [{"role": "user", "content": request.prompt}]
-            if request.context:
-                messages.insert(0, {"role": "system", "content": request.context})
+        messages = _effective_messages(request)
 
         llm = _litellm_module()
         extra_kwargs: dict[str, Any] = {}

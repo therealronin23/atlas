@@ -148,3 +148,24 @@ línea de inyección de `prev_error` hace fallar el test, confirmando que no es 
 mock complaciente). Cero cambios en `atlas_coder.py`. El 1/6 medido en T1.5 no
 viene de la ausencia del loop — viene de que el modelo no corrigió dado el error,
 o de los bugs de `_apply_edits` ya reparados por separado.
+
+## `t5-context-window-condensation-retry`: gap real, cerrado
+
+A diferencia de `t1-*`, este ítem SÍ describía un gap real — verificado por grep
+(`condense`/`truncate_history`/`trim_history`: cero resultados en
+`inference_hub.py`/`atlas_coder.py`) antes de tocar código. `classify_provider_error`
+ya clasificaba `ErrorKind.CONTEXT_LENGTH`, pero ningún caller de `InferenceHub`
+actuaba sobre esa clasificación más allá de marcar el proveedor degradado y
+pasar al siguiente (mismo error de tamaño, mismo fallo). Implementado en
+`inference_hub.py`: `_effective_messages()` (misma construcción prompt/context
+→ messages de ADR-031, reutilizada — antes duplicada en `_call_provider_real`),
+`_condense_messages()` (recorte determinista por presupuesto de tokens
+aproximado por caracteres, sin `tiktoken` ni LLM adicional, preserva `system` +
+últimos 4 mensajes, descarta los más antiguos primero) y `_condensed_request()`
+(devuelve `None` si condensar no cambiaría nada — evita reintentar con una
+petición idéntica). Enganchado en `_infer_raw`: tras `_walk_chain` fallar con
+`error_kind == "context"`, condensa y re-camina la cadena UNA vez. TDD: 2 tests
+en `tests/test_inference_hub_real.py::TestContextWindowCondensation` (RED
+confirmado antes de implementar — el primero fallaba con `success=False`/
+`error_kind="context"`; GREEN tras la implementación, sin tocar el resto de la
+suite). mypy limpio (299 ficheros).
