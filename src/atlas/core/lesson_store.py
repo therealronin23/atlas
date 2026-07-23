@@ -38,6 +38,7 @@ from typing import Any
 
 from atlas.core.verify import Check, CostTier, Evidence, Verdict
 from atlas.logging.merkle_logger import MerkleLogger
+from atlas.memory.memory_system import ErrorRegistry
 
 
 class LessonProvenance(str, Enum):
@@ -360,9 +361,20 @@ class LessonPromoter:
     `LessonVerifier` y solo persiste si PASS (la ley vive en `LessonStore.add`,
     pero promover devuelve None en vez de lanzar para no romper el lazo)."""
 
-    def __init__(self, store: LessonStore, *, verifier: LessonVerifier | None = None) -> None:
+    def __init__(
+        self,
+        store: LessonStore,
+        *,
+        verifier: LessonVerifier | None = None,
+        error_registry: ErrorRegistry | None = None,
+    ) -> None:
         self._store = store
         self._verifier = verifier or LessonVerifier()
+        # Capa 4 backlog t1-error-registry-lesson-promotion: opcional para no
+        # romper a los llamadores existentes que no la pasan (lesson_runner,
+        # deliberation_council, seed_lessons) — sin ella, promote_failure
+        # sigue funcionando pero no cierra el back-link en ErrorRegistry.
+        self._error_registry = error_registry
 
     def promote_failure(
         self,
@@ -376,7 +388,10 @@ class LessonPromoter:
         tags: tuple[str, ...] = (),
     ) -> Lesson | None:
         """Promociona un FailureEntry blando a Lesson dura. Sin prove-it
-        rojo-antes/verde-ahora, devuelve None: no hay lección."""
+        rojo-antes/verde-ahora, devuelve None: no hay lección. Con
+        error_registry cableado, una promoción exitosa marca la entrada de
+        ErrorRegistry (buscada por `failure_id`) con `promoted_to_lesson_id`
+        — el lazo de trazabilidad fallo-blando -> lección-dura."""
         evidence = self._verifier.verify_internal(prove_it)
         if evidence.verdict is not Verdict.PASS:
             return None
@@ -391,7 +406,10 @@ class LessonPromoter:
             source_refs=(f"failure:{failure_id}", f"fix:{prove_it.fix_commit}"),
             tags=tags,
         )
-        return self._store.add(lesson)
+        lesson = self._store.add(lesson)
+        if self._error_registry is not None:
+            self._error_registry.mark_promoted(failure_id, lesson.id)
+        return lesson
 
     def ingest_external(
         self,

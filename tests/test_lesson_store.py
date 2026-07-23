@@ -21,6 +21,7 @@ from atlas.core.lesson_store import (
 )
 from atlas.core.verify import Verdict
 from atlas.logging.merkle_logger import MerkleLogger
+from atlas.memory.memory_system import ErrorRegistry, FailureEntry
 
 
 @pytest.fixture
@@ -183,6 +184,82 @@ class TestLessonPromoter:
         )
         assert rejected is None
         assert len(store.all()) == 1  # solo la corroborada
+
+
+class TestPromoteFailureClosesErrorRegistryLoop:
+    """Capa 4 backlog t1-error-registry-lesson-promotion: `promoted_to_lesson_id`
+    existía en FailureEntry pero nada lo asignaba. Round-trip completo: fallo
+    registrado -> promovido -> la entrada de ErrorRegistry referencia la lección."""
+
+    def _record_failure(self, registry: ErrorRegistry, *, failure_id: str) -> FailureEntry:
+        entry = FailureEntry(
+            id=failure_id,
+            error_type="writer_lock",
+            description="dos procesos escriben la misma cadena Merkle",
+            context={"pid_a": 1, "pid_b": 2},
+            solution="single-writer con lock de fichero",
+        )
+        registry.record(entry)
+        return entry
+
+    def _get(self, registry: ErrorRegistry, failure_id: str) -> FailureEntry:
+        matches = [e for e in registry.all() if e.id == failure_id]
+        assert len(matches) == 1
+        return matches[0]
+
+    def test_successful_promotion_marks_error_registry_entry(
+        self, store: LessonStore, tmp_path: Path
+    ) -> None:
+        registry = ErrorRegistry(tmp_path / "error_registry")
+        self._record_failure(registry, failure_id="fail-round-trip")
+        promoter = LessonPromoter(store, error_registry=registry)
+
+        lesson = promoter.promote_failure(
+            failure_id="fail-round-trip",
+            title="doble escritor Merkle",
+            detection_heuristic="dos procesos escriben la misma cadena",
+            avoid_pattern="CLI escribiendo Merkle con el servicio vivo",
+            regression_test_path="tests/test_writer_lock.py::test_single_writer",
+            prove_it=_prove_it(),
+        )
+
+        assert lesson is not None
+        updated = self._get(registry, "fail-round-trip")
+        assert updated.promoted_to_lesson_id == lesson.id
+
+    def test_failed_promotion_does_not_touch_error_registry(
+        self, store: LessonStore, tmp_path: Path
+    ) -> None:
+        registry = ErrorRegistry(tmp_path / "error_registry")
+        self._record_failure(registry, failure_id="fail-no-prove-it")
+        promoter = LessonPromoter(store, error_registry=registry)
+
+        lesson = promoter.promote_failure(
+            failure_id="fail-no-prove-it",
+            title="x",
+            detection_heuristic="h",
+            avoid_pattern="p",
+            regression_test_path="tests/test_x.py::test_y",
+            prove_it=_prove_it(failed_before=False),
+        )
+
+        assert lesson is None
+        untouched = self._get(registry, "fail-no-prove-it")
+        assert untouched.promoted_to_lesson_id is None
+
+    def test_promotion_without_error_registry_still_works(self, store: LessonStore) -> None:
+        """error_registry sigue siendo opcional: no romper a los llamadores
+        existentes que construyen LessonPromoter(store) sin él."""
+        promoter = LessonPromoter(store)
+        lesson = promoter.promote_failure(
+            failure_id="fail-no-registry",
+            title="x",
+            detection_heuristic="h",
+            avoid_pattern="p",
+            regression_test_path="tests/test_x.py::test_y",
+            prove_it=_prove_it(),
+        )
+        assert lesson is not None
 
 
 class TestRecordRecurring:

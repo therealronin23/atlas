@@ -124,6 +124,38 @@ class ErrorRegistry:
                 payload={"entry": entry.to_dict()},
             )
 
+    def mark_promoted(self, failure_id: str, lesson_id: str) -> FailureEntry | None:
+        """Cierra el lazo de trazabilidad (backlog t1-error-registry-lesson-
+        promotion): tras una promoción exitosa en
+        `LessonPromoter.promote_failure`, la entrada de FailureEntry que la
+        originó queda marcada con el id de la Lesson resultante. Fallos
+        blandos (entrada inexistente o fichero corrupto) se registran como
+        warning y devuelven None: no deben tumbar una promoción ya exitosa."""
+        file = self._path / f"{failure_id}.json"
+        if not file.is_file():
+            _log.warning(
+                "mark_promoted: no existe entrada %s en ErrorRegistry", failure_id
+            )
+            return None
+        try:
+            entry = FailureEntry(**json.loads(file.read_text(encoding="utf-8")))
+        except Exception as e:  # noqa: BLE001 — fichero corrupto, no tumbar la promoción
+            _log.warning("mark_promoted: entrada %s ilegible: %s", failure_id, e)
+            return None
+
+        entry.promoted_to_lesson_id = lesson_id
+        file.write_text(json.dumps(entry.to_dict(), indent=2, ensure_ascii=False))
+
+        if self._merkle is not None:
+            self._merkle.log(
+                action="error_registry.promoted",
+                agent="error_registry",
+                result="success",
+                risk_level="safe",
+                payload={"failure_id": failure_id, "lesson_id": lesson_id},
+            )
+        return entry
+
     def find_similar(self, query: str, top_k: int = 5) -> list[Any]:
         """Busqueda semantica si hay vector_store. Devuelve [] si no esta."""
         if self._vector_store is None:
