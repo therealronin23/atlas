@@ -17,6 +17,8 @@ from fastapi.testclient import TestClient
 from jsonschema import Draft202012Validator
 
 from atlas.api.missions import (
+    ecosystem_drift_mission,
+    ecosystem_drift_receipt,
     mission_receipt,
     missions_payload,
     proposal_to_mission,
@@ -200,6 +202,106 @@ def test_radar_quiet_on_healthy_history() -> None:
     assert radar_findings(proposals, now=NOW) == []
 
 
+# ------------------------------------------------ T1.3 radar → misión NUEVA
+# (ecosystem_drift): el radar hoy solo proyecta hallazgos sobre proposals ya
+# existentes; estos tests demuestran que un hallazgo de ecosystem_drift (NO
+# derivado de un proposal existente) genera una AtlasMission draft nueva,
+# nunca auto-aprobada.
+
+def test_ecosystem_drift_mission_is_none_without_drift() -> None:
+    assert ecosystem_drift_mission([], now=NOW) is None
+
+
+def test_ecosystem_drift_mission_builds_draft_mission() -> None:
+    drift = ["ADR-999 (adr_999_test.md) sin fila en docs/design/atlas_ecosystem_map.md"]
+    mission = ecosystem_drift_mission(drift, now=NOW)
+    assert mission is not None
+    assert mission["mission_id"].startswith("msn_ecodrift-")
+    assert mission["state"] == "plan_proposed"
+    assert mission["risk"] == "low"
+    assert mission["source"]["kind"] == "ecosystem_drift"
+    assert mission["human_action_required"] is True
+    assert mission["next_action"]["actor"] == "human"
+    # nunca auto-aprobada/aplicada: el next_action nunca es un comando de
+    # aprobar/aplicar — solo puede señalar a un humano a crear una propuesta
+    # real con `atlas update propose`.
+    assert "approve" not in mission["next_action"]["command"]
+    assert "apply" not in mission["next_action"]["command"]
+    assert mission["evidence_bundle"]["evidence"]["drift"] == drift
+
+
+def test_ecosystem_drift_mission_is_stable_regardless_of_order() -> None:
+    """Mismo hallazgo (aunque llegue en otro orden) → misma mission_id, para
+    que el radar no genere una misión duplicada en cada tick."""
+    drift = ["ADR-1 sin fila", "ADR-2 sin fila"]
+    m1 = ecosystem_drift_mission(drift, now=NOW)
+    m2 = ecosystem_drift_mission(list(reversed(drift)), now=NOW)
+    assert m1 is not None and m2 is not None
+    assert m1["mission_id"] == m2["mission_id"]
+
+
+def test_ecosystem_drift_mission_conforms_to_mission_schema() -> None:
+    schema = json.loads((REPO / "schemas" / "mission.schema.json").read_text())
+    validator = Draft202012Validator(schema)
+    mission = ecosystem_drift_mission(["ADR-1 sin fila"], now=NOW)
+    assert mission is not None
+    errors = list(validator.iter_errors(mission))
+    assert not errors, [e.message for e in errors]
+
+
+def test_ecosystem_drift_receipt_is_honest_and_unverifiable() -> None:
+    mission = ecosystem_drift_mission(["ADR-1 sin fila"], now=NOW)
+    assert mission is not None
+    receipt = ecosystem_drift_receipt(mission)
+    assert receipt["mission_id"] == mission["mission_id"]
+    assert receipt["verifiable"] is False  # nadie ha validado nada: solo hay un hallazgo
+    for field in ("what_happened", "why_it_matters", "what_atlas_did",
+                  "whats_missing", "decision_needed"):
+        assert receipt[field], field
+
+
+def test_ecosystem_drift_receipt_conforms_to_receipt_schema() -> None:
+    schema = json.loads((REPO / "schemas" / "mission_receipt.schema.json").read_text())
+    validator = Draft202012Validator(schema)
+    mission = ecosystem_drift_mission(["ADR-1 sin fila"], now=NOW)
+    assert mission is not None
+    receipt = ecosystem_drift_receipt(mission)
+    errors = list(validator.iter_errors(receipt))
+    assert not errors, [e.message for e in errors]
+
+
+def test_radar_findings_surfaces_ecosystem_drift() -> None:
+    findings = radar_findings([], now=NOW, drift=["ADR-1 sin fila"])
+    drift_findings = [f for f in findings if f["detector"] == "ecosystem_drift"]
+    assert len(drift_findings) == 1
+    assert drift_findings[0]["severity"] == "ask"
+    assert drift_findings[0]["mission_ids"][0].startswith("msn_ecodrift-")
+
+
+def test_radar_findings_silent_without_drift() -> None:
+    findings = radar_findings([], now=NOW, drift=[])
+    assert not [f for f in findings if f["detector"] == "ecosystem_drift"]
+    findings_default = radar_findings([], now=NOW)  # drift ni se pasa
+    assert not [f for f in findings_default if f["detector"] == "ecosystem_drift"]
+
+
+def test_missions_payload_includes_extra_missions() -> None:
+    mission = ecosystem_drift_mission(["ADR-1 sin fila"], now=NOW)
+    assert mission is not None
+    body = missions_payload([], limit=10, extra_missions=[mission])
+    assert body["total"] == 1
+    assert body["missions"][0]["mission_id"] == mission["mission_id"]
+    assert body["missions"][0]["human_action_required"] is True
+    assert body["by_state"]["plan_proposed"] == 1
+
+
+def test_missions_payload_without_extra_missions_unaffected() -> None:
+    proposals = [_proposal(id="a", status="proposed")]
+    assert missions_payload(proposals, limit=10) == missions_payload(
+        proposals, limit=10, extra_missions=None
+    )
+
+
 # ------------------------------------------------------------ payload/API
 
 def test_missions_payload_aggregates() -> None:
@@ -272,3 +374,61 @@ def test_radar_endpoint_shape(client: TestClient) -> None:
         assert isinstance(body["findings"], list)
         for f in body["findings"]:
             assert f["severity"] in {"silent", "radar", "ask", "gate"}
+
+
+def _client_with_repo_root(tmp_path: Path, repo_root: Path) -> TestClient:
+    store = OsEventStore(tmp_path / "events.jsonl")
+    return TestClient(
+        create_app(
+            store=store,
+            fixtures_dir=REPO / "fixtures",
+            business_core_path=tmp_path / "business_core.json",
+            repo_root=repo_root,
+        ),
+        base_url="http://127.0.0.1",
+        client=("127.0.0.1", 50000),
+    )
+
+
+def test_missions_endpoint_surfaces_synthetic_ecosystem_drift(tmp_path: Path) -> None:
+    """T1.3: un ADR real sin fila en el mapa (hallazgo NO derivado de ningún
+    proposal existente) debe aparecer en GET /missions como misión draft
+    nueva, con human_action_required=true — sin que nada la haya aplicado."""
+    drift_root = tmp_path / "repo"
+    adr_dir = drift_root / "docs" / "decisions" / "adr"
+    adr_dir.mkdir(parents=True)
+    (adr_dir / "adr_999_test_drift.md").write_text("# ADR 999 de prueba\n", encoding="utf-8")
+    design_dir = drift_root / "docs" / "design"
+    design_dir.mkdir(parents=True)
+    (design_dir / "atlas_ecosystem_map.md").write_text("sin citas aqui\n", encoding="utf-8")
+
+    test_client = _client_with_repo_root(tmp_path, drift_root)
+
+    body = test_client.get("/missions").json()
+    if not body["real"]:
+        pytest.skip(f"proposals.json no disponible en este entorno: {body}")
+    drift_missions = [m for m in body["missions"] if m["source"]["kind"] == "ecosystem_drift"]
+    assert len(drift_missions) == 1
+    assert drift_missions[0]["human_action_required"] is True
+    assert drift_missions[0]["next_action"] is not None
+    assert "approve" not in drift_missions[0]["next_action"]["command"]
+    assert "apply" not in drift_missions[0]["next_action"]["command"]
+
+    radar_body = test_client.get("/missions/radar").json()
+    if radar_body["real"]:
+        assert any(f["detector"] == "ecosystem_drift" for f in radar_body["findings"])
+
+
+def test_missions_endpoint_silent_when_no_drift(tmp_path: Path) -> None:
+    """Repo sin ADRs (o todos citados) → ningún hallazgo sintético; el radar
+    no inventa misiones de la nada."""
+    drift_root = tmp_path / "repo"
+    (drift_root / "docs" / "decisions" / "adr").mkdir(parents=True)
+    (drift_root / "docs" / "design").mkdir(parents=True)
+
+    test_client = _client_with_repo_root(tmp_path, drift_root)
+    body = test_client.get("/missions").json()
+    if not body["real"]:
+        pytest.skip(f"proposals.json no disponible en este entorno: {body}")
+    drift_missions = [m for m in body["missions"] if m["source"]["kind"] == "ecosystem_drift"]
+    assert drift_missions == []

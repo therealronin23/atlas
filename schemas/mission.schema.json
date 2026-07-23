@@ -64,7 +64,7 @@
       "properties": {
         "kind": {
           "type": "string",
-          "enum": ["cold_update_proposal"]
+          "enum": ["cold_update_proposal", "ecosystem_drift"]
         },
         "ref": {
           "type": "string",

@@ -12,6 +12,7 @@ Contratos: schemas/mission.schema.json, schemas/mission_receipt.schema.json
 
 from __future__ import annotations
 
+import hashlib
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -21,6 +22,8 @@ __all__ = [
     "mission_receipt",
     "radar_findings",
     "missions_payload",
+    "ecosystem_drift_mission",
+    "ecosystem_drift_receipt",
 ]
 
 # ledger status → estado de misión (vocabulario del product contract).
@@ -211,6 +214,41 @@ def mission_receipt(
     }
 
 
+def ecosystem_drift_receipt(mission: dict[str, Any]) -> dict[str, Any]:
+    """Receipt v0 (mismo contrato de 5 preguntas que `mission_receipt`) para
+    una misión draft de `ecosystem_drift_mission` — no hay ColdUpdateProposal
+    detrás todavía, así que `verifiable=False` siempre (honesto: nadie ha
+    validado nada, solo se detectó el hallazgo)."""
+    evidence_bundle = mission.get("evidence_bundle") or {}
+    evidence = evidence_bundle.get("evidence") or {}
+    drift: list[str] = list(evidence.get("drift") or [])
+    count = len(drift)
+    return {
+        "receipt_id": f"rcp_{mission['source']['ref']}",
+        "mission_id": mission["mission_id"],
+        "what_happened": (
+            f"El radar (detector ecosystem_drift) encontró {count} ADR(s) "
+            "real(es) sin fila citada en docs/design/atlas_ecosystem_map.md."
+        ),
+        "why_it_matters": (
+            "El mapa del ecosistema queda desactualizado frente a decisiones "
+            "de arquitectura ya tomadas (ADRs reales en disco)."
+        ),
+        "what_atlas_did": (
+            "Generó esta misión draft a partir del hallazgo — no creó ningún "
+            "ColdUpdateProposal ni tocó el mapa."
+        ),
+        "whats_missing": (
+            "Sin parche todavía: nadie ha redactado el cambio al mapa ni "
+            "corrido `atlas update propose`."
+        ),
+        "decision_needed": mission["next_action"]["command"],
+        "evidence_refs": list(evidence_bundle.get("refs") or []),
+        "verifiable": False,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 def _finding(
     detector: str,
     severity: str,
@@ -227,17 +265,104 @@ def _finding(
     }
 
 
+def _drift_finding_ref(drift: list[str]) -> str:
+    """Ref estable e independiente del orden — el mismo conjunto de ADRs sin
+    fila produce siempre el mismo id, así el radar no genera una misión
+    draft duplicada en cada tick sobre el mismo hallazgo."""
+    digest = hashlib.sha256("\n".join(sorted(drift)).encode("utf-8")).hexdigest()[:12]
+    return f"ecodrift-{digest}"
+
+
+def ecosystem_drift_mission(
+    drift: list[str],
+    *,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """T1.3 — cierra el lazo que `radar_findings` (4 detectores originales)
+    no cerraba: un hallazgo de `ecosystem_drift_map_drift` (ADR real sin fila
+    citada en `docs/design/atlas_ecosystem_map.md`) NO es una proyección de
+    un ColdUpdateProposal existente — es una fuente nueva. Genera una
+    AtlasMission draft (`state="plan_proposed"`, `source.kind=
+    "ecosystem_drift"`) directamente desde el hallazgo, vía el mismo seam de
+    misión/next_action-humano que el resto del radar. Nunca se persiste como
+    ColdUpdateProposal real, nunca se auto-aprueba ni auto-aplica: el
+    `next_action` solo puede pedirle a un humano que redacte un parche real y
+    corra `atlas update propose` — jamás `approve`/`apply` directamente.
+    ``None`` si no hay drift (silent — nada que draftear)."""
+    if not drift:
+        return None
+    moment = now or datetime.now(timezone.utc)
+    ts = moment.isoformat()
+    finding_ref = _drift_finding_ref(drift)
+    count = len(drift)
+    preview = "; ".join(drift[:3]) + ("…" if count > 3 else "")
+    intent = (
+        f"Actualizar docs/design/atlas_ecosystem_map.md: {count} ADR(s) real(es) "
+        f"sin fila citada ({preview})"
+    )
+    return {
+        "mission_id": _mission_id(finding_ref),
+        "intent": intent,
+        "state": "plan_proposed",
+        "risk": "low",
+        "origin": "ecosystem_drift_radar",
+        "source": {"kind": "ecosystem_drift", "ref": finding_ref},
+        "created_at": ts,
+        "updated_at": ts,
+        "artifacts": ["docs/design/atlas_ecosystem_map.md"],
+        "evidence_bundle": {
+            "validation": None,
+            "evidence": {"drift": list(drift)},
+            "refs": [f"ecosystem_drift:{item}" for item in drift],
+        },
+        "next_action": {
+            "kind": "cli",
+            "command": (
+                "Redactar el parche real y correr: atlas update propose "
+                "\"<intent>\" --patch <ruta-al-parche>  "
+                "(el radar solo señala — nunca crea ni aprueba el proposal)"
+            ),
+            "actor": "human",
+        },
+        "human_action_required": True,
+        "gate": None,
+        "model_use": [],
+        "soul_invocations": [],
+        "receipt_ref": None,
+    }
+
+
 def radar_findings(
     proposals: list[dict[str, Any]],
     *,
     now: datetime | None = None,
+    drift: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """Self-Build Radar (Foundry Fase D, primer corte): 4 detectores
-    deterministas sobre el ledger real. Salidas graduadas: silent (no se
-    emite) < radar (tarjeta informativa) < ask (decisión humana esperando)
-    < gate (bloqueado por gate). Ningún detector actúa: solo señala."""
+    """Self-Build Radar (Foundry Fase D): 4 detectores deterministas sobre
+    proyecciones de proposals ya existentes + (T1.3) un 5º detector,
+    `ecosystem_drift`, que SÍ genera una misión draft nueva a partir de un
+    hallazgo que no era ya una propuesta abierta (ver
+    `ecosystem_drift_mission`). Salidas graduadas: silent (no se emite) <
+    radar (tarjeta informativa) < ask (decisión humana esperando) < gate
+    (bloqueado por gate). Ningún detector aplica cambios: solo señala o,
+    como mucho, propone en draft — la aprobación siempre es humana."""
     moment = now or datetime.now(timezone.utc)
     findings: list[dict[str, Any]] = []
+
+    # 5. EcosystemDriftDetector — ADR real sin fila en el mapa del
+    #    ecosistema. Única fuente del radar que genera una misión NUEVA
+    #    (draft) en vez de solo señalar una ya existente.
+    if drift:
+        drift_mission = ecosystem_drift_mission(drift, now=moment)
+        if drift_mission is not None:
+            findings.append(_finding(
+                "ecosystem_drift",
+                "ask",
+                f"{len(drift)} ADR(s) sin fila citada en el mapa del "
+                "ecosistema — misión draft generada, pendiente de decisión humana",
+                [drift_mission["mission_id"]],
+                [f"ecosystem_drift:{item}" for item in drift],
+            ))
 
     # 1. RepeatedProposalDetector — mismo intent re-propuesto sin converger
     #    (caso real conocido: "Cablear el vault Obsidian…", ADR-068 Act. 2).
@@ -301,10 +426,18 @@ def radar_findings(
 def missions_payload(
     proposals: list[dict[str, Any]],
     limit: int = 50,
+    *,
+    extra_missions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Payload de GET /missions: misiones adaptadas (activas primero, luego
-    por updated_at desc) + agregados por estado/riesgo/origen."""
+    por updated_at desc) + agregados por estado/riesgo/origen.
+
+    `extra_missions` (T1.3): misiones ya construidas que NO vienen de un
+    proposal del ledger — p.ej. `ecosystem_drift_mission`. Se agregan al
+    mismo listado/orden/agregados que el resto; nunca se instancia nada ni
+    se escribe a disco aquí, siguen siendo dicts puros."""
     missions = [proposal_to_mission(p) for p in proposals]
+    missions.extend(extra_missions or [])
     # orden estable: updated_at desc primero, luego activas-primero (sort
     # estable de Python preserva el orden anterior dentro de cada grupo).
     missions.sort(key=lambda m: str(m.get("updated_at") or ""), reverse=True)

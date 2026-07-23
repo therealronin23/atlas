@@ -31,6 +31,8 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse, Response
 
 from atlas.api.missions import (
+    ecosystem_drift_mission,
+    ecosystem_drift_receipt,
     mission_receipt,
     missions_payload,
     proposal_to_mission,
@@ -45,6 +47,7 @@ from atlas.api.models import (
     SimulateRequest,
 )
 from atlas.api.product_routes import register_product_routes
+from atlas.core.self_maintenance.ecosystem_drift import ecosystem_map_drift
 from atlas.events.player import EventPlayer
 from atlas.events.schemas import Causality, EventStatus, OsEvent, Risk
 from atlas.events.store import OsEventStore
@@ -415,8 +418,10 @@ def create_app(
     store: OsEventStore | None = None,
     fixtures_dir: Path | None = None,
     business_core_path: Path | None = None,
+    repo_root: Path | None = None,
 ) -> FastAPI:
     fixtures = fixtures_dir or _FIXTURES
+    mission_repo_root = repo_root or _REPO_ROOT
     event_store = store or OsEventStore()
     player = EventPlayer(event_store)
     connectors = _load_connectors(fixtures / "connectors")
@@ -515,13 +520,27 @@ def create_app(
         proposals = _load_proposals()
         if isinstance(proposals, dict):  # error payload
             return proposals
-        return {"real": True, "findings": radar_findings(proposals)}
+        # T1.3: ecosystem_map_drift es puro/read-only (nunca lanza, nunca
+        # red) — igual de seguro leerlo aquí que leer proposals.json.
+        drift = ecosystem_map_drift(mission_repo_root)
+        return {"real": True, "findings": radar_findings(proposals, drift=drift)}
 
     @app.get("/missions/{mission_id}")
     def mission_detail(mission_id: str) -> dict[str, Any]:
         proposals = _load_proposals()
         if isinstance(proposals, dict):
             return proposals
+        # T1.3: la misión draft de ecosystem_drift no vive en proposals.json
+        # (no es un ColdUpdateProposal real) — se recalcula igual que en
+        # /missions y se compara por mission_id antes de caer al ledger.
+        drift = ecosystem_map_drift(mission_repo_root)
+        drift_mission = ecosystem_drift_mission(drift)
+        if drift_mission is not None and drift_mission["mission_id"] == mission_id:
+            return {
+                "real": True,
+                "mission": drift_mission,
+                "receipt": ecosystem_drift_receipt(drift_mission),
+            }
         proposal_id = mission_id.removeprefix("msn_")
         proposal = next(
             (p for p in proposals if p.get("id") == proposal_id), None
@@ -541,7 +560,15 @@ def create_app(
         proposals = _load_proposals()
         if isinstance(proposals, dict):
             return proposals
-        return missions_payload(proposals, limit=limit)
+        # T1.3: hallazgos de ecosystem_drift generan misiones draft NUEVAS
+        # (no derivadas de ningún proposal existente) — mismo seam de
+        # misión/next_action-humano, nunca auto-aprobadas.
+        drift = ecosystem_map_drift(mission_repo_root)
+        extra_missions = []
+        drift_mission = ecosystem_drift_mission(drift)
+        if drift_mission is not None:
+            extra_missions.append(drift_mission)
+        return missions_payload(proposals, limit=limit, extra_missions=extra_missions)
 
     @app.post("/memory/import")
     def memory_import(raw: dict[str, Any]) -> dict[str, Any]:
