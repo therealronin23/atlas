@@ -1638,6 +1638,48 @@ def connections_test(connector_id: str, mode: str) -> None:
     rprint(runner.test(connector_id, mode=mode))
 
 
+@cli.group("mcp")
+def mcp_group() -> None:
+    """Catálogo MCP (docs/design/mcp_catalog.yaml) — instalador ensamblado."""
+
+
+@mcp_group.command("install")
+@click.option(
+    "--catalog", "catalog_path", default=None, type=click.Path(path_type=Path),
+    help="Ruta al catálogo YAML (default: docs/design/mcp_catalog.yaml bajo ATLAS_CORE_ROOT/cwd).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Salida JSON completa.")
+def mcp_install(catalog_path: Path | None, as_json: bool) -> None:
+    """Ensambla catálogo→plan_install()→vet_action()/SentinelGate→execute() y
+    reporta instaladas/vetadas/omitidas. Solo planifica lo `verificado`; hoy
+    execute() sigue fail-closed para connect/place_skill (sin ejecutor de
+    admisión real) — ver atlas.mcp.installer.execute."""
+    import os
+
+    from atlas.mcp.installer import run_catalog_install
+
+    if catalog_path is None:
+        root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
+        catalog_path = root / "docs" / "design" / "mcp_catalog.yaml"
+    report = run_catalog_install(catalog_path)
+    if as_json:
+        console.print_json(json.dumps(report.to_dict(), ensure_ascii=False))
+        return
+    console.print(
+        f"[bold cyan]mcp install[/bold cyan] — {report.total_entries} entradas, "
+        f"{report.total_verified} verificado(s) planificado(s)"
+    )
+    console.print(f"[green]instaladas ({len(report.installed)})[/green]")
+    for m in report.installed:
+        console.print(f"  - {m}")
+    console.print(f"[yellow]vetadas ({len(report.vetoed)})[/yellow]")
+    for m in report.vetoed:
+        console.print(f"  - {m}")
+    console.print(f"[dim]omitidas ({len(report.omitted)})[/dim]")
+    for m in report.omitted:
+        console.print(f"  - {m}")
+
+
 @cli.group("business")
 def business_group() -> None:
     """Adaptive Question Engine / Business Core (Fase 15) — todo draft-first."""
