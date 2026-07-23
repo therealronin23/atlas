@@ -11,6 +11,8 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 
+from atlas.core.inference_hub import InferenceLevel
+from atlas.core.provider_preflight import PreflightVerdict
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.core.self_maintenance.self_build_runner import (
     SelfBuildRunner,
@@ -92,6 +94,18 @@ class _RecordingCoderFactory:
 
         coder.code.side_effect = _code
         return coder
+
+
+def _raising_tool_coder_factory(hub: object, *, repo_root: Path) -> MagicMock:
+    """Doble de tool_coder_factory que revienta si se invoca -- usado para
+    probar que un preflight NO-GO corta ANTES de arrancar ninguna iteración,
+    ni siquiera de construir el ToolCoder. Mismo patrón que
+    tests/test_provider_preflight.py usa para verificar que Capa 0 no llama a
+    discover_available_models innecesariamente."""
+    raise AssertionError(
+        "tool_coder_factory no debe invocarse cuando el preflight de "
+        "proveedores es NO-GO"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -268,6 +282,71 @@ def test_run_item_success_calls_propose_with_self_audit_origin(tmp_path: Path) -
     assert kwargs["origin"] == "self_audit"
     assert kwargs["evidence"]["backlog_item_id"] == item.id
     assert "cycle_result" in kwargs["evidence"]
+
+
+def test_run_item_aborts_before_any_iteration_when_preflight_not_ok(tmp_path: Path) -> None:
+    """T8 (plan 2026-07-23-t5-provider-discovery-plan): con provider_preflight
+    inyectado devolviendo ok=False, run_item aborta ANTES de crear el worktree
+    o invocar a ToolCoder -- ni una sola iteración, cero llamadas a
+    inferencia. tool_coder_factory es un doble que revienta si se llama, para
+    probarlo de forma dura (no solo contar llamadas)."""
+    _init_repo(tmp_path, {"README.md": "hello\n"})
+    cold_update_manager = MagicMock()
+
+    def _no_go_preflight(level: InferenceLevel, *, root: Path) -> PreflightVerdict:
+        return PreflightVerdict(
+            ok=False,
+            level=level.value,
+            reason="ningún proveedor vivo del nivel (inyectado en test)",
+            dead_providers=["prov_a", "prov_b"],
+        )
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=cold_update_manager,
+        tool_coder_factory=_raising_tool_coder_factory,
+        provider_preflight=_no_go_preflight,
+    )
+
+    result = runner.run_item(_item())
+
+    assert result["status"] == "skipped"
+    assert result["proposal_id"] is None
+    assert "ningún proveedor vivo" in result["detail"]
+    cold_update_manager.propose.assert_not_called()
+
+
+def test_run_item_preflight_ok_leaves_flow_unchanged(tmp_path: Path) -> None:
+    """Preflight inyectado con ok=True no cambia el comportamiento de
+    siempre: ToolCoder se invoca y, si tiene éxito, se propone igual que sin
+    preflight (criterio de aceptación T8: "sin cambio de comportamiento
+    cuando hay proveedor vivo")."""
+    (tmp_path / "tests").mkdir()
+    _init_repo(tmp_path, {"README.md": "hello\n"})
+
+    def _on_code(repo_root: Path) -> MagicMock:
+        (repo_root / "README.md").write_text("hello\nmodified\n", encoding="utf-8")
+        return _coder_result(success=True, files_changed=["README.md"])
+
+    factory = _RecordingCoderFactory(_on_code)
+    cold_update_manager = MagicMock()
+    proposal = MagicMock()
+    proposal.id = "proposal-456"
+    cold_update_manager.propose.return_value = proposal
+
+    def _go_preflight(level: InferenceLevel, *, root: Path) -> PreflightVerdict:
+        return PreflightVerdict(ok=True, level=level.value, reason="vivo (inyectado en test)")
+
+    runner = SelfBuildRunner(
+        repo_root=tmp_path, hub=MagicMock(), cold_update_manager=cold_update_manager,
+        tool_coder_factory=factory,
+        provider_preflight=_go_preflight,
+    )
+
+    result = runner.run_item(_item())
+
+    assert result["status"] == "proposed"
+    assert result["proposal_id"] == "proposal-456"
+    assert factory.code_calls == 1
 
 
 def test_expand_targets_directory_becomes_py_files(tmp_path: Path) -> None:

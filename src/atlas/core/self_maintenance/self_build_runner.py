@@ -30,6 +30,8 @@ from typing import Any, Callable
 from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
 from atlas.core.git_env import clean_git_env
 from atlas.core.inference_hub import InferenceHub, InferenceLevel
+from atlas.core.provider_preflight import PreflightVerdict
+from atlas.core.provider_preflight import provider_preflight as _real_provider_preflight
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.core.tool_coder import ToolCoder
 
@@ -50,6 +52,30 @@ def _self_build_level() -> InferenceLevel:
     if raw and hasattr(InferenceLevel, raw):
         return getattr(InferenceLevel, raw)  # type: ignore[no-any-return]
     return InferenceLevel.L1
+
+
+def _default_provider_preflight(level: InferenceLevel, *, root: Path) -> PreflightVerdict:
+    """Preflight por defecto de ``SelfBuildRunner.run_item`` (T8, plan
+    2026-07-23-t5-provider-discovery-plan): go/no-go barato ANTES de lanzar
+    la tanda de N iteraciones de ToolCoder.
+
+    En pytest (``PYTEST_CURRENT_TEST``) se asume ``ok=True`` sin llamar al
+    ``provider_preflight`` real -- igual que ``InferenceHub._resolve_live_for``
+    cae a stub bajo pytest. Sin esta guardia, cualquier test de este runner
+    que NO inyecte su propio ``provider_preflight`` dispararía la Capa 1 real
+    (``discover_available_models`` -> red real vía httpx) en cuanto no
+    hubiera un ``provider_smoke_state.json`` fresco en el ``tmp_path`` del
+    test, rompiendo la suite hermética existente. Los tests que SÍ quieren
+    ejercitar el corte por preflight inyectan su propio callable via el
+    parámetro ``provider_preflight`` del constructor."""
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        level_value = level.value if hasattr(level, "value") else str(level)
+        return PreflightVerdict(
+            ok=True,
+            level=level_value,
+            reason="pytest: preflight de proveedores asumido ok por defecto (hermético, sin red real)",
+        )
+    return _real_provider_preflight(level, root=root)
 
 
 # openevolve._prepare_evaluator() extrae el CÓDIGO FUENTE de un evaluator
@@ -167,12 +193,14 @@ class SelfBuildRunner:
         backlog_path: Path = Path("docs/backlog.yaml"),
         *,
         tool_coder_factory: Callable[..., ToolCoder] = ToolCoder,
+        provider_preflight: Callable[..., PreflightVerdict] = _default_provider_preflight,
     ) -> None:
         self._repo_root = repo_root
         self._hub = hub
         self._cold_update = cold_update_manager
         self._backlog_path = backlog_path
         self._tool_coder_factory = tool_coder_factory
+        self._provider_preflight = provider_preflight
 
     # ------------------------------------------------------------------
     # derive_test_cmd
@@ -271,7 +299,32 @@ class SelfBuildRunner:
 
         Nunca marca el item como "done": eso requiere aprobación humana del
         proposal, fuera del alcance de este método.
+
+        Antes de crear el worktree o lanzar ninguna iteración de ToolCoder
+        (T8, plan 2026-07-23-t5-provider-discovery-plan), hace un preflight
+        barato de proveedores del nivel de autoconstrucción configurado
+        (``ATLAS_SELF_BUILD_LEVEL``); si no hay ninguno vivo, aborta de
+        inmediato SIN gastar ni un worktree ni una llamada de inferencia.
         """
+        level = _self_build_level()
+        preflight = self._provider_preflight(level, root=self._repo_root)
+        if not preflight.ok:
+            logger.warning(
+                "SelfBuildRunner.run_item: preflight de proveedores NO-GO "
+                "(nivel=%s reason=%s) -- abortando sin lanzar ninguna iteración "
+                "(item=%s)",
+                preflight.level, preflight.reason, item.id,
+            )
+            return {
+                "item_id": item.id,
+                "proposal_id": None,
+                "status": "skipped",
+                "detail": (
+                    f"preflight de proveedores NO-GO para nivel {preflight.level}: "
+                    f"{preflight.reason}"
+                ),
+            }
+
         test_cmd = self.derive_test_cmd(item)
         task = f"{item.title}\n\n{item.why}\n\nCriterio de aceptación:\n{item.acceptance}"
 
