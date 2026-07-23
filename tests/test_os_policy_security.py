@@ -261,3 +261,91 @@ def test_policy_decision_is_json_serializable() -> None:
     assert isinstance(decision, PolicyDecision)
     dumped = decision.model_dump(mode="json")
     json.dumps(dumped)  # no debe reventar
+
+
+# -- T1: modo real de governance (GOVERNANCE_KERNEL.md "Camino a real" #1) --
+
+
+def test_engine_defaults_to_simulated_true() -> None:
+    """Sin pasar `simulated=`, el comportamiento no cambia: sigue siendo
+    modo fixture/dev (backward-compat)."""
+    decision = PolicyEngine().evaluate(PolicyRequest(capability="email.send"))
+    assert decision.simulated is True
+
+
+def test_engine_real_mode_marks_every_branch_simulated_false() -> None:
+    """`simulated=False` se propaga desde evaluate() sin importar qué rama
+    interna decidió: invariante duro (hard rule), gate de capability y el
+    default fail-closed de lectura de bajo riesgo."""
+    engine = PolicyEngine(simulated=False)
+
+    hard = engine.evaluate(PolicyRequest(capability="certificate.use"))
+    assert hard.hard is True
+    assert hard.simulated is False
+
+    gated = engine.evaluate(PolicyRequest(capability="email.send"))
+    assert gated.decision == "require_gate"
+    assert gated.simulated is False
+
+    read = engine.evaluate(PolicyRequest(capability="email.read"))
+    assert read.decision == "allow"
+    assert read.simulated is False
+
+
+def test_default_policy_engine_real_reads_config_governance_gates(
+    tmp_path: Path,
+) -> None:
+    """`default_policy_engine(repo_root, real=True)` lee
+    config/governance/gates.json (real) en vez de fixtures/governance/
+    gates.json — y marca las decisiones simulated=False. El modo fixture
+    (default) sigue leyendo el fixture y queda simulated=True."""
+    from atlas.fabric.policy import default_policy_engine
+
+    repo_root = tmp_path / "repo"
+    (repo_root / "config" / "governance").mkdir(parents=True)
+    (repo_root / "fixtures" / "governance").mkdir(parents=True)
+    (repo_root / "fixtures" / "security").mkdir(parents=True)
+    (repo_root / "config" / "governance" / "gates.json").write_text(
+        json.dumps([{
+            "gate_id": "gate_t1_real_only",
+            "display_name": "Gate solo en config real",
+            "applies_to": ["t1.real_only_action"],
+            "risk_threshold": "high",
+            "approval_mode": "human_explicit",
+            "default_decision": "require_approval",
+            "enabled": True,
+        }]),
+        encoding="utf-8",
+    )
+    # fixtures/governance/gates.json queda vacío a propósito: si el motor
+    # "real" leyera el fixture por error, esta gate no existiría ahí.
+    (repo_root / "fixtures" / "governance" / "gates.json").write_text("[]", encoding="utf-8")
+
+    real_engine = default_policy_engine(repo_root, real=True)
+    fixture_engine = default_policy_engine(repo_root, real=False)
+
+    # gate_id inexistente en el catálogo de capabilities → siempre cae al
+    # evaluador v1 legacy en el bridge, pero a nivel de PolicyEngine puro
+    # basta con comprobar que el gate real cargó y el fixture no.
+    assert real_engine._gates.get("gate_t1_real_only") is not None  # noqa: SLF001
+    assert fixture_engine._gates.get("gate_t1_real_only") is None  # noqa: SLF001
+
+    decision = real_engine.evaluate(PolicyRequest(capability="email.send"))
+    assert decision.simulated is False
+    decision_fixture = fixture_engine.evaluate(PolicyRequest(capability="email.send"))
+    assert decision_fixture.simulated is True
+
+
+def test_default_policy_engine_real_missing_file_is_fail_closed(tmp_path: Path) -> None:
+    """Si config/governance/gates.json todavía no existe, real=True no
+    revienta: se comporta como lista de gates vacía (los invariantes duros y
+    el default fail-closed de PolicyEngine siguen aplicando)."""
+    from atlas.fabric.policy import default_policy_engine
+
+    repo_root = tmp_path / "repo_sin_config"
+    repo_root.mkdir()
+    engine = default_policy_engine(repo_root, real=True)
+    assert engine._gates == {}  # noqa: SLF001
+    decision = engine.evaluate(PolicyRequest(capability="email.send"))
+    assert decision.simulated is False
+    assert decision.decision == "require_gate"  # spec de la capability lo exige

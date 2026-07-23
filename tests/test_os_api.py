@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -390,3 +391,209 @@ def test_next_action_hint_by_status() -> None:
     assert _next_action_hint("approved", "abc") == "atlas update apply abc"
     assert _next_action_hint("applied", "abc") is None
     assert _next_action_hint("rejected", "abc") is None
+
+
+# -- T1: bridge de governance lee gates reales, no solo fixture -------------
+# (docs/architecture/GOVERNANCE_KERNEL.md, "Camino a real")
+
+
+def _make_client(**create_app_kwargs: object) -> TestClient:
+    app = create_app(**create_app_kwargs)  # type: ignore[arg-type]
+    return TestClient(app, base_url="http://127.0.0.1", client=("127.0.0.1", 50000))
+
+
+def test_permissions_evaluate_real_mode_reads_config_governance_gates(
+    tmp_path: Path,
+) -> None:
+    """create_app(governance_real=True) evalúa contra
+    config/governance/gates.json (real) en vez de fixtures/governance/
+    gates.json — integración end-to-end de un gate real, simulated=False."""
+    repo_root = tmp_path / "repo"
+    fixtures_dir = tmp_path / "fixtures_empty"
+    (repo_root / "config" / "governance").mkdir(parents=True)
+    (fixtures_dir / "governance").mkdir(parents=True)
+    (repo_root / "config" / "governance" / "gates.json").write_text(
+        json.dumps([{
+            "gate_id": "gate_t1_e2e",
+            "display_name": "Gate T1 end-to-end",
+            "applies_to": ["t1.custom_action"],
+            "risk_threshold": "high",
+            "approval_mode": "human_explicit",
+            "default_decision": "require_approval",
+            "enabled": True,
+        }]),
+        encoding="utf-8",
+    )
+    # El fixture (compartido con el modo "fixture" de abajo) NO tiene esta
+    # gate: si el modo real la leyera por error del fixture, el test fallaría.
+    (fixtures_dir / "governance" / "gates.json").write_text("[]", encoding="utf-8")
+
+    real_client = _make_client(
+        store=OsEventStore(tmp_path / "real-events.jsonl"),
+        fixtures_dir=fixtures_dir,
+        business_core_path=tmp_path / "real-business-core.json",
+        repo_root=repo_root,
+        governance_real=True,
+    )
+    body = real_client.post(
+        "/permissions/evaluate",
+        json={"action": "t1.custom_action", "resource": "demo"},
+    ).json()
+    assert body["simulated"] is False
+    ev = body["evaluation"]
+    assert ev["decision"] == "require_approval"
+    assert ev["gate_id"] == "gate_t1_e2e"
+
+    # Mismo repo_root/fixtures_dir, modo fixture (default): no ve el gate
+    # real y sigue marcando simulated=True — cero regresión del camino viejo.
+    fixture_client = _make_client(
+        store=OsEventStore(tmp_path / "fixture-events.jsonl"),
+        fixtures_dir=fixtures_dir,
+        business_core_path=tmp_path / "fixture-business-core.json",
+        repo_root=repo_root,
+    )
+    body2 = fixture_client.post(
+        "/permissions/evaluate",
+        json={"action": "t1.custom_action", "resource": "demo"},
+    ).json()
+    assert body2["simulated"] is True
+    assert body2["evaluation"]["gate_id"] is None
+
+
+def test_permissions_evaluate_real_mode_via_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Activación real sin pasar governance_real= explícito: ATLAS_OS_
+    GOVERNANCE_MODE=real (mismo patrón que ATLAS_OS_BRIDGE_TOKEN)."""
+    monkeypatch.setenv("ATLAS_OS_GOVERNANCE_MODE", "real")
+    repo_root = tmp_path / "repo"
+    (repo_root / "config" / "governance").mkdir(parents=True)
+    (repo_root / "config" / "governance" / "gates.json").write_text("[]", encoding="utf-8")
+    real_client = _make_client(
+        store=OsEventStore(tmp_path / "env-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "env-business-core.json",
+        repo_root=repo_root,
+    )
+    body = real_client.post(
+        "/permissions/evaluate",
+        json={"action": "github.repos.read", "resource": "github"},
+    ).json()
+    assert body["simulated"] is False
+
+
+def test_permissions_pending_reads_real_orchestrator_queue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GET /permissions/pending lee memory/pending_approvals/ del workspace
+    RUNTIME (ATLAS_HOME) sin instanciar Orchestrator — read-only."""
+    from atlas.security.pending_store import wrap_task_payload
+
+    workspace = tmp_path / "atlas_home"
+    pending_dir = workspace / "memory" / "pending_approvals"
+    pending_dir.mkdir(parents=True)
+    task_data = {
+        "id": "task_t1_pending",
+        "intent": "enviar correo de prueba",
+        "tool_name": "mail.send",
+        "status": "awaiting_approval",
+        "created_at": "2026-07-23T00:00:00+00:00",
+        "result": {"reason": "requiere aprobación humana"},
+    }
+    envelope = wrap_task_payload(task_data)
+    (pending_dir / "task_t1_pending.json").write_text(
+        json.dumps(envelope), encoding="utf-8",
+    )
+    monkeypatch.setenv("ATLAS_HOME", str(workspace))
+
+    real_client = _make_client(
+        store=OsEventStore(tmp_path / "pending-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "pending-business-core.json",
+    )
+    body = real_client.get("/permissions/pending").json()
+    assert body["count"] == 1
+    item = body["pending"][0]
+    assert item["task_id"] == "task_t1_pending"
+    assert item["tool"] == "mail.send"
+    assert item["reason"] == "requiere aprobación humana"
+
+
+def test_permissions_pending_empty_when_no_workspace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "nunca_existio"))
+    real_client = _make_client(
+        store=OsEventStore(tmp_path / "empty-pending-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "empty-pending-business-core.json",
+    )
+    body = real_client.get("/permissions/pending").json()
+    assert body == {"real": True, "count": 0, "pending": []}
+
+
+def test_permissions_approve_routes_to_atlas_cli_not_a_noop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """POST /permissions/pending/{task_id}/approve enruta a `atlas approve`
+    en un proceso APARTE (nunca Orchestrator dentro del bridge) — sustituye
+    el no-op documentado en GOVERNANCE_KERNEL.md."""
+    import subprocess as subprocess_module
+
+    captured: dict[str, object] = {}
+
+    def fake_run(args: list[str], **kwargs: object) -> subprocess_module.CompletedProcess[str]:
+        captured["args"] = args
+        return subprocess_module.CompletedProcess(
+            args=args, returncode=0, stdout="Status: done\n", stderr="",
+        )
+
+    monkeypatch.setattr("atlas.api.server.subprocess.run", fake_run)
+
+    real_client = _make_client(
+        store=OsEventStore(tmp_path / "approve-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "approve-business-core.json",
+    )
+    resp = real_client.post(
+        "/permissions/pending/task_t1_pending/approve", json={"approved": True},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["returncode"] == 0
+    args = captured["args"]
+    assert isinstance(args, list)
+    assert args[-2:] == ["approve", "task_t1_pending"]
+    assert "--deny" not in args
+
+    types = [e["type"] for e in real_client.get("/events").json()["events"]]
+    assert "approval.routed" in types
+
+
+def test_permissions_approve_deny_flag_and_failure_propagates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import subprocess as subprocess_module
+
+    captured: dict[str, object] = {}
+
+    def fake_run(args: list[str], **kwargs: object) -> subprocess_module.CompletedProcess[str]:
+        captured["args"] = args
+        return subprocess_module.CompletedProcess(
+            args=args, returncode=1, stdout="", stderr="task_id desconocido",
+        )
+
+    monkeypatch.setattr("atlas.api.server.subprocess.run", fake_run)
+
+    real_client = _make_client(
+        store=OsEventStore(tmp_path / "approve-deny-events.jsonl"),
+        fixtures_dir=REPO / "fixtures",
+        business_core_path=tmp_path / "approve-deny-business-core.json",
+    )
+    resp = real_client.post(
+        "/permissions/pending/task_nope/approve", json={"approved": False},
+    )
+    assert resp.status_code == 502
+    args = captured["args"]
+    assert isinstance(args, list)
+    assert "--deny" in args

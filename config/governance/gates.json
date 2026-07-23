@@ -1,0 +1,155 @@
+[
+  {
+    "gate_id": "gate_outbound",
+    "display_name": "Acciones outbound (email/mensajes/publicar)",
+    "applies_to": [
+      "mail.send",
+      "message.send",
+      "social.publish",
+      "github.issues.create",
+      "github.prs.comment"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Invariante: nada sale de la máquina sin humano."
+  },
+  {
+    "gate_id": "gate_destructive_fs",
+    "display_name": "Borrado/escritura masiva de ficheros",
+    "applies_to": [
+      "fs.delete",
+      "fs.bulk_write"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": null
+  },
+  {
+    "gate_id": "gate_credentials",
+    "display_name": "Tocar credenciales o seguridad",
+    "applies_to": [
+      "credentials.*",
+      "security.config.*"
+    ],
+    "risk_threshold": "critical",
+    "approval_mode": "always_block",
+    "default_decision": "deny",
+    "enabled": true,
+    "notes": "config/governance.json es intocable por agentes (AGENTS.md inv.3)."
+  },
+  {
+    "gate_id": "gate_shell",
+    "display_name": "Ejecución shell fuera de sandbox",
+    "applies_to": [
+      "shell.exec"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "La ruta real ya existe: BwrapJail fail-closed."
+  },
+  {
+    "gate_id": "gate_business_write",
+    "display_name": "Escritura CRM/ERP (contactos, oportunidades, facturas borrador)",
+    "applies_to": [
+      "crm.contacts.write",
+      "crm.deals.update",
+      "erp.invoices.create_draft"
+    ],
+    "risk_threshold": "medium",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15: capability.gate_id de fabric/capabilities.py."
+  },
+  {
+    "gate_id": "gate_data_export",
+    "display_name": "Exportación masiva de datos de negocio",
+    "applies_to": [
+      "crm.bulk_export"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15."
+  },
+  {
+    "gate_id": "gate_accounting",
+    "display_name": "Escritura contable real",
+    "applies_to": [
+      "erp.accounting.write"
+    ],
+    "risk_threshold": "critical",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15: invariante duro también replicado en fabric/policy.py (pol_hard_accounting_write)."
+  },
+  {
+    "gate_id": "gate_computer_use",
+    "display_name": "Automatización visual del equipo (computer-use)",
+    "applies_to": [
+      "computer_use.execute"
+    ],
+    "risk_threshold": "critical",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15: invariante duro también replicado en fabric/policy.py (pol_hard_computer_use). Último recurso de la Connection Ladder."
+  },
+  {
+    "gate_id": "gate_browser_submit",
+    "display_name": "Rellenar/enviar formularios web",
+    "applies_to": [
+      "browser.fill",
+      "browser.submit"
+    ],
+    "risk_threshold": "medium",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15."
+  },
+  {
+    "gate_id": "gate_memory_review",
+    "display_name": "Consolidación en memoria desde fuente externa",
+    "applies_to": [
+      "memory.write"
+    ],
+    "risk_threshold": "medium",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15."
+  },
+  {
+    "gate_id": "gate_official_submit",
+    "display_name": "Presentación oficial (AEAT/registros)",
+    "applies_to": [
+      "official.submit"
+    ],
+    "risk_threshold": "critical",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15: invariante duro también replicado en fabric/policy.py (pol_hard_official_submit). Nunca automática."
+  },
+  {
+    "gate_id": "gate_business_activation",
+    "display_name": "Activación de un Business Core en borrador",
+    "applies_to": [
+      "business_core.activate"
+    ],
+    "risk_threshold": "high",
+    "approval_mode": "human_explicit",
+    "default_decision": "require_approval",
+    "enabled": true,
+    "notes": "Fase 15: BusinessCoreEngine.approve_activation exige approved_by explícito."
+  }
+]

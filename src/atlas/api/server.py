@@ -19,6 +19,8 @@ import ipaddress
 import json
 import os
 import sqlite3
+import subprocess
+import sys
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
@@ -52,11 +54,18 @@ from atlas.events.player import EventPlayer
 from atlas.events.schemas import Causality, EventStatus, OsEvent, Risk
 from atlas.events.store import OsEventStore
 from atlas.runtime_paths import atlas_data_root
+from atlas.security.pending_store import unwrap_task_payload
 
 HOST = "127.0.0.1"
 PORT = 7341
 AUTH_TOKEN_ENV = "ATLAS_OS_BRIDGE_TOKEN"
 _MIN_AUTH_TOKEN_BYTES = 32
+# T1 (GOVERNANCE_KERNEL.md, "Camino a real" #1): activa el modo de
+# governance real (config/governance/gates.json en vez del fixture) cuando
+# se arranca vía `atlas os-bridge`/uvicorn sin pasar `governance_real=` a
+# create_app() explícitamente. Default "fixture": cero cambio de
+# comportamiento para quien no lo active.
+GOVERNANCE_MODE_ENV = "ATLAS_OS_GOVERNANCE_MODE"
 
 _REPO_ROOT = atlas_data_root()
 _FIXTURES = _REPO_ROOT / "fixtures"
@@ -236,6 +245,22 @@ def _load_gates(gates_path: Path) -> list[GateSpec]:
         return []
     raw = json.loads(gates_path.read_text(encoding="utf-8"))
     return [GateSpec.model_validate(g) for g in raw]
+
+
+def _governance_real_default() -> bool:
+    return os.environ.get(GOVERNANCE_MODE_ENV, "fixture").strip().casefold() == "real"
+
+
+def _workspace_root() -> Path:
+    """Workspace RUNTIME del Orchestrator (ATLAS_HOME) — NO el repo
+    (_REPO_ROOT). Misma resolución que governance/permission_profile.py y
+    security/pending_store.py, duplicada aquí a propósito: el bridge no
+    puede importar nada bajo core/orchestrator_parts (OS-R1, ver
+    test_orchestrator_never_imported)."""
+    env_home = os.environ.get("ATLAS_HOME", "").strip()
+    if env_home:
+        return Path(env_home).expanduser().resolve()
+    return Path.home() / "atlas"
 
 
 def _memory_summary() -> dict[str, Any]:
@@ -419,13 +444,26 @@ def create_app(
     fixtures_dir: Path | None = None,
     business_core_path: Path | None = None,
     repo_root: Path | None = None,
+    governance_real: bool | None = None,
 ) -> FastAPI:
     fixtures = fixtures_dir or _FIXTURES
     mission_repo_root = repo_root or _REPO_ROOT
     event_store = store or OsEventStore()
     player = EventPlayer(event_store)
     connectors = _load_connectors(fixtures / "connectors")
-    gates = _load_gates(fixtures / "governance" / "gates.json")
+    # T1: modo real explícito (parámetro) > env var GOVERNANCE_MODE_ENV >
+    # fixture. En modo real, los gates vienen de config/governance/gates.json
+    # (real, mantenido por el operador) en vez de fixtures/governance/
+    # gates.json — read-only desde el bridge, invariante 3 intacta.
+    real_governance = (
+        governance_real if governance_real is not None else _governance_real_default()
+    )
+    gates_path = (
+        mission_repo_root / "config" / "governance" / "gates.json"
+        if real_governance
+        else fixtures / "governance" / "gates.json"
+    )
+    gates = _load_gates(gates_path)
 
     app = FastAPI(title="Atlas OS Bridge", docs_url=None, redoc_url=None,
                   openapi_url=None)
@@ -736,6 +774,7 @@ def create_app(
             engine = PolicyEngine(
                 rules_path=fixtures / "security" / "policies.json",
                 gates=gates,
+                simulated=not real_governance,
             )
             pdecision = engine.evaluate(PolicyRequest(capability=req.action))
             # Vocabulario del contrato de representación: require_gate del
@@ -764,9 +803,10 @@ def create_app(
                 status=EventStatus.WAITING_USER
                 if pdecision_str == "require_approval"
                 else EventStatus.COMPLETED,
+                simulated=pdecision.simulated,
                 payload={"evaluator": "policy_engine", **evaluation.model_dump()},
             )
-            return {"simulated": True, "evaluation": evaluation.model_dump()}
+            return {"simulated": pdecision.simulated, "evaluation": evaluation.model_dump()}
 
         # -- v1 legacy: patrones de acción sobre gates.json --------------------
         matched: GateSpec | None = None
@@ -813,9 +853,98 @@ def create_app(
             status=EventStatus.WAITING_USER
             if decision == "require_approval"
             else EventStatus.COMPLETED,
-            payload={"evaluator": "os_v1_fixture_gates", **evaluation.model_dump()},
+            simulated=not real_governance,
+            payload={
+                "evaluator": "os_v1_real_gates" if real_governance else "os_v1_fixture_gates",
+                **evaluation.model_dump(),
+            },
         )
-        return {"simulated": True, "evaluation": evaluation.model_dump()}
+        return {"simulated": not real_governance, "evaluation": evaluation.model_dump()}
+
+    @app.get("/permissions/pending")
+    def permissions_pending() -> dict[str, Any]:
+        """Lectura READ-ONLY de la cola HITL real (memory/pending_approvals
+        del Orchestrator, ADR-032/033) — GOVERNANCE_KERNEL.md "Camino a
+        real" #3. Nunca instancia ni importa nada bajo core/orchestrator_
+        parts (OS-R1): parsea los ficheros HMAC-envueltos a mano con la
+        utilidad pura de atlas.security.pending_store."""
+        pending_dir = _workspace_root() / "memory" / "pending_approvals"
+        items: list[dict[str, Any]] = []
+        if pending_dir.exists():
+            for path in sorted(pending_dir.glob("*.json")):
+                if ".executing" in path.name or path.name.startswith("_"):
+                    continue
+                try:
+                    raw = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                if not isinstance(raw, dict):
+                    continue
+                task_data = unwrap_task_payload(raw)
+                if task_data is None:
+                    continue
+                result = task_data.get("result")
+                items.append({
+                    "task_id": task_data.get("id"),
+                    "intent": task_data.get("intent"),
+                    "tool": task_data.get("tool_name"),
+                    "status": task_data.get("status"),
+                    "reason": result.get("reason", "") if isinstance(result, dict) else "",
+                    "created_at": task_data.get("created_at"),
+                })
+        return {"real": True, "count": len(items), "pending": items}
+
+    @app.post("/permissions/pending/{task_id}/approve")
+    def permissions_approve(task_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        """Enruta la decisión humana a la cola HITL REAL: ejecuta
+        `atlas approve` (GOVERNANCE_KERNEL.md "Camino a real" #3) como
+        proceso APARTE — jamás Orchestrator dentro del bridge (ADR-058).
+        Sustituye el no-op documentado ahí ("approval.granted/denied desde
+        la UI NO ejecuta nada")."""
+        approved = bool(body.get("approved", True))
+        abort = bool(body.get("abort", False))
+        approve_only = body.get("approve_only")
+
+        args = [sys.executable, "-m", "atlas.interfaces.cli", "approve", task_id]
+        if not approved:
+            args.append("--deny")
+        if abort:
+            args.append("--abort")
+        if approve_only:
+            args += ["--only", ",".join(str(item) for item in approve_only)]
+
+        try:
+            proc = subprocess.run(
+                args, capture_output=True, text=True, timeout=120, check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise HTTPException(
+                status_code=504, detail="atlas approve: timeout",
+            ) from exc
+
+        emit(
+            "approval.routed",
+            f"{task_id} → atlas approve (rc={proc.returncode})",
+            actor="governance",
+            status=EventStatus.COMPLETED if proc.returncode == 0 else EventStatus.FAILED,
+            simulated=False,
+            payload={
+                "task_id": task_id,
+                "approved": approved,
+                "returncode": proc.returncode,
+                "stdout_tail": proc.stdout[-2000:],
+                "stderr_tail": proc.stderr[-2000:],
+            },
+        )
+        if proc.returncode != 0:
+            raise HTTPException(
+                status_code=502,
+                detail=f"atlas approve falló (rc={proc.returncode}): {proc.stderr[-500:]}",
+            )
+        return {
+            "real": True, "task_id": task_id,
+            "returncode": proc.returncode, "stdout": proc.stdout,
+        }
 
     # -- WebSocket -------------------------------------------------------------
 

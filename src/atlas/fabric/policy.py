@@ -166,6 +166,8 @@ class PolicyEngine:
         rules_path: Path | None = None,
         gates: list[GateSpec] | None = None,
         store: OsEventStore | None = None,
+        *,
+        simulated: bool = True,
     ) -> None:
         self._soft_rules: list[PolicyRule] = []
         if rules_path is not None and rules_path.exists():
@@ -173,6 +175,10 @@ class PolicyEngine:
             self._soft_rules = [PolicyRule.model_validate(r) for r in raw]
         self._gates = {g.gate_id: g for g in (gates or [])}
         self._store = store
+        # T1: si los gates vienen de la governance real (config/governance/
+        # gates.json) en vez del fixture, el llamador pasa simulated=False —
+        # se propaga a toda PolicyDecision devuelta (ver evaluate()).
+        self._simulated = simulated
 
     @property
     def hard_rules(self) -> list[PolicyRule]:
@@ -184,6 +190,11 @@ class PolicyEngine:
 
     def evaluate(self, req: PolicyRequest) -> PolicyDecision:
         decision = self._evaluate(req)
+        # Un único punto de verdad para `simulated`, sin importar qué rama
+        # interna (invariante duro, regla blanda, spec de capacidad, default
+        # fail-closed) construyó la decisión.
+        if decision.simulated != self._simulated:
+            decision = decision.model_copy(update={"simulated": self._simulated})
         if self._store is not None:
             emit_event(
                 self._store,
@@ -370,11 +381,30 @@ def load_gates(gates_path: Path) -> list[GateSpec]:
 
 
 def default_policy_engine(
-    repo_root: Path, store: OsEventStore | None = None
+    repo_root: Path, store: OsEventStore | None = None, *, real: bool = False,
 ) -> PolicyEngine:
-    """Motor con las rutas convencionales del repo."""
+    """Motor con las rutas convencionales del repo.
+
+    T1 (docs/architecture/GOVERNANCE_KERNEL.md, "Camino a real" #1):
+
+    * ``real=False`` (default, sin cambios de comportamiento): gates de
+      ``fixtures/governance/gates.json`` — catálogo de desarrollo/tests,
+      decisiones marcadas ``simulated=True``.
+    * ``real=True``: gates de ``config/governance/gates.json`` — catálogo
+      real mantenido por el operador. Lectura READ-ONLY (invariante 3: nunca
+      se escribe governance desde aquí); decisiones marcadas
+      ``simulated=False``. Si el fichero no existe todavía, se comporta
+      igual que una lista de gates vacía (fail-closed: los invariantes
+      duros y el default de PolicyEngine siguen aplicando).
+    """
+    gates_path = (
+        repo_root / "config" / "governance" / "gates.json"
+        if real
+        else repo_root / "fixtures" / "governance" / "gates.json"
+    )
     return PolicyEngine(
         rules_path=repo_root / "fixtures" / "security" / "policies.json",
-        gates=load_gates(repo_root / "fixtures" / "governance" / "gates.json"),
+        gates=load_gates(gates_path),
         store=store,
+        simulated=not real,
     )
