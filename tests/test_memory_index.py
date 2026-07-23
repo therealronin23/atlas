@@ -395,3 +395,107 @@ class TestRecallTemporal:
         results = idx_b.recall_temporal("dato exclusivo tenant A")
         ids = {r.lesson_id for r in results}
         assert "secret_a" not in ids, "record de tenant A no debe aparecer en tenant B"
+
+
+# ---------------------------------------------------------------------------
+# recall_temporal(use_fact_time=True) — mem-1: tiempo del HECHO vs tiempo de SISTEMA
+# ---------------------------------------------------------------------------
+
+class TestRecallTemporalFactTime:
+    """mem-1: fact_valid_at_ns/fact_invalid_at_ns opcionales en MemoryRecord.
+
+    Demuestra la diferencia REAL entre anclar `as_of` al tiempo del HECHO
+    (cuándo algo fue cierto EN EL MUNDO) frente a anclarlo al tiempo de SISTEMA
+    (cuándo el índice lo ingirió) — el hueco que Graphiti/Zep resuelven y que
+    valid_from_ns/valid_until_ns por sí solos no pueden distinguir.
+    """
+
+    def _open_idx(self, tmp_path: Path) -> SqliteMemoryIndex:
+        return SqliteMemoryIndex(tmp_path / "fact_time.db")
+
+    def test_use_fact_time_recovers_late_ingested_past_fact(self, tmp_path: Path) -> None:
+        """Un hecho ocurrido en el pasado pero ingerido HOY (tarde): as_of anclado
+        al tiempo del HECHO lo recupera; as_of anclado al tiempo de sistema (default,
+        use_fact_time=False) NO lo recupera, porque valid_from_ns es el instante de
+        ingesta (hoy), muy posterior al as_of pasado."""
+        idx = self._open_idx(tmp_path)
+
+        fact_start = 1_000_000_000_000_000_000   # el hecho empezó a ser cierto aquí
+        fact_end = fact_start + 5_000_000_000     # y dejó de serlo 5s después
+        ingested_at = fact_start + 100_000_000_000  # se ingiere ~100s después del hecho
+
+        rec = GenericRecord(
+            record_id="late_fact",
+            text="el servidor de pruebas estuvo caido por mantenimiento",
+            fact_valid_at_ns=fact_start,
+            fact_invalid_at_ns=fact_end,
+        )
+        idx.upsert(rec, valid_from_ns=ingested_at)
+
+        as_of_during_fact = fact_start + 1_000_000_000  # dentro de la ventana del hecho
+
+        # Tiempo de HECHO: SÍ lo encuentra (el hecho era cierto en ese instante).
+        by_fact = idx.recall_temporal(
+            "servidor caido mantenimiento", as_of_ns=as_of_during_fact, use_fact_time=True
+        )
+        assert "late_fact" in {r.lesson_id for r in by_fact}
+
+        # Tiempo de SISTEMA (default): NO lo encuentra — todavía no se había
+        # ingerido en ese instante (valid_from_ns=ingested_at > as_of_during_fact).
+        by_system = idx.recall_temporal(
+            "servidor caido mantenimiento", as_of_ns=as_of_during_fact, use_fact_time=False
+        )
+        assert "late_fact" not in {r.lesson_id for r in by_system}
+
+    def test_use_fact_time_excludes_fact_no_longer_true(self, tmp_path: Path) -> None:
+        """Un hecho vigente en el SISTEMA (valid_until_ns NULL: nunca se ha
+        supersedido) pero que ya dejó de ser cierto EN EL MUNDO (fact_invalid_at_ns
+        pasado): use_fact_time=True lo excluye; el tiempo de sistema (default) lo
+        sigue devolviendo porque no sabe que el hecho expiró."""
+        idx = self._open_idx(tmp_path)
+
+        fact_start = 1_000_000_000_000_000_000
+        fact_end = fact_start + 2_000_000_000  # el hecho dejó de ser cierto aquí
+
+        rec = GenericRecord(
+            record_id="stale_fact",
+            text="el precio del producto es diez euros temporada antigua",
+            fact_valid_at_ns=fact_start,
+            fact_invalid_at_ns=fact_end,
+        )
+        idx.upsert(rec, valid_from_ns=fact_start)
+
+        as_of_after_fact_ended = fact_end + 10_000_000_000  # bien después de fact_end
+
+        by_fact = idx.recall_temporal(
+            "precio del producto diez euros",
+            as_of_ns=as_of_after_fact_ended,
+            use_fact_time=True,
+        )
+        assert "stale_fact" not in {r.lesson_id for r in by_fact}
+
+        by_system = idx.recall_temporal(
+            "precio del producto diez euros",
+            as_of_ns=as_of_after_fact_ended,
+            use_fact_time=False,
+        )
+        assert "stale_fact" in {r.lesson_id for r in by_system}
+
+    def test_use_fact_time_falls_back_to_system_time_when_absent(
+        self, tmp_path: Path
+    ) -> None:
+        """Un record SIN fact_valid_at_ns/fact_invalid_at_ns (default None) se
+        comporta IGUAL con use_fact_time=True que con False — cero cambio de
+        comportamiento cuando no se usa el campo nuevo."""
+        idx = self._open_idx(tmp_path)
+        vfrom = 1_000_000_000_000_000_000
+        idx.upsert(_make_record("plain", "hecho sin distincion temporal"), valid_from_ns=vfrom)
+
+        as_of = vfrom + 1_000_000_000
+        by_fact = idx.recall_temporal(
+            "hecho sin distincion temporal", as_of_ns=as_of, use_fact_time=True
+        )
+        by_system = idx.recall_temporal(
+            "hecho sin distincion temporal", as_of_ns=as_of, use_fact_time=False
+        )
+        assert {r.lesson_id for r in by_fact} == {r.lesson_id for r in by_system} == {"plain"}

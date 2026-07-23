@@ -35,6 +35,22 @@ def test_generic_record_satisfies_protocol() -> None:
     assert isinstance(rec, MemoryRecord)
 
 
+def test_generic_record_fact_time_defaults_to_none() -> None:
+    """mem-1: fact_valid_at_ns/fact_invalid_at_ns son opcionales — quien no los pasa
+    obtiene None (sin distinguir tiempo-del-hecho de tiempo-de-sistema)."""
+    rec = GenericRecord("x", "texto")
+    assert rec.fact_valid_at_ns is None
+    assert rec.fact_invalid_at_ns is None
+    assert isinstance(rec, MemoryRecord)
+
+    rec_with_fact_time = GenericRecord(
+        "y", "texto", fact_valid_at_ns=100, fact_invalid_at_ns=200
+    )
+    assert rec_with_fact_time.fact_valid_at_ns == 100
+    assert rec_with_fact_time.fact_invalid_at_ns == 200
+    assert isinstance(rec_with_fact_time, MemoryRecord)
+
+
 # ---------------------------------------------------------------------------
 # Índice genérico, dominio no-seguridad
 # ---------------------------------------------------------------------------

@@ -170,6 +170,14 @@ _CLASS_TTL_COLUMNS = {
     "expires_at": "REAL",
 }
 
+# Columnas añadidas por mem-1 (tiempo del HECHO vs tiempo de SISTEMA), idempotente
+# como las anteriores. NULL = sin distinguir del tiempo de sistema (valid_from_ns/
+# valid_until_ns) — cero cambio de comportamiento para quien no los usa.
+_FACT_TIME_COLUMNS = {
+    "fact_valid_at_ns": "INTEGER",
+    "fact_invalid_at_ns": "INTEGER",
+}
+
 
 def _pack(vec: list[float]) -> bytes:
     return struct.pack(f"<{len(vec)}d", *vec)
@@ -257,6 +265,7 @@ class SqliteMemoryIndex:
         self._migrate_shred()
         self._migrate_tenant()
         self._migrate_class_ttl()
+        self._migrate_fact_time()
         self._migrate_keystore()
         self._guard_embedder_dim()
         self._guard_embedder_identity()
@@ -397,6 +406,19 @@ class SqliteMemoryIndex:
                 except Exception:
                     pass  # carrera de init concurrente: seguro ignorar
         self._conn.commit()
+
+    def _migrate_fact_time(self) -> None:
+        """Añade fact_valid_at_ns/fact_invalid_at_ns (mem-1) a un índice de esquema
+        previo (idempotente — mismo patrón que _migrate_class_ttl/_migrate_shred).
+        Sin backfill: filas viejas quedan con NULL en ambas, que es exactamente
+        "sin distinguir del tiempo de sistema" (comportamiento actual intacto)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(records)")}
+        for col, decl in _FACT_TIME_COLUMNS.items():
+            if col not in existing:
+                try:
+                    self._conn.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
+                except Exception:
+                    pass  # carrera de init concurrente: seguro ignorar
 
     def _migrate_keystore(self) -> None:
         """Migración idempotente: mueve claves de records.content_keys → keystore separado.
@@ -592,6 +614,11 @@ class SqliteMemoryIndex:
         eff_expires_at = expires_at
         if eff_expires_at is None and memory_class == "personal":
             eff_expires_at = time.time() + PERSONAL_TTL_S
+        # mem-1: tiempo del HECHO, opcional — getattr defensivo (no todo MemoryRecord
+        # duck-tipado tiene por qué llevarlo); default None = sin distinguir del
+        # tiempo de sistema (vfrom/valid_until_ns), cero cambio de comportamiento.
+        fact_valid_at_ns = getattr(record, "fact_valid_at_ns", None)
+        fact_invalid_at_ns = getattr(record, "fact_invalid_at_ns", None)
         # Cifrado Fernet: genera clave nueva en cada upsert (re-cifra si ya existe).
         key = Fernet.generate_key()
         token: str = Fernet(key).encrypt(record.text.encode()).decode()
@@ -600,8 +627,8 @@ class SqliteMemoryIndex:
             INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                  created_at, valid_from_ns, valid_until_ns, supersedes,
                                  tier, last_access_ns, access_count, shredded, tenant,
-                                 memory_class, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?, ?, ?)
+                                 memory_class, expires_at, fact_valid_at_ns, fact_invalid_at_ns)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 'hot', ?, 0, 0, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 text=excluded.text,
                 vector=excluded.vector,
@@ -610,11 +637,13 @@ class SqliteMemoryIndex:
                 created_at=excluded.created_at,
                 shredded=0,
                 memory_class=excluded.memory_class,
-                expires_at=excluded.expires_at
+                expires_at=excluded.expires_at,
+                fact_valid_at_ns=excluded.fact_valid_at_ns,
+                fact_invalid_at_ns=excluded.fact_invalid_at_ns
             """,
             (record.record_id, token, _pack(vec), merkle_leaf_hash,
              merkle_leaf_index, record.created_at, vfrom, supersedes, vfrom, self._tenant,
-             memory_class, eff_expires_at),
+             memory_class, eff_expires_at, fact_valid_at_ns, fact_invalid_at_ns),
         )
         # Upsert de la clave en el keystore separado.
         self._put_key(record.record_id, key)
@@ -652,15 +681,19 @@ class SqliteMemoryIndex:
             # Cifrado Fernet: genera clave nueva por record, igual que upsert.
             key = Fernet.generate_key()
             token: str = Fernet(key).encrypt(record.text.encode()).decode()
+            # mem-1: tiempo del HECHO, opcional (ver upsert()).
+            fact_valid_at_ns = getattr(record, "fact_valid_at_ns", None)
+            fact_invalid_at_ns = getattr(record, "fact_invalid_at_ns", None)
             self._conn.execute(
                 """
                 INSERT INTO records (id, text, vector, merkle_leaf_hash, merkle_leaf_index,
                                      created_at, valid_from_ns, valid_until_ns, supersedes,
-                                     tier, last_access_ns, access_count, shredded, tenant)
-                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0, 0, ?)
+                                     tier, last_access_ns, access_count, shredded, tenant,
+                                     fact_valid_at_ns, fact_invalid_at_ns)
+                VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, NULL, 'hot', ?, 0, 0, ?, ?, ?)
                 """,
                 (record.record_id, token, _pack(vec), record.created_at, now, now,
-                 self._tenant),
+                 self._tenant, fact_valid_at_ns, fact_invalid_at_ns),
             )
             self._put_key(record.record_id, key)
             new_ids.add(record.record_id)
@@ -952,28 +985,42 @@ class SqliteMemoryIndex:
         k: int = 10,
         as_of_ns: int | None = None,
         half_life_ns: int | None = None,
+        use_fact_time: bool = False,
     ) -> list[RecallResult]:
         """Recall consciente de validez temporal: reconstruye qué era vigente en as_of_ns.
 
         Señal de ranking determinista y auditable — NO borra nada, solo reordena/filtra.
 
-        Semántica de validez: un record es válido en T si
+        Semántica de validez (tiempo de SISTEMA, default): un record es válido en T si
             valid_from_ns <= T AND (valid_until_ns IS NULL OR T < valid_until_ns).
         Esto permite recuperar versiones que eran vigentes en el PASADO aunque hoy
         estén superseded, y excluir versiones que todavía no habían entrado (futuro).
         Respeta tenant y expires_at igual que recall_all.
 
+        `use_fact_time` (mem-1, default False = CERO cambio de comportamiento): cuando
+        es True, razona sobre cuándo el HECHO fue/dejó de ser cierto EN EL MUNDO en vez
+        de cuándo el sistema lo ingirió/invalidó. Por fila, usa fact_valid_at_ns/
+        fact_invalid_at_ns si están presentes y cae a valid_from_ns/valid_until_ns si no
+        (NULL por fila = ese record no distingue tiempo-de-hecho de tiempo-de-sistema).
+        Esto permite recuperar un hecho ingerido HOY que describe algo que fue cierto en
+        el pasado, en una query as_of anclada a ESE pasado — algo que el tiempo de
+        sistema por sí solo no puede hacer (valid_from_ns == instante de ingesta, no el
+        instante en que el hecho era cierto).
+
         Ranking:
           - Con half_life_ns dado: score = coseno * 0.5^(age/half_life_ns)
-            donde age = max(0, as_of_ns - valid_from_ns). Favorece lo más reciente.
-          - Con half_life_ns=None: coseno puro; desempate por valid_from_ns desc
+            donde age = max(0, as_of_ns - efectivo_from). Favorece lo más reciente.
+          - Con half_life_ns=None: coseno puro; desempate por efectivo_from desc
             (lo más reciente primero, determinista).
+          (efectivo_from = fact_valid_at_ns si use_fact_time y presente, si no valid_from_ns.)
 
         Args:
-            query_text:   texto de la query.
-            k:            número máximo de resultados.
-            as_of_ns:     instante de consulta en nanosegundos; None → ahora.
-            half_life_ns: vida media del decaimiento exponencial en ns; None → sin decay.
+            query_text:    texto de la query.
+            k:             número máximo de resultados.
+            as_of_ns:      instante de consulta en nanosegundos; None → ahora.
+            half_life_ns:  vida media del decaimiento exponencial en ns; None → sin decay.
+            use_fact_time: si True, razona sobre fact_valid_at_ns/fact_invalid_at_ns
+                           en vez de valid_from_ns/valid_until_ns (ver arriba).
 
         Returns:
             Lista de RecallResult ordenada por score combinado, top-k.
@@ -981,22 +1028,45 @@ class SqliteMemoryIndex:
         t_ns = as_of_ns if as_of_ns is not None else time.time_ns()
         now_epoch = t_ns / 1e9  # para filtro expires_at
 
-        # Recuperamos TODAS las filas del tenant (include_superseded=True) y aplicamos
-        # el filtro de validez en as_of_ns + expires_at manualmente.
-        sql = (
-            "SELECT id, vector, valid_from_ns "
-            "FROM records WHERE tenant=? "
-            "AND valid_from_ns IS NOT NULL "
-            "AND valid_from_ns <= ? "
-            "AND (valid_until_ns IS NULL OR ? < valid_until_ns) "
-            "AND (expires_at IS NULL OR expires_at > ?) "
-            "ORDER BY ordinal"
-        )
-        cur = self._conn.execute(sql, (self._tenant, t_ns, t_ns, now_epoch))
-        raw_rows: list[tuple[str, list[float], int]] = [
-            (rid, _unpack(blob), vfrom)
-            for rid, blob, vfrom in cur.fetchall()
-        ]
+        raw_rows: list[tuple[str, list[float], int]]
+        if use_fact_time:
+            # Traemos también las columnas de tiempo-de-hecho y resolvemos el
+            # "efectivo_from/until" por fila en Python: fact_* si está presente,
+            # si no cae a valid_from_ns/valid_until_ns (system time), fila a fila.
+            sql = (
+                "SELECT id, vector, valid_from_ns, valid_until_ns, "
+                "fact_valid_at_ns, fact_invalid_at_ns "
+                "FROM records WHERE tenant=? "
+                "AND (expires_at IS NULL OR expires_at > ?) "
+                "ORDER BY ordinal"
+            )
+            cur = self._conn.execute(sql, (self._tenant, now_epoch))
+            raw_rows = []
+            for rid, blob, vfrom, vuntil, fact_from, fact_until in cur.fetchall():
+                eff_from = fact_from if fact_from is not None else vfrom
+                eff_until = fact_until if fact_until is not None else vuntil
+                if eff_from is None or eff_from > t_ns:
+                    continue
+                if eff_until is not None and t_ns >= eff_until:
+                    continue
+                raw_rows.append((rid, _unpack(blob), eff_from))
+        else:
+            # Recuperamos TODAS las filas del tenant (include_superseded=True) y aplicamos
+            # el filtro de validez en as_of_ns + expires_at manualmente.
+            sql = (
+                "SELECT id, vector, valid_from_ns "
+                "FROM records WHERE tenant=? "
+                "AND valid_from_ns IS NOT NULL "
+                "AND valid_from_ns <= ? "
+                "AND (valid_until_ns IS NULL OR ? < valid_until_ns) "
+                "AND (expires_at IS NULL OR expires_at > ?) "
+                "ORDER BY ordinal"
+            )
+            cur = self._conn.execute(sql, (self._tenant, t_ns, t_ns, now_epoch))
+            raw_rows = [
+                (rid, _unpack(blob), vfrom)
+                for rid, blob, vfrom in cur.fetchall()
+            ]
 
         if not raw_rows:
             return []
