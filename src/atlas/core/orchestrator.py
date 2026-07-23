@@ -1607,6 +1607,11 @@ class Orchestrator:
             domain, service, entity_id=entity_id, data=data,
         )
 
+    def _run_git_checkpoint_restore(
+        self, repo_path: str, ref: str, run_count: int, kind: str,
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_git_checkpoint_restore(repo_path, ref, run_count, kind)
+
     def _get_editor_tool(self) -> Any:
         return self._gate_f_exec.get_editor_tool()
 
@@ -1680,7 +1685,15 @@ class Orchestrator:
     def _is_agentic_auto_approved(self, name: str, task: Task) -> bool:
         """Una mutación corre inline (sin suspender) solo si está en la allowlist
         Y la tarea no es de sensibilidad alta. Seguro por defecto: allowlist
-        vacía → siempre False → todo mutante exige HITL."""
+        vacía → siempre False → todo mutante exige HITL.
+
+        t1-git-checkpoint-agentic-wiring: `git_checkpoint_restore` es
+        DESTRUCTIVO (risk_level="critical" en git_checkpoint.py) y queda
+        excluida aquí de forma incondicional — a diferencia del resto de
+        mutantes, ni siquiera un operador que la añada a
+        `set_agentic_auto_approve()` puede saltarse el HITL."""
+        if name == "git_checkpoint_restore":
+            return False
         if name not in self._agentic_auto_approve:
             return False
         return task.sensitivity != "high"

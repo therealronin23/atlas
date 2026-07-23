@@ -13,7 +13,11 @@ from pathlib import Path
 
 import pytest
 
-from atlas.core.git_checkpoint import GitCheckpointError, GitCheckpointManager
+from atlas.core.git_checkpoint import (
+    GitCheckpointError,
+    GitCheckpointManager,
+    is_ephemeral_worktree,
+)
 from atlas.logging.merkle_logger import MerkleLogger
 
 
@@ -102,6 +106,29 @@ class TestCheckpointAndRestoreEndToEnd:
         )
         with pytest.raises(GitCheckpointError):
             manager.restore(real_repo, fake)
+
+
+class TestIsEphemeralWorktree:
+    """Predicado estructural usado por el wiring agéntico (t1-git-checkpoint-
+    agentic-wiring): distingue un worktree efímero real del checkout git
+    principal SIN depender de una lista de rutas conocidas de antemano."""
+
+    def test_main_checkout_is_not_a_worktree(self, real_repo: Path) -> None:
+        assert (real_repo / ".git").is_dir()  # supuesto de partida real
+        assert is_ephemeral_worktree(real_repo) is False
+
+    def test_real_git_worktree_add_is_a_worktree(
+        self, real_repo: Path, tmp_path: Path
+    ) -> None:
+        wt = tmp_path / "wt"
+        _git(real_repo, "worktree", "add", "--detach", str(wt), "HEAD")
+        assert (wt / ".git").is_file()  # supuesto de partida real
+        assert is_ephemeral_worktree(wt) is True
+
+    def test_non_repo_directory_is_not_a_worktree(self, tmp_path: Path) -> None:
+        plain = tmp_path / "plain"
+        plain.mkdir()
+        assert is_ephemeral_worktree(plain) is False
 
 
 class TestMerkleAudit:

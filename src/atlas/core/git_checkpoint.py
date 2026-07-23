@@ -21,9 +21,18 @@ son directorios temporales dinámicos), pero SÍ rechaza explícitamente
 operar sin que `repo_path` exista y sea un repo git real.
 
 `restore()` es DESTRUCTIVO por diseño (como en Cline): borra todo lo no
-checkpointeado. Se audita en Merkle con risk_level="critical" y NO se
-expone al loop agéntico en este slice — wiring con aprobación HITL
-explícita queda como siguiente paso, no se apresura al final de la sesión.
+checkpointeado. Se audita en Merkle con risk_level="critical".
+
+2026-07-22 — wireado en el loop agéntico (`orchestrator.py` /
+`orchestrator_parts/agentic_executor.py` + `gate_f_executor.py`): expuesto
+como tool `git_checkpoint_restore`, clasificada `mutate` (ADR-032/033),
+NUNCA auto-aprobada por la allowlist de ADR-033 pese a su riesgo `critical`
+(exclusión explícita en `Orchestrator._is_agentic_auto_approved`, ver ADR).
+El wiring agéntico añade la guarda estructural que este módulo, a propósito,
+no fuerza por sí mismo (ver párrafo anterior): `is_ephemeral_worktree()` más
+abajo, invocada por `GateFExecutor.run_git_checkpoint_restore` ANTES de
+llamar a `restore()`, rechaza cualquier `repo_path` que no sea un worktree
+efímero real (nunca el checkout git principal).
 """
 
 from __future__ import annotations
@@ -48,6 +57,24 @@ class CheckpointEntry:
 
 class GitCheckpointError(Exception):
     """El repo_path no es un repo git real, o el comando de git falló."""
+
+
+def is_ephemeral_worktree(repo_path: Path) -> bool:
+    """True si `repo_path` es un git worktree efímero (creado con
+    `git worktree add`), nunca el checkout git principal.
+
+    Invariante ESTRUCTURAL real, no una allowlist de rutas conocidas de
+    antemano (los worktrees que crean `ParallelCoder`/`ToolCoder` son
+    directorios temporales dinámicos, imposibles de enumerar de antemano):
+    en un worktree, `.git` es un FICHERO de una línea
+    (`gitdir: <repo>/.git/worktrees/<nombre>`); en el checkout principal,
+    `.git` es un DIRECTORIO. Verificado en vivo con `git worktree add`
+    real (no asumido de la documentación de git).
+
+    Usado por el wiring agéntico de `restore()` (`GateFExecutor` en
+    `orchestrator_parts/gate_f_executor.py`) para rechazar, ANTES de tocar
+    el disco, cualquier intento de restaurar sobre el repo real."""
+    return (repo_path / ".git").is_file()
 
 
 class GitCheckpointManager:

@@ -532,6 +532,12 @@ class AgenticExecutor:
                     entity_id=args.get("entity_id", ""), data=args.get("data"),
                 )
                 return host._stringify_tool_result(result)
+            if name == "git_checkpoint_restore":
+                result = host._run_git_checkpoint_restore(
+                    args["repo_path"], args["ref"],
+                    int(args.get("run_count", 0)), args.get("kind", "stash"),
+                )
+                return host._stringify_tool_result(result)
             if tool == "editor":
                 result = host._execute_editor_command(action, args, task=task)
             elif tool == "browser":

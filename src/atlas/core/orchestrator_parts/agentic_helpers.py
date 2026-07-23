@@ -20,6 +20,12 @@ AGENTIC_MUTATING_TOOLS: frozenset[str] = frozenset({
     "browser_navigate", "browser_click", "browser_fill",
     "invoke_claude_code", "manipulate_pdf", "image_generate", "video_generate",
     "smart_home_control", "acp_invoke",
+    # t1-git-checkpoint-agentic-wiring (2026-07-22): restore() es DESTRUCTIVO
+    # (git reset --hard + clean -fd). Además de 'mutate' normal, el host
+    # (Orchestrator._is_agentic_auto_approved) la excluye por nombre de la
+    # allowlist de auto-aprobación de ADR-033 — nunca corre sin HITL, ni
+    # siquiera si un operador la añade a la allowlist por error.
+    "git_checkpoint_restore",
 })
 
 
@@ -261,6 +267,25 @@ def tool_specs() -> list[dict[str, Any]]:
                 "aspect_ratio": {"type": "string"},
             },
             ["prompt", "output_path"],
+        ),
+        fn(
+            "git_checkpoint_restore",
+            "Restaura un git worktree efímero al estado de un checkpoint anterior "
+            "(git reset --hard + git clean -fd + aplicar el checkpoint). "
+            "DESTRUCTIVO: borra todo lo no checkpointeado. Riesgo CRÍTICO — "
+            "SIEMPRE requiere aprobación humana inline, nunca auto-aprobado por "
+            "la allowlist de ADR-033 aunque el operador la incluya en ella. Solo "
+            "opera dentro de worktrees efímeros: se rechaza estructuralmente si "
+            "repo_path no fue creado con 'git worktree add' (nunca sobre el "
+            "checkout git real). kind es 'commit' o 'stash', según devolvió el "
+            "checkpoint original.",
+            {
+                "repo_path": {"type": "string"},
+                "ref": {"type": "string"},
+                "run_count": {"type": "integer"},
+                "kind": {"type": "string"},
+            },
+            ["repo_path", "ref", "run_count", "kind"],
         ),
         fn(
             "read_external_file",

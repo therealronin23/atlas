@@ -57,6 +57,7 @@ class GateFExecutor:
         self._image_gen_tool: Any | None = None
         self._video_gen_tool: Any | None = None
         self._home_assistant_tool: Any | None = None
+        self._git_checkpoint_manager: Any | None = None
 
     # ------------------------------------------------------------------ tools
     def attach(
@@ -442,6 +443,52 @@ class GateFExecutor:
             domain, service, entity_id=entity_id or None, data=data,
         )
         return {"action": result.action, "success": result.success, "data": result.data, "error": result.error}
+
+    def get_git_checkpoint_manager(self) -> Any:
+        if self._git_checkpoint_manager is None:
+            from atlas.core.git_checkpoint import GitCheckpointManager  # noqa: PLC0415
+
+            self._git_checkpoint_manager = GitCheckpointManager(merkle=self._merkle)
+        return self._git_checkpoint_manager
+
+    def run_git_checkpoint_restore(
+        self, repo_path: str, ref: str, run_count: int, kind: str,
+    ) -> dict[str, Any]:
+        """t1-git-checkpoint-agentic-wiring: `restore()` es DESTRUCTIVO (git
+        reset --hard + clean -fd). Llegar aquí YA implica que el HITL de
+        ADR-032/033 aprobó la mutación (dispatch_mutation solo llama esto tras
+        aprobación); la guarda que queda es estructural, no de permisos:
+        rechazar cualquier repo_path que no sea un worktree efímero real
+        (nunca el checkout git principal) ANTES de tocar el disco."""
+        from atlas.core.git_checkpoint import (  # noqa: PLC0415
+            CheckpointEntry,
+            GitCheckpointError,
+            is_ephemeral_worktree,
+        )
+
+        path = Path(repo_path)
+        if not is_ephemeral_worktree(path):
+            return {
+                "repo_path": repo_path, "ref": ref, "success": False,
+                "error": (
+                    f"{repo_path} no es un worktree efimero (.git no es un "
+                    "fichero) - restore() nunca opera sobre el checkout git real."
+                ),
+            }
+        if kind not in ("commit", "stash"):
+            return {
+                "repo_path": repo_path, "ref": ref, "success": False,
+                "error": f"kind invalido {kind!r}: debe ser 'commit' o 'stash'",
+            }
+        checkpoint = CheckpointEntry(
+            ref=ref, run_count=run_count, kind=kind,  # type: ignore[arg-type]
+            created_at="",
+        )
+        try:
+            self.get_git_checkpoint_manager().restore(path, checkpoint)
+        except GitCheckpointError as exc:
+            return {"repo_path": repo_path, "ref": ref, "success": False, "error": str(exc)}
+        return {"repo_path": repo_path, "ref": ref, "run_count": run_count, "success": True, "error": None}
 
     def run_read_external_file(self, path: str) -> dict[str, Any]:
         decision = self.get_fs_bridge_tool().check(path)
