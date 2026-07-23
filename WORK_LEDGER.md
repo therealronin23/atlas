@@ -8,6 +8,33 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-23 (sesión siguiente, tras triage) — `t3-1-universal-gui-operator`
+  Commit 1/2: tipos puros + fakes, sin tocar Gate F todavía.** Investigado
+  antes de codificar (2 agentes Explore + 1 Plan): `computer-control-mcp`
+  catalogado (`verificado`) pero sin ningún caller en `src/atlas/`; patrón a
+  imitar es Gate F (`gate_f_parser.py`/`gate_f_executor.py`, parser
+  puro+executor con estado, `requires_approval` decidido por regla estática
+  — invariante D2); el cliente MCP real a reusar es `McpRegistry`, no
+  `TrunkAggregator` (ese vive en el proceso servidor separado); gap de
+  gobernanza confirmado: `pol_hard_computer_use`
+  (`src/atlas/fabric/policy.py:127`) existe pero `PolicyEngine` no se
+  instancia en `orchestrator.py`. Añadidos con TDD real (RED confirmado
+  antes de cada implementación): `src/atlas/tools/computer_use/desktop_action.py`
+  (`DesktopAction`, hermano de `ProposedAction` de `vision_loop.py`, no
+  reutilizado a la fuerza — campos de escritorio distintos a los de
+  browser), `desktop_tool.py` (wrapper fino sobre invoke/invoke_readonly
+  narrow, fail-closed si se cuela una tool mutante por el camino
+  read-only), `desktop_planner.py` (LLM→plan JSON tipado pydantic
+  `extra="forbid"` — el schema de entrada ni siquiera tiene
+  `requires_approval`, el LLM no puede proponerlo; fallback a `[stop]` ante
+  cualquier fallo de parseo). 24 tests nuevos, mypy limpio (5 ficheros del
+  paquete). Siguiente: Commit 2 — wiring real en `gate_f_parser.py`/
+  `gate_f_executor.py`/`orchestrator.py` (PolicyEngine), con fakes/dummies,
+  sin Xvfb. Las fases 8-9 (config real del servidor + test E2E con 2 apps
+  reales) quedan bloqueadas por infraestructura (sin Xvfb `:99` ni
+  `.venv-desktop/bin/computer-control-mcp` en este entorno) — decisión
+  explícita del operador de no instalarlas hoy.
+
 - **2026-07-23 (sesión siguiente) — `t1-atlascoder-selfcorrect-loop`: cerrado
   SIN cambios de producción, el mecanismo ya existía desde 6df920e**. Antes de
   implementar, verificación de código real (`git log -S`) mostró que
