@@ -1150,7 +1150,7 @@ items:
       sintética que excede el presupuesto, un fake que lanza ContextWindowExceededError
       en el primer intento y responde normal en el segundo tras la condensación.
     priority: 3
-    status: done  # 2026-07-23: commit pendiente — _condensed_request()/_condense_messages()
+    status: done  # 2026-07-23: commit b054e45 — _condensed_request()/_condense_messages()
     # en inference_hub.py, enganchado en _infer_raw tras _walk_chain fallar con
     # error_kind=="context" (recorte determinista por presupuesto de tokens
     # aprox. por caracteres, sin tiktoken ni LLM adicional; preserva system +
