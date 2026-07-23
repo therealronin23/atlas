@@ -24,6 +24,8 @@ import random
 import time
 import importlib
 import importlib.util
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
@@ -839,7 +841,25 @@ class InferenceHub:
         last_exc: BaseException | None = None
         for attempt in range(max_retries + 1):
             try:
-                completion = llm.completion(
+                # 2026-07-23: `timeout=timeout_s` pasado a litellm NO acota el
+                # tiempo real de vuelta — probado en vivo con nvidia_nim
+                # (mistral-medium-3.5-128b): timeout=10 tardó ~34s, timeout=30
+                # tardó ~92s (factor ~3x consistente, causa exacta en litellm/
+                # openai-sdk no aislada). El cap de 30s del smoke (2026-07-22,
+                # pensado para evitar el cuelgue de 18min ya visto una vez con
+                # este mismo provider) quedaba así solo parcialmente aplicado.
+                # Wrapper de hilo: fuerza el corte real a `timeout_s`
+                # independientemente de si la librería lo respeta; el hilo
+                # colgado se abandona (no se puede matar una llamada de red
+                # bloqueante desde fuera) pero deja de bloquear al caller.
+                # OJO: NO usar `with ThreadPoolExecutor(...)` aquí — su
+                # `__exit__` llama a `shutdown(wait=True)`, que bloquea hasta
+                # que el hilo colgado termine y anula el propio timeout duro
+                # (bug real, cazado en vivo: el primer intento de este fix
+                # seguía tardando ~50s con timeout_s=15 por exactamente esto).
+                pool = ThreadPoolExecutor(max_workers=1)
+                future = pool.submit(
+                    llm.completion,
                     model=provider.litellm_model,
                     messages=messages,
                     max_tokens=request.max_tokens,
@@ -847,7 +867,21 @@ class InferenceHub:
                     timeout=timeout_s,
                     **extra_kwargs,
                 )
+                try:
+                    completion = future.result(timeout=timeout_s)
+                finally:
+                    pool.shutdown(wait=False)
                 last_exc = None
+                break
+            except FutureTimeoutError as exc:
+                last_exc = TimeoutError(
+                    f"hard timeout tras {timeout_s}s (litellm no devolvió a tiempo)"
+                )
+                last_exc.__cause__ = exc
+                if attempt < max_retries:
+                    backoff = INFER_RETRY_BASE_S * (2 ** attempt)
+                    self._sleep(backoff + random.uniform(0.0, INFER_RETRY_BASE_S))
+                    continue
                 break
             except Exception as exc:  # noqa: BLE001 — clasificamos abajo
                 last_exc = exc

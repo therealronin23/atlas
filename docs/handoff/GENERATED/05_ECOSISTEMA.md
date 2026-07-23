@@ -1,14 +1,14 @@
-<!-- GENERADO por atlas handoff 2026-07-22T19:57:27.068581+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-23T16:18:38.103790+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # Mapa del ecosistema — resumen
 
 ## Conteo por estado
 
 - ACTIVO: 25
-- PENDIENTE: 6
+- PENDIENTE: 7
 - SELLADO: 4
+- PARK: 2
 - MURO: 1
-- PARK: 1
 
 ## Ítems PENDIENTE (más accionables para un driver nuevo)
 
@@ -18,5 +18,6 @@
 - Universal verifier ADR-041
 - Cascade routing ADR-042
 - Swarm / worker backend ADR-045/046
+- Atlas IDE — Void fork (`atlas-ide`)
 
 Fuente completa: `docs/design/atlas_ecosystem_map.md`.

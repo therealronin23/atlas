@@ -75,16 +75,20 @@ This matrix details architectural patterns observed in Aider, Cursor, Codex, and
 
 ## Zero-Importer Triage Snapshot
 
-Classification from the 2026-07-07 sanitation radar. This is not deletion
-approval; it prevents zero-importer modules from being called live by accident.
+Classification refreshed 2026-07-23 (audit pass) against real `grep` evidence
+of `src/atlas/` importers, replacing the stale 2026-07-07 snapshot that had
+drifted out of sync with `maintenance_facade.py` wiring done on 2026-07-08.
+This is not deletion approval; it prevents zero-importer modules from being
+called live by accident.
 
 | Module group | State | Rationale | Next action |
 | --- | --- | --- | --- |
 | `_crawl4ai_worker.py` | KEEP | Subprocess entrypoint used by `CrawlerTool` in isolated venv | Keep out of normal import graph |
 | `root_cause_classifier.py`, `benchmark_gate.py`, `failure_lesson_sink.py`, `evolution_gate.py` | KEEP | Injectable components used by ColdUpdate/Batcher/SelfBuild paths when configured | Do not claim always-on; wire only through explicit runtime config |
-| `incremental_coder.py`, `lesson_runner.py` | PARK | Tested coding/lesson workflows without current runtime owner | Reopen with CLI/runtime owner or quarantine later |
-| `history_compactor.py`, `token_budget.py` | PARK | Standalone context utilities; caller-owned | Wire only when a caller needs them |
-| `preflight_gate.py`, `batch_premortem.py`, `topic_expander.py`, `panorama_scout.py`, `sota_snapshot.py` | PARK | Self-maintenance/discovery helpers; scheduler/service-runner owner not enabled | Reopen with service-runner path |
+| `preflight_gate.py`, `batch_premortem.py`, `topic_expander.py`, `panorama_scout.py` | ACTIVO | Imported for real by `maintenance_facade.py` since 2026-07-08 (self-build preflight, batch premortem gate, topic/panorama discovery ticks) — verified live via `grep` 2026-07-23, not just tested | Keep; gated behind `ATLAS_SELF_BUILD=1`/`ATLAS_RESEARCH=1`, not always-on |
+| `lesson_runner.py` | ACTIVO | Real production callers: `tool_coder.py`, `lesson_store.py` (verified 2026-07-23) | Keep; not orphaned |
+| `incremental_coder.py`, `sota_snapshot.py` | PARK | Tested workflows, zero non-test callers confirmed 2026-07-23 | Reopen with CLI/runtime owner or quarantine later |
+| `history_compactor.py`, `token_budget.py` | PARK | Standalone context utilities, zero non-test callers confirmed 2026-07-23; caller-owned | Wire only when a caller needs them |
 | `immunity/live_loop.py` | PARK | Gated hook adapter, no hot-path owner enabled | Keep disabled unless gateway hook is explicitly reopened |
 
 ## Operating Rule

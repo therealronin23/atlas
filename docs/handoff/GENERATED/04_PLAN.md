@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-22T19:57:27.068581+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-23T16:18:38.103790+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ---
 title: "ATLAS — Plan Maestro de Implantación"

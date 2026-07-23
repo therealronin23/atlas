@@ -1,20 +1,20 @@
 {
   "files": {
-    "00_ESTADO.md": "01ecba94858c0dcd1e013a987656876395a442800f6768d30f8e8341be333ebf",
+    "00_ESTADO.md": "a928489fbde387d4dbe2d1af906363ad9cbaa3f840f0d8bcfb376b4273e488ea",
     "01_QUIEN_ES_QUIEN.md": "c35c32f06724de8178865219b7c09d23a0f82566ca56f6dfbc6942051b7904c6",
-    "02_INVARIANTES.md": "03dac74e3b4eb7807ffbb0f503ab5fbf630515585bd2998f17bf029ecea56da5",
+    "02_INVARIANTES.md": "770373f36d20a5c15e6479e05c895070e2fee681470756eed46deaba93fd25ce",
     "03_MEMORIA_CLAVE.md": "dd04d905d6dba90ebd05a280a2a1ce4cbb26d2ef86373f37b6eeead1956b499f",
     "04_PLAN.md": "84ad981d9e961ac7218426d5688de6009fe39979592e9739a1d1e2890f4ca00b",
-    "05_ECOSISTEMA.md": "87ab6ee44830bff01386d0e4a018d3cc6d759797f3b689e8993b4f0a566ed1ca",
+    "05_ECOSISTEMA.md": "521aba2aa1cbdf0d1e5f238a653c10833ae292545a77f19d5beb666bdafce4c8",
     "06_PRIMEROS_10_MINUTOS.md": "651be28c639c3258314e716d0c482d9c2b9ba3759aac88e9929cc4432d7e0fb4"
   },
-  "generated_at": "2026-07-22T19:57:27.068581+00:00",
-  "head_sha": "adf34668a8436990bd78526e87f6e0c3111a0f85",
+  "generated_at": "2026-07-23T16:18:38.103790+00:00",
+  "head_sha": "8317cf836461d496f60b5d788f32f082efbbb831",
   "sources": {
-    "AGENTS.md": "03dac74e3b4eb7807ffbb0f503ab5fbf630515585bd2998f17bf029ecea56da5",
-    "WORK_LEDGER.md": "cea7b76f2da1dea8ef1b5fe98581afaac47faaf2428b6e63ec5e33e519491a6c",
+    "AGENTS.md": "770373f36d20a5c15e6479e05c895070e2fee681470756eed46deaba93fd25ce",
+    "WORK_LEDGER.md": "d9f1ed977583c4f41b43fa09997ccaec08264c33973527402321f87c1abb7c61",
     "docs/design/actor_roles.md": "c35c32f06724de8178865219b7c09d23a0f82566ca56f6dfbc6942051b7904c6",
-    "docs/design/atlas_ecosystem_map.md": "1033c8f0226a9e4d850ec114084c73d2d7eab3dc2676a43bbe1c5e0354868fef",
+    "docs/design/atlas_ecosystem_map.md": "60908669e94a5d761a95cd824a1a82968103daa49c5aa7b710269d1a2321c5e3",
     "docs/design/atlas_master_plan.md": "84ad981d9e961ac7218426d5688de6009fe39979592e9739a1d1e2890f4ca00b"
   }
 }

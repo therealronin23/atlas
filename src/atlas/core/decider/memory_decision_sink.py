@@ -25,6 +25,7 @@ import time
 from pathlib import Path
 
 from atlas.core.decider.decision_record import DecisionRecord, DecisionSink
+from atlas.memory.embeddings import Embedder, default_embedder
 from atlas.memory.memory_index import ProvenanceWriteGate, SqliteMemoryIndex
 from atlas.memory.record import GenericRecord
 
@@ -93,11 +94,17 @@ class MemoryDecisionSink:
         db_path: str | Path,
         *,
         tenant: str = "decisions",
+        embedder: Embedder | None = None,
     ) -> None:
+        # Sin `embedder` explícito, SqliteMemoryIndex cae a StubEmbedder(dim=64)
+        # en silencio (vectores falsos) — aquí resolvemos el default real
+        # (ATLAS_EMBEDDER, normalmente fastembed) para que el corpus de
+        # decisiones no quede indexado con embeddings inservibles sin avisar.
         self._idx = SqliteMemoryIndex(
             Path(db_path),
             tenant=tenant,
             write_gate=ProvenanceWriteGate(),
+            embedder=embedder if embedder is not None else default_embedder(),
         )
         self._tenant = tenant
 

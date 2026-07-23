@@ -93,7 +93,7 @@ class TestEmbedderIdentity:
             _model_dir = artifact_dir
 
         class _FakeModel:
-            def __init__(self, model_name: str) -> None:
+            def __init__(self, model_name: str, **kwargs: object) -> None:
                 self.model_name = model_name
                 self.model = _ConcreteModel()
 
@@ -130,7 +130,7 @@ class TestEmbedderIdentity:
                 self._model_dir = model_dir
 
         class _FakeModel:
-            def __init__(self, model_name: str) -> None:
+            def __init__(self, model_name: str, **kwargs: object) -> None:
                 self.model_name = model_name
                 self.model = _ConcreteModel(tmp_path)
 

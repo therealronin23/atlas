@@ -34,6 +34,17 @@ _PROBE_MAX_TOKENS = 8
 # colgado retuvo la pasada 18 minutos medidos (nvidia_mistral_medium,
 # latency_ms=1087936). Un probe responde "¿vive?" en segundos; si un proveedor
 # necesita >30s para un ping de 8 tokens, ese dato ES el resultado del smoke.
+#
+# 2026-07-23: el cap de 30s de arriba NO se estaba cumpliendo de verdad —
+# `timeout_s` pasado a litellm.completion no acotaba la duración real
+# (probado en vivo: timeout=10 tardó ~34s, timeout=30 tardó ~92s, factor
+# ~3x consistente; causa exacta en litellm/openai-sdk no aislada). Arreglado
+# en `InferenceHub._call_provider_real` con un wrapper de hilo que fuerza el
+# corte real — este cap de 30s ahora sí es el límite duro. Con esto, si
+# `nvidia_glm`/`nvidia_mistral_medium` siguen apareciendo "dead" en el smoke
+# diario durante varios días seguidos (no solo un run), ESO sí es evidencia
+# suficiente para retirarlos de DEFAULT_PROVIDERS — un timeout puntual no lo
+# es (ver WORK_LEDGER.md, auditoría 2026-07-23).
 _PROBE_TIMEOUT_S = 30.0
 _PROBE_MAX_RETRIES = 0
 

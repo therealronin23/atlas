@@ -349,7 +349,20 @@ class FastEmbedEmbedder:
             ) from exc
         cached = self._MODEL_CACHE.get(model_name)
         if cached is None:
-            cached = TextEmbedding(model_name=model_name)
+            # 2026-07-23: mitigación tras auditoría de un SIGABRT real del
+            # daemon (coredump 2026-07-12, 38 hilos del SO vivos en el
+            # momento del crash; backtrace sin símbolos porque el venv se
+            # reinstaló desde entonces, causa exacta no aislada). Sin
+            # `threads=`, onnxruntime abre un pool intra-op de tantos hilos
+            # como núcleos tenga la máquina para ESTA única sesión — sumado
+            # a los N hilos de schedulers propios del daemon (thermal,
+            # maintenance, self-audit, swarm, MCP stdio, telegram...), es
+            # presión real de hilos/memoria bajo la que earlyoom ya mató
+            # procesos antes (ver memoria del operador). Los embeddings aquí
+            # son de textos cortos (lecciones/memoria) — no hace falta
+            # paralelismo intra-op amplio; acotarlo reduce presión sin tocar
+            # el resultado del embed (mismo modelo, mismos vectores).
+            cached = TextEmbedding(model_name=model_name, threads=2)
             self._MODEL_CACHE[model_name] = cached
         self._model = cached
         self._dim = dim

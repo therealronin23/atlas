@@ -169,7 +169,7 @@ class TestFastEmbedModelCache:
             _model_dir = model_dir
 
         class _FakeModel:
-            def __init__(self, model_name: str) -> None:
+            def __init__(self, model_name: str, **kwargs: object) -> None:
                 loads.append(model_name)
                 self.model = _ConcreteModel()
 
@@ -177,7 +177,7 @@ class TestFastEmbedModelCache:
                 return [[0.0] * 384 for _ in texts]
 
         fake = types.ModuleType("fastembed")
-        fake.TextEmbedding = lambda model_name: _FakeModel(model_name)  # type: ignore[attr-defined]
+        fake.TextEmbedding = lambda model_name, **kwargs: _FakeModel(model_name, **kwargs)  # type: ignore[attr-defined]
         monkeypatch.setitem(sys.modules, "fastembed", fake)
 
         from atlas.memory.embeddings import FastEmbedEmbedder
