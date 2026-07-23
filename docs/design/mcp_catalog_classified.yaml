@@ -186,6 +186,22 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: paperless-ngx/paperless-ngx
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/paperless-ngx/paperless-ngx
+      install: ''
+      status: candidato
+      tags:
+      - ciberseguridad
+      evidence:
+      - tema:document indexing
+      - informe:2
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
   conocimiento-memoria:
     label: Conocimiento y memoria
     entries:
@@ -378,6 +394,88 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-17T00:41:21.940994+00:00'
+    - name: Dicklesworthstone/frankengraphdb
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Dicklesworthstone/frankengraphdb
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database
+      - tema:graph databases
+      - informe:5
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
+    - name: LagoVista/CloudStorage
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/LagoVista/CloudStorage
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph persistence
+      - informe:2
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
+    - name: MartinBlomqvistDev/hazium
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/MartinBlomqvistDev/hazium
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:6
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
+    - name: eMTAi-Labs/xraygraph-bench
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/eMTAi-Labs/xraygraph-bench
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:6
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
+    - name: fisallllll280-code/VAIXLNS
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/fisallllll280-code/VAIXLNS
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:repository mutation
+      - tema:temporal knowledge graph
+      - informe:6
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
   datos:
     label: Datos
     entries:
@@ -642,6 +740,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-11T05:18:43.943823+00:00'
+    - name: Azqato/stocks
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Azqato/stocks
+      install: ''
+      status: candidato
+      tags:
+      - datos
+      evidence:
+      - tema:document indexing
+      - informe:5
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-23T01:49:28.203259+00:00'
   diseno:
     label: Diseño
     entries:

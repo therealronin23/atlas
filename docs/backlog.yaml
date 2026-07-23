@@ -788,7 +788,7 @@ items:
       el umbral, y CLI que escribe a docs/inbox/. Test del render con resultados sintéticos en
       ambos lados del umbral.
     priority: 3
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón, cierre de Ola 5)
     test_cmd: ["python3", "-m", "pytest", "tests/benchmarks/test_judge_verdict_report.py", "-q"]
 
   # --- Absorción Graphiti (disección 2026-07-10, docs/inbox/graphiti_dissection_2026-07-10.md) ---
@@ -1516,7 +1516,8 @@ items:
       real (no una recomendación de compra); cero llamadas de red de pago, cero aprovisionamiento
       de infraestructura nueva.
     priority: 2
-    status: pending
+    status: done  # 2026-07-23 (sesión maratón, cierre de Ola 5)
+    test_cmd: ["python3", "-m", "pytest", "tests/test_benchmark_workload.py", "-q"]
 
   - id: t6-atlas-box-hardware-profile
     title: "Decisión de perfil de hardware Atlas Box (three-node topology) — compra real"

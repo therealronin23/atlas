@@ -68,6 +68,72 @@ implementación acotada (T5.2/T5.3), con TDD real.
   registra en la sección "Cola para el operador" de este doc — NO se bloquea la
   sesión por ello, se sigue con el resto.
 
+## Incidente real: límite de sesión (2026-07-23, madrugada)
+
+Los 6 agentes de la ola 3 fallaron simultáneamente con "You've hit your session
+limit · resets 4:10am (Europe/Madrid)". Exactamente el riesgo que el operador
+anticipó al pedir la maratón ("necesito que tengas en cuenta los límites de sesión").
+Estado parcial encontrado en el árbol (sin commitear, no roto — tests existentes
+siguen en verde): `src/atlas/core/tool_coder.py` (+25, de toolcoder-process-sandbox,
+incompleto), `src/atlas/core/verify.py` (+8, de irreversible-action-verifier,
+incompleto). NO se commiteó nada a medias. Reloj del sistema ya marca las 07:37 CEST
+(pasado el reset declarado) — se prueba un redespacho único antes de relanzar los 5
+restantes, para no gastar más intentos si el límite sigue activo por otra razón.
+
+## Ola 2 — tras cerrar los 4 tracks principales (sigue la maratón, backlog real)
+
+Con Track A/B/C/D cerrados, se sigue trabajando el backlog recién creado (71 ítems,
+32 pending). Elegidos 5 de prioridad p2/p3, backend/lógica pura (sin verificación
+visual/GUI necesaria, sin dinero/infra): `t1-golden-route-vocabulary`,
+`t1-soul-devil-advocate`, `t1-radar-missions-draft`, `t4-sentinel-tool-coherence`,
+`t1-error-registry-lesson-promotion`. Despachados en paralelo, sin solape de ficheros.
+
+## Olas 2-5 — resumen (backlog real, tras cerrar los 4 tracks principales)
+
+- **Ola 2** (5/5 cerrados): golden-route-vocabulary, soul-devil-advocate,
+  radar-missions-draft, sentinel-tool-coherence, error-registry-lesson-promotion.
+- **Ola 3** (6/6 cerrados, sobrevivió un límite real de sesión con reset a las 4:10am
+  — retomados sin perder trabajo): daemon-control-surface, toolcoder-process-sandbox,
+  plugin-contribution-consumers, irreversible-action-verifier,
+  harness-adapter-contract-registry, governance-fixture-to-real.
+- **Ola 4** (6/6 cerrados, 1 resultó ya estar implementado — evitado duplicar):
+  git-checkpoint-agentic-wiring, mcp-installer-e2e-wiring, mem-fact-time-vs-system-time,
+  project-graph-vault-wiring (ya hecho), openapi-to-capability-compiler,
+  node-identity-module.
+- **Ola 5** (CERRADA): f2-6b-1-gen-judge-pairs, f2-6b-2-judge-vs-baseline-runner,
+  f2-6b-3-verdict-report, t6-workload-benchmark-harness. Los dos últimos fallaron
+  una primera vez por un SEGUNDO límite de sesión real ("resets 12:30pm Europe/Madrid",
+  distinto del de la madrugada) dejando estado parcial correcto pero incompleto
+  (`tests/benchmarks/judge_verdict_report.py` sin escribir, solo su test rojo;
+  `scripts/benchmark_workload.py`/`tests/test_benchmark_workload.py` completos pero
+  con 1 test real en rojo). Al retomar la sesión tras el reset: implementación de
+  `judge_verdict_report.py` completada (11/11 tests, incluye un fix real de
+  redondeo de punto flotante en el límite exacto del umbral del 10%); bug real
+  encontrado y arreglado en `analyze_bottleneck()` (el flag `gpu_offloads_llm_to_gpu`
+  se sobreescribía con el último workload iterado en vez de hacer OR entre todos —
+  17/17 tests); mypy limpio en ambos ficheros nuevos. Benchmark real ejecutado en
+  este HP Omen (`--fast`, todos los workloads salvo `browser_tasks`, que se
+  autodocumenta `skipped` por falta de `playwright` en el venv): cuello de botella
+  real = throughput de CPU, no VRAM (confirmado por `ollama ps` en vivo); resultado
+  completo en `docs/knowledge/benchmarks/workload_benchmark_2026-07-23.json` y
+  resumen en `docs/operations/atlas_box_architecture.md` §"Resultado real".
+
+**Restante del backlog (~19 ítems)**: casi todos son T2.1 (micro-PoCs Flutter/Compose/
+Qt, Mission Console dedicada) o T3.1/T3.2 (operador GUI universal) — necesitan
+verificación VISUAL real (capturas, lanzar la app, confirmar que se ve bien), que un
+agente de fondo sin ojos no puede autoverificar con garantía. Dejados
+deliberadamente para cuando el operador esté presente o para una sesión que use
+Browser/computer-control-mcp de forma dirigida, no en background ciego.
+
+## Cierre de la maratón (2026-07-23, ~12:55 CEST)
+
+El operador pidió cerrar lo pendiente y volver con un resumen para empezar una
+sesión nueva. Ola 5 cerrada (arriba). Sin más ítems de backlog ejecutables sin
+GUI/dinero/credenciales pendientes de esta sesión — el resto es la cola para el
+operador (abajo) más el trabajo GUI deliberadamente diferido. Suite completa:
+4113 passed, 10 failed (mismos 10 preexistentes de `mcp` faltante, cero
+regresiones nuevas), 41 skipped.
+
 ## Cola para el operador (se rellena según aparezca, vacía al empezar)
 
 - **Confirmar revocación real del secreto OAuth viejo de Google Workspace** en la
