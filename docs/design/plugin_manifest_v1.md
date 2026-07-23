@@ -32,6 +32,29 @@
   sin ningún cambio de proceso. `prompt`/`rule`/`command` se siguen
   aplicando mecánicamente sin que nada los lea — sin consumidor propio
   todavía, honesto.
+- **Segundo consumidor real (2026-07-23, t1-plugin-contribution-consumers,
+  docs/backlog.yaml)**: `PluginPromptStore` (`atlas.mcp.plugin_prompt_store`)
+  descubre `<active_root>/<plugin_id>/prompt/*.md` — MISMO patrón exacto que
+  `SkillStore` (namespace `plugin:<plugin_id>/<contribution_id>`, sigue
+  symlinks porque `PluginActivator` aplica por symlink, fuente única). A
+  diferencia de `SkillStore` no toma un `root` nativo: hoy no hay prompts
+  "core" bundleados en el repo, solo los que aporte un plugin activado.
+  Cableado en producción en `trunk_server.py` (`serve()` construye
+  `PluginPromptStore` sobre el MISMO `plugins/active` que `SkillStore`, y
+  `build_trunk_server(..., plugin_prompt_store=...)` registra cada prompt de
+  plugin como MCP `Prompt` nativo — idéntico mecanismo `Prompt.from_function`
+  + `server.add_prompt` que ya usa la rama de `skill_store`, solo que aplicado
+  a este store). Prove-it en vivo (test de integración,
+  `tests/test_mcp_plugin_prompt_store.py::test_trunk_registers_activated_plugin_prompt_as_mcp_prompt`):
+  activé un plugin real con contribución `kind="prompt"` vía
+  `PluginActivator`, reconstruí el tronco con `PluginPromptStore` apuntando al
+  mismo `active_root`, y `server.list_prompts()`/`server.get_prompt(name)`
+  (primitivos MCP nativos, cliente real) vieron y devolvieron el contenido del
+  plugin — comportamiento observable que antes de este ítem era imposible
+  para CUALQUIER `prompt` de plugin. `rule` y `command` SIGUEN sin consumidor
+  propio — se aplican mecánicamente (symlink bajo
+  `<active_root>/<plugin_id>/rule|command/*.md`) pero nada los lee todavía;
+  quedan como trabajo futuro honesto, no resueltos por este ítem.
 - Autoridad: [ADR-073](../decisions/adr/adr_073_declarative_plugin_manifest_v1.md).
 
 ## Contrato mínimo

@@ -63,6 +63,7 @@ if TYPE_CHECKING:
 
     from atlas.core.self_maintenance.backlog import BacklogItem
     from atlas.mcp.catalog import CatalogEntry
+    from atlas.mcp.plugin_prompt_store import PluginPromptStore
     from atlas.mcp.skills_store import SkillStore
 
 
@@ -227,6 +228,7 @@ def build_trunk_server(
     *,
     name: str = "atlas-trunk",
     skill_store: "SkillStore | None" = None,
+    plugin_prompt_store: "PluginPromptStore | None" = None,
     catalog: "list[CatalogEntry] | None" = None,
     taxonomy: dict[str, Any] | None = None,
     lesson_store: Any | None = None,
@@ -235,8 +237,12 @@ def build_trunk_server(
     health_configs: list[McpServerConfig] | None = None,
 ) -> "FastMCP":
     """Servidor FastMCP que expone la fachada meta lazy del tronco (navegación de 3
-    niveles + buscador). Con `skill_store` sirve skills; con `catalog`+`taxonomy`
-    expone `trunk_subsectors` y `trunk_find` (salto directo, sin manual). Con
+    niveles + buscador). Con `skill_store` sirve skills; con `plugin_prompt_store`
+    registra las contribuciones `prompt` de plugins activados como MCP `Prompt`
+    nativo (t1-plugin-contribution-consumers — consumidor real, análogo al de
+    `skill_store` para skills; `rule`/`command` siguen sin consumidor, ver
+    `docs/design/plugin_manifest_v1.md`). Con `catalog`+`taxonomy` expone
+    `trunk_subsectors` y `trunk_find` (salto directo, sin manual). Con
     `catalog`+`lesson_store`+`backlog_items`+`memory_count` expone SP-A
     (`workbench://manifest`, la mesa de trabajo compartida — ver
     `workbench_resources.py`)."""
@@ -395,6 +401,31 @@ def build_trunk_server(
         for _sname in skill_store.list_skills():
             server.add_prompt(_make_skill_prompt(_sname))
 
+    if plugin_prompt_store is not None:
+        # t1-plugin-contribution-consumers: consumidor real de la contribución
+        # `prompt` de plugins activados — mismo mecanismo que `skill_store` usa
+        # arriba (Prompt.from_function con cuerpo perezoso + server.add_prompt),
+        # aplicado a `PluginPromptStore` en vez de a `SkillStore`. Antes de este
+        # ítem un `prompt` de plugin se materializaba por symlink (PluginActivator)
+        # pero NADA lo leía — mecanismo completo, cero consumidor (documentado en
+        # plugin_manifest_v1.md). Igual que los prompts de skill, el registro es
+        # baked-in al arranque: un plugin activado necesita reiniciar el tronco
+        # para aparecer en list_prompts(), no para PluginPromptStore.get().
+        from mcp.server.fastmcp.prompts.base import Prompt as _Prompt
+
+        def _make_plugin_prompt(prompt_name: str) -> "_Prompt":
+            def _plugin_prompt_body() -> str:
+                return plugin_prompt_store.get(prompt_name)
+
+            return _Prompt.from_function(
+                _plugin_prompt_body,
+                name=prompt_name,
+                description=f"Prompt de plugin activado servido por el tronco: {prompt_name}",
+            )
+
+        for _pname in plugin_prompt_store.list_prompts():
+            server.add_prompt(_make_plugin_prompt(_pname))
+
     if (
         catalog is not None
         and lesson_store is not None
@@ -504,6 +535,13 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         plugins_active_root=_atlas_home / "plugins" / "active",
     )
 
+    # t1-plugin-contribution-consumers: mismo árbol `plugins/active` que
+    # SkillStore, ahora también leído para la contribución `prompt` (consumidor
+    # real nuevo; `rule`/`command` siguen sin uno, ver plugin_manifest_v1.md).
+    from atlas.mcp.plugin_prompt_store import PluginPromptStore
+
+    prompt_store = PluginPromptStore(_atlas_home / "plugins" / "active")
+
     # SP-A: mesa de trabajo compartida — fuentes reales para workbench://manifest.
     # Fail-soft por diseño: si algo falta (backlog.yaml ausente, DB de memoria
     # aún no creada), el tronco arranca igual sin ese resource, nunca rompe el
@@ -549,7 +587,8 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         memory_count_val = None
 
     server = build_trunk_server(
-        agg, name=name, skill_store=store, catalog=catalog, taxonomy=taxonomy,
+        agg, name=name, skill_store=store, plugin_prompt_store=prompt_store,
+        catalog=catalog, taxonomy=taxonomy,
         lesson_store=lesson_store_obj, backlog_items=backlog_items_list,
         memory_count=memory_count_val, health_configs=children,
     )
