@@ -38,12 +38,37 @@ from atlas.core.inference_hub import InferenceHub, InferenceLevel, InferenceRequ
 from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
 from atlas.core.repo_map import build_repo_map
 from atlas.core.trunk_preflight import build_trunk_preflight_section
+from atlas.security.bwrap_jail import BwrapJail, BwrapUnavailableError
 
 __all__ = ["ToolCoder"]
 
 logger = logging.getLogger(__name__)
 
 _MAX_TOOL_TURNS_DEFAULT = 30  # por iteración — guard anti-loop del bucle agéntico
+
+
+def _jail_enabled() -> bool:
+    """Flag opt-in (default OFF) — backlog t1-toolcoder-process-sandbox.
+
+    `_create_sandbox` solo aísla RUTA (copia en tmp); el test_cmd de `code()`
+    corría con subprocess directo, acceso completo de red/proceso del host —
+    a diferencia de lesson_runner.py/cold_update_manager.py, que SÍ pasan por
+    BwrapJail. Con este flag activo (y bwrap disponible), la ejecución de
+    test_cmd se enruta a BwrapJail.run_command (mismo patrón, rootfs mínimo,
+    sin red).
+
+    DEUDA EXPLÍCITA, no relajada en silencio: el default sigue siendo
+    subprocess directo. Verificado en este entorno (2026-07-23): pytest vive
+    en site-packages de usuario (``~/.local/lib/pythonX.Y/site-packages``),
+    fuera del rootfs mínimo que bwrap monta (solo /usr + working_dir) —
+    activar el jail por defecto rompería toda invocación real de ToolCoder
+    cuyo test_cmd dependa de un pytest instalado así (no bajo /usr ni bajo el
+    propio repo). Activar con ``ATLAS_TOOL_CODER_JAIL=1`` solo en despliegues
+    donde el intérprete/dependencias de test sean alcanzables dentro del
+    jail.
+    """
+    raw = os.environ.get("ATLAS_TOOL_CODER_JAIL", "").strip().lower()
+    return raw in ("1", "true", "yes")
 
 
 def _max_tool_turns() -> int:
@@ -377,6 +402,44 @@ class ToolCoder:
         except Exception:  # noqa: BLE001 — limpieza nunca debe romper el flujo
             pass
 
+    def _run_test_cmd(
+        self, test_cmd: list[str], cwd: Path, env: dict[str, str], *, use_jail: bool,
+    ) -> tuple[int, str]:
+        """Ejecuta test_cmd sobre cwd — backlog t1-toolcoder-process-sandbox.
+
+        use_jail=True (solo con sandbox=True y ATLAS_TOOL_CODER_JAIL=1, ver
+        _jail_enabled) enruta la ejecución a BwrapJail.run_command en vez de
+        subprocess directo: mismo rootfs mínimo/sin red que lesson_runner.py
+        y cold_update_manager.py, en vez de acceso completo de red/proceso
+        del host sobre el directorio temporal del sandbox.
+
+        Fail-closed: si el flag está activo pero bwrap no está disponible,
+        BwrapUnavailableError se propaga al llamador (no se degrada en
+        silencio a subprocess directo). subprocess.TimeoutExpired y
+        FileNotFoundError también se propagan igual que en la ruta directa
+        para que code() los maneje de forma uniforme.
+        """
+        if use_jail:
+            jail = BwrapJail()  # BwrapUnavailableError se propaga
+            jail_result = jail.run_command(
+                test_cmd, working_dir=cwd, working_dir_writable=True,
+                timeout_s=self._timeout_s,
+                # Env mínimo, no todo os.environ: el jail ya aporta su propio
+                # PATH/HOME reducidos (ver bwrap_jail.py); solo añadimos lo
+                # que el resultado de los tests depende (árbol correcto +
+                # guardia anti-recursión), no secretos del host.
+                extra_env={
+                    "PYTHONPATH": env.get("PYTHONPATH", ""),
+                    "ATLAS_NESTED_TEST_RUN": "1",
+                },
+            )
+            return jail_result.returncode, jail_result.stdout + jail_result.stderr
+        result = subprocess.run(
+            test_cmd, cwd=cwd, capture_output=True,
+            timeout=self._timeout_s, text=True, env=env,
+        )
+        return result.returncode, result.stdout + result.stderr
+
     def _sync_sandbox_back(
         self, sandbox_dir: Path, real_repo_root: Path, files_changed: list[str],
     ) -> None:
@@ -624,11 +687,10 @@ class ToolCoder:
             # dentro de una suite lanzada por el propio lazo (fail-closed).
             test_env["ATLAS_NESTED_TEST_RUN"] = "1"
             try:
-                result = subprocess.run(
-                    test_cmd, cwd=self._repo_root, capture_output=True,
-                    timeout=self._timeout_s, text=True, env=test_env,
+                returncode, test_output = self._run_test_cmd(
+                    test_cmd, self._repo_root, test_env,
+                    use_jail=sandbox_dir is not None and _jail_enabled(),
                 )
-                test_output = result.stdout + result.stderr
             except subprocess.TimeoutExpired:
                 _cleanup_on_exit()
                 return CoderResult(
@@ -641,8 +703,21 @@ class ToolCoder:
                     success=False, iterations=iteration, files_changed=changed,
                     test_output="", error=f"test_cmd no encontrado: {exc}",
                 )
+            except BwrapUnavailableError as exc:
+                # Fail-closed: ATLAS_TOOL_CODER_JAIL=1 exige el jail, sin
+                # degradar en silencio a subprocess directo (backlog
+                # t1-toolcoder-process-sandbox).
+                _cleanup_on_exit()
+                return CoderResult(
+                    success=False, iterations=iteration, files_changed=changed,
+                    test_output="",
+                    error=(
+                        "ATLAS_TOOL_CODER_JAIL=1 pero bwrap no está disponible "
+                        f"(fail-closed): {exc}"
+                    ),
+                )
 
-            if result.returncode == 0:
+            if returncode == 0:
                 if sandbox_dir is not None:
                     self._sync_sandbox_back(sandbox_dir, original_repo_root, changed)
                 _cleanup_on_exit()

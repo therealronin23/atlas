@@ -11,7 +11,9 @@ la sesión (rutas protegidas, match único fail-closed, linter bloqueante).
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from atlas.core.tool_coder import ToolCoder
 
@@ -362,3 +364,140 @@ def test_sandbox_failure_leaves_real_tree_untouched(tmp_path: Path):
 
     assert result.success is False
     assert f.read_text() == "x = 1\n"
+
+
+# ----------------------------------------------------------------------
+# t1-toolcoder-process-sandbox: BwrapJail opt-in para test_cmd en sandbox.
+# _create_sandbox solo aislaba RUTA (copia en tmp); estos tests demuestran
+# que, con el flag activo, la ejecución pasa por BwrapJail.run_command en
+# vez de subprocess directo — y que sin el flag (default) el comportamiento
+# actual no cambia (deuda explícita, no relajada en silencio).
+# ----------------------------------------------------------------------
+
+
+def test_jail_flag_off_by_default_uses_direct_subprocess(tmp_path: Path, monkeypatch):
+    """Sin ATLAS_TOOL_CODER_JAIL, el test_cmd del sandbox sigue corriendo por
+    subprocess directo — BwrapJail nunca se construye."""
+    import atlas.core.tool_coder as tool_coder_mod
+
+    monkeypatch.delenv("ATLAS_TOOL_CODER_JAIL", raising=False)
+    ctor_calls: list[tuple] = []
+    monkeypatch.setattr(
+        tool_coder_mod, "BwrapJail",
+        lambda *a, **k: ctor_calls.append((a, k)) or MagicMock(),
+    )
+
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 2")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="cambia x", context_files=["foo.py"], test_cmd=["true"],
+        max_iterations=1, sandbox=True,
+    )
+
+    assert result.success is True
+    assert ctor_calls == [], "BwrapJail no debe construirse sin el flag opt-in"
+
+
+def test_jail_flag_on_routes_sandbox_test_cmd_through_bwrap(tmp_path: Path, monkeypatch):
+    """Con ATLAS_TOOL_CODER_JAIL=1, el test_cmd dentro del sandbox pasa por
+    BwrapJail.run_command en vez de subprocess directo sobre el directorio
+    temporal (acceptance criteria del backlog)."""
+    import atlas.core.tool_coder as tool_coder_mod
+    from atlas.security.bwrap_jail import BwrapResult
+
+    monkeypatch.setenv("ATLAS_TOOL_CODER_JAIL", "1")
+
+    fake_jail = MagicMock(spec=tool_coder_mod.BwrapJail)
+    fake_jail.run_command.return_value = BwrapResult(0, "ok\n", "", 3)
+    ctor_calls: list[tuple] = []
+
+    def _fake_ctor(*args, **kwargs):
+        ctor_calls.append((args, kwargs))
+        return fake_jail
+
+    monkeypatch.setattr(tool_coder_mod, "BwrapJail", _fake_ctor)
+
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 2")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="cambia x", context_files=["foo.py"], test_cmd=["pytest"],
+        max_iterations=1, sandbox=True,
+    )
+
+    assert result.success is True
+    assert ctor_calls, "BwrapJail no fue construido — la ejecución no pasó por el jail"
+    fake_jail.run_command.assert_called_once()
+    args, kwargs = fake_jail.run_command.call_args
+    assert args[0] == ["pytest"]
+    assert kwargs["working_dir_writable"] is True
+    assert str(kwargs["working_dir"]).startswith(tempfile.gettempdir())
+    assert kwargs["extra_env"]["PYTHONPATH"]
+
+
+def test_jail_flag_on_without_bwrap_fails_closed(tmp_path: Path, monkeypatch):
+    """Fail-closed: con el flag activo pero bwrap no disponible, la tarea
+    falla con error explícito — no degrada en silencio a subprocess directo."""
+    import atlas.core.tool_coder as tool_coder_mod
+    from atlas.security.bwrap_jail import BwrapUnavailableError
+
+    monkeypatch.setenv("ATLAS_TOOL_CODER_JAIL", "1")
+
+    def _raise(*a, **k):
+        raise BwrapUnavailableError("bwrap no está en PATH")
+
+    monkeypatch.setattr(tool_coder_mod, "BwrapJail", _raise)
+
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 2")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="cambia x", context_files=["foo.py"], test_cmd=["true"],
+        max_iterations=1, sandbox=True,
+    )
+
+    assert result.success is False
+    assert "bwrap" in (result.error or "").lower()
+    assert f.read_text() == "x = 1\n"  # mismo invariante que sandbox_failure
+
+
+def test_jail_flag_ignored_without_sandbox(tmp_path: Path, monkeypatch):
+    """El flag solo aplica dentro del sandbox de _create_sandbox; sin
+    sandbox=True no hay directorio temporal que aislar y BwrapJail no se
+    construye (el test_cmd corre sobre el árbol real, como hoy)."""
+    import atlas.core.tool_coder as tool_coder_mod
+
+    monkeypatch.setenv("ATLAS_TOOL_CODER_JAIL", "1")
+    ctor_calls: list[tuple] = []
+    monkeypatch.setattr(
+        tool_coder_mod, "BwrapJail",
+        lambda *a, **k: ctor_calls.append((a, k)) or MagicMock(),
+    )
+
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+    hub = _ScriptedHub([
+        [_tc("str_replace", path="foo.py", old_str="x = 1", new_str="x = 2")],
+        None,
+    ])
+    coder = ToolCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="cambia x", context_files=["foo.py"], test_cmd=["true"],
+        max_iterations=1, sandbox=False,
+    )
+
+    assert result.success is True
+    assert ctor_calls == []
