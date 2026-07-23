@@ -8,6 +8,23 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-23 (sesión siguiente) — `t1-atlascoder-selfcorrect-loop`: cerrado
+  SIN cambios de producción, el mecanismo ya existía desde 6df920e**. Antes de
+  implementar, verificación de código real (`git log -S`) mostró que
+  `AtlasCoder.code()` ya inyecta `test_output` de la iteración fallida en el
+  prompt del siguiente intento (`_ITERATION_ERROR_SECTION`,
+  `atlas_coder.py:487-488`) — el "why" original del ítem de backlog afirmaba
+  lo contrario sin haber grepeado. Único gap real: sin test que lo probara.
+  Añadido `tests/test_atlas_coder.py::test_code_corrects_using_previous_test_error`
+  (TDD: hub mockeado solo corrige si ve el marcador del error previo en el
+  prompt; verificado por mutación que el test detecta la regresión si se
+  desactiva la inyección). `docs/backlog.yaml` marcado `done`; corrección
+  añadida a `docs/design/2026-07-23-t15-coding-territory-veredicto.md`.
+  Ver memoria `feedback-scope-adoption-as-extraction`. Siguiente: revisar
+  `t5-context-window-condensation-retry` con la misma disciplina antes de
+  tocar `inference_hub.py` — no asumir que el gap descrito en el backlog es
+  real sin grepear primero.
+
 - **Sesión post-MAXIMUS — los 3 frentes de Cycle 14 EJECUTADOS en paralelo
   (2026-07-22 23:20)** — el operador pidió correr F2.6/Taxonomía/T0.5b-paso3
   a la vez, auditando (autobuild), con trabajo pesado en subagentes de fondo

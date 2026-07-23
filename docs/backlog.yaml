@@ -1098,10 +1098,17 @@ items:
       Disección real de aider/coders/base_coder.py (código leído, no README) muestra
       el mecanismo real: run() aplica ediciones → lint_edited()/corre tests → si falla,
       mete el error en reflected_message y vuelve a run_one() — un reintento real con
-      el fallo concreto en contexto, no solo "generar de nuevo a ciegas". AtlasCoder
-      hoy no tiene este loop; es la extracción quirúrgica de UNA técnica (no absorción
-      del paquete Aider — sin dependencia nueva, sin colisión de litellm posible, ver
-      corrección de encuadre en el veredicto T1.5).
+      el fallo concreto en contexto, no solo "generar de nuevo a ciegas".
+      CORRECCIÓN (2026-07-23, verificado en código antes de implementar, no solo en
+      el "why" original de este ítem): AtlasCoder.code() YA tiene este mecanismo desde
+      el commit fundacional 6df920e — `_ITERATION_ERROR_SECTION` inyecta `prev_error`
+      (=`test_output` de la iteración anterior) en el prompt del siguiente intento
+      (atlas_coder.py:487-488). El 1/6 medido en T1.5 no viene de la ausencia del
+      loop, sino de que el modelo no logró corregir dado el error (o de otros bugs
+      ya reparados en `_apply_edits`, ver T1.5). Lo que SÍ faltaba, y es lo único que
+      se entregó aquí: cobertura de test que demuestre el mecanismo end-to-end
+      (nadie lo probaba). No absorción del paquete Aider — el mecanismo nativo ya
+      existía; ver corrección de encuadre en el veredicto T1.5.
     targets:
       - "src/atlas/core/atlas_coder.py"
     acceptance: >
@@ -1112,7 +1119,13 @@ items:
       determinista (fixture) y el segundo, con el error en contexto, corrige — demuestra
       el diferencial real que la medición de T1.5 no logró probar.
     priority: 2
-    status: pending
+    status: done  # 2026-07-23: mecanismo ya existía (6df920e); se añadió
+    # tests/test_atlas_coder.py::test_code_corrects_using_previous_test_error
+    # (mock del hub solo corrige si ve el marcador del error de la iteración
+    # previa en el prompt) + verificación por mutación (comentar la inyección
+    # de prev_error hace fallar el test — confirma que prueba el mecanismo
+    # real, no un mock complaciente). Cero cambios en atlas_coder.py.
+    test_cmd: ["python3", "-m", "pytest", "tests/test_atlas_coder.py", "-k", "test_code_corrects_using_previous_test_error", "-q"]
 
   - id: t5-context-window-condensation-retry
     title: "InferenceHub: condensar historia y reintentar cuando el error es CONTEXT_LENGTH"

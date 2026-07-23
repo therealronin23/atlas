@@ -74,6 +74,60 @@ def test_code_iterates_on_test_failure(tmp_path):
     assert result.iterations == max_iter
 
 
+def test_code_corrects_using_previous_test_error(tmp_path):
+    """Acceptance criteria de backlog t1-atlascoder-selfcorrect-loop: primer
+    intento falla de forma determinista, el error real llega al prompt del
+    segundo intento (vía _ITERATION_ERROR_SECTION) y el modelo corrige usando
+    ese error en contexto — no solo "generar de nuevo a ciegas".
+
+    El hub mockeado solo devuelve el fix correcto cuando ve el marcador único
+    que el test_cmd fallido imprime; si AtlasCoder no inyectara prev_error en
+    el prompt del segundo intento, el marcador nunca aparecería y el mock
+    repetiría el fix incorrecto hasta agotar max_iterations.
+    """
+    import sys
+
+    f = tmp_path / "foo.py"
+    f.write_text("x = 1\n")
+
+    checker = tmp_path / "check.py"
+    checker.write_text(
+        "import pathlib, sys\n"
+        "c = pathlib.Path('foo.py').read_text()\n"
+        "if 'x = 2' in c:\n"
+        "    sys.exit(0)\n"
+        "print('SELFCORRECT_MARKER: x debe ser 2')\n"
+        "sys.exit(1)\n"
+    )
+
+    wrong_fix = _sr_block("x = 1", "x = 3")
+    correct_fix = _sr_block("x = 3", "x = 2")
+
+    hub = MagicMock()
+
+    def _infer_for_role(role, request):
+        resp = MagicMock()
+        resp.success = True
+        resp.error = None
+        resp.text = correct_fix if "SELFCORRECT_MARKER" in request.prompt else wrong_fix
+        return resp
+
+    hub.infer_for_role.side_effect = _infer_for_role
+
+    coder = AtlasCoder(hub, repo_root=tmp_path)
+    result = coder.code(
+        task="corrige x",
+        context_files=["foo.py"],
+        test_cmd=[sys.executable, str(checker)],
+        max_iterations=2,
+    )
+
+    assert result.success is True
+    assert result.iterations == 2
+    assert "x = 2" in f.read_text()
+    assert hub.infer_for_role.call_count == 2
+
+
 def test_code_stops_on_infer_failure(tmp_path):
     f = tmp_path / "foo.py"
     f.write_text("pass\n")

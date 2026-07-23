@@ -123,3 +123,28 @@ autocorrección de Aider) y `t5-context-window-condensation-retry` (el manejo de
 contexto excedido de OpenHands, que se apoya en `classify_provider_error` ya
 construido en T5/Track D de la sesión anterior pero sin ningún consumidor que actúe
 sobre `ErrorKind.CONTEXT_LENGTH` todavía).
+
+## CORRECCIÓN #2 (2026-07-23, sesión siguiente): `t1-atlascoder-selfcorrect-loop`
+también estaba mal encuadrado — el mecanismo ya existía
+
+Al ir a implementar el ítem, la verificación de código real (misma disciplina que
+salvó el caso repo-map arriba) mostró que `AtlasCoder.code()` ya tiene el loop
+completo desde el commit FUNDACIONAL `6df920e` (el primer commit que introdujo
+AtlasCoder, no algo añadido después): itera hasta `max_iterations`, aplica
+ediciones, corre `test_cmd`, y si falla mete `test_output` en
+`_ITERATION_ERROR_SECTION` para el prompt del siguiente intento
+(`atlas_coder.py:487-488`). El "why" original del ítem afirmaba "AtlasCoder hoy no
+tiene este loop" sin haber grepeado el código — la misma clase de error que casi
+produjo un ítem duplicado para el repo-map, esta vez consumado en el propio
+ítem de backlog en vez de detectado antes de crearlo.
+
+Lo que sí faltaba, y es lo único que se entregó: un test que demuestre el
+mecanismo end-to-end (nadie lo probaba — `test_code_iterates_on_test_failure`
+solo comprueba que itera, no que el error llegue al segundo prompt).
+`tests/test_atlas_coder.py::test_code_corrects_using_previous_test_error` usa un
+hub mockeado que solo devuelve el fix correcto si ve el marcador del error de la
+iteración anterior en el prompt; verificado además por mutación (comentar la
+línea de inyección de `prev_error` hace fallar el test, confirmando que no es un
+mock complaciente). Cero cambios en `atlas_coder.py`. El 1/6 medido en T1.5 no
+viene de la ausencia del loop — viene de que el modelo no corrigió dado el error,
+o de los bugs de `_apply_edits` ya reparados por separado.
