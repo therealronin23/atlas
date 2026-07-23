@@ -1119,7 +1119,7 @@ items:
       determinista (fixture) y el segundo, con el error en contexto, corrige — demuestra
       el diferencial real que la medición de T1.5 no logró probar.
     priority: 2
-    status: done  # 2026-07-23: mecanismo ya existía (6df920e); se añadió
+    status: done  # 2026-07-23: commit 17ec13d — mecanismo ya existía (6df920e); se añadió
     # tests/test_atlas_coder.py::test_code_corrects_using_previous_test_error
     # (mock del hub solo corrige si ve el marcador del error de la iteración
     # previa en el prompt) + verificación por mutación (comentar la inyección
