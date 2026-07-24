@@ -92,6 +92,24 @@ terceros sin sanitizar (I3). El sandbox de red es necesario-pero-no-suficiente.
 6. **Re-vet continuo** (`revet_all` + `maintenance_*_tick`): re-escaneo periódico;
    drift de rug-pull → auto-revoca + `pending_review`.
 
+## "Aprobar lo que tenemos ya" (aclaración del operador, 2026-07-24)
+
+El operador aclaró que su intención es **escanear lo que tenemos y aprobar los que
+pasen** (scan-antes-de-aprobar, no aprobar-luego-scan), y en el futuro, cuando un
+MCP se actualice, re-analizar lo descargado y re-barrer el tronco entero. Esto
+encaja con este ADR. Con una precisión no negociable sobre qué significa "aprobar":
+
+- Los 2111 candidatos hoy son **solo metadata** del registro (no descargados). El
+  único "aprobar" honesto para una entrada no-descargada es promover
+  `candidato → metadata-cleared` (elegible para fetch) tras pasar la etapa 1 —
+  **nunca** `apto-ejecutar`, que exige ver el código (etapas 2–4).
+- "Aprobar TODOS" = aprobar todos **los que pasan el scan**. El scan debe poder
+  rechazar (I1/I6); un IOC confirmado (`giftshop.club`) o una descripción con
+  payload de inyección no se promueve.
+- El ciclo futuro del operador (actualización → re-analizar lo descargado →
+  aprobar para ejecutar → re-barrer el tronco periódicamente) **es** exactamente
+  las etapas 2–6 + el re-vet continuo de este ADR.
+
 ## Qué se construye ya (seguro, reversible) vs qué queda gateado
 
 - **Ahora (read-only, no toca el invariante):** etapa 1 — el pre-screen estático
