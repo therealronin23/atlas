@@ -1,7 +1,13 @@
 # ADR-075 — Ciclo continuo de vetting de MCPs remotos (scan-antes-de-aprobar)
 
-- Estado: **Propuesto** (2026-07-24) — requiere aprobación del operador y cierre
-  del hueco de la voz EU del Cónclave antes de pasar a Aceptado.
+- Estado: **Aceptado** (2026-07-24, aprobación explícita del operador). El hueco
+  de la voz EU del Cónclave (Mistral, ver ADR-074) sigue **sin cerrar** — la
+  aprobación del operador es autoridad final y satisface la condición humana;
+  el hueco EU queda como deuda de infraestructura registrada aparte (no bloquea
+  este ADR, pero tampoco se da por resuelto). Etapa 1 (pre-screen estático,
+  read-only) ya construida y corrida sobre los 2111 candidatos reales. Etapas
+  2–6 (fetch/probe/admisión/activación) siguen sin construir; requieren su
+  propio trabajo de ingeniería antes de tocar código o red de terceros.
 - Extiende (no reemplaza): **ADR-072** (supply-chain admission scan A1),
   **ADR-073** (PluginManifest v1 + A3 materializer/receipt/activator), **ADR-038**
   (SentinelGate), **ADR-055** (BwrapJail).
