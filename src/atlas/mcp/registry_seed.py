@@ -78,6 +78,25 @@ def _transport_of(server: dict[str, Any]) -> str:
     return ""
 
 
+def _first_package(server: dict[str, Any]) -> dict[str, Any] | None:
+    packages = server.get("packages")
+    return packages[0] if packages else None
+
+
+def _install_spec(pkg: dict[str, Any] | None) -> str:
+    """``registry:identifier[==version]`` -- lo mínimo que un fetcher real
+    necesita para saber QUÉ descargar (bloqueaba la etapa 2A de ADR-075 sin
+    esto: antes ``install`` salía siempre vacío)."""
+    if not pkg:
+        return ""
+    registry = pkg.get("registryType", "")
+    identifier = pkg.get("identifier", "")
+    if not registry or not identifier:
+        return ""
+    version = pkg.get("version", "")
+    return f"{registry}:{identifier}=={version}" if version else f"{registry}:{identifier}"
+
+
 def registry_to_candidates(payload: dict[str, Any], *, source_url: str) -> list[dict[str, Any]]:
     """Mapea la respuesta del registro → entradas candidatas de catálogo, con
     procedencia. Sin clasificar (sector=uncategorized) hasta el triaje."""
@@ -88,6 +107,8 @@ def registry_to_candidates(payload: dict[str, Any], *, source_url: str) -> list[
         name = server.get("name")
         if not name:
             continue
+        pkg = _first_package(server)
+        repository = server.get("repository") or {}
         out.append({
             "name": name,
             "sector": "uncategorized",
@@ -97,7 +118,10 @@ def registry_to_candidates(payload: dict[str, Any], *, source_url: str) -> list[
             "version": server.get("version", ""),
             "transport": _transport_of(server),
             "source": name,
-            "install": "",
+            "install": _install_spec(pkg),
+            "package_registry": pkg.get("registryType", "") if pkg else "",
+            "package_identifier": pkg.get("identifier", "") if pkg else "",
+            "repository_url": repository.get("url", ""),
             "status": "candidato",
             "tags": [],
             "provenance": {"source": source_url, "fetched_at": fetched_at},

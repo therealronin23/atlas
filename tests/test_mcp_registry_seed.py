@@ -129,6 +129,51 @@ def test_maps_servers_to_candidates_with_provenance() -> None:
     assert b["transport"] == "stdio"         # tiene packages, no remotes
 
 
+def test_stdio_candidate_captures_real_package_install_info() -> None:
+    """Fix 2026-07-24 (bloqueaba la etapa 2A de ADR-075): antes, ``install``
+    salía SIEMPRE ``""`` -- se descartaba ``packages[].registryType``/
+    ``.identifier``/``.version`` y ``repository.url`` que el registro real SÍ
+    trae (verificado en vivo contra registry.modelcontextprotocol.io). Sin
+    esto no hay forma de saber QUÉ fetchear para un candidato stdio."""
+    from atlas.mcp.registry_seed import registry_to_candidates
+
+    cands = registry_to_candidates(json.loads(_PAYLOAD), source_url="x")
+    b = next(c for c in cands if c["name"] == "io.github.foo/files")
+    assert b["install"] == "npm:@foo/files"
+    assert b["package_registry"] == "npm"
+    assert b["package_identifier"] == "@foo/files"
+
+
+def test_http_candidate_has_empty_install_no_package_to_fetch() -> None:
+    from atlas.mcp.registry_seed import registry_to_candidates
+
+    cands = registry_to_candidates(json.loads(_PAYLOAD), source_url="x")
+    a = next(c for c in cands if c["name"] == "ac.inference.sh/mcp")
+    assert a["install"] == ""
+    assert a["package_registry"] == ""
+
+
+def test_repository_url_captured_when_present() -> None:
+    from atlas.mcp.registry_seed import registry_to_candidates
+
+    payload = json.dumps({
+        "servers": [{
+            "server": {
+                "name": "ai.adeu/adeu",
+                "description": "Automated DOCX Redlining Engine",
+                "version": "1.5.2",
+                "packages": [{"registryType": "pypi", "identifier": "adeu", "version": "1.5.2"}],
+                "repository": {"url": "https://github.com/dealfluence/adeu", "source": "github"},
+            },
+        }],
+        "metadata": {},
+    })
+    cands = registry_to_candidates(json.loads(payload), source_url="x")
+    c = cands[0]
+    assert c["install"] == "pypi:adeu==1.5.2"
+    assert c["repository_url"] == "https://github.com/dealfluence/adeu"
+
+
 def test_candidates_default_uncategorized_sector() -> None:
     from atlas.mcp.registry_seed import registry_to_candidates
 
