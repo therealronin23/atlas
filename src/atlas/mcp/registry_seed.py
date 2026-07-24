@@ -14,8 +14,11 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+
+import yaml
 
 from atlas.knowledge.sources import Fetcher, HttpApiSource, RawRecord
 from atlas.security.ssrf_bridge import SSRFBridge
@@ -138,6 +141,35 @@ def reseed_candidates(*, source: RegistrySource | None = None) -> dict[str, Any]
         first_status = records[0].status if records else "sin respuesta"
         raise RuntimeError(f"reseed: primera página del registro no accesible (status={first_status})")
     return {"candidates": candidates, "pages_fetched": pages_fetched}
+
+
+def write_seeded_catalog(
+    out_path: Path,
+    result: dict[str, Any],
+    *,
+    source_url: str = _DEFAULT_SOURCE_URL,
+    generated_by: str = "atlas.mcp.registry_seed.reseed_candidates",
+) -> None:
+    """Escribe ``result['candidates']`` al catálogo sembrado YAML -- mismo
+    formato que ``scripts/mcp_seed_registry.py`` de hoy, reusado por A.2 (el
+    tick continuo) para no duplicar la forma del documento en dos sitios."""
+    doc = {
+        "_generated": {
+            "by": generated_by,
+            "at": datetime.now(timezone.utc).isoformat(),
+            "source": source_url,
+            "note": "MÁQUINA-GENERADO. Todo candidato/uncategorized. Triar + prove-it antes de usar.",
+            "pages_fetched": result["pages_fetched"],
+        },
+        "sectors": {
+            "uncategorized": {
+                "label": "Sin clasificar (sembrado del registro oficial)",
+                "entries": result["candidates"],
+            }
+        },
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 
 def registry_to_candidates(payload: dict[str, Any], *, source_url: str) -> list[dict[str, Any]]:

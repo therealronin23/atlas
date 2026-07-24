@@ -337,6 +337,12 @@ class MaintenanceFacade:
                 # Capa 6 SentinelGate: ver maintenance_sentinel_revet_tick.
                 _isolated_cycle("sentinel_revet", self.maintenance_sentinel_revet_tick)
 
+            def _mcp_reseed_cycle() -> None:
+                # Re-siembra continua del catálogo: ver maintenance_mcp_reseed_tick
+                # (A.2, ADR-076). Autolimitado por su propio estado -- correr
+                # a la cadencia global del scheduler no re-siembra de más.
+                _isolated_cycle("mcp_reseed", self.maintenance_mcp_reseed_tick)
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -388,7 +394,7 @@ class MaintenanceFacade:
                     _research_cycle, _provider_smoke_cycle,
                     _knowledge_ingest_cycle, _project_graph_cycle,
                     _provider_discovery_cycle, _mcp_trial_cycle,
-                    _sentinel_revet_cycle,
+                    _sentinel_revet_cycle, _mcp_reseed_cycle,
                 ),
                 **scheduler_kwargs,
             )
@@ -621,6 +627,86 @@ class MaintenanceFacade:
             payload={"findings": findings},
         )
         return {"status": "ran", "findings": findings}
+
+    def maintenance_mcp_reseed_tick(self) -> dict[str, Any]:
+        """Un tick de re-siembra continua del catálogo MCP desde el registro
+        oficial (A.2, ADR-076): mismo dato que ``scripts/mcp_seed_registry.py``,
+        invocable desde el scheduler para que el catálogo no dependa de
+        correrlo a mano.
+
+        Autothrottle interno OBLIGATORIO: el scheduler corre todos los
+        ``extra_cycles`` a la misma cadencia global
+        (``ATLAS_MAINTENANCE_POLL_S``, default 24h) -- pero el registro
+        oficial no cambia minuto a minuto, así que el tick se autolimita
+        leyendo/escribiendo su propio estado
+        (``workspace/mcp/reseed_state.json``, mismo patrón que
+        ``f26_gate_state.json``): solo re-siembra de verdad si pasaron
+        ``ATLAS_MCP_RESEED_INTERVAL_S`` (default 86400) desde el último
+        ÉXITO. Un fallo de red NO cuenta como éxito -- no actualiza el
+        estado, así que el próximo tick puede reintentar de inmediato en
+        vez de esperar la ventana completa.
+
+        Opt-in explícito (red saliente): requiere ``ATLAS_MCP_RESEED=1``."""
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_MCP_RESEED", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        try:
+            interval_s = int(os.environ.get("ATLAS_MCP_RESEED_INTERVAL_S", "86400").strip())
+        except ValueError:
+            interval_s = 86400
+
+        state_path = self._project_root() / "workspace" / "mcp" / "reseed_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+
+        last_success = state.get("last_success")
+        if last_success:
+            try:
+                elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(last_success)).total_seconds()
+                if elapsed < interval_s:
+                    return {"status": "skipped_too_soon"}
+            except ValueError:
+                pass  # estado corrupto -- trátalo como "nunca corrió", re-siembra
+
+        from atlas.mcp.registry_seed import RegistrySource, reseed_candidates, write_seeded_catalog
+
+        try:
+            result = reseed_candidates(source=RegistrySource(limit=100))
+        except RuntimeError as exc:
+            self._orch._merkle.log(
+                action="mcp.reseed_tick",
+                agent="maintenance_facade",
+                result="error",
+                risk_level="safe",
+                payload={"reason": str(exc)},
+            )
+            return {"status": "error", "reason": str(exc)}
+
+        catalog_path = self._project_root() / "docs" / "design" / "mcp_catalog_seeded.yaml"
+        write_seeded_catalog(
+            catalog_path, result, generated_by="maintenance_facade.maintenance_mcp_reseed_tick"
+        )
+
+        state["last_success"] = datetime.now(timezone.utc).isoformat()
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        payload = {"candidate_count": len(result["candidates"]), "pages_fetched": result["pages_fetched"]}
+        self._orch._merkle.log(
+            action="mcp.reseed_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=payload,
+        )
+        return {"status": "ran", **payload}
 
     def maintenance_research_tick(self) -> dict[str, Any]:
         """Un tick de investigación: intereses recientes → consultas variadas →
