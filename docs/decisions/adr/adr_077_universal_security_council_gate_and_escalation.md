@@ -1,8 +1,15 @@
-# ADR-077 — Cónclave de seguridad universal: rechazo permanente + escalada con informe (Propuesto, revisado por Cónclave)
+# ADR-077 — Cónclave de seguridad universal: rechazo permanente + escalada con informe (Aceptado)
 
-- Estado: **Propuesto** — diseño revisado por un Cónclave real (ver
-  "Revisión de Cónclave" abajo: 4 objeciones concretas incorporadas), listo
-  para implementar con TDD. Sin código todavía.
+- Estado: **Aceptado** (2026-07-24) — diseño revisado por un Cónclave real
+  (4 objeciones concretas incorporadas, ver "Revisión de Cónclave" abajo) e
+  **implementado con TDD estricto en 4 piezas**, todas commiteadas en
+  `main`: `security_council_gate.py` (escaneo+auditor, fail-closed),
+  `security_council_escalation.py` (segunda opinión del trío real),
+  `security_council_registry.py` + `Orchestrator.security_council_unblock`
+  (rechazo permanente + revocación HITL), wiring real en
+  `Orchestrator._consult_decider` (opt-in `ATLAS_SECURITY_COUNCIL_GATE=1`,
+  apagado por defecto). 41 tests nuevos, mypy limpio, sin regresiones
+  (verificado contra 345 tests de los call-sites del decider).
 - Origen: petición explícita del operador (2026-07-24) tras la auditoría de
   ADR-076/ADR-036 que encontró que `RequiresHuman` es hoy inalcanzable en
   producción y que hay reintentos en bucle contra candidatos ya rechazados.
@@ -247,10 +254,40 @@ proceder a implementación tras esta revisión.
    ni a re-escalar.
 4. `offensive_action` con `flagged` del auditor único: confirmar que escala
    SIEMPRE al trío real, nunca se resuelve solo con la primera pasada.
-5. Confirmar que bajo `ATLAS_DECIDER=autonomous` la escalada SÍ llega a
-   `Task.AWAITING_APPROVAL` (hoy no llega nunca) -- este es el criterio de
-   éxito central del ADR.
+5. Confirmar que bajo `ATLAS_DECIDER=autonomous` el veredicto `RequiresHuman`
+   SÍ se produce y llega a cada call-site (hoy no llega nunca) -- este es el
+   criterio de éxito central del ADR.
 6. `security-council unblock <hash>`: confirmar que revoca el rechazo
    permanente, queda logueado en Merkle, y un intento posterior con ese hash
    vuelve a correr el gate normalmente (no queda "desbloqueado para
    siempre" sin pasar por el gate otra vez).
+
+## Implementación real (2026-07-24) -- 2 precisiones honestas sobre el diseño
+
+Las 4 piezas se implementaron con TDD estricto (`security_council_gate.py`,
+`security_council_escalation.py`, `security_council_registry.py` +
+`Orchestrator.security_council_unblock`, wiring en `_consult_decider`). Dos
+detalles que la implementación forzó a precisar respecto al diseño original:
+
+1. **`Task.AWAITING_APPROVAL` NO se dispara para los 4 kinds gateados.**
+   Verificado leyendo el código real: esa maquinaria es específica del
+   pipeline `gate_f`/`handle_intent` (task-oriented). `mcp_adopt`,
+   `cold_update_apply`, `offensive_action`, `omega_exec` se llaman desde
+   métodos que solo devuelven un string ante `RequiresHuman` (ej.
+   `adopt_mcp_server`: `"requiere aprobación humana para adoptar el
+   server"`) -- ningún `Task` se encola. `gate_f` queda FUERA del gate a
+   propósito (su HITL ya pasa por esa máquina). Lo que sí se logró y es el
+   fix real: `RequiresHuman` ahora se PRODUCE para estos 4 kinds bajo
+   cualquier decisor (antes, bajo autónomo, nunca se producía) -- la
+   visibilidad humana llega vía el informe en Merkle
+   (`security_council.flagged`) + notificación Telegram en tiempo real, no
+   vía cola de `Task`. Convertir estos 4 call-sites a task-oriented con cola
+   de aprobación visible en UI es una ampliación futura, fuera de este ADR.
+2. **El gate es opt-in (`ATLAS_SECURITY_COUNCIL_GATE=1`, apagado por
+   defecto)** -- no estaba en el diseño revisado por el Cónclave, se añadió
+   durante la implementación al encontrar una regresión real: los 4 kinds
+   gateados ya tenían tests existentes que no esperaban un pre-gate, y en
+   entorno sin claves LLM el auditor fallaba cerrado y cambiaba veredictos
+   Allow/Deny existentes a RequiresHuman. Mismo criterio que toda capacidad
+   nueva de esta sesión (`ATLAS_MCP_RESEED`/`ATLAS_MCP_VETTING`): nada
+   cambia de comportamiento hasta que el operador lo enciende explícito.
