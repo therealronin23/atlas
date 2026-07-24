@@ -15,6 +15,7 @@ cabe ahí (decodificar binario como UTF-8 lo corrompe) -- es trabajo aparte.
 
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import dataclass
 from typing import Callable
@@ -31,12 +32,19 @@ class PackageLookupResult:
     exists: bool
     version_matches: bool
     download_url: str
-    sha256: str
+    sha256: str  # hex digest -- pese al nombre histórico, el algoritmo real está en hash_algo
     reason: str
+    hash_algo: str = "sha256"
 
 
 def _empty(reason: str) -> PackageLookupResult:
     return PackageLookupResult(exists=False, version_matches=False, download_url="", sha256="", reason=reason)
+
+
+def _sri_to_hex(integrity: str) -> tuple[str, str]:
+    """Parsea Subresource Integrity ('sha512-<base64>') a (algo, hex)."""
+    algo, _, b64 = integrity.partition("-")
+    return algo, base64.b64decode(b64).hex()
 
 
 def lookup_pypi_package(identifier: str, version: str, *, fetcher: Fetcher | None = None) -> PackageLookupResult:
@@ -102,10 +110,23 @@ def lookup_npm_package(identifier: str, version: str, *, fetcher: Fetcher | None
             reason=f"versión {version!r} no publicada (disponibles: {sorted(versions)[:5]!r})",
         )
     dist = entry.get("dist") or {}
+    integrity = str(dist.get("integrity", ""))
+    if integrity and "-" in integrity:
+        # Preferido: SRI moderno (típicamente sha512) -- el 'shasum' legado de
+        # npm es SHA-1, y verificarlo con hashlib.sha256() rechaza el 100% de
+        # los paquetes npm legítimos como "hash no coincide" (hallazgo real,
+        # 2026-07-24, corrido contra el registro real).
+        algo, hex_digest = _sri_to_hex(integrity)
+        return PackageLookupResult(
+            exists=True, version_matches=True,
+            download_url=str(dist.get("tarball", "")),
+            sha256=hex_digest, hash_algo=algo,
+            reason="ok",
+        )
     return PackageLookupResult(
         exists=True, version_matches=True,
         download_url=str(dist.get("tarball", "")),
-        sha256=str(dist.get("shasum", "")),
+        sha256=str(dist.get("shasum", "")), hash_algo="sha1",
         reason="ok",
     )
 

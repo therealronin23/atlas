@@ -39,15 +39,21 @@ class FetchResult:
 
 def download_and_verify(
     url: str,
-    expected_sha256: str,
+    expected_hash: str,
     dest_path: Path,
     *,
     fetcher: BinaryFetcher,
     allowed_domain: str,
+    hash_algo: str = "sha256",
 ) -> FetchResult:
     """Fail-closed en dos frentes: egress (SSRFBridge efímero, dominio del
     endpoint DEBE coincidir con lo esperado) e integridad (hash DEBE coincidir
-    con lo declarado por el registro -- nunca se escribe con hash inválido)."""
+    con lo declarado por el registro -- nunca se escribe con hash inválido).
+
+    ``hash_algo`` importa de verdad: el 'shasum' legado de npm es SHA-1, no
+    SHA-256 -- asumir sha256 siempre rechazaba el 100% de los paquetes npm
+    legítimos como "posible sustitución" (hallazgo real, 2026-07-24, corrido
+    contra el registro real). Ver ``candidate_package_lookup.hash_algo``."""
     domain = urlparse(url).hostname or ""
     bridge = SSRFBridge(extra_allowed={allowed_domain})
     decision = bridge.check(url)
@@ -58,11 +64,14 @@ def download_and_verify(
     if status != 200:
         return FetchResult(ok=False, reason=f"HTTP {status}")
 
-    real_hash = hashlib.sha256(content).hexdigest()
-    if real_hash != expected_sha256:
+    try:
+        real_hash = hashlib.new(hash_algo, content).hexdigest()
+    except ValueError:
+        return FetchResult(ok=False, reason=f"algoritmo de hash no soportado: {hash_algo!r}")
+    if real_hash != expected_hash:
         return FetchResult(
             ok=False,
-            reason=f"hash no coincide: esperado {expected_sha256[:12]}…, real {real_hash[:12]}… (posible sustitución)",
+            reason=f"hash {hash_algo} no coincide: esperado {expected_hash[:12]}…, real {real_hash[:12]}… (posible sustitución)",
         )
 
     dest_path.parent.mkdir(parents=True, exist_ok=True)

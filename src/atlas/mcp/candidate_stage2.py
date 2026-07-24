@@ -76,7 +76,7 @@ def run_stage2a_stdio(
     allowed_domain = "files.pythonhosted.org" if registry == "pypi" else "registry.npmjs.org"
     fetch = download_and_verify(
         lookup.download_url, lookup.sha256, archive_path,
-        fetcher=binary_fetcher, allowed_domain=allowed_domain,
+        fetcher=binary_fetcher, allowed_domain=allowed_domain, hash_algo=lookup.hash_algo,
     )
     if not fetch.ok:
         return Stage2AResult(name=name, completed=False, stage_reached="fetch", reason=fetch.reason)
@@ -84,8 +84,20 @@ def run_stage2a_stdio(
     extract_dir = dest_dir / "extracted"
     extract_dir.mkdir(parents=True, exist_ok=True)
     # El nombre del archivo no lleva extensión real (download_and_verify no la
-    # preserva) -- safe_extract despacha por contenido probando tar primero.
-    archive_named = archive_path.with_suffix(".tar.gz" if registry == "pypi" else ".zip")
+    # preserva) -- se deriva del propio download_url, NUNCA del registry: npm
+    # SIEMPRE distribuye .tgz (tar.gz) y pypi sdist también es tar.gz; solo
+    # los wheels de Python (.whl) son zip. Asumir "zip para todo lo no-pypi"
+    # rompía TODO el track npm en extract (hallazgo real, 2026-07-24).
+    url_lower = lookup.download_url.lower()
+    if url_lower.endswith(".whl"):
+        real_suffix = ".whl"
+    elif url_lower.endswith(".zip"):
+        real_suffix = ".zip"
+    elif url_lower.endswith(".tgz"):
+        real_suffix = ".tgz"
+    else:
+        real_suffix = ".tar.gz"  # pypi sdist y npm tarball por defecto
+    archive_named = archive_path.with_suffix(real_suffix)
     archive_path.rename(archive_named)
     extract = safe_extract(archive_named, extract_dir)
     if not extract.ok:

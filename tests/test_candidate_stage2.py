@@ -106,6 +106,43 @@ def test_stage2a_completes_with_findings_on_full_real_flow(tmp_path) -> None:
     assert len(result.static_findings) == 1
 
 
+def test_stage2a_npm_tarball_extracts_as_targz_not_zip(tmp_path) -> None:
+    """Hallazgo real 2026-07-24: npm SIEMPRE distribuye .tgz (tar.gz), nunca
+    .zip -- solo los wheels de Python (.whl) son zip. Asumir zip para
+    'cualquier cosa que no sea pypi' rompía TODO el track npm en extract."""
+    import hashlib
+    import io
+    import tarfile
+    from atlas.mcp.candidate_stage2 import run_stage2a_stdio
+    from atlas.mcp.candidate_package_lookup import PackageLookupResult
+
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        content = b'{"name": "@foo/files", "bin": "dist/index.js"}'
+        info = tarfile.TarInfo(name="package/package.json")
+        info.size = len(content)
+        tar.addfile(info, io.BytesIO(content))
+    tgz_bytes = buf.getvalue()
+    real_hash = hashlib.sha512(tgz_bytes).hexdigest()
+
+    def fake_lookup(registry, identifier, version, *, fetcher=None):
+        return PackageLookupResult(
+            exists=True, version_matches=True,
+            download_url="https://registry.npmjs.org/@foo/files/-/files-0.2.0.tgz",
+            sha256=real_hash, hash_algo="sha512", reason="ok",
+        )
+
+    def fake_binary_fetcher(url):
+        return 200, tgz_bytes
+
+    result = run_stage2a_stdio(
+        {"name": "@foo/files", "transport": "stdio", "package_registry": "npm",
+         "package_identifier": "@foo/files", "version": "0.2.0"},
+        quarantine_root=tmp_path, lookup_fn=fake_lookup, binary_fetcher=fake_binary_fetcher,
+    )
+    assert result.stage_reached not in ("fetch", "extract")  # pasó fetch+extract; falla más tarde (semgrep no instalado en runner por defecto aquí) es aceptable
+
+
 def test_stage2b_probes_real_remote_url() -> None:
     from atlas.mcp.candidate_stage2 import run_stage2b_http
 

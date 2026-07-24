@@ -34,6 +34,7 @@ def test_pypi_lookup_confirms_real_package_and_version() -> None:
     assert result.version_matches is True
     assert result.download_url == "https://files.pythonhosted.org/packages/.../adeu-1.5.2.tar.gz"
     assert result.sha256 == "abc123"
+    assert result.hash_algo == "sha256"
 
 
 def test_pypi_lookup_flags_missing_package_404() -> None:
@@ -57,6 +58,53 @@ def test_pypi_lookup_flags_version_mismatch() -> None:
     assert result.exists is True
     assert result.version_matches is False
     assert result.download_url == ""
+
+
+def test_npm_lookup_prefers_integrity_sri_over_legacy_shasum() -> None:
+    """Hallazgo real 2026-07-24 (corrido contra npm real): 'shasum' de npm es
+    SHA-1 (legado), NO SHA-256 -- verificar su valor con hashlib.sha256()
+    rechazaba el 100% de los paquetes npm legítimos como "hash no coincide/
+    posible sustitución". 'integrity' (SRI, ej. 'sha512-<base64>') es el
+    campo moderno y correcto; se prefiere cuando está presente."""
+    from atlas.mcp.candidate_package_lookup import lookup_npm_package
+    import hashlib, base64
+
+    content = b"contenido real del tarball"
+    digest_b64 = base64.b64encode(hashlib.sha512(content).digest()).decode()
+    body = json.dumps({
+        "name": "@foo/files",
+        "versions": {
+            "0.2.0": {
+                "dist": {
+                    "tarball": "https://registry.npmjs.org/@foo/files/-/files-0.2.0.tgz",
+                    "shasum": "0" * 40,  # SHA-1 legado, deliberadamente distinto/ignorado
+                    "integrity": f"sha512-{digest_b64}",
+                }
+            }
+        },
+    })
+    result = lookup_npm_package("@foo/files", "0.2.0", fetcher=_stub_fetcher(200, body))
+    assert result.exists is True
+    assert result.hash_algo == "sha512"
+    assert result.sha256 == hashlib.sha512(content).hexdigest()  # campo reusado como "hash esperado", algo real en hash_algo
+
+
+def test_npm_lookup_falls_back_to_shasum_sha1_when_no_integrity() -> None:
+    from atlas.mcp.candidate_package_lookup import lookup_npm_package
+
+    body = json.dumps({
+        "name": "@foo/files",
+        "versions": {
+            "0.2.0": {
+                "dist": {"tarball": "https://registry.npmjs.org/@foo/files/-/files-0.2.0.tgz",
+                          "shasum": "deadbeef00deadbeef00deadbeef00deadbeef0"}
+            }
+        },
+    })
+    result = lookup_npm_package("@foo/files", "0.2.0", fetcher=_stub_fetcher(200, body))
+    assert result.exists is True
+    assert result.hash_algo == "sha1"
+    assert result.sha256 == "deadbeef00deadbeef00deadbeef00deadbeef0"
 
 
 def test_npm_lookup_confirms_real_package_and_version() -> None:

@@ -92,6 +92,23 @@ def test_npm_entrypoint_from_bin_dict_matches_identifier(tmp_path) -> None:
     assert result.script_path == "dist/cli.js"
 
 
+def test_npm_entrypoint_from_bin_dict_single_entry_used_directly_even_if_name_differs(tmp_path) -> None:
+    """Hallazgo real 2026-07-24 (corrido contra un paquete npm real): con UN
+    solo binario declarado no hay ambigüedad real, aunque su nombre no
+    coincida con ningún patrón heurístico -- mismo principio que el caso
+    pypi de un único script. Antes se rechazaba como "ambiguo" un caso que
+    no lo era en absoluto."""
+    import json
+    from atlas.mcp.candidate_entrypoint import discover_npm_entrypoint
+
+    (tmp_path / "package.json").write_text(
+        json.dumps({"name": "@aetherwealth/mcp", "bin": {"aether-wealth-mcp": "dist/index.js"}})
+    )
+    result = discover_npm_entrypoint(tmp_path, package_identifier="@aetherwealth/mcp")
+    assert result.ok is True
+    assert result.script_path == "dist/index.js"
+
+
 def test_npm_entrypoint_from_bin_dict_no_pattern_match_failclosed(tmp_path) -> None:
     """2+ binarios, NINGUNO coincide con ningún patrón conocido -- ambiguo de
     verdad, se rechaza en vez de adivinar cuál es el server."""

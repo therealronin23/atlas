@@ -85,6 +85,13 @@ def discover_npm_entrypoint(source_dir: Path, *, package_identifier: str) -> Npm
     if isinstance(bin_field, str):
         return NpmEntrypoint(ok=True, script_path=bin_field, reason="ok")
     if isinstance(bin_field, dict):
+        if len(bin_field) == 1:
+            # Un único binario: sin ambigüedad real aunque el nombre no
+            # coincida con ningún patrón (mismo principio que el caso pypi
+            # de un único script). Hallazgo real 2026-07-24: se rechazaba
+            # como "ambiguo" un caso que no lo era en absoluto.
+            (only_path,) = bin_field.values()
+            return NpmEntrypoint(ok=True, script_path=str(only_path), reason="ok")
         short_name = package_identifier.rsplit("/", 1)[-1]
         for key in (short_name, f"{short_name}-mcp", f"{short_name}-server"):
             if key in bin_field:
