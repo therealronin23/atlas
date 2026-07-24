@@ -291,3 +291,39 @@ detalles que la implementación forzó a precisar respecto al diseño original:
    Allow/Deny existentes a RequiresHuman. Mismo criterio que toda capacidad
    nueva de esta sesión (`ATLAS_MCP_RESEED`/`ATLAS_MCP_VETTING`): nada
    cambia de comportamiento hasta que el operador lo enciende explícito.
+
+## Auditoría de seguridad dedicada (2026-07-24) -- antes de activar el flag
+
+Corrección explícita del operador tras el cierre de la implementación: enmarcar
+el problema como "cortar los reintentos de `ai.adeu/adeu`" era incorrecto -- el
+problema es estructural, cualquier candidato futuro puede repetirlo. Antes de
+considerar `ATLAS_SECURITY_COUNCIL_GATE=1` en producción, se convocó una
+auditoría dedicada (agente `security-auditor`, diff completo del gate) más una
+revisión manual propia. 7 hallazgos reales, 6 corregidos con TDD, 1 aceptado
+como limitación documentada:
+
+| # | Severidad | Hallazgo | Resolución |
+|---|---|---|---|
+| 1 | CRITICAL | `execute_reversible_code` nunca pasaba `code` al gate (`descriptor=""` por defecto) -- el kind de mayor riesgo quedaba ciego | `gate_artifact` nuevo parámetro de `_consult_decider`, separado de `descriptor` (no toca action_hash/undo); `execute_reversible_code` lo pasa |
+| 2 | HIGH | `action_hash` sin normalizar -- un espacio/mayúscula bastaba para saltar un rechazo permanente | `_security_council_key`: canonicaliza (trim+casefold) + incorpora `gate_artifact`, clave separada del `action_hash` real |
+| 3 | HIGH | Solo `run_security_council_gate` era fail-closed -- `is_rejected`/`record_rejection`/`resolve_council_verdict` (incl. el trío real) podían lanzar sin control | Registro ilegible -> tratado como rechazado; cualquier excepción no anticipada en el gate -> `flagged`, nunca crash sin control |
+| 4 | HIGH | TOCTOU: sin lock, N intentos concurrentes idénticos pagaban N veces el trío real + N notificaciones | Dedup en memoria por `council_key` (`threading.Lock` + `set`) |
+| 5 | MEDIUM | Telegram enviaba `candidate_target` de `offensive_action` en claro (OPSEC-sensible, el escaneo de keywords no lo cubre) | Redacción específica: solo se envía la `capability`, el target se enmascara |
+| 6 | MEDIUM | `resolve_council_verdict` podía degradar en silencio la garantía "offensive_action siempre escala" si `convene_fn` devolvía `None` | Ya cerrado en el commit anterior (ver "Revisión de Cónclave") -- fail-closed explícito |
+| 7 | MEDIUM | `security_council_unblock` no tiene enforcement técnico de HITL más allá de ser el único caller hoy (verificado por grep: CLI, nada más) | **Aceptado, no corregido** -- ver razón abajo |
+| 8 | LOW | Severidad hardcodeada a `MAJOR` en toda rama `flagged`, sin distinguir hit determinista de escaneo vs corazonada del auditor | Hit de escaneo (IOC-regex/evidencia real) -> `BLOCKING`; auditor LLM único -> se queda en `MAJOR` |
+
+**Por qué el hallazgo #7 queda como limitación documentada, no corregido**:
+cualquier enforcement técnico (token en memoria, marcador de proceso) que un
+caller con acceso directo al objeto `Orchestrator` en el MISMO proceso Python
+pudiera saltarse trivialmente es seguridad teatral, no una barrera real -- la
+protección real hoy es que **nada más en el código llama a este método**
+(verificado por grep, no supuesto). Si en el futuro algo nuevo obtiene una
+referencia a `Orchestrator` y expone `security_council_unblock` por un camino
+autónomo, ese es el momento de revisar esto -- no antes.
+
+9 tests nuevos verificando cada corrección contra un escenario real (código
+peligroso en `omega_exec`, dedup de intentos concurrentes, fail-closed ante
+registro corrupto, bypass cosmético bloqueado, redacción de Telegram,
+severidad diferenciada, fallo de persistencia no crashea). **Suite completa:
+4465 tests, 0 fallos, mypy limpio.**
