@@ -69,6 +69,25 @@ class TestBuildGraph:
         # 'suelto.md' no tiene aristas; 'viejo.md' tampoco pero es historico.
         assert g.orphans() == ["docs/design/suelto.md"]
 
+    def test_mdlink_to_real_repo_root_file_outside_docs_resolves(self, tmp_path: Path) -> None:
+        """Bug real 2026-07-24 (encontrado auditando enlaces rotos reales del
+        repo): build_graph solo indexa docs/ como nodos -- un mdlink correcto
+        a AGENTS.md/README.md (fuera de docs/, en la raíz del repo) NUNCA
+        podía marcarse resuelto aunque la ruta relativa fuera matemáticamente
+        correcta y el fichero existiera de verdad, porque el target jamás
+        estaba en graph.nodes. Fix: fallback a comprobar el fichero real en
+        disco cuando el target no es un nodo docs/ trackeado."""
+        docs = _make_docs(tmp_path)
+        (tmp_path / "AGENTS.md").write_text("# AGENTS", encoding="utf-8")
+        (docs / "gates").mkdir()
+        (docs / "gates" / "seal.md").write_text(
+            "[AGENTS.md](../../AGENTS.md)", encoding="utf-8"
+        )
+        _load("docs_index_audit").write_index(docs)
+        g = _load("docs_graph").build_graph(docs)
+        mds = [e for e in g.outgoing("docs/gates/seal.md") if e.kind == "mdlink"]
+        assert mds and mds[0].resolved is True
+
 
 class TestGraphDrift:
     def test_drift_excludes_archive_and_dedupes(self, tmp_path: Path) -> None:

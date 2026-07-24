@@ -144,7 +144,17 @@ def build_graph(docs_dir: Path | None = None) -> DocsGraph:
             if target in graph.nodes:
                 graph.edges.append(Edge(key, target, "mdlink", True))
             else:
-                graph.edges.append(Edge(key, raw, "mdlink", False))
+                # El grafo solo trackea docs/ como nodos (línea 92-97) -- un
+                # mdlink correcto a un fichero real FUERA de docs/ (AGENTS.md,
+                # README.md, memory/... en la raíz del repo) nunca podía
+                # marcarse resuelto aunque la ruta relativa fuera correcta y
+                # el fichero existiera de verdad (bug real, 2026-07-24).
+                # Fallback: comprobar el fichero real en disco antes de
+                # declarar roto -- no se añade como nodo (fuera de alcance de
+                # docs/), solo se deja de reportar como falso positivo.
+                on_disk = (src_path.parent / raw.split("#", 1)[0]).resolve()
+                resolved_on_disk = on_disk.is_file() and not target.startswith("docs/")
+                graph.edges.append(Edge(key, target if resolved_on_disk else raw, "mdlink", resolved_on_disk))
 
     return graph
 
