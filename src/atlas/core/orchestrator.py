@@ -306,9 +306,26 @@ class Orchestrator:
         from atlas.core.decider.security_council_escalation import resolve_council_verdict
         from atlas.core.inference_hub import InferenceHub
 
+        # mcp_adopt: el descriptor es solo el NOMBRE del candidato -- un
+        # regex IOC genérico no encuentra nada peligroso en un string como
+        # "ai.adeu/adeu". La evidencia REAL (semgrep, worst_severity) ya la
+        # calculó ADR-075 y vive en mcp_catalog_stage2_report.jsonl -- este
+        # scan_fn la consulta por nombre en vez de mirar solo el texto. Sin
+        # esto, cualquier candidato futuro con hallazgo MAJOR/BLOCKING real
+        # pasaría igual que uno limpio (hallazgo real, no solo el caso de
+        # adeu que motivó el gate).
+        if action.kind == "mcp_adopt":
+            from atlas.core.decider.security_council_mcp_scan import mcp_vetting_scan_fn
+
+            scan_fn = mcp_vetting_scan_fn(
+                self._project_root() / "docs" / "design" / "mcp_catalog_stage2_report.jsonl"
+            )
+        else:
+            scan_fn = default_scan_fn
+
         hub = self._inference_hub or InferenceHub(mode="auto")
         first_pass = run_security_council_gate(
-            action.descriptor, scan_fn=default_scan_fn, audit_fn=build_llm_audit_fn(hub)
+            action.descriptor, scan_fn=scan_fn, audit_fn=build_llm_audit_fn(hub)
         )
         final = resolve_council_verdict(
             kind=action.kind,
