@@ -40,6 +40,27 @@ def test_flagged_when_scan_flags() -> None:
     assert "patrón peligroso" in verdict.report.triggered_by
 
 
+def test_scan_flag_severity_is_blocking_deterministic_evidence() -> None:
+    """Hallazgo de auditoría de seguridad (2026-07-24): un hit de escaneo
+    (IOC-regex/evidencia real de vetting) es determinista -- distinto de
+    'el LLM tuvo una corazonada'. Debe pesar más en la severidad."""
+    def dirty_scan(descriptor: str) -> ScanFinding:
+        return ScanFinding(clean=False, detail="x")
+
+    verdict = run_security_council_gate("x", scan_fn=dirty_scan, audit_fn=_clean_audit)
+    assert verdict.report.severity == Severity.BLOCKING
+
+
+def test_audit_flag_severity_stays_major_probabilistic_evidence() -> None:
+    """El auditor LLM único es una sola voz, probabilística -- se queda en
+    MAJOR (más débil que un hit determinista de escaneo), no BLOCKING."""
+    def dirty_audit(descriptor: str) -> AuditFinding:
+        return AuditFinding(clean=False, detail="x")
+
+    verdict = run_security_council_gate("x", scan_fn=_clean_scan, audit_fn=dirty_audit)
+    assert verdict.report.severity == Severity.MAJOR
+
+
 def test_flagged_when_audit_flags() -> None:
     def dirty_audit(descriptor: str) -> AuditFinding:
         return AuditFinding(clean=False, detail="riesgo semántico detectado")

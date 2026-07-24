@@ -136,7 +136,11 @@ def run_security_council_gate(
         return CouncilVerdict(
             status="flagged",
             report=SecurityReport(
-                severity=Severity.MAJOR,
+                # BLOCKING, no MAJOR: un hit de escaneo (IOC-regex / evidencia
+                # real de vetting) es determinista -- distinto de una
+                # corazonada probabilística del auditor LLM (hallazgo de
+                # auditoría de seguridad, 2026-07-24).
+                severity=Severity.BLOCKING,
                 checks_run=checks_run,
                 triggered_by=f"escaneo automatizado: {scan.detail}",
                 recommended_action="revisar manual",
