@@ -37,9 +37,9 @@ necesitan infra inexistente para slices posteriores.
 | 1 | **Identidad criptográfica + snapshot (anti rug-pull)** | `sha256(name+description+inputSchema)` por tool. Primera adopción = TOFU: admite y graba snapshot en `memory/sentinel/<server>.json`. Después: hash distinto (drift) o tool nueva en server conocido ⇒ **bloqueado** hasta re-aprobación humana | ✅ |
 | 2 | **IOC + coherencia de comando** | El `cmd` es argv (nunca shell, ADR-035): un token con metacaracteres de shell (`;`, `\|`, `$(`, …) es smuggling ⇒ veta el server. Blocklist inyectable de dominios/comandos veta tool o server | ✅ |
 | 3 | **Tiering + bloqueo de credenciales** | Clasifica cada tool en read / write / shell_net / credential. Las de tier `credential` no se adoptan: una tool que dice manejar secretos no entra sin decisión humana | ✅ |
-| 4 | **Coherencia AST profunda** | ¿lo que el tool *dice* (description) coincide con lo que *pide* (paths/endpoints/permisos del schema)? Reusar `ast_guard` | ⏳ diferido |
-| 5 | **Egress IOC runtime** | Blocklist de dominios/comandos antes de cada `tools/call` (no solo en adopción) | ⏳ diferido |
-| 6 | **Re-vetting atado a ColdUpdate** | El snapshot+diff ya existe; falta cablear la re-verificación al flujo de update real cuando exista | ⏳ diferido |
+| 4 | **Coherencia AST profunda** | ¿lo que el tool *dice* (description) coincide con lo que *pide* (paths/endpoints/permisos del schema)? Patrón de `ast_guard` adaptado (no reuso directo — ver nota de investigación bajo `_vet_coherence`), cerrado 2026-07-23 (`t4-sentinel-tool-coherence`) | ✅ |
+| 5 | **Egress IOC runtime** | `SentinelGate.vet_call(tool, args)` vetea CADA `tools/call` (no solo adopción), cableado en `McpRegistry.dispatch()`. Fail-open en error del chequeo, fail-closed en IOC real. Overhead medido: <5ms/llamada. Cerrado 2026-07-24 (`t4-sentinel-egress-runtime-ioc`) | ✅ |
+| 6 | **Re-vetting periódico** | `McpRegistry.revet_all()` (solo lectura) + `maintenance_sentinel_revet_tick` (opt-in `ATLAS_SENTINEL_REVET=1`) re-corren `vet_tools` sobre servers ya adoptados contra su snapshot — nunca re-arma TOFU, solo señala. Cerrado 2026-07-24 (`t4-sentinel-scheduled-revet`) | ✅ |
 
 ### Postura: fail-closed
 
@@ -65,6 +65,38 @@ superficie nueva; el botón de Telegram para re-vetar llega con el flujo ColdUpd
   el snapshot; a partir de ahí vigila drift.
 - No añade deps. No toca el modelo. El snapshot es JSON local, fuera de Merkle (no
   contiene secretos; sí se auditan los veredictos en Merkle).
+
+## Addendum (2026-07-23) — re-minado de `claude-mcp-sentinel` (ahora v3.1.1)
+
+El proyecto real pasó de v2.0 (referenciado arriba) a v3.1.1 (`CHANGELOG.md`,
+GitHub `soy-rafa/claude-mcp-sentinel`, 184★, actualizado 2026-07-21). Mismo
+método que la creación de este ADR: se roba el CONCEPTO, no el código. Dos
+hallazgos concretos aplicados a `sentinel_gate.py`:
+
+1. **Capa 2 estaba vacía en producción.** `Orchestrator` construye
+   `SentinelGate` sin `ioc_domains`/`ioc_commands` — la blocklist "✅" de la
+   tabla de arriba no bloqueaba nada real. Añadido un suelo no anulable
+   (`_INCIDENT_IOC_DOMAINS`, unión con lo inyectado, nunca reemplazo) con
+   `giftshop.club` (el mismo incidente Postmark de este ADR) — patrón
+   "confirmed-malicious infra can't be allowlisted" de su v2.
+2. **Fail-open silencioso en `_load_snapshot`.** Un snapshot corrupto (no
+   ausente) se trataba igual que "primera adopción" — TOFU se re-armaba sin
+   ningún aviso. Añadido `logger.warning` (patrón P4 de su v3.1.0: "si la
+   protección se degrada, avisa; nunca en silencio"). Comportamiento
+   fail-open intacto, solo deja de ser silencioso.
+
+**Validación externa de las capas diferidas**: su v2 ya shippeaba en
+producción real (20/20 regresión, ~30-80ms/llamada, cero coste LLM)
+exactamente la Capa 5 de este ADR ("egress IOC runtime en cada tools/call")
+— sube su prioridad, ya no es solo teórica. Su "scheduled monitoring"
+(re-escaneo diario) valida el mismo patrón que la Capa 6 diferida
+("re-vetting atado a ColdUpdate") — puede montarse sobre la misma
+infraestructura de scheduler que el resto de ticks de `maintenance_facade.py`,
+no requiere diseño nuevo. Ambas registradas en `docs/backlog.yaml`.
+
+No adoptado (no aplica a este gate, que es adopción-time no runtime-per-call):
+confianza adaptativa por sesión, capa de IA opcional, redacción de secretos
+antes de IA — ninguno tiene equivalente en el alcance de `SentinelGate` hoy.
 
 ## Consecuencias
 

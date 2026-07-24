@@ -709,7 +709,15 @@ items:
       el nuestro, 3 patrones concretos absorbibles (o veredicto honesto de que no aportan), y coste.
       Sin código de producción en este item; la suite no cambia.
     priority: 3
-    status: deferred  # 2026-07-10: reasignado a la Fase B de la campaña (disección por Sonnet con adopt-real); si B halla patrón absorbible, dará de alta el item mecánico del wrapper
+    status: done  # 2026-07-24: verificado que docs/inbox/graphiti_dissection_2026-07-10.md
+    # (Fase B, ya escrito) cumple la aceptación completa: tabla comparativa de
+    # esquema (temporal/backend Kuzu/búsqueda híbrida/extracción LLM) + exactamente
+    # 3 patrones absorbibles con coste estimado (separar valid_at/invalid_at de
+    # valid_from_ns/valid_until_ns -- coste S; auto-invalidación de contradicciones
+    # LLM+heurística -- coste M; MMR como reranker -- coste S) + notas descartadas
+    # honestas. Ya citado como fuente real por mem-1-fact-time-vs-system-time
+    # (done). Quedaba marcado deferred por accidente de limpieza de backlog, no
+    # porque faltara trabajo.
     test_cmd: ["python3", "-m", "mypy", "src/atlas/"]
 
   - id: project-graph-vault-wiring
@@ -1013,7 +1021,16 @@ items:
       ADR-033, sin superficie nueva); test demuestra que el checklist sobrevive a una
       suspensión/reanudación del loop; no es mutante (no requiere aprobación HITL).
     priority: 3
-    status: pending
+    status: done  # 2026-07-24: tool update_focus_chain(steps) real en
+    # agentic_helpers.py (spec)/agentic_executor.py (_dispatch_tool). No
+    # mutante (no esta en AGENTIC_MUTATING_TOOLS -> clasifica 'read', corre
+    # inline sin HITL), provenance 'trusted'. Persiste en
+    # task.metadata["focus_chain"] -- mismo canal generico que agentic_state
+    # (task_persistence.py serializa "metadata" entero), sobrevive
+    # suspension/reanudacion SIN codigo de persistencia nuevo (verificado con
+    # TaskPersistence.persist/load real). Progreso reusa AGENTIC_PROGRESS
+    # existente (_emit_progress ya se llama para cualquier tool). 6 tests
+    # nuevos verdes, mypy limpio.
 
   - id: t1-git-checkpoint-agentic-wiring
     title: "Exponer GitCheckpointManager.restore() en el loop agéntico con aprobación HITL explícita"
@@ -1411,28 +1428,26 @@ items:
       ninguna rama de código condicionada al nombre de la app. mypy limpio; suite
       verde; ningún cambio de comportamiento en browser/editor/vision existentes.
     priority: 1
-    status: pending  # 2026-07-23: AVANCE PARCIAL, commits 53786f8 (tipos puros) +
-    # 9e4fe68 (Gate F/PolicyEngine wiring). Investigado con 2
-    # agentes Explore + 1 Plan antes de codificar. Hecho: DesktopAction/
-    # DesktopTool/DesktopPlanner (src/atlas/tools/computer_use/), routing
-    # "desktop" en gate_f_parser.py/gate_f_executor.py (observe/windows/click/
-    # type/key), PolicyEngine instanciado en Orchestrator.__init__ y wireado
-    # (gap de wiring real que existía, pol_hard_computer_use ahora se evalúa
-    # de verdad, no solo declarado), routing end-to-end verificado con
-    # PolicyEngine REAL (no fake) en test_orchestrator_gate_f.py. mypy limpio
-    # (302 ficheros), suite dirigida verde, cero cambio de comportamiento en
-    # browser/editor/vision (regresión verificada). NO cerrado: falta la
-    # evidencia OBLIGATORIA del acceptance (test E2E con ≥2 apps de escritorio
-    # reales contra Xvfb :99) — bloqueado por infraestructura ausente en este
-    # entorno (sin Xvfb :99 ni .venv-desktop/bin/computer-control-mcp;
-    # computer-control-mcp tampoco está en ningún mcp_servers.json real
-    # todavía). Decisión explícita del operador de no instalar esa
-    # infraestructura en esta sesión. Acción "plan" del parser (desktop plan
-    # <instrucción>) queda parseada pero sin ejecutor (execute_desktop_command
-    # la rechaza honesto como "Unsupported desktop action: plan" — requiere
-    # inyectar InferenceHub/DesktopPlanner en GateFExecutor, fuera de alcance
-    # de esta sesión). Siguiente sesión con Xvfb disponible: Fase 8 (entrada
-    # real en mcp_servers.example.json) + Fase 9 (test E2E 2 apps).
+    status: done  # 2026-07-24: CERRADO. Infraestructura llegó vía atlas-xvfb.service
+    # (fluxbox instalado 2026-07-23) + .venv-desktop real. Faltaba solo:
+    # (a) test E2E obligatorio con >=2 apps de escritorio distintas
+    # (test_desktop_plan_executes_across_two_different_real_apps,
+    # tests/acceptance/test_t3_1_desktop_operator_e2e.py) -- planner con
+    # InferenceHub FAKE determinista (cero LLM real) pero EJECUCIÓN real
+    # contra Xvfb :99/computer-control-mcp, misma DesktopTool que
+    # click/type/key, cero rama condicionada al nombre de la app; (b)
+    # wiring de InferenceHub -> GateFExecutor.get_desktop_planner()
+    # (getter lazy, mismo patrón que timetravel) + rama "plan" real en
+    # execute_desktop_command (antes rechazaba honesto con "Unsupported
+    # desktop action: plan"). De paso: DesktopTool.move() añadido (tool MCP
+    # move_mouse real); kinds scroll/drag documentados como sin ejecutor
+    # real hoy (sin tool MCP de scroll; drag necesita 2 pares de coordenadas
+    # que DesktopAction no expresa) -- se reportan honestos, no se fingen.
+    # 118 tests verdes (gate_f_executor+parser+orchestrator_gate_f+
+    # desktop_tool+desktop_planner+acceptance E2E), mypy limpio (303
+    # ficheros). Sigue pendiente como item aparte: t3-2-gui-recipe-library
+    # (biblioteca de recetas reutilizables) y soporte real de scroll/drag
+    # si algún día hace falta.
 
   - id: t3-2-gui-recipe-library
     title: "Biblioteca de recetas GUI aprendidas: secuencias de acciones reutilizables"
@@ -1717,3 +1732,306 @@ items:
       consumidor todavía (evitar wire-before-claim).
     priority: 3
     status: done  # 2026-07-23 (sesión maratón): commit cb1250d
+
+  # --- Auditoría completa + premortem 2026-07-23 (2ª pasada del día) ---
+  - id: t1-shadow-router-drift-wiring-decision
+    title: "Decidir wiring de DriftTripwire+ShadowRouter en TransparencyGateway real"
+    why: >
+      Auditoría 2026-07-23 (docs/audits/audit_full_premortem_2026-07-23.md,
+      hallazgo #2): `DriftTripwire` (src/atlas/security/drift.py) y
+      `ShadowRouter` (src/atlas/security/shadow_model.py) — detección de deriva
+      de sesión con escalada a shadow routing, invariantes OSM-010/OSM-028
+      referenciados en el propio código — están implementados y testeados
+      (tests/test_drift.py, tests/test_shadow_model.py,
+      tests/test_transparency_gateway.py) pero NUNCA instanciados en
+      producción: el único `TransparencyGateway` real
+      (src/atlas/core/orchestrator.py:1267) no pasa `shadow_router=`, y ningún
+      caller real calcula `confidence=`/`monitor_cause=` en `gateway.call(...)`.
+      Cero protección efectiva hoy pese a existir el código. Cablear esto
+      cambia el comportamiento de TODAS las sesiones de producción — no es un
+      fix mecánico, es una decisión de seguridad (¿bajo qué umbral escala?,
+      ¿qué hace el shadow model con la sesión?, coste de falsos positivos).
+    targets:
+      - "src/atlas/core/orchestrator.py"
+      - "src/atlas/transparency/gateway.py"
+    acceptance: >
+      Cónclave (decisión de seguridad, no mecánica) que fije: si se activa
+      shadow routing en producción, bajo qué señal real se calcula
+      `confidence`/`monitor_cause`, y qué umbral dispara la escalada. Si se
+      decide activar: wiring real + test de integración end-to-end (sesión
+      con deriva simulada real dispara shadow routing observable, no solo
+      unit tests aislados). Si se decide NO activar todavía: registrar la
+      razón explícita y marcar ambos módulos como PARK (no ACTIVO) en
+      atlas_ecosystem_map.md, con condición de reapertura.
+    priority: 1
+    status: done  # 2026-07-24: CERRADO vía ADR-074. Cónclave real convocado
+    # (trío deliberation_council, Gemini+GLM en vivo -- Mistral Large EOL,
+    # ver task_a68d180f) sobre la propuesta de activación completa: veredicto
+    # FAIL/BLOCKING (3 objeciones accionables: threshold_active nunca
+    # ejercitado en real, GatedLessonRecorder envenenaría LessonStore con
+    # verifier permisivo, session_id fijo mezcla tareas). El operador decidió
+    # cablear igualmente pero corrigiendo las 3 objeciones: threshold_passive
+    # subido a 0.80 (recomendación explícita de la propia OSM-042), verifier
+    # sustituido por build_judge_verifier() real + pending_review.jsonl para
+    # lo rechazado, session_id de ShadowRouter.route() aislado por task_id.
+    # Wiring real en Orchestrator.enable_gate_d_pipeline(). Ver adr_074_shadow_router_drift_wiring.md,
+    # tests/test_transparency_gateway.py, tests/test_live_loop.py,
+    # tests/test_gate_d_lazy_init.py.
+
+  - id: t1-evolution-gate-wiring-decision
+    title: "Decidir wiring de run_item_with_evolution en el ciclo real de mantenimiento"
+    why: >
+      Auditoría 2026-07-23 (docs/audits/audit_full_premortem_2026-07-23.md,
+      hallazgo #3): `EvolutionGate` (src/atlas/core/self_maintenance/
+      evolution_gate.py) y `SelfBuildRunner.run_item_with_evolution()`
+      (src/atlas/core/self_maintenance/self_build_runner.py:415) — selección
+      evolutiva real de variantes de código vía openevolve, evaluada en
+      worktree git efímero real — existen y están testeados
+      (tests/test_evolution_gate.py, tests/test_self_build_runner.py), pero
+      el ciclo real de mantenimiento (maintenance_facade.py:441) sigue
+      llamando a `runner.run_item(item)` (ruta plana), nunca a la variante
+      evolutiva. El propio docstring de EvolutionGate tiene un TODO
+      desactualizado que sugiere que el cableado "es la siguiente tarea"
+      cuando técnicamente ya existe — solo que nadie en el camino real lo usa.
+      Activar esto en el daemon real (ATLAS_SELF_BUILD=1) es un cambio de
+      comportamiento del autoconstructor, no un fix mecánico.
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+      - "src/atlas/core/self_maintenance/self_build_runner.py"
+    acceptance: >
+      Decisión explícita (no requiere Cónclave completo, pero sí registro
+      razonado): activar `run_item_with_evolution` en el ciclo real con
+      criterio de coste/beneficio documentado (openevolve tiene coste de
+      inferencia mayor que la ruta plana), o marcar explícitamente PARK en
+      la tabla Zero-Importer Triage de atlas_ecosystem_map.md (hoy no
+      aparece clasificado ahí) con la razón de por qué sigue sin activarse.
+      Corregir también el TODO desactualizado en evolution_gate.py:9-13.
+    priority: 2
+    status: done  # 2026-07-23: operador decidió activar con el proveedor real (Groq).
+    # _build_evolution_gate() en maintenance_facade.py construye un EvolutionGate
+    # real (api_base=https://api.groq.com/openai/v1, model=llama-3.3-70b-versatile)
+    # cuando GROQ_API_KEY está en el entorno; maintenance_self_build_tick llama a
+    # run_item_with_evolution en vez de run_item cuando el gate existe (fail-open:
+    # sin API key, o si openevolve/la API fallan, cae a run_item() sin romper el
+    # ciclo — mismo comportamiento ya garantizado por EvolutionGate.evolve).
+    # openevolve>=0.2.27 instalado en .venv (ya declarado como extra [evolution]
+    # en pyproject.toml, no es dependencia nueva). Daemon atlas-core.service
+    # reiniciado para recoger el cambio. TODOs desactualizados en evolution_gate.py
+    # corregidos. payload Merkle de self_build.run_item ahora incluye
+    # evolution_attempted para no repetir el patrón de comportamiento silencioso.
+
+  - id: t4-sentinel-egress-runtime-ioc
+    title: "SentinelGate Capa 5: egress IOC runtime en cada tools/call (ADR-038, diferida)"
+    why: >
+      ADR-038 difiere esta capa desde el principio ("blocklist de dominios/comandos
+      antes de cada tools/call, no solo en adopción"). Re-minado de
+      `claude-mcp-sentinel` (ahora v3.1.1, GitHub soy-rafa/claude-mcp-sentinel,
+      2026-07-23) confirma que esto ya corre en producción real en ese proyecto
+      desde su v2 (20/20 tests de regresión, ~30-80ms/llamada, cero coste LLM,
+      fail-open) — deja de ser solo teórica, hay prior art externo validado de
+      que es barato y viable. Sube de prioridad frente a las otras capas diferidas.
+    targets:
+      - "src/atlas/security/sentinel_gate.py"
+      - "src/atlas/mcp/registry.py"
+    acceptance: >
+      Hook pre-tools/call (no solo pre-adopción) que vete una llamada cuya
+      superficie (argumentos serializados) contenga un IOC de dominio/comando
+      del mismo suelo ya usado en adopción; overhead medido y documentado;
+      fail-open si el chequeo mismo falla (nunca debe poder tumbar una
+      llamada legítima por un bug del propio gate); test que demuestre
+      bloqueo real de un intento de exfiltración con el dominio IOC ya
+      sembrado (giftshop.club).
+    priority: 2
+    status: done  # 2026-07-24: SentinelGate.vet_call(tool, args) real (Capa 5),
+    # cableado en McpRegistry.dispatch() justo antes de tools/call. Fail-open
+    # en el ERROR del chequeo (try/except + logger.warning), fail-closed en un
+    # IOC real. Overhead medido: <5ms/llamada (test real, 200 iteraciones) --
+    # muy por debajo del 30-80ms que claude-mcp-sentinel documenta para su
+    # propio hook. Test E2E real con el toy echo server: bloqueo real de un
+    # intento de exfiltración con giftshop.club antes de llegar al
+    # subproceso. 11 tests nuevos verdes, mypy limpio.
+
+  - id: t4-sentinel-scheduled-revet
+    title: "SentinelGate Capa 6: re-vetting periódico sobre el mismo scheduler de mantenimiento"
+    why: >
+      ADR-038 difiere "re-vetting atado a ColdUpdate" (snapshot+diff ya existe,
+      falta cablearlo a un flujo real). Re-minado de `claude-mcp-sentinel` v3.1
+      confirma el mismo patrón ya en producción: "scheduled monitoring, corre
+      cada mañana, re-escanea todo" -- un server seguro ayer puede tener un CVE
+      nuevo hoy. No requiere diseño nuevo: monta sobre la MISMA infraestructura
+      de ticks que `maintenance_facade.py` ya usa para self_build/research/etc.
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+      - "src/atlas/security/sentinel_gate.py"
+    acceptance: >
+      Nuevo tick (mismo patrón que maintenance_self_build_tick) que re-corra
+      SentinelGate.vet_tools sobre servers ya adoptados contra su snapshot
+      guardado, detectando drift que haya ocurrido fuera de una adopción nueva
+      (p.ej. un server que reescribió su propio binario in-place); resultado
+      auditado en Merkle; NUNCA re-arma TOFU automáticamente -- solo señala,
+      la re-aprobación sigue siendo HITL explícito (borrar snapshot).
+    priority: 3
+    status: done  # 2026-07-24: McpRegistry.revet_all() real (solo lectura,
+    # re-corre tools/list + SentinelGate.vet_tools contra el snapshot de cada
+    # server ya adoptado); maintenance_sentinel_revet_tick nuevo
+    # (ATLAS_SENTINEL_REVET=1, mismo patrón de guardias que los demás ticks).
+    # Test real simula drift corrompiendo el snapshot en disco de un server
+    # YA adoptado (sin nueva adopción) y confirma: (a) el drift se detecta y
+    # reporta, (b) el snapshot NUNCA se reescribe (TOFU no se re-arma solo).
+    # 8 tests nuevos verdes (4 en McpRegistry + 4 del tick E2E), mypy limpio.
+
+  - id: t4-mcp-trial-autonomous-tick
+    title: "Pieza 2 (trial-en-jaula) cableada al ciclo real: candidato → probado-en-jaula"
+    why: >
+      docs/design/design_catalog_enrichment.md define Pieza 2 (trial-en-jaula +
+      escáneres adoptados). El código (TrialGate/SpawnTrial,
+      src/atlas/mcp/trial_gate.py + spawn_trial.py) existía completo y testeado
+      desde hace tiempo, pero auditoría 2026-07-23 confirmó CERO callers de
+      producción — 777 entradas de catálogo, 0 `probado-en-jaula` para
+      siempre, porque nadie construía un `SpawnTrial` real (el círculo que el
+      operador describió: "cómo lo pruebas si no puedes probarlo si no ha
+      sido probado primero"). `maintenance_mcp_trial_tick` (nuevo,
+      maintenance_facade.py) lo cierra: candidato → probado-en-jaula real,
+      opt-in (ATLAS_MCP_TRIAL=1), lote acotado (5/tick), nunca promueve más
+      allá de probado-en-jaula (verificado/instalado siguen HITL explícito).
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+      - "src/atlas/core/orchestrator.py"
+      - "src/atlas/mcp/spawn_trial.py"
+    acceptance: >
+      Tick registrado en el scheduler real (extra_cycles), guardia
+      anti-recursión + opt-in explícito, test end-to-end real (skill con
+      contenido local limpio se promueve de verdad, sin mocks de TrialGate) +
+      tests de guardias/límites. mypy limpio; suite verde.
+    priority: 2
+    status: done  # 2026-07-23: cableado + hallazgo de seguridad real corregido de
+    # paso — SpawnTrial._probe_jailed solo aislaba en bwrap módulos
+    # atlas.mcp.*; un binario LOCAL de terceros caía a spawn SIN jaula
+    # (exactamente el caso que menos confianza merece). Corregido: jaula
+    # aplica a cualquier comando local, no solo el propio. Test live real
+    # (bwrap de verdad, no mockeado) lo confirma. 87 tests verdes
+    # (mcp_trial_tick+spawn_trial+trial_gate+sentinel_gate+registry_seed+
+    # self_improvement_wiring), mypy limpio en los 5 ficheros tocados.
+
+  - id: t4-catalog-refresh-2026-07
+    title: "Catálogo del tronco refrescado con el registro oficial MCP real (2026-07-23)"
+    why: >
+      El último sembrado real (mcp_seed_registry.py contra
+      registry.modelcontextprotocol.io) era del 2026-07-03 y solo traía 100
+      candidatos (sin paginar). El operador pidió actualizar con lo último de
+      2026.
+    targets:
+      - "src/atlas/mcp/registry_seed.py"
+      - "docs/design/mcp_catalog_seeded.yaml"
+      - "docs/design/mcp_catalog_classified.yaml"
+    acceptance: >
+      RegistrySource pagina de verdad (nextCursor) con tope de seguridad;
+      sembrado + clasificado re-ejecutados contra la red real; catálogo
+      resultante refleja el tamaño real del registro oficial hoy.
+    priority: 3
+    status: done  # 2026-07-23: RegistrySource paginado (4 tests TDD nuevos,
+    # tope max_pages=50 para no colgar indefinidamente ante un registro que
+    # nunca deja de dar cursor). Sembrado real: 2111 candidatos (antes 100),
+    # 50 páginas (tocó el tope de seguridad -- el registro real es aún más
+    # grande; subir el tope es una decisión de coste/tiempo del operador, no
+    # técnica). Clasificado: 2736 entradas totales (antes 777). Enriquecimiento
+    # (Pieza 1, github/npm metadata) probado sobre 300: 0 enriquecidas, 0
+    # aisladas -- honesto, no un bug: los nombres del registro oficial MCP son
+    # identificadores DNS-inversos (p.ej. "ac.inference.sh/mcp"), no slugs de
+    # GitHub/npm reales, así que no hay metadata que traer para la mayoría.
+    # Mapear nombre-de-registro → repo real resoluble queda como deuda
+    # (follow-up, no bug de este cierre).
+
+  - id: t4-workbench-mandatory-hook
+    title: "Hook de mesa de trabajo obligatoria: aviso no bloqueante + hallazgo durable"
+    why: >
+      workbench://manifest (SP-A) ya agregaba catálogo+lecciones+backlog+
+      memoria, pero consultarlo era discrecional -- solo una mención de texto
+      dentro de trunk_prepare(). El operador pidió una obligación estructural
+      (hook), no discrecionalidad del modelo: si no se consulta antes de
+      trabajo sustancial, debe quedar registrado para que un ciclo de
+      auditoría/coldupdate futuro lo revise -- nunca bloquear el prompt.
+    targets:
+      - "src/atlas/mcp/workbench_resources.py"
+      - "src/atlas/mcp/workbench_compliance.py"
+      - "src/atlas/mcp/trunk_server.py"
+      - "scripts/capability_route_hook.py"
+    acceptance: >
+      Cada lectura real de workbench://manifest deja timestamp durable
+      (record_consultation); el hook de routing (Pieza 3, ya se dispara en
+      cada prompt en Claude Code y Cursor) detecta staleness (>30 min sin
+      consulta) y, si stale, imprime un aviso corto + registra un hallazgo
+      JSONL con hash del prompt (nunca texto plano) en
+      workspace/mcp/workbench_compliance_findings.jsonl. Fail-soft total.
+    priority: 2
+    status: done  # 2026-07-23: implementado con TDD (record_consultation,
+    # is_stale/check_and_record en workbench_compliance.py, wiring en
+    # trunk_server.py + capability_route_hook.py). 19 tests nuevos +
+    # smoke-test real de subprocess. Diseño confirmado con el operador
+    # (AskUserQuestion): híbrido de aviso enriquecido + detección, nunca
+    # bloqueo duro. Follow-up NO construido hoy (fuera de alcance de este
+    # cierre): el ciclo de auditoría/coldupdate que CONSUME
+    # workbench_compliance_findings.jsonl para actuar sobre violaciones
+    # repetidas -- hoy el fichero se llena mecánicamente pero nada lo lee
+    # todavía. Registrar como próximo paso si se quiere cerrar el círculo.
+
+  - id: t4-workbench-compliance-review-tick
+    title: "Consumir workbench_compliance_findings.jsonl en un ciclo de auditoría/coldupdate"
+    why: >
+      t4-workbench-mandatory-hook deja hallazgos durables (JSONL,
+      workspace/mcp/workbench_compliance_findings.jsonl) cuando una sesión
+      arranca trabajo sin consultar workbench://manifest -- pero hoy nada
+      LEE ese fichero. Es el mismo patrón "wire-before-claim" que el resto de
+      la auditoría 2026-07-23: el mecanismo de detección existe, falta el
+      consumidor. El operador pidió explícitamente que esto se revise en el
+      próximo ciclo de auditoría o coldupdate.
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+      - "workspace/mcp/workbench_compliance_findings.jsonl"
+    acceptance: >
+      Un tick (o un paso dentro de un ciclo de auditoría ya existente) que
+      lea los hallazgos acumulados, cuente frecuencia/recencia, y decida algo
+      accionable (p.ej. subir la prioridad de "arreglar el detector" si hay
+      demasiados falsos positivos, o simplemente reportar un resumen en
+      WORK_LEDGER.md). Nunca borra el fichero de hallazgos sin que quede
+      constancia de lo que se decidió con ellos.
+    priority: 3
+    status: pending  # 2026-07-23: registrado, no construido -- el operador
+    # pidió explícitamente que esto se revise "en el próximo ciclo de
+    # auditoría o de coldupdate", no en esta misma sesión.
+    # Revisión manual 2026-07-24 (este ciclo): workspace/mcp/workbench_compliance_findings.jsonl
+    # tiene 3 hallazgos, los 3 de HOY mismo (22:09-22:13), todos de mientras se
+    # construía/probaba el propio hook -- sin patrón de violación repetida real
+    # que escalar. No se borra el fichero (evidencia). Sigue pendiente construir
+    # el TICK consumidor automático (esto fue solo la revisión manual pedida).
+
+  - id: t7-fabric-gmail-real-wiring
+    title: "Cablear la cadena Fabric completa: AuthBroker + ConnectorRegistry + GmailReadOnlyConnector"
+    why: >
+      ADR-065 dejó explícito que el conector real de Gmail no estaba
+      conectado a ConnectionTestRunner/mode=real "para no ampliar el
+      alcance... queda para una tarea posterior explícita". La auditoría
+      2026-07-23 encontró la cadena entera (AuthBroker/ConnectorRegistry/
+      GmailReadOnlyConnector) con 0 callers de producción. El operador
+      decidió explícitamente 2026-07-24 cablear la cadena COMPLETA (no PARK).
+    targets:
+      - "src/atlas/fabric/testing.py"
+      - "src/atlas/fabric/auth_broker.py"
+      - "src/atlas/fabric/registry.py"
+      - "src/atlas/api/product_routes.py"
+      - "src/atlas/interfaces/cli.py"
+    acceptance: >
+      ConnectionTestRunner.test("gmail", mode="real") exige una referencia
+      AuthBroker real (no env var hardcodeado), verifica el descriptor vía
+      ConnectorRegistry (TOFU + rug-pull fail-closed sin tocar red), y solo
+      entonces llama a GmailReadOnlyConnector real. Callers de producción:
+      POST /connections/credential-reference, POST /connections/test
+      (product_routes.py) y `atlas connections credential-reference` /
+      `atlas connections test --mode real` (CLI).
+    priority: 1
+    status: done  # 2026-07-24: cerrado. tests/test_os_fabric.py (5 tests
+    # reales: bloqueo sin referencia, éxito con referencia+red mockeada,
+    # TOFU auto-aprueba, rug-pull bloquea SIN tocar red, error del conector
+    # se reporta), tests/test_os_product_api.py (endpoint HTTP E2E),
+    # tests/test_cli_connections_credential.py (CLI E2E). mypy limpio.
+    # ADR-065 y atlas_ecosystem_map.md actualizados (fila ahora ACTIVO).

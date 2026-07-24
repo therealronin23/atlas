@@ -1,6 +1,9 @@
 # OSM-042 — Shadow Model: defensa activa + honeypot pasivo/activo + red team dual-use
 
-Fecha: 2026-06-17 · Estado: **Absorbida** (2026-06-18) ·
+Fecha: 2026-06-17 · Estado: **Promovida a ADR-074** (2026-07-24, Fase 1 del
+plan de implementación de abajo: ShadowRouter + DriftTripwire + ShadowModel
+cableados en producción real, con Cónclave real convocado primero. Fase 2
+(red team) y Fase 4 (honeypot standalone) siguen sin construir) · Absorbida (2026-06-18) ·
 Origen: sesión 2026-06-17 — extensión natural de la capa 2 (output inspection) y de
 OSM-028 (inspección por causa) · Contexto: `src/atlas/security/` (nuevo módulo),
 `src/atlas/transparency/client_cosign.py` (`InspectionRecord.decision`),

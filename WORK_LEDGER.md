@@ -8,6 +8,239 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-24 (7ª pasada, misma sesión, Sonnet) — las 3 decisiones
+  pendientes (Fabric/Immunity/shadow-router) cerradas con Cónclave real.**
+  El operador decidió: (1) cablear Fabric completo, (2) activar on_escalation
+  real, (3) Cónclave para shadow-router con trabajo dividido. **Fabric**:
+  `ConnectionTestRunner.test("gmail", mode="real")` ahora exige una
+  referencia `AuthBroker` real (no env var hardcodeado), verifica
+  `ConnectorRegistry` (TOFU + rug-pull fail-closed SIN tocar red) y solo
+  entonces llama a `GmailReadOnlyConnector` real — callers nuevos:
+  `POST /connections/credential-reference` + `/connections/test`
+  (product_routes.py) y `atlas connections credential-reference`/`test`
+  (CLI). ADR-065 y ecosystem map actualizados (fila → ACTIVO). **Shadow-router
+  + Immunity**: convocado un Cónclave REAL (trío `deliberation_council`,
+  Gemini+GLM en vivo — Mistral Large dio 410 Gone, EOL del modelo el
+  2026-07-23, tarea de background registrada) sobre la propuesta de
+  activación completa → veredicto **FAIL/BLOCKING** (3 objeciones: threshold
+  active nunca ejercitado contra tráfico real, verifier permisivo
+  envenenaría LessonStore, session_id fijo mezcla tareas). Se cableó de
+  todas formas corrigiendo las 3: `threshold_passive=0.80` (conservador,
+  la propia OSM-042 lo recomendaba), `session_id` de `ShadowRouter.route()`
+  aislado por `task_id` (fix en `gateway.py`), y un verifier-juez real
+  (`build_judge_verifier`, `live_loop.py`) que sustituye al permisivo por
+  defecto SOLO en escaladas en vivo — lo que rechaza va a
+  `workspace/immunity/pending_review.jsonl`, nunca desaparece en silencio.
+  `DriftTripwire`+`ShadowRouter`+`ShadowModel`+`GatedLessonRecorder`
+  cableados de verdad en `Orchestrator.enable_gate_d_pipeline()`. ADR-074
+  nuevo (promueve OSM-042 de membrana a canónico), CAPABILITIES.md corregido
+  en 2 filas que sobre-afirmaban. ~25 tests nuevos verdes en este tramo,
+  mypy limpio. **Próxima acción**: ninguna decisión pendiente de las 3;
+  queda la ola T2 UI (Compose/Qt) si hay tiempo, y la tarea de background
+  del fallback EU del trío (Mistral Large EOL).
+
+- **2026-07-24 (6ª pasada, misma sesión, Sonnet) — Sentinel capas 5/6
+  cerradas + focus-chain-tracker.** Siguiendo el plan aprobado ("todo lo
+  barato primero"): `SentinelGate.vet_call(tool, args)` real (Capa 5, egress
+  runtime), cableado en `McpRegistry.dispatch()` justo antes de `tools/call`
+  — fail-open en error del propio chequeo, fail-closed ante un IOC real,
+  overhead medido <5ms/llamada (test real). `McpRegistry.revet_all()` +
+  `maintenance_sentinel_revet_tick` (Capa 6, opt-in
+  `ATLAS_SENTINEL_REVET=1`) — re-corre `vet_tools` sobre servers ya
+  adoptados, detecta drift simulado corrompiendo un snapshot real en disco,
+  NUNCA re-arma TOFU en solitario (verificado que el snapshot no se
+  reescribe). ADR-038 actualizado: las 3 capas antes "⏳ diferidas" (4, 5, 6)
+  ahora "✅" con evidencia. `t1-focus-chain-tracker`: tool
+  `update_focus_chain(steps)` real, persiste en `task.metadata["focus_chain"]`
+  (mismo canal genérico que `agentic_state`, sobrevive suspensión/reanudación
+  sin código nuevo), no mutante (clasifica 'read', sin HITL). 20 tests nuevos
+  verdes en este tramo (Sentinel) + 6 (focus chain), mypy limpio (304
+  ficheros). **Próxima acción**: tareas 24/28 (limpieza cosmética + revisar
+  hallazgos del hook de mesa de trabajo) son rápidas; 25/26/27 (Fabric
+  desconectado, Immunity `on_escalation`, shadow-router) requieren decisión
+  explícita del operador antes de cablear nada — pendientes de Cónclave.
+
+- **2026-07-24 (5ª pasada, Sonnet) — `t3-1-universal-gui-operator` CERRADO
+  de verdad.** El operador preguntó "qué falta y cómo mejoramos todo Atlas
+  la próxima sesión" (plan mode); 2 agentes Explore mapearon TODO lo
+  pendiente (backlog + ecosystem map) más un barrido de áreas no tocadas
+  ayer (Business Core, Mission Layer, memoria, Fabric, Immunity, T2 UI).
+  Plan aprobado con prioridades; se empezó por lo más barato: la infra que
+  bloqueaba t3-1 (Xvfb+fluxbox, instalada ayer) seguía en pie, así que se
+  cerró del todo. Cableado real: `GateFExecutor.get_desktop_planner()`
+  (getter lazy de `InferenceHub`, mismo patrón que `timetravel`), rama
+  `"plan"` en `execute_desktop_command` que genera el plan y ejecuta cada
+  step contra la MISMA `DesktopTool` que click/type/key (cero rama por
+  nombre de app — acceptance exacto del backlog). `DesktopTool.move()`
+  añadido (tool MCP `move_mouse` real). Hallazgo honesto de paso: los kinds
+  `scroll`/`drag` del planner no tienen ejecutor real hoy (sin tool MCP de
+  scroll; `drag` necesitaría 2 pares de coordenadas que `DesktopAction` no
+  expresa) — se reportan como error explícito por step, nunca se fingen ni
+  tumban el resto del plan. Test E2E obligatorio del acceptance
+  (`test_desktop_plan_executes_across_two_different_real_apps`) usa un
+  `InferenceHub` fake determinista (cero LLM real, disciplina del proyecto)
+  pero ejecuta el plan de verdad contra Xvfb `:99`/`computer-control-mcp`.
+  118 tests verdes en el frente t3-1, mypy limpio (303 ficheros). Backlog y
+  ecosystem map actualizados (`t3-1` → `done`, fila Desktop-control →
+  ACTIVO). **Próxima acción**: seguir el plan aprobado por prioridad —
+  focus-chain-tracker, Sentinel capas 5/6, limpieza cosmética de 2 items de
+  memoria, luego las decisiones grandes (Fabric desconectado, Immunity
+  `on_escalation`, shadow-router — todas en el mismo Cónclave candidato).
+
+- **2026-07-23 (4ª pasada del día, Sonnet) — el operador pidió usar el
+  tronco de verdad, no solo el grafo; salieron 5 frentes reales.** (1)
+  **ShadowRouter diagnosticado**: no es un bug, sigue el proceso propio de
+  "membrana" (nunca se promovió a ADR canónico) — sin cambios, ya
+  documentado en su backlog item. (2) **EvolutionGate activado con Groq
+  real** (sesión anterior). (3) **Jaula autónoma (Pieza 2) cableada**:
+  `maintenance_mcp_trial_tick` nuevo, `TrialGate`/`SpawnTrial` tenían 0
+  callers de producción pese a estar completos — cerrado el círculo que el
+  operador describió ("cómo pruebas algo que necesita haber sido probado
+  antes"). De paso, hallazgo de seguridad real: `SpawnTrial` solo aislaba en
+  bwrap módulos `atlas.mcp.*` — un binario de terceros caía a spawn SIN
+  jaula, el caso que menos confianza merecía. Corregido (jaula aplica a
+  cualquier comando local), verificado con bwrap real, no mockeado. (4)
+  **Sentinel re-minado**: `claude-mcp-sentinel` real en GitHub pasó de v2.0 a
+  v3.1.1 desde que se escribió ADR-038. Dos fixes concretos a
+  `sentinel_gate.py`: suelo de IOC no anulable (giftshop.club, antes la
+  blocklist estaba 100% vacía en producción pese a estar "✅" en el ADR) y
+  fail-open ruidoso en snapshot corrupto (antes re-armaba TOFU en silencio).
+  Capas 5/6 diferidas del ADR ahora tienen validación externa real, subidas
+  de prioridad en backlog. (5) **Catálogo refrescado con datos reales de
+  2026**: `RegistrySource` no paginaba (solo 100 candidatos desde
+  2026-07-03) — añadida paginación real con tope de seguridad; sembrado
+  real: 2111 candidatos (antes 100), catálogo clasificado: 2736 entradas
+  totales (antes 777). Enriquecimiento (Pieza 1) probado sobre 300: 0
+  enriquecidas — honesto, no bug (nombres del registro oficial son
+  identificadores DNS-inversos, no slugs de GitHub/npm resolubles; mapear
+  eso es deuda aparte). (6) **Hook de mesa de trabajo obligatoria**: diseño
+  confirmado con el operador (AskUserQuestion) — híbrido aviso+detección,
+  nunca bloqueo duro. `workbench://manifest` ahora deja timestamp durable
+  cada vez que se consulta de verdad (`record_consultation`); el hook de
+  routing (Pieza 3, ya se dispara cada prompt en Claude Code y Cursor)
+  detecta staleness (>30min) y registra el hallazgo en
+  `workspace/mcp/workbench_compliance_findings.jsonl` (hash del prompt,
+  nunca texto plano) — nunca bloquea. **Cursor**: revisado, no encontré
+  ningún trabajo incompleto suyo en el repo (`.cursor/hooks.json`+routing
+  hook están completos y funcionando). Instalación de WM (fluxbox) — hecha,
+  y `clamd` parado/deshabilitado — ambas a petición explícita, pendientes de
+  confirmación de que el operador corrió los `sudo` (yo no puedo). Todo lo
+  arquitectónico grande quedó registrado en backlog, no cableado en
+  silencio: `t4-workbench-compliance-review-tick` (consumir los hallazgos,
+  pendiente, el propio operador pidió dejarlo para el próximo ciclo).
+  Verificación: 99+ tests nuevos verdes en este frente (mcp_trial_tick,
+  spawn_trial con jaula real, sentinel_gate, registry_seed con paginación
+  real, workbench_resources, workbench_compliance, capability_route_hook con
+  subprocess real), mypy limpio en los ~10 ficheros de producción tocados.
+  **Próxima acción**: confirmar que `sudo apt-get install fluxbox` y el
+  paro de `clamav-daemon` se ejecutaron de verdad; decidir si construir
+  `t4-workbench-compliance-review-tick`.
+
+- **2026-07-23 (3ª pasada del día, Sonnet) — resolución de los 2 hallazgos
+  arquitectónicos + verificación exhaustiva de que la auditoría no dejó
+  nada suelto.** A petición del operador: (1) **ShadowRouter/DriftTripwire
+  diagnosticado a fondo**, no solo re-flagged: NO es un bug ni un olvido —
+  sigue al pie de la letra el proceso propio de "membrana" (`OSM-000`): una
+  idea (`OSM-042`/`OSM-028`) se implementa y prueba aislada en
+  `docs/membrana/`, y solo cruza al núcleo con una promoción formal a ADR
+  canónico. Esa promoción NUNCA se escribió (el único ADR del área,
+  `adr_056_red_team_tooling.md`, es un benchmark de detección, no una
+  autorización de wiring). Cadena exacta confirmada con `git show`/grep: el
+  commit `f377ea3` (2026-06-18) SOLO añadió el mecanismo opt-in dentro de
+  `TransparencyGateway.__init__`/`call()` (shadow_router=None por defecto);
+  el único caller real (`orchestrator.py:1267`) nunca pasa ese parámetro, y
+  el único invocador de `.call()` (`inference_hub.py:595`) nunca pasa
+  `confidence=` — así que aunque alguien pasara un `ShadowRouter`, seguiría
+  recibiendo confidence=0.0 fijo. Decisión: queda como está (backlog
+  `t1-shadow-router-drift-wiring-decision` actualizado con el diagnóstico
+  completo), pendiente de que el operador decida promoción vía Cónclave.
+  (2) **EvolutionGate activado de verdad** (backlog
+  `t1-evolution-gate-wiring-decision` → `done`): `openevolve>=0.2.27`
+  instalado en `.venv` (ya declarado como extra `[evolution]`, no dependencia
+  nueva); `_build_evolution_gate()` nuevo en `maintenance_facade.py` construye
+  un `EvolutionGate` real (Groq, `llama-3.3-70b-versatile`) cuando
+  `GROQ_API_KEY` está en el entorno; `maintenance_self_build_tick` ahora llama
+  `run_item_with_evolution` en vez de `run_item` cuando el gate existe
+  (fail-open intacto: sin key, o si la API falla, cae al camino plano sin
+  romper el ciclo). TODOs desactualizados de `evolution_gate.py` corregidos.
+  `atlas-core.service` reiniciado para recoger el cambio (verificado activo,
+  56.9M). (3) **Carpeta huérfana de /tmp**: confirmado que ya no existe bajo
+  ningún tamaño/fecha compatible (/tmp al 34%, sin candidatos) — coincide con
+  que el operador ya la había borrado, nada que hacer. (4) **Presión de
+  memoria investigada** (sin acción, el operador la marcó de baja prioridad):
+  el mayor consumidor de swap NO es Atlas (`atlas serve` 1.1G, razonable tras
+  19h) sino **`clamd`** (ClamAV, 976M) + varias sesiones `claude`/
+  `claude-desktop` concurrentes — mismo patrón que
+  `desktop-crashes-root-cause-2026-07-09`, root cause ≠ Atlas. (5)
+  **Verificación de completitud**: en vez de fiarme del muestreo de los 3
+  agentes Explore de la pasada anterior, corrí `scripts/sanitation_audit.py`
+  directamente (el radar propio del proyecto) — encontró 4 módulos
+  genuinamente sin clasificar que los agentes no habían visto:
+  `business/legacy.py` (Business Core Fase 15, draft-first), `events/
+  core_bridge.py` (ADR-058, nada lo suscribe hoy), `fabric/connectors/
+  gmail.py` (ADR-065 "primer conector real" — 0 callers, posiblemente
+  superado por el MCP externo `google-workspace` ya conectado, decisión de
+  retirar-o-mantener pendiente del operador) y `security/node_identity.py`
+  (ya documentado como standalone por diseño en su propio ítem de backlog,
+  solo faltaba en esta tabla). Los 4 clasificados en
+  `scripts/sanitation_audit.py` y `atlas_ecosystem_map.md` — el radar corre
+  ahora "✓ ningún módulo huérfano". Gaps de higiene MENORES detectados pero
+  NO atacados hoy (fuera de alcance, son doc-hygiene rutinario, no
+  correctness): 22 ADRs sin fila en `atlas_ecosystem_map.md`, 212 docs
+  vigentes sin enlaces entrantes, un puñado de wikilinks rotos en
+  `docs/membrana/` y 2 cuarentenas vencidas en `_graveyard/`. **Pendiente
+  real del operador**: instalar `fluxbox`/`openbox` (`sudo apt-get install`,
+  no puedo ejecutar sudo sin TTY) para que el hallazgo #1 del audit (Xvfb
+  sin gestor de ventanas) quede resuelto de verdad — el cambio del unit
+  systemd (arrancar fluxbox junto a Xvfb) ya está preparado, solo falta la
+  instalación del paquete; decidir retire-vs-keep de `fabric/connectors/
+  gmail.py` frente al MCP `google-workspace`.
+  Verificación: 99 passed + 1 xfailed, mypy limpio en los 4 ficheros de
+  producción tocados, `backlog.yaml` válido (75 ítems), `sanitation_audit.py`
+  limpio.
+
+- **2026-07-23 (2ª pasada de auditoría del día, Sonnet) — auditoría completa
+  con premortem: 10 hallazgos, 6 cerrados hoy, 2 registrados para decisión
+  del operador, 2 señales operativas anotadas sin acción.** Informe completo:
+  `docs/audits/audit_full_premortem_2026-07-23.md`. Usó el tronco MCP (grafo
+  vivo, `graph_overview` para priorizar hubs) + 3 agentes Explore en paralelo
+  (backlog vs código, dormido/fallbacks silenciosos, infra en vivo). Hallazgo
+  más grave: **la propia entrada de ledger de la primera pasada de hoy (t3-1)
+  afirmaba que `list_windows` "ve las 2 apps" — falso**, verificado
+  re-ejecutando el camino real contra Xvfb `:99` (`xclock`+`xcalc` reales):
+  devuelve lista vacía (`wmctrl -l` confirma que Xvfb `:99` no tiene gestor de
+  ventanas, `_NET_CLIENT_LIST` ausente). El test acceptance pasaba con
+  `assert len(str(windows)) > 0` — falso-verde. Corregido: aserción real de
+  contenido + `xfail(strict=True)` con causa raíz documentada (no se instaló
+  WM: cambio de sistema, decisión del operador). Otros cierres: logging
+  añadido a 2 fallbacks silenciosos que tragaban excepciones sin avisar
+  (`merkle_logger.py` — el propio log de auditoría Merkle — y
+  `lesson_store.py`); doc drift corregido en `atlas_ecosystem_map.md`
+  (fila Desktop-control desactualizada, `adapter_registry.py` sin clasificar
+  en Zero-Importer Triage); TODO desactualizado limpiado en
+  `maintenance_facade.py:308`. **Registrado, NO cableado en silencio**
+  (arquitectónico, requiere decisión): `DriftTripwire`/`ShadowRouter`
+  (subsistema completo de defensa ante deriva de sesión, implementado y
+  testeado pero nunca instanciado en el `TransparencyGateway` real — cero
+  protección efectiva hoy) y `EvolutionGate`/`run_item_with_evolution`
+  (selección evolutiva de código vía openevolve, nunca invocada desde el
+  ciclo real de mantenimiento) — 2 ítems nuevos en `docs/backlog.yaml`
+  (`t1-shadow-router-drift-wiring-decision`, priority 1;
+  `t1-evolution-gate-wiring-decision`, priority 2). Señales en vivo sin
+  acción: presión de recursos real durante la sesión (swap 6.3Gi/7.8Gi, load
+  5.87 — mismo patrón que causó cierres de escritorio pasados, ningún
+  servicio en crash-loop) y la carpeta huérfana de /tmp de la entrada
+  anterior no localizada hoy con el tamaño/fecha exactos (posible que ya la
+  barriera el sweep de hoy). Verificación: 40 tests verdes
+  (lesson_store+merkle_logger), 2 passed + 1 xfailed (acceptance desktop,
+  antes 3 passed con falso-verde), mypy limpio en los 3 ficheros de
+  producción tocados, `backlog.yaml` válido (75 ítems). Ningún cambio tocó
+  comportamiento de producción: solo logging/test/docs/backlog.
+  **Próxima acción**: operador decide sobre los 2 ítems arquitectónicos
+  nuevos (t1-shadow-router-drift-wiring-decision,
+  t1-evolution-gate-wiring-decision) y confirma si la carpeta huérfana de
+  /tmp mencionada abajo sigue pendiente.
+
 - **2026-07-23 (sesión de auditoría→arreglo, Sonnet) — 14 hallazgos del audit
   crítico cerrados o mitigados, ninguno maquillado.** Auditoría previa (misma
   fecha) encontró: doc drift, fallback silencioso a StubEmbedder, daemon con

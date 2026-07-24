@@ -68,8 +68,17 @@
   tocar la red, llamada real con header Bearer verificado, exclusión de
   `email.send` de `capabilities()`, y no-filtración del token en salidas
   de éxito y de error (401 simulado).
-- Este conector NO se conecta todavía a `ConnectionTestRunner`/
-  `mode=real` (`src/atlas/fabric/testing.py`) — ese cableado (y decidir si
-  `HealthMonitor` pasa a reportar `CONNECTED` real en vez de simulado)
-  queda para una tarea posterior explícita, para no ampliar el alcance de
-  esta pieza sensible más allá de lo que el Cónclave decidió.
+- **Addendum (2026-07-24)** — la tarea posterior explícita se ejecutó: el
+  operador decidió cablear la cadena COMPLETA. `ConnectionTestRunner.test(
+  connector_id="gmail", mode="real")` ahora exige una referencia de
+  credencial registrada en `AuthBroker` (nunca lee `os.environ` a ciegas),
+  verifica el descriptor de capacidades contra `ConnectorRegistry` (TOFU en
+  el primer éxito real, bloqueo fail-closed sin tocar red si el descriptor
+  cambió tras la aprobación) y solo entonces llama a
+  `GmailReadOnlyConnector.list_messages()`. `HealthMonitor` reporta
+  `CONNECTED`/`ERROR`/`DEGRADED` con `simulated=False` en este camino.
+  Callers de producción nuevos: `POST /connections/credential-reference` +
+  `POST /connections/test` (`atlas.api.product_routes`) y
+  `atlas connections credential-reference` / `atlas connections test
+  --mode real` (CLI). Ver `tests/test_os_fabric.py`,
+  `tests/test_os_product_api.py`, `tests/test_cli_connections_credential.py`.
