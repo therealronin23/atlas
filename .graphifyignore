@@ -68,6 +68,12 @@ docs/outreach/paper/paper_subject_enforced_completeness.pdf
 # extraerlo re-inyecta ruido histórico al grafo semántico (misma ola).
 docs/archive/_graveyard/
 
+# 500KB (2026-07-24, ADR-075 etapa 1) — reporte JSONL de pre-screen estático
+# sobre los 2111 candidatos sembrados (routing por transporte + severidad de
+# tool-poisoning), regenerado por scripts/mcp_stage1_triage.py. Dato tabular
+# puro, máquina-generado, mismo criterio que mcp_catalog_seeded.yaml.
+docs/design/mcp_catalog_stage1_triage.jsonl
+
 # Pack de sucesión GENERADO: proyección de fuentes que YA se ingieren por
 # separado (AGENTS.md, master plan, actor_roles, bloque WHERE del ledger).
 # Ingerirlo duplica conceptos en el grafo semántico — mismo criterio que los
