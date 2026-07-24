@@ -13,6 +13,11 @@
 # 195KB — catálogo MCP clasificado, dato tabular puro.
 docs/design/mcp_catalog_classified.yaml
 
+# ~1MB (2026-07-23: RegistrySource paginado de verdad contra el registro
+# oficial MCP, 100 -> 2111 candidatos crudos). Dato tabular puro,
+# máquina-generado, sin prosa.
+docs/design/mcp_catalog_seeded.yaml
+
 # ~100KB (cruzó el umbral 2026-07-23 tras 29 ítems nuevos de T0.5b paso 3).
 # A diferencia de los demás ficheros de esta lista, SÍ tiene prosa real
 # (why/acceptance por ítem) — pero el límite es técnico (truncado a 4096
