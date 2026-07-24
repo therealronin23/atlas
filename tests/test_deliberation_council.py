@@ -266,6 +266,23 @@ def test_build_trio_prefers_primary_over_fallback_when_both_available():
     assert provs == {"gemini_free", "nvidia_glm", "nvidia_mistral_large"}
 
 
+def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
+    """Fix 2026-07-24: el hub de cada reviewer lleva la lista ORDENADA de
+    proveedores del MISMO linaje (no solo el primario), para que InferenceHub
+    casque en caliente si el primario tiene key pero su llamada falla
+    (resp.success=False). Antes solo caía a fallback si faltaba la key en el pool,
+    dejando el slot muerto ante un proveedor keyed-pero-caído (Mistral EU 410,
+    NVIDIA rate-limit). La etiqueta `.provider` sigue siendo el primario (la
+    diversidad del trío se mide por linaje, no por vendor de hosting)."""
+    from atlas.core.deliberation_council import build_trio_reviewers
+
+    trio = build_trio_reviewers()  # pool completo
+    us = next(r for r in trio if r.provider == "gemini_free")
+    cn = next(r for r in trio if r.provider == "nvidia_glm")
+    assert [p.name for p in us._hub._providers] == ["gemini_free", "groq_llama_70b"]
+    assert [p.name for p in cn._hub._providers] == ["nvidia_glm", "groq_qwen3"]
+
+
 # ---------------------------------------------------------------------------
 # v2.1 — debate por rondas (opt-in, rounds>1)
 # ---------------------------------------------------------------------------

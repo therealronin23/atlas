@@ -135,14 +135,21 @@ def build_trio_reviewers(providers: list[Provider] | None = None) -> list[Review
     out: list[Reviewer] = []
     for name in _TRIO_NAMES:
         lineage = _TRIO_LINEAGE_FALLBACKS.get(name, (name,))
-        p = None
-        for candidate in lineage:
-            p = pool.get(candidate)
-            if p is not None:
-                break
-        if p is None:
+        # Toda la lista de linaje disponible, EN ORDEN (primario primero). El hub
+        # multi-proveedor de InferenceHub casca en caliente: si el primario tiene
+        # key pero su llamada falla (resp.success=False -- Mistral EU 410, NVIDIA
+        # rate-limit), pasa al siguiente DEL MISMO linaje. Antes se pasaba solo
+        # [primario], así que un proveedor keyed-pero-caído mataba el slot sin
+        # recuperación. Nunca cruza de linaje (romper la ortogonalidad anula la
+        # señal de desacuerdo). La etiqueta es el primario: la diversidad se mide
+        # por linaje, no por vendor de hosting.
+        available = [pool[c] for c in lineage if c in pool]
+        if not available:
             continue
-        out.append(LlmReviewer(p.name, p.name, InferenceHub(providers=[p]), p.level))
+        primary = available[0]
+        out.append(
+            LlmReviewer(primary.name, primary.name, InferenceHub(providers=available), primary.level)
+        )
     return out
 
 
