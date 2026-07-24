@@ -43,7 +43,12 @@ _CLASSIFIED_ZERO_IMPORTERS = {
     "src/atlas/core/incremental_coder.py": "PARK tested coding workflow; no runtime owner in current slice",
     "src/atlas/core/history_compactor.py": "PARK standalone context utility; caller-owned",
     "src/atlas/core/token_budget.py": "PARK standalone context utility; caller-owned",
-    "src/atlas/immunity/live_loop.py": "PARK gated hook adapter; no hot-path owner enabled",
+    # 2026-07-24 (ADR-074): GatedLessonRecorder + build_judge_verifier SÍ se
+    # importan y construyen en producción dentro de Orchestrator.enable_gate_d_pipeline()
+    # (import DIFERIDO dentro de la función -- por eso el escáner estático de
+    # imports a nivel de módulo no lo ve; esta tabla es justo el mecanismo para
+    # corregir ese punto ciego). Dueño real en hot-path cuando ATLAS_PIPELINE_GATE_D=1.
+    "src/atlas/immunity/live_loop.py": "KEEP GatedLessonRecorder/build_judge_verifier wired in enable_gate_d_pipeline (ADR-074, deferred import)",
     # 2026-07-08: preflight_gate, batch_premortem, root_cause_classifier y
     # failure_lesson_sink dejaron de ser 0-importer — cableados en producción
     # (orchestrator.cold_update / maintenance_facade). Ver WORK_LEDGER.md.
