@@ -242,8 +242,8 @@ def test_build_trio_uses_lineage_fallback_when_primary_missing():
 
 
 def test_build_trio_slot_empty_when_no_fallback_available():
-    """EU (nvidia_mistral_large) no tiene fallback no-NIM vivo confirmado — si
-    falta, el slot queda vacío (comportamiento ya existente, no se inventa uno)."""
+    """Si el pool no tiene NI el primario NI el fallback de un linaje, el
+    slot queda vacío (comportamiento ya existente, no se inventa uno)."""
     from atlas.core.deliberation_council import build_trio_reviewers
     from atlas.core.inference_hub import DEFAULT_PROVIDERS
 
@@ -255,6 +255,25 @@ def test_build_trio_slot_empty_when_no_fallback_available():
     provs = {r.provider for r in trio}
     assert "nvidia_mistral_large" not in provs
     assert len(trio) == 2
+
+
+def test_build_trio_eu_uses_openrouter_mistral_fallback_when_nvidia_missing():
+    """Hueco EU cerrado 2026-07-24: nvidia_mistral_large (NIM) da 410 Gone
+    (EOL); openrouter_mistral_large (mistralai/mistral-large-2512, prove-it
+    en vivo real contra OpenRouter, provider real 'Mistral') es el fallback
+    del MISMO linaje EU -- nunca se cruza a otro."""
+    from atlas.core.deliberation_council import build_trio_reviewers
+    from atlas.core.inference_hub import DEFAULT_PROVIDERS
+
+    pool = [
+        p for p in DEFAULT_PROVIDERS
+        if p.name in {"gemini_free", "nvidia_glm", "openrouter_mistral_large"}
+    ]
+    trio = build_trio_reviewers(providers=pool)
+    provs = {r.provider for r in trio}
+    assert "openrouter_mistral_large" in provs
+    assert "nvidia_mistral_large" not in provs
+    assert len(trio) == 3
 
 
 def test_build_trio_prefers_primary_over_fallback_when_both_available():

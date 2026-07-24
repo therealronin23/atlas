@@ -437,6 +437,25 @@ DEFAULT_PROVIDERS: list[Provider] = [
         account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
         roles=("chat",),  # LiveCodeBench débil (0.465) vs Mistral Medium 3.5 — no "edit"
     ),
+    # 2026-07-24: fallback de linaje EU para el trío del Cónclave --
+    # nvidia_mistral_large (NIM) daba 410 Gone (EOL). Prove-it en vivo real
+    # contra OpenRouter: mistralai/mistral-large-2512, provider real
+    # "Mistral" (directo, no proxy), respuesta OK, coste real ~$0.00001/call.
+    # Mismo linaje EU (Mistral), no cruza a otro (ver
+    # deliberation_council._TRIO_LINEAGE_FALLBACKS).
+    Provider(
+        name="openrouter_mistral_large",
+        level=InferenceLevel.L2,
+        base_url="https://openrouter.ai/api/v1",
+        model_id="mistralai/mistral-large-2512",
+        litellm_model="openrouter/mistralai/mistral-large-2512",
+        api_key_env="OPENROUTER_API_KEY",
+        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        free_tier=False,
+        rpm_limit=20,
+        context_tokens=262144,
+        roles=("chat",),
+    ),
     # 2026-06-28: nvidia_glm RETIRADO — prove-it en vivo confirma HTTP 410 Gone
     # (mismo patrón que qwen3_coder). Reintentar si aparece GLM-5.2 en este tier.
     #

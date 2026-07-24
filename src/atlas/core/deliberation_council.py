@@ -110,13 +110,14 @@ _TRIO_NAMES = ("gemini_free", "nvidia_glm", "nvidia_mistral_large")
 # de linaje (cruzar linajes rompe la ortogonalidad que hace útil el desacuerdo).
 # 🇺🇸 US: gemini_free (primary) -> groq_llama_70b (fallback, confirmado vivo).
 # 🇨🇳 CN: nvidia_glm (primary) -> groq_qwen3 (fallback, confirmado vivo).
-# 🇪🇺 EU: nvidia_mistral_large SIN fallback no-NIM vivo confirmado — MISTRAL_API_KEY
-#         no está configurada y no hay un ID de OpenRouter verificado para Mistral
-#         Large; hueco real, documentado aquí a propósito (no se fabrica uno falso).
+# 🇪🇺 EU: nvidia_mistral_large (NIM) -> openrouter_mistral_large (fallback,
+#         prove-it en vivo real 2026-07-24 contra OpenRouter: mistralai/
+#         mistral-large-2512, provider real "Mistral" directo -- cierra el
+#         hueco EU que quedó documentado en ADR-074/075).
 _TRIO_LINEAGE_FALLBACKS: dict[str, tuple[str, ...]] = {
     "gemini_free": ("gemini_free", "groq_llama_70b"),
     "nvidia_glm": ("nvidia_glm", "groq_qwen3"),
-    "nvidia_mistral_large": ("nvidia_mistral_large",),
+    "nvidia_mistral_large": ("nvidia_mistral_large", "openrouter_mistral_large"),
 }
 
 
