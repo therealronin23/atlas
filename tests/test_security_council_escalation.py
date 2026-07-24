@@ -90,6 +90,21 @@ def test_trio_unknown_does_not_clear_flagged_fail_closed() -> None:
     assert result.status == "flagged"
 
 
+def test_offensive_action_convene_none_fails_closed_even_if_first_pass_clean() -> None:
+    """Hallazgo de auditoría de seguridad (2026-07-24): si should_convene()
+    cambia en el futuro y deja de escalar offensive_action (convene_fn
+    devuelve None), NO debe degradar en silencio a 'solo el auditor único
+    decidió' -- eso rompería la garantía 'offensive_action SIEMPRE tiene
+    segunda opinión' sin que nadie lo note. Fail-closed: sin segunda
+    opinión disponible para offensive_action, se trata como flagged."""
+    def convene(descriptor: str) -> Evidence | None:
+        return None
+
+    result = resolve_council_verdict(kind="offensive_action", first_pass=_CLEAN, descriptor="x", convene_fn=convene)
+    assert result.status == "flagged"
+    assert "segunda opinión" in result.report.triggered_by.lower() or "trío" in result.report.triggered_by.lower()
+
+
 def test_convene_declined_by_gating_keeps_first_pass() -> None:
     """should_convene() puede devolver False -> convene_for_decision devuelve
     None -- no hay segunda opinión disponible, la primera pasada es la final."""

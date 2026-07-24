@@ -41,6 +41,27 @@ def resolve_council_verdict(
 
     evidence = convene_fn(descriptor)
     if evidence is None:
+        if kind == "offensive_action":
+            # offensive_action tiene la garantía de SIEMPRE recibir segunda
+            # opinión (consecuencias externas irreversibles). Si por algún
+            # cambio futuro en should_convene() la escalada no está
+            # disponible, no se degrada en silencio a "decidió solo el
+            # auditor único" -- fail-closed (hallazgo de auditoría de
+            # seguridad, 2026-07-24).
+            prior_checks = list(first_pass.report.checks_run) if first_pass.report else []
+            return CouncilVerdict(
+                status="flagged",
+                report=SecurityReport(
+                    severity=Severity.MAJOR,
+                    checks_run=[*prior_checks, "council_trio:unavailable"],
+                    triggered_by=(
+                        "offensive_action requiere segunda opinión real del "
+                        "trío; no disponible -- fail-closed, no se resuelve "
+                        "solo con el auditor único"
+                    ),
+                    recommended_action="revisar manual -- el trío no pudo convocarse",
+                ),
+            )
         # should_convene() decidió que esto no ameritaba escalar -- sin
         # segunda opinión disponible, la primera pasada es la final.
         return first_pass
