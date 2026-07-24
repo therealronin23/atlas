@@ -1,9 +1,8 @@
-# ADR-077 — Cónclave de seguridad universal: rechazo permanente + escalada con informe (Propuesto)
+# ADR-077 — Cónclave de seguridad universal: rechazo permanente + escalada con informe (Propuesto, revisado por Cónclave)
 
-- Estado: **Propuesto** — diseño completo, sin código todavía. Recomienda una
-  revisión de Cónclave ligera antes de implementar (ver "Antes de construir"),
-  no por debilitar un invariante (no toca ninguno) sino porque envuelve el
-  seam del Decider para TODOS los `kind`, superficie amplia.
+- Estado: **Propuesto** — diseño revisado por un Cónclave real (ver
+  "Revisión de Cónclave" abajo: 4 objeciones concretas incorporadas), listo
+  para implementar con TDD. Sin código todavía.
 - Origen: petición explícita del operador (2026-07-24) tras la auditoría de
   ADR-076/ADR-036 que encontró que `RequiresHuman` es hoy inalcanzable en
   producción y que hay reintentos en bucle contra candidatos ya rechazados.
@@ -149,36 +148,109 @@ código por dominio.
   MÁS barato y de una sola voz -- es triaje rutinario por acción, no
   deliberación de gobernanza.
 
+## Revisión de Cónclave (2026-07-24) — incorporada, no bloqueó
+
+Convocado (`scripts/council_adr077_design_review.py`, red real) pidiendo
+mejora de diseño, no veredicto binario. **2 voces reales** (`gemini_free`
+BLOCKING, `nvidia_mistral_large` MAJOR con 5 puntos concretos) más
+`nvidia_glm` que falló la llamada y quedó registrado fail-closed (no es una
+tercera objeción sustantiva -- honestidad de diversidad, mismo criterio que
+ADR-075). El operador ya había decidido construir esto ("revisión para
+mejorar, luego implementamos") -- las 4 objeciones accionables se incorporan
+al diseño de abajo, no bloquean la implementación:
+
+1. **Un solo LLM auditor no tiene diversidad cognitiva** (Mistral): puede
+   pasar por alto ataques *out-of-distribution* que semgrep no cubre (ej.
+   manipulación de `sys.path`). **Incorporado**: el auditor único es solo el
+   PRIMER paso (barato, cubre el volumen). Si devuelve `flagged` O
+   `uncertain`, escala automáticamente al trío real de `deliberation_council`
+   (ya construido, ya gateado por `should_convene`) antes de que el rechazo
+   se vuelva permanente -- segunda opinión real solo donde importa, sin pagar
+   el coste del trío en cada acción.
+2. **Fail-open no especificado = BLOCKING** (ambas voces): el diseño original
+   no decía qué pasa si el escaneo o el LLM fallan. **Incorporado**: fail-closed
+   explícito y testeado -- cualquier timeout/excepción/proveedor caído en
+   CUALQUIER etapa produce `flagged`, nunca `clean` (mismo principio I6 de
+   ADR-075: "lo no-analizable se rechaza").
+3. **`action_hash` puede bloquear actualizaciones legítimas + sin revocación**
+   (Mistral): verificado contra `decider.py:68-83` -- el hash incluye
+   `descriptor` (texto libre del caller), que en la práctica YA suele portar
+   versión (confirmado contra el log real: `"click 8.4.1 8.4.2..."`), pero no
+   está garantizado por el tipo. **Incorporado**: (a) el registro de un `kind`
+   en el gate exige que su `descriptor` porte entropía suficiente para
+   distinguir intentos legítimamente distintos -- test que lo verifica, no
+   solo convención; (b) nuevo comando `atlas security-council unblock <hash>`
+   (HITL explícito, logueado en Merkle) para revocar un rechazo permanente
+   que resulte falso positivo -- el diseño original no tenía ninguna vía de
+   apelación.
+4. **Tratar todos los `kind` por igual subestima el riesgo** (Mistral):
+   `offensive_action` puede tener consecuencias externas irreversibles;
+   `omega_exec` ya tiene snapshot+undo. **Incorporado**: `offensive_action`
+   con veredicto `flagged` escala SIEMPRE al trío real (nunca se conforma con
+   el auditor único, sea cual sea su verdict); `omega_exec`/`cold_update_apply`/
+   `mcp_adopt` siguen el flujo de dos niveles estándar (único → trío solo si
+   flagged/uncertain).
+5. **Informes que nadie revisa, repite el problema de `pending_review.jsonl`**
+   (Mistral): **Incorporado**: reusa `TelegramBot.notify_all()`
+   (`src/atlas/interfaces/telegram_bot.py:398`, ya cableado y en producción)
+   para empujar el `SecurityReport` en tiempo real cuando `severity` es
+   `MAJOR`/`BLOCKING` -- no otro JSONL más al que nadie vuelve.
+
+## Diseño final (tras la revisión)
+
+Los mismos 4 componentes del diseño original (gate delante del Decider,
+verdict clean/flagged, rechazo permanente + informe + escalada, generalizado
+por `kind`), con las 5 correcciones de arriba incorporadas: auditor de dos
+niveles (único → trío real si flagged/uncertain, o siempre-trío para
+`offensive_action`), fail-closed explícito y testeado, entropía de
+`descriptor` exigida + comando de revocación HITL, y notificación real vía
+Telegram en vez de un JSONL pasivo.
+
 ## Antes de construir
 
-Aunque este diseño no relaja ningún invariante, sí envuelve el seam del
-Decider para múltiples `kind` a la vez -- superficie amplia. Recomendado:
-una revisión de Cónclave (no necesariamente con el gating de `irreversible=True`
-de ADR-076 C, dado que esto es aditivo/más estricto, no una relajación) antes
-de escribir el primer commit, para que quede en acta que el diseño se validó
-antes de tocar el seam que gobierna adopción/parcheo/acciones ofensivas.
+Diseño revisado por Cónclave real (arriba) -- las objeciones concretas están
+incorporadas. No se convoca una segunda ronda: el operador ya decidió
+proceder a implementación tras esta revisión.
 
-## Ficheros críticos (si se aprueba)
+## Ficheros críticos
 
 - `src/atlas/core/decider/decider.py` — nuevo `CouncilVerdict`/`SecurityReport`
-- Nuevo `src/atlas/core/decider/security_council_gate.py`
+- Nuevo `src/atlas/core/decider/security_council_gate.py` — gate de dos
+  niveles (auditor único → trío real si `flagged`/`uncertain`/fallo),
+  fail-closed explícito
 - `src/atlas/core/orchestrator.py` — envolver `_consult_decider` para kinds
-  gateados
+  gateados; nuevo método `security_council_unblock(action_hash)` (HITL,
+  Merkle-logueado)
+- `src/atlas/interfaces/cli.py` — nuevo subcomando
+  `security-council unblock <hash>`
 - `workspace/security_council/rejected.jsonl` — registro de rechazo permanente
   (runtime, gitignored, mismo patrón que `workspace/mcp/*.jsonl`)
 - Reusar: `atlas.mcp.candidate_static_scan` (semgrep), CLI `security-audit`
   (CWE), IOC/credential checks ya en `autonomous_decider.py`,
+  `deliberation_council.build_trio_reviewers`/`convene_for_decision` (segunda
+  opinión real), `TelegramBot.notify_all` (escalada real, no JSONL pasivo),
   `Task.AWAITING_APPROVAL`/`EventType.APPROVAL_REQUIRED`/
   `_persist_pending_approval` (ya existen, hoy inertes)
 
-## Verificación end-to-end (si se aprueba)
+## Verificación end-to-end
 
-1. TDD por pieza: `SecurityReport`/`CouncilVerdict` → gate genérico → registro
-   de rechazo permanente → wiring en `_consult_decider`.
-2. Caso real: reproducir `ai.adeu/adeu` (ya tiene hallazgo MAJOR real de
+1. TDD por pieza: `SecurityReport`/`CouncilVerdict` → auditor único → escalada
+   a trío real (flagged/uncertain) → registro de rechazo permanente + entropía
+   de `descriptor` → comando `unblock` → wiring en `_consult_decider`.
+2. Fail-closed explícito: test que fuerza timeout/excepción en el escaneo Y
+   en el auditor único, cada uno por separado -- ambos deben producir
+   `flagged`, nunca `clean` por defecto.
+3. Caso real: reproducir `ai.adeu/adeu` (ya tiene hallazgo MAJOR real de
    ADR-075) contra el gate nuevo -- confirmar `flagged`, informe generado,
-   escalada disparada UNA vez, y que un segundo intento con el mismo
-   `action_hash` no vuelve a correr el escaneo ni a re-escalar.
-3. Confirmar que bajo `ATLAS_DECIDER=autonomous` la escalada SÍ llega a
+   notificación Telegram disparada, escalada disparada UNA vez, y que un
+   segundo intento con el mismo `action_hash` no vuelve a correr el escaneo
+   ni a re-escalar.
+4. `offensive_action` con `flagged` del auditor único: confirmar que escala
+   SIEMPRE al trío real, nunca se resuelve solo con la primera pasada.
+5. Confirmar que bajo `ATLAS_DECIDER=autonomous` la escalada SÍ llega a
    `Task.AWAITING_APPROVAL` (hoy no llega nunca) -- este es el criterio de
    éxito central del ADR.
+6. `security-council unblock <hash>`: confirmar que revoca el rechazo
+   permanente, queda logueado en Merkle, y un intento posterior con ese hash
+   vuelve a correr el gate normalmente (no queda "desbloqueado para
+   siempre" sin pasar por el gate otra vez).
