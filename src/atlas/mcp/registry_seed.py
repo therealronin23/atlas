@@ -108,6 +108,38 @@ def _install_spec(pkg: dict[str, Any] | None) -> str:
     return f"{registry}:{identifier}=={version}" if version else f"{registry}:{identifier}"
 
 
+_DEFAULT_SOURCE_URL = f"https://{_HOST}/v0/servers"
+
+
+def reseed_candidates(*, source: RegistrySource | None = None) -> dict[str, Any]:
+    """Pagina el registro oficial, dedup por nombre entre páginas, devuelve
+    ``{'candidates': [...], 'pages_fetched': int}``.
+
+    Misma lógica que ``scripts/mcp_seed_registry.py::main()`` de hoy, pero
+    importable -- para que un tick del scheduler (A.2) la invoque sin pasar
+    por un script CLI. Levanta ``RuntimeError`` si la primera página no
+    responde 200 (nada que sembrar, y silenciarlo sería fingir éxito)."""
+    src = source or RegistrySource()
+    records = src.fetch(None)
+    seen_names: set[str] = set()
+    candidates: list[dict[str, Any]] = []
+    pages_fetched = 0
+    for rec in records:
+        if rec.status != 200:
+            break
+        pages_fetched += 1
+        for cand in registry_to_candidates(json.loads(rec.payload), source_url=_DEFAULT_SOURCE_URL):
+            name = cand["name"]
+            if name in seen_names:
+                continue
+            seen_names.add(name)
+            candidates.append(cand)
+    if pages_fetched == 0:
+        first_status = records[0].status if records else "sin respuesta"
+        raise RuntimeError(f"reseed: primera página del registro no accesible (status={first_status})")
+    return {"candidates": candidates, "pages_fetched": pages_fetched}
+
+
 def registry_to_candidates(payload: dict[str, Any], *, source_url: str) -> list[dict[str, Any]]:
     """Mapea la respuesta del registro → entradas candidatas de catálogo, con
     procedencia. Sin clasificar (sector=uncategorized) hasta el triaje."""

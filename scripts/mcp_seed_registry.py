@@ -9,7 +9,6 @@ pasos posteriores y explícitos (no kitchen-sink, wire-before-claim).
 """
 from __future__ import annotations
 
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,30 +18,24 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import yaml  # noqa: E402
 
-from atlas.mcp.registry_seed import RegistrySource, registry_to_candidates  # noqa: E402
+from atlas.mcp.registry_seed import RegistrySource, reseed_candidates  # noqa: E402
 
 _OUT = ROOT / "docs" / "design" / "mcp_catalog_seeded.yaml"
 _SOURCE_URL = "https://registry.modelcontextprotocol.io/v0/servers"
 
 
 def main() -> int:
-    records = RegistrySource(limit=100).fetch(None)
-    seen_names: set[str] = set()
-    cands: list[dict[str, object]] = []
-    pages_ok = 0
-    for rec in records:
-        if rec.status != 200:
-            print(f"pagina no accesible: status={rec.status} ({rec.payload[:120]}) -- se detiene ahi")
-            break
-        pages_ok += 1
-        for cand in registry_to_candidates(json.loads(rec.payload), source_url=_SOURCE_URL):
-            name = cand["name"]
-            if name in seen_names:
-                continue
-            seen_names.add(name)
-            cands.append(cand)
-    if pages_ok == 0:
+    """Wrapper delgado sobre ``reseed_candidates()`` (A.1, ADR-076) -- la
+    lógica de paginación+dedup vive en ``atlas.mcp.registry_seed`` para que un
+    tick del scheduler (A.2) la reuse sin pasar por este script. El CLI manual
+    sigue funcionando igual: red real, mismo fichero de salida."""
+    try:
+        result = reseed_candidates(source=RegistrySource(limit=100))
+    except RuntimeError as exc:
+        print(str(exc))
         return 1
+    cands = result["candidates"]
+    pages_ok = result["pages_fetched"]
     doc = {
         "_generated": {
             "by": "scripts/mcp_seed_registry.py",
