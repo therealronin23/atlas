@@ -750,6 +750,10 @@ class Orchestrator:
         """Re-siembra continua y autolimitada del catálogo MCP desde el registro oficial. Delegado al facade."""
         return self._maintenance_facade.maintenance_mcp_reseed_tick()
 
+    def maintenance_mcp_vetting_tick(self) -> dict[str, Any]:
+        """Vetting continuo del catálogo MCP: stage1 completo + lote de stage2 sobre lo pendiente. Delegado al facade."""
+        return self._maintenance_facade.maintenance_mcp_vetting_tick()
+
     def maintenance_provider_smoke_tick(self) -> dict[str, Any]:
         """Smoke diario de la cadena de proveedores (1 llamada mínima c/u). Delegado al facade."""
         return self._maintenance_facade.maintenance_provider_smoke_tick()

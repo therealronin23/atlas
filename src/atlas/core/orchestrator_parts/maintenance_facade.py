@@ -70,6 +70,13 @@ _EGRESS_MAX_BYTES = 5 * 1024 * 1024
 # a propósito: cada uno puede spawnear un subproceso real en jaula bwrap.
 _MCP_TRIAL_BATCH_SIZE = 5
 
+# Candidatos vetados por tick en cada pista (maintenance_mcp_vetting_tick,
+# ADR-076 B.3). stdio puede descargar+extraer+correr semgrep sobre un paquete
+# real por candidato (I/O+CPU, mismo orden de magnitud que _MCP_TRIAL_BATCH_SIZE);
+# http solo hace un handshake de protocolo (más barato, solo red).
+_MCP_VETTING_STDIO_BATCH = 5
+_MCP_VETTING_HTTP_BATCH = 20
+
 
 def _build_avoid_section(recaller: Any, store: Any, query: str) -> str:
     """Construye la sección '## Patrones a evitar' para el prompt de codegen.
@@ -343,6 +350,12 @@ class MaintenanceFacade:
                 # a la cadencia global del scheduler no re-siembra de más.
                 _isolated_cycle("mcp_reseed", self.maintenance_mcp_reseed_tick)
 
+            def _mcp_vetting_cycle() -> None:
+                # Vetting continuo del catálogo: ver maintenance_mcp_vetting_tick
+                # (B.3, ADR-076). El propio reporte fusionado es el estado --
+                # cada ciclo retoma lo pendiente sin cursor aparte.
+                _isolated_cycle("mcp_vetting", self.maintenance_mcp_vetting_tick)
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -394,7 +407,7 @@ class MaintenanceFacade:
                     _research_cycle, _provider_smoke_cycle,
                     _knowledge_ingest_cycle, _project_graph_cycle,
                     _provider_discovery_cycle, _mcp_trial_cycle,
-                    _sentinel_revet_cycle, _mcp_reseed_cycle,
+                    _sentinel_revet_cycle, _mcp_reseed_cycle, _mcp_vetting_cycle,
                 ),
                 **scheduler_kwargs,
             )
@@ -701,6 +714,126 @@ class MaintenanceFacade:
         payload = {"candidate_count": len(result["candidates"]), "pages_fetched": result["pages_fetched"]}
         self._orch._merkle.log(
             action="mcp.reseed_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=payload,
+        )
+        return {"status": "ran", **payload}
+
+    def maintenance_mcp_vetting_tick(self) -> dict[str, Any]:
+        """Un tick de vetting continuo del catálogo MCP (B.3, ADR-076):
+        stage1 completo cada ciclo (barato, read-only, ADR-075) + un lote de
+        stage2 (2A stdio / 2B http) sobre lo que aún falta -- nunca
+        reprocesa ``completed``/``terminal`` (B.2, ``candidate_stage2_cursor``).
+
+        ``scripts/mcp_stage2_batch.py`` de hoy sobrescribe el reporte entero
+        y toma siempre los primeros N elegibles -- en un tick continuo
+        procesaría los mismos N para siempre. Aquí el propio reporte
+        fusionado ES el estado (no hace falta un cursor de posición aparte):
+        cada ciclo compara stage1 recalculado contra el reporte existente y
+        retoma lo que falta -- nuevos primero, luego ``retryable``.
+
+        Cada candidato en su propio try/except (mismo criterio que
+        ``mcp_stage2_batch.py``): una excepción no anticipada en un
+        candidato no debe perder el resto del lote.
+
+        Opt-in explícito (red saliente + I/O de descarga en 2A): requiere
+        ``ATLAS_MCP_VETTING=1``."""
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_MCP_VETTING", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        import yaml
+
+        from atlas.mcp.candidate_package_lookup import lookup_package
+        from atlas.mcp.candidate_stage2 import _default_binary_fetcher, run_stage2a_stdio, run_stage2b_http
+        from atlas.mcp.candidate_stage2_cursor import merge_stage2_report, select_stage2_batch
+        from atlas.mcp.candidate_triage import run_stage1_triage
+        from atlas.mcp.http_mcp_transport import urllib_fetcher_with_headers
+
+        seeded_path = self._project_root() / "docs" / "design" / "mcp_catalog_seeded.yaml"
+        if not seeded_path.is_file():
+            return {"status": "no_catalog"}
+
+        triage_path = self._project_root() / "docs" / "design" / "mcp_catalog_stage1_triage.jsonl"
+        stage1_summary = run_stage1_triage(seeded_path, triage_path)
+        triaged = [
+            json.loads(ln) for ln in triage_path.read_text(encoding="utf-8").splitlines() if ln.strip()
+        ]
+
+        report_path = self._project_root() / "docs" / "design" / "mcp_catalog_stage2_report.jsonl"
+        prior: dict[str, dict[str, Any]] = {}
+        if report_path.is_file():
+            for ln in report_path.read_text(encoding="utf-8").splitlines():
+                if ln.strip():
+                    row = json.loads(ln)
+                    prior[str(row["name"])] = row
+
+        stdio_names, http_names = select_stage2_batch(
+            triaged, prior,
+            limit_stdio=_MCP_VETTING_STDIO_BATCH,
+            limit_http=_MCP_VETTING_HTTP_BATCH,
+        )
+
+        seeded_doc = yaml.safe_load(seeded_path.read_text(encoding="utf-8")) or {}
+        by_name: dict[str, dict[str, Any]] = {}
+        for sector in (seeded_doc.get("sectors") or {}).values():
+            for e in sector.get("entries") or []:
+                by_name[e["name"]] = e
+
+        quarantine_root = self._project_root() / "workspace" / "mcp" / "quarantine"
+        quarantine_root.mkdir(parents=True, exist_ok=True)
+
+        new_rows: list[dict[str, Any]] = []
+        for name in stdio_names:
+            entry = by_name.get(name, {"name": name})
+            try:
+                r = run_stage2a_stdio(
+                    entry, quarantine_root=quarantine_root,
+                    lookup_fn=lookup_package, binary_fetcher=_default_binary_fetcher,
+                )
+                row = {
+                    "track": "stdio", "name": name, "completed": r.completed,
+                    "stage_reached": r.stage_reached, "reason": r.reason,
+                    "entrypoint": r.entrypoint_module, "n_findings": len(r.static_findings),
+                    "worst_severity": r.worst_severity.name,
+                }
+            except Exception as exc:  # noqa: BLE001 -- un candidato no debe perder el lote
+                row = {
+                    "track": "stdio", "name": name, "completed": False,
+                    "stage_reached": "crash", "reason": f"crash: {exc}"[:200],
+                }
+            new_rows.append(row)
+
+        for name in http_names:
+            entry = by_name.get(name, {"name": name})
+            try:
+                r_http = run_stage2b_http(entry, fetcher=urllib_fetcher_with_headers)
+                row = {
+                    "track": "http", "name": name, "completed": r_http.completed,
+                    "reason": r_http.reason, "tool_count": r_http.tool_count,
+                }
+            except Exception as exc:  # noqa: BLE001 -- mismo criterio
+                row = {"track": "http", "name": name, "completed": False, "tool_count": 0, "reason": f"crash: {exc}"[:200]}
+            new_rows.append(row)
+
+        merged = merge_stage2_report(prior, new_rows)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with report_path.open("w", encoding="utf-8") as f:
+            for row in merged.values():
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        payload = {
+            "stage1": stage1_summary,
+            "stage2_stdio": len(stdio_names),
+            "stage2_http": len(http_names),
+            "report_total": len(merged),
+        }
+        self._orch._merkle.log(
+            action="mcp.vetting_tick",
             agent="maintenance_facade",
             result="ran",
             risk_level="safe",
