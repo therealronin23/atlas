@@ -55,42 +55,90 @@ Correcciones incorporadas: análisis estático del **código fuente** obligatori
 **antes** de cualquier ejecución (I2); el LLM vivo **nunca** lee descripciones de
 terceros sin sanitizar (I3). El sandbox de red es necesario-pero-no-suficiente.
 
+## Autocrítica (auditoría 2026-07-24) — el pipeline original asumía algo falso
+
+Al releer este ADR con ojo crítico (pedido explícito del operador: "haz una
+auditoría del 075 y corrígelo"), la distribución real del catálogo lo contradice:
+
+```
+grep -oE "transport: \w+" mcp_catalog_seeded.yaml | sort | uniq -c
+   1869 transport: http     (88.5%)
+    228 transport: stdio    (10.8%)
+```
+
+`transport: http` viene del campo `remotes` del esquema del registro oficial
+(`_transport_of()`, `registry_seed.py`) — por diseño, es un servicio **alojado
+remotamente**, no un paquete descargable. `install` sale **siempre `""`**, incluso
+para los `stdio` (el seeder nunca lo capturó — gap menor aparte, no bloqueante).
+
+El pipeline original (I2: análisis de fuente obligatorio; I4: sandbox sin red)
+asumía implícitamente que TODO candidato es un paquete local fetchable — cierto
+solo para el 10.8%. Para el 88.5% restante **no existe código fuente que analizar**
+ni tiene sentido "probar en sandbox sin red" un servidor cuyo único punto de
+contacto ES la red. I2/I4 tal como estaban habrían bloqueado el 88.5% del catálogo
+por un requisito inaplicable, o (peor) alguien los habría relajado en silencio para
+"que pase algo". Corregido abajo con dos pistas explícitas.
+
 ## Decisión — invariantes no negociables
 
-- **I1 · scan-antes-de-aprobar.** Ningún candidato es `apto` sin pasar las etapas
-  1–4. "Convertir TODOS en aptos" queda prohibido explícitamente.
-- **I2 · análisis de código fuente obligatorio antes de ejecutar.** Ningún código
-  remoto se ejecuta (ni en sandbox) sin pasar análisis estático de su fuente.
+- **I1 · scan-antes-de-aprobar.** Ningún candidato es `apto` sin pasar su pista
+  (stdio o remoto). "Convertir TODOS en aptos" queda prohibido explícitamente.
+- **I2 · análisis de código fuente obligatorio antes de ejecutar CÓDIGO LOCAL**
+  (pista stdio, 228 candidatos). No aplica a la pista remota — ahí no hay fuente;
+  ver I2-R.
+- **I2-R · para la pista remota (http, 1869 candidatos): admisión basada 100% en
+  comportamiento observado + IOC, nunca en "hemos visto el código".** Riesgo
+  residual reconocido, no oculto (ver Consecuencias).
 - **I3 · el LLM vivo nunca lee descripciones de terceros sin sanitizar.** El
   escaneo de inyección corre en un hub PLANO aislado, no en el orquestador vivo.
-- **I4 · fetch y probe network-isolated** (`--unshare-all`) **y** egress-IOC gated
-  (`vet_call`). El aislamiento de red se empareja siempre con I2/I3, nunca solo.
+  Aplica a AMBAS pistas (la inyección vive en `purpose`/tool descriptions, sea
+  local o remoto).
+- **I4 · pista stdio: fetch+probe network-isolated** (`--unshare-all`, sin red).
+  **Pista remota: egress gated de un único endpoint**, allowlist estricta al
+  dominio declarado en `source`, vía la misma capa IOC/dominio de SentinelGate
+  (`vet_command`) — nunca red sin restricción. No son el mismo mecanismo; no
+  confundir "sin red" (stdio) con "red restringida a 1 dominio" (remoto).
 - **I5 · admisión HITL por lotes** vía el Decider A3 + receipt Merkle; activación
   reversible (A3.3). Cero auto-adopción de tipos remotos ejecutables.
 - **I6 · fail-closed** en todo: lo no-analizable/no-fetchable/ambiguo se rechaza y
-  se registra en `pending_review`.
+  se registra en `pending_review`. Para la pista remota, "no-analizable" es la
+  norma, no la excepción — I6 es la defensa primaria ahí, no un backstop.
 - **I7 · adopt-real-not-shell.** Las capas nuevas (inyección + fuente) envuelven
   herramientas reales (`mcp-scan`/`MCP-Scanner`/Semgrep-class) diseccionadas en un
   jail, no un cascarón reimplementado.
 
-## Pipeline por etapas (reusa la infra existente)
+## Pipeline por etapas (reusa la infra existente; dos pistas desde la etapa 2)
 
 0. **Seed** (hecho) — 2111 candidatos, metadata-only, sin descarga ni ejecución.
 1. **Pre-screen estático (read-only, sin descarga)** sobre la metadata ya en
    catálogo: A1 + heurística nueva de tool-poisoning/inyección en descripciones
    (keyword + semántico + juez LLM opcional, en hub plano — I3). Barato, cubre los
-   2111. Salida: score de riesgo + triaje.
-2. **Fetch + análisis de fuente (antes de ejecutar — I2)** para los que pasan la 1:
-   descarga a cuarentena sin ejecución, análisis estático de código (Semgrep-class
-   + A1 sobre el código real). Fetch con egress controlado.
-3. **Probe conductual en sandbox** (`SpawnTrial`/`BwrapJail`, sin red): valida
-   conformidad de protocolo y captura defs para snapshot TOFU. Las descripciones
-   pasan por SentinelGate + escaneo de inyección **antes** de tocar cualquier LLM (I3).
-4. **Score + admisión SentinelGate:** 6 capas + la capa nueva de inyección → veredicto.
+   2111 (ambas pistas, mismo chequeo — la inyección no distingue transporte).
+   Salida: score de riesgo + triaje + **routing por transporte** a la pista 2A/2B.
+2. **Bifurcación por transporte:**
+   - **2A — pista stdio (228):** fetch a cuarentena sin ejecución → análisis
+     estático de código (Semgrep-class + A1 sobre el código real, I2).
+   - **2B — pista remota (1869):** NO hay fetch de fuente. Se registra el
+     endpoint (`source`) y pasa directo a probe conductual con egress de
+     un-solo-dominio (I4 remoto).
+3. **Probe conductual en sandbox:**
+   - **2A→3:** `SpawnTrial`/`BwrapJail`, sin red — valida conformidad de
+     protocolo, captura defs para TOFU.
+   - **2B→3:** llamada de protocolo real al endpoint remoto (egress
+     allowlisted a ese dominio, nada más) — mismo objetivo (conformidad +
+     defs TOFU), sin sandbox de proceso porque no hay proceso local que aislar.
+   Ambas pistas: descripciones pasan por SentinelGate + escaneo de inyección
+   **antes** de tocar cualquier LLM (I3).
+4. **Score + admisión SentinelGate:** 6 capas + la capa nueva de inyección →
+   veredicto. Para 2B, el veredicto pesa más en comportamiento/IOC (I2-R) que
+   en las capas ausentes por falta de fuente.
 5. **Aprobación HITL por lotes** vía Decider A3 + receipt Merkle; activación
    reversible (A3.3). Nunca auto-aprobación masiva.
 6. **Re-vet continuo** (`revet_all` + `maintenance_*_tick`): re-escaneo periódico;
-   drift de rug-pull → auto-revoca + `pending_review`.
+   drift de rug-pull → auto-revoca + `pending_review`. Para la pista remota, el
+   re-vet es la defensa de mayor peso a largo plazo (un servidor remoto puede
+   cambiar de comportamiento del lado del servidor sin ningún "update" visible
+   localmente — motivo de más para no relajar la cadencia de `revet_all` en 2B).
 
 ## "Aprobar lo que tenemos ya" (aclaración del operador, 2026-07-24)
 
@@ -113,16 +161,26 @@ encaja con este ADR. Con una precisión no negociable sobre qué significa "apro
 ## Qué se construye ya (seguro, reversible) vs qué queda gateado
 
 - **Ahora (read-only, no toca el invariante):** etapa 1 — el pre-screen estático
-  sobre los 2111, que produce el triaje sin descargar ni ejecutar nada.
-- **Gateado a la aceptación de este ADR:** etapas 2–6 (fetch, ejecución en sandbox,
-  admisión, activación). No se descarga ni ejecuta ningún server remoto hasta que
-  el operador acepte este ADR y se cierre (o se acepte el hueco de) la voz EU del Cónclave.
+  sobre los 2111, que produce el triaje + el routing 2A/2B por transporte, sin
+  descargar ni ejecutar nada.
+- **Gateado a la aceptación de este ADR:** etapas 2–6 en ambas pistas (fetch 2A,
+  probe remoto 2B, ejecución en sandbox, admisión, activación). No se descarga
+  fuente ni se contacta ningún endpoint remoto hasta que el operador acepte este
+  ADR y se cierre (o se acepte el hueco de) la voz EU del Cónclave.
 
 ## Consecuencias
 
 - Primera vez que Atlas ingiere fuentes MCP remotas — bajo scan-antes-de-aprobar,
   no aprobar-luego-scan. El coste computacional del análisis de fuente (I2) es real
-  pero solo sobre los que pasan la etapa 1, no los 2111.
+  pero solo sobre el 10.8% (`stdio`) que pasa la etapa 1.
+- **Riesgo residual estructural (no un detalle menor): el 88.5% del catálogo
+  (`http`) nunca podrá pasar por análisis de código fuente, por diseño del
+  transporte, no por falta de esfuerzo.** La admisión de esa pista depende
+  enteramente de comportamiento observado + IOC + re-vet continuo (I2-R/I6) —
+  un techo de confianza más bajo que la pista stdio, permanente, no algo que un
+  futuro ciclo "arregle". El operador debe decidir con esto en mente si algún
+  sector de la pista remota (p.ej. `credential`-tier) merece un listón más alto
+  que "pasó el scan" — no cerrado en este ADR, registrado para su decisión.
 - Riesgo residual honesto: el juez de inyección es una llamada LLM con su tasa de
   error; fail-closed (I6). El hueco EU del trío queda como deuda de infra que este
-  ADR no cierra pero registra.
+  ADR no cierra pero registra (task de seguimiento abierta).
