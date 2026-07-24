@@ -67,6 +67,27 @@ def test_request_parses_sse_framed_response() -> None:
     assert result == {"tools": [{"name": "x"}]}
 
 
+def test_request_sends_accept_header_per_mcp_spec() -> None:
+    """Hallazgo real 2026-07-24 (probado en vivo contra api.inference.sh):
+    el spec de MCP Streamable HTTP exige 'Accept: application/json,
+    text/event-stream' en el POST -- sin él, el servidor responde HTTP 400
+    (verificado con curl real). Muchos de los "HTTP 406" del batch real eran
+    justo esto: falta de conformidad de MI cliente, no un límite ajeno."""
+    from atlas.mcp.http_mcp_transport import HttpMcpTransport
+
+    seen_headers = {}
+
+    def fetcher(method, url, data, headers):
+        seen_headers.update(headers)
+        body = json.loads(data.decode())
+        return 200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {}})
+
+    t = HttpMcpTransport("https://real.example.com/mcp", fetcher=fetcher)
+    with patch("socket.getaddrinfo", return_value=_FAKE_ADDR):
+        t.request("initialize", {})
+    assert seen_headers.get("Accept") == "application/json, text/event-stream"
+
+
 def test_request_raises_on_jsonrpc_error() -> None:
     from atlas.mcp.http_mcp_transport import HttpMcpTransport
     from atlas.mcp.transport import McpProtocolError

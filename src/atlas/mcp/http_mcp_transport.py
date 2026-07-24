@@ -65,7 +65,15 @@ class HttpMcpTransport:
         if not decision.allowed:
             raise McpProtocolError(f"egress bloqueado por allowlist: {decision.reason}")
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        headers = {"Content-Type": "application/json", "User-Agent": "atlas-core-vetting-probe"}
+        headers = {
+            "Content-Type": "application/json",
+            # MCP Streamable HTTP exige este Accept -- sin él, servidores
+            # reales responden 400/406 (verificado en vivo, 2026-07-24,
+            # contra api.inference.sh). Antes de este fix, muchos "HTTP 406"
+            # del batch real eran justo esto: falta de conformidad propia.
+            "Accept": "application/json, text/event-stream",
+            "User-Agent": "atlas-core-vetting-probe",
+        }
         status, text = self._fetcher("POST", self._url, data, headers)
         return status, text
 
