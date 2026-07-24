@@ -1,7 +1,7 @@
 # ADR-036 — Modelo de amenazas y hoja de murallas defensivas
 
 - Status: **Accepted** (2026-05-30)
-- Plano completo: [`docs/plan_mcp_y_murallas_defensivas.md`](plan_mcp_y_murallas_defensivas.md)
+- Plano completo: [`docs/plan_mcp_y_murallas_defensivas.md`](../../design/plan_mcp_y_murallas_defensivas.md)
 - Depende de: ADR-031/032/033 (loop agéntico), ADR-034 (hardening de proceso)
 - Habilita: ADR-037 (frontera de contenido no confiable), ADR-038 (gate de adopción)
 
@@ -67,5 +67,5 @@ prohíbe.
 
 ## Referencias
 
-Ver [`docs/plan_mcp_y_murallas_defensivas.md`](plan_mcp_y_murallas_defensivas.md#referencias)
+Ver [`docs/plan_mcp_y_murallas_defensivas.md`](../../design/plan_mcp_y_murallas_defensivas.md#referencias)
 (CaMeL arXiv:2503.18813, arXiv:2601.17548, CoSAI, NSA CSI, CSA, Snyk).

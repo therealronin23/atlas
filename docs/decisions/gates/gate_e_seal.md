@@ -67,7 +67,7 @@ atlas voice --mode stub
 
 ## Documentos asociados
 
-- [AGENTS.md](../AGENTS.md) — fuente de verdad única.
-- [ROADMAP.md](../ROADMAP.md) — checklist de estado.
+- [AGENTS.md](../../../AGENTS.md) — fuente de verdad única.
+- ROADMAP.md — archivado en la cuarentena `1/` (cierre 2026-07, ver `git log -- ROADMAP.md`); el checklist de estado vivo hoy es [docs/backlog.yaml](../../backlog.yaml) + `WORK_LEDGER.md`.
 - [docs/gate_c_seal.md](gate_c_seal.md) — cierre Gate C.
 - [docs/gate_d_seal.md](gate_d_seal.md) — cierre Gate D.

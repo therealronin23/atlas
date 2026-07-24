@@ -27,7 +27,7 @@ goal is not new autonomy; it is reliable operations.
 
 ## Operational runbook
 
-See [operational_runbook.md](operational_runbook.md) and `scripts/operational_smoke.py`
+See [operational_runbook.md](../../operations/operational_runbook.md) and `scripts/operational_smoke.py`
 for the full Sesion A checklist (automated + manual CLI/Telegram).
 
 ## Remaining Follow-Up

@@ -1,7 +1,7 @@
 # Atlas Core — Guía de operación
 
 Documento de referencia para operar Atlas Core en local. Asume que ya
-has hecho el quick start del [README.md](../README.md).
+has hecho el quick start del [README.md](../../README.md).
 
 ---
 
@@ -388,7 +388,7 @@ Solución: pasar `inference_hub=...` a `enable_gate_d_pipeline()`.
 
 ## 6. ADRs vigentes (lectura rápida)
 
-Lista canónica en [memory/system_context/03_adr.md](../memory/system_context/03_adr.md).
+Lista canónica en [memory/system_context/03_adr.md](../../memory/system_context/03_adr.md).
 
 Atajo:
 
