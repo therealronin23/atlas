@@ -83,6 +83,17 @@ def _first_package(server: dict[str, Any]) -> dict[str, Any] | None:
     return packages[0] if packages else None
 
 
+def _first_remote_url(server: dict[str, Any]) -> str:
+    """El campo ``name`` del registro (ej. 'ac.inference.sh/mcp') es solo un
+    identificador estilo reverse-DNS -- NO el host real (que puede ser un
+    dominio totalmente distinto). Sin esto no hay nada que contactar en la
+    etapa 2B."""
+    remotes = server.get("remotes")
+    if not remotes:
+        return ""
+    return str(remotes[0].get("url", ""))
+
+
 def _install_spec(pkg: dict[str, Any] | None) -> str:
     """``registry:identifier[==version]`` -- lo mínimo que un fetcher real
     necesita para saber QUÉ descargar (bloqueaba la etapa 2A de ADR-075 sin
@@ -122,6 +133,7 @@ def registry_to_candidates(payload: dict[str, Any], *, source_url: str) -> list[
             "package_registry": pkg.get("registryType", "") if pkg else "",
             "package_identifier": pkg.get("identifier", "") if pkg else "",
             "repository_url": repository.get("url", ""),
+            "remote_url": _first_remote_url(server),
             "status": "candidato",
             "tags": [],
             "provenance": {"source": source_url, "fetched_at": fetched_at},

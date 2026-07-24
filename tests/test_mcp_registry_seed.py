@@ -153,6 +153,30 @@ def test_http_candidate_has_empty_install_no_package_to_fetch() -> None:
     assert a["package_registry"] == ""
 
 
+def test_http_candidate_captures_real_remote_url() -> None:
+    """Hallazgo 2026-07-24: el ``name`` del registro (ej. 'ac.inference.sh/mcp')
+    es solo un identificador estilo reverse-DNS -- NO el host real a contactar
+    (que puede ser un dominio totalmente distinto, ej. 'api.inference.sh').
+    Sin capturar ``remotes[].url`` no hay nada que sondear en la etapa 2B."""
+    from atlas.mcp.registry_seed import registry_to_candidates
+
+    payload = json.dumps({
+        "servers": [{
+            "server": {
+                "name": "ac.inference.sh/mcp",
+                "description": "x",
+                "remotes": [
+                    {"type": "streamable-http", "url": "https://sh.inference.ac"},
+                    {"type": "streamable-http", "url": "https://api.inference.sh/mcp"},
+                ],
+            },
+        }],
+        "metadata": {},
+    })
+    cands = registry_to_candidates(json.loads(payload), source_url="x")
+    assert cands[0]["remote_url"] == "https://sh.inference.ac"  # primer remote, orden del registro
+
+
 def test_repository_url_captured_when_present() -> None:
     from atlas.mcp.registry_seed import registry_to_candidates
 
