@@ -8,6 +8,56 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-24 (8ª pasada, sesión Opus nueva, sobre el trabajo sin commitear
+  de las pasadas 5-7) — auditoría premortem/postmortem + ADR-075 construido
+  y probado en vivo de punta a punta (32 commits, `0c2ecaa`..`94262fb`).**
+  Arranqué con "auditoría completa con premortem y postmortem": el árbol
+  estaba sucio con el trabajo real de las pasadas 5-7 (ADR-074 shadow-router/
+  DriftTripwire, Sentinel capas 5/6, cierre t3-1) sin commitear ni cargado en
+  el daemon vivo — commit dividido en 3 (catálogo/código/docs) + reinicio del
+  daemon, con un test PATH-dependiente cazado y arreglado por el propio hook
+  de pre-commit (`test_third_party_local_binary_also_gets_jailed`).
+  Corrección presionada por el operador: usar las capacidades del tronco
+  (`sanitation_audit`, Cónclave) en vez de reconstruir a mano — memoria
+  nueva `feedback-use-trunk-capabilities-in-audits`.
+  El operador pidió "escanea lo que tenemos y apruébalo, con ciclo continuo" —
+  auditoría crítica encontró que el 88.5% del catálogo (`transport:http`) son
+  servicios remotos SIN fuente descargable, invalidando el diseño de pipeline
+  único; ADR-075 (Propuesto→Aceptado) bifurca stdio/http con invariantes I1-I7,
+  corregido por un Cónclave real (Gemini+GLM: "sandbox de red no defiende de
+  ataque semántico"). Construido con TDD estricto, verificado en vivo (no
+  mockeado) en cada pieza: `candidate_triage.py` (etapa 1, 2114 candidatos,
+  229 stdio/1871 http elegibles), `candidate_package_lookup.py` (PyPI/npm real),
+  `candidate_fetch.py` (hash verificado + extracción anti path-traversal),
+  `candidate_entrypoint.py`, `candidate_static_scan.py` (semgrep real
+  instalado), `http_mcp_transport.py` (MCP-sobre-HTTP con SSRFBridge efímero
+  por-dominio — nunca la instancia compartida), `candidate_stage2.py`
+  (orquestación 2A/2B). **9 bugs reales encontrados y corregidos corriendo
+  contra datos/infra de verdad** (invisibles en tests aislados): hash npm
+  SHA-1 vs SHA-256 (43/43 falsos positivos), extensión .tgz vs .zip, entry
+  point single-entry mal rechazado, ruta relativa de semgrep bajo cuarentena
+  compartida, `install`/`remote_url` nunca capturados del registro (bloqueaban
+  2A/2B enteros), header `Accept` MCP faltante (406 falsos), `Mcp-Session-Id`
+  no propagado, y uno crítico: `ConnectionRefusedError` sin capturar tumbaba
+  la corrida de horas en el primer fallo de red real (arreglado + cinturón de
+  seguridad try/except por candidato + escritura incremental). Corrida
+  completa final: 2100 candidatos, 904 completados (10406 tools reales, 4 con
+  hallazgo MAJOR de semgrep pendientes de revisión HITL). De paso: hueco EU
+  del Cónclave cerrado (`openrouter_mistral_large`, prove-it real, trío 3/3
+  vivo), fallback en caliente US/CN, 21 filas ADR huérfanas + INDEX.yaml +
+  2 cuarentenas vencidas + `docs_graph.py` (bug real: nunca resolvía mdlinks
+  a ficheros fuera de `docs/`) + 5 enlaces rotos reales (profundidad de ruta).
+  `ROADMAP.md` confirmado archivado en cuarentena `1/` (no restaurado).
+  **Plan preparado para sesión nueva** (contexto lleno):
+  `~/.claude/plans/vamos-a-mejorar-el-greedy-dongarra.md` — ADR-076
+  (re-seed continuo + vetting continuo con clasificación terminal/
+  reintentable, ambos seguros) + auto-adopción real gateada a un Cónclave
+  obligatorio antes de tocar código (es enmienda a I5 de ADR-075, no
+  aditiva — la regla constitucional #4 de `AutonomousDecider` sigue intacta
+  hasta que ese Cónclave decida).
+  **Próxima acción:** pegar el prompt del plan en sesión nueva; revisar HITL
+  los 4 candidatos MAJOR antes de cualquier adopción; F2.6 sigue `due` (4
+  ADRs nuevos desde el último run, 072-075) — correr `atlas f26 run --json`.
 - **2026-07-24 (7ª pasada, misma sesión, Sonnet) — las 3 decisiones
   pendientes (Fabric/Immunity/shadow-router) cerradas con Cónclave real.**
   El operador decidió: (1) cablear Fabric completo, (2) activar on_escalation
