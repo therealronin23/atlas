@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-22'
+generated: '2026-07-24'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
@@ -168,6 +168,10 @@ entries:
   type: historia
   status: historico
   verified: null
+- path: docs/archive/2026-07-work-ledger-fold-1/WORK_LEDGER_ARCHIVE.md
+  type: historia
+  status: historico
+  verified: null
 - path: docs/archive/_graveyard/2026-06-21/MANIFEST.md
   type: historia
   status: historico
@@ -200,7 +204,8 @@ entries:
   type: historia
   status: historico
   verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria de Atlas.md
+- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria
+    de Atlas.md
   type: historia
   status: historico
   verified: null
@@ -353,6 +358,14 @@ entries:
   status: vigente
   verified: null
 - path: docs/audits/audit_context_premortem_2026-07-07.md
+  type: evidencia
+  status: vigente
+  verified: null
+- path: docs/audits/audit_full_premortem_2026-07-23.md
+  type: evidencia
+  status: vigente
+  verified: null
+- path: docs/audits/audit_full_premortem_postmortem_2026-07-24.md
   type: evidencia
   status: vigente
   verified: null
@@ -832,6 +845,14 @@ entries:
   type: decision
   status: vigente
   verified: null
+- path: docs/decisions/adr/adr_074_shadow_router_drift_wiring.md
+  type: decision
+  status: vigente
+  verified: null
+- path: docs/decisions/adr/adr_075_remote_mcp_continuous_vetting.md
+  type: decision
+  status: vigente
+  verified: null
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
@@ -904,6 +925,22 @@ entries:
   type: difusion
   status: vigente
   verified: null
+- path: docs/design/2026-07-22-t05b-paso3-sintesis.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/design/2026-07-23-marathon-session-plan.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/design/2026-07-23-t15-coding-territory-veredicto.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/design/2026-07-23-t42-candidata-pipeline.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/design/UI_QUALITY_GATE.md
   type: design
   status: vigente
@@ -924,7 +961,8 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build (misión absorb_harness_patterns)
+  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build
+    (misión absorb_harness_patterns)
 - path: docs/design/atlas_ecosystem_map.md
   type: design
   status: vigente
@@ -985,7 +1023,8 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido con OK del operador 2026-07-09
+  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido
+    con OK del operador 2026-07-09
 - path: docs/design/ideas/2026-07-02-vision-atlas-microkernel-universal.md
   type: design
   status: vigente
@@ -1114,6 +1153,10 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/design/ui/research/2026-07-23-t21-micropoc-flutter-resultados.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/design/ui/research/DECISION_STACK_T21.md
   type: design
   status: vigente
@@ -1159,6 +1202,14 @@ entries:
   status: vigente
   verified: null
 - path: docs/handoff/GENERATED/04_PLAN.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/handoff/GENERATED/05_ECOSISTEMA.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/handoff/GENERATED/06_PRIMEROS_10_MINUTOS.md
   type: conocimiento
   status: vigente
   verified: null
@@ -3390,6 +3441,10 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/knowledge/benchmarks/workload_benchmark_2026-07-23.json
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/knowledge/corpus_inventory.json
   type: conocimiento
   status: vigente
@@ -3429,11 +3484,58 @@ entries:
   status: propuesto
   verified: null
   notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-23.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-24.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
 - path: docs/knowledge/research_atlas_foundry_v0_2026-07-15.md
   type: conocimiento
   status: propuesto
   verified: null
-  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al sustrato 2026-07-16'
+  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al
+    sustrato 2026-07-16'
+- path: docs/knowledge/t05b_paso3/audit_A.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/audit_B.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/audit_C.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/audit_D.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/corpus_digest_consolidated.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/digest_A.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/digest_B.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/digest_C.json
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/knowledge/t05b_paso3/digest_D.json
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/membrana/OSM-000_membrana.md
   type: compliance
   status: vigente
@@ -3578,6 +3680,14 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/superpowers/plans/2026-07-22-t05b-paso3-parallel-digestion-BRIEF.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/superpowers/plans/2026-07-23-t5-provider-discovery-plan.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/superpowers/specs/2026-06-24-council-v2.0-trio-reliability-design.md
   type: design
   status: vigente
@@ -3602,13 +3712,3 @@ entries:
   type: design
   status: vigente
   verified: null
-- path: docs/knowledge/research_2026-07-23.md
-  type: conocimiento
-  status: propuesto
-  verified: null
-  notes: 'triage: regla determinista (^research[_-])'
-- path: docs/knowledge/research_2026-07-24.md
-  type: conocimiento
-  status: propuesto
-  verified: null
-  notes: 'triage: regla determinista (^research[_-])'
