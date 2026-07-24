@@ -74,10 +74,16 @@ def scan_source(
 ) -> StaticScanResult:
     """Fail-closed (I6): un semgrep que crashea, se cuelga, o devuelve algo
     no parseable NUNCA se trata como "código limpio" -- ``ok=False`` corta el
-    pipeline aquí, el candidato no se promociona."""
-    cmd = [_semgrep_binary(), "--config", ruleset, "--json", "--quiet", source_dir]
+    pipeline aquí, el candidato no se promociona.
+
+    ``source_dir`` se resuelve a ABSOLUTO antes de construir el comando --
+    se pasa como argumento Y como cwd del subproceso; si fuera relativo,
+    tras el chdir del subproceso ya no apuntaría a donde apuntaba (bug real
+    2026-07-24: semgrep devolvía "Invalid scanning root")."""
+    abs_source_dir = str(Path(source_dir).resolve())
+    cmd = [_semgrep_binary(), "--config", ruleset, "--json", "--quiet", abs_source_dir]
     try:
-        returncode, stdout, stderr = runner(cmd, source_dir, timeout_seconds)
+        returncode, stdout, stderr = runner(cmd, abs_source_dir, timeout_seconds)
     except TimeoutError:
         return StaticScanResult(ok=False, reason=f"semgrep excedió el timeout de {timeout_seconds}s")
     except Exception as exc:  # noqa: BLE001 — fail-closed ante cualquier fallo del runner

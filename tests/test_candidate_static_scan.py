@@ -21,6 +21,30 @@ def _fake_runner(returncode: int, stdout: str):
     return run
 
 
+def test_scan_source_resolves_relative_path_to_absolute(tmp_path, monkeypatch) -> None:
+    """Bug real 2026-07-24 (encontrado corriendo la orquestación completa
+    contra un directorio de cuarentena relativo): scan_source pasaba
+    source_dir tal cual como argumento Y como cwd del subproceso -- si es
+    relativo, tras el chdir del subproceso ya no apunta a donde apuntaba
+    (semgrep: "Invalid scanning root"). Debe resolverse a absoluto ANTES de
+    construir el comando, sin importar qué cwd tenga el proceso llamador."""
+    from atlas.mcp.candidate_static_scan import scan_source
+
+    seen_cmd = {}
+
+    def spy_runner(cmd, cwd, timeout):
+        seen_cmd["cmd"] = cmd
+        return 0, '{"results": [], "errors": []}', ""
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "sub").mkdir()
+    scan_source("sub", runner=spy_runner)  # ruta RELATIVA a propósito
+    scanned_path = seen_cmd["cmd"][-1]
+    import os
+    assert os.path.isabs(scanned_path)
+    assert scanned_path == str(tmp_path / "sub")
+
+
 def test_scan_source_parses_findings_by_severity() -> None:
     from atlas.mcp.candidate_static_scan import scan_source
     from atlas.core.adversarial_panel import Severity
