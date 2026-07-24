@@ -18,7 +18,7 @@ separadas que consumen `CouncilVerdict` como entrada.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Literal
+from typing import Any, Callable, Literal
 
 from atlas.core.adversarial_panel import Severity
 
@@ -62,6 +62,49 @@ class CouncilVerdict:
 
 ScanFn = Callable[[str], ScanFinding]
 AuditFn = Callable[[str], AuditFinding]
+
+
+def default_scan_fn(descriptor: str) -> ScanFinding:
+    """Escaneo automatizado por defecto -- reusa las MISMAS regexes IOC/
+    credencial que ya viven en `AutonomousDecider` (probadas en producción,
+    603 verdicts reales verificados en la auditoría de ADR-077). Primera
+    línea de defensa determinista, sin LLM, sin coste de red."""
+    from atlas.core.decider.autonomous_decider import _CREDENTIAL_KW, _IOC_REGEXES, _fold
+
+    surface = _fold(descriptor)
+    for rx in _IOC_REGEXES:
+        if rx.search(surface):
+            return ScanFinding(clean=False, detail=f"IOC: patrón peligroso ({rx.pattern})")
+    for kw in _CREDENTIAL_KW:
+        if kw in surface:
+            return ScanFinding(clean=False, detail=f"IOC: menciona credenciales ({kw!r})")
+    return ScanFinding(clean=True)
+
+
+_AUDIT_PROMPT = (
+    "Eres un auditor de seguridad hostil. Revisa esta acción candidata antes "
+    "de que se ejecute. Responde en la PRIMERA línea SOLO con LIMPIO o "
+    "SOSPECHOSO. En las siguientes líneas, explica por qué.\n\nACCIÓN:\n{descriptor}\n"
+)
+
+
+def build_llm_audit_fn(hub: Any) -> AuditFn:
+    """Construye el auditor LLM único (barato, una sola voz) a partir de un
+    `InferenceHub` ya configurado. NO es el trío de `deliberation_council`
+    -- esa es la segunda opinión que se paga solo si esto marca `flagged`
+    (ver `security_council_escalation.py`)."""
+
+    def audit(descriptor: str) -> AuditFinding:
+        from atlas.core.inference_hub import InferenceRequest
+
+        resp = hub.infer(InferenceRequest(prompt=_AUDIT_PROMPT.format(descriptor=descriptor)))
+        if not resp.success or not resp.text.strip():
+            raise RuntimeError("auditor LLM sin respuesta")
+        first = resp.text.strip().splitlines()[0].strip().strip("[](){}*#:.- ").upper()
+        clean = first.startswith("LIMPIO") or first.startswith("CLEAN")
+        return AuditFinding(clean=clean, detail=resp.text.strip())
+
+    return audit
 
 
 def run_security_council_gate(

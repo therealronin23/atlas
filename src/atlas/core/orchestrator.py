@@ -69,6 +69,7 @@ from atlas.core.orchestrator_parts.gate_f_parser import (
 from atlas.core.orchestrator_parts.git_read_tools import GitReadTools
 from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
 from atlas.core.timetravel import TimeTravel
+from atlas.core.verify import Evidence
 from atlas.memory.block_memory import (
     BlockLimitExceeded,
     BlockMemory,
@@ -204,6 +205,125 @@ class Orchestrator:
         """
         self._decider = decider
 
+    # Kinds que pasan por el Security Council Gate (ADR-077) antes de
+    # consultar al decisor subyacente. Registro explícito, no todos los
+    # DecisionAction.kind -- gate_f/route quedan fuera a propósito (su HITL
+    # ya pasa por la máquina de aprobación de handle_intent).
+    _SECURITY_GATEABLE_KINDS = frozenset(
+        {"mcp_adopt", "cold_update_apply", "offensive_action", "omega_exec"}
+    )
+
+    def _security_council_registry_path(self) -> Path:
+        return self._project_root() / "workspace" / "security_council" / "rejected.jsonl"
+
+    def _convene_second_opinion(self, descriptor: str, kind: str) -> Evidence | None:
+        """Segunda opinión REAL del trío de `deliberation_council` (ADR-077.2)
+        -- solo se paga cuando el auditor único marcó `flagged`, o siempre
+        para `offensive_action` dado su perfil de consecuencias externas
+        irreversibles."""
+        from atlas.core.deliberation_council import build_trio_reviewers, convene_for_decision
+        from atlas.router.cascade import Difficulty
+
+        return convene_for_decision(
+            f"Security Council Gate escaló '{kind}': {descriptor}",
+            context=(
+                f"Auditor único del Security Council Gate (ADR-077) marcó "
+                f"flagged para kind={kind}. Segunda opinión real requerida "
+                f"antes de confirmar el rechazo permanente."
+            ),
+            difficulty=Difficulty.HARD,
+            risk="high",
+            irreversible=(kind == "offensive_action"),
+            reviewers=build_trio_reviewers(),
+        )
+
+    def _notify_security_council_flag(
+        self, action: DecisionAction, act_hash: str, report: Any
+    ) -> None:
+        from atlas.core.adversarial_panel import Severity
+
+        self._merkle.log(
+            action="security_council.flagged",
+            agent="orchestrator",
+            result="flagged",
+            risk_level="high",
+            payload={
+                "action_kind": action.kind,
+                "descriptor": action.descriptor,
+                "action_hash": act_hash,
+                "severity": report.severity.name,
+                "triggered_by": report.triggered_by,
+                "recommended_action": report.recommended_action,
+            },
+        )
+        if report.severity not in (Severity.MAJOR, Severity.BLOCKING):
+            return
+        if self._telegram_bot is None:
+            return
+        try:
+            self._telegram_bot.notify_all(
+                f"🛑 Security Council Gate: {action.kind} '{action.descriptor[:80]}' "
+                f"FLAGGED ({report.severity.name})\n{report.triggered_by}\n"
+                f"hash={act_hash[:12]}... -- revisar y "
+                f"`atlas security-council unblock {act_hash}` si es falso positivo."
+            )
+        except Exception:  # noqa: BLE001 -- notificación best-effort, nunca bloquea
+            pass
+
+    def _run_security_council(self, action: DecisionAction, act_hash: str) -> Verdict | None:
+        """Pre-gate delante del decisor existente (ADR-077). Devuelve un
+        ``Verdict`` final si el gate ya resolvió la decisión (rechazado
+        permanente -> ``Deny`` instantáneo sin re-correr nada; ``flagged``
+        confirmado -> ``RequiresHuman``, independiente de ``ATLAS_DECIDER``
+        -- la vía que la auditoría de ADR-076/036 encontró inalcanzable desde
+        mayo de 2026). Devuelve ``None`` si el kind no está gateado, si el
+        gate está apagado, o si el veredicto salió ``clean`` -- en todos esos
+        casos el decisor subyacente decide exactamente como hoy, sin cambios.
+
+        Opt-in explícito (``ATLAS_SECURITY_COUNCIL_GATE=1``, gasta LLM + red
+        saliente en cada acción gateada -- mismo criterio que el resto de
+        capacidades nuevas de esta sesión): sin el flag, ningún test ni
+        despliegue existente cambia de comportamiento por accidente."""
+        if os.environ.get("ATLAS_SECURITY_COUNCIL_GATE", "").strip() != "1":
+            return None
+        if action.kind not in self._SECURITY_GATEABLE_KINDS:
+            return None
+
+        from atlas.core.decider.security_council_registry import is_rejected, record_rejection
+
+        registry_path = self._security_council_registry_path()
+        if is_rejected(act_hash, registry_path):
+            return Deny(
+                reason="rechazado permanentemente por Security Council Gate -- "
+                "usar 'atlas security-council unblock' si es falso positivo"
+            )
+
+        from atlas.core.decider.security_council_gate import (
+            build_llm_audit_fn,
+            default_scan_fn,
+            run_security_council_gate,
+        )
+        from atlas.core.decider.security_council_escalation import resolve_council_verdict
+        from atlas.core.inference_hub import InferenceHub
+
+        hub = self._inference_hub or InferenceHub(mode="auto")
+        first_pass = run_security_council_gate(
+            action.descriptor, scan_fn=default_scan_fn, audit_fn=build_llm_audit_fn(hub)
+        )
+        final = resolve_council_verdict(
+            kind=action.kind,
+            first_pass=first_pass,
+            descriptor=action.descriptor,
+            convene_fn=lambda descriptor: self._convene_second_opinion(descriptor, action.kind),
+        )
+        if final.status == "clean":
+            return None
+
+        assert final.report is not None
+        record_rejection(act_hash, action.kind, action.descriptor, final.report, registry_path)
+        self._notify_security_council_flag(action, act_hash, final.report)
+        return RequiresHuman(reason=final.report.triggered_by)
+
     def _consult_decider(
         self, action: DecisionAction, task: Task
     ) -> tuple[Verdict, str]:
@@ -213,12 +333,22 @@ class Orchestrator:
         exacta, ADR-036 P2), lo pasa al decisor en el contexto y emite
         telemetría no bloqueante (D7) en cada veredicto.
 
+        ADR-077: para los `kind` gateados, el Security Council Gate corre
+        ANTES del decisor subyacente -- un rechazo permanente o un `flagged`
+        confirmado nunca llega a `AutonomousDecider`/`HumanDecider`.
+
         Devuelve ``(verdict, action_hash)``. El hash se hila hasta el punto de
         ejecución (slice 6): una mutación reversible que se ejecuta registra su
         handle de undo atado a este mismo hash, y ``revert(action_hash)`` lo
         consume. Los call-sites sin undo real ignoran el hash (``verdict, _``).
         """
         act_hash = action_hash(action, task.intent)
+
+        gate_verdict = self._run_security_council(action, act_hash)
+        if gate_verdict is not None:
+            self._emit_decider_telemetry(action, task, gate_verdict, act_hash)
+            return gate_verdict, act_hash
+
         verdict = self._decider.decide(
             action,
             sanctioned_intent=task.intent,
