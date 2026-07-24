@@ -49,6 +49,24 @@ def test_request_sends_jsonrpc_envelope_and_parses_result() -> None:
     assert seen["body"]["method"] == "tools/list"
 
 
+def test_request_parses_sse_framed_response() -> None:
+    """Hallazgo real (2026-07-24, probado contra api.inference.sh en vivo):
+    MCP Streamable HTTP puede responder como SSE (``data: {...}``) en vez de
+    JSON plano -- el propio spec lo permite. Sin despojar el framing, una
+    respuesta REAL y válida se descartaba como "no-JSON"."""
+    from atlas.mcp.http_mcp_transport import HttpMcpTransport
+
+    def fetcher(method, url, data, headers):
+        body = json.loads(data.decode())
+        payload = json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {"tools": [{"name": "x"}]}})
+        return 200, f"event: message\ndata: {payload}\n\n"
+
+    t = HttpMcpTransport("https://real.example.com/mcp", fetcher=fetcher)
+    with patch("socket.getaddrinfo", return_value=_FAKE_ADDR):
+        result = t.request("tools/list", {})
+    assert result == {"tools": [{"name": "x"}]}
+
+
 def test_request_raises_on_jsonrpc_error() -> None:
     from atlas.mcp.http_mcp_transport import HttpMcpTransport
     from atlas.mcp.transport import McpProtocolError

@@ -27,6 +27,19 @@ from atlas.security.ssrf_bridge import SSRFBridge
 Fetcher = Any  # firma: (method, url, data: bytes, headers: dict) -> (status, text)
 
 
+def _strip_sse_framing(text: str) -> str:
+    """MCP Streamable HTTP permite responder como SSE (``event:``/``data:``
+    líneas) en vez de JSON plano -- verificado en vivo contra un endpoint
+    remoto real (api.inference.sh) que SÍ usa este framing. Toma el ÚLTIMO
+    ``data:`` (el mensaje JSON-RPC de respuesta; líneas ``event:`` se ignoran).
+    Si no hay framing SSE, devuelve el texto tal cual (JSON plano, camino ya
+    cubierto)."""
+    if "data:" not in text:
+        return text
+    data_lines = [ln[len("data:"):].strip() for ln in text.splitlines() if ln.startswith("data:")]
+    return data_lines[-1] if data_lines else text
+
+
 class HttpMcpTransport:
     """JSON-RPC 2.0 sobre HTTP POST (MCP Streamable HTTP), mismo envelope que
     ``StdioTransport`` (``jsonrpc``/``id``/``method``/``params``)."""
@@ -67,8 +80,9 @@ class HttpMcpTransport:
             raise McpProtocolError(f"HTTP {status} del endpoint remoto")
         if not text.strip():
             raise McpProtocolError("respuesta vacía del endpoint remoto")
+        body = _strip_sse_framing(text)
         try:
-            msg = json.loads(text)
+            msg = json.loads(body)
         except json.JSONDecodeError as exc:
             raise McpProtocolError(f"respuesta no-JSON: {text[:200]}") from exc
         if not isinstance(msg, dict):
