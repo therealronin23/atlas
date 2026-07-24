@@ -18,13 +18,33 @@ de Atlas (ver discusión ADR-075, hallazgo 2026-07-24).
 from __future__ import annotations
 
 import json
+import urllib.error
+import urllib.request
 from typing import Any
 from urllib.parse import urlparse
 
 from atlas.mcp.transport import McpProtocolError
 from atlas.security.ssrf_bridge import SSRFBridge
 
-Fetcher = Any  # firma: (method, url, data: bytes, headers: dict) -> (status, text)
+Fetcher = Any  # firma: (method, url, data: bytes, headers: dict) -> (status, text[, response_headers])
+
+
+def urllib_fetcher_with_headers(
+    method: str, url: str, data: bytes | None, headers: dict[str, str]
+) -> tuple[int, str, dict[str, str]]:
+    """Fetcher real (stdlib urllib, sin deps nuevas) que SÍ expone los
+    headers de respuesta -- necesario para que HttpMcpTransport capture
+    ``Mcp-Session-Id`` (MCP Streamable HTTP). El fetcher plano de
+    ``atlas.knowledge.sources`` no los expone (2-tuple); esta variante es
+    específica del probe de protocolo MCP."""
+    req = urllib.request.Request(url, data=data, method=method)
+    for k, v in headers.items():
+        req.add_header(k, v)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.status, resp.read().decode("utf-8", errors="replace"), dict(resp.headers)
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode("utf-8", errors="replace"), dict(e.headers or {})
 
 
 def _strip_sse_framing(text: str) -> str:
@@ -59,6 +79,11 @@ class HttpMcpTransport:
         # Efímera, propia de este transporte -- nunca la compartida.
         self._bridge = SSRFBridge(extra_allowed=allowed_domains if allowed_domains is not None else {domain})
         self._next_id = 1
+        # MCP Streamable HTTP: el server puede devolver 'Mcp-Session-Id' en
+        # la respuesta de initialize; las peticiones siguientes DEBEN
+        # repetirlo (verificado en vivo, 2026-07-24, mcp.abmeter.ai) o el
+        # server rechaza. None hasta que se capture.
+        self._session_id: str | None = None
 
     def _post(self, payload: dict[str, Any]) -> tuple[int, str]:
         decision = self._bridge.check(self._url)
@@ -74,7 +99,23 @@ class HttpMcpTransport:
             "Accept": "application/json, text/event-stream",
             "User-Agent": "atlas-core-vetting-probe",
         }
-        status, text = self._fetcher("POST", self._url, data, headers)
+        if self._session_id is not None:
+            headers["Mcp-Session-Id"] = self._session_id
+
+        # Compat: el fetcher puede devolver (status, text) o (status, text,
+        # response_headers) -- 2-tuple sigue soportado, solo sin sesión.
+        result = self._fetcher("POST", self._url, data, headers)
+        if len(result) == 3:
+            status, text, response_headers = result
+            if self._session_id is None and response_headers:
+                # Case-insensitive: los headers HTTP lo son (verificado en
+                # vivo -- mcp.abmeter.ai devuelve 'mcp-session-id' en minúsculas).
+                for key, value in response_headers.items():
+                    if key.lower() == "mcp-session-id":
+                        self._session_id = str(value)
+                        break
+        else:
+            status, text = result
         return status, text
 
     def request(self, method: str, params: dict[str, Any] | None = None) -> Any:

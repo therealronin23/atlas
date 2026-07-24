@@ -149,6 +149,69 @@ def test_transport_never_calls_tools_call_helper_absent() -> None:
     assert not hasattr(HttpMcpTransport, "invoke_tool")
 
 
+def test_session_id_captured_from_initialize_and_echoed_on_next_request() -> None:
+    """Hallazgo real 2026-07-24 (probado en vivo contra mcp.abmeter.ai): el
+    server devuelve 'Mcp-Session-Id' en la respuesta de initialize (per spec
+    MCP Streamable HTTP); las peticiones siguientes DEBEN repetirlo o el
+    server rechaza. El fetcher puede devolver un 3-tuple (status, text,
+    response_headers) -- 2-tuple sigue soportado (sin sesión, camino ya
+    cubierto)."""
+    from atlas.mcp.http_mcp_transport import HttpMcpTransport
+
+    seen_headers_per_call = []
+
+    def fetcher(method, url, data, headers):
+        seen_headers_per_call.append(dict(headers))
+        body = json.loads(data.decode())
+        if body["method"] == "initialize":
+            return 200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {}}), {"Mcp-Session-Id": "abc123"}
+        return 200, json.dumps({"jsonrpc": "2.0", "id": body.get("id", 0), "result": {"tools": []}}), {}
+
+    t = HttpMcpTransport("https://real.example.com/mcp", fetcher=fetcher)
+    with patch("socket.getaddrinfo", return_value=_FAKE_ADDR):
+        t.request("initialize", {})
+        assert "Mcp-Session-Id" not in seen_headers_per_call[0]  # aún no hay sesión en la 1ª llamada
+        t.request("tools/list", {})
+    assert seen_headers_per_call[1].get("Mcp-Session-Id") == "abc123"
+
+
+def test_session_id_header_case_insensitive() -> None:
+    """Los headers HTTP son case-insensitive -- un server puede devolver
+    'mcp-session-id' en minúsculas (verificado en vivo: mcp.abmeter.ai lo
+    hace así)."""
+    from atlas.mcp.http_mcp_transport import HttpMcpTransport
+
+    calls = []
+
+    def fetcher(method, url, data, headers):
+        calls.append(dict(headers))
+        body = json.loads(data.decode())
+        if body["method"] == "initialize":
+            return 200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {}}), {"mcp-session-id": "xyz789"}
+        return 200, json.dumps({"jsonrpc": "2.0", "id": body.get("id", 0), "result": {}}), {}
+
+    t = HttpMcpTransport("https://real.example.com/mcp", fetcher=fetcher)
+    with patch("socket.getaddrinfo", return_value=_FAKE_ADDR):
+        t.request("initialize", {})
+        t.request("tools/list", {})
+    assert calls[1].get("Mcp-Session-Id") == "xyz789"
+
+
+def test_two_tuple_fetcher_still_supported_no_session() -> None:
+    """Backward-compat: un fetcher que devuelve (status, text) sin headers
+    (2-tuple) sigue funcionando -- simplemente no hay soporte de sesión."""
+    from atlas.mcp.http_mcp_transport import HttpMcpTransport
+
+    def fetcher(method, url, data, headers):
+        body = json.loads(data.decode())
+        return 200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {"ok": True}})
+
+    t = HttpMcpTransport("https://real.example.com/mcp", fetcher=fetcher)
+    with patch("socket.getaddrinfo", return_value=_FAKE_ADDR):
+        result = t.request("initialize", {})
+    assert result == {"ok": True}
+
+
 def test_close_is_noop_safe() -> None:
     from atlas.mcp.http_mcp_transport import HttpMcpTransport
 
