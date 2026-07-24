@@ -131,6 +131,11 @@ workspace/knowledge/
 # state are evidence inputs, not source artifacts to publish.
 workspace/mcp/*.jsonl
 workspace/mcp/*.json
+# Cuarentena de ADR-075 (etapa 2A): código fuente de terceros EXTRAÍDO para
+# análisis estático -- scratch operativo real, no versionar (2026-07-24: 583MB
+# tras la corrida completa de 229 candidatos stdio). Los RESULTADOS del análisis
+# viven en docs/design/mcp_catalog_stage2_report.jsonl (ese sí se versiona).
+workspace/mcp/quarantine/
 # Salida de builds de graphify (mal ubicada bajo src/, no es código)
 src/graphify-out/
 graphify-out/

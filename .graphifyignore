@@ -74,6 +74,12 @@ docs/archive/_graveyard/
 # puro, máquina-generado, mismo criterio que mcp_catalog_seeded.yaml.
 docs/design/mcp_catalog_stage1_triage.jsonl
 
+# 308KB (2026-07-24, ADR-075 etapa 2) — reporte JSONL de la corrida real
+# (lookup+descarga+extracción+entrypoint+semgrep para stdio; handshake MCP
+# para http) sobre los 2100 candidatos elegibles, regenerado por
+# scripts/mcp_stage2_batch.py. Dato tabular puro, mismo criterio.
+docs/design/mcp_catalog_stage2_report.jsonl
+
 # Pack de sucesión GENERADO: proyección de fuentes que YA se ingieren por
 # separado (AGENTS.md, master plan, actor_roles, bloque WHERE del ledger).
 # Ingerirlo duplica conceptos en el grafo semántico — mismo criterio que los
