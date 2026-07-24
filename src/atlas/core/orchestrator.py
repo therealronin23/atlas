@@ -237,40 +237,78 @@ class Orchestrator:
             reviewers=build_trio_reviewers(),
         )
 
+    def _security_council_key(self, action: DecisionAction, task: Task, gate_artifact: str) -> str:
+        """Clave de identidad del registro de rechazo permanente -- SEPARADA
+        del ``action_hash`` real que usan undo/revert (ese contrato no se
+        toca). Dos correcciones de auditoría de seguridad (2026-07-24):
+
+        1. Canonicaliza (trim + casefold) para que un cambio cosmético en
+           ``descriptor`` (espacio, mayúsculas) no baste para saltarse un
+           rechazo permanente ya registrado.
+        2. Incorpora ``gate_artifact`` (el contenido REAL inspeccionado --
+           ``code`` para ``omega_exec``, no solo la etiqueta) para que dos
+           payloads distintos con la misma etiqueta genérica no colisionen
+           en la misma clave."""
+        from dataclasses import replace
+
+        canonical_descriptor = action.descriptor.strip().casefold()
+        canonical_artifact = gate_artifact.strip().casefold()
+        surface = f"{canonical_descriptor}\n{canonical_artifact}"
+        canonical_action = replace(action, descriptor=surface)
+        return action_hash(canonical_action, task.intent)
+
     def _notify_security_council_flag(
-        self, action: DecisionAction, act_hash: str, report: Any
+        self, action: DecisionAction, council_key: str, report: Any
     ) -> None:
         from atlas.core.adversarial_panel import Severity
 
-        self._merkle.log(
-            action="security_council.flagged",
-            agent="orchestrator",
-            result="flagged",
-            risk_level="high",
-            payload={
-                "action_kind": action.kind,
-                "descriptor": action.descriptor,
-                "action_hash": act_hash,
-                "severity": report.severity.name,
-                "triggered_by": report.triggered_by,
-                "recommended_action": report.recommended_action,
-            },
-        )
+        try:
+            self._merkle.log(
+                action="security_council.flagged",
+                agent="orchestrator",
+                result="flagged",
+                risk_level="high",
+                payload={
+                    "action_kind": action.kind,
+                    "descriptor": action.descriptor,
+                    "action_hash": council_key,
+                    "severity": report.severity.name,
+                    "triggered_by": report.triggered_by,
+                    "recommended_action": report.recommended_action,
+                },
+            )
+        except Exception:  # noqa: BLE001 -- un fallo de auditoría no debe crashear el veredicto
+            pass
         if report.severity not in (Severity.MAJOR, Severity.BLOCKING):
             return
         if self._telegram_bot is None:
             return
         try:
             self._telegram_bot.notify_all(
-                f"🛑 Security Council Gate: {action.kind} '{action.descriptor[:80]}' "
+                f"🛑 Security Council Gate: {action.kind} "
+                f"'{self._telegram_safe_descriptor(action)}' "
                 f"FLAGGED ({report.severity.name})\n{report.triggered_by}\n"
-                f"hash={act_hash[:12]}... -- revisar y "
-                f"`atlas security-council unblock {act_hash}` si es falso positivo."
+                f"hash={council_key[:12]}... -- revisar y "
+                f"`atlas security-council unblock {council_key}` si es falso positivo."
             )
         except Exception:  # noqa: BLE001 -- notificación best-effort, nunca bloquea
             pass
 
-    def _run_security_council(self, action: DecisionAction, act_hash: str) -> Verdict | None:
+    @staticmethod
+    def _telegram_safe_descriptor(action: DecisionAction) -> str:
+        """Redacción para Telegram (hallazgo de auditoría de seguridad):
+        ``offensive_action`` porta el target real de una operación ofensiva
+        -- OPSEC-sensible -- en ``descriptor``. No se envía en claro a un
+        canal de chat aunque el escaneo de keywords no lo detecte (el
+        escaneo busca ETIQUETAS de credencial, no CUALQUIER dato sensible)."""
+        if action.kind == "offensive_action" and "@" in action.descriptor:
+            capability, _, _target = action.descriptor.partition("@")
+            return f"{capability}@***redacted***"
+        return action.descriptor[:80]
+
+    def _run_security_council(
+        self, action: DecisionAction, task: Task, *, gate_artifact: str
+    ) -> Verdict | None:
         """Pre-gate delante del decisor existente (ADR-077). Devuelve un
         ``Verdict`` final si el gate ya resolvió la decisión (rechazado
         permanente -> ``Deny`` instantáneo sin re-correr nada; ``flagged``
@@ -279,6 +317,12 @@ class Orchestrator:
         mayo de 2026). Devuelve ``None`` si el kind no está gateado, si el
         gate está apagado, o si el veredicto salió ``clean`` -- en todos esos
         casos el decisor subyacente decide exactamente como hoy, sin cambios.
+
+        ``gate_artifact`` es el contenido REAL que el escaneo/auditor
+        inspeccionan -- normalmente ``action.descriptor``, pero para
+        ``omega_exec`` es el código a ejecutar (hallazgo de auditoría de
+        seguridad: el descriptor por defecto es un string vacío, así que sin
+        esto el gate quedaba ciego para el kind de mayor riesgo).
 
         Opt-in explícito (``ATLAS_SECURITY_COUNCIL_GATE=1``, gasta LLM + red
         saliente en cada acción gateada -- mismo criterio que el resto de
@@ -289,60 +333,104 @@ class Orchestrator:
         if action.kind not in self._SECURITY_GATEABLE_KINDS:
             return None
 
+        council_key = self._security_council_key(action, task, gate_artifact)
+        registry_path = self._security_council_registry_path()
+
         from atlas.core.decider.security_council_registry import is_rejected, record_rejection
 
-        registry_path = self._security_council_registry_path()
-        if is_rejected(act_hash, registry_path):
+        try:
+            already_rejected = is_rejected(council_key, registry_path)
+        except Exception:  # noqa: BLE001 -- fail-closed: registro ilegible -> tratar como rechazado
+            already_rejected = True
+        if already_rejected:
             return Deny(
                 reason="rechazado permanentemente por Security Council Gate -- "
                 "usar 'atlas security-council unblock' si es falso positivo"
             )
 
-        from atlas.core.decider.security_council_gate import (
-            build_llm_audit_fn,
-            default_scan_fn,
-            run_security_council_gate,
-        )
-        from atlas.core.decider.security_council_escalation import resolve_council_verdict
-        from atlas.core.inference_hub import InferenceHub
+        # Dedup TOCTOU (hallazgo de auditoría de seguridad): dos intentos
+        # concurrentes con el MISMO council_key no deben pagar dos veces el
+        # trío real ni disparar dos notificaciones. El primero evalúa; el
+        # resto, mientras tanto, no re-ejecuta el gate -- se trata como
+        # pendiente de revisión (RequiresHuman) sin volver a escanear.
+        with self._security_council_inflight_lock:
+            if council_key in self._security_council_inflight:
+                return RequiresHuman(
+                    reason="Security Council Gate ya evaluando este mismo action_hash "
+                    "-- esperar el resultado del intento en curso"
+                )
+            self._security_council_inflight.add(council_key)
 
-        # mcp_adopt: el descriptor es solo el NOMBRE del candidato -- un
-        # regex IOC genérico no encuentra nada peligroso en un string como
-        # "ai.adeu/adeu". La evidencia REAL (semgrep, worst_severity) ya la
-        # calculó ADR-075 y vive en mcp_catalog_stage2_report.jsonl -- este
-        # scan_fn la consulta por nombre en vez de mirar solo el texto. Sin
-        # esto, cualquier candidato futuro con hallazgo MAJOR/BLOCKING real
-        # pasaría igual que uno limpio (hallazgo real, no solo el caso de
-        # adeu que motivó el gate).
-        if action.kind == "mcp_adopt":
-            from atlas.core.decider.security_council_mcp_scan import mcp_vetting_scan_fn
-
-            scan_fn = mcp_vetting_scan_fn(
-                self._project_root() / "docs" / "design" / "mcp_catalog_stage2_report.jsonl"
+        try:
+            from atlas.core.decider.security_council_gate import (
+                CouncilVerdict,
+                SecurityReport,
+                build_llm_audit_fn,
+                default_scan_fn,
+                run_security_council_gate,
             )
-        else:
-            scan_fn = default_scan_fn
+            from atlas.core.decider.security_council_escalation import resolve_council_verdict
+            from atlas.core.adversarial_panel import Severity
+            from atlas.core.inference_hub import InferenceHub
 
-        hub = self._inference_hub or InferenceHub(mode="auto")
-        first_pass = run_security_council_gate(
-            action.descriptor, scan_fn=scan_fn, audit_fn=build_llm_audit_fn(hub)
-        )
-        final = resolve_council_verdict(
-            kind=action.kind,
-            first_pass=first_pass,
-            descriptor=action.descriptor,
-            convene_fn=lambda descriptor: self._convene_second_opinion(descriptor, action.kind),
-        )
-        if final.status == "clean":
-            return None
+            # mcp_adopt: el descriptor es solo el NOMBRE del candidato -- un
+            # regex IOC genérico no encuentra nada peligroso en un string
+            # como "ai.adeu/adeu". La evidencia REAL (semgrep, worst_severity)
+            # ya la calculó ADR-075 y vive en mcp_catalog_stage2_report.jsonl
+            # -- este scan_fn la consulta por nombre en vez de mirar solo el
+            # texto. Sin esto, cualquier candidato futuro con hallazgo
+            # MAJOR/BLOCKING real pasaría igual que uno limpio.
+            if action.kind == "mcp_adopt":
+                from atlas.core.decider.security_council_mcp_scan import mcp_vetting_scan_fn
 
-        assert final.report is not None
-        record_rejection(act_hash, action.kind, action.descriptor, final.report, registry_path)
-        self._notify_security_council_flag(action, act_hash, final.report)
-        return RequiresHuman(reason=final.report.triggered_by)
+                scan_fn = mcp_vetting_scan_fn(
+                    self._project_root() / "docs" / "design" / "mcp_catalog_stage2_report.jsonl"
+                )
+            else:
+                scan_fn = default_scan_fn
+
+            hub = self._inference_hub or InferenceHub(mode="auto")
+            try:
+                first_pass = run_security_council_gate(
+                    gate_artifact, scan_fn=scan_fn, audit_fn=build_llm_audit_fn(hub)
+                )
+                final = resolve_council_verdict(
+                    kind=action.kind,
+                    first_pass=first_pass,
+                    descriptor=gate_artifact,
+                    convene_fn=lambda descriptor: self._convene_second_opinion(descriptor, action.kind),
+                )
+            except Exception as exc:  # noqa: BLE001 -- fail-closed en TODA la cadena, no
+                # solo en el propio run_security_council_gate (hallazgo de
+                # auditoría de seguridad: is_rejected/record_rejection/
+                # convene_fn -- incl. AdversarialPanel.verify -- podían
+                # lanzar sin control y crashear al caller en vez de degradar).
+                final = CouncilVerdict(
+                    status="flagged",
+                    report=SecurityReport(
+                        severity=Severity.MAJOR,
+                        checks_run=["gate:crashed_unexpectedly"],
+                        triggered_by=f"Security Council Gate falló de forma no anticipada (fail-closed): {exc}",
+                        recommended_action="revisar manual -- el gate no pudo completar la evaluación",
+                    ),
+                )
+
+            if final.status == "clean":
+                return None
+
+            assert final.report is not None
+            try:
+                record_rejection(council_key, action.kind, gate_artifact[:2000], final.report, registry_path)
+            except Exception:  # noqa: BLE001 -- persistir el rechazo no debe tumbar el veredicto
+                pass
+            self._notify_security_council_flag(action, council_key, final.report)
+            return RequiresHuman(reason=final.report.triggered_by)
+        finally:
+            with self._security_council_inflight_lock:
+                self._security_council_inflight.discard(council_key)
 
     def _consult_decider(
-        self, action: DecisionAction, task: Task
+        self, action: DecisionAction, task: Task, *, gate_artifact: str | None = None
     ) -> tuple[Verdict, str]:
         """Punto único de decisión (ADR-040).
 
@@ -353,6 +441,9 @@ class Orchestrator:
         ADR-077: para los `kind` gateados, el Security Council Gate corre
         ANTES del decisor subyacente -- un rechazo permanente o un `flagged`
         confirmado nunca llega a `AutonomousDecider`/`HumanDecider`.
+        ``gate_artifact`` es el contenido real que el gate debe inspeccionar
+        cuando ``action.descriptor`` no lo porta (ej. ``code`` para
+        ``omega_exec``); por defecto usa el propio ``descriptor``.
 
         Devuelve ``(verdict, action_hash)``. El hash se hila hasta el punto de
         ejecución (slice 6): una mutación reversible que se ejecuta registra su
@@ -361,7 +452,9 @@ class Orchestrator:
         """
         act_hash = action_hash(action, task.intent)
 
-        gate_verdict = self._run_security_council(action, act_hash)
+        gate_verdict = self._run_security_council(
+            action, task, gate_artifact=gate_artifact if gate_artifact is not None else action.descriptor
+        )
         if gate_verdict is not None:
             self._emit_decider_telemetry(action, task, gate_verdict, act_hash)
             return gate_verdict, act_hash
@@ -498,6 +591,12 @@ class Orchestrator:
         ``snapshot_id``, registra el undo ``SNAPSHOT`` atado al ``action_hash``.
         Devuelve ``None`` si el decisor no autorizó (Deny / RequiresHuman); en
         ese caso no se ejecuta nada."""
+        # Hallazgo CRITICAL de auditoría de seguridad (2026-07-24): el
+        # Security Council Gate (ADR-077) solo veía `descriptor` (vacío por
+        # defecto) -- nunca `code`, el payload REAL que se ejecuta en OMEGA.
+        # gate_artifact le da al gate el código de verdad; `descriptor` (el
+        # DecisionAction que gobierna undo/revert) queda intacto.
+        gate_artifact = f"{descriptor}\n{code}" if descriptor else code
         verdict, act_hash = self._consult_decider(
             DecisionAction(
                 kind="omega_exec",
@@ -509,6 +608,7 @@ class Orchestrator:
                 reason="ejecución OMEGA con snapshot reversible",
             ),
             task,
+            gate_artifact=gate_artifact,
         )
         if not isinstance(verdict, Allow):
             return None
@@ -2333,6 +2433,12 @@ class Orchestrator:
         self._telegram_thread = None
         self._offline_monitor = None
         self._thermal_watchdog = None
+        # Security Council Gate (ADR-077) -- dedup TOCTOU: dos invocaciones
+        # concurrentes para el MISMO council_key no deben pagar dos veces el
+        # trío real ni disparar dos notificaciones (hallazgo de auditoría de
+        # seguridad, 2026-07-24). Lock en memoria, alcance de este proceso.
+        self._security_council_inflight: set[str] = set()
+        self._security_council_inflight_lock = threading.Lock()
         # t3-1-universal-gui-operator: PolicyEngine determinista (D14,
         # ADR-060) — cierra el gap de wiring detectado en la investigación
         # (pol_hard_computer_use ya existía en atlas.fabric.policy pero
