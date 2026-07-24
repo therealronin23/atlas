@@ -12,8 +12,10 @@ Diseño: docs/design/mcp_trunk_portable.md + mcp_sector_architecture_audit.md.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote
 
 from atlas.knowledge.sources import Fetcher, HttpApiSource, RawRecord
 from atlas.security.ssrf_bridge import SSRFBridge
@@ -22,9 +24,22 @@ _HOST = "registry.modelcontextprotocol.io"
 
 
 class RegistrySource(HttpApiSource):
-    """Fuente del registro oficial MCP (`/v0/servers`)."""
+    """Fuente del registro oficial MCP (`/v0/servers`).
 
-    def __init__(self, *, fetcher: Fetcher | None = None, limit: int = 100) -> None:
+    Pagina de verdad (verificado en vivo 2026-07-23: el registro real supera
+    las 400 entradas con `metadata.nextCursor`; sin paginar, el sembrado se
+    quedaba para siempre con solo la primera página de 100). ``max_pages``
+    es un tope de seguridad -- un registro (o un bug) que nunca deja de dar
+    cursor no debe colgar el sembrador indefinidamente.
+    """
+
+    def __init__(
+        self,
+        *,
+        fetcher: Fetcher | None = None,
+        limit: int = 100,
+        max_pages: int = 50,
+    ) -> None:
         super().__init__(
             "mcp-registry",
             "mcp/registry",
@@ -32,10 +47,27 @@ class RegistrySource(HttpApiSource):
             fetcher=fetcher,
         )
         self._limit = limit
+        self._max_pages = max_pages
 
     def fetch(self, query: Any) -> list[RawRecord]:
-        url = f"https://{_HOST}/v0/servers?limit={self._limit}"
-        return [self._request("GET", url)]
+        records: list[RawRecord] = []
+        cursor: str | None = None
+        for _ in range(self._max_pages):
+            url = f"https://{_HOST}/v0/servers?limit={self._limit}"
+            if cursor:
+                url += f"&cursor={quote(cursor, safe='')}"
+            rec = self._request("GET", url)
+            records.append(rec)
+            if rec.status != 200:
+                break
+            try:
+                payload = json.loads(rec.payload)
+            except json.JSONDecodeError:
+                break
+            cursor = (payload.get("metadata") or {}).get("nextCursor") or None
+            if not cursor:
+                break
+        return records
 
 
 def _transport_of(server: dict[str, Any]) -> str:

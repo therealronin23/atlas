@@ -27,26 +27,46 @@ diferidas):
 4. **Coherencia description↔inputSchema.** ¿Lo que la tool AFIRMA que hace
    (``description``) coincide con lo que PIDE (``inputSchema``)? Ver la nota de
    investigación bajo ``_vet_coherence`` para la decisión ast_guard-sí/no.
-
-Diferido (ver ADR-038): egress IOC runtime en cada ``tools/call``, y
-re-vetting atado a ColdUpdate.
+5. **Egress IOC runtime (``vet_call``).** Vetea CADA ``tools/call``, no solo
+   la adopción -- cableado en ``McpRegistry.dispatch()``. Fail-open si el
+   chequeo mismo falla; fail-closed ante un IOC real.
+6. **Re-vetting periódico.** Ver ``McpRegistry.revet_all()`` +
+   ``maintenance_sentinel_revet_tick`` -- re-corre esta gate sobre servers ya
+   adoptados, nunca re-arma TOFU en solitario.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
 from atlas.mcp.config import McpServerConfig
 
+_log = logging.getLogger(__name__)
+
 # Metacaracteres de shell que NUNCA deben aparecer en un token argv legítimo.
 # Su presencia indica un intento de smuggling de shell en el comando del server.
 _SHELL_METACHARS: tuple[str, ...] = (
     ";", "|", "$(", "`", "&&", "||", ">", "<", "\n",
 )
+
+# Suelo de IOC de incidentes confirmados, NO anulable (2026-07-23, extraído
+# del concepto de claude-mcp-sentinel v3.1: "confirmed-malicious infra can't
+# be allowlisted" -- ver README, seccion "Known-malicious domains"). Producción
+# construye SentinelGate sin ioc_domains/ioc_commands (orchestrator.py) -- sin
+# este suelo, Capa 2 (IOC) no bloqueaba NADA en producción pese a estar
+# marcada ✅ en ADR-038: el mecanismo existía, la blocklist estaba vacía.
+# Se UNE (nunca reemplaza) con lo que el caller inyecte.
+_INCIDENT_IOC_DOMAINS: frozenset[str] = frozenset({
+    # Postmark MCP backdoor, sept. 2025 (ADR-036, thehackernews.com):
+    # 15 versiones limpias + 1 update envenenado que BCC'eaba cada email.
+    "giftshop.club",
+})
+_INCIDENT_IOC_COMMANDS: frozenset[str] = frozenset()
 
 # Keywords de tiering. Orden de precedencia: credential > shell_net > write > read.
 _CREDENTIAL_KW: tuple[str, ...] = (
@@ -125,8 +145,10 @@ class SentinelGate:
     ) -> None:
         self._snapshot_dir = Path(snapshot_dir)
         self._merkle_log = merkle_log
-        self._ioc_domains = frozenset(d.lower() for d in ioc_domains)
-        self._ioc_commands = frozenset(c.lower() for c in ioc_commands)
+        # Union con el suelo no anulable: pasar ioc_domains=frozenset() no
+        # vacía la protección contra incidentes confirmados.
+        self._ioc_domains = frozenset(d.lower() for d in ioc_domains) | _INCIDENT_IOC_DOMAINS
+        self._ioc_commands = frozenset(c.lower() for c in ioc_commands) | _INCIDENT_IOC_COMMANDS
 
     # ------------------------------------------------------------------ API
 
@@ -138,6 +160,28 @@ class SentinelGate:
         if reason is not None:
             self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
         return reason
+
+    def vet_call(self, tool: str, args: dict[str, Any]) -> str | None:
+        """Capa 5, **egress runtime**: vetea CADA ``tools/call`` (no solo la
+        adopción) contra el mismo suelo de IOC. Re-minado de
+        claude-mcp-sentinel v3.1 (su hook corre pre-tools-call en producción,
+        20/20 regresión, ~30-80ms). Fail-open en el ERROR del propio chequeo
+        (un bug aquí nunca debe poder tumbar una llamada legítima) --
+        distinto de fail-closed cuando SÍ se encuentra un IOC real."""
+        try:
+            surface = self._tool_surface_for_call(tool, args)
+            return self._scan_iocs(surface)
+        except Exception:  # noqa: BLE001 — fail-open: el chequeo no debe tumbar la llamada
+            _log.warning(
+                "SentinelGate.vet_call: el chequeo mismo falló para tool=%r -- "
+                "fail-open (llamada permitida, protección degradada este turno)",
+                tool, exc_info=True,
+            )
+            return None
+
+    @staticmethod
+    def _tool_surface_for_call(tool: str, args: dict[str, Any]) -> str:
+        return f"{tool} {json.dumps(args, ensure_ascii=False, default=str)}".lower()
 
     def vet(self, cfg: McpServerConfig, tools: list[dict[str, Any]]) -> VetResult:
         """Conveniencia: comando + tools en una llamada (para callers que ya
@@ -382,10 +426,22 @@ class SentinelGate:
     def _load_snapshot(self, server: str) -> dict[str, str] | None:
         path = self._snapshot_path(server)
         if not path.exists():
-            return None
+            return None  # esperado: primera adopción real, sin señal que dar
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
+            # Patrón P4 de claude-mcp-sentinel v3.1 ("fail-open ruidoso"): un
+            # snapshot corrupto (crash a media escritura, disco dañado, o
+            # borrado/reescrito) se trataba como "no existe" -> TOFU se
+            # re-arma en SILENCIO y admite lo que corra ahora como si fuera
+            # la primera vez. Mismo fail-open (no bloquea), pero ahora deja
+            # constancia de que la protección anti rug-pull se degradó.
+            _log.warning(
+                "SentinelGate: snapshot corrupto para %r en %s -- TOFU se "
+                "re-arma como si fuera primera adopción (protección anti "
+                "rug-pull degradada para este server)",
+                server, path,
+            )
             return None
         if not isinstance(data, dict):
             return None

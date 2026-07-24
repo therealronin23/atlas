@@ -37,9 +37,38 @@ def _isolated_cycle(name: str, tick: Callable[[], object]) -> None:
 if TYPE_CHECKING:
     from atlas.core.orchestrator import Orchestrator
 
+
+def _build_evolution_gate() -> Any | None:
+    """Construye un EvolutionGate real (openevolve + Groq) si hay API key en
+    el entorno. Devuelve None si no -- ``run_item_with_evolution`` cae a
+    ``run_item()`` sin romper el ciclo (mismo fail-open que
+    ``EvolutionGate.evolve``: cualquier fallo de la API/openevolve se
+    traduce a ``succeeded=False``, nunca propaga).
+
+    Auditoría 2026-07-23 (docs/audits/audit_full_premortem_2026-07-23.md,
+    hallazgo #3): EvolutionGate/run_item_with_evolution existían testeados
+    pero nunca se invocaban desde este ciclo real -- decisión del operador
+    de activarlo con el evaluador/proveedor real (Groq, ya usado como
+    fallback real de Hermes, ver WORK_LEDGER.md), no un stub."""
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not api_key:
+        return None
+    from atlas.core.self_maintenance.evolution_gate import EvolutionGate
+
+    return EvolutionGate(
+        api_base="https://api.groq.com/openai/v1",
+        api_key=api_key,
+        model="llama-3.3-70b-versatile",
+        iterations=5,
+    )
+
 # Cota del cuerpo descargado (mismo criterio que SecureExecutor: no leer
 # respuestas ilimitadas aunque la URL esté en la allowlist).
 _EGRESS_MAX_BYTES = 5 * 1024 * 1024
+
+# Candidatos de catálogo probados por tick (maintenance_mcp_trial_tick). Bajo
+# a propósito: cada uno puede spawnear un subproceso real en jaula bwrap.
+_MCP_TRIAL_BATCH_SIZE = 5
 
 
 def _build_avoid_section(recaller: Any, store: Any, query: str) -> str:
@@ -300,14 +329,22 @@ class MaintenanceFacade:
                 # Grafo vivo automático: ver maintenance_project_graph_tick.
                 _isolated_cycle("project_graph", self.maintenance_project_graph_tick)
 
+            def _mcp_trial_cycle() -> None:
+                # Prueba en jaula del catálogo: ver maintenance_mcp_trial_tick.
+                _isolated_cycle("mcp_trial", self.maintenance_mcp_trial_tick)
+
+            def _sentinel_revet_cycle() -> None:
+                # Capa 6 SentinelGate: ver maintenance_sentinel_revet_tick.
+                _isolated_cycle("sentinel_revet", self.maintenance_sentinel_revet_tick)
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
                 # respetar monkeypatches de tests sobre el Orchestrator.
                 #
-                # TODO(batch+benchmark): ColdUpdateBatcher no expone las rutas del
-                # worktree final antes de limpiar; integrar BenchmarkGate.compare()
-                # requeriría ese hook — ver backlog. Fuera de alcance de este slice.
+                # BenchmarkGate ya cableado desde 2026-07-10 dentro de
+                # maintenance_cold_update_batcher() (ver mas abajo en este
+                # fichero): senal, nunca gate bloqueante.
                 batcher = self._orch.maintenance_cold_update_batcher()
                 result = batcher.run_batch()
                 if not result.included:
@@ -350,7 +387,8 @@ class MaintenanceFacade:
                     _dep_cycle, _batch_cycle, _self_build_cycle,
                     _research_cycle, _provider_smoke_cycle,
                     _knowledge_ingest_cycle, _project_graph_cycle,
-                    _provider_discovery_cycle,
+                    _provider_discovery_cycle, _mcp_trial_cycle,
+                    _sentinel_revet_cycle,
                 ),
                 **scheduler_kwargs,
             )
@@ -438,7 +476,12 @@ class MaintenanceFacade:
         if item is None:
             return {"status": "no_pending"}
         runner = self._orch.maintenance_self_build_runner()
-        result: dict[str, Any] = runner.run_item(item)
+        evolution_gate = _build_evolution_gate()
+        result: dict[str, Any] = (
+            runner.run_item_with_evolution(item, evolution_gate=evolution_gate)
+            if evolution_gate is not None
+            else runner.run_item(item)
+        )
         save_queue_state(
             state_path,
             record_outcome(state, item.id, success=result.get("status") == "proposed"),
@@ -457,9 +500,127 @@ class MaintenanceFacade:
                 "proposal_id": result.get("proposal_id"),
                 "detail": str(result.get("detail") or "")[:800],
                 "files_changed": result.get("files_changed", []),
+                "evolution_attempted": evolution_gate is not None,
             },
         )
         return {"status": "ran", "result": result}
+
+    def maintenance_mcp_trial_tick(self) -> dict[str, Any]:
+        """Un tick de prueba en jaula del catálogo MCP: ``candidato`` ->
+        ``probado-en-jaula`` (Pieza 2, docs/design/design_catalog_enrichment.md).
+
+        Auditoría 2026-07-23 (docs/audits/audit_full_premortem_2026-07-23.md):
+        ``TrialGate``/``SpawnTrial`` existían completos y testeados (Pieza 2b/2c,
+        incl. aislamiento bwrap real) pero CERO callers de producción -- el
+        catálogo tenía 777 entradas y 0 ``probado-en-jaula`` para siempre,
+        porque nadie construía un ``SpawnTrial`` real. Este tick cierra ese
+        círculo. De paso (mismo día) se corrigió un hallazgo de seguridad real
+        en ``SpawnTrial``: antes de hoy solo aislaba módulos ``atlas.mcp.*``
+        en jaula bwrap -- un binario de terceros caía a spawn SIN jaula,
+        exactamente el caso que menos confianza merece (ver spawn_trial.py).
+
+        Opt-in explícito (``ATLAS_MCP_TRIAL=1``, gasta CPU/spawns reales, aunque
+        sin red ni LLM). Lote acotado por tick (``_MCP_TRIAL_BATCH_SIZE``) para
+        no convertir un solo ciclo en un barrido de las 700+ entradas. NUNCA
+        promueve más allá de ``probado-en-jaula`` -- ``verificado``/``instalado``
+        siguen siendo HITL explícito, sin cambio de esa invariante."""
+        # Mismo guardia anti-recursión que self_build/research/etc (incidente
+        # 2026-07-09): la suite que el lazo corre en su worktree hereda las
+        # flags ATLAS_* del daemon real -- sin esto, un tick que spawnea
+        # procesos reales en jaula podría cascadear dentro de tests anidados.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_MCP_TRIAL", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import yaml
+
+        from atlas.mcp.catalog import load_catalog
+        from atlas.mcp.spawn_trial import SpawnTrial
+        from atlas.mcp.trial_gate import TrialGate
+
+        classified_path = self._project_root() / "docs" / "design" / "mcp_catalog_classified.yaml"
+        if not classified_path.is_file():
+            return {"status": "no_catalog"}
+
+        raw = yaml.safe_load(classified_path.read_text(encoding="utf-8")) or {}
+        sectors: dict[str, Any] = raw.get("sectors") or {}
+        entries = load_catalog(classified_path)
+
+        # Posición (sector_id, indice) en el MISMO orden de iteración que
+        # load_catalog (sectors.items() -> entries en orden) para poder
+        # escribir de vuelta el status sin reimplementar su parseo/validación.
+        positions: list[tuple[str, int]] = [
+            (sector_id, i)
+            for sector_id, block in sectors.items()
+            for i in range(len((block or {}).get("entries") or []))
+        ]
+        candidates = [
+            (pos, entry) for pos, entry in zip(positions, entries) if entry.status == "candidato"
+        ]
+        if not candidates:
+            return {"status": "no_candidates"}
+
+        batch = candidates[:_MCP_TRIAL_BATCH_SIZE]
+        gate = TrialGate(
+            agents_skill_root=self._project_root() / ".claude" / "skills",
+            spawn_trial=SpawnTrial(
+                repo_root=self._project_root(),
+                work_dir=self._project_root() / "workspace" / "mcp_trial" / "jail_work",
+            ),
+        )
+
+        results: list[dict[str, Any]] = []
+        promoted = 0
+        for (sector_id, idx), entry in batch:
+            result = gate.trial(entry)
+            results.append(result.to_dict())
+            if result.suggested_status:
+                sectors[sector_id]["entries"][idx]["status"] = result.suggested_status
+                promoted += 1
+
+        if promoted:
+            classified_path.write_text(
+                yaml.safe_dump(raw, allow_unicode=True, sort_keys=False), encoding="utf-8"
+            )
+
+        self._orch._merkle.log(
+            action="mcp.trial_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={
+                "trialed": len(batch),
+                "promoted": promoted,
+                "results": results[:20],
+            },
+        )
+        return {"status": "ran", "trialed": len(batch), "promoted": promoted, "results": results}
+
+    def maintenance_sentinel_revet_tick(self) -> dict[str, Any]:
+        """Un tick de re-vetting periódico (Capa 6 de SentinelGate, ADR-038):
+        re-corre ``McpRegistry.revet_all()`` sobre servers YA adoptados,
+        detectando drift ocurrido fuera de una adopción nueva. Re-minado de
+        claude-mcp-sentinel v3.1 ("scheduled monitoring, re-escanea todo cada
+        mañana"). Opt-in (``ATLAS_SENTINEL_REVET=1``) por consistencia con el
+        resto de ticks nuevos, aunque el chequeo en sí es barato (sin red/LLM,
+        solo tools/list + comparación local de hashes). NUNCA re-arma TOFU ni
+        desregistra tools por su cuenta -- solo señala; la re-aprobación
+        sigue siendo HITL explícito (borrar el snapshot)."""
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_SENTINEL_REVET", "").strip() != "1":
+            return {"status": "disabled"}
+
+        findings = self._orch._mcp.revet_all()
+        self._orch._merkle.log(
+            action="sentinel.revet_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="moderate" if findings else "safe",
+            payload={"findings": findings},
+        )
+        return {"status": "ran", "findings": findings}
 
     def maintenance_research_tick(self) -> dict[str, Any]:
         """Un tick de investigación: intereses recientes → consultas variadas →

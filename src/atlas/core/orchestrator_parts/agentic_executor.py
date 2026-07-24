@@ -262,6 +262,14 @@ class AgenticExecutor:
             if name == "append_memory_block":
                 block = host._block_memory.append(args["label"], args["text"])
                 return f"ok: bloque '{block.label}' ampliado ({block.chars} chars)"
+            if name == "update_focus_chain":
+                from atlas.core.orchestrator_parts.agentic_helpers import render_focus_chain
+
+                steps = args["steps"]
+                if not isinstance(steps, list):
+                    return "error: 'steps' debe ser una lista"
+                task.metadata["focus_chain"] = steps
+                return render_focus_chain(steps)
             if name == "web_crawl":
                 return host._stringify_tool_result(host._run_web_crawl(args["url"]))
             if name == "read_external_file":

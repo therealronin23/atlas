@@ -21,11 +21,13 @@ infraestructura real, no reproducible sin ese entorno (igual que
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import time
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -101,6 +103,47 @@ def orch_with_real_desktop_mcp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     return orch
 
 
+def _extract_window_list(windows_field: Any) -> list[Any]:
+    """Desempaqueta la respuesta MCP cruda de list_windows a la lista real.
+
+    ``McpRegistry._stringify`` (src/atlas/mcp/registry.py) tiene DOS formatos
+    reales, no uno (verificado en vivo 2026-07-23 tras instalar el WM):
+
+    - Sin resultados (``content`` vacío): cae al JSON crudo completo, p.ej.
+      ``{"content": [], "structuredContent": {"result": []}, "isError": false}``.
+    - Con resultados: extrae y concatena SOLO los ``content[].text`` con
+      ``"\\n"``, uno por ventana, cada uno un objeto JSON pretty-printed (con
+      saltos de línea propios) — sin envoltorio ``structuredContent``. Por
+      eso no vale un split por líneas; hace falta un decoder que consuma
+      objetos JSON concatenados uno detrás de otro.
+    """
+    if not isinstance(windows_field, str):
+        return windows_field if isinstance(windows_field, list) else []
+    text = windows_field.strip()
+    if not text:
+        return []
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        payload = None
+    if isinstance(payload, dict):
+        structured = payload.get("structuredContent", {})
+        result = structured.get("result", []) if isinstance(structured, dict) else []
+        return result if isinstance(result, list) else []
+    windows: list[Any] = []
+    decoder = json.JSONDecoder()
+    idx = 0
+    while idx < len(text):
+        remainder = text[idx:].lstrip()
+        if not remainder:
+            break
+        idx += len(text[idx:]) - len(remainder)
+        obj, end = decoder.raw_decode(text[idx:])
+        windows.append(obj)
+        idx += end
+    return windows
+
+
 def test_list_windows_sees_two_real_desktop_apps(
     orch_with_real_desktop_mcp: Orchestrator,
     two_real_desktop_apps: list[subprocess.Popen[bytes]],
@@ -110,11 +153,14 @@ def test_list_windows_sees_two_real_desktop_apps(
 
     assert task.status == TaskStatus.DONE
     assert task.route == RoutingLevel.DETERMINISTIC_TOOL
-    windows = task.result
-    assert windows is not None
-    # No fingimos: si list_windows real no ve NINGUNA ventana X11, el test
-    # debe fallar (evidencia real, no simulada).
-    assert len(str(windows)) > 0
+    assert task.result is not None
+    window_list = _extract_window_list(task.result["windows"])
+    # No fingimos: verificamos CONTENIDO real (>=2 ventanas), no solo que
+    # la respuesta serializada tenga longitud > 0.
+    assert len(window_list) >= 2, (
+        f"esperaba ver xclock+xcalc reales, vi {window_list!r} "
+        "(0 ventanas visibles sin WM en Xvfb :99 — ver xfail reason)"
+    )
 
 
 def test_screenshot_returns_real_pixels(
@@ -126,6 +172,49 @@ def test_screenshot_returns_real_pixels(
     assert task.status == TaskStatus.DONE
     assert task.route == RoutingLevel.DETERMINISTIC_TOOL
     assert task.result is not None
+
+
+def test_desktop_plan_executes_across_two_different_real_apps(
+    orch_with_real_desktop_mcp: Orchestrator,
+    two_real_desktop_apps: list[subprocess.Popen[bytes]],
+) -> None:
+    """Evidencia OBLIGATORIA del acceptance de t3-1 (docs/backlog.yaml): la
+    MISMA lógica del planner ejecutada sobre >=2 apps de escritorio
+    distintas, sin ninguna rama de código condicionada al nombre de la app.
+    DesktopPlanner usa un InferenceHub FAKE (determinista, cero LLM real —
+    disciplina del proyecto) devolviendo un plan de 2 clicks; la EJECUCIÓN
+    de esos clicks es real contra Xvfb :99 vía computer-control-mcp, la
+    misma DesktopTool que test_real_click_requires_approval_then_executes."""
+    from unittest.mock import MagicMock
+
+    from atlas.tools.computer_use.desktop_planner import DesktopPlanner
+
+    hub = MagicMock()
+    resp = MagicMock()
+    resp.success = True
+    resp.text = (
+        '{"steps": ['
+        '{"kind": "click", "x": 50, "y": 50, "reason": "click en xclock"},'
+        '{"kind": "click", "x": 260, "y": 60, "reason": "click en xcalc"}'
+        "]}"
+    )
+    hub.infer_for_role.return_value = resp
+    orch_with_real_desktop_mcp._gate_f_exec.attach(desktop_planner=DesktopPlanner(hub))
+
+    task = orch_with_real_desktop_mcp.handle_intent("desktop plan abre las 2 apps y haz click en cada una")
+
+    assert task.status == TaskStatus.AWAITING_APPROVAL
+    assert task.route == RoutingLevel.REQUIRES_APPROVAL
+
+    approved = orch_with_real_desktop_mcp.approve_pending(task.id, approved=True)
+
+    assert approved["status"] == TaskStatus.DONE.value
+    plan_result = approved["result"]["plan"]
+    assert [step["kind"] for step in plan_result] == ["click", "click"]
+    # Ejecución real, no fingida: cada click devuelve el resultado real de
+    # computer-control-mcp -> click_screen, sin error.
+    for step in plan_result:
+        assert "error" not in str(step["result"]).lower()
 
 
 def test_real_click_requires_approval_then_executes_against_real_mcp(

@@ -24,6 +24,12 @@ from atlas.mcp.router_telemetry import (
     append_suggestion,
     apply_cooldown,
 )
+from atlas.mcp.workbench_compliance import check_and_record
+
+# Mismo save_dir que .cursor/mcp.json / el --mcp-config real de la CLI
+# ("${userHome}/atlas-mcp"): la raíz del tronco, no del repo -- es donde
+# workbench://manifest deja su rastro de consulta cada vez que se lee.
+_WORKBENCH_SAVE_DIR = Path.home() / "atlas-mcp"
 
 
 def _extract_prompt(raw: str) -> str:
@@ -104,13 +110,29 @@ def main() -> int:
             pass
 
     block = format_routing_block(hits)
-    if not block:
+
+    # Mesa de trabajo obligatoria (2026-07-23, diseño del operador): aviso no
+    # bloqueante si workbench://manifest lleva stale -- el hallazgo queda
+    # registrado en workspace/mcp/workbench_compliance_findings.jsonl para
+    # que un ciclo de auditoría/coldupdate futuro lo revise y actúe. Fail-soft
+    # total: check_and_record nunca lanza. Respeta --no-state (su contrato
+    # es "no toca workspace/mcp" — el mismo que cooldown/telemetría).
+    workbench_notice = None
+    if not args.no_state:
+        workbench_notice = check_and_record(
+            consultation_log_path=_WORKBENCH_SAVE_DIR / "workbench_consultations.jsonl",
+            findings_path=repo / "workspace" / "mcp" / "workbench_compliance_findings.jsonl",
+            prompt=prompt,
+        )
+
+    combined = "\n\n".join(part for part in (block, workbench_notice) if part)
+    if not combined:
         return 0
 
     if args.cursor_json:
-        print(json.dumps({"continue": True, "additional_context": block}, ensure_ascii=False))
+        print(json.dumps({"continue": True, "additional_context": combined}, ensure_ascii=False))
     else:
-        print(block)
+        print(combined)
     return 0
 
 

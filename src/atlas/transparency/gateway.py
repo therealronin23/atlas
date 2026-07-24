@@ -186,8 +186,11 @@ class TransparencyGateway:
 
         if self._shadow_router is not None:
             from atlas.security.shadow_model import ShadowMode, ShadowModel
+            # OSM-042 (Cónclave 2026-07-24): aislar el estado de escalada por
+            # task_id cuando se proporciona — un session_id fijo del gateway
+            # mezclaría el contador de escalada de tareas no relacionadas.
             routing = self._shadow_router.route(
-                session_id=self._session_id or "gateway",
+                session_id=task_id or self._session_id or "gateway",
                 confidence=confidence,
             )
             if routing.mode != ShadowMode.NORMAL:

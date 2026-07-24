@@ -16,7 +16,11 @@ from atlas.core.lesson_store import (
 )
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.mcp.catalog import CatalogEntry
-from atlas.mcp.workbench_resources import workbench_hash, workbench_manifest_json
+from atlas.mcp.workbench_resources import (
+    record_consultation,
+    workbench_hash,
+    workbench_manifest_json,
+)
 
 
 def _entry(
@@ -135,3 +139,34 @@ def test_workbench_hash_stable_for_same_inputs(store: LessonStore) -> None:
     h1 = workbench_hash(catalog_entries, lesson_stats, backlog_items, memory_count=5)
     h2 = workbench_hash(catalog_entries, lesson_stats, backlog_items, memory_count=5)
     assert h1 == h2
+
+
+# ===========================================================================
+# record_consultation (2026-07-23) — hook de mesa de trabajo obligatoria:
+# deja rastro durable de CUÁNDO se consultó workbench://manifest de verdad,
+# para que un hook externo (capability_route_hook.py) pueda detectar si el
+# trabajo sustancial de una sesión arrancó sin haberla mirado.
+# ===========================================================================
+
+
+def test_record_consultation_creates_file_with_timestamp(tmp_path: Path) -> None:
+    path = tmp_path / "consultations.jsonl"
+    record_consultation(path)
+    lines = path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    entry = json.loads(lines[0])
+    assert "at" in entry and entry["at"]
+
+
+def test_record_consultation_appends_not_overwrites(tmp_path: Path) -> None:
+    path = tmp_path / "consultations.jsonl"
+    record_consultation(path)
+    record_consultation(path)
+    lines = path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+
+
+def test_record_consultation_creates_parent_dirs(tmp_path: Path) -> None:
+    path = tmp_path / "nested" / "dir" / "consultations.jsonl"
+    record_consultation(path)
+    assert path.is_file()

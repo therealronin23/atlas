@@ -57,6 +57,58 @@ def test_registry_source_hits_official_v0_servers_through_gate() -> None:
     assert "/v0/servers" in seen[0]
 
 
+def test_paginates_until_no_next_cursor() -> None:
+    """El registro real es más grande que una página (verificado en vivo:
+    2026-07-23, >400 entradas con nextCursor). Sin paginar, el sembrado se
+    queda con solo la primera página (100) para siempre."""
+    from atlas.mcp.registry_seed import RegistrySource
+
+    pages = {
+        None: json.dumps({"servers": [{"server": {"name": "a"}}], "metadata": {"nextCursor": "cursor1"}}),
+        "cursor1": json.dumps({"servers": [{"server": {"name": "b"}}], "metadata": {"nextCursor": "cursor2"}}),
+        "cursor2": json.dumps({"servers": [{"server": {"name": "c"}}], "metadata": {}}),
+    }
+    seen_urls: list[str] = []
+
+    def fetcher(method, url, body, headers):
+        seen_urls.append(url)
+        cursor = None
+        if "cursor=" in url:
+            cursor = url.split("cursor=", 1)[1].split("&", 1)[0]
+        return 200, pages[cursor]
+
+    records = RegistrySource(fetcher=fetcher).fetch(None)
+    assert len(records) == 3
+    assert "cursor=cursor1" in seen_urls[1]
+    assert "cursor=cursor2" in seen_urls[2]
+
+
+def test_pagination_stops_at_max_pages_safety_cap() -> None:
+    """Un registro (o un bug) que nunca deja de dar nextCursor no debe colgar
+    el sembrador para siempre."""
+    from atlas.mcp.registry_seed import RegistrySource
+
+    def infinite_fetcher(method, url, body, headers):
+        return 200, json.dumps({"servers": [], "metadata": {"nextCursor": "always-more"}})
+
+    records = RegistrySource(fetcher=infinite_fetcher, max_pages=3).fetch(None)
+    assert len(records) == 3
+
+
+def test_pagination_stops_on_non_200_page() -> None:
+    from atlas.mcp.registry_seed import RegistrySource
+
+    def flaky_fetcher(method, url, body, headers):
+        if "cursor=" in url:
+            return 500, "error"
+        return 200, json.dumps({"servers": [{"server": {"name": "a"}}], "metadata": {"nextCursor": "x"}})
+
+    records = RegistrySource(fetcher=flaky_fetcher).fetch(None)
+    assert len(records) == 2
+    assert records[0].status == 200
+    assert records[1].status == 500
+
+
 def test_maps_servers_to_candidates_with_provenance() -> None:
     from atlas.mcp.registry_seed import registry_to_candidates
 

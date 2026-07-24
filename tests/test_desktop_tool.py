@@ -67,6 +67,16 @@ def test_click_uses_invoke() -> None:
     assert calls == [("invoke", "click_screen", {"x": 100, "y": 200})]
 
 
+def test_move_uses_invoke() -> None:
+    """Necesario para que el ejecutor de planes (t3-1) pueda dispatchar
+    steps kind='move' -- computer-control-mcp expone move_mouse(x,y) real."""
+    tool, calls = _recording_tool()
+
+    tool.move(50, 60)
+
+    assert calls == [("invoke", "move_mouse", {"x": 50, "y": 60})]
+
+
 def test_type_text_uses_invoke() -> None:
     tool, calls = _recording_tool()
 

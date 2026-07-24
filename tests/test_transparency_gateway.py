@@ -264,6 +264,90 @@ def test_hub_infer_with_gateway_seq_increments():
     assert r2.api_response.seq_ack == 1
 
 
+def test_hub_infer_with_drift_passes_computed_confidence_to_gateway():
+    """OSM-042 (Cónclave 2026-07-24): con un DriftTripwire (o cualquier
+    objeto con `.observe(session_id, turn_text)`) cableado, el hub calcula
+    confidence/cause REALES por turno y los pasa al gateway — en vez del
+    0.0 fijo de siempre. Usa un fake (no el DriftTripwire real, que tiene
+    su propia suite en test_drift.py) para aislar la responsabilidad del
+    hub: llamar a drift.observe() con el session_id/texto correctos y
+    propagar el resultado."""
+    from atlas.security.drift import DriftResult
+    from atlas.security.shadow_model import LatencyProfile, SessionStateStore, ShadowModel, ShadowRouter
+
+    subj_signer, _ = _make_ed25519()
+    op_signer, _ = _make_ed25519()
+    log_signer, _ = _make_ed25519()
+    log = TransparencyLog(signer=log_signer)
+    cosigner = ClientCosigner(subj_signer)
+    router = ShadowRouter(SessionStateStore(), threshold_passive=0.65, threshold_active=0.88)
+    sm = ShadowModel(latency=LatencyProfile(p50_ms=0.0, p95_ms=0.0, p99_ms=0.0))
+    gw = TransparencyGateway(cosigner, op_signer, log, shadow_router=router, shadow_model=sm)
+
+    calls: list[tuple[str, str]] = []
+
+    class _FakeDrift:
+        def observe(self, session_id: str, turn_text: str) -> DriftResult:
+            calls.append((session_id, turn_text))
+            return DriftResult(confidence=0.95, cause="fake-drift z=9.0")
+
+    hub = InferenceHub(mode="stub", transparency=gw, drift=_FakeDrift())
+    req = InferenceRequest(prompt="hello world", level=InferenceLevel.L1, task_id="task-1")
+    resp = hub.infer(req)
+
+    assert calls == [("task-1", "hello world")]
+    import json as _json
+    doc = _json.loads(resp.api_response.leaf_bytes)
+    assert doc["decision"] == "shadow_active"
+    assert "fake-drift z=9.0" in doc["cause"]
+
+
+def test_hub_infer_without_drift_defaults_confidence_zero():
+    """Compat: sin drift cableado, comportamiento previo intacto (confidence
+    siempre 0.0, nunca escala)."""
+    from atlas.security.shadow_model import LatencyProfile, SessionStateStore, ShadowModel, ShadowRouter
+
+    subj_signer, _ = _make_ed25519()
+    op_signer, _ = _make_ed25519()
+    log_signer, _ = _make_ed25519()
+    log = TransparencyLog(signer=log_signer)
+    cosigner = ClientCosigner(subj_signer)
+    router = ShadowRouter(SessionStateStore(), threshold_passive=0.5, threshold_active=0.88)
+    sm = ShadowModel(latency=LatencyProfile(p50_ms=0.0, p95_ms=0.0, p99_ms=0.0))
+    gw = TransparencyGateway(cosigner, op_signer, log, shadow_router=router, shadow_model=sm)
+
+    hub = InferenceHub(mode="stub", transparency=gw)
+    req = InferenceRequest(prompt="hello world", level=InferenceLevel.L1, task_id="task-1")
+    resp = hub.infer(req)
+
+    import json as _json
+    doc = _json.loads(resp.api_response.leaf_bytes)
+    assert doc["decision"] == "allow"
+
+
+def test_hub_infer_passes_on_escalation_hook_to_gateway():
+    from atlas.security.shadow_model import LatencyProfile, SessionStateStore, ShadowModel, ShadowRouter
+
+    subj_signer, _ = _make_ed25519()
+    op_signer, _ = _make_ed25519()
+    log_signer, _ = _make_ed25519()
+    log = TransparencyLog(signer=log_signer)
+    cosigner = ClientCosigner(subj_signer)
+    router = ShadowRouter(SessionStateStore(), threshold_passive=0.0, threshold_active=0.0)
+    sm = ShadowModel(latency=LatencyProfile(p50_ms=0.0, p95_ms=0.0, p99_ms=0.0))
+    gw = TransparencyGateway(cosigner, op_signer, log, shadow_router=router, shadow_model=sm)
+
+    escalations: list[tuple[bytes, str]] = []
+    hub = InferenceHub(
+        mode="stub", transparency=gw,
+        on_escalation=lambda payload, cause: escalations.append((payload, cause)),
+    )
+    req = InferenceRequest(prompt="hello", level=InferenceLevel.L1, task_id="task-1")
+    hub.infer(req)
+
+    assert len(escalations) == 1
+
+
 def test_hub_infer_with_gateway_log_grows():
     hub, gw = _make_hub_with_gateway()
     req = InferenceRequest(prompt="test", level=InferenceLevel.L1)
@@ -530,6 +614,34 @@ def test_gateway_distinct_seqs_no_false_positive():
     assert r1.seq_ack == 0
     assert r2.seq_ack == 1
     assert log.tree_size == 4  # 2 entries per call
+
+
+def test_gateway_shadow_routing_scoped_by_task_id_not_shared_across_tasks():
+    """OSM-042 (Cónclave 2026-07-24): el estado de escalada de ShadowRouter debe
+    aislarse por task_id, no compartirse bajo el session_id fijo del gateway —
+    si no, la actividad de una tarea contamina el contador de escalada de otra."""
+    gw, _router = _make_gateway_with_shadow(threshold_passive=0.65, threshold_active=0.88)
+
+    gw.call(b"p1", _noop_call, confidence=0.75, task_id="task-A")
+    gw.call(b"p2", _noop_call, confidence=0.75, task_id="task-B")
+    # 3er request de la sesión combinada, pero 2o de task-A: si el estado se
+    # compartiera bajo un solo session_id, este sería el 3o consecutivo en
+    # passive → escalaría a ACTIVE. Aislado por task_id, task-A solo lleva 2.
+    api_resp, _ = gw.call(b"p3", _noop_call, confidence=0.75, task_id="task-A")
+    doc = _json.loads(api_resp.leaf_bytes)
+    assert doc["decision"] == "shadow_passive"
+
+
+def test_gateway_shadow_routing_without_task_id_falls_back_to_gateway_session_id():
+    """Compatibilidad: sin task_id, el comportamiento previo (session_id fijo
+    del gateway) se preserva intacto."""
+    gw, _router = _make_gateway_with_shadow(threshold_passive=0.65, threshold_active=0.88)
+
+    gw.call(b"p1", _noop_call, confidence=0.75)
+    gw.call(b"p2", _noop_call, confidence=0.75)
+    api_resp, _ = gw.call(b"p3", _noop_call, confidence=0.75)
+    doc = _json.loads(api_resp.leaf_bytes)
+    assert doc["decision"] == "shadow_active"
 
 
 def test_gateway_without_shadow_router_unchanged():

@@ -74,6 +74,60 @@ def test_connections_discover_known_and_unknown(client: TestClient) -> None:
     assert unknown["status"] == "unknown_target"
 
 
+# ---------------------------------------------------------------------------
+# Cableado real: AuthBroker vía HTTP + real mode end-to-end (2026-07-24)
+# ---------------------------------------------------------------------------
+
+
+def test_create_credential_reference_endpoint(client: TestClient) -> None:
+    body = client.post("/connections/credential-reference", json={
+        "provider": "gmail", "env_var": "MY_GMAIL_TOKEN", "scopes": ["email.read"],
+    }).json()
+    assert body["provider"] == "gmail"
+    assert body["reference"] == "env:MY_GMAIL_TOKEN"
+    assert body["plaintext_stored"] is False
+
+    listed = client.get("/connections/credential-references").json()
+    assert listed["references"][0]["credential_ref_id"] == body["credential_ref_id"]
+
+
+def test_create_credential_reference_rejects_secret_looking_value(client: TestClient) -> None:
+    resp = client.post("/connections/credential-reference", json={
+        "provider": "gmail", "env_var": "sk-abcdefghijklmnopqrstuvwx", "scopes": [],
+    })
+    assert resp.status_code == 400
+
+
+def test_connections_test_real_mode_end_to_end_with_credential(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json as _json
+    import urllib.request
+    from unittest.mock import MagicMock
+
+    client.post("/connections/credential-reference", json={
+        "provider": "gmail", "env_var": "E2E_GMAIL_TOKEN", "scopes": ["email.read"],
+    })
+    monkeypatch.setenv("E2E_GMAIL_TOKEN", "fake-oauth-token")
+
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.__exit__.return_value = False
+    response.read.return_value = _json.dumps({"messages": [{"id": "m1"}]}).encode("utf-8")
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: response)
+
+    real = client.post("/connections/test",
+                       json={"connector_id": "gmail", "mode": "real"}).json()
+    assert real["ok"] is True
+    assert real["real"] is True
+    assert real["simulated"] is False
+
+    health = client.get("/integrations/health").json()
+    gmail_health = next(c for c in health["connectors"] if c["connector_id"] == "gmail")
+    assert gmail_health["status"] == "connected"
+    assert gmail_health["simulated"] is False
+
+
 def test_integrations_health_reflects_tests(client: TestClient) -> None:
     client.post("/connections/test", json={"connector_id": "odoo_erp", "mode": "mock"})
     body = client.get("/integrations/health").json()

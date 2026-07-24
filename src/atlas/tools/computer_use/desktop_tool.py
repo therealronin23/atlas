@@ -51,6 +51,9 @@ class DesktopTool:
     def click(self, x: int, y: int) -> Any:
         return self._call_mutating("click_screen", {"x": x, "y": y})
 
+    def move(self, x: int, y: int) -> Any:
+        return self._call_mutating("move_mouse", {"x": x, "y": y})
+
     def type_text(self, text: str) -> Any:
         return self._call_mutating("type_text", {"text": text})
 

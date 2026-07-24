@@ -462,6 +462,33 @@ def test_build_trunk_server_exposes_workbench_manifest(tmp_path: Path) -> None:
     ]
 
 
+def test_workbench_manifest_read_records_consultation(tmp_path: Path) -> None:
+    """2026-07-23: cada lectura real de workbench://manifest deja un
+    timestamp durable -- base del hook de mesa de trabajo obligatoria
+    (capability_route_hook.py detecta staleness sobre este fichero)."""
+    pytest.importorskip("mcp")
+    import asyncio
+    import json
+
+    from atlas.core.lesson_store import LessonStore
+    from atlas.mcp.catalog import load_catalog
+    from atlas.mcp.trunk_server import build_trunk_server
+
+    log_path = tmp_path / "workbench_consultations.jsonl"
+    server = build_trunk_server(
+        _agg(), catalog=load_catalog(_CATALOG), lesson_store=LessonStore(tmp_path / "lessons"),
+        backlog_items=[], memory_count=0, consultation_log_path=log_path,
+    )
+    assert not log_path.exists()
+    asyncio.run(server.read_resource("workbench://manifest"))
+    lines = log_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    assert "at" in json.loads(lines[0])
+
+    asyncio.run(server.read_resource("workbench://manifest"))
+    assert len(log_path.read_text(encoding="utf-8").strip().splitlines()) == 2
+
+
 def test_build_trunk_server_omits_workbench_manifest_without_all_sources() -> None:
     """Aditivo/opcional: sin las 4 fuentes, el resource simplemente no se
     registra — nunca rompe el arranque del resto del tronco."""

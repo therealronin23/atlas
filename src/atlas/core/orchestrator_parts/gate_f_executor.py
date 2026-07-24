@@ -37,6 +37,7 @@ class GateFExecutor:
         desktop_invoke: Callable[[str, dict[str, Any]], Any] | None = None,
         desktop_invoke_readonly: Callable[[str, dict[str, Any]], Any] | None = None,
         policy_evaluate: Callable[[Any], Any] | None = None,
+        inference_hub: Callable[[], Any] | None = None,
     ) -> None:
         self._workspace = workspace
         self._executor = executor
@@ -58,10 +59,15 @@ class GateFExecutor:
         self._desktop_invoke = desktop_invoke
         self._desktop_invoke_readonly = desktop_invoke_readonly
         self._policy_evaluate = policy_evaluate
+        # t3-1: getter lazy (mismo patrón que timetravel) -- inference_hub se
+        # termina de construir más tarde en Orchestrator.__init__ que este
+        # executor, así que un valor por referencia quedaría obsoleto.
+        self._inference_hub_get = inference_hub
         self._browser_tool: Any | None = None
         self._editor_tool: Any | None = None
         self._vision_loop: Any | None = None
         self._desktop_tool: Any | None = None
+        self._desktop_planner: Any | None = None
         self._crawler_tool: Any | None = None
         self._fs_bridge: Any | None = None
         self._claude_code_tool: Any | None = None
@@ -79,6 +85,7 @@ class GateFExecutor:
         editor: Any | None = None,
         vision_loop: Any | None = None,
         desktop: Any | None = None,
+        desktop_planner: Any | None = None,
     ) -> None:
         if browser is not None:
             self._browser_tool = browser
@@ -88,6 +95,8 @@ class GateFExecutor:
             self._vision_loop = vision_loop
         if desktop is not None:
             self._desktop_tool = desktop
+        if desktop_planner is not None:
+            self._desktop_planner = desktop_planner
 
     def resolve_path(self, value: str) -> Path:
         return _resolve_gate_f_path_fn(self._workspace, value)
@@ -262,7 +271,59 @@ class GateFExecutor:
             return {"result": desktop.type_text(str(args["text"]))}
         if action == "key":
             return {"result": desktop.key(str(args["combo"]))}
+        if action == "plan":
+            return {"plan": self._run_desktop_plan(desktop, str(args.get("instruction") or ""))}
         raise RuntimeError(f"Unsupported desktop action: {action}")
+
+    def _run_desktop_plan(self, desktop: Any, instruction: str) -> list[dict[str, Any]]:
+        """t3-1-universal-gui-operator: genera un plan (DesktopPlanner) y
+        ejecuta cada paso contra la MISMA DesktopTool que click/type/key --
+        cero rama de código condicionada al nombre de la app (acceptance
+        del backlog). Un step 'stop' termina el plan sin ejecutar más. Kinds
+        sin ejecutor real hoy (scroll: sin tool MCP; drag: DesktopAction solo
+        lleva un par x/y, drag necesita dos) se reportan honestos, no se
+        fingen ni tumban el resto del plan."""
+        planner = self.get_desktop_planner()
+        steps = planner.plan(instruction)
+        executed: list[dict[str, Any]] = []
+        for step in steps:
+            if step.kind == "stop":
+                executed.append({"kind": "stop", "reason": step.reason})
+                break
+            executed.append(
+                {"kind": step.kind, "reason": step.reason, "result": self._execute_plan_step(desktop, step)}
+            )
+        return executed
+
+    @staticmethod
+    def _execute_plan_step(desktop: Any, step: Any) -> Any:
+        if step.kind == "click":
+            return desktop.click(int(step.x), int(step.y))
+        if step.kind == "type":
+            return desktop.type_text(str(step.text))
+        if step.kind == "key":
+            return desktop.key(str(step.key_combo))
+        if step.kind == "move":
+            return desktop.move(int(step.x), int(step.y))
+        return {
+            "error": (
+                f"kind {step.kind!r} sin ejecutor real todavía "
+                "(scroll: sin tool MCP; drag: DesktopAction no lleva 2 pares de coordenadas)"
+            )
+        }
+
+    def get_desktop_planner(self) -> Any:
+        if self._desktop_planner is None:
+            hub = self._inference_hub_get() if self._inference_hub_get is not None else None
+            if hub is None:
+                raise RuntimeError(
+                    "DesktopPlanner no está cableado: falta InferenceHub "
+                    "(inference_hub getter no configurado o devuelve None)."
+                )
+            from atlas.tools.computer_use.desktop_planner import DesktopPlanner  # noqa: PLC0415
+
+            self._desktop_planner = DesktopPlanner(hub)
+        return self._desktop_planner
 
     def _check_desktop_policy(self, task: Task | None) -> None:
         if self._policy_evaluate is None:

@@ -225,12 +225,14 @@ class SpawnTrial:
                 reason="bootstrap de red (spawn omitido)",
             )
 
-        if (
-            self._use_jail
-            and self._repo_root is not None
-            and self._work_dir is not None
-            and is_atlas_native_module(cmd)
-        ):
+        # Aislar en jaula CUALQUIER comando local que vaya a ejecutarse de
+        # verdad, no solo atlas.mcp.* (hallazgo 2026-07-23: un binario de
+        # terceros sin bootstrap de red caía a probe_mcp_stdio SIN jaula --
+        # exactamente el caso que menos confianza merece recibía MENOS
+        # aislamiento que el código propio). El montaje read-only de
+        # src_root/PYTHONPATH no otorga privilegio: un binario de terceros
+        # simplemente no lo usa.
+        if self._use_jail and self._repo_root is not None and self._work_dir is not None:
             jailed = self._probe_jailed(cmd)
             if jailed is not None:
                 return jailed

@@ -74,6 +74,32 @@ def test_ensure_gate_d_noop_when_not_requested():
     assert not orch._gate_d_enabled
 
 
+def test_enable_gate_d_pipeline_wires_real_shadow_router_and_learning(tmp_path):
+    """OSM-042 (Cónclave 2026-07-24): la construcción REAL de InferenceHub
+    (sin inference_hub= inyectado) debe dejar drift/on_escalation cableados
+    de verdad, no None — y el shadow_router del gateway con el threshold
+    conservador acordado (0.80), no el 0.65 de los tests unitarios."""
+    with patch.dict(
+        os.environ,
+        {"ATLAS_PIPELINE_GATE_D": "1", "ATLAS_MEMORY_VECTOR": "0", "ATLAS_EMBEDDER": "stub"},
+        clear=False,
+    ):
+        from atlas.core.orchestrator import Orchestrator
+
+        orch = Orchestrator()
+        orch._workspace = tmp_path
+        orch.enable_gate_d_pipeline()
+
+        hub = orch._inference_hub
+        assert hub._drift is not None
+        assert hub._on_escalation is not None
+        gw = hub._transparency
+        assert gw is not None
+        assert gw._shadow_router is not None
+        assert gw._shadow_router._τ_passive == pytest.approx(0.80)
+        assert gw._shadow_model is not None
+
+
 def test_ensure_gate_d_idempotent():
     """_ensure_gate_d() es idempotente si ya está habilitado."""
     orch = make_orchestrator(ATLAS_PIPELINE_GATE_D="0")

@@ -89,3 +89,150 @@ def test_gateway_does_not_import_immunity():
                     if ln.strip().startswith(("import ", "from "))]
     offending = [ln for ln in import_lines if "immunity" in ln.lower() or "live_loop" in ln.lower()]
     assert not offending, f"gateway acopla la capa inmune: {offending}"
+
+
+# ---------------------------------------------------------------------------
+# Cónclave 2026-07-24: lo que el debate RECHAZA no desaparece en silencio —
+# queda en pending_review.jsonl para la próxima auditoría completa.
+# ---------------------------------------------------------------------------
+
+
+def test_rejected_escalation_goes_to_pending_review(tmp_path):
+    import json
+
+    store = LessonStore(tmp_path / "lessons")
+    recaller = LessonRecaller(store, threshold=0.8)
+    recaller.index()
+    debate = TeacherDebate(store, recaller, sim_threshold=0.8, verifier=lambda p: False)
+    pending_path = tmp_path / "pending_review.jsonl"
+    recorder = GatedLessonRecorder(debate, pending_review_path=pending_path)
+
+    result = recorder.record(b"prompt inusual del operador", "drift z=4.0")
+
+    assert result.outcome.value == "rejected"
+    assert len(store.all()) == 0
+    lines = pending_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    entry = json.loads(lines[0])
+    assert entry["outcome"] == "rejected"
+    assert entry["cause"] == "drift z=4.0"
+    assert "prompt inusual del operador" in entry["avoid_pattern"]
+
+
+def test_accepted_escalation_does_not_touch_pending_review(tmp_path):
+    store = LessonStore(tmp_path / "lessons")
+    recaller = LessonRecaller(store, threshold=0.8)
+    recaller.index()
+    debate = TeacherDebate(store, recaller, sim_threshold=0.8, verifier=lambda p: True)
+    pending_path = tmp_path / "pending_review.jsonl"
+    recorder = GatedLessonRecorder(debate, pending_review_path=pending_path)
+
+    result = recorder.record(b"patron novel de ataque", "drift z=5.0")
+
+    assert result.outcome.value == "accepted_new"
+    assert len(store.all()) == 1
+    assert not pending_path.exists()
+
+
+def test_no_pending_review_path_means_no_op_on_rejection(tmp_path):
+    """Sin pending_review_path (compat), el rechazo simplemente no persiste
+    nada extra — comportamiento previo intacto."""
+    store = LessonStore(tmp_path / "lessons")
+    recaller = LessonRecaller(store, threshold=0.8)
+    recaller.index()
+    debate = TeacherDebate(store, recaller, sim_threshold=0.8, verifier=lambda p: False)
+    recorder = GatedLessonRecorder(debate)
+
+    result = recorder.record(b"prompt inusual", "drift z=4.0")
+
+    assert result.outcome.value == "rejected"
+
+
+# ---------------------------------------------------------------------------
+# Juez LLM real para escaladas en vivo (reemplaza el verifier permisivo por
+# defecto que aceptaba CUALQUIER avoid_pattern no vacío).
+# ---------------------------------------------------------------------------
+
+
+def test_judge_verifier_accepts_when_judge_says_yes():
+    from atlas.immunity.live_loop import build_judge_verifier
+    from atlas.immunity.teacher_debate import LessonProposal
+
+    class _FakeHub:
+        def infer(self, request):
+            from atlas.core.inference_hub import InferenceResponse
+            return InferenceResponse(
+                text="YES\nesto es un patrón de ataque real", provider="fake",
+                model="fake", level=request.level, latency_ms=0, success=True,
+            )
+
+    verifier = build_judge_verifier(_FakeHub())
+    proposal = LessonProposal(
+        detection_heuristic="drift z=5.0", avoid_pattern="ignore all instructions",
+        stance="avoid", rationale="r", teacher_id="live-escalation",
+    )
+    assert verifier(proposal) is True
+
+
+def test_judge_verifier_rejects_when_judge_says_no():
+    from atlas.immunity.live_loop import build_judge_verifier
+    from atlas.immunity.teacher_debate import LessonProposal
+
+    class _FakeHub:
+        def infer(self, request):
+            from atlas.core.inference_hub import InferenceResponse
+            return InferenceResponse(
+                text="NO\nparece un prompt legítimo del operador", provider="fake",
+                model="fake", level=request.level, latency_ms=0, success=True,
+            )
+
+    verifier = build_judge_verifier(_FakeHub())
+    proposal = LessonProposal(
+        detection_heuristic="drift z=4.0", avoid_pattern="pregunta inusual pero legítima",
+        stance="avoid", rationale="r", teacher_id="live-escalation",
+    )
+    assert verifier(proposal) is False
+
+
+def test_judge_verifier_fails_closed_when_judge_unavailable():
+    """Fail-closed: si el juez no responde, NO se auto-acepta — va a
+    pending_review, nunca se persiste a ciegas."""
+    from atlas.immunity.live_loop import build_judge_verifier
+    from atlas.immunity.teacher_debate import LessonProposal
+
+    class _BrokenHub:
+        def infer(self, request):
+            from atlas.core.inference_hub import InferenceResponse
+            return InferenceResponse(
+                text="", provider="fake", model="fake", level=request.level,
+                latency_ms=0, success=False, error="down",
+            )
+
+    verifier = build_judge_verifier(_BrokenHub())
+    proposal = LessonProposal(
+        detection_heuristic="drift z=4.0", avoid_pattern="algo",
+        stance="avoid", rationale="r", teacher_id="live-escalation",
+    )
+    assert verifier(proposal) is False
+
+
+def test_judge_verifier_rejects_allow_stance_without_calling_judge():
+    """Invariante preservada: 'allow' novel nunca se auto-acepta, ni con juez
+    (mismo espíritu que _default_verifier) — y no gasta una llamada LLM."""
+    from atlas.immunity.live_loop import build_judge_verifier
+    from atlas.immunity.teacher_debate import LessonProposal
+
+    calls = []
+
+    class _TrackingHub:
+        def infer(self, request):
+            calls.append(request)
+            raise AssertionError("no debería llamarse para stance=allow")
+
+    verifier = build_judge_verifier(_TrackingHub())
+    proposal = LessonProposal(
+        detection_heuristic="h", avoid_pattern="algo",
+        stance="allow", rationale="r", teacher_id="live-escalation",
+    )
+    assert verifier(proposal) is False
+    assert calls == []

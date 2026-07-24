@@ -202,6 +202,11 @@ sectors:
 
 
 def _run_hook(repo_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
+    # HOME aislado: Path.home() decide dónde vive workbench_consultations.jsonl
+    # (mesa de trabajo obligatoria, 2026-07-23) -- sin esto el test depende del
+    # estado REAL de la máquina que lo corre (no determinista).
+    home = repo_root / "_home"
+    home.mkdir(exist_ok=True)
     return subprocess.run(
         [
             sys.executable,
@@ -212,7 +217,7 @@ def _run_hook(repo_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         text=True,
         timeout=60,
-        env={"PYTHONPATH": str(_REPO_ROOT / "src"), "PATH": ""},
+        env={"PYTHONPATH": str(_REPO_ROOT / "src"), "PATH": "", "HOME": str(home)},
     )
 
 
@@ -228,7 +233,11 @@ def test_hook_second_invocation_same_prompt_empty_block(tmp_path: Path) -> None:
 
     second = _run_hook(tmp_path, "revisar componentes react")
     assert second.returncode == 0, second.stderr
-    assert second.stdout.strip() == ""  # cooldown: bloque vacío
+    # Cooldown: la sugerencia de capacidad NO se repite (bloque de routing
+    # vacío). El aviso de mesa de trabajo (2026-07-23) es independiente del
+    # cooldown de routing -- puede seguir apareciendo, no es lo que este test
+    # verifica.
+    assert "react-helper" not in second.stdout
 
     # Telemetría escrita bajo workspace/mcp del repo-root, sin prompt en claro.
     sugg = tmp_path / "workspace" / "mcp" / "routing_suggestions.jsonl"

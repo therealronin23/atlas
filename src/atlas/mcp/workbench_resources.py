@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from atlas.mcp import catalog_resources
@@ -79,3 +81,16 @@ def workbench_manifest_json(
         "backlog_top_pending": backlog["top_pending"],
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def record_consultation(path: Path) -> None:
+    """Deja rastro durable (JSONL, append-only) de que ``workbench://manifest``
+    se consultó de verdad. 2026-07-23: sin esto, "preparar la mesa de trabajo"
+    era discrecional -- el operador pidió que quede registrado cuándo se
+    consulta para que un hook externo (``capability_route_hook.py``) pueda
+    detectar sesiones que arrancaron trabajo sustancial sin haberla mirado."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps({"at": datetime.now(timezone.utc).isoformat()}, ensure_ascii=False)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")

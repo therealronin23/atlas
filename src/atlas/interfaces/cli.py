@@ -1627,15 +1627,41 @@ def connections_plan(connector_id: str) -> None:
 @click.argument("connector_id")
 @click.option("--mode", default="mock", type=click.Choice(["mock", "sandbox", "real"]), show_default=True)
 def connections_test(connector_id: str, mode: str) -> None:
-    """Prueba una conexión en modo mock/sandbox (real está bloqueado en Fase 15)."""
+    """Prueba una conexión en mock/sandbox, o en real para conectores con
+    implementación real (hoy solo gmail, ADR-065; requiere referencia de
+    credencial previa vía `atlas connections credential-reference`)."""
+    from atlas.fabric.auth_broker import AuthBroker  # noqa: PLC0415
     from atlas.fabric.health import HealthMonitor  # noqa: PLC0415
     from atlas.fabric.recipes import RecipeEngine  # noqa: PLC0415
+    from atlas.fabric.registry import ConnectorRegistry  # noqa: PLC0415
     from atlas.fabric.testing import ConnectionTestRunner  # noqa: PLC0415
 
     root = _repo_root()
     recipes = RecipeEngine(root / "fixtures" / "connection_recipes")
-    runner = ConnectionTestRunner(recipes, HealthMonitor())
+    runner = ConnectionTestRunner(
+        recipes, HealthMonitor(),
+        auth_broker=AuthBroker(), registry=ConnectorRegistry(),
+    )
     rprint(runner.test(connector_id, mode=mode))
+
+
+@connections_group.command("credential-reference")
+@click.argument("provider")
+@click.argument("env_var")
+@click.option("--scope", "scopes", multiple=True, help="Scope concedido (repetible).")
+def connections_credential_reference(provider: str, env_var: str, scopes: tuple[str, ...]) -> None:
+    """Registra dónde vive un secreto (variable de entorno) SIN leer su valor.
+
+    Atlas nunca ve el secreto: solo guarda la referencia `env:<VAR>` y
+    comprueba presencia. El usuario debe exportar la variable él mismo."""
+    from atlas.fabric.auth_broker import AuthBroker, SecretRejected  # noqa: PLC0415
+
+    try:
+        ref = AuthBroker().create_env_reference(provider, env_var, list(scopes))
+    except SecretRejected as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    rprint(ref)
 
 
 @cli.group("mcp")

@@ -29,6 +29,7 @@ difiere a la capa 3, donde codegen tendrá contexto de ejecución alcanzable
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timedelta, timezone
@@ -39,6 +40,8 @@ from typing import Any
 from atlas.core.verify import Check, CostTier, Evidence, Verdict
 from atlas.logging.merkle_logger import MerkleLogger
 from atlas.memory.memory_system import ErrorRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class LessonProvenance(str, Enum):
@@ -206,6 +209,13 @@ class LessonStore:
             try:
                 results.append(Lesson.from_dict(json.loads(f.read_text(encoding="utf-8"))))
             except Exception:  # noqa: BLE001 — un fichero corrupto no tumba el resto
+                logger.warning(
+                    "LessonStore.all: fichero de leccion corrupto descartado en %s "
+                    "(la leccion desaparece silenciosamente de all()/by_provenance() "
+                    "si esto no se reporta)",
+                    f,
+                    exc_info=True,
+                )
                 continue
         return sorted(results, key=lambda lesson: lesson.created_at, reverse=True)
 

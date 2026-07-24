@@ -235,6 +235,7 @@ def build_trunk_server(
     backlog_items: "list[BacklogItem] | None" = None,
     memory_count: int | None = None,
     health_configs: list[McpServerConfig] | None = None,
+    consultation_log_path: Path | None = None,
 ) -> "FastMCP":
     """Servidor FastMCP que expone la fachada meta lazy del tronco (navegación de 3
     niveles + buscador). Con `skill_store` sirve skills; con `plugin_prompt_store`
@@ -432,13 +433,23 @@ def build_trunk_server(
         and backlog_items is not None
         and memory_count is not None
     ):
+        from atlas.mcp.workbench_resources import record_consultation as _record_consultation
         from atlas.mcp.workbench_resources import workbench_manifest_json as _workbench_manifest_json
 
         @server.resource("workbench://manifest", mime_type="application/json")
         def workbench_manifest() -> str:
             """SP-A: la mesa de trabajo compartida. Un único Resource que agrega
             catálogo+lecciones+backlog+memoria — léelo UNA vez al planificar en vez
-            de conocer cada subsistema por separado o hacer N tool-calls."""
+            de conocer cada subsistema por separado o hacer N tool-calls.
+
+            2026-07-23: cada lectura real deja un timestamp en
+            ``consultation_log_path`` (si se pasó) -- rastro durable que
+            ``capability_route_hook.py`` usa para detectar sesiones que
+            arrancaron trabajo sustancial sin haberla consultado (aviso, no
+            bloqueo; el hallazgo queda para revisión en el próximo ciclo de
+            auditoría/coldupdate)."""
+            if consultation_log_path is not None:
+                _record_consultation(consultation_log_path)
             return _workbench_manifest_json(catalog, lesson_store, backlog_items, memory_count)
 
     # Cierre de primitivos MCP (audit): Completion + Logging/Progress (consumidor real).
@@ -591,6 +602,7 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         catalog=catalog, taxonomy=taxonomy,
         lesson_store=lesson_store_obj, backlog_items=backlog_items_list,
         memory_count=memory_count_val, health_configs=children,
+        consultation_log_path=Path(save_dir) / "workbench_consultations.jsonl",
     )
     try:
         server.run()

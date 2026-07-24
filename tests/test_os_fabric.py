@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -222,6 +223,125 @@ def test_connection_test_runner_blocks_real_mode(tmp_path: Path, recipes: Recipe
     mock = runner.test("gmail", mode="mock")
     assert mock["ok"] is True
     assert mock["simulated"] is True
+
+
+# ---------------------------------------------------------------------------
+# Cableado real gmail: AuthBroker + ConnectorRegistry + GmailReadOnlyConnector
+# (ADR-065 dejó esto explícitamente para una tarea posterior; esta es esa
+# tarea, decidida por el operador 2026-07-24: cablear la cadena COMPLETA).
+# ---------------------------------------------------------------------------
+
+
+def _runner_with_broker(tmp_path: Path) -> tuple[ConnectionTestRunner, AuthBroker, ConnectorRegistry, OsEventStore, HealthMonitor]:
+    store = OsEventStore(tmp_path / "events.jsonl")
+    monitor = HealthMonitor(store=store)
+    broker = AuthBroker(tmp_path / "credential_refs.json")
+    registry = ConnectorRegistry(tmp_path / "approved_descriptors.json", store=store)
+    runner = ConnectionTestRunner(
+        RecipeEngine(RECIPES_DIR), monitor, store=store,
+        auth_broker=broker, registry=registry,
+    )
+    return runner, broker, registry, store, monitor
+
+
+def test_real_mode_blocked_without_credential_reference(tmp_path: Path) -> None:
+    """Sin referencia registrada en AuthBroker, real mode sigue bloqueado
+    aunque el env var exista por accidente — la referencia ES el gate."""
+    runner, _broker, _registry, _store, monitor = _runner_with_broker(tmp_path)
+
+    result = runner.test("gmail", mode="real")
+
+    assert result["ok"] is False
+    assert result["status"] == "BLOCKED_BY_MISSING_DEPENDENCY"
+    assert monitor.get("gmail").status is HealthStatus.NEVER_CONNECTED
+
+
+def test_real_mode_succeeds_with_registered_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json as _json
+    import urllib.request
+    from unittest.mock import MagicMock
+
+    runner, broker, registry, _store, monitor = _runner_with_broker(tmp_path)
+    broker.create_env_reference("gmail", "MY_GMAIL_TOKEN", ["email.read"])
+    monkeypatch.setenv("MY_GMAIL_TOKEN", "fake-oauth-token")
+
+    fake_body = {"messages": [{"id": "m1"}]}
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.__exit__.return_value = False
+    response.read.return_value = _json.dumps(fake_body).encode("utf-8")
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: response)
+
+    result = runner.test("gmail", mode="real")
+
+    assert result["ok"] is True
+    assert result["real"] is True
+    assert result["simulated"] is False
+    assert monitor.get("gmail").status is HealthStatus.CONNECTED
+    # TOFU: el descriptor de gmail queda aprobado tras el primer éxito real
+    assert registry.verify_descriptor(
+        "gmail", {"capabilities": ["email.read", "email.draft"]}
+    )["status"] == "ok"
+
+
+def test_real_mode_blocks_on_rug_pull_without_touching_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import urllib.request
+    from unittest.mock import MagicMock
+
+    runner, broker, registry, _store, monitor = _runner_with_broker(tmp_path)
+    broker.create_env_reference("gmail", "MY_GMAIL_TOKEN", ["email.read"])
+    monkeypatch.setenv("MY_GMAIL_TOKEN", "fake-oauth-token")
+    # Aprobar un descriptor DISTINTO al real de antemano → rug pull detectado
+    registry.approve_descriptor("gmail", {"capabilities": ["email.read", "email.send"]})
+
+    urlopen_mock = MagicMock()
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen_mock)
+
+    result = runner.test("gmail", mode="real")
+
+    assert result["ok"] is False
+    assert result["status"] == "rug_pull_suspected"
+    assert monitor.get("gmail").status is HealthStatus.DEGRADED
+    urlopen_mock.assert_not_called()
+
+
+def test_real_mode_reports_connector_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+    import urllib.error
+    import urllib.request
+
+    runner, broker, _registry, _store, monitor = _runner_with_broker(tmp_path)
+    broker.create_env_reference("gmail", "MY_GMAIL_TOKEN", ["email.read"])
+    monkeypatch.setenv("MY_GMAIL_TOKEN", "fake-oauth-token")
+
+    def raise_401(request: Any, timeout: float | None = None) -> Any:
+        raise urllib.error.HTTPError(request.full_url, 401, "Unauthorized", None, io.BytesIO(b""))
+
+    monkeypatch.setattr(urllib.request, "urlopen", raise_401)
+
+    result = runner.test("gmail", mode="real")
+
+    assert result["ok"] is False
+    assert result["status"] == "error"
+    assert result["real"] is True
+    assert monitor.get("gmail").status is HealthStatus.ERROR
+
+
+def test_real_mode_other_connectors_still_blocked(tmp_path: Path) -> None:
+    """Solo gmail tiene conector real; el resto sigue BLOCKED_BY_MISSING_DEPENDENCY."""
+    runner, broker, _registry, _store, _monitor = _runner_with_broker(tmp_path)
+    broker.create_env_reference("odoo_erp", "ODOO_TOKEN", ["files.read"])
+
+    result = runner.test("odoo_erp", mode="real")
+
+    assert result["ok"] is False
+    assert result["status"] == "BLOCKED_BY_MISSING_DEPENDENCY"
 
 
 def test_concierge_plan_shows_will_and_will_not(recipes: RecipeEngine) -> None:

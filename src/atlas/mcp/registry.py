@@ -329,6 +329,41 @@ class McpRegistry:
     def knows(self, full_name: str) -> bool:
         return full_name in self._tool_index
 
+    def revet_all(self) -> list[dict[str, Any]]:
+        """Capa 6 (re-vetting periódico, ADR-038): re-corre
+        ``SentinelGate.vet_tools`` sobre cada server YA adoptado y corriendo,
+        contra su snapshot guardado -- detecta drift ocurrido FUERA de una
+        adopción nueva (p.ej. un server que reescribió su propio binario
+        in-place). Solo LECTURA: nunca re-arma TOFU, nunca desregistra tools
+        por su cuenta -- solo reporta; la re-aprobación sigue siendo HITL
+        explícito (borrar el snapshot). Re-minado de claude-mcp-sentinel v3.1
+        ("scheduled monitoring, re-escanea todo cada mañana")."""
+        if self._sentinel is None:
+            return []
+        findings: list[dict[str, Any]] = []
+        for cfg in self._configs:
+            transport = self._transports.get(cfg.name)
+            if transport is None:
+                continue
+            try:
+                tools_resp = transport.request("tools/list", {})
+            except McpProtocolError as exc:
+                findings.append({"server": cfg.name, "error": str(exc)[:300]})
+                continue
+            tools = (tools_resp or {}).get("tools", []) if isinstance(tools_resp, dict) else []
+            clean = [t for t in tools if isinstance(t, dict)]
+            vet = self._sentinel.vet_tools(cfg, clean)
+            blocked = [
+                {"tool": v.tool_name, "reason": v.reason} for v in vet.tools if not v.admitted
+            ]
+            if blocked:
+                findings.append({"server": cfg.name, "blocked": blocked})
+                self._audit(
+                    "sentinel.revet_drift", cfg.name,
+                    f"{len(blocked)} tool(s) con drift detectado", "blocked",
+                )
+        return findings
+
     def dispatch(self, full_name: str, arguments: str | dict[str, Any]) -> str:
         """Llama ``tools/call`` en el server correcto y devuelve el resultado
         como texto. Errores se devuelven como texto (consistente con el
@@ -355,6 +390,12 @@ class McpRegistry:
             args = arguments
         if not isinstance(args, dict):
             args = {}
+
+        if self._sentinel is not None:
+            veto_reason = self._sentinel.vet_call(tool, args)
+            if veto_reason is not None:
+                self._audit("sentinel.call_vetoed", full_name, veto_reason, "blocked")
+                return f"error: MCP {full_name}: bloqueado por Sentinel — {veto_reason}"
 
         try:
             result = transport.request("tools/call", {

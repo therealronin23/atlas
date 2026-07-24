@@ -30,12 +30,14 @@ from atlas.business.questions import (
 )
 from atlas.business.registries import ObjectiveRegistry, SectorRegistry
 from atlas.events.store import OsEventStore
+from atlas.fabric.auth_broker import AuthBroker, SecretRejected
 from atlas.fabric.concierge import ConnectionConcierge
 from atlas.fabric.discovery import ConnectorDiscoveryEngine
 from atlas.fabric.health import HealthMonitor
 from atlas.fabric.packs import PackEngine
 from atlas.fabric.policy import PolicyEngine, load_gates
 from atlas.fabric.recipes import RecipeEngine
+from atlas.fabric.registry import ConnectorRegistry
 from atlas.fabric.testing import ConnectionTestRunner
 
 
@@ -50,6 +52,14 @@ class ConnectionTestRequest(BaseModel):
 
     connector_id: str
     mode: str = "mock"
+
+
+class CredentialReferenceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str
+    env_var: str
+    scopes: list[str] = Field(default_factory=list)
 
 
 class OnboardingStartRequest(BaseModel):
@@ -173,7 +183,22 @@ def register_product_routes(
     concierge = ConnectionConcierge(recipes, policy)
     discovery = ConnectorDiscoveryEngine(recipes)
     health = HealthMonitor(store=store)
-    tester = ConnectionTestRunner(recipes, health, store=store)
+    # Mismo patrón que business_core_path: derivar bajo tmp_path cuando se
+    # pasa explícito (tests), o caer a $ATLAS_HOME real en producción. Sin
+    # esto, los tests leerían/escribirían el $ATLAS_HOME real de la máquina
+    # (mismo bug de clase ya corregido para BusinessCoreEngine).
+    auth_broker = AuthBroker(
+        business_core_path.parent / "credential_refs.json"
+        if business_core_path is not None else None
+    )
+    registry = ConnectorRegistry(
+        business_core_path.parent / "approved_descriptors.json"
+        if business_core_path is not None else None,
+        store=store,
+    )
+    tester = ConnectionTestRunner(
+        recipes, health, store=store, auth_broker=auth_broker, registry=registry,
+    )
     question_packs = load_all_packs(fixtures_dir / "question_packs")
     questions = QuestionEngine()
     business = BusinessCoreEngine(store=store, path=business_core_path)
@@ -234,6 +259,17 @@ def register_product_routes(
     @app.post("/connections/test")
     def connections_test(req: ConnectionTestRequest) -> dict[str, Any]:
         return tester.test(req.connector_id, mode=req.mode)
+
+    @app.post("/connections/credential-reference")
+    def create_credential_reference(req: CredentialReferenceRequest) -> dict[str, Any]:
+        try:
+            return auth_broker.create_env_reference(req.provider, req.env_var, req.scopes)
+        except SecretRejected as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/connections/credential-references")
+    def list_credential_references() -> dict[str, Any]:
+        return {"references": auth_broker.list_references()}
 
     @app.get("/connections/discover")
     def connections_discover(target: str) -> dict[str, Any]:

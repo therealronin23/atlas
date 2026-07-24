@@ -738,6 +738,14 @@ class Orchestrator:
         """Un tick de investigación abierta (intereses → informe en inbox). Delegado al facade."""
         return self._maintenance_facade.maintenance_research_tick()
 
+    def maintenance_mcp_trial_tick(self) -> dict[str, Any]:
+        """Un tick de prueba en jaula del catálogo MCP (candidato → probado-en-jaula). Delegado al facade."""
+        return self._maintenance_facade.maintenance_mcp_trial_tick()
+
+    def maintenance_sentinel_revet_tick(self) -> dict[str, Any]:
+        """Re-vetting periódico (Capa 6 SentinelGate) sobre servers ya adoptados. Delegado al facade."""
+        return self._maintenance_facade.maintenance_sentinel_revet_tick()
+
     def maintenance_provider_smoke_tick(self) -> dict[str, Any]:
         """Smoke diario de la cadena de proveedores (1 llamada mínima c/u). Delegado al facade."""
         return self._maintenance_facade.maintenance_provider_smoke_tick()
@@ -1252,10 +1260,18 @@ class Orchestrator:
         hub = inference_hub
         if hub is None:
             from atlas.core.inference_hub import InferenceHub as _InferenceHub
+            from atlas.core.inference_hub import InferenceRequest as _InferenceRequest
+            from atlas.core.inference_hub import InferenceLevel as _InferenceLevel
             from atlas.transparency.gateway import TransparencyGateway
             from atlas.transparency.key_store import load_or_create_subject, load_or_create_operator
             from atlas.transparency.client_cosign import ClientCosigner
             from atlas.transparency.log import TransparencyLog
+            from atlas.security.drift import DriftTripwire
+            from atlas.security.shadow_model import SessionStateStore, ShadowModel, ShadowRouter
+            from atlas.core.lesson_store import LessonStore
+            from atlas.immunity.lesson_recaller import LessonRecaller
+            from atlas.immunity.live_loop import GatedLessonRecorder, build_judge_verifier
+            from atlas.immunity.teacher_debate import TeacherDebate
 
             subj_signer, _, _ = load_or_create_subject()
             op_signer, _, _   = load_or_create_operator()
@@ -1264,8 +1280,53 @@ class Orchestrator:
             _tlog = TransparencyLog(signer=op_signer, path=_tlog_path)
             _cosigner = ClientCosigner(subj_signer)
             _replay_path = self._workspace / "transparency" / "anti_replay.jsonl"
-            _gw = TransparencyGateway(_cosigner, op_signer, _tlog, replay_path=_replay_path)
-            hub = _InferenceHub(mode="auto", transparency=_gw)
+
+            # OSM-042 (Cónclave 2026-07-24, veredicto FAIL/BLOCKING contra la
+            # activación sin salvaguardas — corregido aquí): DriftTripwire real
+            # (mismo embedder que el resto de Gate D) + ShadowRouter con
+            # threshold_passive CONSERVADOR (0.80, recomendación explícita del
+            # propio diseño OSM-042: "empezar con τ_passive alto y ajustar con
+            # datos reales" — no el 0.65 de los tests unitarios). El backend
+            # del sombra y el juez de lecciones usan un hub PLANO propio (sin
+            # transparency) para no recursar sobre el mismo gateway que los
+            # invoca.
+            _internal_hub = _InferenceHub(mode="auto")
+
+            def _shadow_backend(system: str, user_message: str) -> bytes:
+                resp = _internal_hub.infer(_InferenceRequest(
+                    prompt=user_message, context=system, level=_InferenceLevel.L0,
+                ))
+                return resp.text.encode("utf-8") if resp.success else b""
+
+            _drift = DriftTripwire(embedder=emb)
+            _shadow_router = ShadowRouter(
+                SessionStateStore(), threshold_passive=0.80, threshold_active=0.88,
+            )
+            _shadow_model = ShadowModel(backend=_shadow_backend)
+
+            # Aprendizaje gateado por juez (no el verifier permisivo por
+            # defecto): lo que el juez acepta se persiste real; lo que
+            # rechaza queda en pending_review.jsonl para la próxima
+            # auditoría completa, nunca desaparece en silencio.
+            _lesson_store = LessonStore(self._workspace / "memory" / "lessons", merkle=self._merkle)
+            _lesson_recaller = LessonRecaller(_lesson_store, embedder=emb, threshold=0.55)
+            _teacher_debate = TeacherDebate(
+                _lesson_store, _lesson_recaller, sim_threshold=0.55,
+                verifier=build_judge_verifier(_internal_hub),
+            )
+            _lesson_recorder = GatedLessonRecorder(
+                _teacher_debate,
+                pending_review_path=self._workspace / "immunity" / "pending_review.jsonl",
+            )
+
+            _gw = TransparencyGateway(
+                _cosigner, op_signer, _tlog, replay_path=_replay_path,
+                shadow_router=_shadow_router, shadow_model=_shadow_model,
+            )
+            hub = _InferenceHub(
+                mode="auto", transparency=_gw,
+                drift=_drift, on_escalation=_lesson_recorder.as_hook(),
+            )
         self._inference_hub = hub
         self._slm_classifier = SLMClassifier(
             hub=hub,
@@ -2126,6 +2187,7 @@ class Orchestrator:
             desktop_invoke=self._desktop_mcp_invoke,
             desktop_invoke_readonly=self._desktop_mcp_invoke,
             policy_evaluate=self._policy_engine.evaluate,
+            inference_hub=lambda: self._inference_hub,
         )
 
         # Gate D pipeline integrado — desactivado por defecto. Se activa con

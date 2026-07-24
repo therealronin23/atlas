@@ -52,6 +52,12 @@ _CLASSIFIED_ZERO_IMPORTERS = {
     "src/atlas/core/self_maintenance/sota_snapshot.py": "PARK benchmark context recorder; no scheduler owner enabled",
     "src/atlas/core/self_maintenance/panorama_scout.py": "PARK discovery scout; no scheduler owner enabled",
     "src/atlas/core/self_maintenance/evolution_gate.py": "KEEP optional component used by SelfBuildRunner evolution path when configured",
+    # 2026-07-23 (2ª pasada de auditoría, sanitation_audit corrido directo):
+    # 3 módulos genuinamente sin clasificar, encontrados por el propio scanner.
+    "src/atlas/business/legacy.py": "PARK Business Core Fase 15 (LegacyLinkLayer); draft-first, sin flujo real que lo consuma todavia",
+    "src/atlas/events/core_bridge.py": "PARK ADR-058 (CoreEventBridge proyecta EventBus->OsEvent canon); nada vivo lo suscribe hoy, Mission Layer/Radar leen el bus real directamente",
+    "src/atlas/fabric/connectors/gmail.py": "PARK ADR-065 (GmailReadOnlyConnector stdlib); posible candidato a retirar -- el MCP externo google-workspace (45 tools, conectado) puede haberlo hecho redundante, decision del operador pendiente",
+    "src/atlas/security/node_identity.py": "KEEP by design (backlog t6-node-identity-module, done): standalone crypto module, sin segundo nodo real (Hermes VPS de baja) que lo consuma todavia -- documentado explicitamente como standalone en el propio item",
 }
 
 

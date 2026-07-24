@@ -30,7 +30,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from atlas.core.provider_errors import ErrorKind, classify_provider_error
 
@@ -38,6 +38,13 @@ if TYPE_CHECKING:
     from atlas.logging.merkle_logger import MerkleLogger
     from atlas.transparency.gateway import TransparencyGateway
     from atlas.transparency.client_cosign import APIResponse
+
+    class _DriftObserver(Protocol):
+        """Duck-type de DriftTripwire.observe() — evita acoplar inference_hub
+        a atlas.security.drift más allá del tipo (mismo patrón que el resto
+        de dependencias inyectadas de este módulo)."""
+
+        def observe(self, session_id: str, turn_text: str) -> Any: ...
 
 # Silenciar warnings cosmeticos de LiteLLM (bedrock/sagemaker pre-load, etc).
 # Se debe hacer ANTES del import porque algunos warnings se emiten al cargar el modulo.
@@ -484,6 +491,8 @@ class InferenceHub:
         merkle: "MerkleLogger" | None = None,
         transparency: "TransparencyGateway | None" = None,
         sleep_fn: Callable[[float], None] = time.sleep,
+        drift: "_DriftObserver | None" = None,
+        on_escalation: "Callable[[bytes, str], None] | None" = None,
     ) -> None:
         if mode not in ("auto", "live", "stub"):
             raise ValueError(f"mode invalido: {mode}")
@@ -494,6 +503,8 @@ class InferenceHub:
         self._merkle = merkle
         self._transparency = transparency
         self._sleep = sleep_fn
+        self._drift = drift
+        self._on_escalation = on_escalation
 
     @property
     def mode(self) -> str:
@@ -592,10 +603,24 @@ class InferenceHub:
 
         payload = request.prompt.encode("utf-8")
         assert self._transparency is not None
+
+        # OSM-042 (Cónclave 2026-07-24): confidence/cause reales desde el
+        # drift tripwire cuando hay uno cableado; sin él, 0.0 fijo (idéntico
+        # al comportamiento previo — nunca escala).
+        confidence = 0.0
+        monitor_cause = ""
+        if self._drift is not None:
+            drift_result = self._drift.observe(request.task_id or "default-task", request.prompt)
+            confidence = drift_result.confidence
+            monitor_cause = drift_result.cause
+
         api_resp, _metrics = self._transparency.call(
             payload,
             call_fn,
             task_id=request.task_id or "",
+            confidence=confidence,
+            monitor_cause=monitor_cause,
+            on_escalation=self._on_escalation,
         )
 
         resp = captured[0] if captured else InferenceResponse(

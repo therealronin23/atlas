@@ -95,6 +95,18 @@ def stringify_tool_result(result: Any) -> str:
     return str(result)
 
 
+def render_focus_chain(steps: list[dict[str, Any]]) -> str:
+    """Renderiza el checklist de sub-pasos (patrón Focus Chain de Cline,
+    t1-focus-chain-tracker) como markdown '- [ ]'/'- [x]'."""
+    if not steps:
+        return "(sin pasos declarados)"
+    lines = []
+    for step in steps:
+        mark = "x" if step.get("done") else " "
+        lines.append(f"- [{mark}] {step.get('text', '')}")
+    return "\n".join(lines)
+
+
 def tool_specs() -> list[dict[str, Any]]:
     """Especificaciones de herramientas (formato OpenAI/LiteLLM) para el
     loop agéntico. Lectura/grounding (git, fs, status, blocks) + escritura
@@ -137,6 +149,29 @@ def tool_specs() -> list[dict[str, Any]]:
             "Añade texto al final de un bloque de core memory existente.",
             {"label": {"type": "string"}, "text": {"type": "string"}},
             ["label", "text"],
+        ),
+        # t1-focus-chain-tracker (patrón Focus Chain de Cline): declara/marca
+        # el checklist de sub-pasos de la tarea agéntica en curso. No muta el
+        # host (persiste en task.metadata, mismo canal genérico que
+        # agentic_state) -- corre inline, sin HITL.
+        fn(
+            "update_focus_chain",
+            "Declara o actualiza el checklist de sub-pasos de la tarea en curso "
+            "(cada uno con texto y si está hecho). Visible al humano como progreso.",
+            {
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string"},
+                            "done": {"type": "boolean"},
+                        },
+                        "required": ["text"],
+                    },
+                },
+            },
+            ["steps"],
         ),
         # ADR-032: herramientas mutantes de host. El modelo puede pedirlas
         # dentro del razonamiento; el loop se SUSPENDE y pide aprobación

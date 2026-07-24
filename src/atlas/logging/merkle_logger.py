@@ -19,6 +19,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import logging
 import os
 import stat
 import threading
@@ -30,6 +31,8 @@ import uuid
 
 if TYPE_CHECKING:
     from atlas.security.authorization import Signer
+
+logger = logging.getLogger(__name__)
 
 GENESIS_HASH: str = "0" * 64
 MAX_FILE_BYTES: int = 50 * 1024 * 1024  # 50 MB
@@ -289,6 +292,12 @@ class MerkleLogger:
                         data.pop("sig_algo", None)
                         records.append(AuditRecord(**data))
                     except Exception:
+                        logger.warning(
+                            "MerkleLogger.read_all: linea corrupta descartada en %s "
+                            "(cadena de auditoria puede tener un hueco no reportado)",
+                            log_file,
+                            exc_info=True,
+                        )
                         continue
             return records
 
@@ -308,6 +317,12 @@ class MerkleLogger:
                         data.pop("sig_algo", None)
                         newest_first.append(AuditRecord(**data))
                     except Exception:
+                        logger.warning(
+                            "MerkleLogger.tail: linea corrupta descartada en %s "
+                            "(cadena de auditoria puede tener un hueco no reportado)",
+                            log_file,
+                            exc_info=True,
+                        )
                         continue
                     if len(newest_first) == n:
                         return list(reversed(newest_first))
@@ -367,6 +382,14 @@ class MerkleLogger:
                     last_hash = data.get("hash_self", last_hash)
                     count += 1
                 except Exception:
+                    logger.warning(
+                        "MerkleLogger._load_last_hash: linea corrupta descartada "
+                        "en %s al arrancar — el ultimo hash cargado puede no "
+                        "corresponder al ultimo record fisico si la corrupcion "
+                        "esta al final del archivo",
+                        log_file,
+                        exc_info=True,
+                    )
                     continue
         self._last_hash = last_hash
         self._record_count = count

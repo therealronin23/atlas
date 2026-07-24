@@ -1,6 +1,7 @@
 """Tests for GateFExecutor.run_read_external_file."""
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -112,6 +113,10 @@ class FakeDesktopTool:
     def click(self, x: int, y: int) -> dict[str, Any]:
         self.calls.append(("click", (x, y)))
         return {"clicked": [x, y]}
+
+    def move(self, x: int, y: int) -> dict[str, Any]:
+        self.calls.append(("move", (x, y)))
+        return {"moved": [x, y]}
 
     def type_text(self, text: str) -> dict[str, Any]:
         self.calls.append(("type_text", (text,)))
@@ -248,6 +253,106 @@ class TestExecuteDesktopCommand:
 
         gfe.execute_desktop_command("observe", {})
         gfe.execute_desktop_command("windows", {})
+
+
+class TestDesktopPlan:
+    """t3-1-universal-gui-operator: execute_desktop_command('plan', ...)
+    genera un plan (DesktopPlanner) y ejecuta cada step contra la MISMA
+    DesktopTool que click/type/key -- cero rama condicionada al nombre de
+    la app (acceptance del backlog)."""
+
+    def test_plan_executes_click_and_type_steps_via_same_desktop_tool(
+        self, tmp_path: Path
+    ) -> None:
+        from atlas.tools.computer_use.desktop_action import DesktopAction
+
+        desktop = FakeDesktopTool()
+        planner = MagicMock()
+        planner.plan.return_value = [
+            DesktopAction(kind="click", reason="abrir menú", x=10, y=20),
+            DesktopAction(kind="type", reason="escribir", text="hola"),
+        ]
+        gfe = _make_gfe(tmp_path)
+        gfe.attach(desktop=desktop, desktop_planner=planner)
+
+        result = gfe.execute_desktop_command("plan", {"instruction": "abre el menú y escribe hola"})
+
+        planner.plan.assert_called_once_with("abre el menú y escribe hola")
+        assert desktop.calls == [("click", (10, 20)), ("type_text", ("hola",))]
+        assert result == {
+            "plan": [
+                {"kind": "click", "reason": "abrir menú", "result": {"clicked": [10, 20]}},
+                {"kind": "type", "reason": "escribir", "result": {"typed": "hola"}},
+            ]
+        }
+
+    def test_plan_move_step_dispatches_to_desktop_move(self, tmp_path: Path) -> None:
+        from atlas.tools.computer_use.desktop_action import DesktopAction
+
+        desktop = FakeDesktopTool()
+        planner = MagicMock()
+        planner.plan.return_value = [DesktopAction(kind="move", reason="mover", x=5, y=6)]
+        gfe = _make_gfe(tmp_path)
+        gfe.attach(desktop=desktop, desktop_planner=planner)
+
+        result = gfe.execute_desktop_command("plan", {"instruction": "mueve el ratón"})
+
+        assert desktop.calls == [("move", (5, 6))]
+        assert result["plan"][0]["result"] == {"moved": [5, 6]}
+
+    def test_plan_stops_at_stop_step_without_executing_further(self, tmp_path: Path) -> None:
+        from atlas.tools.computer_use.desktop_action import DesktopAction
+
+        desktop = FakeDesktopTool()
+        planner = MagicMock()
+        planner.plan.return_value = [
+            DesktopAction(kind="stop", reason="nada que hacer", requires_approval=False),
+            DesktopAction(kind="click", reason="nunca debe ejecutarse", x=1, y=1),
+        ]
+        gfe = _make_gfe(tmp_path)
+        gfe.attach(desktop=desktop, desktop_planner=planner)
+
+        result = gfe.execute_desktop_command("plan", {"instruction": "no hagas nada"})
+
+        assert desktop.calls == [], "el step tras 'stop' no debe ejecutarse"
+        assert result == {"plan": [{"kind": "stop", "reason": "nada que hacer"}]}
+
+    def test_plan_unsupported_kind_reports_honestly_without_crashing(self, tmp_path: Path) -> None:
+        """scroll/drag no tienen ejecutor real hoy (sin tool MCP de scroll;
+        drag necesita 2 pares de coordenadas que DesktopAction no expresa)
+        -- deben reportarse honestos, nunca fingirse ni tumbar el plan."""
+        from atlas.tools.computer_use.desktop_action import DesktopAction
+
+        desktop = FakeDesktopTool()
+        planner = MagicMock()
+        planner.plan.return_value = [
+            DesktopAction(kind="scroll", reason="bajar"),
+            DesktopAction(kind="click", reason="sigue tras el no-soportado", x=7, y=8),
+        ]
+        gfe = _make_gfe(tmp_path)
+        gfe.attach(desktop=desktop, desktop_planner=planner)
+
+        result = gfe.execute_desktop_command("plan", {"instruction": "baja y haz click"})
+
+        assert "sin ejecutor real" in result["plan"][0]["result"]["error"]
+        assert desktop.calls == [("click", (7, 8))], "un kind no soportado no debe abortar el resto del plan"
+
+    def test_get_desktop_planner_raises_clear_error_when_not_wired(self, tmp_path: Path) -> None:
+        gfe = _make_gfe(tmp_path)
+
+        with pytest.raises(RuntimeError, match="DesktopPlanner no está cableado"):
+            gfe.get_desktop_planner()
+
+    def test_get_desktop_planner_builds_from_injected_inference_hub(self, tmp_path: Path) -> None:
+        from atlas.tools.computer_use.desktop_planner import DesktopPlanner
+
+        hub = MagicMock()
+        gfe = _make_gfe(tmp_path, inference_hub=lambda: hub)
+
+        planner = gfe.get_desktop_planner()
+
+        assert isinstance(planner, DesktopPlanner)
+        assert gfe.get_desktop_planner() is planner  # cacheado, no reconstruye
 
 
 class TestGetDesktopTool:

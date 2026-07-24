@@ -7,11 +7,12 @@ Cónclave tumbó con razón: sin variantes reales compitiendo, aquello era solo
 estadística sobre categorías sin mecanismo causal, no evolución de verdad.
 Aquí sí hay variantes reales generadas y puntuadas por un evaluador real.
 
-TODO(evolution+self-build): el cableado a SelfBuildRunner con un evaluador
-que aplique cada variante a un worktree real y corra los tests reales del
-backlog item es la SIGUIENTE tarea — fuera de alcance de este slice, no
-fingido aquí. Este slice es SOLO el wrapper genérico: código inicial +
-función evaluadora → mejor variante.
+Cableado a SelfBuildRunner (2026-07-23, auditoría con premortem, hallazgo
+#3): ``run_item_with_evolution`` en ``self_build_runner.py`` aplica cada
+variante a un worktree git efímero real y corre el test_cmd real del
+backlog item; ``maintenance_facade.py`` lo invoca desde el ciclo real
+(``_build_evolution_gate``, Groq real vía ``GROQ_API_KEY``) en vez de
+``run_item()`` cuando hay API key disponible.
 """
 
 from __future__ import annotations
@@ -48,11 +49,10 @@ class EvolutionGate:
     del Cónclave: "categorías de cambio" sin variantes reales competiendo
     era estadística sin mecanismo causal, no evolución de verdad).
 
-    TODO(evolution+self-build): el cableado a SelfBuildRunner con un
-    evaluador que aplique cada variante a un worktree real y corra los
-    tests reales del backlog item es la SIGUIENTE tarea — fuera de
-    alcance aquí, no fingido. Este slice es el wrapper genérico:
-    código inicial + evaluador → mejor variante."""
+    Cableado real (2026-07-23): ``SelfBuildRunner.run_item_with_evolution``
+    aplica cada variante a un worktree real y corre los tests reales del
+    backlog item; ``maintenance_facade._build_evolution_gate`` lo activa
+    en el ciclo real cuando ``GROQ_API_KEY`` está disponible."""
 
     def __init__(
         self,

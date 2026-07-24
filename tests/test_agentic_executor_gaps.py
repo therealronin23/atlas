@@ -680,3 +680,84 @@ class TestDriveInferenceFailure:
             c for c in host._merkle.calls if c.get("action") == "inference.failed"
         ]
         assert failed_logs, "Debe haber al menos un log 'inference.failed' en merkle"
+
+
+# ===========================================================================
+# (m) update_focus_chain — checklist auto-mantenido (t1-focus-chain-tracker)
+# ===========================================================================
+
+
+class TestUpdateFocusChain:
+    """El modelo declara/marca sub-pasos de una tarea agéntica larga vía
+    update_focus_chain(steps). No es mutante (no HITL): se clasifica 'read'
+    por default (no está en AGENTIC_MUTATING_TOOLS). Persiste en
+    task.metadata['focus_chain'] -- mismo mecanismo genérico que agentic_state
+    (task_persistence.py: 'metadata' se serializa entero), así que sobrevive
+    suspensión/reanudación sin código de persistencia nuevo."""
+
+    def test_sets_focus_chain_in_task_metadata(self) -> None:
+        host = _make_host()
+        executor = AgenticExecutor(host)
+        task = _task_routing()
+
+        args = json.dumps({"steps": [
+            {"text": "leer el fichero", "done": True},
+            {"text": "escribir el fix", "done": False},
+        ]})
+        result = executor._dispatch_tool("update_focus_chain", args, task)
+
+        assert task.metadata["focus_chain"] == [
+            {"text": "leer el fichero", "done": True},
+            {"text": "escribir el fix", "done": False},
+        ]
+        assert "[x] leer el fichero" in result
+        assert "[ ] escribir el fix" in result
+
+    def test_is_not_classified_as_mutating(self) -> None:
+        """No requiere aprobación HITL: no está en AGENTIC_MUTATING_TOOLS."""
+        assert _ah.tool_kind("update_focus_chain") == "read"
+
+    def test_is_trusted_provenance(self) -> None:
+        assert _ah.tool_provenance("update_focus_chain") == "trusted"
+
+    def test_missing_steps_arg_reports_error_not_crash(self) -> None:
+        host = _make_host()
+        executor = AgenticExecutor(host)
+        task = _task_routing()
+
+        result = executor._dispatch_tool("update_focus_chain", "{}", task)
+
+        assert result.startswith("error:")
+        assert "focus_chain" not in task.metadata
+
+    def test_survives_suspend_and_resume_persistence_round_trip(self, tmp_path) -> None:  # noqa: ANN001
+        """Acceptance del backlog: el checklist sobrevive a una
+        suspensión/reanudación real del loop -- vía TaskPersistence
+        (mismo mecanismo genérico que agentic_state, sin código nuevo)."""
+        from atlas.logging.merkle_logger import MerkleLogger
+        from atlas.core.orchestrator_parts.task_persistence import TaskPersistence
+
+        host = _make_host()
+        executor = AgenticExecutor(host)
+        task = _task_routing()
+        task.transition(TaskStatus.EXECUTING)
+
+        executor._dispatch_tool(
+            "update_focus_chain",
+            json.dumps({"steps": [{"text": "paso 1", "done": True}]}),
+            task,
+        )
+
+        merkle = MerkleLogger(tmp_path / "merkle")
+        persistence = TaskPersistence(tmp_path / "pending", merkle)
+        persistence.persist(task)
+        reloaded = persistence.load(task.id)
+
+        assert reloaded is not None
+        assert reloaded.metadata["focus_chain"] == [{"text": "paso 1", "done": True}]
+
+
+def test_focus_chain_tool_spec_is_registered() -> None:
+    specs = _ah.tool_specs()
+    names = [s["function"]["name"] for s in specs]
+    assert "update_focus_chain" in names
