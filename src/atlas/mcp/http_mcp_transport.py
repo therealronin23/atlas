@@ -45,6 +45,14 @@ def urllib_fetcher_with_headers(
             return resp.status, resp.read().decode("utf-8", errors="replace"), dict(resp.headers)
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8", errors="replace"), dict(e.headers or {})
+    except urllib.error.URLError:
+        # Bug real 2026-07-24: fallo de CONEXIÓN (rechazada, DNS, timeout) es
+        # URLError, no HTTPError -- sin este except, un batch de ~2100
+        # candidatos crasheaba entero en el primer inalcanzable (garantizado
+        # a escala de internet). status=0 -> HttpMcpTransport lo trata como
+        # "HTTP 0 del endpoint remoto" (fail-closed, no completado, nunca
+        # una excepción sin capturar).
+        return 0, "", {}
 
 
 def _strip_sse_framing(text: str) -> str:

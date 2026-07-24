@@ -54,32 +54,48 @@ def main() -> int:
     stdio_names = [t["name"] for t in triaged if t["track"] == "stdio" and t["eligible"]][: args.limit_stdio]
     http_names = [t["name"] for t in triaged if t["track"] == "http" and t["eligible"]][: args.limit_http]
 
-    results = []
-    for name in stdio_names:
-        entry = by_name.get(name, {"name": name})
-        r = run_stage2a_stdio(entry, quarantine_root=_QUARANTINE)
-        results.append({
-            "track": "stdio", "name": name, "completed": r.completed, "stage_reached": r.stage_reached,
-            "reason": r.reason, "entrypoint": r.entrypoint_module, "n_findings": len(r.static_findings),
-            "worst_severity": r.worst_severity.name,
-        })
-        print(f"[2A] {name}: completed={r.completed} stage={r.stage_reached} findings={len(r.static_findings)}")
-
-    for name in http_names:
-        entry = by_name.get(name, {"name": name})
-        r = run_stage2b_http(entry, fetcher=urllib_fetcher_with_headers)
-        results.append({
-            "track": "http", "name": name, "completed": r.completed, "reason": r.reason, "tool_count": r.tool_count,
-        })
-        print(f"[2B] {name}: completed={r.completed} tools={r.tool_count} reason={r.reason[:60]}")
-        time.sleep(args.per_request_delay)
-
+    n_total = 0
+    n_ok = 0
+    # Escritura INCREMENTAL (no solo al final): si algo mata el proceso a
+    # media corrida (crash real visto 2026-07-24: ConnectionRefusedError no
+    # capturada), el progreso acumulado hasta ese punto no se pierde.
     with _REPORT.open("w", encoding="utf-8") as f:
-        for r in results:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        for name in stdio_names:
+            entry = by_name.get(name, {"name": name})
+            try:
+                r = run_stage2a_stdio(entry, quarantine_root=_QUARANTINE)
+                row = {
+                    "track": "stdio", "name": name, "completed": r.completed, "stage_reached": r.stage_reached,
+                    "reason": r.reason, "entrypoint": r.entrypoint_module, "n_findings": len(r.static_findings),
+                    "worst_severity": r.worst_severity.name,
+                }
+                print(f"[2A] {name}: completed={r.completed} stage={r.stage_reached} findings={len(r.static_findings)}")
+            except Exception as exc:  # noqa: BLE001 -- un candidato no debe matar horas de corrida
+                row = {"track": "stdio", "name": name, "completed": False, "stage_reached": "crash", "reason": str(exc)[:200]}
+                print(f"[2A] {name}: EXCEPCION NO ANTICIPADA (no completado, sigue): {exc}")
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            f.flush()
+            n_total += 1
+            n_ok += int(row["completed"])
 
-    n_ok = sum(1 for r in results if r["completed"])
-    print(f"\n{n_ok}/{len(results)} completados -> {_REPORT.relative_to(ROOT)}")
+        for name in http_names:
+            entry = by_name.get(name, {"name": name})
+            try:
+                r = run_stage2b_http(entry, fetcher=urllib_fetcher_with_headers)
+                row = {
+                    "track": "http", "name": name, "completed": r.completed, "reason": r.reason, "tool_count": r.tool_count,
+                }
+                print(f"[2B] {name}: completed={r.completed} tools={r.tool_count} reason={r.reason[:60]}")
+            except Exception as exc:  # noqa: BLE001 -- mismo criterio: nunca matar la corrida completa
+                row = {"track": "http", "name": name, "completed": False, "tool_count": 0, "reason": f"crash: {exc}"[:200]}
+                print(f"[2B] {name}: EXCEPCION NO ANTICIPADA (no completado, sigue): {exc}")
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            f.flush()
+            n_total += 1
+            n_ok += int(row["completed"])
+            time.sleep(args.per_request_delay)
+
+    print(f"\n{n_ok}/{n_total} completados -> {_REPORT.relative_to(ROOT)}")
     return 0
 
 
