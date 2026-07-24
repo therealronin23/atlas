@@ -877,6 +877,24 @@ class Orchestrator:
             os.environ.get("ATLAS_CORE_ROOT", str(Path.cwd()))
         ).expanduser().resolve()
 
+    def security_council_unblock(self, action_hash_value: str, *, reason: str, actor: str) -> dict[str, Any]:
+        """Revoca un rechazo permanente del Security Council Gate (ADR-077.3)
+        que resulte falso positivo -- HITL explícito, la única vía de
+        apelación del diseño (objeción real del Cónclave: sin esto, un
+        rechazo permanente equivocado no tiene forma de arreglarse)."""
+        from atlas.core.decider.security_council_registry import unblock
+
+        registry_path = self._project_root() / "workspace" / "security_council" / "rejected.jsonl"
+        unblocked = unblock(action_hash_value, registry_path, reason=reason, actor=actor)
+        self._merkle.log(
+            action="security_council.unblock",
+            agent=actor,
+            result="unblocked" if unblocked else "not_found",
+            risk_level="moderate",
+            payload={"action_hash": action_hash_value, "reason": reason, "actor": actor},
+        )
+        return {"status": "unblocked" if unblocked else "not_found", "action_hash": action_hash_value}
+
     def _pyproject_dep_floors(self) -> list[tuple[str, str]]:
         """Pares (nombre, piso ``>=``) de las deps de ``pyproject``. Vacío si falla."""
         import tomllib

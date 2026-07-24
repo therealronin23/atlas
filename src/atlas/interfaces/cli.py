@@ -757,6 +757,25 @@ def update_batch_approve(batch_id: str) -> None:
     console.print(f"[green]Lote {batch_id} aplicado completo[/green] — {len(applied)} cambios.")
 
 
+@cli.group("security-council")
+def security_council() -> None:
+    """ADR-077 — Security Council Gate: escaneo+auditor delante del Decider."""
+
+
+@security_council.command("unblock")
+@click.argument("action_hash")
+@click.option("--reason", required=True, help="Por qué se revoca (falso positivo, etc.)")
+@click.option("--actor", default="operador", help="Quién revoca (auditoría)")
+def security_council_unblock(action_hash: str, reason: str, actor: str) -> None:
+    """Revoca un rechazo permanente que resulte falso positivo (HITL explícito)."""
+    orch = get_orchestrator()
+    result = orch.security_council_unblock(action_hash, reason=reason, actor=actor)
+    if result["status"] == "unblocked":
+        console.print(f"[green]Desbloqueado[/green] {action_hash}")
+    else:
+        console.print(f"[yellow]No había ningún rechazo vigente para {action_hash}[/yellow]")
+
+
 @cli.group("self-audit")
 def self_audit() -> None:
     """Atlas 24h self-audit loop — cold, auditable, no hot self-patch."""

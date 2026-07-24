@@ -136,6 +136,9 @@ workspace/mcp/*.json
 # tras la corrida completa de 229 candidatos stdio). Los RESULTADOS del análisis
 # viven en docs/design/mcp_catalog_stage2_report.jsonl (ese sí se versiona).
 workspace/mcp/quarantine/
+# Registro de rechazo permanente del Security Council Gate (ADR-077) --
+# cola operativa runtime, no artefacto versionado (mismo patrón que workspace/mcp).
+workspace/security_council/
 # Salida de builds de graphify (mal ubicada bajo src/, no es código)
 src/graphify-out/
 graphify-out/
