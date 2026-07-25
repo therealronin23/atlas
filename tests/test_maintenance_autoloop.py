@@ -181,6 +181,19 @@ class TestNotifyRoutesToAdopter:
 
 
 class TestMaintenancePollInterval:
+    def test_operational_cycles_run_before_expensive_batch(self, orch: Orchestrator) -> None:
+        """Un batch de pytest no puede retrasar investigación, grafo ni trial."""
+        cycle_names = [cycle.__name__ for cycle in orch.maintenance_scheduler()._extra_cycles]
+        batch_index = cycle_names.index("_batch_cycle")
+        for operational_cycle in (
+            "_research_cycle",
+            "_knowledge_ingest_cycle",
+            "_project_graph_cycle",
+            "_mcp_trial_cycle",
+            "_mcp_vetting_cycle",
+        ):
+            assert cycle_names.index(operational_cycle) < batch_index
+
     def test_default_poll_interval_is_24h_when_env_unset(
         self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
     ) -> None:

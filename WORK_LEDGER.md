@@ -17,8 +17,10 @@ de escribir: `atlas reality --json`.
   quality gate → vetting → TrialGate → HITL; un rechazo conserva la escalada
   del Security Council. La cadencia conserva el límite diario, pero una
   huella SHA-256 del manifiesto permite una única pasada adicional cuando
-  cambia la lista de fuentes. **Próxima acción:** ejecutar un ciclo observado
-  y revisar recibos/fuentes que fallen sin ensanchar la red en silencio.
+  cambia la lista de fuentes. En un tick, investigación, ingestión, grafo y
+  fases MCP se ejecutan antes del batch de autoauditoría potencialmente lento.
+  **Próxima acción:** ejecutar un ciclo observado y revisar recibos/fuentes
+  que fallen sin ensanchar la red en silencio.
 
 - **2026-07-25 — bulk de discovery retirado; catálogo operativo delimitado.**
   Se aplicó el reset reversible del catálogo clasificado: se retiraron 2.780

@@ -426,11 +426,12 @@ class MaintenanceFacade:
                 analyze=analyst.analyze,
                 notify=_notify,
                 extra_cycles=(
-                    _dep_cycle, _batch_cycle, _self_build_cycle,
+                    _dep_cycle, _self_build_cycle,
                     _research_cycle, _provider_smoke_cycle,
                     _knowledge_ingest_cycle, _project_graph_cycle,
                     _provider_discovery_cycle, _mcp_trial_cycle,
                     _sentinel_revet_cycle, _mcp_reseed_cycle, _mcp_vetting_cycle,
+                    _batch_cycle,
                 ),
                 **scheduler_kwargs,
             )
