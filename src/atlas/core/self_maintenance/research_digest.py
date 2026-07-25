@@ -121,6 +121,7 @@ class CandidateSuggestion:
     kind: str
     evidence: tuple[str, ...]
     status: str = "candidato"
+    seeds: tuple[str, ...] = ()
 
 
 # owner/repo embebido en una URL/instalador de github.com, tolerante a
@@ -162,6 +163,7 @@ class _Aggregate:
     topics: set[str] = field(default_factory=set)
     reports: set[int] = field(default_factory=set)
     excerpts: list[str] = field(default_factory=list)
+    seeds: set[str] = field(default_factory=set)
 
 
 def digest_findings(
@@ -193,6 +195,8 @@ def digest_findings(
             agg.reports.add(report_idx)
             if finding.excerpt:
                 agg.excerpts.append(finding.excerpt)
+            if finding.seed:
+                agg.seeds.add(finding.seed)
 
     cat_names, cat_urls = _catalog_identity_keys(catalog)
 
@@ -220,6 +224,7 @@ def digest_findings(
                 sector=sector,
                 kind=kind,
                 evidence=evidence,
+                seeds=tuple(sorted(agg.seeds)),
             )
         )
     return suggestions

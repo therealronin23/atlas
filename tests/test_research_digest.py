@@ -244,6 +244,13 @@ def test_digest_evidence_traces_topics_and_reports() -> None:
     assert "informe:0" in result[0].evidence
 
 
+def test_digest_aggregates_originating_seeds() -> None:
+    report_a = "### [github] acme/mempalace\n- tema: temporal knowledge graph\n- seed: memoria de agentes de IA\n- url: https://github.com/acme/mempalace\n"
+    report_b = "### [github] acme/mempalace\n- tema: agent memory benchmark\n- seed: memoria de agentes de IA\n- url: https://github.com/acme/mempalace\n"
+    suggestions = digest_findings([report_a, report_b], [], _TAXONOMY)
+    assert suggestions[0].seeds == ("memoria de agentes de IA",)
+
+
 # ---------------------------------------------------------------------------
 # append_candidates_to_catalog — preserva lo existente, añade candidatos
 # ---------------------------------------------------------------------------
