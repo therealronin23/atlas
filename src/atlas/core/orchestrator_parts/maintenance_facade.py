@@ -930,6 +930,10 @@ class MaintenanceFacade:
             min_stars=min_stars,
         )
         findings = scout.discover()
+        from atlas.core.self_maintenance.curated_sources import load_curated_findings
+
+        curated_path = self._project_root() / "docs" / "knowledge" / "curated_sources.yaml"
+        findings = findings + load_curated_findings(curated_path)
 
         report_path = self._project_root() / "docs" / "inbox" / f"research_{today}.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)

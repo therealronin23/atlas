@@ -34,3 +34,25 @@ def test_research_tick_threads_seed_and_min_stars(tmp_path: Path, monkeypatch) -
     assert result["status"] == "ran"
     assert seen["min_stars"] == 7
     assert "- seed: memoria de agentes de IA" in report
+
+
+def test_research_tick_includes_curated_findings(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ATLAS_RESEARCH", "1")
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(tmp_path / "core"))
+    (tmp_path / "core" / "docs" / "knowledge").mkdir(parents=True)
+    (tmp_path / "atlas").mkdir()
+    (tmp_path / "core" / "docs" / "knowledge" / "curated_sources.yaml").write_text(
+        "sources:\n  - url: https://github.com/vercel-labs/agent-skills\n    note: Vercel skills\n",
+        encoding="utf-8",
+    )
+    class Expander:
+        def __init__(self, **_kwargs) -> None: pass
+        def expand_detailed(self, _seeds, *, queries_per_seed):
+            return [TopicExpansion(seed="x", queries=["x"])]
+    class Scout:
+        def __init__(self, **_kwargs) -> None: pass
+        def discover(self): return []
+    monkeypatch.setattr("atlas.core.self_maintenance.topic_expander.TopicExpander", Expander)
+    monkeypatch.setattr("atlas.core.self_maintenance.panorama_scout.PanoramaScout", Scout)
+    result = Orchestrator(workspace=tmp_path / "atlas").maintenance_research_tick()
+    assert "vercel-labs/agent-skills" in Path(result["report_path"]).read_text(encoding="utf-8")
