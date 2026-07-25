@@ -146,3 +146,6 @@ graphify-vault/
 notebooklm-package/
 # Local database dumps are operator artifacts, not source.
 backups/neo4j/*.dump
+
+# Temporary isolated worktrees created by Superpowers during implementation.
+.worktrees/
