@@ -8,6 +8,14 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-26 — publicación del grafo restaurada tras rebuild real.** El
+  cargador bitemporal libera su `QueryResult` de Kuzu antes de cerrar la BD;
+  ese objeto nativo retenía el lock que impedía cargar inmediatamente vault y
+  callgraph sobre la misma copia `.rebuild`. Una regresión reproduce el
+  contrato de cierre y las pruebas reales de grafo/vault pasan. **Próxima
+  acción:** confirmar que el daemon publica el swap y que `atlas reality`
+  vuelve a declarar el grafo FRESH; no lanzar un escritor de grafo paralelo.
+
 - **2026-07-26 — observación permanente: tronco, autoauditoría y ColdUpdate
   saneados.** El servicio ejecuta los schedulers dentro del mismo proceso y
   conserva el escritor Merkle único. `ATLAS_COLD_UPDATE_AUTO_APPLY=0` hace que

@@ -203,6 +203,10 @@ def load_bitemporal_into_kuzu(
         res: Any = conn.execute("MATCH (n:FileVersion) RETURN n.id")
         while res.has_next():
             existing_ids.add(str(res.get_next()[0]))
+        # QueryResult conserva recursos nativos de Kuzu. Debe desaparecer
+        # antes de cerrar esta BD: el proyecto abre después la misma ruta
+        # para cargar vault y callgraph dentro de la transacción de rebuild.
+        del res
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         nodes = 0

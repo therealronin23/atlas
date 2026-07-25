@@ -91,6 +91,64 @@ def test_load_bitemporal_into_kuzu_no_drift(tiny_repo: tuple[Path, list[str]], t
         db.close()
 
 
+def test_load_bitemporal_releases_query_result_before_closing_kuzu(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Un resultado nativo no puede sobrevivir al cierre de su base.
+
+    Kuzu mantiene recursos de la base detrás de ``QueryResult``. El cargador
+    encadena otra apertura sobre la misma BD para el vault/callgraph, de modo
+    que debe soltar el resultado de ``MATCH`` antes de cerrar esta conexión.
+    """
+    import atlas.core.graphs as graphs_module
+
+    state = {"result_open": False}
+
+    class _Result:
+        def __init__(self) -> None:
+            state["result_open"] = True
+
+        def has_next(self) -> bool:
+            return False
+
+        def get_next(self) -> list[str]:
+            raise AssertionError("no rows expected")
+
+        def __del__(self) -> None:
+            state["result_open"] = False
+
+    class _Database:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def close(self) -> None:
+            assert not state["result_open"], "QueryResult survived Database.close()"
+
+    class _Connection:
+        def __init__(self, _db: _Database) -> None:
+            pass
+
+        def execute(self, query: str, *_args: object, **_kwargs: object) -> _Result | None:
+            if "RETURN n.id" in query:
+                return _Result()
+            return None
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(graphs_module.kuzu, "Database", _Database)
+    monkeypatch.setattr(graphs_module.kuzu, "Connection", _Connection)
+    monkeypatch.setattr(
+        graphs_module,
+        "build_bitemporal_graph",
+        lambda *_args, **_kwargs: {"snapshots": {"sha": {}}, "diffs": []},
+    )
+
+    metrics = load_bitemporal_into_kuzu(tmp_path, tmp_path / "graph.kuzu", ["sha"])
+
+    assert metrics["nodes"] == 0
+
+
 def test_queries_diffs_impact_lineage(tiny_repo: tuple[Path, list[str]], tmp_path: Path) -> None:
     repo, shas = tiny_repo
     db_path = tmp_path / "graphs.kuzu"
