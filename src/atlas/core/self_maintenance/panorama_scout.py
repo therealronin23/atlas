@@ -62,6 +62,7 @@ class PanoramaFinding:
     title: str
     url: str
     excerpt: str
+    seed: str = ""
     discovered_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -73,6 +74,7 @@ class PanoramaFinding:
             "title": self.title,
             "url": self.url,
             "excerpt": self.excerpt,
+            "seed": self.seed,
             "discovered_at": self.discovered_at,
         }
 
@@ -94,12 +96,14 @@ class PanoramaScout:
         fetch: Callable[[str], str],
         topics: list[str],
         max_results_per_topic: int = 5,
+        topic_seeds: dict[str, str] | None = None,
     ) -> None:
         self._merkle = merkle
         self._bridge = bridge
         self._fetch = fetch
         self._topics = topics
         self._max_results = max_results_per_topic
+        self._topic_seeds = topic_seeds or {}
 
     def discover(self) -> list[PanoramaFinding]:
         """Por cada tema en self._topics, busca en GitHub y en Hacker News.
@@ -140,6 +144,7 @@ class PanoramaScout:
                 title=item.get("full_name", ""),
                 url=item.get("html_url", ""),
                 excerpt=(item.get("description") or "")[:_EXCERPT_MAX],
+                seed=self._topic_seeds.get(topic, ""),
             )
             for item in items[: self._max_results]
             if isinstance(item, dict)
@@ -175,6 +180,7 @@ class PanoramaScout:
                 title=hit.get("title", ""),
                 url=hit.get("url") or f"https://news.ycombinator.com/item?id={hit.get('objectID', '')}",
                 excerpt=(hit.get("story_text") or "")[:_EXCERPT_MAX],
+                seed=self._topic_seeds.get(topic, ""),
             )
             for hit in hits[: self._max_results]
             if isinstance(hit, dict)
@@ -218,6 +224,7 @@ class PanoramaScout:
                     title=title,
                     url=link,
                     excerpt=summary[:_EXCERPT_MAX],
+                    seed=self._topic_seeds.get(topic, ""),
                 )
             )
         self._audit(topic, "discovered", len(topic_findings), source="arxiv")

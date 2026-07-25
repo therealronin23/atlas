@@ -75,6 +75,31 @@ class TestDiscoverySingleTopic:
         assert findings[0].excerpt == "A memory palace tool"
 
 
+class TestSeedThreading:
+    def test_finding_carries_seed_from_topic_seeds_map(self, merkle) -> None:
+        scout = PanoramaScout(
+            merkle=merkle,
+            bridge=SSRFBridge(),
+            fetch=lambda _url: _github_body(
+                _repo("acme/mempalace", "https://github.com/acme/mempalace", "desc")
+            ),
+            topics=["memory palace"],
+            topic_seeds={"memory palace": "memoria de agentes de IA"},
+        )
+        assert scout.discover()[0].seed == "memoria de agentes de IA"
+
+    def test_finding_seed_is_empty_when_topic_is_not_mapped(self, merkle) -> None:
+        scout = PanoramaScout(
+            merkle=merkle,
+            bridge=SSRFBridge(),
+            fetch=lambda _url: _github_body(
+                _repo("acme/mempalace", "https://github.com/acme/mempalace", "desc")
+            ),
+            topics=["memory palace"],
+        )
+        assert scout.discover()[0].seed == ""
+
+
 class TestMultipleTopics:
     def test_two_topics_each_with_correct_topic_field(self, merkle) -> None:
         def fake_fetch(url: str) -> str:
