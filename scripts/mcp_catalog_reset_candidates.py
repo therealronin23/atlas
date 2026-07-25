@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("classified_path", type=Path)
     parser.add_argument("--apply", action="store_true", help="write the filtered YAML")
+    parser.add_argument("--dry-run", action="store_true", help="explicit no-write mode (default)")
     args = parser.parse_args(argv)
     data = yaml.safe_load(args.classified_path.read_text(encoding="utf-8")) or {}
     filtered, removed = filter_out_candidates(data)

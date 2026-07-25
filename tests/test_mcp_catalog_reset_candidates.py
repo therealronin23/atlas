@@ -21,3 +21,9 @@ def test_filter_does_not_mutate_input() -> None:
     data = {"sectors": {"s": {"entries": [{"name": "a", "status": "instalado"}]}}}
     filtered, removed = module.filter_out_candidates(data)
     assert filtered == data and removed == 0
+
+
+def test_cli_accepts_explicit_dry_run(tmp_path: Path) -> None:
+    path = tmp_path / "catalog.yaml"
+    path.write_text("sectors: {}\n", encoding="utf-8")
+    assert module.main([str(path), "--dry-run"]) == 0
