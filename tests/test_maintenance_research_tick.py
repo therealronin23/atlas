@@ -142,3 +142,29 @@ def test_research_tick_fetches_curated_official_material_via_injected_egress(tmp
     assert result["curated_findings_count"] == 1
     assert "[official] OpenAI resources" in report
     assert "Official material" in report
+
+
+def test_research_tick_reruns_once_when_curated_manifest_changes(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ATLAS_RESEARCH", "1")
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(tmp_path / "core"))
+    manifest = tmp_path / "core" / "docs" / "knowledge" / "curated_sources.yaml"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text("sources: []\n", encoding="utf-8")
+    (tmp_path / "atlas").mkdir()
+
+    class Expander:
+        def __init__(self, **_kwargs) -> None: pass
+        def expand_detailed(self, _seeds, *, queries_per_seed):
+            return [TopicExpansion(seed="x", queries=["x"])]
+
+    class Scout:
+        def __init__(self, **_kwargs) -> None: pass
+        def discover(self): return []
+
+    monkeypatch.setattr("atlas.core.self_maintenance.topic_expander.TopicExpander", Expander)
+    monkeypatch.setattr("atlas.core.self_maintenance.panorama_scout.PanoramaScout", Scout)
+    orchestrator = Orchestrator(workspace=tmp_path / "atlas")
+    assert orchestrator.maintenance_research_tick()["status"] == "ran"
+    manifest.write_text("sources: []\n# changed\n", encoding="utf-8")
+    assert orchestrator.maintenance_research_tick()["status"] == "ran"
+    assert orchestrator.maintenance_research_tick()["status"] == "already_ran_today"

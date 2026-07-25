@@ -892,6 +892,7 @@ class MaintenanceFacade:
         if os.environ.get("ATLAS_RESEARCH", "").strip() != "1":
             return {"status": "disabled"}
 
+        import hashlib
         import json
         from datetime import datetime, timezone
 
@@ -901,7 +902,16 @@ class MaintenanceFacade:
             state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
         except (OSError, ValueError):
             state = {}
-        if state.get("last_run_date") == today:
+        curated_path = self._project_root() / "docs" / "knowledge" / "curated_sources.yaml"
+        curated_manifest_sha256 = (
+            hashlib.sha256(curated_path.read_bytes()).hexdigest()
+            if curated_path.exists()
+            else ""
+        )
+        if (
+            state.get("last_run_date") == today
+            and state.get("curated_manifest_sha256") == curated_manifest_sha256
+        ):
             return {"status": "already_ran_today"}
 
         from atlas.core.inference_hub import InferenceHub
@@ -961,7 +971,6 @@ class MaintenanceFacade:
         findings = scout.discover()
         from atlas.core.self_maintenance.curated_sources import load_curated_findings
 
-        curated_path = self._project_root() / "docs" / "knowledge" / "curated_sources.yaml"
         curated_findings = load_curated_findings(
             curated_path,
             bridge=orch._ssrf_bridge,
@@ -974,6 +983,7 @@ class MaintenanceFacade:
         report_path.write_text(_render_research_report(today, seeds, queries, findings), encoding="utf-8")
 
         state["last_run_date"] = today
+        state["curated_manifest_sha256"] = curated_manifest_sha256
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
