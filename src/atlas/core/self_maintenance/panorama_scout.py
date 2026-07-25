@@ -97,6 +97,7 @@ class PanoramaScout:
         topics: list[str],
         max_results_per_topic: int = 5,
         topic_seeds: dict[str, str] | None = None,
+        min_stars: int = 0,
     ) -> None:
         self._merkle = merkle
         self._bridge = bridge
@@ -104,6 +105,7 @@ class PanoramaScout:
         self._topics = topics
         self._max_results = max_results_per_topic
         self._topic_seeds = topic_seeds or {}
+        self._min_stars = min_stars
 
     def discover(self) -> list[PanoramaFinding]:
         """Por cada tema en self._topics, busca en GitHub y en Hacker News.
@@ -122,8 +124,11 @@ class PanoramaScout:
         """Busca en GitHub repos ordenados por actualizacion reciente.
         Fail-closed: egress denegado o fetch/parseo roto -> [] (auditado),
         sin propagar la excepcion."""
+        query = topic
+        if self._min_stars > 0:
+            query = f"{topic} stars:>={self._min_stars}"
         url = (
-            f"{_GITHUB_SEARCH_URL}?q={quote_plus(topic)}"
+            f"{_GITHUB_SEARCH_URL}?q={quote_plus(query)}"
             f"&sort=updated&order=desc&per_page={self._max_results}"
         )
         decision = self._bridge.check(url)

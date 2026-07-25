@@ -100,6 +100,31 @@ class TestSeedThreading:
         assert scout.discover()[0].seed == ""
 
 
+class TestMinStarsFilter:
+    def test_min_stars_appends_qualifier_to_github_query(self, merkle) -> None:
+        urls: list[str] = []
+        scout = PanoramaScout(
+            merkle=merkle,
+            bridge=SSRFBridge(),
+            fetch=lambda url: (urls.append(url) or _github_body()),
+            topics=["memory palace"],
+            min_stars=5,
+        )
+        scout.discover()
+        assert any("stars%3A%3E%3D5" in url or "stars:>=5" in url for url in urls)
+
+    def test_zero_min_stars_omits_qualifier(self, merkle) -> None:
+        urls: list[str] = []
+        scout = PanoramaScout(
+            merkle=merkle,
+            bridge=SSRFBridge(),
+            fetch=lambda url: (urls.append(url) or _github_body()),
+            topics=["memory palace"],
+        )
+        scout.discover()
+        assert all("stars" not in url for url in urls)
+
+
 class TestMultipleTopics:
     def test_two_topics_each_with_correct_topic_field(self, merkle) -> None:
         def fake_fetch(url: str) -> str:
