@@ -20,7 +20,8 @@ de escribir: `atlas reality --json`.
   cambia la lista de fuentes. En un tick, investigación, ingestión, grafo y
   fases MCP se ejecutan antes del batch de autoauditoría potencialmente lento.
   El scheduler ejecuta esos ciclos operativos antes del análisis MCP, para que
-  un proveedor lento no los bloquee.
+  un proveedor lento no los bloquee; el orden empieza por investigación,
+  ingestión, grafo y fases MCP antes de dep/self-build.
   **Próxima acción:** ejecutar un ciclo observado y revisar recibos/fuentes
   que fallen sin ensanchar la red en silencio.
 

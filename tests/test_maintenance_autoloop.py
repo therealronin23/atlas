@@ -193,6 +193,15 @@ class TestMaintenancePollInterval:
             "_mcp_vetting_cycle",
         ):
             assert cycle_names.index(operational_cycle) < batch_index
+        self_build_index = cycle_names.index("_self_build_cycle")
+        for discovery_cycle in (
+            "_research_cycle",
+            "_knowledge_ingest_cycle",
+            "_project_graph_cycle",
+            "_mcp_trial_cycle",
+            "_mcp_vetting_cycle",
+        ):
+            assert cycle_names.index(discovery_cycle) < self_build_index
 
     def test_default_poll_interval_is_24h_when_env_unset(
         self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch,
