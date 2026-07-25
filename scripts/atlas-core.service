@@ -10,8 +10,10 @@ EnvironmentFile=/home/ronin/proyectos/atlas-core/.env
 ExecStart=/home/ronin/proyectos/atlas-core/.venv/bin/atlas serve --poll-interval 1.0
 Restart=always
 RestartSec=10
-# Timeout de parada explícito: detiene el cuelgue ~90s (SIGTERM hasta 30s, luego SIGKILL)
-TimeoutStopSec=30
+# La regeneración incremental del grafo puede tardar decenas de minutos. El
+# scheduler la detiene cooperativamente, pero no puede interrumpir un build ya
+# dentro de Kuzu; un límite corto corrompería la parada con SIGKILL.
+TimeoutStopSec=1h
 KillMode=control-group
 # El runtime y sus hijos crean memoria, claves y logs: nunca heredar una umask
 # permisiva del login. bwrap fue verificado bajo no-new-privileges.

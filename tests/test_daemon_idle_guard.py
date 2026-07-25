@@ -126,6 +126,10 @@ class TestSystemdHardening:
         assert "UMask=0077" in unit
         assert "NoNewPrivileges=true" in unit
 
+    def test_service_allows_a_running_graph_rebuild_to_stop_cleanly(self) -> None:
+        unit = SERVICE_PATH.read_text(encoding="utf-8")
+        assert "TimeoutStopSec=1h" in unit
+
     def test_installer_has_bounded_readiness_gate(self) -> None:
         installer = INSTALLER_PATH.read_text(encoding="utf-8")
         assert "sleep 8" not in installer

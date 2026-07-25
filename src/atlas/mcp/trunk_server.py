@@ -189,6 +189,11 @@ def trunk_health_snapshot(
     for entry in catalog:
         if entry.kind != "mcp" or entry.status != "candidato":
             continue
+        # El catálogo histórico contiene miles de entradas sembradas sin
+        # procedencia suficiente. Salud no debe presentarlas como listas para
+        # prueba: solo se muestran los candidatos de investigación curada.
+        if entry.trust != "research-2026":
+            continue
         if not entry.install and not entry.source:
             continue
         trial_ready.append(

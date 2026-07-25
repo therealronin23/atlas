@@ -121,6 +121,7 @@ def test_health_reports_catalog_and_does_not_spawn() -> None:
     assert "trial_ready_candidates" in out
     names = [c["name"] for c in out["trial_ready_candidates"][:8]]
     assert "Context7" in names
+    assert all(c["trust"] == "research-2026" for c in out["trial_ready_candidates"])
 
 
 def test_recommend_stack_tool_returns_small_shortlist() -> None:

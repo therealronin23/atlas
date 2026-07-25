@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-25 — mantenimiento autónomo del tronco verificado y saneado.**
+  Con `ATLAS_PROJECT_GRAPH=1`, el daemon detectó el commit `4ea06a6`, reconstruyó
+  en `.rebuild` y publicó el swap sin competir por el lock; `atlas reality`
+  confirmó `graph=FRESH` y Merkle íntegro. La unidad instalada ahora espera hasta
+  una hora para una parada cooperativa durante ese build, en vez de acabar en
+  `SIGKILL`. El vetting ya no reescribe el snapshot stage-1 si el contenido no
+  cambia y `trunk_health` sólo muestra candidatos `research-2026`; los 2.824
+  heredados siguen pendientes de la revisión/reset explícito del operador.
+  **Próxima acción:** decidir y aplicar (o no) el reset de candidatos heredados;
+  diseñar después el circuito rechazo → Security Council → HITL.
+
 - **2026-07-25 — tronco/grafo recuperado y filtro de descubrimiento endurecido.**
   `maintenance_project_graph_tick` completó sobre una copia y publicó el swap
   atómico en `3f5d762`: 2.881 nodos, 7.368 importaciones, 4.024 símbolos y

@@ -207,6 +207,27 @@ def test_run_stage1_triage_is_read_only_on_seeded_catalog(tmp_path) -> None:
     assert summary["track_http"] == 1
 
 
+def test_run_stage1_triage_does_not_rewrite_an_equivalent_snapshot(tmp_path) -> None:
+    import yaml
+
+    from atlas.mcp.candidate_triage import run_stage1_triage
+
+    seeded = tmp_path / "seeded.yaml"
+    seeded.write_text(
+        yaml.safe_dump(
+            {"sectors": {"x": {"entries": [_entry("stable.example/mcp", "ok", "stdio")]}}}
+        ),
+        encoding="utf-8",
+    )
+    report = tmp_path / "stage1_triage.jsonl"
+    run_stage1_triage(seeded, report)
+    before = report.read_text(encoding="utf-8")
+
+    run_stage1_triage(seeded, report)
+
+    assert report.read_text(encoding="utf-8") == before
+
+
 def test_run_stage1_triage_missing_file_raises() -> None:
     import pytest
     from atlas.mcp.candidate_triage import run_stage1_triage

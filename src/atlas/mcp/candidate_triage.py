@@ -177,10 +177,32 @@ def run_stage1_triage(seeded_path: str | Path, report_path: str | Path) -> dict[
 
     out = Path(report_path)
     out.parent.mkdir(parents=True, exist_ok=True)
+    snapshot = [r.to_dict() for r in results]
+    if out.is_file():
+        try:
+            prior = [
+                {key: value for key, value in json.loads(line).items() if key != "generated_at"}
+                for line in out.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        except (OSError, ValueError, TypeError):
+            prior = []
+        if prior == snapshot:
+            return {
+                "total": len(results),
+                "eligible": sum(1 for r in results if r.eligible),
+                "pending_review": sum(1 for r in results if not r.eligible),
+                "track_stdio": sum(1 for r in results if r.track == "stdio"),
+                "track_http": sum(1 for r in results if r.track == "http"),
+                "track_unknown": sum(1 for r in results if r.track == "unknown"),
+                "injection_major_or_worse": sum(
+                    1 for r in results if r.injection_severity >= Severity.MAJOR
+                ),
+            }
     generated_at = datetime.now(timezone.utc).isoformat()
     with out.open("w", encoding="utf-8") as f:
-        for r in results:
-            line = {"generated_at": generated_at, **r.to_dict()}
+        for row in snapshot:
+            line = {"generated_at": generated_at, **row}
             f.write(json.dumps(line, ensure_ascii=False) + "\n")
 
     return {
