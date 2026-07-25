@@ -109,6 +109,22 @@ def test_parse_findings_empty_report() -> None:
     assert parse_findings("# Investigación\n\nstatus: propuesto\n\nSin hallazgos.\n") == []
 
 
+def test_parse_findings_captures_optional_seed_line() -> None:
+    findings = parse_findings(
+        "### [github] acme/mempalace\n"
+        "- tema: temporal knowledge graph\n"
+        "- seed: memoria de agentes de IA\n"
+        "- url: https://github.com/acme/mempalace\n"
+        "- extracto: a memory tool\n"
+    )
+    assert len(findings) == 1
+    assert findings[0].seed == "memoria de agentes de IA"
+
+
+def test_parse_findings_seed_defaults_to_empty_when_absent() -> None:
+    assert all(f.seed == "" for f in parse_findings(_REAL_REPORT_FRAGMENT))
+
+
 # ---------------------------------------------------------------------------
 # digest_findings — señal, dedupe, sector, kind
 # ---------------------------------------------------------------------------

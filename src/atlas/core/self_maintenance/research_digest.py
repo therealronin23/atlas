@@ -41,6 +41,7 @@ from atlas.mcp.catalog import CatalogEntry, classify
 
 _SECTION_RE = re.compile(r"^### \[(?P<source>[^\]]+)\]\s*(?P<title>.+?)\s*$")
 _TEMA_PREFIX = "- tema:"
+_SEED_PREFIX = "- seed:"
 _URL_PREFIX = "- url:"
 _EXTRACTO_PREFIX = "- extracto:"
 
@@ -54,6 +55,7 @@ class Finding:
     url: str
     topic: str
     excerpt: str
+    seed: str = ""
 
 
 def parse_findings(report_text: str) -> list[Finding]:
@@ -75,6 +77,7 @@ def parse_findings(report_text: str) -> list[Finding]:
                     url=current.get("url", ""),
                     topic=current.get("topic", ""),
                     excerpt=current.get("excerpt", ""),
+                    seed=current.get("seed", ""),
                 )
             )
         current = None
@@ -90,6 +93,8 @@ def parse_findings(report_text: str) -> list[Finding]:
         stripped = line.strip()
         if stripped.startswith(_TEMA_PREFIX):
             current["topic"] = stripped[len(_TEMA_PREFIX):].strip()
+        elif stripped.startswith(_SEED_PREFIX):
+            current["seed"] = stripped[len(_SEED_PREFIX):].strip()
         elif stripped.startswith(_URL_PREFIX):
             current["url"] = stripped[len(_URL_PREFIX):].strip()
         elif stripped.startswith(_EXTRACTO_PREFIX):
