@@ -134,6 +134,8 @@ def _render_research_report(
     for finding in findings:
         lines.append(f"### [{finding.source}] {finding.title}")
         lines.append(f"- tema: {finding.topic}")
+        if getattr(finding, "seed", ""):
+            lines.append(f"- seed: {finding.seed}")
         lines.append(f"- url: {finding.url}")
         if finding.excerpt:
             lines.append(f"- extracto: {finding.excerpt}")
