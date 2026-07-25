@@ -903,7 +903,22 @@ class MaintenanceFacade:
         ]
 
         expander = TopicExpander(hub=hub, merkle=orch._merkle)
-        queries = expander.expand(seeds, queries_per_seed=4)
+        expansions = expander.expand_detailed(seeds, queries_per_seed=4)
+        queries: list[str] = []
+        topic_seeds: dict[str, str] = {}
+        seen: set[str] = set()
+        for expansion in expansions:
+            for query in expansion.queries:
+                if query not in seen:
+                    seen.add(query)
+                    queries.append(query)
+                    topic_seeds[query] = expansion.seed
+
+        min_stars_env = os.environ.get("ATLAS_MCP_DISCOVERY_MIN_STARS", "5").strip()
+        try:
+            min_stars = int(min_stars_env)
+        except ValueError:
+            min_stars = 5
 
         scout = PanoramaScout(
             merkle=orch._merkle,
@@ -911,6 +926,8 @@ class MaintenanceFacade:
             fetch=_egress_fetch_text,
             topics=queries,
             max_results_per_topic=4,
+            topic_seeds=topic_seeds,
+            min_stars=min_stars,
         )
         findings = scout.discover()
 
