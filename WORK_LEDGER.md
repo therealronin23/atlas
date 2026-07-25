@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-25 — tronco/grafo recuperado y filtro de descubrimiento endurecido.**
+  `maintenance_project_graph_tick` completó sobre una copia y publicó el swap
+  atómico en `3f5d762`: 2.881 nodos, 7.368 importaciones, 4.024 símbolos y
+  7.136 llamadas; `atlas reality` confirma `graph=FRESH`. Se localizó un lock
+  retenido por el daemon sobre `.rebuild`; se liberó mediante parada controlada
+  y el daemon se reactivó tras la publicación. `run_quality_gate` ahora exige
+  los tres veredictos LLM: real, relevante a la semilla y hueco real; los 2.824
+  candidatos heredados no son una shortlist ni evidencia de adopción. **Próxima
+  acción:** ejecutar una ingesta nueva con LLM bajo este gate y revisar solo los
+  candidatos que sobrevivan, con fuente/licencia y prueba de trial antes de HITL.
+
 - **2026-07-24 (8ª pasada, sesión Opus nueva, sobre el trabajo sin commitear
   de las pasadas 5-7) — auditoría premortem/postmortem + ADR-075 construido
   y probado en vivo de punta a punta (32 commits, `0c2ecaa`..`94262fb`).**

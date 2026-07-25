@@ -9,10 +9,10 @@ def _candidate(seeds: tuple[str, ...] = ()) -> CandidateSuggestion:
     return CandidateSuggestion("acme/x", "https://github.com/acme/x", "memory", "tool", ("tema:x",), seeds=seeds)
 
 
-def test_gate_keeps_only_real_and_seed_relevant_candidates() -> None:
+def test_gate_requires_a_real_seed_relevant_capability_gap() -> None:
     keep = run_quality_gate([_candidate()], capability_summary="", judge_fn=lambda _c, _x: QualityVerdict(True, True, False, "ok"))
     reject = run_quality_gate([_candidate()], capability_summary="", judge_fn=lambda _c, _x: QualityVerdict(False, True, True, "toy"))
-    assert len(keep) == 1
+    assert keep == []
     assert reject == []
 
 

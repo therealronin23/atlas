@@ -57,13 +57,13 @@ def build_llm_judge_fn(hub: Any) -> JudgeFn:
 
 
 def run_quality_gate(suggestions: list[CandidateSuggestion], *, capability_summary: str, judge_fn: JudgeFn) -> list[CandidateSuggestion]:
-    """Keep only real, seed-relevant candidates; any judge error excludes."""
+    """Keep only real, seed-relevant candidates that cover a real gap."""
     kept: list[CandidateSuggestion] = []
     for candidate in suggestions:
         try:
             verdict = judge_fn(candidate, JudgeContext(candidate.seeds[0] if candidate.seeds else "", capability_summary))
         except Exception:  # noqa: BLE001 - gate must fail closed per candidate
             continue
-        if verdict.real_mantenido and verdict.relevante_al_seed:
+        if verdict.real_mantenido and verdict.relevante_al_seed and verdict.cubre_hueco_real:
             kept.append(candidate)
     return kept
