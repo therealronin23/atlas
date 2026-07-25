@@ -1209,6 +1209,20 @@ class MaintenanceFacade:
                 suggestions = digest_findings(
                     reports, catalog, load_taxonomy(catalog_path)
                 )
+                if suggestions:
+                    from atlas.core.inference_hub import InferenceHub
+                    from atlas.core.self_maintenance.mcp_discovery_quality_gate import (
+                        build_llm_judge_fn,
+                        run_quality_gate,
+                        summarize_catalog_capabilities,
+                    )
+
+                    gate_hub = self._orch._inference_hub or InferenceHub(mode="auto")
+                    suggestions = run_quality_gate(
+                        suggestions,
+                        capability_summary=summarize_catalog_capabilities(catalog),
+                        judge_fn=build_llm_judge_fn(gate_hub),
+                    )
                 if suggestions and classified_path.is_file():
                     digested = append_candidates_to_catalog(suggestions, classified_path)
         except Exception:  # noqa: BLE001 — la digestión es extra, nunca rompe la ingesta
