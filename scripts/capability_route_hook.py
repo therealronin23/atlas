@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +25,7 @@ from atlas.mcp.router_telemetry import (
     append_suggestion,
     apply_cooldown,
 )
-from atlas.mcp.workbench_compliance import check_and_record
+from atlas.mcp.workbench_compliance import check_and_maybe_synthesize
 
 # Mismo save_dir que .cursor/mcp.json / el --mcp-config real de la CLI
 # ("${userHome}/atlas-mcp"): la raíz del tronco, no del repo -- es donde
@@ -47,6 +48,72 @@ def _extract_prompt(raw: str) -> str:
         if isinstance(val, str) and val.strip():
             return val.strip()
     return ""
+
+
+def _build_manifest_json_fn(repo_root: Path, entries: list[CatalogEntry]) -> Callable[[], str]:
+    """Construcción PEREZOSA del manifiesto de la mesa de trabajo (catálogo ya
+    cargado + lecciones + backlog + memoria) -- solo se invoca cuando
+    check_and_maybe_synthesize decide que toca síntesis (primera vez de la
+    sesión, ver workbench_compliance.is_synthesis_due). Mismo patrón fail-soft
+    por fuente que trunk_server.py: una fuente ausente no tumba las demás."""
+
+    def _build() -> str:
+        from atlas.core.lesson_store import LessonStore
+        from atlas.core.self_maintenance.backlog import load_backlog
+        from atlas.mcp.workbench_resources import workbench_manifest_json
+
+        # LessonStore.__init__ crea el directorio si falta (mkdir parents=True,
+        # exist_ok=True) -- no necesita guarda propia; un fallo real aquí
+        # (p.ej. permisos) se propaga y lo atrapa build_workbench_synth_fn.
+        lesson_store_obj = LessonStore(repo_root / "workspace" / "lessons")
+
+        backlog_items: list[Any] = []
+        try:
+            backlog_path = repo_root / "docs" / "backlog.yaml"
+            if backlog_path.is_file():
+                backlog_items = load_backlog(backlog_path)
+        except Exception:  # noqa: BLE001
+            backlog_items = []
+
+        memory_count = 0
+        try:
+            memory_db = _WORKBENCH_SAVE_DIR / "memory.db"
+            if memory_db.is_file():
+                import sqlite3
+
+                conn = sqlite3.connect(str(memory_db))
+                try:
+                    memory_count = int(conn.execute("SELECT COUNT(*) FROM records").fetchone()[0])
+                finally:
+                    conn.close()
+        except Exception:  # noqa: BLE001
+            memory_count = 0
+
+        manifest_json: str = workbench_manifest_json(
+            entries, lesson_store_obj, backlog_items, memory_count
+        )
+        return manifest_json
+
+    return _build
+
+
+def _build_workbench_synth_fn_safe(
+    repo_root: Path, entries: list[CatalogEntry]
+) -> Callable[[str], str | None] | None:
+    """Compone hub (gemini_free dedicado) + manifiesto perezoso. Si el propio
+    import/construcción del hub falla, no hay synth_fn -- check_and_maybe_synthesize
+    cae directamente al aviso de texto plano, igual que hoy."""
+    try:
+        from atlas.core.inference_hub import InferenceHub
+        from atlas.mcp.workbench_synthesis import build_workbench_synth_fn
+
+        hub = InferenceHub(mode="auto")
+        synth_fn: Callable[[str], str | None] = build_workbench_synth_fn(
+            hub, _build_manifest_json_fn(repo_root, entries)
+        )
+        return synth_fn
+    except Exception:  # noqa: BLE001 — nunca bloquea el hook
+        return None
 
 
 def _load_entries(repo_root: Path) -> tuple[list[CatalogEntry], dict[str, Any]]:
@@ -111,18 +178,26 @@ def main() -> int:
 
     block = format_routing_block(hits)
 
-    # Mesa de trabajo obligatoria (2026-07-23, diseño del operador): aviso no
-    # bloqueante si workbench://manifest lleva stale -- el hallazgo queda
-    # registrado en workspace/mcp/workbench_compliance_findings.jsonl para
-    # que un ciclo de auditoría/coldupdate futuro lo revise y actúe. Fail-soft
-    # total: check_and_record nunca lanza. Respeta --no-state (su contrato
+    # Mesa de trabajo obligatoria (2026-07-23, diseño del operador) + síntesis
+    # Gemini de primera-vez-por-sesión (2026-07-25, ver memoria
+    # trunk-plan-cooperation-design): si workbench://manifest lleva stale Y es
+    # la primera vez que esta sesión lo ve así (is_synthesis_due, cooldown de
+    # 6h), se hace UNA llamada real a gemini_free que sintetiza un briefing
+    # del manifiesto sobre el prompt actual -- esa llamada cuenta como
+    # consulta real y resetea el reloj. Si no toca síntesis, o falla, cae al
+    # aviso de texto plano de siempre; el hallazgo queda igualmente registrado
+    # en workspace/mcp/workbench_compliance_findings.jsonl. Fail-soft total:
+    # check_and_maybe_synthesize nunca lanza. Respeta --no-state (su contrato
     # es "no toca workspace/mcp" — el mismo que cooldown/telemetría).
     workbench_notice = None
     if not args.no_state:
-        workbench_notice = check_and_record(
+        synth_fn = _build_workbench_synth_fn_safe(repo, entries)
+        workbench_notice = check_and_maybe_synthesize(
             consultation_log_path=_WORKBENCH_SAVE_DIR / "workbench_consultations.jsonl",
             findings_path=repo / "workspace" / "mcp" / "workbench_compliance_findings.jsonl",
             prompt=prompt,
+            goal=prompt,
+            synth_fn=synth_fn,
         )
 
     combined = "\n\n".join(part for part in (block, workbench_notice) if part)

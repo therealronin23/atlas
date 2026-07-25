@@ -3,6 +3,7 @@ obligatoria cableada en capability_route_hook.py (2026-07-23)."""
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -63,6 +64,37 @@ def test_hook_omits_workbench_notice_when_fresh(tmp_path: Path) -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "mesa de trabajo" not in result.stdout.lower()
+
+
+def test_hook_stale_beyond_synthesis_cooldown_falls_back_safely_without_key(
+    tmp_path: Path,
+) -> None:
+    """Fase 1 (2026-07-25): cuando la última consulta real es tan vieja que
+    tocaría síntesis Gemini (is_synthesis_due) Y no hay GEMINI_API_KEY en el
+    entorno (como en este subprocess aislado), la llamada real al hub debe
+    fallar rápido y en silencio (auto-skip por falta de clave) -- el hook
+    sigue devolviendo el aviso de texto plano de siempre, nunca cuelga ni
+    revienta."""
+    repo = _isolated_repo(tmp_path)
+    fake_home = tmp_path / "home"
+    (fake_home / "atlas-mcp").mkdir(parents=True)
+    from datetime import datetime, timedelta, timezone
+
+    old = (datetime.now(timezone.utc) - timedelta(hours=8)).isoformat()
+    (fake_home / "atlas-mcp" / "workbench_consultations.jsonl").write_text(
+        json.dumps({"at": old}) + "\n", encoding="utf-8"
+    )
+    env = {"HOME": str(fake_home), "PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"}
+
+    result = subprocess.run(
+        [
+            sys.executable, str(ROOT / "scripts" / "capability_route_hook.py"),
+            "--prompt", "hola mundo", "--repo-root", str(repo),
+        ],
+        capture_output=True, text=True, timeout=30, env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "mesa de trabajo" in result.stdout.lower()
 
 
 def test_hook_no_state_flag_also_skips_workbench_check(tmp_path: Path) -> None:

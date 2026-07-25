@@ -11,12 +11,22 @@ poder romperse por esto.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
 from atlas.mcp.router_telemetry import hash_prompt
 
 DEFAULT_STALE_AFTER_SECONDS = 30 * 60  # 30 min: ventana razonable de "sesión de trabajo"
+
+# 2026-07-25: cooldown de síntesis Gemini -- deliberadamente más grueso que
+# DEFAULT_STALE_AFTER_SECONDS. Sirve de proxy de "sesión nueva" (evento) sin
+# inventar un mecanismo de session-id: si la última consulta real (manual o
+# sintetizada) tiene más de esto, se considera una sesión distinta y la
+# síntesis es obligatoria; dentro de la ventana, staleness repetida es
+# discrecional (solo el aviso de texto plano). Ver memoria
+# trunk-plan-cooperation-design-2026-07-25.
+DEFAULT_SYNTHESIS_COOLDOWN_SECONDS = 6 * 60 * 60
 
 
 def _last_consultation_at(log_path: Path) -> datetime | None:
@@ -88,3 +98,59 @@ def check_and_record(
         )
     except Exception:  # noqa: BLE001 — nunca romper el hook por esto
         return None
+
+
+def is_synthesis_due(
+    log_path: Path,
+    *,
+    now: datetime | None = None,
+    cooldown_seconds: int = DEFAULT_SYNTHESIS_COOLDOWN_SECONDS,
+) -> bool:
+    """True si nunca hubo consulta real registrada, o la última es más vieja
+    que ``cooldown_seconds`` -- proxy de "sesión nueva" para decidir si la
+    síntesis Gemini de primera-vez-por-sesión toca ahora."""
+    last = _last_consultation_at(log_path)
+    if last is None:
+        return True
+    reference = now if now is not None else datetime.now(timezone.utc)
+    return (reference - last).total_seconds() > cooldown_seconds
+
+
+def check_and_maybe_synthesize(
+    *,
+    consultation_log_path: Path,
+    findings_path: Path,
+    prompt: str,
+    goal: str,
+    synth_fn: Callable[[str], str | None] | None = None,
+    now: datetime | None = None,
+    stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
+    synthesis_cooldown_seconds: int = DEFAULT_SYNTHESIS_COOLDOWN_SECONDS,
+) -> str | None:
+    """Punto de entrada del hook (diseño 2026-07-25). Igual que
+    ``check_and_record`` si el manifest está fresco o si no hay ``synth_fn``.
+    Si está stale Y es la primera vez de la sesión (``is_synthesis_due``),
+    intenta un briefing real vía ``synth_fn(goal)`` -- si sale bien, cuenta
+    como consulta real (resetea el reloj) y se devuelve. Si no toca síntesis,
+    o ``synth_fn`` falla/devuelve vacío, cae al aviso de texto plano de
+    siempre. Fail-soft total: nunca lanza."""
+    try:
+        if not is_stale(consultation_log_path, now=now, stale_after_seconds=stale_after_seconds):
+            return None
+        if synth_fn is not None and is_synthesis_due(
+            consultation_log_path, now=now, cooldown_seconds=synthesis_cooldown_seconds
+        ):
+            briefing = synth_fn(goal)
+            if briefing:
+                from atlas.mcp.workbench_resources import record_consultation
+
+                record_consultation(consultation_log_path)
+                return "[mesa de trabajo -- síntesis Gemini]\n" + briefing
+    except Exception:  # noqa: BLE001 — nunca romper el hook por esto
+        pass
+    return check_and_record(
+        consultation_log_path=consultation_log_path,
+        findings_path=findings_path,
+        prompt=prompt,
+        now=now,
+    )
