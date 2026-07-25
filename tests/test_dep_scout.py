@@ -118,6 +118,23 @@ def _candidate(name: str, current: str, latest: str) -> DepCandidate:
 
 
 class TestDepProposer:
+    def test_skips_an_identical_open_proposal(self, merkle, tmp_path) -> None:
+        """Un tick repetido no crea otro bump mientras el primero siga abierto."""
+        pp = tmp_path / "pyproject.toml"
+        pp.write_text(_PYPROJECT, encoding="utf-8")
+        proposed: list[str] = []
+
+        result = DepProposer(
+            merkle=merkle,
+            propose=lambda *args, **kwargs: proposed.append(args[0]),
+            pyproject_path=pp,
+            installed_version=lambda _name: "8.2.0",
+            has_open_proposal=lambda intent: intent == "bump dependencia click 8.1 → 8.2.0",
+        ).propose_bump(_candidate("click", "8.1", "8.2.0"))
+
+        assert result is None
+        assert proposed == []
+
     def test_builds_patch_and_delegates(self, merkle, tmp_path) -> None:
         pp = tmp_path / "pyproject.toml"
         pp.write_text(_PYPROJECT, encoding="utf-8")

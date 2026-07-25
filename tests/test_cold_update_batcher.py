@@ -167,6 +167,31 @@ class _FakeRunner:
         return self._report
 
 
+def test_successful_unchanged_batch_is_not_revalidated(tmp_path: Path) -> None:
+    """Un tick posterior sin propuestas nuevas no vuelve a gastar la suite."""
+    root = _make_git_repo(tmp_path, "dedupe")
+    mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="dedupe")
+    proposal_id = _propose_validated(
+        mgr, tmp_path, "dedupe",
+        "--- /dev/null\n+++ b/src/atlas/dedupe.txt\n@@ -0,0 +1 @@\n+dedupe\n",
+    )
+    runs = 0
+
+    class _CountingRunner:
+        def run(self) -> ValidationReport:
+            nonlocal runs
+            runs += 1
+            return _ok_report()
+
+    batcher = ColdUpdateBatcher(mgr, runner_factory=lambda worktree: _CountingRunner())
+    first = batcher.run_batch()
+    second = batcher.run_batch()
+
+    assert first.included == [proposal_id]
+    assert second.included == []
+    assert runs == 1
+
+
 def test_one_proposal_breaks_combined_suite_bisected_out(tmp_path: Path) -> None:
     root = _make_git_repo(tmp_path, "bisect")
     mgr = _mgr(tmp_path, root, runner_factory=lambda p: None, name="bisect")

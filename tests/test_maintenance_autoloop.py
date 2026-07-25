@@ -244,11 +244,39 @@ class TestMaintenancePollInterval:
 
 
 class TestDepCycleWiring:
-    def test_dep_cycle_chains_scout_proposer_advance(self, orch: Orchestrator) -> None:
+    def test_dep_cycle_validates_without_autoapplying_when_policy_disabled(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """La observación continua valida el parche, pero no toca main sin opt-in."""
+        from types import SimpleNamespace
+
+        monkeypatch.setenv("ATLAS_COLD_UPDATE_AUTO_APPLY", "0")
+        validated: list[str] = []
+        advanced: list[str] = []
+        manager = SimpleNamespace(validate=lambda proposal_id: validated.append(proposal_id))
+        orch._maintenance_dep_scout = SimpleNamespace(
+            discover=lambda: [SimpleNamespace(name="click")]
+        )
+        orch._maintenance_dep_proposer = SimpleNamespace(
+            propose_bump=lambda candidate: SimpleNamespace(id="cu-click")
+        )
+        orch.cold_update = lambda: manager  # type: ignore[method-assign]
+        orch.advance_cold_update = lambda proposal_id: advanced.append(proposal_id)  # type: ignore[method-assign]
+
+        scheduler = orch.maintenance_scheduler()
+        next(cycle for cycle in scheduler._extra_cycles if cycle.__name__ == "_dep_cycle")()
+
+        assert validated == ["cu-click"]
+        assert advanced == []
+
+    def test_dep_cycle_chains_scout_proposer_advance_when_policy_enabled(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """El extra-cycle de deps encadena discover → propose_bump →
         advance_cold_update por cada candidato."""
         from types import SimpleNamespace
 
+        monkeypatch.setenv("ATLAS_COLD_UPDATE_AUTO_APPLY", "1")
         advanced: list[str] = []
 
         # Fakes inyectados en los accessors (cero red/git real).

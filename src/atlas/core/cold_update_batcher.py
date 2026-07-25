@@ -94,10 +94,10 @@ class ColdUpdateBatcher:
         candidates.sort(key=lambda p: p.created_at)
 
         if not candidates:
-            return self._finalize(
-                included=[], excluded=[], passed=True,
-                pytest_summary="", mypy_summary="",
-            )
+            return self._noop_result()
+
+        if self._already_passed(candidates):
+            return self._noop_result()
 
         # Paso 2 del roadmap "juicio real" (corrección del Cónclave: razonar
         # sobre el riesgo de la COMBINACIÓN antes de pagar el coste de correr
@@ -139,6 +139,30 @@ class ColdUpdateBatcher:
             )
 
         return self._bisect(candidates, base_ref, premortem_findings=premortem_findings, benchmark_findings=benchmark_findings)
+
+    def _noop_result(self) -> BatchResult:
+        """No persiste ni reanuncia una pasada que no ha probado nada nuevo."""
+        return BatchResult(
+            id="",
+            included=[], excluded=[], passed=True,
+            pytest_summary="", mypy_summary="",
+            worktree_path=None,
+        )
+
+    def _already_passed(self, candidates: list[Any]) -> bool:
+        """True cuando el conjunto abierto ya pasó sin exclusiones.
+
+        Si aparece una propuesta nueva, la lista deja de coincidir y se vuelve
+        a validar la combinación completa; un lote previo no autoriza cambios
+        posteriores.
+        """
+        candidate_ids = [proposal.id for proposal in candidates]
+        return any(
+            batch.get("passed") is True
+            and not batch.get("excluded")
+            and batch.get("included") == candidate_ids
+            for batch in self._load()["batches"]
+        )
 
     def get_batch(self, batch_id: str) -> BatchResult | None:
         for item in self._load()["batches"]:

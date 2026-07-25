@@ -50,12 +50,14 @@ class DepProposer:
         pyproject_path: Path,
         installed_version: Callable[[str], str | None] | None = None,
         analyst: Any | None = None,
+        has_open_proposal: Callable[[str], bool] | None = None,
     ) -> None:
         self._merkle = merkle
         self._propose = propose
         self._pyproject = pyproject_path
         self._installed_version = installed_version or _installed_version
         self._analyst = analyst
+        self._has_open_proposal = has_open_proposal
 
     def propose_bump(self, candidate: DepCandidate) -> Any:
         """Materializa el bump y lo entrega a ColdUpdate. ``None`` si no hay diana.
@@ -82,8 +84,17 @@ class DepProposer:
             self._audit(candidate, result="no_target", proposal=None)
             return None
 
-        patch = self._unified_diff(original, bumped)
         intent = f"bump dependencia {candidate.name} {candidate.current} → {floor}"
+        if self._has_open_proposal is not None:
+            try:
+                if self._has_open_proposal(intent):
+                    self._audit(candidate, result="already_open", proposal=None)
+                    return None
+            except Exception:  # noqa: BLE001 - no gastar un worktree si falla la deduplicación
+                self._audit(candidate, result="dedupe_check_failed", proposal=None)
+                return None
+
+        patch = self._unified_diff(original, bumped)
         with tempfile.NamedTemporaryFile(
             "w", suffix=".patch", delete=False, encoding="utf-8"
         ) as fh:

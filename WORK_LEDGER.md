@@ -8,6 +8,16 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-26 — observación permanente: tronco, autoauditoría y ColdUpdate
+  saneados.** El servicio ejecuta los schedulers dentro del mismo proceso y
+  conserva el escritor Merkle único. `ATLAS_COLD_UPDATE_AUTO_APPLY=0` hace que
+  los bumps descubiertos se propongan y validen en worktrees, sin aplicar en
+  `main`; solo `=1` restaura ese opt-in autónomo. El proposer suprime una
+  propuesta self-audit idéntica mientras esté abierta, y el batcher no repite
+  la suite si la combinación abierta ya pasó sin exclusiones. **Próxima
+  acción:** observar los recibos de la noche; revisar propuestas nuevas por la
+  ruta HITL y no ejecutar F2.6 sin un gesto explícito.
+
 - **2026-07-25 — catálogo multisource de investigación, sin atajo de adopción.**
   `curated_sources.yaml` declara editores y dominios exactos para protocolo,
   proveedores de IA/cloud, plataformas de desarrollo, seguridad e

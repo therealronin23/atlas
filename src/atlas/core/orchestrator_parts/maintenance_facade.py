@@ -318,7 +318,9 @@ class MaintenanceFacade:
                     adopter.adopt(proposal)
 
             def _dep_cycle() -> None:
-                # Rama de auto-actualización de deps.
+                # Rama de auto-actualización de deps. Por defecto valida el
+                # parche aislado y lo deja para revisión; aplicar desde el
+                # scheduler exige el opt-in explícito ATLAS_COLD_UPDATE_AUTO_APPLY=1.
                 # Se enruta por self._orch para que los monkeypatches sobre
                 # Orchestrator (e.g. _no_real_dep_scout en conftest) sean
                 # respetados en tests (ADR-039 fix regresión).
@@ -327,7 +329,10 @@ class MaintenanceFacade:
                 for cand in scout.discover() or []:
                     proposal = proposer.propose_bump(cand)
                     if proposal is not None:
-                        orch.advance_cold_update(proposal.id)
+                        if os.environ.get("ATLAS_COLD_UPDATE_AUTO_APPLY", "").strip() == "1":
+                            orch.advance_cold_update(proposal.id)
+                        else:
+                            self._orch.cold_update().validate(proposal.id)
 
             def _self_build_cycle() -> None:
                 # Autoconstrucción: ver maintenance_self_build_tick (extraído a
@@ -1549,6 +1554,12 @@ class MaintenanceFacade:
                 merkle=self._orch._merkle,
                 propose=self._orch.cold_update().propose,
                 pyproject_path=self._project_root() / "pyproject.toml",
+                has_open_proposal=lambda intent: any(
+                    proposal.intent == intent
+                    and proposal.origin == "self_audit"
+                    and proposal.status in {"proposed", "validated", "approved"}
+                    for proposal in self._orch.cold_update().list_proposals()
+                ),
             )
         return self._maintenance_dep_proposer
 
