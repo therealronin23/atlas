@@ -58,6 +58,16 @@ _AUTONOMY_ENV_KEYS = (
     "ATLAS_MAINTENANCE_POLL_S",
 )
 
+# ADR-077 (2026-07-25): el .env de producción activó ATLAS_SECURITY_COUNCIL_GATE=1
+# DESPUÉS de que este fichero se escribiera -- mismo mecanismo de fuga que
+# _AUTONOMY_ENV_KEYS de arriba (import litellm -> load_dotenv() del CWD). Sin
+# esto, 12 tests que no stubean scan_fn/audit_fn (test_authorization.py,
+# test_cold_update_decider.py, test_maintenance_adopter.py,
+# test_reversible_mutations.py) ven el gate real activarse a mitad de suite y
+# el auditor LLM sin claves alcanzables falla cerrado -- cambia veredictos
+# Allow/Deny que esos tests ya verifican sin esperar el gate.
+_SECURITY_COUNCIL_ENV_KEYS = ("ATLAS_SECURITY_COUNCIL_GATE",)
+
 # Guardia anti-recursión (041f3972, 2026-07-09): puesta en el entorno real
 # cuando ESTA suite corre dentro del propio lazo de auto-build. Un test que
 # ejercite self_build_tick/similares con fakes, sin limpiarla, ve un corte
@@ -83,6 +93,7 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         *_HERMES_ENV_KEYS,
         *_MODE_OVERRIDES,
         *_AUTONOMY_ENV_KEYS,
+        *_SECURITY_COUNCIL_ENV_KEYS,
         *_NESTED_TEST_RUN_ENV_KEYS,
     ):
         monkeypatch.delenv(key, raising=False)
