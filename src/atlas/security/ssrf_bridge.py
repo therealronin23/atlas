@@ -69,6 +69,24 @@ DEFAULT_ALLOWED_DOMAINS: frozenset[str] = frozenset({
     "gitlab.com",                # host de código alternativo a GitHub
     "medium.com",                # posts técnicos largos (harnesses, arquitecturas)
     "techcrunch.com",            # noticias de producto/startups
+    # Fuentes primarias del catálogo multisource: referencias acotadas, no
+    # ejecutables. Se mantienen exactas, sin comodines de subdominio.
+    "developers.openai.com",
+    "docs.anthropic.com",
+    "learn.microsoft.com",
+    "vercel.com",
+    "developers.cloudflare.com",
+    "docs.docker.com",
+    "supabase.com",
+    "docs.sentry.io",
+    "developers.figma.com",
+    "docs.stripe.com",
+    "developers.notion.com",
+    "api.slack.com",
+    "developers.linear.app",
+    "nvd.nist.gov",
+    "api.semanticscholar.org",
+    "modelcontextprotocol.io",
 })
 
 # Dominios absolutamente bloqueados (aunque esten en allowed)

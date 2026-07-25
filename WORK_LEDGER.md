@@ -8,6 +8,16 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-25 — catálogo multisource de investigación, sin atajo de adopción.**
+  `curated_sources.yaml` declara editores y dominios exactos para protocolo,
+  proveedores de IA/cloud, plataformas de desarrollo, seguridad e
+  investigación. El tick descarga únicamente texto limitado tras SSRFBridge y
+  lo entrega como material `official`; no lo convierte por sí solo en
+  candidato, ni ejecuta/instala terceros. Los candidatos siguen pasando
+  quality gate → vetting → TrialGate → HITL; un rechazo conserva la escalada
+  del Security Council. **Próxima acción:** ejecutar un ciclo observado y
+  revisar recibos/fuentes que fallen sin ensanchar la red en silencio.
+
 - **2026-07-25 — bulk de discovery retirado; catálogo operativo delimitado.**
   Se aplicó el reset reversible del catálogo clasificado: se retiraron 2.780
   candidatos heredados sin evidencia suficiente, dejando ese artefacto vacío.

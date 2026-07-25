@@ -1,3 +1,62 @@
-# Fuentes curadas por el operador: entran por el mismo vetting que discovery.
-# Solo URLs github.com/<owner>/<repo>.
-sources: []
+# Fuentes curadas para investigación y knowledge. Cada editor declara dominios
+# exactos; el loader solo descarga texto acotado tras SSRFBridge. Una fuente no
+# concede ejecución, instalación ni promoción de un candidato.
+version: 1
+publishers:
+  - id: mcp
+    domains: [registry.modelcontextprotocol.io, modelcontextprotocol.io]
+  - id: openai
+    domains: [developers.openai.com]
+  - id: anthropic
+    domains: [docs.anthropic.com]
+  - id: microsoft
+    domains: [learn.microsoft.com]
+  - id: vercel
+    domains: [vercel.com]
+  - id: cloudflare
+    domains: [developers.cloudflare.com]
+  - id: docker
+    domains: [docs.docker.com]
+  - id: supabase
+    domains: [supabase.com]
+  - id: sentry
+    domains: [docs.sentry.io]
+  - id: figma
+    domains: [developers.figma.com]
+  - id: stripe
+    domains: [docs.stripe.com]
+  - id: notion
+    domains: [developers.notion.com]
+  - id: slack
+    domains: [api.slack.com]
+  - id: linear
+    domains: [developers.linear.app]
+  - id: osv
+    domains: [api.osv.dev]
+  - id: nvd
+    domains: [nvd.nist.gov]
+  - id: arxiv
+    domains: [export.arxiv.org]
+  - id: semantic-scholar
+    domains: [api.semanticscholar.org]
+sources:
+  - {publisher: mcp, kind: official_registry, url: https://registry.modelcontextprotocol.io/, note: Official MCP Registry, topic: MCP servers and metadata}
+  - {publisher: mcp, kind: official_docs, url: https://modelcontextprotocol.io/registry/about, note: MCP Registry documentation, topic: MCP governance and discovery}
+  - {publisher: openai, kind: official_docs, url: https://developers.openai.com/resources/, note: OpenAI developer resources, topic: agent tools and APIs}
+  - {publisher: anthropic, kind: official_docs, url: https://docs.anthropic.com/en/docs/mcp, note: Anthropic MCP documentation, topic: MCP clients and servers}
+  - {publisher: microsoft, kind: official_docs, url: https://learn.microsoft.com/en-us/azure/developer/azure-mcp-server/overview, note: Azure MCP Server, topic: cloud agents and governance}
+  - {publisher: microsoft, kind: official_docs, url: https://learn.microsoft.com/en-us/azure/api-management/mcp-server-overview, note: Azure API Management MCP, topic: governed remote MCP}
+  - {publisher: vercel, kind: official_docs, url: https://vercel.com/docs/mcp, note: Vercel MCP documentation, topic: agent tools and deployment}
+  - {publisher: cloudflare, kind: official_docs, url: https://developers.cloudflare.com/agents/, note: Cloudflare Agents documentation, topic: agents and infrastructure}
+  - {publisher: docker, kind: official_docs, url: https://docs.docker.com/ai/mcp-catalog-and-toolkit/, note: Docker MCP Toolkit, topic: local development and MCP}
+  - {publisher: supabase, kind: official_docs, url: https://supabase.com/docs/guides/getting-started/mcp, note: Supabase MCP documentation, topic: databases and agent tools}
+  - {publisher: sentry, kind: official_docs, url: https://docs.sentry.io/product/sentry-mcp/, note: Sentry MCP documentation, topic: observability and debugging}
+  - {publisher: figma, kind: official_docs, url: https://developers.figma.com/docs/figma-mcp-server/, note: Figma MCP documentation, topic: design and implementation}
+  - {publisher: stripe, kind: official_docs, url: https://docs.stripe.com/mcp, note: Stripe MCP documentation, topic: payments and agent tools}
+  - {publisher: notion, kind: official_docs, url: https://developers.notion.com/docs/mcp, note: Notion MCP documentation, topic: knowledge and productivity}
+  - {publisher: slack, kind: official_docs, url: https://api.slack.com/ai/mcp, note: Slack MCP documentation, topic: collaboration and knowledge}
+  - {publisher: linear, kind: official_docs, url: https://developers.linear.app/docs/mcp, note: Linear MCP documentation, topic: product planning}
+  - {publisher: osv, kind: security_advisory, url: https://api.osv.dev/v1/query, note: OSV vulnerability database, topic: supply chain security}
+  - {publisher: nvd, kind: security_advisory, url: https://nvd.nist.gov/developers, note: NVD developer resources, topic: vulnerability intelligence}
+  - {publisher: arxiv, kind: research_index, url: https://export.arxiv.org/api/query, note: arXiv API, topic: agent systems research}
+  - {publisher: semantic-scholar, kind: research_index, url: https://api.semanticscholar.org/api-docs/graph, note: Semantic Scholar Graph API, topic: evidence and research}

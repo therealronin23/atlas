@@ -65,6 +65,10 @@ def _build_evolution_gate() -> Any | None:
 # Cota del cuerpo descargado (mismo criterio que SecureExecutor: no leer
 # respuestas ilimitadas aunque la URL esté en la allowlist).
 _EGRESS_MAX_BYTES = 5 * 1024 * 1024
+_EGRESS_TEXT_TYPES = frozenset({
+    "text/plain", "text/html", "application/json", "application/xml",
+    "application/atom+xml", "text/xml",
+})
 
 # Candidatos de catálogo probados por tick (maintenance_mcp_trial_tick). Bajo
 # a propósito: cada uno puede spawnear un subproceso real en jaula bwrap.
@@ -100,16 +104,33 @@ def _build_avoid_section(recaller: Any, store: Any, query: str) -> str:
     return f"\n\n## Patrones a evitar (lecciones del sistema)\n{patterns}"
 
 
-def _egress_fetch_text(url: str, *, timeout: float = 15.0) -> str:
+def _egress_fetch_text(url: str, *, timeout: float = 15.0, decision: Any | None = None) -> str:
     """Descarga el cuerpo de una URL ya autorizada por el bridge (stdlib).
 
     El gateo de egress lo hace el llamador vía ``SSRFBridge.check`` antes de
     invocar esto; aquí solo se hace el GET HTTP, acotando el tamaño leído."""
     import urllib.request
 
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — gateado por SSRFBridge
-        raw: bytes = resp.read(_EGRESS_MAX_BYTES)
+    req = urllib.request.Request(url, headers={"Accept": "text/plain, text/html, application/json"})
+    if decision is None:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — legacy caller gateado por SSRFBridge
+            return _read_egress_text(resp)
+
+    # The decision's IP is tied to the immediately preceding SSRF check.  Keep
+    # URL host/SNI for TLS but pin the socket to avoid a second DNS resolution.
+    from atlas.security.executor import _build_opener_with_pinned_ip
+
+    opener = _build_opener_with_pinned_ip(decision.pinned_ip, url, int(timeout))
+    with opener.open(req, timeout=timeout) as resp:
+        return _read_egress_text(resp)
+
+
+def _read_egress_text(resp: Any) -> str:
+    """Reject binary responses before reading their body into a report."""
+    content_type = resp.headers.get_content_type().lower()
+    if content_type not in _EGRESS_TEXT_TYPES:
+        raise ValueError(f"unsupported content type: {content_type}")
+    raw: bytes = resp.read(_EGRESS_MAX_BYTES)
     return raw.decode("utf-8", errors="replace")
 
 
@@ -891,6 +912,14 @@ class MaintenanceFacade:
         orch = self._orch
         hub = orch._inference_hub or InferenceHub(mode="auto")
 
+        def _safe_egress_fetch(url: str) -> str:
+            # Recheck at the transport boundary so the pinned IP and the socket
+            # belong to the same decision, even if the caller checked earlier.
+            decision = orch._ssrf_bridge.check(url)
+            if not decision.allowed:
+                raise RuntimeError("egress denied")
+            return _egress_fetch_text(url, decision=decision)
+
         # Semillas: títulos de las lecciones más recientes (lo aprendido/
         # fallado decide qué se investiga) — fallback a intereses de fondo
         # de Atlas si el store está vacío (arranque en frío, sin lecciones).
@@ -923,7 +952,7 @@ class MaintenanceFacade:
         scout = PanoramaScout(
             merkle=orch._merkle,
             bridge=orch._ssrf_bridge,
-            fetch=_egress_fetch_text,
+            fetch=_safe_egress_fetch,
             topics=queries,
             max_results_per_topic=4,
             topic_seeds=topic_seeds,
@@ -933,7 +962,12 @@ class MaintenanceFacade:
         from atlas.core.self_maintenance.curated_sources import load_curated_findings
 
         curated_path = self._project_root() / "docs" / "knowledge" / "curated_sources.yaml"
-        findings = findings + load_curated_findings(curated_path)
+        curated_findings = load_curated_findings(
+            curated_path,
+            bridge=orch._ssrf_bridge,
+            fetch=_safe_egress_fetch,
+        )
+        findings = findings + curated_findings
 
         report_path = self._project_root() / "docs" / "inbox" / f"research_{today}.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -952,6 +986,7 @@ class MaintenanceFacade:
                 "seeds": seeds,
                 "queries_count": len(queries),
                 "findings_count": len(findings),
+                "curated_sources": [finding.url for finding in curated_findings],
                 "report_path": str(report_path),
             },
         )
@@ -960,6 +995,7 @@ class MaintenanceFacade:
             "seeds": seeds,
             "queries_count": len(queries),
             "findings_count": len(findings),
+            "curated_findings_count": len(curated_findings),
             "report_path": str(report_path),
         }
 
