@@ -389,13 +389,13 @@
 {"track": "http", "name": "ai.fathom.api/mcp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.fiber/mcp", "completed": false, "reason": "HTTP 307 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.filegraph/document-processing", "completed": false, "reason": "HTTP 307 del endpoint remoto", "tool_count": 0}
-{"track": "http", "name": "ai.filepad/filepad", "completed": false, "reason": "HTTP 503 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.filepad/filepad", "completed": false, "reason": "HTTP 500 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.filtrix.mcp/filtrix-ai", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.fincontext/fincontext", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.findip/patent-search", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.finestructure/fine-structure", "completed": true, "reason": "ok", "tool_count": 92}
 {"track": "http", "name": "ai.firmbrain/x402-services", "completed": true, "reason": "ok", "tool_count": 131}
-{"track": "http", "name": "ai.flipdomain/domain-sales", "completed": false, "reason": "egress bloqueado por allowlist: DNS rebinding bloqueado: flipdomain.ai resuelve a IP privada/reservada 192.0.2.1 (SSRF protection).", "tool_count": 0}
+{"track": "http", "name": "ai.flipdomain/domain-sales", "completed": true, "reason": "ok", "tool_count": 4}
 {"track": "http", "name": "ai.flowcastle/flowcastle", "completed": true, "reason": "ok", "tool_count": 16}
 {"track": "http", "name": "ai.flowstep/mcp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.fluxink/fci-mcp", "completed": true, "reason": "ok", "tool_count": 6}
@@ -529,7 +529,7 @@
 {"track": "http", "name": "ai.parceled/mcp", "completed": false, "reason": "HTTP 307 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.pathbound/pathbound", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.petraport/agent-commerce", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
-{"track": "http", "name": "ai.physea/liminality", "completed": false, "reason": "HTTP 530 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.physea/liminality", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.pictomancer/image-processing", "completed": false, "reason": "HTTP 308 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.pimea/pimea", "completed": true, "reason": "ok", "tool_count": 3}
 {"track": "http", "name": "ai.plith/plith", "completed": true, "reason": "ok", "tool_count": 15}
@@ -2098,3 +2098,22 @@
 {"track": "http", "name": "com.guruwalk/mcp", "completed": true, "reason": "ok", "tool_count": 4}
 {"track": "http", "name": "com.halalterminal/mcp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "com.hapticpaper/mcp", "completed": false, "reason": "HTTP 404 del endpoint remoto", "tool_count": 0}
+{"track": "stdio", "name": "com.fidacy/ai-agent-firewall", "completed": true, "stage_reached": "static_scan", "reason": "ok", "entrypoint": "dist/index.js", "n_findings": 0, "worst_severity": "NONE"}
+{"track": "http", "name": "ai.ai-akari/agent-trust-receipt", "completed": true, "reason": "ok", "tool_count": 1}
+{"track": "http", "name": "ai.augworlds/travel-world", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.izap/whatsapp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.ladderflow/mcp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.libers/libers-suite", "completed": false, "reason": "HTTP 500 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.masaro/masaro", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.posteverywhere/mcp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "app.getcallme/call-me", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ca.canada-payroll/canada-payroll", "completed": true, "reason": "ok", "tool_count": 3}
+{"track": "http", "name": "ca.freelancertax/freelancertax", "completed": true, "reason": "ok", "tool_count": 6}
+{"track": "http", "name": "com.aistackscore/aistackscore", "completed": true, "reason": "ok", "tool_count": 1}
+{"track": "http", "name": "com.blicht/mcp", "completed": true, "reason": "ok", "tool_count": 4}
+{"track": "http", "name": "com.choosemylo/mind-of-mylo-quotes", "completed": false, "reason": "HTTP 403 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "com.e2llm/element-to-llm", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "com.epovest/ai-visibility", "completed": true, "reason": "ok", "tool_count": 46}
+{"track": "http", "name": "com.expatriator/immigration", "completed": true, "reason": "ok", "tool_count": 4}
+{"track": "http", "name": "com.flingflyers/flingflyers", "completed": true, "reason": "ok", "tool_count": 2}
+{"track": "http", "name": "com.globalsurfari/globalsurfari", "completed": true, "reason": "ok", "tool_count": 3}

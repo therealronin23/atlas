@@ -2262,6 +2262,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-24T00:43:07.758579+00:00'
+    - name: anditaadhi/-Smart-Assistant-RAG-Pipeline-Project
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/anditaadhi/-Smart-Assistant-RAG-Pipeline-Project
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:document indexing
+      - informe:5
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-25T00:53:34.881451+00:00'
   datos:
     label: Datos
     entries:
@@ -11130,6 +11146,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-24T00:43:07.758579+00:00'
+    - name: Sadia0701/Multimodal-Emotional-Cognitive-Conversational-Agent
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Sadia0701/Multimodal-Emotional-Cognitive-Conversational-Agent
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:time aware reasoning
+      - informe:6
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-25T00:53:34.881451+00:00'
   infraestructura:
     label: Infraestructura
     entries:
@@ -12375,6 +12407,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-24T00:43:07.758579+00:00'
+    - name: JosephElaro/worktree
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/JosephElaro/worktree
+      install: ''
+      status: candidato
+      tags:
+      - infraestructura
+      evidence:
+      - tema:version control systems
+      - informe:3
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-25T00:53:34.881451+00:00'
   investigacion:
     label: Investigación
     entries:
@@ -15539,6 +15587,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-24T00:43:07.758579+00:00'
+    - name: codeprty/java-bst
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/codeprty/java-bst
+      install: ''
+      status: candidato
+      tags:
+      - investigacion
+      evidence:
+      - tema:tree traversal
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-25T00:53:34.881451+00:00'
   productividad:
     label: Productividad
     entries:
@@ -22647,6 +22711,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-24T00:43:07.758579+00:00'
+    - name: klondikemarlen/omp-repository-boundary-guard
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/klondikemarlen/omp-repository-boundary-guard
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-25T00:53:34.881451+00:00'
   uncategorized:
     label: uncategorized
     entries:
@@ -25335,3 +25415,19 @@ sectors:
       status: candidato
       tags:
       - uncategorized
+    - name: adrienaunmoving834/manyana
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/adrienaunmoving834/manyana
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+      evidence:
+      - tema:version control systems
+      - informe:3
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-25T00:53:34.881451+00:00'
