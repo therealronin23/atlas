@@ -92,7 +92,21 @@ class MaintenanceScheduler:
                 return
 
     def tick(self) -> list[McpProposal]:
-        """Una pasada: descubre, analiza, notifica lo corroborado. Nunca aplica."""
+        """Ciclos operativos → descubre, analiza, notifica. Nunca aplica."""
+        # Los ciclos operativos (grafo, investigación, ingestión, trials) van
+        # primero: un proveedor lento durante el análisis MCP no puede dejar el
+        # tronco con estado o conocimiento obsoleto durante todo el poll.
+        # Cada ciclo conserva su propio aislamiento y gating.
+        for cycle in self._extra_cycles:
+            if self._stop_event.is_set():
+                # stop() en vuelo: no arrancar más ciclos. Un tick() directo
+                # (sin start/stop) tiene el evento limpio y los corre todos.
+                break
+            try:
+                cycle()
+            except Exception:  # noqa: BLE001 — un ciclo caído no rompe los demás
+                pass
+
         candidates = list(self._discover() or [])
         proposals: list[McpProposal] = []
         for cand in candidates:
@@ -107,18 +121,6 @@ class MaintenanceScheduler:
                 pass
 
         self._audit(len(candidates), proposals)
-
-        # Ciclos adicionales (deps/codegen): aislados, posteriores a la pasada
-        # MCP. Cada uno gobierna su propia adopción tras el seam del decisor.
-        for cycle in self._extra_cycles:
-            if self._stop_event.is_set():
-                # stop() en vuelo: no arrancar más ciclos. Un tick() directo
-                # (sin start/stop) tiene el evento limpio y los corre todos.
-                break
-            try:
-                cycle()
-            except Exception:  # noqa: BLE001 — un ciclo caído no rompe los demás
-                pass
 
         return proposals
 

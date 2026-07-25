@@ -108,7 +108,8 @@ class TestTick:
 
 
 class TestExtraCycles:
-    def test_extra_cycles_run_after_mcp_pass(self, merkle) -> None:
+    def test_extra_cycles_run_before_mcp_pass(self, merkle) -> None:
+        """Un análisis MCP lento no puede bloquear ciclos operativos aislados."""
         order: list[str] = []
         sched = MaintenanceScheduler(
             merkle=merkle,
@@ -121,7 +122,7 @@ class TestExtraCycles:
             ),
         )
         sched.tick()
-        assert order == ["discover", "cycle-a", "cycle-b"]
+        assert order == ["cycle-a", "cycle-b", "discover"]
 
     def test_failing_cycle_does_not_break_others_or_tick(self, merkle) -> None:
         ran: list[str] = []

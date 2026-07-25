@@ -19,6 +19,8 @@ de escribir: `atlas reality --json`.
   huella SHA-256 del manifiesto permite una única pasada adicional cuando
   cambia la lista de fuentes. En un tick, investigación, ingestión, grafo y
   fases MCP se ejecutan antes del batch de autoauditoría potencialmente lento.
+  El scheduler ejecuta esos ciclos operativos antes del análisis MCP, para que
+  un proveedor lento no los bloquee.
   **Próxima acción:** ejecutar un ciclo observado y revisar recibos/fuentes
   que fallen sin ensanchar la red en silencio.
 
