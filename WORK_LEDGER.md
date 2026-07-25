@@ -8,6 +8,16 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-25 — bulk de discovery retirado; catálogo operativo delimitado.**
+  Se aplicó el reset reversible del catálogo clasificado: se retiraron 2.780
+  candidatos heredados sin evidencia suficiente, dejando ese artefacto vacío.
+  El catálogo operativo conserva 65 primitivas (16 instaladas, 5 verificadas,
+  44 candidatas curadas). TrialGate seco sobre las 44 no promovió ninguna:
+  todas requieren staging/fuente, credenciales o soporte de trial que aún no
+  existe; no se fingió aprobación ni se ejecutó tercero alguno. **Próxima
+  acción:** ampliar desde fuentes oficiales con procedencia/licencia y ejecutar
+  trials en jaula por lote antes de cualquier activación.
+
 - **2026-07-25 — mantenimiento autónomo del tronco verificado y saneado.**
   Con `ATLAS_PROJECT_GRAPH=1`, el daemon detectó el commit `4ea06a6`, reconstruyó
   en `.rebuild` y publicó el swap sin competir por el lock; `atlas reality`
