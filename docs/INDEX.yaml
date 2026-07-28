@@ -3429,6 +3429,10 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/knowledge/offline_embedding_compatibility_benchmark.md
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/knowledge/research_2026-07-09.md
   type: conocimiento
   status: propuesto
