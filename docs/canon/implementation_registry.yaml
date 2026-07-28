@@ -1083,7 +1083,7 @@ work_orders:
     title: Register the FastEmbed compatibility measurement as a validation harness
     problem: The FastEmbed 0.8.0 upstream mean-pooling warning identifies a possible semantic change, but a local corpus result was not yet governed and must not be mistaken for a dependency, model, rebuild, or memory-migration decision.
     evidence:
-      - "Commits 748a40a, 8c5c52c, 3c3c82c, and 05d6ef3 provide the evaluator, actionable fixture validation, offline runner/corpus, and hardened runner boundary used by this measurement."
+      - "Commits 748a40a, 8c5c52c, 3c3c82c, 05d6ef3, and 24b784b provide the evaluator, actionable fixture validation, offline runner/corpus, hardened runner boundary, and JSON-only usage boundary used by this measurement."
       - "2026-07-28: PYTHONPATH=src HF_HUB_OFFLINE=1 python scripts/benchmark_fastembed_compatibility.py exited 0 with status=MEASURED and passed=true."
       - "The versioned corpus reported passed=true for its three cases: restablecer-contrasena, declaracion-iva, and programar-reunion."
       - "The measured implementation was FastEmbed 0.8.0 at dimension 384 with fingerprint sha256:d2463fb0b4881ae9b8c05f19230bf3c40447db58afab336135727964f5d9882d and artifact_sha256 e844933822b84e4feda6da123ecfa5cf42eb5a0f409eb46e8f7b881e181394a9."
