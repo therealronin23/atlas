@@ -40,12 +40,22 @@ def _emit_error(status: str, message: str, exit_code: int) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Evaluate one local FastEmbed space against the versioned corpus."""
-    parser = _RunnerArgumentParser(description=__doc__)
+    parser = _RunnerArgumentParser(description=__doc__, add_help=False)
+    parser.add_argument("-h", "--help", action="store_true")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     try:
         args = parser.parse_args(argv)
     except _RunnerArgumentError as exc:
         return _emit_error("INVALID_BENCHMARK_INPUT", str(exc), 4)
+    if args.help:
+        print(
+            json.dumps(
+                {"status": "USAGE", "usage": parser.format_usage().strip()},
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
 
     previous_offline = os.environ.get("HF_HUB_OFFLINE")
     os.environ["HF_HUB_OFFLINE"] = "1"

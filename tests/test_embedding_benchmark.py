@@ -328,6 +328,20 @@ def test_runner_classifies_invalid_arguments(capsys: pytest.CaptureFixture[str])
     assert _output_status(capsys) == "INVALID_BENCHMARK_INPUT"
 
 
+def test_runner_serializes_help_as_usage_json(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Even the usage path keeps stdout machine-readable for callers."""
+    runner = _load_runner()
+
+    assert runner.main(["--help"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert len(lines) == 1
+    payload = json.loads(lines[0])
+    assert payload["status"] == "USAGE"
+    assert "--cases" in payload["usage"]
+
+
 def test_runner_classifies_missing_optional_extra(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
