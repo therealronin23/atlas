@@ -11,6 +11,7 @@ import pytest
 
 from atlas.mcp.trunk_manifest import atlas_mcp_config
 from atlas.mcp.config import load_servers, McpServerConfig
+from atlas.mcp.registry import McpRegistry
 from atlas.security.sentinel_gate import SentinelGate
 
 
@@ -110,6 +111,34 @@ class TestLoadServersCompatibility:
         [config] = load_servers(path)
 
         assert SentinelGate(tmp_path / "sentinel").vet_command(config) is None
+
+    def test_generated_atlas_trunk_config_reaches_registry_transport_factory(
+        self, tmp_path: Path
+    ) -> None:
+        """Registry must not quarantine its own generated trunk before spawn."""
+        raw = atlas_mcp_config(
+            save_dir=Path("/save"),
+            repo_root=Path("/repo"),
+            python=sys.executable,
+        )
+        path = tmp_path / "mcp_servers.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        [config] = load_servers(path)
+        attempted: list[str] = []
+
+        def factory(candidate: McpServerConfig) -> object:
+            attempted.append(candidate.name)
+            raise RuntimeError("test factory stops before any subprocess")
+
+        registry = McpRegistry(
+            [config],
+            sentinel=SentinelGate(tmp_path / "sentinel"),
+            transport_factory=factory,  # type: ignore[arg-type]
+        )
+
+        registry.start_all()
+
+        assert attempted == ["atlas-trunk"]
 
 
 class TestCursorMcpConfig:
