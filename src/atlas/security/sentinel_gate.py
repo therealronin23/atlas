@@ -177,7 +177,7 @@ class SentinelGate:
         """Capa 2, **pre-spawn**: el ``cmd`` es argv (nunca shell, ADR-035).
         Metacaracteres de shell o un comando en la IOC blocklist vetan el server
         ANTES de arrancar el subproceso. Devuelve la razón del veto o None."""
-        reason = self._scan_command(cfg.cmd)
+        reason = self.inspect_command_argv(cfg.cmd)
         if reason is None and not is_valid_mcp_identifier(cfg.name):
             reason = (
                 "identificador MCP inválido o ambiguo; use solo letras, "
@@ -191,6 +191,17 @@ class SentinelGate:
         if reason is not None:
             self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
         return reason
+
+    def inspect_command_argv(self, cmd: list[str]) -> str | None:
+        """Inspecciona sintaxis e IOC sin conceder autoridad de ejecución.
+
+        Catálogos y trials necesitan distinguir un argv peligroso de un
+        paquete limpio que todavía carece de staging/admisión. Este método
+        solo responde a la primera pregunta. ``vet_command`` añade después
+        identidad y procedencia gobernada y continúa siendo el único gate
+        pre-spawn.
+        """
+        return self._scan_command(cmd)
 
     def vet_call(self, tool: str, args: dict[str, Any]) -> str | None:
         """Capa 5, **egress runtime**: vetea CADA ``tools/call`` (no solo la

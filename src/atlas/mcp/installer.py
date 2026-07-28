@@ -22,7 +22,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from atlas.mcp.catalog import CatalogEntry, load_catalog
-from atlas.mcp.config import McpServerConfig
 from atlas.security.sentinel_gate import SentinelGate
 
 _MODE_ACTION = {"served": "noop", "connected": "connect", "installed": "place_skill"}
@@ -51,15 +50,17 @@ def plan_install(entries: list[CatalogEntry]) -> list[InstallAction]:
 
 
 def vet_action(action: InstallAction, sentinel: SentinelGate | None = None) -> str | None:
-    """Veta CUALQUIER acción con comando (connect a un MCP o place_skill que instala
-    código de terceros) con SentinelGate pre-ejecución (metacaracteres/IOC). Devuelve
-    la razón del veto o None si es admisible. Acciones sin comando = None."""
+    """Inspecciona el argv de una acción sin confundirlo con admisión.
+
+    Devuelve una razón únicamente para metacaracteres, evaluación de shell o
+    IOC. ``None`` significa "argv sintácticamente limpio", nunca "tercero
+    admitido": ``execute`` permanece bloqueado hasta que staging, hash, receipt,
+    aislamiento y aprobación estén ligados por un ejecutor futuro.
+    """
     if not action.command:
         return None
-    # vet_command solo escanea el argv (metachars/IOC); snapshot_dir no se usa aquí.
     gate = sentinel if sentinel is not None else SentinelGate(Path(tempfile.gettempdir()))
-    cfg = McpServerConfig(name=action.name, cmd=action.command)
-    return gate.vet_command(cfg)
+    return gate.inspect_command_argv(action.command)
 
 
 def execute(
