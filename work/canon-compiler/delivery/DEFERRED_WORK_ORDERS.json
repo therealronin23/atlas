@@ -1,0 +1,530 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-07-28T13:10:00Z",
+  "anchor": "793a8a8178edacbf9db2ae3b9c7371550d9e52ca",
+  "count": 11,
+  "work_orders": [
+    {
+      "id": "ADC-WO-100",
+      "program": "P10",
+      "title": "Re-establish and live-verify Hermes pairing",
+      "problem": "Historical deployment evidence does not prove a current Hermes service, pairing, provider path, or external receipt flow.",
+      "evidence": [
+        "fresh doctor, health, and reality checks",
+        "historical Hermes ADRs and deployment records"
+      ],
+      "source_decisions": [
+        "ADR-070",
+        "current operator directive sections 14 and 18"
+      ],
+      "current_state": "Hermes is configured only as a mock/unavailable path in fresh local checks and is not LIVE_VERIFIED.",
+      "target_state": "A bounded Hermes node passes authenticated pairing, proposal-only authority, timeout, audit, and rollback tests.",
+      "scope": [
+        "external VPS",
+        "credentials",
+        "network pairing",
+        "live smoke"
+      ],
+      "files": [
+        "docs/canon/open_questions.jsonl",
+        "PLAN.md",
+        "STATUS.md"
+      ],
+      "tests": [
+        "authenticated live Hermes smoke",
+        "proposal cannot bypass Atlas policy",
+        "disconnect and rollback drill"
+      ],
+      "risks": [
+        "external effects",
+        "unavailable secrets",
+        "permission expansion"
+      ],
+      "rollback": "Disable the external pairing and restore the local stub path; preserve receipts.",
+      "dependencies": [
+        "operator-supplied runtime authority and secrets"
+      ],
+      "acceptance": [
+        "fresh dated live receipt",
+        "no authority expansion",
+        "successful rollback drill"
+      ],
+      "operator_decision_required": true,
+      "status": "REQUIRES_OPERATOR"
+    },
+    {
+      "id": "ADC-WO-108",
+      "program": "P09",
+      "title": "Define the Engineering Finding and review/diagnostic coordination plane",
+      "problem": "Atlas has verifiers, diagnosis, production, audit, events, and rollback components but no unified engineering finding contract or coordinator.",
+      "evidence": [
+        "UniversalVerifier and VerifiedProducer",
+        "ValidationRunner and RootCauseClassifier",
+        "SelfAuditRunner, EventBus, Merkle, Golden Route, and ColdUpdate"
+      ],
+      "source_decisions": [
+        "ADR-078",
+        "approved Workbench symbiosis design section 6"
+      ],
+      "current_state": "Specialized findings and verification loops exist without one serializable projection or end-to-end Orchestrator channel.",
+      "target_state": "EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.",
+      "scope": [
+        "typed finding schema",
+        "deterministic and model-driven review adapters",
+        "diagnostic reproduction and classification",
+        "Orchestrator and Merkle events",
+        "read-only projection"
+      ],
+      "files": [
+        "schemas/engineering_finding.schema.json",
+        "src/atlas/",
+        "tests/"
+      ],
+      "tests": [
+        "deterministic complete and incremental review",
+        "finding deduplication and lifecycle",
+        "BLOCKING and MAJOR elevation",
+        "no patch application from a finding"
+      ],
+      "risks": [
+        "creating another verifier instead of composing existing ones",
+        "leaking secrets in findings"
+      ],
+      "rollback": "Disable coordinator wiring while preserving specialized verifiers and immutable findings.",
+      "dependencies": [
+        "operator acceptance of ATLAS DEFINITIVE CANDIDATE"
+      ],
+      "acceptance": [
+        "one versioned finding contract",
+        "failed reviewers produce UNKNOWN",
+        "proposals still pass governed approval paths"
+      ],
+      "operator_decision_required": false,
+      "status": "BLOCKED"
+    },
+    {
+      "id": "ADC-WO-109",
+      "program": "P08",
+      "title": "Execute comprehensive CodeOSS/VSCodium/Void Workbench convergence",
+      "problem": "The accepted desktop host and donor capabilities are not yet integrated into one maintained Atlas product.",
+      "evidence": [
+        "ADR-078",
+        "CodeOSS baseline",
+        "Void forward-port",
+        "VSCodium build and privacy pipeline research"
+      ],
+      "source_decisions": [
+        "ADR-071",
+        "ADR-078"
+      ],
+      "current_state": "Host and donor sources are preserved but not wired into the definitive candidate.",
+      "target_state": "A professional Atlas Workbench compiles reproducibly and projects real Cut 1 contracts through narrow Atlas seams.",
+      "scope": [
+        "exact upstream pin",
+        "privacy, branding, Open VSX, update, and packaging",
+        "broad progressive Void capability ports",
+        "review, diagnosis, approval, and operations surfaces",
+        "comprehensive E2E and rollback"
+      ],
+      "files": [
+        "separate pinned Workbench host tree",
+        "Atlas bridge and ACP adapters",
+        "product packaging and contract tests"
+      ],
+      "tests": [
+        "upstream reproducible build",
+        "bridge version negotiation",
+        "change to finding to proposal to approval to receipt E2E",
+        "offline and backend-loss degradation"
+      ],
+      "risks": [
+        "upstream drift",
+        "deep-fork maintenance burden",
+        "accidental second Atlas runtime"
+      ],
+      "rollback": "Restore the last pinned compilable host and disable Atlas contribution seams independently.",
+      "dependencies": [
+        "ADC-WO-108",
+        "exact CodeOSS and VSCodium upstream pins"
+      ],
+      "acceptance": [
+        "exact scope approved in the Cut 2 design",
+        "no duplicate authority",
+        "product acceptance suite passes"
+      ],
+      "operator_decision_required": true,
+      "status": "BLOCKED"
+    },
+    {
+      "id": "ADC-WO-110",
+      "program": "P08",
+      "title": "Assimilate compatible Zed ACP capabilities and interaction patterns",
+      "problem": "Zed provides useful ACP and agentic patterns but a source transplant would create license and stack coupling.",
+      "evidence": [
+        "Zed baseline and ACP surface",
+        "ADR-078 donor disposition"
+      ],
+      "source_decisions": [
+        "ADR-078"
+      ],
+      "current_state": "Zed is a pinned pattern donor and interoperability target, not Atlas implementation.",
+      "target_state": "Relevant behavior is represented by ACP interoperability, requirements, contract tests, or separately licensed components.",
+      "scope": [
+        "ACP interoperability",
+        "agent/review interaction requirements",
+        "license-compatible isolated components"
+      ],
+      "files": [
+        "ACP adapters and contract tests",
+        "Workbench interaction specifications"
+      ],
+      "tests": [
+        "Atlas agent interoperability in Zed",
+        "parity contracts for selected behaviors",
+        "license inventory"
+      ],
+      "risks": [
+        "incompatible licensing",
+        "unnecessary Rust/GPUI coupling"
+      ],
+      "rollback": "Remove optional adapters or requirements without changing Atlas Core authorities.",
+      "dependencies": [
+        "ADC-WO-108",
+        "Workbench contract tests",
+        "license review"
+      ],
+      "acceptance": [
+        "every selected pattern has measured value and lawful disposition",
+        "no unreviewed source transplant"
+      ],
+      "operator_decision_required": false,
+      "status": "BLOCKED"
+    },
+    {
+      "id": "ADC-WO-111",
+      "program": "P08",
+      "title": "Select and implement the dedicated Android Workbench projection",
+      "problem": "ADR-071 requires Android, while ADR-078 deliberately selects only the desktop host and cannot make CodeOSS an Android implementation.",
+      "evidence": [
+        "ADR-071 platform boundary",
+        "ADR-078 desktop scope"
+      ],
+      "source_decisions": [
+        "ADR-071",
+        "ADR-078"
+      ],
+      "current_state": "Android remains an accepted target without a selected projection or implementation.",
+      "target_state": "A dedicated Android surface consumes stable Atlas contracts without introducing a second runtime authority.",
+      "scope": [
+        "Android product boundary",
+        "shared Surface API",
+        "offline and degraded behavior",
+        "packaging and updates"
+      ],
+      "files": [
+        "future Android product tree",
+        "Surface API contract tests"
+      ],
+      "tests": [
+        "authenticated pairing",
+        "mission, finding, approval, and receipt projection",
+        "offline and rollback behavior"
+      ],
+      "risks": [
+        "duplicate codebase drift",
+        "incomplete mobile approval semantics"
+      ],
+      "rollback": "Remove the Android projection while preserving Surface API and desktop Workbench.",
+      "dependencies": [
+        "ADC-WO-108",
+        "stable Surface API"
+      ],
+      "acceptance": [
+        "operator-approved Android design",
+        "no duplicate Atlas authority",
+        "dedicated-device acceptance suite"
+      ],
+      "operator_decision_required": true,
+      "status": "BLOCKED"
+    },
+    {
+      "id": "ADC-WO-102",
+      "program": "P03",
+      "title": "Decide durable Mission, Task, and orchestration authority",
+      "problem": "Mission is the accepted semantic unit, but durable task ownership and the Mission-to-Task boundary remain ambiguous.",
+      "evidence": [
+        "ADR-069",
+        "current orchestrator and task persistence code",
+        "package conflicts on mutable-state ownership"
+      ],
+      "source_decisions": [
+        "ADR-040",
+        "ADR-062",
+        "ADR-063",
+        "ADR-069"
+      ],
+      "current_state": "Multiple components participate in task lifecycle; no final service boundary has operator authority.",
+      "target_state": "One mutable-state owner with explicit Mission, Task, Orchestrator, Policy, and Evidence interfaces.",
+      "scope": [
+        "Mission schema",
+        "Task state machine",
+        "orchestration authority",
+        "approval persistence"
+      ],
+      "files": [
+        "docs/canon/open_questions.jsonl",
+        "ARCHITECTURE.md",
+        "PLAN.md"
+      ],
+      "tests": [
+        "contract tests after the boundary ADR is accepted"
+      ],
+      "risks": [
+        "incompatible persisted state",
+        "dual writers",
+        "bypassed approval gates"
+      ],
+      "rollback": "Retain current APIs and introduce no migration until an accepted ADR defines compatibility.",
+      "dependencies": [
+        "explicit operator boundary decision"
+      ],
+      "acceptance": [
+        "one authority per mutable state",
+        "migration and compatibility policy accepted"
+      ],
+      "operator_decision_required": true,
+      "status": "REQUIRES_OPERATOR"
+    },
+    {
+      "id": "ADC-WO-103",
+      "program": "P04",
+      "title": "Decide memory ownership and promotion paths",
+      "problem": "SQLite, BlockMemory, Kuzu, vault, semantic knowledge, and Evidence have use-case authorities but no final promotion and sharing map.",
+      "evidence": [
+        "ADR-057",
+        "current memory and knowledge implementations",
+        "privacy and provenance invariants"
+      ],
+      "source_decisions": [
+        "ADR-049",
+        "ADR-057",
+        "current operator directive invariants 16 and 17"
+      ],
+      "current_state": "Use-case-specific stores exist and are tested; cross-store promotion authority is not settled.",
+      "target_state": "An operator-approved ownership map preserves private distillation, provenance, retention, deletion, and shared-graph boundaries.",
+      "scope": [
+        "operational memory",
+        "block memory",
+        "structural graph",
+        "semantic graph",
+        "evidence",
+        "shared knowledge"
+      ],
+      "files": [
+        "docs/canon/open_questions.jsonl",
+        "ARCHITECTURE.md",
+        "PLAN.md"
+      ],
+      "tests": [
+        "promotion provenance tests after the authority ADR is accepted",
+        "privacy deletion and crypto-shred tests"
+      ],
+      "risks": [
+        "privacy leakage",
+        "loss of provenance",
+        "dual authority"
+      ],
+      "rollback": "Preserve ADR-057 use-case authorities and prohibit new automatic promotion.",
+      "dependencies": [
+        "explicit operator memory decision"
+      ],
+      "acceptance": [
+        "one owner per memory class",
+        "explicit promotion and deletion contracts"
+      ],
+      "operator_decision_required": true,
+      "status": "REQUIRES_OPERATOR"
+    },
+    {
+      "id": "ADC-WO-104",
+      "program": "P11",
+      "title": "Authorize Wave 5 Native substrate work",
+      "problem": "Native-kernel work lacks demonstrated Hosted limitations, a complete threat model, portability evidence, migration design, and authorization.",
+      "evidence": [
+        "Native substrate research",
+        "wave registry and open conflicts"
+      ],
+      "source_decisions": [
+        "current operator directive invariants and completion conditions"
+      ],
+      "current_state": "Hosted Linux is the operational substrate; Native is research and Wave 5 is conditional.",
+      "target_state": "Native work begins only after all constitutional gates and rollback criteria are approved.",
+      "scope": [
+        "seL4",
+        "Genode",
+        "NT",
+        "WASM runtime",
+        "hardware and portability"
+      ],
+      "files": [
+        "docs/canon/open_questions.jsonl",
+        "PLAN.md"
+      ],
+      "tests": [
+        "threat-model acceptance",
+        "benchmark and portability evidence",
+        "migration and rollback rehearsal"
+      ],
+      "risks": [
+        "irreversible platform commitment",
+        "security regression",
+        "resource diversion"
+      ],
+      "rollback": "Continue Hosted-first delivery; no Native implementation is introduced.",
+      "dependencies": [
+        "demonstrated Hosted limitation",
+        "explicit operator authorization"
+      ],
+      "acceptance": [
+        "all Wave 5 gates pass",
+        "operator approves a bounded implementation order"
+      ],
+      "operator_decision_required": true,
+      "status": "BLOCKED"
+    },
+    {
+      "id": "ADC-WO-105",
+      "program": "P12",
+      "title": "Select the Membrane and Osmosis enforcement profile",
+      "problem": "Research supports bilateral auditing and provenance filters, but optional gateway versus non-bypass enforcement changes product guarantees.",
+      "evidence": [
+        "docs/membrana/",
+        "Osmosis research and package conflicts",
+        "ADR-074 scoped active-defense slice"
+      ],
+      "source_decisions": [
+        "selective assimilation without cloning",
+        "current operator directive sections 2, 13, and 18"
+      ],
+      "current_state": "Membrane and Osmosis are first-class research/program lines; no general enforcement deployment is accepted.",
+      "target_state": "Operator-approved guarantee profile, bypass semantics, trust boundary, and rollback.",
+      "scope": [
+        "trust membrane",
+        "provenance filters",
+        "compliance gateway",
+        "bilateral audit"
+      ],
+      "files": [
+        "docs/canon/open_questions.jsonl",
+        "ARCHITECTURE.md",
+        "PLAN.md"
+      ],
+      "tests": [
+        "bypass and fail-closed conformance after acceptance"
+      ],
+      "risks": [
+        "overstated guarantees",
+        "hidden bypass path",
+        "policy duplication"
+      ],
+      "rollback": "Keep research and adapters separate from core enforcement.",
+      "dependencies": [
+        "explicit operator guarantee decision"
+      ],
+      "acceptance": [
+        "deployment mode and guarantee profile accepted by ADR",
+        "bypass and rollback semantics defined"
+      ],
+      "operator_decision_required": true,
+      "status": "REQUIRES_OPERATOR"
+    },
+    {
+      "id": "ADC-WO-106",
+      "program": "P07",
+      "title": "Implement autonomous adoption of remote executable MCP packages",
+      "problem": "Automatic remote executable adoption would weaken human control over high-sensitivity third-party effects.",
+      "evidence": [
+        "ADR-076 C council verdict",
+        "absence of ATLAS_MCP_AUTO_ADOPT code path"
+      ],
+      "source_decisions": [
+        "ADR-073",
+        "ADR-075",
+        "ADR-076 C",
+        "constitutional high-sensitivity rule"
+      ],
+      "current_state": "Remote executable auto-adoption is absent and blocked.",
+      "target_state": "Remain absent unless a future constitutional ADR explicitly supersedes the rejection.",
+      "scope": [
+        "remote executable MCP activation"
+      ],
+      "files": [
+        "docs/canon/decision_registry.jsonl",
+        "STATUS.md"
+      ],
+      "tests": [
+        "canonical validator rejects any accepted or implemented disposition for ADR-076 C"
+      ],
+      "risks": [
+        "supply-chain compromise",
+        "silent permission expansion"
+      ],
+      "rollback": "Not applicable; no implementation is authorized.",
+      "dependencies": [],
+      "acceptance": [
+        "no auto-adoption flag or method",
+        "human-gated activation remains intact"
+      ],
+      "operator_decision_required": false,
+      "status": "REJECTED"
+    },
+    {
+      "id": "ADC-WO-107",
+      "program": "P08",
+      "title": "Resolve the Atlas API bridge mutation boundary",
+      "problem": "ADR-058 and ADR-071 define port 7341 as a read-only projection, while the current server exposes mutating POST routes including task approval that executes the Atlas CLI.",
+      "evidence": [
+        "docs/decisions/adr/adr_058_atlas_os_event_kernel_bridge.md",
+        "docs/decisions/adr/adr_071_dedicated_apps_supersede_web_first_ux.md",
+        "src/atlas/api/server.py"
+      ],
+      "source_decisions": [
+        "ADR-058",
+        "ADR-063",
+        "ADR-071"
+      ],
+      "current_state": "Code is present, tested, wired, and contradicted by its accepted bridge boundary; no later ADR authorizes the expansion.",
+      "target_state": "An operator-approved ADR either authorizes governed mutation contracts or restores a strictly read-only bridge.",
+      "scope": [
+        "port 7341 API",
+        "approval endpoint",
+        "connector and memory mutations",
+        "authentication and audit boundary"
+      ],
+      "files": [
+        "src/atlas/api/server.py",
+        "docs/canon/open_questions.jsonl",
+        "ARCHITECTURE.md",
+        "STATUS.md"
+      ],
+      "tests": [
+        "contract and authorization tests after the boundary decision"
+      ],
+      "risks": [
+        "unauthorized external effects",
+        "product clients depending on an unaccepted contract",
+        "weakening approval ceremony"
+      ],
+      "rollback": "Preserve current code without widening it; do not remove routes or declare them canonical until the operator chooses the boundary.",
+      "dependencies": [
+        "explicit operator API-boundary decision"
+      ],
+      "acceptance": [
+        "mutating endpoints have explicit authority, authentication, audit, and rollback, or are removed",
+        "ADR-058 and ADR-071 receive scoped supersession if mutation is accepted"
+      ],
+      "operator_decision_required": true,
+      "status": "REQUIRES_OPERATOR"
+    }
+  ]
+}
