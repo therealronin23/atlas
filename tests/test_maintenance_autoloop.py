@@ -98,10 +98,9 @@ class TestNotifyRoutesToAdopter:
         """notify() enruta cada propuesta corroborada al MaintenanceAdopter.
         2026-07-04: esto SÍ es seguro por defecto — adopter.adopt() siempre
         pasa por el seam del decisor (ADR-040); bajo HumanDecider no hace
-        nada, bajo autónomo/híbrido adopta con la intención anclada. Lo que
-        de verdad estaba roto (arreglado en este mismo cambio) era que
-        add_server() no persistía a disco, así que ni siquiera una adopción
-        aprobada por el decisor sobrevivía a un reinicio."""
+        nada, Hybrid escala a humano y Autonomous deniega high. Un guard
+        constitucional bloquea además cualquier custom Allow. La persistencia
+        de add_server() solo aplica después de una futura aprobación humana."""
         adopted: list[str] = []
 
         class _FakeAdopter:

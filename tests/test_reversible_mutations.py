@@ -120,19 +120,23 @@ class TestAdoptMcpServerIrreversible:
         assert "humana" in status
         assert called == []
 
-    def test_explicit_allow_can_adopt_but_registers_no_false_undo(
+    def test_custom_allow_cannot_spawn_high_mcp(
         self, orch, monkeypatch
     ) -> None:
         orch.set_decider(_ExplicitAllowDecider())
+        called: list[str] = []
         monkeypatch.setattr(
-            orch._mcp, "add_server", lambda cfg: "ok: adopted after explicit approval"
+            orch._mcp,
+            "add_server",
+            lambda cfg: called.append(cfg.name) or "unexpected",
         )
         task = Task(intent="adopta el server weather", source=TaskSource.CLI)
         cfg = McpServerConfig(name="weather", cmd=["weather-mcp"])
 
         status = orch.adopt_mcp_server(cfg, task)
 
-        assert status.startswith("ok:")
+        assert "humana" in status
+        assert called == []
         h = _expected_hash("mcp_adopt", "weather", task.intent)
         assert orch._revert_registry.get(h) is None
 

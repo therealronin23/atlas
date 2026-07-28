@@ -11,6 +11,17 @@
 - Línea de rumbo: ver memoria del proyecto *autonomy-direction* y *no-deepen-
   HITL-coupling*. Este ADR es la materialización de esa dirección.
 
+## Enmienda constitucional de alcance (ATLAS DEFINITIVE CANDIDATE, 2026-07-27)
+
+El modelo human-on-the-loop de este ADR nunca autorizó ni autoriza eliminar el
+control previo para sensibilidad alta. La regla constitucional vigente es:
+`sensitivity="high"` termina en `RequiresHuman` o `Deny`, incluso si un
+`Decider` inyectado devuelve `Allow`. El runtime aplica ahora esa barrera común
+después de cualquier implementación de `Decider` y también en consumidores
+directos. Las frases posteriores sobre “nunca pedir permiso” solo describen
+acciones que no cruzan ese boundary; no superseden ADR-063, ADR-075, ADR-076 C
+ni ADR-077-BOUNDARY.
+
 ## Contexto
 
 Hoy "hace falta una decisión" (ejecutar una mutación, adoptar un server, aplicar
