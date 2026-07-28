@@ -473,6 +473,26 @@ def build_trunk_server(
     return server
 
 
+def build_trunk_registry(
+    children: list[McpServerConfig], *, save_dir: Path
+) -> Any:
+    """Construye el registry productivo con evidencia y Sentinel obligatorios."""
+    from atlas.logging.merkle_logger import MerkleLogger
+    from atlas.mcp.registry import McpRegistry
+    from atlas.security.sentinel_gate import SentinelGate
+
+    merkle = MerkleLogger(Path(save_dir) / "audit")
+    sentinel = SentinelGate(
+        Path(save_dir) / "sentinel",
+        merkle_log=merkle.log,
+    )
+    return McpRegistry(
+        children,
+        merkle_log=merkle.log,
+        sentinel=sentinel,
+    )
+
+
 def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None:
     """Entry stdio del tronco: construye el McpRegistry PEREZOSO (sin start_all),
     frontea con descubrimiento lazy por sector y sirve UNA conexión stdio.
@@ -488,7 +508,6 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     import os
 
     from atlas.mcp.catalog import load_catalog, load_taxonomy
-    from atlas.mcp.registry import McpRegistry
 
     # Carga credenciales del fichero de secretos LOCAL (nunca en git/catálogo).
     # Usa setdefault para no pisar vars ya presentes en el entorno real.
@@ -512,7 +531,7 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         catalog, save_dir=save_dir, repo_root=repo_root,
         adopted_path=adopted_servers_path(),
     )
-    registry = McpRegistry(children)
+    registry = build_trunk_registry(children, save_dir=save_dir)
 
     def _refresh(tool: str) -> dict[str, list[str]]:
         # Routing perezoso de externos: spawnea hijos uno a uno (ensure_started es

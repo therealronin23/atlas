@@ -28,8 +28,8 @@ diferidas):
    (``description``) coincide con lo que PIDE (``inputSchema``)? Ver la nota de
    investigación bajo ``_vet_coherence`` para la decisión ast_guard-sí/no.
 5. **Egress IOC runtime (``vet_call``).** Vetea CADA ``tools/call``, no solo
-   la adopción -- cableado en ``McpRegistry.dispatch()``. Fail-open si el
-   chequeo mismo falla; fail-closed ante un IOC real.
+   la adopción -- cableado en ``McpRegistry.dispatch()``. Fail-closed tanto
+   ante un IOC real como ante un fallo interno del chequeo.
 6. **Re-vetting periódico.** Ver ``McpRegistry.revet_all()`` +
    ``maintenance_sentinel_revet_tick`` -- re-corre esta gate sobre servers ya
    adoptados, nunca re-arma TOFU en solitario.
@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from atlas.mcp.config import McpServerConfig
+from atlas.mcp.config import McpServerConfig, is_valid_mcp_identifier
 
 _log = logging.getLogger(__name__)
 
@@ -67,6 +67,23 @@ _INCIDENT_IOC_DOMAINS: frozenset[str] = frozenset({
     "giftshop.club",
 })
 _INCIDENT_IOC_COMMANDS: frozenset[str] = frozenset()
+
+# Solo estos entrypoints pertenecen al checkout gobernado de Atlas. Cualquier
+# package manager o ejecutable externo permanece en cuarentena hasta que exista
+# un contrato de artefacto materializado, hash, receipt e aislamiento.
+_ATLAS_NATIVE_MCP_MODULES: frozenset[str] = frozenset({
+    "atlas.mcp.memory_server",
+    "atlas.mcp.graph_server",
+    "atlas.mcp.knowledge_server",
+    "atlas.mcp.operating_server",
+})
+_SHELL_EXECUTABLES: frozenset[str] = frozenset({
+    "sh", "bash", "dash", "zsh", "fish", "ksh", "pwsh", "powershell",
+    "powershell.exe", "cmd", "cmd.exe",
+})
+_SHELL_EVAL_FLAGS: frozenset[str] = frozenset({
+    "-c", "/c", "-command", "-encodedcommand", "-enc",
+})
 
 # Keywords de tiering. Orden de precedencia: credential > shell_net > write > read.
 _CREDENTIAL_KW: tuple[str, ...] = (
@@ -132,6 +149,10 @@ class VetResult:
     tools: list[ToolVerdict] = field(default_factory=list)
 
 
+class _SnapshotIntegrityError(RuntimeError):
+    """El snapshot existe, pero no es una autoridad anti-rug-pull válida."""
+
+
 class SentinelGate:
     """Vetador fail-closed de servers MCP en el momento de adopción."""
 
@@ -157,6 +178,16 @@ class SentinelGate:
         Metacaracteres de shell o un comando en la IOC blocklist vetan el server
         ANTES de arrancar el subproceso. Devuelve la razón del veto o None."""
         reason = self._scan_command(cfg.cmd)
+        if reason is None and not is_valid_mcp_identifier(cfg.name):
+            reason = (
+                "identificador MCP inválido o ambiguo; use solo letras, "
+                "dígitos, '_' o '-' y nunca '__'"
+            )
+        if reason is None and not self._is_governed_native_command(cfg.cmd):
+            reason = (
+                "third-party executable sin artefacto materializado, hash, "
+                "receipt e aislamiento; ejecución en cuarentena"
+            )
         if reason is not None:
             self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
         return reason
@@ -165,19 +196,20 @@ class SentinelGate:
         """Capa 5, **egress runtime**: vetea CADA ``tools/call`` (no solo la
         adopción) contra el mismo suelo de IOC. Re-minado de
         claude-mcp-sentinel v3.1 (su hook corre pre-tools-call en producción,
-        20/20 regresión, ~30-80ms). Fail-open en el ERROR del propio chequeo
-        (un bug aquí nunca debe poder tumbar una llamada legítima) --
-        distinto de fail-closed cuando SÍ se encuentra un IOC real."""
+        20/20 regresión, ~30-80ms). Un fallo interno se bloquea: ante ejecución
+        de terceros, protección degradada nunca equivale a permiso."""
         try:
             surface = self._tool_surface_for_call(tool, args)
             return self._scan_iocs(surface)
-        except Exception:  # noqa: BLE001 — fail-open: el chequeo no debe tumbar la llamada
+        except Exception:  # noqa: BLE001 — boundary de terceros, fail-closed
+            reason = "fallo interno de Sentinel durante el vetting; llamada denegada"
             _log.warning(
                 "SentinelGate.vet_call: el chequeo mismo falló para tool=%r -- "
-                "fail-open (llamada permitida, protección degradada este turno)",
+                "fail-closed (llamada denegada)",
                 tool, exc_info=True,
             )
-            return None
+            self._audit("sentinel.call_vetoed", tool, reason, "blocked")
+            return reason
 
     @staticmethod
     def _tool_surface_for_call(tool: str, args: dict[str, Any]) -> str:
@@ -195,9 +227,62 @@ class SentinelGate:
     def vet_tools(self, cfg: McpServerConfig, tools: list[dict[str, Any]]) -> VetResult:
         """Capa 1+3, **post-list**: identidad/snapshot (anti rug-pull) y tiering.
         Asume que el comando ya pasó ``vet_command``. Fail-closed por tool."""
-        snapshot = self._load_snapshot(cfg.name)
+        if not is_valid_mcp_identifier(cfg.name):
+            return VetResult(
+                server=cfg.name,
+                admitted=False,
+                server_reason="identificador MCP inválido o ambiguo",
+            )
+        if not tools:
+            return VetResult(
+                server=cfg.name,
+                admitted=False,
+                server_reason="tools/list vacío; no hay superficie analizable",
+            )
+        names: list[str] = []
+        for tool in tools:
+            name = tool.get("name")
+            schema = tool.get("inputSchema", {})
+            if (
+                not isinstance(name, str)
+                or not is_valid_mcp_identifier(name)
+                or not isinstance(schema, dict)
+            ):
+                return VetResult(
+                    server=cfg.name,
+                    admitted=False,
+                    server_reason="tools/list contiene una definición no analizable",
+                )
+            names.append(name)
+        duplicates = sorted({name for name in names if names.count(name) > 1})
+        if duplicates:
+            return VetResult(
+                server=cfg.name,
+                admitted=False,
+                server_reason=f"tools/list contiene nombres duplicados: {duplicates}",
+            )
+
+        try:
+            snapshot = self._load_snapshot(cfg.name)
+        except _SnapshotIntegrityError as exc:
+            reason = f"integridad de snapshot inválida: {exc}"
+            self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
+            return VetResult(
+                server=cfg.name,
+                admitted=False,
+                server_reason=reason,
+            )
         first_adoption = snapshot is None
         known = snapshot or {}
+        missing = sorted(set(known) - set(names))
+        if missing:
+            reason = f"tool(s) conocidas ausentes del server: {missing}"
+            self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
+            return VetResult(
+                server=cfg.name,
+                admitted=False,
+                server_reason=reason,
+            )
 
         verdicts: list[ToolVerdict] = []
         new_snapshot: dict[str, str] = {}
@@ -308,15 +393,40 @@ class SentinelGate:
         return " ".join(parts).lower()
 
     def _scan_command(self, cmd: list[str]) -> str | None:
+        if not cmd or not all(isinstance(token, str) and token for token in cmd):
+            return "cmd vacío o no analizable"
         for token in cmd:
             for meta in _SHELL_METACHARS:
                 if meta in token:
                     return f"cmd token {token!r} contiene metacaracter de shell {meta!r}"
         joined = " ".join(cmd).lower()
-        for bad in self._ioc_commands:
-            if bad in joined:
-                return f"cmd coincide con IOC '{bad}'"
+        ioc = self._scan_iocs(joined)
+        if ioc is not None:
+            return f"cmd coincide con IOC: {ioc}"
+        executable = Path(cmd[0]).name.lower()
+        lowered_args = {arg.lower() for arg in cmd[1:]}
+        if executable in _SHELL_EXECUTABLES and lowered_args & _SHELL_EVAL_FLAGS:
+            return "shell con evaluación inline no constituye un boundary argv seguro"
         return None
+
+    @staticmethod
+    def _is_governed_native_command(cmd: list[str]) -> bool:
+        if len(cmd) < 2 or not Path(cmd[0]).name.lower().startswith("python"):
+            return False
+        if cmd[1] == "-m":
+            return len(cmd) >= 3 and cmd[2] in _ATLAS_NATIVE_MCP_MODULES
+        script = Path(cmd[1])
+        tracked_fixture = (
+            Path(__file__).resolve().parents[3]
+            / "tests"
+            / "fixtures"
+            / "mcp_echo_server.py"
+        )
+        # Fixture trackeado, permitido únicamente para los smokes locales.
+        return (
+            script.name == "mcp_echo_server.py"
+            and script.resolve() == tracked_fixture
+        )
 
     def _scan_iocs(self, surface: str) -> str | None:
         for dom in self._ioc_domains:
@@ -429,23 +539,37 @@ class SentinelGate:
             return None  # esperado: primera adopción real, sin señal que dar
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            # Patrón P4 de claude-mcp-sentinel v3.1 ("fail-open ruidoso"): un
-            # snapshot corrupto (crash a media escritura, disco dañado, o
-            # borrado/reescrito) se trataba como "no existe" -> TOFU se
-            # re-arma en SILENCIO y admite lo que corra ahora como si fuera
-            # la primera vez. Mismo fail-open (no bloquea), pero ahora deja
-            # constancia de que la protección anti rug-pull se degradó.
+        except (OSError, json.JSONDecodeError) as exc:
             _log.warning(
-                "SentinelGate: snapshot corrupto para %r en %s -- TOFU se "
-                "re-arma como si fuera primera adopción (protección anti "
-                "rug-pull degradada para este server)",
+                "SentinelGate: snapshot corrupto para %r en %s -- adopción "
+                "bloqueada (protección anti rug-pull fail-closed)",
                 server, path,
             )
-            return None
+            raise _SnapshotIntegrityError("no se puede leer o parsear") from exc
         if not isinstance(data, dict):
-            return None
-        return {str(k): str(v) for k, v in data.items()}
+            _log.warning(
+                "SentinelGate: snapshot corrupto para %r en %s -- raíz no "
+                "mapping; adopción bloqueada",
+                server, path,
+            )
+            raise _SnapshotIntegrityError("la raíz JSON no es un objeto")
+        snapshot: dict[str, str] = {}
+        for key, value in data.items():
+            if (
+                not isinstance(key, str)
+                or not key
+                or not isinstance(value, str)
+                or len(value) != 64
+                or any(char not in "0123456789abcdef" for char in value.lower())
+            ):
+                _log.warning(
+                    "SentinelGate: snapshot corrupto para %r en %s -- entrada "
+                    "inválida; adopción bloqueada",
+                    server, path,
+                )
+                raise _SnapshotIntegrityError("contiene una entrada inválida")
+            snapshot[key] = value
+        return snapshot
 
     def _save_snapshot(self, server: str, snapshot: dict[str, str]) -> None:
         self._snapshot_dir.mkdir(parents=True, exist_ok=True)

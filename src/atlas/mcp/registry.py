@@ -16,11 +16,16 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter
 from typing import Any, Callable
 
 from pathlib import Path
 
-from atlas.mcp.config import McpServerConfig, save_servers
+from atlas.mcp.config import (
+    McpServerConfig,
+    is_valid_mcp_identifier,
+    save_servers,
+)
 from atlas.mcp.transport import McpProtocolError, McpTransport, StdioTransport
 from atlas.security.sentinel_gate import SentinelGate
 from atlas import __version__
@@ -42,15 +47,30 @@ class McpRegistry:
         configs: list[McpServerConfig],
         *,
         transport_factory: Callable[[McpServerConfig], McpTransport] | None = None,
-        merkle_log: Callable[..., None] | None = None,
+        merkle_log: Callable[..., Any] | None = None,
         sentinel: SentinelGate | None = None,
         persist_path: Path | str | None = None,
     ) -> None:
-        self._configs = list(configs)
+        counts = Counter(cfg.name for cfg in configs)
+        self._invalid_configs: dict[str, str] = {}
+        for cfg in configs:
+            if not is_valid_mcp_identifier(cfg.name):
+                self._invalid_configs[cfg.name] = (
+                    "identificador vacío, ambiguo o fuera del alfabeto permitido"
+                )
+            elif counts[cfg.name] > 1:
+                self._invalid_configs[cfg.name] = "nombre de server duplicado"
+        self._configs = [
+            cfg for cfg in configs if cfg.name not in self._invalid_configs
+        ]
         self._transports: dict[str, McpTransport] = {}
         self._tool_specs: list[dict[str, Any]] = []
         self._read_only: set[str] = set()
         self._tool_index: dict[str, tuple[str, str]] = {}  # full → (server, tool)
+        # Un drift detectado durante re-vetting revoca el server durante toda
+        # la vida del proceso. Borrar/reaprobar el snapshot requiere reiniciar:
+        # no se permite que el spawn perezoso deshaga una cuarentena.
+        self._sentinel_quarantine: set[str] = set()
         self._merkle_log = merkle_log
         self._sentinel = sentinel
         self._factory = transport_factory or self._default_factory
@@ -81,6 +101,8 @@ class McpRegistry:
     def start_all(self) -> None:
         """Arranca todos los servers habilitados; servers que fallen quedan
         fuera (no rompen el resto). El error se loggea, no se eleva."""
+        for name, reason in self._invalid_configs.items():
+            self._audit("mcp.server_vetoed", name, reason, "blocked")
         for cfg in self._configs:
             if not cfg.enabled:
                 continue
@@ -91,6 +113,14 @@ class McpRegistry:
                 self._audit("mcp.server_failed", cfg.name, str(exc)[:300], "failure")
 
     def _start_one(self, cfg: McpServerConfig) -> None:
+        if cfg.name in self._sentinel_quarantine:
+            self._audit(
+                "sentinel.server_quarantined",
+                cfg.name,
+                "reinicio bloqueado hasta re-aprobación y nuevo proceso",
+                "blocked",
+            )
+            return
         # Gate Atlas Sentinel (ADR-038), capa 2 pre-spawn: si el comando es
         # peligroso NO se arranca el subproceso (vetar después de spawn sería
         # tarde — el proceso ya habría corrido).
@@ -110,56 +140,158 @@ class McpRegistry:
                 f"secretos ausentes: {','.join(missing)}", "failure",
             )
             return
-        transport = self._factory(cfg)
-        # initialize handshake
-        result = transport.request("initialize", {
-            "protocolVersion": _PROTOCOL_VERSION,
-            "capabilities": {},
-            "clientInfo": _CLIENT_INFO,
-        })
-        transport.notify("notifications/initialized", {})
-        # tools/list
-        tools_resp = transport.request("tools/list", {})
-        tools = (tools_resp or {}).get("tools", []) if isinstance(tools_resp, dict) else []
-
-        # Gate Atlas Sentinel (ADR-038), capas 1+3 post-list: vetar las tools
-        # antes de registrarlas. Fail-closed: lo que no pasa, no se adopta.
-        admitted_tools: set[str] | None = None
-        if self._sentinel is not None:
-            clean = [t for t in tools if isinstance(t, dict)]
-            vet = self._sentinel.vet_tools(cfg, clean)
-            admitted_tools = {v.tool_name for v in vet.tools if v.admitted}
-
-        self._transports[cfg.name] = transport
-        read_only = set(cfg.read_only_tools)
-        for t in tools:
-            if not isinstance(t, dict):
-                continue
-            tool_name = str(t.get("name") or "")
-            if not tool_name:
-                continue
-            if admitted_tools is not None and tool_name not in admitted_tools:
-                continue
-            full = f"mcp__{cfg.name}__{tool_name}"
-            self._tool_index[full] = (cfg.name, tool_name)
-            if tool_name in read_only:
-                self._read_only.add(full)
-            self._tool_specs.append({
-                "type": "function",
-                "function": {
-                    "name": full,
-                    "description": str(t.get("description") or "")[:1024],
-                    "parameters": t.get("inputSchema") or {
-                        "type": "object",
-                        "properties": {},
-                    },
-                },
+        if not self._audit_before_effect(
+            "mcp.server_start_requested",
+            cfg.name,
+            "comando admitido; creación de transporte pendiente",
+        ):
+            return
+        transport: McpTransport | None = None
+        committed = False
+        try:
+            transport = self._factory(cfg)
+            # initialize handshake
+            result = transport.request("initialize", {
+                "protocolVersion": _PROTOCOL_VERSION,
+                "capabilities": {},
+                "clientInfo": _CLIENT_INFO,
             })
-        self._audit(
-            "mcp.server_started", cfg.name,
-            f"tools={len(tools)} protocol={result.get('protocolVersion') if isinstance(result, dict) else '?'}",
-            "success",
-        )
+            transport.notify("notifications/initialized", {})
+            tools = self._validated_tools(
+                transport.request("tools/list", {}), cfg.name
+            )
+
+            # Gate Atlas Sentinel (ADR-038), capas 1+3 post-list: vetar las
+            # tools antes de registrar transporte o índices.
+            admitted_tools = {str(t["name"]) for t in tools}
+            tiers: dict[str, str] = {}
+            if self._sentinel is not None:
+                try:
+                    vet = self._sentinel.vet_tools(cfg, tools)
+                except Exception as exc:  # noqa: BLE001
+                    self._sentinel_quarantine.add(cfg.name)
+                    self._audit(
+                        "sentinel.server_vetoed",
+                        cfg.name,
+                        f"fallo interno durante vetting: {exc}",
+                        "blocked",
+                    )
+                    raise
+                if not vet.admitted:
+                    self._sentinel_quarantine.add(cfg.name)
+                    self._audit(
+                        "sentinel.server_vetoed",
+                        cfg.name,
+                        vet.server_reason,
+                        "blocked",
+                    )
+                    return
+                admitted_tools = {
+                    verdict.tool_name for verdict in vet.tools if verdict.admitted
+                }
+                tiers = {
+                    verdict.tool_name: verdict.tier
+                    for verdict in vet.tools
+                    if verdict.admitted
+                }
+                if not admitted_tools:
+                    self._sentinel_quarantine.add(cfg.name)
+                    self._audit(
+                        "sentinel.server_vetoed",
+                        cfg.name,
+                        "ninguna tool superó el vetting",
+                        "blocked",
+                    )
+                    return
+
+            read_only = set(cfg.read_only_tools)
+            new_specs: list[dict[str, Any]] = []
+            new_index: dict[str, tuple[str, str]] = {}
+            new_read_only: set[str] = set()
+            for tool in tools:
+                tool_name = str(tool["name"])
+                if tool_name not in admitted_tools:
+                    continue
+                full = f"mcp__{cfg.name}__{tool_name}"
+                new_index[full] = (cfg.name, tool_name)
+                if (
+                    tool_name in read_only
+                    and (self._sentinel is None or tiers.get(tool_name) == "read")
+                ):
+                    new_read_only.add(full)
+                new_specs.append({
+                    "type": "function",
+                    "function": {
+                        "name": full,
+                        "description": str(tool.get("description") or "")[:1024],
+                        "parameters": tool.get("inputSchema") or {
+                            "type": "object",
+                            "properties": {},
+                        },
+                    },
+                })
+
+            # Commit único: ningún estado parcial es visible antes de aquí.
+            self._transports[cfg.name] = transport
+            self._tool_index.update(new_index)
+            self._read_only.update(new_read_only)
+            self._tool_specs.extend(new_specs)
+            committed = True
+            self._audit(
+                "mcp.server_started",
+                cfg.name,
+                (
+                    f"tools_advertised={len(tools)} "
+                    f"tools_admitted={len(new_specs)} "
+                    f"protocol={result.get('protocolVersion') if isinstance(result, dict) else '?'}"
+                ),
+                "success",
+            )
+        finally:
+            if transport is not None and not committed:
+                try:
+                    transport.close()
+                except Exception:  # noqa: BLE001
+                    pass
+
+    @staticmethod
+    def _validated_tools(response: Any, server: str) -> list[dict[str, Any]]:
+        if not isinstance(response, dict) or not isinstance(
+            response.get("tools"), list
+        ):
+            raise McpProtocolError(
+                f"server '{server}': tools/list debe devolver una lista"
+            )
+        tools = response["tools"]
+        if not tools:
+            raise McpProtocolError(
+                f"server '{server}': tools/list vacío no es analizable"
+            )
+        names: list[str] = []
+        clean: list[dict[str, Any]] = []
+        for tool in tools:
+            if not isinstance(tool, dict):
+                raise McpProtocolError(
+                    f"server '{server}': definición de tool no es un objeto"
+                )
+            name = tool.get("name")
+            schema = tool.get("inputSchema", {})
+            if not isinstance(name, str) or not is_valid_mcp_identifier(name):
+                raise McpProtocolError(
+                    f"server '{server}': nombre de tool inválido o ambiguo"
+                )
+            if not isinstance(schema, dict):
+                raise McpProtocolError(
+                    f"server '{server}': inputSchema de '{name}' no es objeto"
+                )
+            names.append(name)
+            clean.append(tool)
+        duplicates = sorted(name for name, count in Counter(names).items() if count > 1)
+        if duplicates:
+            raise McpProtocolError(
+                f"server '{server}': nombres de tool duplicados {duplicates}"
+            )
+        return clean
 
     def ensure_started(self, server_name: str) -> bool:
         """Arranca ``server_name`` en diferido si aún no está activo.
@@ -169,6 +301,8 @@ class McpRegistry:
         se loggean pero no se elevan — igual que ``start_all``."""
         if server_name in self._transports:
             return True
+        if server_name in self._sentinel_quarantine:
+            return False
         cfg = next((c for c in self._configs if c.name == server_name and c.enabled), None)
         if cfg is None:
             return False
@@ -198,8 +332,21 @@ class McpRegistry:
         (``ok`` / ``skipped`` / ``vetoed`` / ``error``) para que el llamante
         (Telegram, auto-mantenimiento) lo reporte. Fail-safe: un fallo no
         afecta a los servers ya activos."""
+        if not is_valid_mcp_identifier(cfg.name):
+            return f"vetoed: server '{cfg.name}' tiene identificador inválido"
+        existing = next((item for item in self._configs if item.name == cfg.name), None)
+        if existing is not None and existing != cfg:
+            return (
+                f"vetoed: server '{cfg.name}' contradice la configuración "
+                "existente"
+            )
         if cfg.name in self._transports:
             return f"skipped: server '{cfg.name}' ya está activo"
+        if cfg.name in self._sentinel_quarantine:
+            return (
+                f"vetoed: server '{cfg.name}' en cuarentena Sentinel; "
+                "requiere re-aprobación y reinicio"
+            )
         if not cfg.enabled:
             return f"skipped: server '{cfg.name}' deshabilitado"
         # Backoff persistente de adopción (2026-07-10): el lazo de adopción
@@ -232,14 +379,15 @@ class McpRegistry:
 
     def remove_server(self, name: str) -> bool:
         """Retira un server en caliente: cierra su transporte y descarta sus
-        tools del surface. Devuelve False si no estaba activo."""
+        tools/config/cuarentena. También funciona después de una revocación."""
+        had_config = any(cfg.name == name for cfg in self._configs)
+        was_quarantined = name in self._sentinel_quarantine
         transport = self._transports.pop(name, None)
-        if transport is None:
-            return False
-        try:
-            transport.close()
-        except Exception:  # noqa: BLE001
-            pass
+        if transport is not None:
+            try:
+                transport.close()
+            except Exception:  # noqa: BLE001
+                pass
         fulls = {f for f, (srv, _t) in self._tool_index.items() if srv == name}
         for full in fulls:
             self._tool_index.pop(full, None)
@@ -249,9 +397,10 @@ class McpRegistry:
             if s.get("function", {}).get("name") not in fulls
         ]
         self._configs = [c for c in self._configs if c.name != name]
+        self._sentinel_quarantine.discard(name)
         self._persist()
         self._audit("mcp.server_removed", name, f"tools={len(fulls)}", "success")
-        return True
+        return transport is not None or had_config or was_quarantined
 
     _MAX_START_FAILURES = 3
 
@@ -312,19 +461,14 @@ class McpRegistry:
         return list(self._tool_specs)
 
     def is_read_only(self, full_name: str) -> bool:
-        """ADR-035 dec.5: por defecto mutate (HITL). Solo los que el config
-        marca explícitamente son lectura. Predicado ESTÁTICO sobre la config
-        declarada: con spawn perezoso el server puede no haber arrancado aún
-        cuando invoke_readonly consulta, y el veredicto no puede depender de
-        estado de runtime (sería fail-always en frío, no fail-closed)."""
-        if full_name in self._read_only:
-            return True
+        """Solo afirma read tras arrancar, validar y vetar la superficie real."""
         parts = full_name.split("__", 2)
         if len(parts) != 3 or parts[0] != "mcp":
             return False
-        server, tool = parts[1], parts[2]
-        cfg = next((c for c in self._configs if c.name == server and c.enabled), None)
-        return cfg is not None and tool in cfg.read_only_tools
+        server, _tool = parts[1], parts[2]
+        if not self.ensure_started(server):
+            return False
+        return full_name in self._read_only
 
     def knows(self, full_name: str) -> bool:
         return full_name in self._tool_index
@@ -334,10 +478,10 @@ class McpRegistry:
         ``SentinelGate.vet_tools`` sobre cada server YA adoptado y corriendo,
         contra su snapshot guardado -- detecta drift ocurrido FUERA de una
         adopción nueva (p.ej. un server que reescribió su propio binario
-        in-place). Solo LECTURA: nunca re-arma TOFU, nunca desregistra tools
-        por su cuenta -- solo reporta; la re-aprobación sigue siendo HITL
-        explícito (borrar el snapshot). Re-minado de claude-mcp-sentinel v3.1
-        ("scheduled monitoring, re-escanea todo cada mañana")."""
+        in-place). El escaneo no reescribe snapshots; un fallo o drift revoca
+        el transporte y sus tools y lo deja en cuarentena hasta re-aprobación
+        HITL + reinicio. Re-minado de claude-mcp-sentinel v3.1 ("scheduled
+        monitoring, re-escanea todo cada mañana")."""
         if self._sentinel is None:
             return []
         findings: list[dict[str, Any]] = []
@@ -346,23 +490,70 @@ class McpRegistry:
             if transport is None:
                 continue
             try:
-                tools_resp = transport.request("tools/list", {})
-            except McpProtocolError as exc:
-                findings.append({"server": cfg.name, "error": str(exc)[:300]})
+                clean = self._validated_tools(
+                    transport.request("tools/list", {}), cfg.name
+                )
+                vet = self._sentinel.vet_tools(cfg, clean)
+            except Exception as exc:  # noqa: BLE001 — protección degradada
+                self._quarantine_server(
+                    cfg.name, f"re-vetting falló: {exc}"
+                )
+                findings.append(
+                    {
+                        "server": cfg.name,
+                        "error": str(exc)[:300],
+                        "revoked": True,
+                        "pending_review": True,
+                    }
+                )
                 continue
-            tools = (tools_resp or {}).get("tools", []) if isinstance(tools_resp, dict) else []
-            clean = [t for t in tools if isinstance(t, dict)]
-            vet = self._sentinel.vet_tools(cfg, clean)
             blocked = [
                 {"tool": v.tool_name, "reason": v.reason} for v in vet.tools if not v.admitted
             ]
-            if blocked:
-                findings.append({"server": cfg.name, "blocked": blocked})
+            if not vet.admitted and not blocked:
+                blocked.append({"tool": "<server>", "reason": vet.server_reason})
+            if blocked or not vet.admitted:
+                self._quarantine_server(
+                    cfg.name, f"{len(blocked)} hallazgo(s) de Sentinel"
+                )
+                findings.append(
+                    {
+                        "server": cfg.name,
+                        "blocked": blocked,
+                        "revoked": True,
+                        "pending_review": True,
+                    }
+                )
                 self._audit(
                     "sentinel.revet_drift", cfg.name,
-                    f"{len(blocked)} tool(s) con drift detectado", "blocked",
+                    f"{len(blocked)} hallazgo(s); server revocado", "blocked",
                 )
         return findings
+
+    def _quarantine_server(self, name: str, reason: str) -> None:
+        """Revoca runtime sin borrar la configuración ni rearmar TOFU."""
+        transport = self._transports.pop(name, None)
+        if transport is not None:
+            try:
+                transport.close()
+            except Exception:  # noqa: BLE001
+                pass
+        fulls = {f for f, (srv, _tool) in self._tool_index.items() if srv == name}
+        for full in fulls:
+            self._tool_index.pop(full, None)
+            self._read_only.discard(full)
+        self._tool_specs = [
+            spec
+            for spec in self._tool_specs
+            if spec.get("function", {}).get("name") not in fulls
+        ]
+        self._sentinel_quarantine.add(name)
+        self._audit(
+            "sentinel.server_revoked",
+            name,
+            f"{reason}; tools={len(fulls)}",
+            "blocked",
+        )
 
     def dispatch(self, full_name: str, arguments: str | dict[str, Any]) -> str:
         """Llama ``tools/call`` en el server correcto y devuelve el resultado
@@ -440,8 +631,34 @@ class McpRegistry:
                 action=action,
                 agent="orchestrator.mcp",
                 result=outcome,
-                risk_level="moderate" if outcome == "failure" else "safe",
+                risk_level="moderate" if outcome in {"failure", "blocked"} else "safe",
                 payload={"server": server, "detail": detail[:500]},
             )
         except Exception:  # noqa: BLE001
             pass
+
+    def _audit_before_effect(self, action: str, server: str, detail: str) -> bool:
+        """Registra un efecto pendiente; un logger configurado que falla veta.
+
+        La ausencia explícita de logger se mantiene para arneses aislados. En
+        runtime gobernado, donde se inyecta Merkle, degradar la evidencia no
+        concede permiso para crear el transporte externo.
+        """
+        if self._merkle_log is None:
+            return True
+        try:
+            self._merkle_log(
+                action=action,
+                agent="orchestrator.mcp",
+                result="requested",
+                risk_level="moderate",
+                payload={"server": server, "detail": detail[:500]},
+            )
+        except Exception:  # noqa: BLE001 — límite de auditoría fail-closed
+            _log.error(
+                "MCP server '%s' not started: pre-effect audit failed",
+                server,
+                exc_info=True,
+            )
+            return False
+        return True
