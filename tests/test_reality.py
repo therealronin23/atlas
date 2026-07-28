@@ -241,15 +241,15 @@ def test_check_timeout_default_and_env_override(monkeypatch) -> None:
     from atlas.core.reality import _default_check_timeout
 
     monkeypatch.delenv("ATLAS_REALITY_TIMEOUT", raising=False)
-    assert _default_check_timeout() == 600
-
-    monkeypatch.setenv("ATLAS_REALITY_TIMEOUT", "900")
     assert _default_check_timeout() == 900
+
+    monkeypatch.setenv("ATLAS_REALITY_TIMEOUT", "1200")
+    assert _default_check_timeout() == 1200
 
     # Valores inválidos caen al default seguro, no rompen el preflight.
     for bad in ("0", "-5", "abc", ""):
         monkeypatch.setenv("ATLAS_REALITY_TIMEOUT", bad)
-        assert _default_check_timeout() == 600
+        assert _default_check_timeout() == 900
 
 
 def test_capabilities_cli_json(monkeypatch, tmp_path: Path) -> None:
