@@ -3780,3 +3780,7 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md
+  type: design
+  status: vigente
+  verified: null

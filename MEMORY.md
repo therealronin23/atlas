@@ -5,6 +5,11 @@
   local/primaria, alternativas comparadas, falsificadores y límites de
   comparabilidad antes de solicitar una elección. Una aprobación intuitiva se
   trata como provisional hasta quedar trazada.
+- `embedding-identity-before-migration`: un aviso de cambio semántico de un
+  embedder no autoriza pin, rebuild ni cambio de pooling. Medir con corpus
+  versionado y preservar identidad de implementación/artefacto antes de tocar
+  almacenamiento; un benchmark no convierte por sí solo una hipótesis en
+  decisión de memoria.
 - `workbench-lineage-convergence`: Atlas Core conserva la única autoridad;
   Atlas Engineering Workbench es el primer producto, con CodeOSS/VSCodium como
   host desktop, Void como donante de capacidades y Zed como donante ACP/de

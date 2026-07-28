@@ -8,6 +8,14 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — diseño de benchmark de compatibilidad FastEmbed aprobado para
+  especificación.** Tras el aviso de pooling de FastEmbed 0.8.0, Atlas no fija
+  una dependencia ni cambia embeddings: el diseño propone un harness puro de
+  ranking/identidad, corpus español versionado, JSON efímero y prueba real
+  opcional. No toca stores, configuración, Merkle ni descarga autónoma.
+  **Próxima acción:** revisión del documento de diseño antes del plan y ciclo
+  TDD; una medición no autoriza una migración.
+
 - **2026-07-28 — evidencia de entrega renovada (ADC-WO-114).** Los artefactos
   de revisión quedan anclados al candidato sustantivo `aa71a98`: suite directa
   4522 passed/57 skipped/1 deselected, Reality ampliado, mypy de 318 módulos,
