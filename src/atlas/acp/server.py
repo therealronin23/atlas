@@ -53,7 +53,7 @@ def _extract_text(prompt: list[Any]) -> str:
 class AtlasACPAgent:
     """Agente ACP mínimo real: initialize/new_session/prompt sobre InferenceHub.
 
-    Hereda de `acp.Agent` en tiempo de import (import perezoso — el paquete
+    La clase enlazada hereda de `acp.Agent` solo al arrancar (import perezoso — el paquete
     `agent-client-protocol` solo se necesita para arrancar el server real,
     no para importar el resto de Atlas)."""
 
@@ -140,10 +140,7 @@ def make_agent_class() -> type:
     importable sin tener `agent-client-protocol` instalado)."""
     import acp  # noqa: PLC0415
 
-    class _BoundAtlasACPAgent(AtlasACPAgent, acp.Agent):
-        pass
-
-    return _BoundAtlasACPAgent
+    return type("_BoundAtlasACPAgent", (AtlasACPAgent, acp.Agent), {})
 
 
 def serve() -> None:

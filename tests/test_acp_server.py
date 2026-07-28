@@ -9,13 +9,15 @@ el transporte stdio real.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from importlib.util import find_spec
+from types import ModuleType
 from unittest.mock import MagicMock
 
 import pytest
 
-from atlas.acp.server import AtlasACPAgent, _extract_text
+from atlas.acp.server import AtlasACPAgent, _extract_text, make_agent_class
 from atlas.core.inference_hub import InferenceResponse
 
 
@@ -44,6 +46,21 @@ class TestExtractText:
 
     def test_empty_list_returns_empty_string(self) -> None:
         assert _extract_text([]) == ""
+
+    def test_make_agent_class_binds_the_optional_sdk_lazily(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeAgent:
+            pass
+
+        fake_acp = ModuleType("acp")
+        setattr(fake_acp, "Agent", FakeAgent)
+        monkeypatch.setitem(sys.modules, "acp", fake_acp)
+
+        agent_class = make_agent_class()
+
+        assert issubclass(agent_class, AtlasACPAgent)
+        assert issubclass(agent_class, FakeAgent)
 
 
 @requires_acp

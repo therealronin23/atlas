@@ -8,7 +8,9 @@ ExternalFsBridge, credencial explícita, auditoría Merkle.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+from types import ModuleType
 from unittest.mock import patch
 
 import pytest
@@ -43,6 +45,18 @@ class TestGovernance:
 
 
 class TestGenerateMocked:
+    def test_fal_subscribe_rejects_non_mapping_sdk_response(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        bridge = ExternalFsBridge(extra_roots={str(tmp_path)})
+        tool = VideoGenTool(fs_bridge=bridge)
+        fake_client = ModuleType("fal_client")
+        setattr(fake_client, "subscribe", lambda *_args, **_kwargs: ["not-a-mapping"])
+        monkeypatch.setitem(sys.modules, "fal_client", fake_client)
+
+        with pytest.raises(TypeError, match="mapping"):
+            tool._fal_subscribe("model", "prompt", "16:9")
+
     def test_missing_api_key_returns_failed_result_not_exception(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

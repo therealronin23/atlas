@@ -940,3 +940,49 @@ work_orders:
       - TypeScript and Vite build pass
     operator_decision_required: false
     status: DONE
+
+  - id: ADC-WO-112
+    program: P09
+    title: Close optional-adapter type-safety debt
+    problem: Strict mypy reports unchecked Any returns from the optional fal.ai SDK and an Any base class in the optional ACP adapter, obscuring malformed provider responses and weakening the repository type gate.
+    evidence:
+      - MYPYPATH=src python -m mypy src/atlas/ on 2026-07-28 reported no-any-return in image_gen_tool.py and video_gen_tool.py plus an Any subclass in acp/server.py
+      - pyproject.toml declares media-gen and acp as optional extras
+      - current adapter tests exercise valid mocked payloads but not malformed SDK output or the dynamic ACP binding
+    source_decisions:
+      - current operator directive invariant 7
+      - AGENTS.md definition of done
+      - ADR-078 selective ACP assimilation
+    current_state: Runtime behavior is guarded by broad error handling, but static validation fails and malformed optional-SDK payloads are not rejected at the adapter boundary.
+    target_state: Optional adapters normalize only mapping payloads, the ACP inheritance remains lazy at runtime, focused regressions cover both seams, and strict mypy is clean without adding dependencies.
+    scope:
+      - src/atlas/tools/image_gen_tool.py
+      - src/atlas/tools/video_gen_tool.py
+      - src/atlas/acp/server.py
+      - tests/test_image_gen_tool.py
+      - tests/test_video_gen_tool.py
+      - tests/test_acp_server.py
+    files:
+      - src/atlas/tools/image_gen_tool.py
+      - src/atlas/tools/video_gen_tool.py
+      - src/atlas/acp/server.py
+      - tests/test_image_gen_tool.py
+      - tests/test_video_gen_tool.py
+      - tests/test_acp_server.py
+      - docs/canon/implementation_registry.yaml
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_image_gen_tool.py tests/test_video_gen_tool.py tests/test_acp_server.py -q
+      - MYPYPATH=src python -m mypy src/atlas/
+    risks:
+      - treating a valid SDK mapping subtype as malformed
+      - breaking lazy import behavior when the optional ACP package is absent
+    rollback: Revert the isolated type-safety commit; no persisted state, public protocol, dependency, or governance configuration changes.
+    dependencies: []
+    acceptance:
+      - malformed fal.ai SDK payload becomes an auditable failed generation rather than an unchecked shape assumption
+      - valid mapping payload behavior is preserved
+      - ACP class still binds at runtime only when its optional package is available
+      - strict mypy completes with exit code 0
+    operator_decision_required: false
+    status: DONE

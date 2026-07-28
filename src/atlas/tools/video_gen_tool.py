@@ -16,6 +16,7 @@ import base64
 import os
 import time
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -131,10 +132,18 @@ class VideoGenTool:
     def _fal_subscribe(self, model: str, prompt: str, aspect_ratio: str) -> dict[str, Any]:
         import fal_client  # noqa: PLC0415 — import perezoso, solo al generar de verdad
 
-        return fal_client.subscribe(
+        raw_response = fal_client.subscribe(
             model,
             arguments={"prompt": prompt, "aspect_ratio": aspect_ratio},
         )
+        if not isinstance(raw_response, Mapping):
+            raise TypeError("fal.ai devolvió una respuesta que no es un mapping")
+        response: dict[str, Any] = {}
+        for key, value in raw_response.items():
+            if not isinstance(key, str):
+                raise TypeError("fal.ai devolvió una respuesta con claves no textuales")
+            response[key] = value
+        return response
 
     def _download(self, url: str) -> bytes:
         if url.startswith("data:"):

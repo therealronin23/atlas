@@ -8,6 +8,15 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — gate de tipos de adapters opcionales cerrado (ADC-WO-112).**
+  Los bordes `fal_client` de imagen/vídeo ya aceptan solo mappings con claves
+  textuales, de modo que una forma maliciosa o errónea se convierte en fallo
+  auditable del adaptador. El enlace ACP conserva su import perezoso y ahora
+  se construye dinámicamente, sin una base `Any` que debilite mypy. Pruebas
+  focalizadas cubren payloads no estructurados y el binding lazy; `mypy`
+  estricto pasa sobre 318 módulos. **Próxima acción:** auditar P00/P01/P09 y
+  convertir solo gaps no constitucionales en work orders ejecutables.
+
 - **2026-07-28 — foundation de decisiones calificadas por evidencia
   implementada en la rama de convergencia.** `evidence_registry.jsonl` y
   `decision_evidence_matrix.jsonl` complementan —sin reemplazar— el registro

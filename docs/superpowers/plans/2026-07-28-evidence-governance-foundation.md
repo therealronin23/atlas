@@ -399,6 +399,50 @@ remain runnable without the extra.
   git commit -m "test(validation): honor optional protocol extras"
   ```
 
+### Task 5: Close optional-adapter type-safety debt
+
+**Files:**
+- Modify: `src/atlas/tools/image_gen_tool.py`
+- Modify: `src/atlas/tools/video_gen_tool.py`
+- Modify: `src/atlas/acp/server.py`
+- Modify: `tests/test_image_gen_tool.py`
+- Modify: `tests/test_video_gen_tool.py`
+- Modify: `tests/test_acp_server.py`
+
+- [x] **Step 1: Reproduce the strict-type failures**
+
+  The first `mypy src/atlas/` run found two unchecked `fal_client.subscribe`
+  returns and one optional ACP base-class `Any` error. These are adapter-boundary
+  gaps, not an invitation to install optional dependencies.
+
+- [x] **Step 2: Add red malformed-payload regressions**
+
+  Fake `fal_client` modules returning lists must raise `TypeError` at the
+  adapter. The ACP test proves `make_agent_class()` binds the SDK base only
+  after a runtime import.
+
+- [x] **Step 3: Normalize provider data and make the ACP binding dynamic**
+
+  Both media adapters copy only `Mapping` payloads whose keys are strings. The
+  ACP factory uses runtime `type(...)` construction so importing the optional
+  package does not introduce a static `Any` base class.
+
+- [x] **Step 4: Verify focused tests and the complete type gate**
+
+  ```bash
+  PYTHONPATH=src python -m pytest tests/test_image_gen_tool.py \
+    tests/test_video_gen_tool.py tests/test_acp_server.py -q
+  MYPYPATH=src python -m mypy src/atlas/
+  ```
+
+  Result: `23 passed, 7 skipped`; `Success: no issues found in 318 source files`.
+
+- [x] **Step 5: Commit the isolated work order**
+
+  ```bash
+  git commit -m "fix(adapters): close optional SDK type gaps"
+  ```
+
 ## Plan Self-Review
 
 - Spec coverage: sections 4–8 and 11–12 are implemented by Tasks 1–3. The
