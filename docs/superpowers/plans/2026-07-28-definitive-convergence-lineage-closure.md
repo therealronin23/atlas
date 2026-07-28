@@ -311,7 +311,7 @@ git -C /home/ronin/proyectos/atlas-ide-forward-port diff --name-status b3166e7..
 git -C /home/ronin/proyectos/atlas-ide-forward-port diff b3166e7..34803da -- src/vs/workbench/contrib/void/electron-main/atlasBackendMainService.ts
 ```
 
-Record the provider roles, port-7342 bridge, lifecycle supervision, and tests as `PORT_LATER` into the bounded Workbench namespace. Do not copy them into `src/atlas` or vendor editor sources in Cut 0.
+Record the provider roles, port-7342 bridge, lifecycle supervision, and tests as `PORT_LATER` for the Workbench convergence. Do not copy them into `src/atlas` or vendor editor sources in Cut 0. This Cut 0 disposition does not cap the breadth of the later Workbench integration.
 
 - [ ] **Step 3: Classify host and donor baselines**
 
@@ -373,7 +373,7 @@ Replace `OPEN-OPERATOR-PRODUCT-SHELL` with a resolved record referencing ADR-078
 
 - `ADC-WO-010`: lineage reconciliation, `DONE` after Tasks 4–6;
 - `ADC-WO-108`: Engineering Finding/Review Coordinator contract, `BLOCKED` on definitive-candidate acceptance;
-- `ADC-WO-109`: bounded CodeOSS/VSCodium/Void Workbench port, `BLOCKED` on `ADC-WO-108` and an exact upstream pin;
+- `ADC-WO-109`: comprehensive CodeOSS/VSCodium/Void Workbench convergence, scope to be decided in its own design, `BLOCKED` on `ADC-WO-108` and an exact upstream pin;
 - `ADC-WO-110`: Zed ACP/pattern assimilation, `BLOCKED` on Workbench contract tests and license review.
 
 Do not leave product-shell selection as `REQUIRES_OPERATOR`.
@@ -413,7 +413,7 @@ git commit -m "canon(product): accept Atlas Workbench convergence boundary"
 **Interfaces:**
 - `CURRENT`: Atlas backend and validation harness, plus preserved external product lineages.
 - `TARGET`: Engineering Workbench and internal review/debug/control plane.
-- `TRANSITION`: Cut 0 candidate closure → Cut 1 backend review contracts → Cut 2 bounded host port.
+- `TRANSITION`: Cut 0 candidate closure → Cut 1 backend review contracts → Cut 2 comprehensive Workbench convergence.
 
 - [ ] **Step 1: Update product and program projections**
 
@@ -583,7 +583,7 @@ Record base commit, final commit, branch, worktree, backup path, bundle path/SHA
 ## Deferred Follow-on Cuts
 
 - **Cut 1 — Engineering Review Plane:** define and implement `EngineeringFinding`, `ReviewCoordinator`, `DiagnosticCoordinator`, review/debug event contracts, receipts, approvals, and tests by composing existing Atlas verification, production, diagnosis, audit, Golden Route, Decider, EventBus, and Merkle components.
-- **Cut 2 — Atlas Workbench Host:** pin the then-current CodeOSS/VSCodium baseline, port the bounded Void Atlas bridge and lifecycle into `contrib/atlas`, expose Cut 1 contracts through ACP/bridge adapters, assimilate selected Zed patterns, and build the first mission/findings/incidents/diffs/tests/receipts surface.
+- **Cut 2 — Atlas Workbench Host:** design a complete professional product convergence over a pinned CodeOSS/VSCodium baseline, reusing the Void Atlas bridge and lifecycle, exposing Cut 1 contracts through ACP/bridge adapters, and assimilating relevant Zed capabilities and patterns. Its exact breadth is deliberately left for that cut's operator discussion; it is not presumed to be a bounded or minimal port.
 - Neither cut may be reported as implemented by completion of this plan.
 
 ## Completion Criteria

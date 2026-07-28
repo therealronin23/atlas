@@ -470,10 +470,16 @@ candidata que aún no está verde.
 
 1. host Code-OSS fijado;
 2. canalización libre y orientada a privacidad tipo VSCodium;
-3. port incremental de Void;
-4. cliente ACP y comparación con Zed;
-5. paneles mínimos de revisión/diagnóstico/aprobación;
-6. E2E y packaging inicial.
+3. integración amplia y progresiva de las capacidades aprovechables de Void;
+4. asimilación ACP y de capacidades/patrones relevantes de Zed;
+5. superficies empresariales de revisión, diagnóstico, aprobación y operación;
+6. E2E, packaging y ciclo de actualización del producto.
+
+El Corte 2 no queda constitucionalmente limitado a un port «acotado» o a una
+demostración mínima. Su ambición es una base de producto completa y profesional.
+El alcance exacto, la secuencia interna y qué capacidades se integran, adaptan o
+descartan se decidirán al diseñar ese corte; esta decisión solo impide que esa
+amplitud bloquee el cierre seguro de la candidata actual.
 
 ### Corte 3 — evolución
 
