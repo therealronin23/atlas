@@ -1,8 +1,8 @@
 # Diseño de gobernanza de decisiones calificadas por evidencia
 
-**Estado:** aprobado por el operador para especificación  
-**Fecha:** 2026-07-28  
-**Ámbito:** P00–P12  
+**Estado:** aprobado por el operador para especificación
+**Fecha:** 2026-07-28
+**Ámbito:** P00–P12
 **No modifica:** `config/governance.json`
 
 ## 1. Propósito

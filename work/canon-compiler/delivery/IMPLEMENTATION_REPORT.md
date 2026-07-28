@@ -1,73 +1,73 @@
 # Implementation Report
 
-## Work orders
+## Closed work orders
 
-Twelve work orders are complete after delivery:
+Fifteen work orders are complete in the current delivery, including the prior
+convergence baseline:
 
-- `ADC-WO-000` preservation and isolated baseline;
-- `ADC-WO-001` live-source classification/import;
-- `ADC-WO-002` authority and traceability compilation;
-- `ADC-WO-003` definitive documents and P00–P12;
-- `ADC-WO-004` canonical validator and CI;
-- `ADC-WO-005` reality/claim reconciliation;
-- `ADC-WO-006` adversarial review, validation and delivery;
-- `ADC-WO-007` high-sensitivity constitutional guard;
-- `ADC-WO-008` fail-closed MCP vetting/re-vetting;
-- `ADC-WO-009` UI advisory remediation;
-- `ADC-WO-010` product/construction lineage reconciliation;
-- `ADC-WO-101` Workbench host and first-product decision.
+- `ADC-WO-000` through `ADC-WO-006`: preservation, live-source disposition,
+  canonical authority, candidate documents, CI integrity, reality reconciliation
+  and independent delivery preparation;
+- `ADC-WO-007` through `ADC-WO-010`: high-sensitivity enforcement, fail-closed
+  MCP vetting/re-vetting, UI advisory remediation and lineage reconciliation;
+- `ADC-WO-101`: Workbench host/first-product decision;
+- `ADC-WO-112`: optional SDK adapter type safety;
+- `ADC-WO-113`: operator-decision work-order eligibility;
+- `ADC-WO-114`: current delivery evidence, archive and review artifacts.
 
-Five work orders require the operator, five are dependency-blocked, and
-`ADC-WO-106` remains rejected by design.
+Eleven work orders remain explicitly deferred: five require an operator,
+five are dependency-blocked, and remote executable MCP auto-adoption remains
+rejected by design.
 
-## Code and security changes
+## Implementation changes after the former delivery anchor
 
-### Constitutional decision boundary
+### Evidence-qualified governance
 
-All supported and injected Deciders pass through the same post-verdict
-normalization. High sensitivity cannot become autonomous `Allow`. The plugin
-receipt path uses the same boundary. Tests cover custom Deciders and direct
-clients.
+The decision registry remains the disposition authority. Additive evidence
+source and decision-evidence registries, schemas and dossiers make sources,
+alternatives, falsifiers and revisit triggers reviewable. The canon gate now
+rejects unsafe local evidence paths, unresolvable cross-links, duplicate
+corroboration, state drift and unsupported `EVIDENCE_QUALIFIED` claims.
 
-### Third-party MCP boundary
+### Operator-owned execution boundaries
 
-Sentinel failures, corrupt snapshots and behavioral drift now deny and record
-evidence. Re-vetting revokes/quarantines affected runtime servers. Installer
-command inspection is separated from admission so static argv screening never
-executes a clean-but-unadmitted third party.
+The canon gate now makes it impossible for the registry to present an
+operator-required item as `READY`. Every `REQUIRES_OPERATOR` work order must
+declare that fact, and an operator question's blocker must exist and be
+compatible. This closes a documentation-state bypass without deciding
+Mission/Task ownership, memory promotion, the mutating API bridge, Native Wave
+5, Hermes credentials or Osmosis enforcement.
 
-### Reality and tests
+### Optional-adapter safety and type gate
 
-The semgrep binary-resolution test is hermetic and covers both local-venv and
-PATH fallback behavior. Reality's finite default check timeout is 900 seconds,
-because the canonical suite takes approximately 670 seconds on the measured
-host; `ATLAS_REALITY_TIMEOUT` remains the explicit override.
+The image/video adapters reject malformed `fal_client` values at the boundary
+instead of assuming an `Any` mapping. Their existing error path turns that into
+an auditable failed generation. ACP's optional SDK class is now dynamically
+bound only after its lazy import, eliminating the unchecked `Any` base class.
+Regression tests cover both behaviors and strict mypy is clean over 318 source
+files.
 
-### UI
+### Validation honesty
 
-The existing Atlas shell remains a validation harness. Its lock now resolves
-PostCSS 8.5.23; build and audit pass with zero known advisories.
+Protocol-specific tests now skip only when their optional ACP/MCP extras are
+absent locally; CI installs both extras and retains those checks. The additive
+schema test no longer assumes a fixed global schema count, so new canonical
+schemas do not create a false regression.
 
-## Documentation and product lineage
+## Existing security and lineage controls retained
 
-Atlas Core is the only canonical implementation target. No editor tree was
-blindly merged:
-
-- Doc0 capability precursor: already present semantically;
-- Doc0 canon precursor: historical authority seed;
-- Void and its forward-port: port source for Cut 2;
-- CodeOSS/VSCodium: host baseline;
-- Zed: ACP/pattern donor;
-- relevant cold-update and self-build worktrees: ancestor/already integrated
-  or semantically present.
-
-ADR-078 and work orders 108–111 turn that evidence into a future construction
-sequence without pretending Cut 1, Cut 2 or Android already exists.
+- High sensitivity is normalized after every supported or injected Decider.
+- Sentinel errors, corrupt snapshots and drift deny, record evidence and
+  quarantine affected MCP servers; argv inspection is separated from admission.
+- The UI remains a validation harness, not the final product surface.
+- No whole-tree editor merge occurred: CodeOSS/VSCodium, Void and Zed keep
+  their governed host/donor roles until their dependent contracts exist.
 
 ## Rollback
 
-Each functional change is an atomic commit. Revert in reverse order by concern:
-Reality timeout/test, MCP hermetic test, canon/docs, UI lock, MCP
-screening/admission, high-sensitivity guard, then Sentinel admission. The
-original checkout and pre-convergence bundle provide an independent rollback
-root.
+Each functional change is an atomic local commit. Revert in reverse concern
+order: delivery artifacts, eligibility gate, adapter type safety, optional-test
+classification, evidence governance, then prior convergence commits. The
+original checkout and pre-convergence bundle remain an independent rollback
+root. No external service or `config/governance.json` change is part of this
+delivery.

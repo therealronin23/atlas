@@ -1,8 +1,9 @@
 {
-  "schema_version": "1.0",
-  "generated_at": "2026-07-28T13:10:00Z",
-  "anchor": "793a8a8178edacbf9db2ae3b9c7371550d9e52ca",
-  "count": 12,
+  "schema_version": "1.1",
+  "generated_at": "2026-07-28T19:19:02Z",
+  "anchor": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+  "artifact_commit_excluded_by_design": true,
+  "count": 15,
   "work_orders": [
     {
       "id": "ADC-WO-000",
@@ -611,6 +612,168 @@
         "exact install succeeds",
         "npm audit reports zero vulnerabilities",
         "TypeScript and Vite build pass"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-112",
+      "program": "P09",
+      "title": "Close optional-adapter type-safety debt",
+      "problem": "Strict mypy reports unchecked Any returns from the optional fal.ai SDK and an Any base class in the optional ACP adapter, obscuring malformed provider responses and weakening the repository type gate.",
+      "evidence": [
+        "MYPYPATH=src python -m mypy src/atlas/ on 2026-07-28 reported no-any-return in image_gen_tool.py and video_gen_tool.py plus an Any subclass in acp/server.py",
+        "pyproject.toml declares media-gen and acp as optional extras",
+        "current adapter tests exercise valid mocked payloads but not malformed SDK output or the dynamic ACP binding"
+      ],
+      "source_decisions": [
+        "current operator directive invariant 7",
+        "AGENTS.md definition of done",
+        "ADR-078 selective ACP assimilation"
+      ],
+      "current_state": "Runtime behavior is guarded by broad error handling, but static validation fails and malformed optional-SDK payloads are not rejected at the adapter boundary.",
+      "target_state": "Optional adapters normalize only mapping payloads, the ACP inheritance remains lazy at runtime, focused regressions cover both seams, and strict mypy is clean without adding dependencies.",
+      "scope": [
+        "src/atlas/tools/image_gen_tool.py",
+        "src/atlas/tools/video_gen_tool.py",
+        "src/atlas/acp/server.py",
+        "tests/test_image_gen_tool.py",
+        "tests/test_video_gen_tool.py",
+        "tests/test_acp_server.py"
+      ],
+      "files": [
+        "src/atlas/tools/image_gen_tool.py",
+        "src/atlas/tools/video_gen_tool.py",
+        "src/atlas/acp/server.py",
+        "tests/test_image_gen_tool.py",
+        "tests/test_video_gen_tool.py",
+        "tests/test_acp_server.py",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/test_image_gen_tool.py tests/test_video_gen_tool.py tests/test_acp_server.py -q",
+        "MYPYPATH=src python -m mypy src/atlas/"
+      ],
+      "risks": [
+        "treating a valid SDK mapping subtype as malformed",
+        "breaking lazy import behavior when the optional ACP package is absent"
+      ],
+      "rollback": "Revert the isolated type-safety commit; no persisted state, public protocol, dependency, or governance configuration changes.",
+      "dependencies": [],
+      "acceptance": [
+        "malformed fal.ai SDK payload becomes an auditable failed generation rather than an unchecked shape assumption",
+        "valid mapping payload behavior is preserved",
+        "ACP class still binds at runtime only when its optional package is available",
+        "strict mypy completes with exit code 0"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-113",
+      "program": "P00",
+      "title": "Enforce operator-decision work-order eligibility",
+      "problem": "The canonical gate validates work-order shape but does not reject a decision-gated item marked READY or an operator question whose blocking work order does not exist, allowing documentation state to imply unauthorized execution.",
+      "evidence": [
+        "scripts/check_canon.py validates work-order fields and status vocabulary but not operator-decision semantics",
+        "docs/canon/open_questions.jsonl links constitutional blockers to work orders",
+        "current operator directive sections 15 and 17 reserve constitutional and irreversible decisions to the operator"
+      ],
+      "source_decisions": [
+        "ADR-067",
+        "current operator directive sections 7, 15, and 17",
+        "evidence-before-operator-choice standing rule"
+      ],
+      "current_state": "READY/BLOCKED/REQUIRES_OPERATOR labels are syntactically checked, while the cross-registry execution eligibility relationship is not enforced.",
+      "target_state": "A decision-required work order cannot be marked READY, REQUIRES_OPERATOR has an explicit operator flag, and every blocking-work-order reference from an operator question resolves to a compatible registered work order.",
+      "scope": [
+        "scripts/check_canon.py",
+        "tests/test_canon_integrity.py",
+        "docs/canon/implementation_registry.yaml",
+        "docs/canon/open_questions.jsonl"
+      ],
+      "files": [
+        "scripts/check_canon.py",
+        "tests/test_canon_integrity.py",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/test_canon_integrity.py -q",
+        "PYTHONPATH=src python scripts/check_canon.py",
+        "MYPYPATH=src python -m mypy scripts/check_canon.py"
+      ],
+      "risks": [
+        "rejecting a completed historical work order that correctly followed a prior operator decision",
+        "overconstraining open questions that are informational rather than blockers"
+      ],
+      "rollback": "Revert the isolated validator commit; it changes no runtime authority and no decision disposition.",
+      "dependencies": [],
+      "acceptance": [
+        "READY work orders never require an operator decision",
+        "REQUIRES_OPERATOR work orders explicitly declare that requirement",
+        "a missing or incompatible blocking work-order reference fails with an actionable code",
+        "the current candidate remains valid"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-114",
+      "program": "P09",
+      "title": "Refresh definitive delivery evidence after governance hardening",
+      "problem": "Delivery reports, diff, commit inventory and bundle were anchored before the evidence, type-safety and operator-eligibility commits, so a reviewer could receive stale convergence evidence.",
+      "evidence": [
+        "work/canon-compiler/delivery/LOCAL_COMMITS.json ends before the current branch head",
+        "work/canon-compiler/delivery/VALIDATION_RESULTS.json references an earlier substantive anchor",
+        "current branch contains evidence-governance, optional-adapter and work-order-gate commits"
+      ],
+      "source_decisions": [
+        "current operator directive sections 19 through 23",
+        "ADR-067 traceability requirements",
+        "AGENTS.md definition of done"
+      ],
+      "current_state": "The prior delivery is valid historical evidence but does not describe the current candidate head.",
+      "target_state": "Reports distinguish prior and current validation, enumerate current atomic commits, include a current patch, bundle/checksum and documentary ZIP, and preserve runtime limitations without promotion.",
+      "scope": [
+        "work/canon-compiler/delivery/",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md",
+        "external local bundle and documentary ZIP under atlas-definitive-backup"
+      ],
+      "files": [
+        "work/canon-compiler/delivery/VALIDATION_RESULTS.json",
+        "work/canon-compiler/delivery/DEFINITIVE_CONVERGENCE_REPORT.md",
+        "work/canon-compiler/delivery/IMPLEMENTATION_REPORT.md",
+        "work/canon-compiler/delivery/ADVERSARIAL_AUDIT.md",
+        "work/canon-compiler/delivery/LOCAL_COMMITS.json",
+        "work/canon-compiler/delivery/FINAL_DIFF.patch",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/ -q",
+        "MYPYPATH=src python -m mypy src/atlas/",
+        "PYTHONPATH=src python scripts/check_canon.py",
+        "git bundle verify",
+        "sha256sum -c"
+      ],
+      "risks": [
+        "self-referential generated artifacts omitting their own delivery commit",
+        "recording a runtime service as live without a fresh proof",
+        "inadvertently archiving secrets or the repository itself"
+      ],
+      "rollback": "Revert only the delivery-evidence commit and remove the newly generated external bundle/ZIP; implementation commits remain intact and the prior bundle remains available.",
+      "dependencies": [
+        "ADC-WO-112",
+        "ADC-WO-113"
+      ],
+      "acceptance": [
+        "delivery anchor and commit inventory describe the current substantive head",
+        "all validation classifications are explicit",
+        "bundle and documentary ZIP verify and exclude secrets/source tree",
+        "review and non-destructive integration steps are current"
       ],
       "operator_decision_required": false,
       "status": "DONE"

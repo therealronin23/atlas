@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — evidencia de entrega renovada (ADC-WO-114).** Los artefactos
+  de revisión quedan anclados al candidato sustantivo `aa71a98`: suite directa
+  4522 passed/57 skipped/1 deselected, Reality ampliado, mypy de 318 módulos,
+  canon (2085 JSONL/25 pruebas), índice, Merkle, UI, lock y auditoría de
+  dependencias pasan. Reality conserva límites honestos: browser sin
+  Playwright, Hermes mock, MCP solo configurado, proveedores ausentes y grafo
+  compartido stale. El bundle y ZIP documental se regeneran desde el commit de
+  entrega. **Próxima acción:** revisión e integración gobernada; no abrir las
+  fronteras Mission/Task, memoria, 7341, Hermes, Native u Osmosis sin su
+  decisión/evidencia correspondiente.
+
 - **2026-07-28 — elegibilidad de work orders del operador forzada
   (ADC-WO-113).** El gate canónico rechaza ahora un work order
   `operator_decision_required` marcado `READY`, un `REQUIRES_OPERATOR` sin
@@ -15,9 +26,9 @@ de escribir: `atlas reality --json`.
   o incompatible. El análisis P00/P01/P09 deja P01 sin migración segura: la
   frontera Mission/Task y los POST 7341 conservan `REQUIRES_OPERATOR`; P09
   cierra el gate de tipos y mantiene la validación amplia separada. Pruebas
-  canónicas (25), validator y mypy del script pasan. **Próxima acción:**
-  repetir la suite completa contra el commit actual y preparar los siguientes
-  lotes de decisión solo con evidencia fresca.
+  canónicas (25), validator, mypy del script, suite completa y Reality
+  ampliado pasan. **Próxima acción:** preparar únicamente lotes de decisión
+  respaldados por evidencia fresca; no migrar los límites reservados.
 
 - **2026-07-28 — gate de tipos de adapters opcionales cerrado (ADC-WO-112).**
   Los bordes `fal_client` de imagen/vídeo ya aceptan solo mappings con claves

@@ -1,6 +1,6 @@
 schema_version: 1
 candidate: ATLAS_DEFINITIVE_CANDIDATE
-generated_at: "2026-07-27"
+generated_at: "2026-07-28"
 base_commit: c95038c9d7e97ddc6339f38abe6dad09b166f47d
 status_vocabulary:
   - READY
@@ -1025,5 +1025,55 @@ work_orders:
       - REQUIRES_OPERATOR work orders explicitly declare that requirement
       - a missing or incompatible blocking work-order reference fails with an actionable code
       - the current candidate remains valid
+    operator_decision_required: false
+    status: DONE
+
+  - id: ADC-WO-114
+    program: P09
+    title: Refresh definitive delivery evidence after governance hardening
+    problem: Delivery reports, diff, commit inventory and bundle were anchored before the evidence, type-safety and operator-eligibility commits, so a reviewer could receive stale convergence evidence.
+    evidence:
+      - work/canon-compiler/delivery/LOCAL_COMMITS.json ends before the current branch head
+      - work/canon-compiler/delivery/VALIDATION_RESULTS.json references an earlier substantive anchor
+      - current branch contains evidence-governance, optional-adapter and work-order-gate commits
+    source_decisions:
+      - current operator directive sections 19 through 23
+      - ADR-067 traceability requirements
+      - AGENTS.md definition of done
+    current_state: The prior delivery is valid historical evidence but does not describe the current candidate head.
+    target_state: Reports distinguish prior and current validation, enumerate current atomic commits, include a current patch, bundle/checksum and documentary ZIP, and preserve runtime limitations without promotion.
+    scope:
+      - work/canon-compiler/delivery/
+      - docs/canon/implementation_registry.yaml
+      - WORK_LEDGER.md
+      - external local bundle and documentary ZIP under atlas-definitive-backup
+    files:
+      - work/canon-compiler/delivery/VALIDATION_RESULTS.json
+      - work/canon-compiler/delivery/DEFINITIVE_CONVERGENCE_REPORT.md
+      - work/canon-compiler/delivery/IMPLEMENTATION_REPORT.md
+      - work/canon-compiler/delivery/ADVERSARIAL_AUDIT.md
+      - work/canon-compiler/delivery/LOCAL_COMMITS.json
+      - work/canon-compiler/delivery/FINAL_DIFF.patch
+      - docs/canon/implementation_registry.yaml
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/ -q
+      - MYPYPATH=src python -m mypy src/atlas/
+      - PYTHONPATH=src python scripts/check_canon.py
+      - git bundle verify
+      - sha256sum -c
+    risks:
+      - self-referential generated artifacts omitting their own delivery commit
+      - recording a runtime service as live without a fresh proof
+      - inadvertently archiving secrets or the repository itself
+    rollback: Revert only the delivery-evidence commit and remove the newly generated external bundle/ZIP; implementation commits remain intact and the prior bundle remains available.
+    dependencies:
+      - ADC-WO-112
+      - ADC-WO-113
+    acceptance:
+      - delivery anchor and commit inventory describe the current substantive head
+      - all validation classifications are explicit
+      - bundle and documentary ZIP verify and exclude secrets/source tree
+      - review and non-destructive integration steps are current
     operator_decision_required: false
     status: DONE

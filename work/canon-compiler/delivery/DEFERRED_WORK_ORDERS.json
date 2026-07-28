@@ -1,7 +1,8 @@
 {
-  "schema_version": "1.0",
-  "generated_at": "2026-07-28T13:10:00Z",
-  "anchor": "793a8a8178edacbf9db2ae3b9c7371550d9e52ca",
+  "schema_version": "1.1",
+  "generated_at": "2026-07-28T19:19:02Z",
+  "anchor": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+  "artifact_commit_excluded_by_design": true,
   "count": 11,
   "work_orders": [
     {

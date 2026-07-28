@@ -2,17 +2,17 @@
 
 ## Authority result
 
-The compilation does not create a fifth constitution. ADR-067 remains the
-constitutional model; `ATLAS.md` is its single human entry and
-`docs/canon/authority_registry.yaml` routes machine consumers to the authority
+The compiler did not create a fifth constitution. ADR-067 remains the
+constitutional model; `ATLAS.md` is the single human entry and
+`docs/canon/authority_registry.yaml` routes machine consumers to the source
 that governs each scope.
 
-Current reality is resolved from fresh runtime, code, tests, configuration and
-living status. Target architecture is resolved from the current operator
-directive, explicit operator decisions, invariants and accepted ADRs. Historical
-or derivative repetition never counts as independent corroboration.
+Current reality is derived from fresh runtime, code, tests, configuration and
+living status. Target architecture is derived from the operator directive,
+explicit operator decisions, invariants and accepted ADRs. Repeated or
+derivative documents never count as independent corroboration.
 
-## Corpus result
+## Corpus result at `aa71a98`
 
 | Registry | Records |
 |---|---:|
@@ -26,57 +26,45 @@ or derivative repetition never counts as independent corroboration.
 | Open questions | 45 |
 | Product lineages | 32 |
 | Component reality matrix | 137 |
-| Total JSONL | 2062 |
+| Evidence sources | 19 |
+| Decision-evidence matrix | 4 |
+| **Total JSONL** | **2085** |
 
-All 906 documents are discoverable through `docs/INDEX.yaml`. Exact duplicates
-remain one source occurrence set rather than false corroboration.
+All 912 tracked documents are discoverable through `docs/INDEX.yaml`. Four
+decision dossiers expose alternatives, falsifiers and revisit triggers without
+claiming that their `PROVISIONAL` recommendations are accepted implementation.
 
-## ADR disposition
+## ADR and conflict disposition
 
-- 56 ADR files were traversed.
-- ADR-067 through ADR-077 received explicit definitive addenda or atomic
-  registry dispositions where their historical prose could overstate current
-  reality.
-- ADR-076 is split into A accepted/implemented/opt-in, B
-  accepted/implemented/opt-in and C rejected/not implemented/absent.
-- ADR-077 is split into implemented gate/report, opt-in activation, missing
-  universal Task escalation, explicit unblock limitations and the preserved
-  high-sensitivity boundary.
-- ADR-078 records the operator-approved Workbench lineage convergence.
+- 56 ADR source files were traversed.
+- ADR-076 is atomic: A and B are accepted/implemented/opt-in; C is rejected,
+  absent and not implemented.
+- ADR-077 preserves its implemented/opt-in pieces and its high-sensitivity
+  human-command boundary.
+- ADR-078 records the Workbench lineage decision without presenting a host or
+  donor repository as already product-accepted.
+- The mutating port-7341 bridge remains elevated as `ADC-WO-107`: ADR-058/071
+  describe a read-only projection while current code exposes mutation.
 
-## Conflicts and supersessions
+Every supersession names scope, old/new authority, preserved parts and annulled
+parts. Unresolved evidence stays visible as an open question or program-owned
+conflict rather than being erased in prose.
 
-Current conflicts for desktop host and first product are resolved by ADR-078.
-Android is elevated to its own dependency-gated work order. The mutating API
-bridge remains elevated to the operator because ADR-058/071 say read-only
-while code exposes mutation.
+## New evidence and eligibility gates
 
-Recovered low-confidence conflicts retain their underlying `UNRESOLVED`
-epistemic state but carry `resolution_status=ELEVATED_TO_PROGRAM` and a named
-owner. This preserves uncertainty without allowing it to become implicit
-authority.
+`scripts/check_canon.py` now validates source tiers, local evidence paths,
+cross-references, independent corroboration, falsifiers, revisit triggers and
+dossiers. It also validates that a work order needing the operator cannot be
+`READY`, that `REQUIRES_OPERATOR` explicitly says so, and that an operator
+question links only to a registered compatible blocker.
 
-Every supersession identifies scope, old/new authority, preserved parts and
-annulled parts. Notable results:
-
-- ADR-068 refines only the F5/F6 framing, preserving ADR-066 parking;
-- ADR-070 retires Hermes REST without claiming a live twin;
-- ADR-071 supersedes web-first final UX, not the validation harness;
-- ADR-078 refines ADR-071 for desktop host and first product while preserving
-  Android.
+The current candidate passes the gate with 2085 JSONL records and 25 behavioral
+tests. This is an authority/discovery control, not evidence that external
+services or product surfaces are live.
 
 ## Reality discipline
 
-The matrix contains one record for every component and capability registry
-entry. It does not infer:
-
-- product from harness;
-- liveness from tests;
-- handshake from MCP configuration;
-- Hermes availability from deployment history;
-- fact from GraphRAG hypothesis;
-- Android support from a desktop host;
-- Atlas integration from donor code in another repository.
-
-Canon integrity and its 15 adversarial tests run in CI without a new
-dependency.
+The component matrix does not infer product from a harness, liveness from unit
+tests, a handshake from configuration, Hermes availability from history, fact
+from GraphRAG hypothesis, Android support from a desktop host, or Atlas
+integration from donor code elsewhere.
