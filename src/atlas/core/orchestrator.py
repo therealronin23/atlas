@@ -2423,6 +2423,7 @@ class Orchestrator:
         self._sentinel = SentinelGate(
             self._workspace / "memory" / "sentinel",
             merkle_log=self._merkle.log,
+            governed_repo_root=self._repo_root(),
         )
         self._mcp = McpRegistry(
             load_servers(mcp_config_path),

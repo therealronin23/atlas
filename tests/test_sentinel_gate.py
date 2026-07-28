@@ -20,7 +20,10 @@ def _cfg(cmd: list[str] | None = None, name: str = "srv") -> McpServerConfig:
     return McpServerConfig(
         name=name,
         cmd=cmd
-        or [sys.executable, "-m", "atlas.mcp.memory_server", "/tmp/atlas-test.db"],
+        or [
+            sys.executable,
+            str(Path(__file__).parent / "fixtures" / "mcp_echo_server.py"),
+        ],
     )
 
 

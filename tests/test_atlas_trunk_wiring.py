@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -100,9 +101,10 @@ class TestLoadServersCompatibility:
         native-command boundary, so adding a native Atlas MCP server cannot
         accidentally make its generated configuration unlaunchable.
         """
+        repo_root = Path(__file__).resolve().parents[1]
         raw = atlas_mcp_config(
-            save_dir=Path("/save"),
-            repo_root=Path("/repo"),
+            save_dir=tmp_path / "save",
+            repo_root=repo_root,
             python=sys.executable,
         )
         path = tmp_path / "mcp_servers.json"
@@ -110,15 +112,64 @@ class TestLoadServersCompatibility:
 
         [config] = load_servers(path)
 
-        assert SentinelGate(tmp_path / "sentinel").vet_command(config) is None
+        assert (
+            SentinelGate(
+                tmp_path / "sentinel", governed_repo_root=repo_root
+            ).vet_command(config)
+            is None
+        )
+
+    def test_atlas_trunk_rejects_spoofed_execution_context(
+        self, tmp_path: Path
+    ) -> None:
+        """A module name alone never proves the subprocess imports Atlas code.
+
+        The native exception is deliberately bound to the running Atlas
+        interpreter, the governed checkout and a clean child environment.  A
+        user-editable MCP JSON entry cannot swap any one of those values and
+        retain the native admission exception.
+        """
+        repo_root = Path(__file__).resolve().parents[1]
+        raw = atlas_mcp_config(
+            save_dir=tmp_path / "save",
+            repo_root=repo_root,
+            python=sys.executable,
+        )
+        path = tmp_path / "mcp_servers.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        [config] = load_servers(path)
+        gate = SentinelGate(tmp_path / "sentinel", governed_repo_root=repo_root)
+
+        spoofed_executable = replace(
+            config,
+            cmd=[str(tmp_path / "python"), *config.cmd[1:]],
+        )
+        spoofed_cwd = replace(config, cwd=str(tmp_path / "shadow"))
+        spoofed_repo = replace(
+            config,
+            cmd=[*config.cmd[:-1], str(tmp_path / "other-repo")],
+        )
+        injected_import_path = replace(
+            config,
+            env_extra={"PYTHONPATH": str(tmp_path / "shadow")},
+        )
+
+        for altered in (
+            spoofed_executable,
+            spoofed_cwd,
+            spoofed_repo,
+            injected_import_path,
+        ):
+            assert gate.vet_command(altered) is not None
 
     def test_generated_atlas_trunk_config_reaches_registry_transport_factory(
         self, tmp_path: Path
     ) -> None:
         """Registry must not quarantine its own generated trunk before spawn."""
+        repo_root = Path(__file__).resolve().parents[1]
         raw = atlas_mcp_config(
-            save_dir=Path("/save"),
-            repo_root=Path("/repo"),
+            save_dir=tmp_path / "save",
+            repo_root=repo_root,
             python=sys.executable,
         )
         path = tmp_path / "mcp_servers.json"
@@ -132,7 +183,9 @@ class TestLoadServersCompatibility:
 
         registry = McpRegistry(
             [config],
-            sentinel=SentinelGate(tmp_path / "sentinel"),
+            sentinel=SentinelGate(
+                tmp_path / "sentinel", governed_repo_root=repo_root
+            ),
             transport_factory=factory,  # type: ignore[arg-type]
         )
 

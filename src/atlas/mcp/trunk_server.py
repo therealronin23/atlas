@@ -82,6 +82,9 @@ def root_configs(
         McpServerConfig(
             name=root.name,
             cmd=[exe, "-m", root.module, *([arg_for[root.arg_kind]] if root.arg_kind else [])],
+            # Las raíces nativas deben importar desde el mismo checkout que
+            # sirve el trunk; Sentinel enlaza este cwd con su contexto.
+            cwd=str(repo_root.resolve()),
             # recall/lookup/audit/graph son de lectura; el resto mutan (HITL).
             read_only_tools=[t for t in root.tools if t.startswith(("recall", "wikipedia_lookup", "worldbank_lookup", "sanitation", "graph_"))],
         )
@@ -474,7 +477,7 @@ def build_trunk_server(
 
 
 def build_trunk_registry(
-    children: list[McpServerConfig], *, save_dir: Path
+    children: list[McpServerConfig], *, save_dir: Path, repo_root: Path | None = None
 ) -> Any:
     """Construye el registry productivo con evidencia y Sentinel obligatorios."""
     from atlas.logging.merkle_logger import MerkleLogger
@@ -485,6 +488,7 @@ def build_trunk_registry(
     sentinel = SentinelGate(
         Path(save_dir) / "sentinel",
         merkle_log=merkle.log,
+        governed_repo_root=repo_root,
     )
     return McpRegistry(
         children,
@@ -531,7 +535,7 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
         catalog, save_dir=save_dir, repo_root=repo_root,
         adopted_path=adopted_servers_path(),
     )
-    registry = build_trunk_registry(children, save_dir=save_dir)
+    registry = build_trunk_registry(children, save_dir=save_dir, repo_root=repo_root)
 
     def _refresh(tool: str) -> dict[str, list[str]]:
         # Routing perezoso de externos: spawnea hijos uno a uno (ensure_started es

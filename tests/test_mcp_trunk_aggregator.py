@@ -15,6 +15,7 @@ Diseño: docs/design/mcp_trunk_portable.md + WORK_LEDGER (línea TRONCO-AGREGADO
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -177,23 +178,35 @@ def test_build_trunk_server_exposes_small_meta_surface() -> None:
 def test_root_configs_map_each_root_to_its_launch_command(tmp_path: Path) -> None:
     from atlas.mcp.trunk_server import root_configs
 
+    repo_root = Path(__file__).resolve().parents[1]
     cfgs = {c.name: c for c in root_configs(
-        save_dir=tmp_path / "save", repo_root=Path("/repo"), python="/py"
+        save_dir=tmp_path / "save", repo_root=repo_root, python=sys.executable
     )}
     assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
 
     mem = cfgs["atlas-memory"]
-    assert mem.cmd[0] == "/py"
+    assert mem.cmd[0] == sys.executable
     assert "atlas.mcp.memory_server" in mem.cmd
     assert str(tmp_path / "save" / "memory.db") in mem.cmd
     # operating recibe el repo; knowledge recibe el base (kb)
-    assert "/repo" in cfgs["atlas-operating"].cmd
+    assert str(repo_root) in cfgs["atlas-operating"].cmd
     assert str(tmp_path / "save" / "kb") in cfgs["atlas-knowledge"].cmd
     # graph recibe el repo para verificar HEAD (la BD usa DEFAULT_GRAPH_DB) y
     # sus tools son de lectura.
     graph = cfgs["atlas-graph"]
-    assert graph.cmd == ["/py", "-m", "atlas.mcp.graph_server", "/repo"]
+    assert graph.cmd == [
+        sys.executable,
+        "-m",
+        "atlas.mcp.graph_server",
+        str(repo_root),
+    ]
     assert "graph_importers" in graph.read_only_tools
+    assert all(config.cwd == str(repo_root) for config in cfgs.values())
+
+    from atlas.security.sentinel_gate import SentinelGate
+
+    gate = SentinelGate(tmp_path / "sentinel", governed_repo_root=repo_root)
+    assert gate.vet_command(mem) is None
 
 
 # ---------------------------------------------------------------------------

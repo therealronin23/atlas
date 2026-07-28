@@ -151,6 +151,9 @@ def atlas_mcp_config(
     entry: dict[str, object] = {
         "name": "atlas-trunk",
         "cmd": [exe, "-m", "atlas.mcp.trunk_server", str(save_dir), str(repo_root)],
+        # Fija la resolución de imports del hijo al checkout que este manifest
+        # declara. Sentinel rechaza una entrada nativa sin este enlace.
+        "cwd": str(repo_root.resolve()),
         "read_only_tools": _TRUNK_READ_ONLY_TOOLS,
         "enabled": True,
         "timeout_seconds": 30.0,

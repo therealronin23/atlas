@@ -43,7 +43,7 @@ necesitan infra inexistente para slices posteriores.
 | # | Capa | Qué hace | Estado |
 |---|------|----------|--------|
 | 1 | **Identidad criptográfica + snapshot (anti rug-pull)** | `sha256(name+description+inputSchema)` por tool. Primera adopción = TOFU: admite y graba snapshot en `memory/sentinel/<server>.json`. Después: hash distinto (drift) o tool nueva en server conocido ⇒ **bloqueado** hasta re-aprobación humana | ✅ |
-| 2 | **IOC + coherencia de comando** | El `cmd` es argv (nunca shell, ADR-035): un token con metacaracteres de shell (`;`, `\|`, `$(`, …) es smuggling ⇒ veta el server. Blocklist inyectable de dominios/comandos veta tool o server | ✅ |
+| 2 | **IOC + coherencia de comando** | El `cmd` es argv (nunca shell, ADR-035): un token con metacaracteres de shell (`;`, `\|`, `$(`, …) es smuggling ⇒ veta el server. Blocklist inyectable de dominios/comandos veta tool o server. La excepción para módulos nativos exige además intérprete del proceso Atlas, checkout/cwd gobernado, argumentos exactos y entorno hijo sin import-path editable; el nombre `python -m atlas...` por sí solo no concede autoridad | ✅ |
 | 3 | **Tiering + bloqueo de credenciales** | Clasifica cada tool en read / write / shell_net / credential. Las de tier `credential` no se adoptan: una tool que dice manejar secretos no entra sin decisión humana | ✅ |
 | 4 | **Coherencia AST profunda** | ¿lo que el tool *dice* (description) coincide con lo que *pide* (paths/endpoints/permisos del schema)? Patrón de `ast_guard` adaptado (no reuso directo — ver nota de investigación bajo `_vet_coherence`), cerrado 2026-07-23 (`t4-sentinel-tool-coherence`) | ✅ |
 | 5 | **Egress IOC runtime** | `SentinelGate.vet_call(tool, args)` vetea CADA `tools/call` (no solo adopción), cableado en `McpRegistry.dispatch()`. Un IOC o un error interno del chequeo bloquean la llamada. Overhead medido: <5ms/llamada. Endurecido fail-closed por ATLAS DEFINITIVE CANDIDATE. | ✅ |
@@ -70,7 +70,9 @@ superficie nueva; el botón de Telegram para re-vetar llega con el flujo ColdUpd
   los tests de transporte), comportamiento idéntico a ADR-035 — cero regresión.
 - El `Orchestrator` construye un `SentinelGate` real con snapshot en
   `memory/sentinel/`. La primera vez que arranca un server, lo adopta (TOFU) y graba
-  el snapshot; a partir de ahí vigila drift.
+  el snapshot; a partir de ahí vigila drift. Para una raíz MCP nativa entrega su
+  checkout gobernado al gate: si no puede probar ese contexto, también la ruta
+  `python -m atlas.mcp.*` queda en cuarentena.
 - No añade deps. No toca el modelo. El snapshot es JSON local, fuera de Merkle (no
   contiene secretos; sí se auditan los veredictos en Merkle).
 

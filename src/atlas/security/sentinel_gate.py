@@ -40,6 +40,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -68,18 +69,18 @@ _INCIDENT_IOC_DOMAINS: frozenset[str] = frozenset({
 })
 _INCIDENT_IOC_COMMANDS: frozenset[str] = frozenset()
 
-# Solo estos entrypoints pertenecen al checkout gobernado de Atlas. Cualquier
-# package manager o ejecutable externo permanece en cuarentena hasta que exista
-# un contrato de artefacto materializado, hash, receipt e aislamiento.
-_ATLAS_NATIVE_MCP_MODULES: frozenset[str] = frozenset({
-    "atlas.mcp.memory_server",
-    "atlas.mcp.graph_server",
-    "atlas.mcp.knowledge_server",
-    "atlas.mcp.operating_server",
+# Módulo → nombre de servidor que Atlas mismo genera. El nombre de módulo no es
+# autoridad suficiente: ``SentinelGate`` enlaza además intérprete, checkout,
+# cwd y entorno del hijo antes de conceder esta excepción nativa.
+_ATLAS_NATIVE_MCP_SERVERS: dict[str, str] = {
+    "atlas.mcp.memory_server": "atlas-memory",
+    "atlas.mcp.graph_server": "atlas-graph",
+    "atlas.mcp.knowledge_server": "atlas-knowledge",
+    "atlas.mcp.operating_server": "atlas-operating",
     # Entry point agregado gobernado. Sus hijos siguen pasando el Sentinel
     # independiente que build_trunk_registry() instala antes de cada spawn.
-    "atlas.mcp.trunk_server",
-})
+    "atlas.mcp.trunk_server": "atlas-trunk",
+}
 _SHELL_EXECUTABLES: frozenset[str] = frozenset({
     "sh", "bash", "dash", "zsh", "fish", "ksh", "pwsh", "powershell",
     "powershell.exe", "cmd", "cmd.exe",
@@ -166,9 +167,21 @@ class SentinelGate:
         merkle_log: Callable[..., Any] | None = None,
         ioc_domains: frozenset[str] = frozenset(),
         ioc_commands: frozenset[str] = frozenset(),
+        governed_repo_root: Path | None = None,
     ) -> None:
         self._snapshot_dir = Path(snapshot_dir)
         self._merkle_log = merkle_log
+        # La excepción nativa solo existe cuando el caller conoce el checkout
+        # que gobierna. Sin esa procedencia, ``python -m atlas...`` sigue siendo
+        # un comando no probado y permanece en cuarentena.
+        self._governed_repo_root = (
+            self._resolve_path(governed_repo_root, require_exists=True)
+            if governed_repo_root is not None
+            else None
+        )
+        self._governed_python = self._resolve_path(
+            Path(sys.executable), require_exists=True
+        )
         # Union con el suelo no anulable: pasar ioc_domains=frozenset() no
         # vacía la protección contra incidentes confirmados.
         self._ioc_domains = frozenset(d.lower() for d in ioc_domains) | _INCIDENT_IOC_DOMAINS
@@ -186,7 +199,7 @@ class SentinelGate:
                 "identificador MCP inválido o ambiguo; use solo letras, "
                 "dígitos, '_' o '-' y nunca '__'"
             )
-        if reason is None and not self._is_governed_native_command(cfg.cmd):
+        if reason is None and not self._is_governed_native_command(cfg):
             reason = (
                 "third-party executable sin artefacto materializado, hash, "
                 "receipt e aislamiento; ejecución en cuarentena"
@@ -424,11 +437,75 @@ class SentinelGate:
         return None
 
     @staticmethod
-    def _is_governed_native_command(cmd: list[str]) -> bool:
+    def _resolve_path(value: Path | str, *, require_exists: bool) -> Path | None:
+        """Devuelve una ruta absoluta canónica o ``None`` sin abrirla.
+
+        Las rutas vienen de configuración editable; un error de resolución es
+        denegación, nunca una razón para caer a una comparación de basename.
+        """
+        try:
+            path = Path(value).expanduser()
+            if not path.is_absolute():
+                return None
+            if require_exists:
+                return path.resolve(strict=True)
+            return path.resolve()
+        except (OSError, RuntimeError, ValueError):
+            return None
+
+    def _has_governed_native_context(self, cfg: McpServerConfig) -> bool:
+        """Prueba que el hijo no pueda sombrear el módulo Atlas a importar."""
+        repo_root = self._governed_repo_root
+        if repo_root is None or self._governed_python is None:
+            return False
+        if cfg.cwd is None or self._resolve_path(cfg.cwd, require_exists=True) != repo_root:
+            return False
+        # Un PATH/PYTHONPATH o secret passthrough editable puede cambiar la
+        # resolución del intérprete o inyectar preload; los entrypoints propios
+        # no los necesitan y deben arrancar con el entorno mínimo del registry.
+        if cfg.env_extra or cfg.env_passthrough:
+            return False
+        return self._resolve_path(cfg.cmd[0], require_exists=True) == self._governed_python
+
+    def _is_governed_native_command(self, cfg: McpServerConfig) -> bool:
+        """Admite solo comandos nativos ligados al proceso y checkout actual.
+
+        Una coincidencia ``python -m atlas.mcp.*`` no acredita qué bytes
+        importará el subproceso. La excepción exige el mismo intérprete que
+        cargó Sentinel, el checkout gobernado como cwd y sin entorno heredado
+        editable; así una config MCP alterada no puede usar un ejecutable con
+        nombre ``python`` ni un paquete Atlas sombreado.
+        """
+        cmd = cfg.cmd
         if len(cmd) < 2 or not Path(cmd[0]).name.lower().startswith("python"):
             return False
         if cmd[1] == "-m":
-            return len(cmd) >= 3 and cmd[2] in _ATLAS_NATIVE_MCP_MODULES
+            if len(cmd) < 3:
+                return False
+            module = cmd[2]
+            expected_name = _ATLAS_NATIVE_MCP_SERVERS.get(module)
+            if expected_name is None or cfg.name != expected_name:
+                return False
+            if not self._has_governed_native_context(cfg):
+                return False
+            if module == "atlas.mcp.trunk_server":
+                # El manifest generado es exacto: un save dir absoluto y el
+                # checkout gobernado como último argumento. Nada adicional se
+                # interpreta silenciosamente por el entrypoint CLI.
+                return (
+                    len(cmd) == 5
+                    and self._resolve_path(cmd[3], require_exists=False) is not None
+                    and self._resolve_path(cmd[4], require_exists=True)
+                    == self._governed_repo_root
+                )
+            # Cada raíz nativa recibe exactamente un argumento de datos. Las
+            # raíces que operan sobre código deben recibir el mismo checkout;
+            # las de memoria/conocimiento pueden usar su almacenamiento local.
+            if len(cmd) != 4 or self._resolve_path(cmd[3], require_exists=False) is None:
+                return False
+            if module in {"atlas.mcp.graph_server", "atlas.mcp.operating_server"}:
+                return self._resolve_path(cmd[3], require_exists=True) == self._governed_repo_root
+            return True
         script = Path(cmd[1])
         tracked_fixture = (
             Path(__file__).resolve().parents[3]
