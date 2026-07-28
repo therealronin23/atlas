@@ -877,6 +877,7 @@ work_orders:
     evidence:
       - independent ADR/code reconciliation review
       - red tests for corrupt snapshots, internal vet errors and drift revocation
+      - integration review reproduced a generated atlas-trunk command quarantined before spawn because its governed entrypoint was absent from the native module set
     source_decisions:
       - ADR-038
       - ADR-075
@@ -887,12 +888,15 @@ work_orders:
       - Sentinel call boundary
       - snapshot integrity
       - McpRegistry re-vet and quarantine
+      - generated Atlas trunk native-command admission
     files:
       - src/atlas/security/sentinel_gate.py
       - src/atlas/mcp/registry.py
       - tests/test_sentinel_gate.py
+      - tests/test_atlas_trunk_wiring.py
     tests:
       - 35 focused Sentinel/re-vet tests
+      - generated atlas-trunk config passes the loader and Sentinel pre-spawn boundary
       - full pytest and mypy
     risks:
       - availability loss on a Sentinel defect
@@ -905,6 +909,7 @@ work_orders:
       - internal call-check error blocks dispatch
       - drift/error removes tools and transport and prevents lazy restart
       - snapshot evidence is never rewritten by re-vet
+      - the generated governed atlas-trunk command is admitted while unmeasured third-party commands remain quarantined
     operator_decision_required: false
     status: DONE
 
