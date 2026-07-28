@@ -3787,4 +3787,6 @@ entries:
 - path: docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md
   type: design
   status: vigente
-  verified: null
+  verified: 2026-07-28
+  notes: Harness de validación FastEmbed implementado y medido localmente; no decide
+    pin, modelo ni migración.

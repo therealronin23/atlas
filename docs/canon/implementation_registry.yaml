@@ -1077,3 +1077,61 @@ work_orders:
       - review and non-destructive integration steps are current
     operator_decision_required: false
     status: DONE
+
+  - id: ADC-WO-115
+    program: P04
+    title: Register the FastEmbed compatibility measurement as a validation harness
+    problem: The FastEmbed 0.8.0 upstream mean-pooling warning identifies a possible semantic change, but a local corpus result was not yet governed and must not be mistaken for a dependency, model, rebuild, or memory-migration decision.
+    evidence:
+      - "Commits 748a40a, 8c5c52c, 3c3c82c, and 05d6ef3 provide the evaluator, actionable fixture validation, offline runner/corpus, and hardened runner boundary used by this measurement."
+      - "2026-07-28: PYTHONPATH=src HF_HUB_OFFLINE=1 python scripts/benchmark_fastembed_compatibility.py exited 0 with status=MEASURED and passed=true."
+      - "The versioned corpus reported passed=true for its three cases: restablecer-contrasena, declaracion-iva, and programar-reunion."
+      - "The measured implementation was FastEmbed 0.8.0 at dimension 384 with fingerprint sha256:d2463fb0b4881ae9b8c05f19230bf3c40447db58afab336135727964f5d9882d and artifact_sha256 e844933822b84e4feda6da123ecfa5cf42eb5a0f409eb46e8f7b881e181394a9."
+      - "Upstream emitted its mean-pooling-versus-CLS UserWarning for sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2; no recommendation from that warning was applied."
+    source_decisions:
+      - docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md
+      - current operator directive evidence-before-decision rule
+    current_state: >-
+      The offline runner has measured the versioned Spanish corpus against one
+      local FastEmbed identity. Its JSON output is an ATLAS_MEASUREMENT from a
+      VALIDATION_HARNESS; it has not changed runtime behavior, dependencies,
+      model registration, persisted vectors, or memory ownership.
+    target_state: >-
+      The measurement remains traceable and reproducible while a separate
+      baseline comparison and explicit dependency/memory decision determine
+      whether any pin, custom model, rebuild, or migration is justified.
+    scope:
+      - offline FastEmbed identity and semantic-ranking measurement
+      - versioned Spanish compatibility corpus
+      - canonical continuation record without runtime promotion
+    files:
+      - src/atlas/memory/embedding_benchmark.py
+      - fixtures/fastembed_compatibility_cases.json
+      - scripts/benchmark_fastembed_compatibility.py
+      - tests/test_embedding_benchmark.py
+      - tests/test_fastembed_embedder.py
+      - tests/test_embedding_identity.py
+      - docs/canon/implementation_registry.yaml
+      - WORK_LEDGER.md
+      - MEMORY.md
+      - docs/INDEX.yaml
+      - docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md
+    tests:
+      - PYTHONPATH=src HF_HUB_OFFLINE=1 python scripts/benchmark_fastembed_compatibility.py
+      - PYTHONPATH=src python -m pytest tests/test_embedding_benchmark.py tests/test_fastembed_embedder.py tests/test_embedding_identity.py -q
+      - MYPYPATH=src python -m mypy src/atlas/memory/embedding_benchmark.py
+      - PYTHONPATH=src python scripts/check_canon.py
+      - PYTHONPATH=src python scripts/docs_index_audit.py --write && PYTHONPATH=src python scripts/docs_index_audit.py --strict
+    risks:
+      - The three-case local corpus is too small to establish compatibility for every persisted-memory workload or future embedder identity.
+      - The upstream pooling warning may represent semantic drift outside the measured corpus.
+      - Treating one passing measurement as authority for a dependency or storage change would bypass the required comparison and decision.
+    rollback: Revert this governed-evidence commit; the harness wrote no report to persistent storage and this work order changes no configuration, dependency, model registration, vector store, or migration state.
+    dependencies: []
+    acceptance:
+      - the offline runner emits the explicit MEASURED classification with exit code 0
+      - all three versioned cases and the overall report pass while recording identity, fingerprint, artifact digest, and dimension
+      - focused tests, mypy, canon, and documentation-index checks pass
+      - the output remains recorded only as a validation harness measurement pending a separate decision
+    operator_decision_required: false
+    status: DONE

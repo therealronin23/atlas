@@ -1,6 +1,7 @@
 # Diseño — benchmark de compatibilidad FastEmbed
 
-**Estado:** aprobado por el operador para implementación; pendiente de ejecución y validación.
+**Estado:** implementado y medido localmente como `ATLAS_MEASUREMENT`; la
+decisión de pin, modelo custom, rebuild o migración sigue separada.
 **Fecha:** 2026-07-28
 **Programas:** P04 — Memory and Continuity; P09 — Security, Evaluation, Operations and Recovery.
 

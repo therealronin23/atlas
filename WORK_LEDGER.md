@@ -8,14 +8,20 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
-- **2026-07-28 — benchmark de compatibilidad FastEmbed aprobado para
-  implementación.** Tras el aviso de pooling de FastEmbed 0.8.0, Atlas no fija
-  una dependencia ni cambia embeddings: el diseño propone un harness puro de
-  ranking/identidad, corpus español versionado, JSON efímero y prueba real
-  opcional. No toca stores, configuración, Merkle ni descarga autónoma.
-  El plan TDD queda en `docs/superpowers/plans/2026-07-28-fastembed-compatibility-benchmark.md`.
-  **Próxima acción:** elegir la modalidad de ejecución del plan; una medición
-  no autoriza una migración.
+- **2026-07-28 — harness de compatibilidad FastEmbed medido (ADC-WO-115).**
+  `PYTHONPATH=src HF_HUB_OFFLINE=1 python
+  scripts/benchmark_fastembed_compatibility.py` emitió `status=MEASURED` y
+  `passed=true` en los tres casos versionados, con FastEmbed 0.8.0, dimensión
+  384, fingerprint
+  `sha256:d2463fb0b4881ae9b8c05f19230bf3c40447db58afab336135727964f5d9882d`
+  y artifact SHA-256
+  `e844933822b84e4feda6da123ecfa5cf42eb5a0f409eb46e8f7b881e181394a9`.
+  El aviso upstream de mean pooling frente a CLS permanece visible. La salida
+  es únicamente `ATLAS_MEASUREMENT` de un `VALIDATION_HARNESS`: no cambia
+  configuración, dependencias, modelo, stores ni índice persistente. El plan
+  TDD queda en `docs/superpowers/plans/2026-07-28-fastembed-compatibility-benchmark.md`.
+  **Próxima acción:** comparar esta identidad con un baseline guardado y llevar
+  cualquier pin, modelo custom, rebuild o migración a una decisión separada.
 
 - **2026-07-28 — evidencia de entrega renovada (ADC-WO-114).** Los artefactos
   de revisión quedan anclados al candidato sustantivo `aa71a98`: suite directa
