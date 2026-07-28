@@ -1,5 +1,19 @@
 # MEMORY
 
+- `workbench-lineage-convergence`: Atlas Core conserva la única autoridad;
+  Atlas Engineering Workbench es el primer producto, con CodeOSS/VSCodium como
+  host desktop, Void como donante de capacidades y Zed como donante ACP/de
+  patrones. Reutilizar y adaptar precede a reescribir; el Cut 2 será integral
+  y cohesivo, `atlas-shell` sigue siendo arnés, y Android permanece como
+  proyección dedicada posterior sobre contratos estables.
+- `post-decider-constitutional-boundary`: una implementación de `Decider`
+  inyectable no es una frontera constitucional. Los invariantes hard deben
+  normalizar el veredicto después de cualquier Decider y antes de telemetría o
+  efectos; los clientes directos comparten el mismo guard.
+- `third-party-vetting-degradation-denies`: en ejecución de terceros, un error
+  del chequeo, evidencia anti-rug-pull corrupta o drift no significa “sin
+  hallazgo”; bloquea, revoca superficie runtime y exige re-aprobación
+  explícita. Disponibilidad degradada es preferible a permiso implícito.
 - `staged-artifact-is-not-an-argv`: un comando remoto sin contenido local no
   es evidencia de trial; un manifest declarativo debe quedar dentro de
   staging, ligado a sus hashes, y seguir sin activar hasta recibo Merkle/HITL

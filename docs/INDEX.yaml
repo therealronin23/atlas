@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-27'
+generated: '2026-07-28'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
@@ -786,7 +786,12 @@ entries:
   type: decision
   status: vigente
   verified: null
-  notes: Split atómico en decision_registry; C universal escalation falta y high permanece humano-o-deny.
+  notes: Split atómico en decision_registry; C universal escalation falta y high permanece
+    humano-o-deny.
+- path: docs/decisions/adr/adr_078_atlas_workbench_lineage_convergence.md
+  type: decision
+  status: vigente
+  verified: null
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
@@ -895,7 +900,8 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build (misión absorb_harness_patterns)
+  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build
+    (misión absorb_harness_patterns)
 - path: docs/design/atlas_ecosystem_map.md
   type: design
   status: vigente
@@ -958,7 +964,8 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido con OK del operador 2026-07-09
+  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido
+    con OK del operador 2026-07-09
 - path: docs/design/ideas/2026-07-02-vision-atlas-microkernel-universal.md
   type: design
   status: vigente
@@ -1115,7 +1122,8 @@ entries:
   type: norma
   status: superseded
   verified: null
-  notes: Redirect de compatibilidad; STATUS.md y component_reality_matrix.jsonl son la realidad vigente.
+  notes: Redirect de compatibilidad; STATUS.md y component_reality_matrix.jsonl son
+    la realidad vigente.
 - path: docs/governance/REPO_STANDARD.md
   type: norma
   status: vigente
@@ -1124,42 +1132,50 @@ entries:
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/01_QUIEN_ES_QUIEN.md
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/02_INVARIANTES.md
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/03_MEMORIA_CLAVE.md
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/04_PLAN.md
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/05_ECOSISTEMA.md
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/06_PRIMEROS_10_MINUTOS.md
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/MANIFEST.json
   type: conocimiento
   status: historico
   verified: null
-  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes live.
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/atlas_build_pack/README.md
   type: conocimiento
   status: propuesto
@@ -2542,7 +2558,7 @@ entries:
   verified: null
 - path: docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/00_ATLAS_PRODUCT_CONSTITUTION.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
   notes: Fuente de principios de producto bajo ADR-067; no autoridad de estado runtime.
 - path: docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/01_TRUE_LIQUID_SOFTWARE.md
@@ -3471,7 +3487,8 @@ entries:
   type: conocimiento
   status: propuesto
   verified: null
-  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al sustrato 2026-07-16'
+  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al
+    sustrato 2026-07-16'
 - path: docs/knowledge/t05b_paso3/audit_A.json
   type: conocimiento
   status: vigente
@@ -3517,62 +3534,74 @@ entries:
   type: compliance
   status: superseded
   verified: null
-  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico, no current-code claim.
+  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico,
+    no current-code claim.
 - path: docs/membrana/OSM-024_osmosis_filter_server_side.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-025_certificado_device_bound.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-026_doble_copia_merkle.md
   type: compliance
   status: superseded
   verified: null
-  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico, no current-code claim.
+  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico,
+    no current-code claim.
 - path: docs/membrana/OSM-027_bucle_apelacion_falsos_positivos.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-028_inspeccion_por_causa_metadata_first.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-029_nucleo_rendimiento_rust.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-030_posicionamiento_escudo_legal.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-038_token_kyc_residencia.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-040_protocolo_red_race_conditions.md
   type: compliance
   status: superseded
   verified: null
-  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico, no current-code claim.
+  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico,
+    no current-code claim.
 - path: docs/membrana/OSM-042_shadow_model_active_defense.md
   type: compliance
   status: propuesto
   verified: null
-  notes: Fase 1 promovida parcialmente por ADR-074; Fases 2/4 siguen propuestas; no live traffic fresco.
+  notes: Fase 1 promovida parcialmente por ADR-074; Fases 2/4 siguen propuestas; no
+    live traffic fresco.
 - path: docs/membrana/OSM-054_behavioral_drift_detection.md
   type: compliance
   status: propuesto
   verified: null
-  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican producto/enforcement aceptado.
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/operations/USAGE.md
   type: operacion
   status: vigente

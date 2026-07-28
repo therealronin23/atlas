@@ -7,6 +7,28 @@
   decisión sellada del plan maestro §4 ("UI = evolución de la Mission
   Console"), D11 (shell = arnés de validación).
 
+## Disposición definitiva (2026-07-28)
+
+La decisión de aplicaciones dedicadas sigue aceptada y queda refinada por
+ADR-078. Atlas Engineering Workbench es el primer producto; CodeOSS actual más
+la disciplina de build/privacidad de VSCodium constituye su host desktop, Void
+es donante de capacidades y Zed donante ACP/patrones. `ui/atlas-shell` continúa
+como arnés web compilable, no como UX final ni producto aceptado. ADR-059 solo
+se preserva para ese arnés y su infraestructura reutilizable.
+
+ADR-078 no declara resuelta por accidente la superficie Android: este ADR
+mantiene Linux desktop y Android como plataformas duras, mientras la proyección
+Android queda bloqueada hasta estabilizar los contratos de superficie. La
+elección futura no puede crear una segunda autoridad de runtime.
+
+Existe una contradicción elevada al operador: ADR-058 y este ADR preservan el
+bridge 7341 como read-only, mientras `src/atlas/api/server.py` contiene POST
+mutantes, incluido aprobar una tarea mediante la CLI. No hay ADR posterior que
+autorice esa ampliación. La candidata conserva el código para revisión, lo
+clasifica `CONTRADICTED` y no lo normaliza como contrato aceptado
+(`ADC-WO-107`). La ruta correcta del cliente actual es
+`ui/atlas-shell/src/core/api.ts`.
+
 ## Decisión (del operador, literal — no re-litigar)
 
 1. La UX real de Atlas se construye como **aplicaciones dedicadas** en cada

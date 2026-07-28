@@ -145,7 +145,7 @@ work_orders:
       - ADR-077 implementation, activation, escalation, and unblock limitations are atomic
       - every unresolved conflict remains visible or has scoped supersession evidence
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-003
     program: P00
@@ -193,7 +193,7 @@ work_orders:
       - Membrane and Osmosis remain first-class
       - no harness or configured service is presented as accepted live product
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-004
     program: P09
@@ -235,7 +235,7 @@ work_orders:
       - current repository passes the validator
       - CI runs the validator without a new dependency
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-005
     program: P09
@@ -283,7 +283,7 @@ work_orders:
       - ADR-077 remains opt-in and does not weaken high-sensitivity handling
       - every reality record has a next action
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-006
     program: P09
@@ -373,43 +373,237 @@ work_orders:
 
   - id: ADC-WO-101
     program: P08
-    title: Select the final dedicated product shell and first complete product
-    problem: ADR-071 establishes dedicated Linux and Android applications but does not decide the shell technology or the first end-to-end product slice.
+    title: Select the Atlas Workbench desktop host and first complete product
+    problem: ADR-071 established dedicated applications but left the desktop host and first complete product unresolved.
     evidence:
       - current atlas-shell validation harness
-      - Void integration evidence
-      - Zed and external shell research
-      - product backlog
+      - verified CodeOSS, Void, Zed, and VSCodium lineage evidence
+      - operator-approved Workbench symbiosis design
     source_decisions:
       - ADR-059 as superseded for final UX
-      - ADR-066
-      - ADR-068
       - ADR-071
-    current_state: Web harness and partial IDE integration exist; no final product shell is accepted.
-    target_state: Operator-approved shell strategy and first complete product with measurable acceptance criteria.
+      - ADR-078
+    current_state: The operator selected the CodeOSS/VSCodium host chain and Atlas Engineering Workbench; implementation remains future work.
+    target_state: The product boundary is accepted without presenting the Workbench as code, live runtime, or accepted product.
     scope:
-      - dedicated Linux shell
-      - Android shell
-      - Coding and Research Workbench
-      - Business Core
-      - Compliance Gateway
+      - desktop host chain
+      - first complete product
+      - donor roles and authority boundary
     files:
       - docs/canon/open_questions.jsonl
+      - docs/decisions/adr/adr_078_atlas_workbench_lineage_convergence.md
       - PLAN.md
     tests:
-      - operator-approved product acceptance suite
+      - canon decision and conflict integrity
     risks:
       - irreversible deep-fork maintenance burden
-      - optimizing a harness into the wrong product
-    rollback: Keep atlas-shell as a validation harness and preserve adapter boundaries until a shell is accepted.
-    dependencies:
-      - explicit operator product decision
+      - mistaking accepted design for implemented product
+    rollback: Revert ADR-078 while preserving all lineage evidence and atlas-shell as a validation harness.
+    dependencies: []
     acceptance:
-      - shell strategy accepted by ADR
-      - first product selected
-      - migration and maintenance budget defined
+      - ADR-078 accepted by the operator
+      - Atlas Engineering Workbench selected
+      - CodeOSS/VSCodium, Void, and Zed roles are explicit
+      - Android remains a separate honest follow-on
+    operator_decision_required: false
+    status: DONE
+
+  - id: ADC-WO-010
+    program: P00
+    title: Reconcile all Atlas product and construction lineages
+    problem: Independent repositories, disconnected branches, and worktrees carried Atlas value without one disposition or canonical destination.
+    evidence:
+      - live git topology and exact heads
+      - semantic comparison of Doc0 capabilities and self-build commits
+      - Void forward-port and CodeOSS/Zed baselines
+    source_decisions:
+      - operator-approved lineage symbiosis design
+      - ADR-078
+    current_state: Every discovered lineage has a role, exact head, evidence, target cut, and disposition; no disconnected commit is blindly merged.
+    target_state: Lineage admission remains reproducible for current and future forks.
+    scope:
+      - product repositories
+      - Doc0 branches
+      - cold-update and self-build worktrees
+      - semantic capability disposition
+    files:
+      - docs/canon/product_lineage_registry.jsonl
+      - docs/canon/component_reality_matrix.jsonl
+      - work/canon-compiler/delivery/LINEAGE_RECONCILIATION_REPORT.md
+    tests:
+      - product-lineage validator tests
+      - canon integrity
+    risks:
+      - treating Git ancestry as semantic absorption
+      - duplicate implementation authorities
+    rollback: Revert the lineage registry and report; source repositories and worktrees remain preserved.
+    dependencies:
+      - ADC-WO-001
+    acceptance:
+      - one canonical target
+      - every exact head has a disposition
+      - every substantive precursor is present, deferred, rejected, or superseded
+    operator_decision_required: false
+    status: DONE
+
+  - id: ADC-WO-108
+    program: P09
+    title: Define the Engineering Finding and review/diagnostic coordination plane
+    problem: Atlas has verifiers, diagnosis, production, audit, events, and rollback components but no unified engineering finding contract or coordinator.
+    evidence:
+      - UniversalVerifier and VerifiedProducer
+      - ValidationRunner and RootCauseClassifier
+      - SelfAuditRunner, EventBus, Merkle, Golden Route, and ColdUpdate
+    source_decisions:
+      - ADR-078
+      - approved Workbench symbiosis design section 6
+    current_state: Specialized findings and verification loops exist without one serializable projection or end-to-end Orchestrator channel.
+    target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
+    scope:
+      - typed finding schema
+      - deterministic and model-driven review adapters
+      - diagnostic reproduction and classification
+      - Orchestrator and Merkle events
+      - read-only projection
+    files:
+      - schemas/engineering_finding.schema.json
+      - src/atlas/
+      - tests/
+    tests:
+      - deterministic complete and incremental review
+      - finding deduplication and lifecycle
+      - BLOCKING and MAJOR elevation
+      - no patch application from a finding
+    risks:
+      - creating another verifier instead of composing existing ones
+      - leaking secrets in findings
+    rollback: Disable coordinator wiring while preserving specialized verifiers and immutable findings.
+    dependencies:
+      - operator acceptance of ATLAS DEFINITIVE CANDIDATE
+    acceptance:
+      - one versioned finding contract
+      - failed reviewers produce UNKNOWN
+      - proposals still pass governed approval paths
+    operator_decision_required: false
+    status: BLOCKED
+
+  - id: ADC-WO-109
+    program: P08
+    title: Execute comprehensive CodeOSS/VSCodium/Void Workbench convergence
+    problem: The accepted desktop host and donor capabilities are not yet integrated into one maintained Atlas product.
+    evidence:
+      - ADR-078
+      - CodeOSS baseline
+      - Void forward-port
+      - VSCodium build and privacy pipeline research
+    source_decisions:
+      - ADR-071
+      - ADR-078
+    current_state: Host and donor sources are preserved but not wired into the definitive candidate.
+    target_state: A professional Atlas Workbench compiles reproducibly and projects real Cut 1 contracts through narrow Atlas seams.
+    scope:
+      - exact upstream pin
+      - privacy, branding, Open VSX, update, and packaging
+      - broad progressive Void capability ports
+      - review, diagnosis, approval, and operations surfaces
+      - comprehensive E2E and rollback
+    files:
+      - separate pinned Workbench host tree
+      - Atlas bridge and ACP adapters
+      - product packaging and contract tests
+    tests:
+      - upstream reproducible build
+      - bridge version negotiation
+      - change to finding to proposal to approval to receipt E2E
+      - offline and backend-loss degradation
+    risks:
+      - upstream drift
+      - deep-fork maintenance burden
+      - accidental second Atlas runtime
+    rollback: Restore the last pinned compilable host and disable Atlas contribution seams independently.
+    dependencies:
+      - ADC-WO-108
+      - exact CodeOSS and VSCodium upstream pins
+    acceptance:
+      - exact scope approved in the Cut 2 design
+      - no duplicate authority
+      - product acceptance suite passes
     operator_decision_required: true
-    status: REQUIRES_OPERATOR
+    status: BLOCKED
+
+  - id: ADC-WO-110
+    program: P08
+    title: Assimilate compatible Zed ACP capabilities and interaction patterns
+    problem: Zed provides useful ACP and agentic patterns but a source transplant would create license and stack coupling.
+    evidence:
+      - Zed baseline and ACP surface
+      - ADR-078 donor disposition
+    source_decisions:
+      - ADR-078
+    current_state: Zed is a pinned pattern donor and interoperability target, not Atlas implementation.
+    target_state: Relevant behavior is represented by ACP interoperability, requirements, contract tests, or separately licensed components.
+    scope:
+      - ACP interoperability
+      - agent/review interaction requirements
+      - license-compatible isolated components
+    files:
+      - ACP adapters and contract tests
+      - Workbench interaction specifications
+    tests:
+      - Atlas agent interoperability in Zed
+      - parity contracts for selected behaviors
+      - license inventory
+    risks:
+      - incompatible licensing
+      - unnecessary Rust/GPUI coupling
+    rollback: Remove optional adapters or requirements without changing Atlas Core authorities.
+    dependencies:
+      - ADC-WO-108
+      - Workbench contract tests
+      - license review
+    acceptance:
+      - every selected pattern has measured value and lawful disposition
+      - no unreviewed source transplant
+    operator_decision_required: false
+    status: BLOCKED
+
+  - id: ADC-WO-111
+    program: P08
+    title: Select and implement the dedicated Android Workbench projection
+    problem: ADR-071 requires Android, while ADR-078 deliberately selects only the desktop host and cannot make CodeOSS an Android implementation.
+    evidence:
+      - ADR-071 platform boundary
+      - ADR-078 desktop scope
+    source_decisions:
+      - ADR-071
+      - ADR-078
+    current_state: Android remains an accepted target without a selected projection or implementation.
+    target_state: A dedicated Android surface consumes stable Atlas contracts without introducing a second runtime authority.
+    scope:
+      - Android product boundary
+      - shared Surface API
+      - offline and degraded behavior
+      - packaging and updates
+    files:
+      - future Android product tree
+      - Surface API contract tests
+    tests:
+      - authenticated pairing
+      - mission, finding, approval, and receipt projection
+      - offline and rollback behavior
+    risks:
+      - duplicate codebase drift
+      - incomplete mobile approval semantics
+    rollback: Remove the Android projection while preserving Surface API and desktop Workbench.
+    dependencies:
+      - ADC-WO-108
+      - stable Surface API
+    acceptance:
+      - operator-approved Android design
+      - no duplicate Atlas authority
+      - dedicated-device acceptance suite
+    operator_decision_required: true
+    status: BLOCKED
 
   - id: ADC-WO-102
     program: P03

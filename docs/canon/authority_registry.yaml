@@ -1,0 +1,139 @@
+schema_version: 1
+candidate: ATLAS_DEFINITIVE_CANDIDATE
+candidate_status: PROPOSED_FOR_OPERATOR_ACCEPTANCE
+compiled_at: "2026-07-27"
+base_commit: c95038c9d7e97ddc6339f38abe6dad09b166f47d
+
+entrypoints:
+  human: ATLAS.md
+  machine: docs/canon/authority_registry.yaml
+  architecture: ARCHITECTURE.md
+  programs: PROGRAMS.md
+  execution: PLAN.md
+  reality: STATUS.md
+
+constitution:
+  mode: DISTRIBUTED
+  decision: ADR-067
+  note: >-
+    This registry is a discovery and traceability layer. It does not replace,
+    concatenate, or silently supersede the distributed constitutional
+    authorities accepted by ADR-067.
+  sources:
+    - path: AGENTS.md
+      role: operating invariants and construction protocol
+    - path: docs/design/atlas_ecosystem_map.md
+      role: canonical ecosystem taxonomy and component classification
+    - path: docs/decisions/adr/
+      role: scoped accepted architecture decisions
+    - path: docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/00_ATLAS_PRODUCT_CONSTITUTION.md
+      role: product principles only; the surrounding handoff remains historical
+
+authority_questions:
+  current_reality:
+    precedence:
+      - FRESH_RUNTIME_EVIDENCE
+      - CURRENT_CODE
+      - CURRENT_TESTS
+      - CURRENT_CONFIGURATION
+      - LIVE_STATUS_DOCUMENTATION
+      - HISTORY
+    rule: A later layer cannot promote a stronger runtime state than the evidence supports.
+  target_architecture:
+    precedence:
+      - CURRENT_OPERATOR_DIRECTIVE
+      - EXPLICIT_OPERATOR_DECISION
+      - CONSTITUTIONAL_INVARIANT
+      - ACCEPTED_NON_SUPERSEDED_ADR
+      - RECONCILED_PACKAGE_SEED
+      - ACCEPTED_DESIGN
+      - PROPOSAL
+      - EXTERNAL_RESEARCH
+    rule: Current code cannot veto an accepted target, and proposals cannot acquire authority through repetition.
+  tie_breakers:
+    - exact scope
+    - explicit supersession
+    - primary source over derivative copy
+    - fresh evidence for current reality
+    - otherwise preserve or elevate the conflict
+
+projections:
+  ATLAS.md: identity, navigation, authority, programs, and continuation
+  VISION.md: intended identity, north star, and non-negotiable product qualities
+  ARCHITECTURE.md: CURRENT, TARGET, and TRANSITION architecture
+  PROGRAMS.md: permanent P00-P12 program charters
+  PLAN.md: executable transition, gates, dependencies, rollback, and decisions
+  STATUS.md: evidence-labelled reality without marketing
+  README.md: minimal redirect to ATLAS.md
+
+registries:
+  sources: docs/canon/source_registry.jsonl
+  decisions: docs/canon/decision_registry.jsonl
+  conflicts: docs/canon/conflict_registry.jsonl
+  supersessions: docs/canon/supersession_registry.jsonl
+  components: docs/canon/component_registry.jsonl
+  capabilities: docs/canon/capability_registry.jsonl
+  contracts: docs/canon/contract_registry.jsonl
+  open_questions: docs/canon/open_questions.jsonl
+  reality_matrix: docs/canon/component_reality_matrix.jsonl
+  implementation: docs/canon/implementation_registry.yaml
+  product_lineages: docs/canon/product_lineage_registry.jsonl
+
+status_vocabulary:
+  - MISSING
+  - HISTORICAL
+  - RESEARCH
+  - PROPOSED_DESIGN
+  - ACCEPTED_DESIGN
+  - PROTOTYPE
+  - VALIDATION_HARNESS
+  - CODE_PRESENT
+  - TESTED
+  - WIRED
+  - RUNTIME_CONFIGURED
+  - LIVE_VERIFIED
+  - PRODUCT_ACCEPTED
+  - PARKED
+  - SUPERSEDED
+  - CONTRADICTED
+
+evidence_rules:
+  - CODE_PRESENT does not imply TESTED.
+  - TESTED does not imply WIRED.
+  - WIRED does not imply RUNTIME_CONFIGURED.
+  - RUNTIME_CONFIGURED does not imply LIVE_VERIFIED.
+  - LIVE_VERIFIED requires a dated passing runtime observation.
+  - PRODUCT_ACCEPTED requires an explicit operator acceptance record.
+  - Repeated derivative copies are one source, not independent corroboration.
+  - Structural graph evidence governs current repository structure.
+  - Semantic GraphRAG edges are hypotheses until verified.
+  - Private memory is distilled before entering shareable graphs.
+
+governance_boundaries:
+  candidate_may_self_promote: false
+  accepted_label_reserved_for_operator: ATLAS_CANON_ACCEPTED
+  governance_config_mutable_by_agents: false
+  remote_executable_mcp_auto_adoption: REJECTED
+  high_sensitivity: HUMAN_APPROVAL_OR_DENY
+  wave_5_native: BLOCKED_PENDING_OPERATOR_AND_GATES
+  golden_route_effects: APPROVAL_BEFORE_ACTION
+
+permanent_programs:
+  - P00
+  - P01
+  - P02
+  - P03
+  - P04
+  - P05
+  - P06
+  - P07
+  - P08
+  - P09
+  - P10
+  - P11
+  - P12
+
+program_definition: PROGRAMS.md
+validation:
+  command: python scripts/check_canon.py
+  ci: .github/workflows/ci.yml
