@@ -1,0 +1,56 @@
+[
+  {
+    "id": "restablecer-contrasena",
+    "query": "¿Cómo puedo recuperar el acceso a mi cuenta si olvidé la contraseña?",
+    "candidates": [
+      {
+        "id": "restablecimiento",
+        "text": "Para restablecer una contraseña olvidada, usa el enlace «He olvidado mi contraseña» de la pantalla de inicio de sesión."
+      },
+      {
+        "id": "horario-soporte",
+        "text": "El equipo de soporte atiende consultas de lunes a viernes de nueve a dieciocho horas."
+      }
+    ],
+    "relevant_ids": [
+      "restablecimiento"
+    ],
+    "top_k": 1
+  },
+  {
+    "id": "declaracion-iva",
+    "query": "¿Qué facturas debo guardar para preparar la declaración trimestral de IVA?",
+    "candidates": [
+      {
+        "id": "facturas-iva",
+        "text": "Conserva las facturas emitidas y recibidas para calcular y presentar la declaración trimestral del IVA."
+      },
+      {
+        "id": "direccion-empresa",
+        "text": "Actualiza la dirección postal de la empresa desde el perfil de administración."
+      }
+    ],
+    "relevant_ids": [
+      "facturas-iva"
+    ],
+    "top_k": 1
+  },
+  {
+    "id": "programar-reunion",
+    "query": "Necesito organizar una reunión con mi equipo la próxima semana.",
+    "candidates": [
+      {
+        "id": "evento-calendario",
+        "text": "Crea un evento en el calendario, añade a los participantes y envía la invitación para programar una reunión."
+      },
+      {
+        "id": "compartir-archivo",
+        "text": "Comparte un archivo desde la carpeta de documentos con un enlace de solo lectura."
+      }
+    ],
+    "relevant_ids": [
+      "evento-calendario"
+    ],
+    "top_k": 1
+  }
+]
