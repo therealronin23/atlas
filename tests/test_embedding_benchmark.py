@@ -317,6 +317,15 @@ def test_runner_forces_offline_before_constructing_fastembed(
 
     assert runner.main([]) == 0
     assert observed["offline"] == "1"
+    assert os.environ.get("HF_HUB_OFFLINE") is None
+
+
+def test_runner_classifies_invalid_arguments(capsys: pytest.CaptureFixture[str]) -> None:
+    """CLI parse errors must not escape as argparse's ambiguous exit code 2."""
+    runner = _load_runner()
+
+    assert runner.main(["--unexpected-option"]) == 4
+    assert _output_status(capsys) == "INVALID_BENCHMARK_INPUT"
 
 
 def test_runner_classifies_missing_optional_extra(
