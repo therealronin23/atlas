@@ -297,11 +297,13 @@ def golden_route_request(text: str) -> None:
 
 @cli.group("plugin")
 def plugin() -> None:
-    """ADR-073 A3.1 — staging gobernado de plugins declarativos.
+    """ADR-073 A3 — staging y activación gobernada de plugins declarativos.
 
     Materializa (copia inmutable + procedencia medida) y re-escanea vía el
-    gate de admisión A2. La ACTIVACIÓN no existe todavía por diseño (A3.3):
-    un admit aquí es evidencia, no permiso de instalación."""
+    gate de admisión A2. A3.2/A3.3 emiten recibos y activan contribuciones
+    locales de forma reversible; un ``admit`` sigue siendo evidencia, nunca
+    permiso de instalación por sí mismo. Tipos remotos ejecutables permanecen
+    fuera de alcance."""
 
 
 @plugin.command("materialize")
