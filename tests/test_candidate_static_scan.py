@@ -93,17 +93,44 @@ def test_scan_source_failclosed_on_unparseable_output() -> None:
     assert result.ok is False
 
 
-def test_semgrep_cmd_resolves_binary_next_to_current_interpreter() -> None:
+def test_semgrep_cmd_resolves_binary_next_to_current_interpreter(
+    tmp_path, monkeypatch
+) -> None:
     """Fix real (2026-07-24): invocar 'semgrep' plano depende del PATH del
     shell que lanza el proceso -- fuera de un venv activado (ej. un script
     invocado con el intérprete absoluto del venv) 'semgrep' no se encuentra
-    aunque esté instalado ahí mismo. Se resuelve junto a sys.executable."""
+    aunque esté instalado ahí mismo. Se resuelve junto a sys.executable.
+
+    La prueba crea ese layout explícitamente: semgrep es una herramienta
+    operativa opcional, no una dependencia declarada del venv de tests."""
     import sys
     from pathlib import Path
     from atlas.mcp.candidate_static_scan import _semgrep_binary
 
+    bin_dir = tmp_path / ".venv" / "bin"
+    bin_dir.mkdir(parents=True)
+    interpreter = bin_dir / "python"
+    semgrep = bin_dir / "semgrep"
+    interpreter.touch()
+    semgrep.touch()
+    monkeypatch.setattr(sys, "executable", str(interpreter))
+
     resolved = _semgrep_binary()
     assert resolved == str(Path(sys.executable).parent / "semgrep")
+
+
+def test_semgrep_cmd_falls_back_to_path_when_venv_binary_is_absent(
+    tmp_path, monkeypatch
+) -> None:
+    import sys
+    from atlas.mcp.candidate_static_scan import _semgrep_binary
+
+    interpreter = tmp_path / ".venv" / "bin" / "python"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.touch()
+    monkeypatch.setattr(sys, "executable", str(interpreter))
+
+    assert _semgrep_binary() == "semgrep"
 
 
 def test_scan_source_timeout_is_failclosed() -> None:
