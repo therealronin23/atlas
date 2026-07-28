@@ -392,7 +392,7 @@ remain runnable without the extra.
   are reported as skipped locally, and CI continues to exercise them with its
   declared extras.
 
-- [ ] **Step 4: Commit the validation repair**
+- [x] **Step 4: Commit the validation repair**
 
   ```bash
   git add tests/test_acp_server.py tests/test_graph_server_communities.py

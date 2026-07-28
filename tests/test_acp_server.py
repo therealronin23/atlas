@@ -10,12 +10,19 @@ el transporte stdio real.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.util import find_spec
 from unittest.mock import MagicMock
 
 import pytest
 
 from atlas.acp.server import AtlasACPAgent, _extract_text
 from atlas.core.inference_hub import InferenceResponse
+
+
+requires_acp = pytest.mark.skipif(
+    find_spec("acp") is None,
+    reason="requires the optional atlas-core[acp] extra",
+)
 
 
 @dataclass
@@ -39,6 +46,7 @@ class TestExtractText:
         assert _extract_text([]) == ""
 
 
+@requires_acp
 class TestInitialize:
     async def test_returns_protocol_version_and_capabilities(self) -> None:
         agent = AtlasACPAgent(hub=MagicMock())
@@ -47,6 +55,7 @@ class TestInitialize:
         assert result.agent_info.name == "atlas"
 
 
+@requires_acp
 class TestNewSession:
     async def test_creates_a_session_with_real_uuid(self) -> None:
         agent = AtlasACPAgent(hub=MagicMock())
@@ -61,6 +70,7 @@ class TestNewSession:
         assert a.session_id != b.session_id
 
 
+@requires_acp
 class TestPrompt:
     async def test_unknown_session_returns_refusal(self) -> None:
         agent = AtlasACPAgent(hub=MagicMock())
