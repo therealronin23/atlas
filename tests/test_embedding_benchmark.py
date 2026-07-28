@@ -175,6 +175,30 @@ def test_load_cases_reports_invalid_top_k_before_candidate_cardinality(
         load_cases(path)
 
 
+def test_load_cases_reports_unknown_relevant_before_candidate_cardinality(
+    tmp_path: Path,
+) -> None:
+    """Unknown relevance is actionable even if the case also lacks a distractor."""
+    path = tmp_path / "cases.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "bad",
+                    "query": "q",
+                    "candidates": [{"id": "a", "text": "a"}],
+                    "relevant_ids": ["missing"],
+                    "top_k": 1,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(BenchmarkInputError, match="relevant"):
+        load_cases(path)
+
+
 def test_load_cases_rejects_fewer_than_two_candidates(tmp_path: Path) -> None:
     """A single candidate cannot measure semantic ranking compatibility."""
     path = tmp_path / "cases.json"

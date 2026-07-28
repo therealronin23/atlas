@@ -139,6 +139,8 @@ def _parse_case(raw_case: object, index: int) -> BenchmarkCase:
         raise BenchmarkInputError(f"{location}.top_k must be a positive integer")
     candidates = _parse_candidates(case["candidates"], location)
     relevant_ids = _parse_relevant_ids(case["relevant_ids"], candidates, location)
+    if len(candidates) < 2:
+        raise BenchmarkInputError(f"{location}.candidates must contain at least two entries")
     if top_k > len(candidates):
         raise BenchmarkInputError(
             f"{location}.top_k must be an integer from 1 to {len(candidates)}"
@@ -154,8 +156,8 @@ def _parse_case(raw_case: object, index: int) -> BenchmarkCase:
 
 
 def _parse_candidates(value: object, location: str) -> tuple[BenchmarkCandidate, ...]:
-    if not isinstance(value, list) or len(value) < 2:
-        raise BenchmarkInputError(f"{location}.candidates must contain at least two entries")
+    if not isinstance(value, list) or not value:
+        raise BenchmarkInputError(f"{location}.candidates must be a non-empty array")
 
     candidates: list[BenchmarkCandidate] = []
     for index, raw_candidate in enumerate(value):
