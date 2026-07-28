@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import pytest
 
 from atlas.mcp.trunk_manifest import atlas_mcp_config
 from atlas.mcp.config import load_servers, McpServerConfig
+from atlas.security.sentinel_gate import SentinelGate
 
 
 class TestAtlasMcpConfig:
@@ -87,6 +89,27 @@ class TestLoadServersCompatibility:
             assert server.name == "atlas-trunk"
         finally:
             tmp_path.unlink(missing_ok=True)
+
+    def test_generated_atlas_trunk_command_is_governed_native(
+        self, tmp_path: Path
+    ) -> None:
+        """The runtime's generated trunk command must pass Sentinel pre-spawn.
+
+        This binds the producer of ``mcp_servers.json`` to the fail-closed
+        native-command boundary, so adding a native Atlas MCP server cannot
+        accidentally make its generated configuration unlaunchable.
+        """
+        raw = atlas_mcp_config(
+            save_dir=Path("/save"),
+            repo_root=Path("/repo"),
+            python=sys.executable,
+        )
+        path = tmp_path / "mcp_servers.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+
+        [config] = load_servers(path)
+
+        assert SentinelGate(tmp_path / "sentinel").vet_command(config) is None
 
 
 class TestCursorMcpConfig:

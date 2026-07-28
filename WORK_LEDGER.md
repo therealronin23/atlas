@@ -8,6 +8,16 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — puente Sentinel → Atlas Trunk restaurado (ADC-WO-008).** La
+  revisión de integración reprodujo que `atlas_mcp_config()` generaba el
+  entrypoint nativo `atlas.mcp.trunk_server`, pero Sentinel lo clasificaba como
+  tercero por omitirlo de su conjunto gobernado. La regresión enlaza la
+  configuración serializada, el loader y el gate pre-spawn; el único cambio de
+  autoridad incorpora el agregador nativo. Cada hijo del trunk sigue pasando
+  su Sentinel independiente antes de cualquier spawn, y los ejecutables de
+  terceros siguen en cuarentena. **Próxima acción:** validar la rama integrada
+  completa y reanclar los artefactos de entrega al commit final.
+
 - **2026-07-28 — harness de compatibilidad FastEmbed medido (ADC-WO-115).**
   `PYTHONPATH=src HF_HUB_OFFLINE=1 python
   scripts/benchmark_fastembed_compatibility.py` emitió `status=MEASURED` y

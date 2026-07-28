@@ -76,6 +76,9 @@ _ATLAS_NATIVE_MCP_MODULES: frozenset[str] = frozenset({
     "atlas.mcp.graph_server",
     "atlas.mcp.knowledge_server",
     "atlas.mcp.operating_server",
+    # Entry point agregado gobernado. Sus hijos siguen pasando el Sentinel
+    # independiente que build_trunk_registry() instala antes de cada spawn.
+    "atlas.mcp.trunk_server",
 })
 _SHELL_EXECUTABLES: frozenset[str] = frozenset({
     "sh", "bash", "dash", "zsh", "fish", "ksh", "pwsh", "powershell",
