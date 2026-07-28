@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import yaml
 
@@ -37,6 +38,8 @@ JSONL_REGISTRIES = (
     "open_questions.jsonl",
     "component_reality_matrix.jsonl",
     "product_lineage_registry.jsonl",
+    "evidence_registry.jsonl",
+    "decision_evidence_matrix.jsonl",
 )
 PERMANENT_PROGRAMS = {f"P{i:02d}" for i in range(13)}
 REALITY_STATES = {
@@ -114,6 +117,74 @@ LINEAGE_DISPOSITIONS = {
     "HISTORICAL_PRECURSOR",
     "SUPERSEDED",
 }
+EVIDENCE_SOURCE_FIELDS = {
+    "id",
+    "program",
+    "kind",
+    "source_tier",
+    "locator",
+    "independence_key",
+    "retrieved_at",
+    "claim_scope",
+    "strength",
+    "status",
+}
+EVIDENCE_SOURCE_TIERS = {
+    "LOCAL_CHECKOUT": 1,
+    "LOCAL_RUNTIME": 1,
+    "PRIMARY_STANDARD": 2,
+    "OFFICIAL_DOCUMENTATION": 3,
+    "RESEARCH_PAPER": 4,
+    "INDEPENDENT_REPLICATION": 5,
+    "ATLAS_MEASUREMENT": 6,
+    "VENDOR_CLAIM": 7,
+    "ANALOGY": 8,
+}
+LOCAL_EVIDENCE_KINDS = {
+    "LOCAL_CHECKOUT",
+    "LOCAL_RUNTIME",
+    "ATLAS_MEASUREMENT",
+}
+EVIDENCE_STRENGTHS = {"HIGH", "MEDIUM", "LOW"}
+EVIDENCE_SOURCE_STATUSES = {"ACTIVE", "SUPERSEDED", "HISTORICAL"}
+DECISION_EVIDENCE_FIELDS = {
+    "id",
+    "decision_id",
+    "program",
+    "state",
+    "alternatives",
+    "evidence_ids",
+    "recommendation",
+    "confidence",
+    "falsifiers",
+    "revisit_triggers",
+    "operator_decision_required",
+    "dossier",
+}
+DECISION_EVIDENCE_STATES = {
+    "EVIDENCE_QUALIFIED",
+    "PROVISIONAL",
+    "EXPERIMENT",
+    "REQUIRES_OPERATOR",
+    "BLOCKED",
+    "REJECTED",
+    "SUPERSEDED",
+}
+ALTERNATIVE_DISPOSITIONS = {"RETAINED", "RECOMMENDED", "REJECTED", "EXPERIMENT"}
+EVIDENCE_SCHEMA_CONTRACTS = (
+    (
+        "schemas/evidence_source.schema.json",
+        EVIDENCE_SOURCE_FIELDS,
+        "kind",
+        set(EVIDENCE_SOURCE_TIERS),
+    ),
+    (
+        "schemas/decision_evidence.schema.json",
+        DECISION_EVIDENCE_FIELDS,
+        "state",
+        DECISION_EVIDENCE_STATES,
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -667,10 +738,386 @@ def _validate_product_lineages(
         )
 
 
+def _is_non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_non_empty_string_list(value: Any) -> bool:
+    return isinstance(value, list) and bool(value) and all(
+        _is_non_empty_string(item) for item in value
+    )
+
+
+def _safe_existing_relative_file(root: Path, value: Any) -> bool:
+    if not _is_non_empty_string(value):
+        return False
+    candidate = Path(value)
+    return not candidate.is_absolute() and ".." not in candidate.parts and (root / candidate).is_file()
+
+
+def _validate_evidence_sources(
+    root: Path, rows: list[dict[str, Any]], findings: list[Finding]
+) -> dict[str, dict[str, Any]]:
+    path = "docs/canon/evidence_registry.jsonl"
+    sources: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        record_id = str(row.get("id", "<unknown>"))
+        missing = sorted(EVIDENCE_SOURCE_FIELDS - row.keys())
+        if missing:
+            findings.append(
+                Finding(
+                    "INCOMPLETE_EVIDENCE_SOURCE",
+                    path,
+                    f"{record_id} missing: {', '.join(missing)}",
+                )
+            )
+        kind = row.get("kind")
+        expected_tier = EVIDENCE_SOURCE_TIERS.get(kind)
+        if expected_tier is None:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_KIND",
+                    path,
+                    f"{record_id} has unknown kind {kind!r}",
+                )
+            )
+        elif row.get("source_tier") != expected_tier:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_TIER",
+                    path,
+                    f"{record_id} kind {kind} requires source_tier {expected_tier}",
+                )
+            )
+
+        for field_name in ("independence_key", "claim_scope"):
+            if not _is_non_empty_string(row.get(field_name)):
+                findings.append(
+                    Finding(
+                        "INVALID_EVIDENCE_FIELD",
+                        path,
+                        f"{record_id} needs a non-empty {field_name}",
+                    )
+                )
+        if row.get("strength") not in EVIDENCE_STRENGTHS:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_FIELD",
+                    path,
+                    f"{record_id} has invalid strength {row.get('strength')!r}",
+                )
+            )
+        if row.get("status") not in EVIDENCE_SOURCE_STATUSES:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_FIELD",
+                    path,
+                    f"{record_id} has invalid status {row.get('status')!r}",
+                )
+            )
+        retrieved_at = row.get("retrieved_at")
+        try:
+            if not isinstance(retrieved_at, str):
+                raise ValueError
+            date.fromisoformat(retrieved_at)
+        except ValueError:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_DATE",
+                    path,
+                    f"{record_id} retrieved_at must be an ISO date",
+                )
+            )
+
+        locator = row.get("locator")
+        if kind in LOCAL_EVIDENCE_KINDS:
+            if not _safe_existing_relative_file(root, locator):
+                findings.append(
+                    Finding(
+                        "INVALID_EVIDENCE_PATH",
+                        path,
+                        f"{record_id} local locator must be an existing safe repository file: {locator!r}",
+                    )
+                )
+        else:
+            parsed = urlparse(locator) if isinstance(locator, str) else None
+            if parsed is None or parsed.scheme != "https" or not parsed.netloc:
+                findings.append(
+                    Finding(
+                        "INVALID_EVIDENCE_LOCATOR",
+                        path,
+                        f"{record_id} external locator must be an https URL: {locator!r}",
+                    )
+                )
+        if isinstance(row.get("id"), str) and row["id"]:
+            sources[row["id"]] = row
+    return sources
+
+
+def _validate_matrix_alternatives(
+    record_id: str, alternatives: Any, findings: list[Finding]
+) -> None:
+    path = "docs/canon/decision_evidence_matrix.jsonl"
+    if not isinstance(alternatives, list) or len(alternatives) < 2:
+        findings.append(
+            Finding(
+                "INVALID_EVIDENCE_ALTERNATIVES",
+                path,
+                f"{record_id} needs at least two alternatives",
+            )
+        )
+        return
+    for index, alternative in enumerate(alternatives):
+        if not isinstance(alternative, dict):
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_ALTERNATIVE",
+                    path,
+                    f"{record_id} alternatives[{index}] must be an object",
+                )
+            )
+            continue
+        for field_name in ("id", "label"):
+            if not _is_non_empty_string(alternative.get(field_name)):
+                findings.append(
+                    Finding(
+                        "INVALID_EVIDENCE_ALTERNATIVE",
+                        path,
+                        f"{record_id} alternatives[{index}] needs {field_name}",
+                    )
+                )
+        if alternative.get("disposition") not in ALTERNATIVE_DISPOSITIONS:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_ALTERNATIVE",
+                    path,
+                    f"{record_id} alternatives[{index}] has invalid disposition",
+                )
+            )
+        if not _is_non_empty_string_list(alternative.get("tradeoffs")):
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_ALTERNATIVE",
+                    path,
+                    f"{record_id} alternatives[{index}] needs non-empty tradeoffs",
+                )
+            )
+
+
+def _validate_decision_evidence_matrix(
+    root: Path,
+    rows: list[dict[str, Any]],
+    sources: dict[str, dict[str, Any]],
+    decisions: list[dict[str, Any]],
+    findings: list[Finding],
+) -> None:
+    path = "docs/canon/decision_evidence_matrix.jsonl"
+    decisions_by_id = {
+        row["id"]: row
+        for row in decisions
+        if isinstance(row.get("id"), str) and row["id"]
+    }
+    matrix_decision_ids: set[str] = set()
+    for row in rows:
+        record_id = str(row.get("id", "<unknown>"))
+        missing = sorted(DECISION_EVIDENCE_FIELDS - row.keys())
+        if missing:
+            findings.append(
+                Finding(
+                    "INCOMPLETE_EVIDENCE_MATRIX",
+                    path,
+                    f"{record_id} missing: {', '.join(missing)}",
+                )
+            )
+        state = row.get("state")
+        if state not in DECISION_EVIDENCE_STATES:
+            findings.append(
+                Finding(
+                    "INVALID_EVIDENCE_STATE",
+                    path,
+                    f"{record_id} has invalid state {state!r}",
+                )
+            )
+        decision_id = row.get("decision_id")
+        decision = decisions_by_id.get(decision_id)
+        if decision is None:
+            findings.append(
+                Finding(
+                    "UNKNOWN_DECISION_REFERENCE",
+                    path,
+                    f"{record_id} references unknown decision {decision_id!r}",
+                )
+            )
+        elif decision.get("evidence_qualification") != state:
+            findings.append(
+                Finding(
+                    "EVIDENCE_STATE_DRIFT",
+                    path,
+                    f"{record_id} state {state!r} differs from {decision_id} evidence_qualification {decision.get('evidence_qualification')!r}",
+                )
+            )
+        if isinstance(decision_id, str) and decision_id:
+            if decision_id in matrix_decision_ids:
+                findings.append(
+                    Finding(
+                        "DUPLICATE_DECISION_EVIDENCE",
+                        path,
+                        f"multiple matrix records reference {decision_id}",
+                    )
+                )
+            matrix_decision_ids.add(decision_id)
+
+        _validate_matrix_alternatives(record_id, row.get("alternatives"), findings)
+        if not _is_non_empty_string(row.get("recommendation")):
+            findings.append(
+                Finding(
+                    "INCOMPLETE_EVIDENCE_MATRIX",
+                    path,
+                    f"{record_id} needs a non-empty recommendation",
+                )
+            )
+        if row.get("confidence") not in EVIDENCE_STRENGTHS:
+            findings.append(
+                Finding(
+                    "INCOMPLETE_EVIDENCE_MATRIX",
+                    path,
+                    f"{record_id} has invalid confidence {row.get('confidence')!r}",
+                )
+            )
+        if not _is_non_empty_string_list(row.get("falsifiers")):
+            findings.append(
+                Finding(
+                    "MISSING_EVIDENCE_FALSIFIER",
+                    path,
+                    f"{record_id} needs at least one falsifier",
+                )
+            )
+        if not _is_non_empty_string_list(row.get("revisit_triggers")):
+            findings.append(
+                Finding(
+                    "MISSING_EVIDENCE_REVISIT_TRIGGER",
+                    path,
+                    f"{record_id} needs at least one revisit trigger",
+                )
+            )
+        if not isinstance(row.get("operator_decision_required"), bool):
+            findings.append(
+                Finding(
+                    "INCOMPLETE_EVIDENCE_MATRIX",
+                    path,
+                    f"{record_id} operator_decision_required must be boolean",
+                )
+            )
+        dossier = row.get("dossier")
+        if not _safe_existing_relative_file(root, dossier):
+            findings.append(
+                Finding(
+                    "MISSING_EVIDENCE_DOSSIER",
+                    path,
+                    f"{record_id} dossier must be an existing safe repository file: {dossier!r}",
+                )
+            )
+
+        evidence_ids = row.get("evidence_ids")
+        resolved_sources: list[dict[str, Any]] = []
+        if not _is_non_empty_string_list(evidence_ids):
+            findings.append(
+                Finding(
+                    "INCOMPLETE_EVIDENCE_MATRIX",
+                    path,
+                    f"{record_id} needs non-empty evidence_ids",
+                )
+            )
+        else:
+            for evidence_id in evidence_ids:
+                source = sources.get(evidence_id)
+                if source is None:
+                    findings.append(
+                        Finding(
+                            "UNKNOWN_EVIDENCE_REFERENCE",
+                            path,
+                            f"{record_id} references unknown evidence {evidence_id}",
+                        )
+                    )
+                else:
+                    resolved_sources.append(source)
+        if state == "EVIDENCE_QUALIFIED":
+            qualifying = [
+                source
+                for source in resolved_sources
+                if isinstance(source.get("source_tier"), int)
+                and source["source_tier"] <= 4
+            ]
+            qualifying_independence_keys = {
+                source.get("independence_key")
+                for source in qualifying
+                if _is_non_empty_string(source.get("independence_key"))
+            }
+            if len(qualifying_independence_keys) < 2:
+                findings.append(
+                    Finding(
+                        "INSUFFICIENT_QUALIFYING_EVIDENCE",
+                        path,
+                        f"{record_id} requires two independent tier 1–4 sources",
+                    )
+                )
+
+    for decision_id, decision in decisions_by_id.items():
+        qualification = decision.get("evidence_qualification")
+        if qualification is not None and decision_id not in matrix_decision_ids:
+            findings.append(
+                Finding(
+                    "ORPHAN_EVIDENCE_QUALIFICATION",
+                    "docs/canon/decision_registry.jsonl",
+                    f"{decision_id} has evidence_qualification but no matrix record",
+                )
+            )
+
+
+def _validate_evidence_schema_contracts(root: Path, findings: list[Finding]) -> None:
+    for relative, required_fields, enum_property, enum_values in EVIDENCE_SCHEMA_CONTRACTS:
+        path = root / relative
+        if not path.is_file():
+            findings.append(Finding("MISSING_EVIDENCE_SCHEMA", relative, "required schema"))
+            continue
+        try:
+            schema = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            findings.append(
+                Finding("INVALID_EVIDENCE_SCHEMA", relative, f"cannot parse schema: {exc}")
+            )
+            continue
+        if not isinstance(schema, dict):
+            findings.append(
+                Finding("INVALID_EVIDENCE_SCHEMA", relative, "schema must be an object")
+            )
+            continue
+        properties = schema.get("properties")
+        enum = properties.get(enum_property, {}).get("enum") if isinstance(properties, dict) else None
+        required = schema.get("required")
+        if (
+            schema.get("type") != "object"
+            or schema.get("additionalProperties") is not False
+            or not isinstance(required, list)
+            or set(required) != required_fields
+            or not isinstance(enum, list)
+            or set(enum) != enum_values
+        ):
+            findings.append(
+                Finding(
+                    "EVIDENCE_SCHEMA_DRIFT",
+                    relative,
+                    "schema must match the checked evidence-registry contract",
+                )
+            )
+
+
 def validate_repo(root: Path) -> tuple[list[Finding], int]:
     root = root.resolve()
     findings: list[Finding] = []
     canon = root / "docs" / "canon"
+
+    _validate_evidence_schema_contracts(root, findings)
 
     for rel in ROOT_DOCS:
         if not (root / rel).is_file():
@@ -757,6 +1204,16 @@ def validate_repo(root: Path) -> tuple[list[Finding], int]:
     _validate_critical_decisions(registries.get("decision_registry.jsonl", []), findings)
     _validate_adr_coverage(
         root, registries.get("decision_registry.jsonl", []), findings
+    )
+    evidence_sources = _validate_evidence_sources(
+        root, registries.get("evidence_registry.jsonl", []), findings
+    )
+    _validate_decision_evidence_matrix(
+        root,
+        registries.get("decision_evidence_matrix.jsonl", []),
+        evidence_sources,
+        registries.get("decision_registry.jsonl", []),
+        findings,
     )
     _validate_conflicts(registries.get("conflict_registry.jsonl", []), findings)
     _validate_supersessions(

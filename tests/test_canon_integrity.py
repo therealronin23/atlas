@@ -32,6 +32,8 @@ JSONL_REGISTRIES = (
     "open_questions.jsonl",
     "component_reality_matrix.jsonl",
     "product_lineage_registry.jsonl",
+    "evidence_registry.jsonl",
+    "decision_evidence_matrix.jsonl",
 )
 
 
@@ -170,6 +172,89 @@ def _make_candidate(tmp_path: Path) -> Path:
     (adr_dir / "adr_001_test.md").write_text(
         "# ADR-001 — Test decision\n", encoding="utf-8"
     )
+    dossier_dir = canon / "decision_dossiers"
+    dossier_dir.mkdir()
+    (dossier_dir / "EDR-ADR-001-test.md").write_text(
+        "# EDR-ADR-001 — Test evidence dossier\n", encoding="utf-8"
+    )
+    schemas = tmp_path / "schemas"
+    schemas.mkdir()
+    (schemas / "evidence_source.schema.json").write_text(
+        json.dumps(
+            {
+                "type": "object",
+                "required": sorted(
+                    {
+                        "id",
+                        "program",
+                        "kind",
+                        "source_tier",
+                        "locator",
+                        "independence_key",
+                        "retrieved_at",
+                        "claim_scope",
+                        "strength",
+                        "status",
+                    }
+                ),
+                "properties": {
+                    "kind": {
+                        "enum": [
+                            "LOCAL_CHECKOUT",
+                            "LOCAL_RUNTIME",
+                            "PRIMARY_STANDARD",
+                            "OFFICIAL_DOCUMENTATION",
+                            "RESEARCH_PAPER",
+                            "INDEPENDENT_REPLICATION",
+                            "ATLAS_MEASUREMENT",
+                            "VENDOR_CLAIM",
+                            "ANALOGY",
+                        ]
+                    }
+                },
+                "additionalProperties": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (schemas / "decision_evidence.schema.json").write_text(
+        json.dumps(
+            {
+                "type": "object",
+                "required": sorted(
+                    {
+                        "id",
+                        "decision_id",
+                        "program",
+                        "state",
+                        "alternatives",
+                        "evidence_ids",
+                        "recommendation",
+                        "confidence",
+                        "falsifiers",
+                        "revisit_triggers",
+                        "operator_decision_required",
+                        "dossier",
+                    }
+                ),
+                "properties": {
+                    "state": {
+                        "enum": [
+                            "EVIDENCE_QUALIFIED",
+                            "PROVISIONAL",
+                            "EXPERIMENT",
+                            "REQUIRES_OPERATOR",
+                            "BLOCKED",
+                            "REJECTED",
+                            "SUPERSEDED",
+                        ]
+                    }
+                },
+                "additionalProperties": False,
+            }
+        ),
+        encoding="utf-8",
+    )
     (canon / "implementation_registry.yaml").write_text(
         "schema_version: 1\ncandidate: ATLAS_DEFINITIVE_CANDIDATE\nwork_orders: []\n",
         encoding="utf-8",
@@ -206,6 +291,7 @@ def _make_candidate(tmp_path: Path) -> Path:
             {
                 "id": "ADR-001",
                 "status": "ACCEPTED",
+                "evidence_qualification": "PROVISIONAL",
                 "sources": [
                     {
                         "member": "docs/decisions/adr/adr_001_test.md",
@@ -310,6 +396,67 @@ def _make_candidate(tmp_path: Path) -> Path:
         canon / "product_lineage_registry.jsonl",
         _product_lineages(),
     )
+    _write_jsonl(
+        canon / "evidence_registry.jsonl",
+        [
+            {
+                "id": "EVD-LOCAL-TEST",
+                "program": "P00",
+                "kind": "LOCAL_CHECKOUT",
+                "source_tier": 1,
+                "locator": "src/atlas/cli/reality.py",
+                "independence_key": "atlas-runtime-reality",
+                "retrieved_at": "2026-07-28",
+                "claim_scope": "Fixture proves local evidence-path validation.",
+                "strength": "HIGH",
+                "status": "ACTIVE",
+            },
+            {
+                "id": "EVD-VENDOR-TEST",
+                "program": "P00",
+                "kind": "VENDOR_CLAIM",
+                "source_tier": 7,
+                "locator": "https://example.test/vendor-claim",
+                "independence_key": "example-vendor-claim",
+                "retrieved_at": "2026-07-28",
+                "claim_scope": "Fixture proves vendor claims do not qualify a decision.",
+                "strength": "LOW",
+                "status": "ACTIVE",
+            },
+        ],
+    )
+    _write_jsonl(
+        canon / "decision_evidence_matrix.jsonl",
+        [
+            {
+                "id": "DEM-ADR-001-TEST",
+                "decision_id": "ADR-001",
+                "program": "P00",
+                "state": "PROVISIONAL",
+                "alternatives": [
+                    {
+                        "id": "NULL_CHANGE",
+                        "label": "Leave the fixture unchanged.",
+                        "disposition": "REJECTED",
+                        "tradeoffs": ["Does not exercise the evidence gate."],
+                    },
+                    {
+                        "id": "EVIDENCE_GATE",
+                        "label": "Validate evidence references.",
+                        "disposition": "RECOMMENDED",
+                        "tradeoffs": ["Adds a small canonical registry."],
+                    },
+                ],
+                "evidence_ids": ["EVD-LOCAL-TEST", "EVD-VENDOR-TEST"],
+                "recommendation": "Keep the decision provisional until measured.",
+                "confidence": "MEDIUM",
+                "falsifiers": ["A missing source must reject the candidate."],
+                "revisit_triggers": ["A primary source supersedes this fixture."],
+                "operator_decision_required": False,
+                "dossier": "docs/canon/decision_dossiers/EDR-ADR-001-test.md",
+            }
+        ],
+    )
 
     for name in JSONL_REGISTRIES:
         assert (canon / name).is_file()
@@ -330,6 +477,122 @@ def test_valid_candidate_passes(tmp_path: Path) -> None:
     result = _run(_make_candidate(tmp_path))
     assert result.returncode == 0, result.stdout + result.stderr
     assert "canon integrity: PASS" in result.stdout
+
+
+def test_evidence_matrix_rejects_unknown_evidence_id(tmp_path: Path) -> None:
+    """Break caught: a decision cannot cite evidence absent from its registry."""
+    root = _make_candidate(tmp_path)
+    matrix = root / "docs" / "canon" / "decision_evidence_matrix.jsonl"
+    rows = [json.loads(line) for line in matrix.read_text(encoding="utf-8").splitlines()]
+    rows[0]["evidence_ids"] = ["EVD-NOT-REGISTERED"]
+    _write_jsonl(matrix, rows)
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "UNKNOWN_EVIDENCE_REFERENCE" in result.stdout
+
+
+def test_evidence_qualified_requires_primary_or_local_evidence(tmp_path: Path) -> None:
+    """Break caught: vendor claims alone must not qualify architecture."""
+    root = _make_candidate(tmp_path)
+    matrix = root / "docs" / "canon" / "decision_evidence_matrix.jsonl"
+    rows = [json.loads(line) for line in matrix.read_text(encoding="utf-8").splitlines()]
+    rows[0]["state"] = "EVIDENCE_QUALIFIED"
+    rows[0]["evidence_ids"] = ["EVD-VENDOR-TEST"]
+    _write_jsonl(matrix, rows)
+
+    registry = root / "docs" / "canon" / "decision_registry.jsonl"
+    decision_rows = [
+        json.loads(line) for line in registry.read_text(encoding="utf-8").splitlines()
+    ]
+    next(row for row in decision_rows if row["id"] == "ADR-001")[
+        "evidence_qualification"
+    ] = "EVIDENCE_QUALIFIED"
+    _write_jsonl(registry, decision_rows)
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "INSUFFICIENT_QUALIFYING_EVIDENCE" in result.stdout
+
+
+def test_evidence_qualified_rejects_duplicate_source_independence(
+    tmp_path: Path,
+) -> None:
+    """Break caught: repeated evidence must not count as corroboration."""
+    root = _make_candidate(tmp_path)
+    matrix = root / "docs" / "canon" / "decision_evidence_matrix.jsonl"
+    matrix_rows = [json.loads(line) for line in matrix.read_text(encoding="utf-8").splitlines()]
+    matrix_rows[0]["state"] = "EVIDENCE_QUALIFIED"
+    _write_jsonl(matrix, matrix_rows)
+
+    decisions = root / "docs" / "canon" / "decision_registry.jsonl"
+    decision_rows = [
+        json.loads(line) for line in decisions.read_text(encoding="utf-8").splitlines()
+    ]
+    next(row for row in decision_rows if row["id"] == "ADR-001")[
+        "evidence_qualification"
+    ] = "EVIDENCE_QUALIFIED"
+    _write_jsonl(decisions, decision_rows)
+
+    sources = root / "docs" / "canon" / "evidence_registry.jsonl"
+    source_rows = [json.loads(line) for line in sources.read_text(encoding="utf-8").splitlines()]
+    source_rows[1].update(
+        {
+            "kind": "LOCAL_CHECKOUT",
+            "source_tier": 1,
+            "locator": "src/atlas/cli/reality.py",
+            "independence_key": source_rows[0]["independence_key"],
+        }
+    )
+    _write_jsonl(sources, source_rows)
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "INSUFFICIENT_QUALIFYING_EVIDENCE" in result.stdout
+
+
+def test_matrix_rejects_decision_state_drift(tmp_path: Path) -> None:
+    """Break caught: matrix and decision registry cannot silently disagree."""
+    root = _make_candidate(tmp_path)
+    registry = root / "docs" / "canon" / "decision_registry.jsonl"
+    rows = [json.loads(line) for line in registry.read_text(encoding="utf-8").splitlines()]
+    next(row for row in rows if row["id"] == "ADR-001")[
+        "evidence_qualification"
+    ] = "REJECTED"
+    _write_jsonl(registry, rows)
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "EVIDENCE_STATE_DRIFT" in result.stdout
+
+
+def test_local_evidence_path_must_exist_and_not_escape_root(tmp_path: Path) -> None:
+    """Break caught: local evidence cannot reference arbitrary machine paths."""
+    root = _make_candidate(tmp_path)
+    registry = root / "docs" / "canon" / "evidence_registry.jsonl"
+    rows = [json.loads(line) for line in registry.read_text(encoding="utf-8").splitlines()]
+    rows[0]["locator"] = "../secret"
+    _write_jsonl(registry, rows)
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "INVALID_EVIDENCE_PATH" in result.stdout
+
+
+def test_evidence_schema_contract_is_required(tmp_path: Path) -> None:
+    """Break caught: registries cannot outlive their checked interchange schema."""
+    root = _make_candidate(tmp_path)
+    (root / "schemas" / "evidence_source.schema.json").unlink()
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "MISSING_EVIDENCE_SCHEMA" in result.stdout
 
 
 def test_unknown_reality_state_fails_with_record_id(tmp_path: Path) -> None:

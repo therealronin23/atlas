@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — foundation de decisiones calificadas por evidencia
+  implementada en la rama de convergencia.** `evidence_registry.jsonl` y
+  `decision_evidence_matrix.jsonl` complementan —sin reemplazar— el registro
+  de decisiones; `scripts/check_canon.py` rechaza referencias inexistentes,
+  rutas locales inseguras, estados divergentes y decisiones calificadas sin
+  fuentes independientes. Cuatro ADR activos (057, 058, 069 y 078) quedan
+  explícitamente `PROVISIONAL` con dossiers, alternativas, falsificadores y
+  triggers de revisión. **Próxima acción:** auditar P00/P01/P09 y convertir el
+  boundary Mission/Task y el control plane en work orders respaldados por esos
+  dossiers; no declarar sus migraciones implementadas todavía.
+
 - **2026-07-28 — ATLAS DEFINITIVE CANDIDATE en convergencia aislada.** El
   checkout original dirty quedó preservado mediante bundle/patch/tar
   secret-safe y el trabajo vive en

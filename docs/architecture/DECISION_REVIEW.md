@@ -4,6 +4,13 @@ Protocolo del master prompt aplicado a las decisiones heredadas (build pack +
 handoff + prompt) contra el estado real del repo. Veredictos: KEEP /
 KEEP_WITH_BOUNDARY / MODIFY / REPLACE / DEPRECATE / INVESTIGATE / REJECT.
 
+> **Enmienda 2026-07-28 — evidencia antes de elección.** Los veredictos
+> históricos siguen siendo contexto, no sustitutos de un dossier contrastado.
+> ADR-057, ADR-058, ADR-069 y ADR-078 están enlazados al registro canónico de
+> evidencia y se mantienen `PROVISIONAL` hasta completar sus benchmarks y
+> límites de integración. `docs/canon/decision_registry.jsonl` conserva la
+> autoridad de disposición; la matriz de evidencia no la reemplaza.
+
 ## D1 — Event Kernel como módulo nuevo `src/atlas/events/`
 
 - **Decisión heredada**: pack §20 propone `events/event_bus.py` +

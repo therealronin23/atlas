@@ -78,6 +78,24 @@ registries:
   reality_matrix: docs/canon/component_reality_matrix.jsonl
   implementation: docs/canon/implementation_registry.yaml
   product_lineages: docs/canon/product_lineage_registry.jsonl
+  evidence_sources: docs/canon/evidence_registry.jsonl
+  decision_evidence_matrix: docs/canon/decision_evidence_matrix.jsonl
+  decision_dossiers: docs/canon/decision_dossiers/
+
+evidence_governance:
+  decision_disposition_authority: docs/canon/decision_registry.jsonl
+  note: >-
+    Evidence records qualify a decision's technical basis and preserve its
+    alternatives, limits and revisit conditions. They do not approve, replace
+    or supersede a decision-registry disposition.
+  qualification_states:
+    - EVIDENCE_QUALIFIED
+    - PROVISIONAL
+    - EXPERIMENT
+    - REQUIRES_OPERATOR
+    - BLOCKED
+    - REJECTED
+    - SUPERSEDED
 
 status_vocabulary:
   - MISSING

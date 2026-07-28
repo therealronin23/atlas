@@ -1,5 +1,10 @@
 # MEMORY
 
+- `evidence-before-operator-choice`: el operador decide intención
+  constitucional y apetito de riesgo; los medios técnicos requieren evidencia
+  local/primaria, alternativas comparadas, falsificadores y límites de
+  comparabilidad antes de solicitar una elección. Una aprobación intuitiva se
+  trata como provisional hasta quedar trazada.
 - `workbench-lineage-convergence`: Atlas Core conserva la única autoridad;
   Atlas Engineering Workbench es el primer producto, con CodeOSS/VSCodium como
   host desktop, Void como donante de capacidades y Zed como donante ACP/de
