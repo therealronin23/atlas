@@ -151,6 +151,30 @@ def test_load_cases_rejects_invalid_top_k(tmp_path: Path) -> None:
         load_cases(path)
 
 
+def test_load_cases_reports_invalid_top_k_before_candidate_cardinality(
+    tmp_path: Path,
+) -> None:
+    """The threshold error remains actionable even when the case has other defects."""
+    path = tmp_path / "cases.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "bad",
+                    "query": "q",
+                    "candidates": [{"id": "a", "text": "a"}],
+                    "relevant_ids": ["a"],
+                    "top_k": 0,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(BenchmarkInputError, match="top_k"):
+        load_cases(path)
+
+
 def test_load_cases_rejects_fewer_than_two_candidates(tmp_path: Path) -> None:
     """A single candidate cannot measure semantic ranking compatibility."""
     path = tmp_path / "cases.json"

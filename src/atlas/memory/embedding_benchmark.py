@@ -134,10 +134,12 @@ def _parse_case(raw_case: object, index: int) -> BenchmarkCase:
 
     case_id = _non_empty_string(case["id"], f"{location}.id")
     query = _non_empty_string(case["query"], f"{location}.query")
+    top_k = case["top_k"]
+    if type(top_k) is not int or top_k < 1:
+        raise BenchmarkInputError(f"{location}.top_k must be a positive integer")
     candidates = _parse_candidates(case["candidates"], location)
     relevant_ids = _parse_relevant_ids(case["relevant_ids"], candidates, location)
-    top_k = case["top_k"]
-    if type(top_k) is not int or not 1 <= top_k <= len(candidates):
+    if top_k > len(candidates):
         raise BenchmarkInputError(
             f"{location}.top_k must be an integer from 1 to {len(candidates)}"
         )
