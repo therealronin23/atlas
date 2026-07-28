@@ -34,7 +34,14 @@ class _RunnerArgumentParser(argparse.ArgumentParser):
 
 
 def _emit_error(status: str, message: str, exit_code: int) -> int:
-    print(json.dumps({"error": message, "status": status}, ensure_ascii=False, sort_keys=True))
+    print(
+        json.dumps(
+            {"error": message, "status": status},
+            ensure_ascii=False,
+            sort_keys=True,
+            allow_nan=False,
+        )
+    )
     return exit_code
 
 
@@ -53,6 +60,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 {"status": "USAGE", "usage": parser.format_usage().strip()},
                 ensure_ascii=False,
                 sort_keys=True,
+                allow_nan=False,
             )
         )
         return 0
@@ -86,7 +94,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         except Exception as exc:
             return _emit_error("MEASUREMENT_FAILED", str(exc), 1)
         status = "MEASURED" if report.passed else "COMPATIBILITY_THRESHOLD_NOT_MET"
-        print(json.dumps({"status": status, **report.as_dict()}, ensure_ascii=False, sort_keys=True))
+        print(
+            json.dumps(
+                {"status": status, **report.as_dict()},
+                ensure_ascii=False,
+                sort_keys=True,
+                allow_nan=False,
+            )
+        )
         return 0 if report.passed else 5
     finally:
         if previous_offline is None:

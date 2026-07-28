@@ -8,6 +8,14 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — límite JSON estricto del harness FastEmbed (ADC-WO-115).**
+  La revisión detectó que vectores finitos extremos podían desbordar el coseno
+  y llegar a `NaN`, que no es JSON estándar. El evaluador ahora rechaza normas
+  o scores no finitos y el runner serializa con `allow_nan=False`; una prueba
+  reproduce ese vector extremo. Sigue siendo solo un `VALIDATION_HARNESS`, sin
+  cambio de dependencias, modelo, índice, memoria ni configuración. **Próxima
+  acción:** conservar la comparación contra baseline como decisión separada.
+
 - **2026-07-28 — puente Sentinel → Atlas Trunk restaurado (ADC-WO-008).** La
   revisión de integración reprodujo que `atlas_mcp_config()` generaba el
   entrypoint nativo `atlas.mcp.trunk_server`, pero Sentinel lo clasificaba como

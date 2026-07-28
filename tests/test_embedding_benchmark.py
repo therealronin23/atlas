@@ -135,6 +135,21 @@ def test_evaluate_cases_rejects_non_finite_or_dimension_mismatched_vectors() -> 
         evaluate_cases(StaticEmbedder.with_candidate([1.0, 0.0, 0.0]), (case,))
 
 
+def test_evaluate_cases_rejects_finite_vectors_that_overflow_cosine_scoring() -> None:
+    """A finite input must never leak a NaN score into JSON measurement output."""
+    case = valid_case()
+    embedder = StaticEmbedder(
+        {
+            "consulta": [1e308, 1e308, 1e308, 1e308],
+            "relevante": [1e308, 1e308, 1e308, 1e308],
+            "ruido": [1e308, -1e308, 1e308, -1e308],
+        }
+    )
+
+    with pytest.raises(EmbeddingVectorError, match="finite"):
+        evaluate_cases(embedder, (case,))
+
+
 def test_evaluate_cases_breaks_score_ties_by_candidate_id_and_reports_margin() -> None:
     """Changing the deterministic tie rule or margin calculation must fail."""
     case = BenchmarkCase(

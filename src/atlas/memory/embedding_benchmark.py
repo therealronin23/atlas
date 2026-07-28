@@ -280,6 +280,14 @@ def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
         raise EmbeddingVectorError("vectors must be non-empty and finite")
     left_norm = math.sqrt(sum(value * value for value in left))
     right_norm = math.sqrt(sum(value * value for value in right))
-    if left_norm == 0.0 or right_norm == 0.0:
-        raise EmbeddingVectorError("vectors must have non-zero norm")
-    return sum(a * b for a, b in zip(left, right)) / (left_norm * right_norm)
+    if (
+        left_norm == 0.0
+        or right_norm == 0.0
+        or not math.isfinite(left_norm)
+        or not math.isfinite(right_norm)
+    ):
+        raise EmbeddingVectorError("vectors must have a finite, non-zero norm")
+    score = sum(a * b for a, b in zip(left, right)) / (left_norm * right_norm)
+    if not math.isfinite(score):
+        raise EmbeddingVectorError("cosine score must be finite")
+    return score
