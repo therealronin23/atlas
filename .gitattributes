@@ -14,3 +14,7 @@ graphify-out/.graphify_analysis.json merge=ours
 graphify-vault/ merge=ours
 graphify-vault/*.md merge=ours
 graphify-out/graph.json merge=ours
+
+# A review artifact may preserve whitespace from the historical/base tree
+# verbatim so that it remains an exact, applicable patch.
+work/canon-compiler/delivery/FINAL_DIFF.patch whitespace=-blank-at-eol
