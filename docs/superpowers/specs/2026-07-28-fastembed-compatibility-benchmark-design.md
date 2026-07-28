@@ -1,6 +1,6 @@
 # Diseño — benchmark de compatibilidad FastEmbed
 
-**Estado:** aprobado por el operador para especificación; pendiente de revisión del documento antes de implementación.
+**Estado:** aprobado por el operador para implementación; pendiente de ejecución y validación.
 **Fecha:** 2026-07-28
 **Programas:** P04 — Memory and Continuity; P09 — Security, Evaluation, Operations and Recovery.
 
