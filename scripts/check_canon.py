@@ -352,7 +352,7 @@ def _validate_critical_decisions(
             )
         )
 
-    expected_fields = {
+    expected_fields: dict[str, dict[str, Any]] = {
         "ADR-076-A": {
             "disposition": "ACCEPTED",
             "implementation": "CODE_PRESENT",
@@ -566,10 +566,11 @@ def _validate_matrix_evidence(
 
 def _validate_implementation_registry(
     data: Any, findings: list[Finding]
-) -> None:
+) -> dict[str, dict[str, Any]]:
     path = "docs/canon/implementation_registry.yaml"
+    work_order_by_id: dict[str, dict[str, Any]] = {}
     if not isinstance(data, dict):
-        return
+        return work_order_by_id
     if data.get("candidate") != "ATLAS_DEFINITIVE_CANDIDATE":
         findings.append(
             Finding(
@@ -581,7 +582,7 @@ def _validate_implementation_registry(
     work_orders = data.get("work_orders")
     if not isinstance(work_orders, list):
         findings.append(Finding("INVALID_WORK_ORDERS", path, "work_orders must be a list"))
-        return
+        return work_order_by_id
     ids: set[str] = set()
     for index, item in enumerate(work_orders):
         if not isinstance(item, dict):
@@ -599,12 +600,18 @@ def _validate_implementation_registry(
                 )
             )
         work_id = item.get("id")
-        if isinstance(work_id, str):
+        if isinstance(work_id, str) and work_id:
             if work_id in ids:
                 findings.append(
                     Finding("DUPLICATE_WORK_ORDER", path, f"duplicate id {work_id}")
                 )
-            ids.add(work_id)
+            else:
+                ids.add(work_id)
+                work_order_by_id[work_id] = item
+        else:
+            findings.append(
+                Finding("INVALID_WORK_ORDER", path, f"work_orders[{index}] needs a non-empty id")
+            )
         status = item.get("status")
         if status not in WORK_ORDER_STATES:
             findings.append(
@@ -614,7 +621,75 @@ def _validate_implementation_registry(
                     f"{work_id or index} has invalid status {status!r}",
                 )
             )
+        operator_decision_required = item.get("operator_decision_required")
+        if not isinstance(operator_decision_required, bool):
+            findings.append(
+                Finding(
+                    "INVALID_WORK_ORDER_OPERATOR_FLAG",
+                    path,
+                    f"{work_id or index} operator_decision_required must be boolean",
+                )
+            )
+        elif operator_decision_required and status == "READY":
+            findings.append(
+                Finding(
+                    "OPERATOR_DECISION_WORK_ORDER_READY",
+                    path,
+                    f"{work_id or index} requires an operator decision and cannot be READY",
+                )
+            )
+        elif status == "REQUIRES_OPERATOR" and not operator_decision_required:
+            findings.append(
+                Finding(
+                    "REQUIRES_OPERATOR_WORK_ORDER_FLAG",
+                    path,
+                    f"{work_id or index} is REQUIRES_OPERATOR but does not declare operator_decision_required",
+                )
+            )
         _validate_program_reference(item, path, findings)
+    return work_order_by_id
+
+
+def _validate_operator_question_links(
+    questions: list[dict[str, Any]],
+    work_orders: dict[str, dict[str, Any]],
+    findings: list[Finding],
+) -> None:
+    path = "docs/canon/open_questions.jsonl"
+    for row in questions:
+        record_id = str(row.get("id", "<unknown>"))
+        blocking_work_order = row.get("blocking_work_order")
+        if blocking_work_order is None:
+            continue
+        if not _is_non_empty_string(blocking_work_order):
+            findings.append(
+                Finding(
+                    "INVALID_BLOCKING_WORK_ORDER",
+                    path,
+                    f"{record_id} blocking_work_order must be a non-empty string",
+                )
+            )
+            continue
+        work_order = work_orders.get(blocking_work_order)
+        if work_order is None:
+            findings.append(
+                Finding(
+                    "UNKNOWN_BLOCKING_WORK_ORDER",
+                    path,
+                    f"{record_id} references unknown work order {blocking_work_order}",
+                )
+            )
+            continue
+        if row.get("operator_decision_required") is True and (
+            work_order.get("operator_decision_required") is not True
+        ):
+            findings.append(
+                Finding(
+                    "OPERATOR_DECISION_WORK_ORDER_MISMATCH",
+                    path,
+                    f"{record_id} requires an operator decision but {blocking_work_order} does not",
+                )
+            )
 
 
 def _validate_product_lineages(
@@ -772,7 +847,7 @@ def _validate_evidence_sources(
                 )
             )
         kind = row.get("kind")
-        expected_tier = EVIDENCE_SOURCE_TIERS.get(kind)
+        expected_tier = EVIDENCE_SOURCE_TIERS.get(kind) if isinstance(kind, str) else None
         if expected_tier is None:
             findings.append(
                 Finding(
@@ -1020,7 +1095,11 @@ def _validate_decision_evidence_matrix(
 
         evidence_ids = row.get("evidence_ids")
         resolved_sources: list[dict[str, Any]] = []
-        if not _is_non_empty_string_list(evidence_ids):
+        if (
+            not isinstance(evidence_ids, list)
+            or not evidence_ids
+            or not all(isinstance(evidence_id, str) and evidence_id for evidence_id in evidence_ids)
+        ):
             findings.append(
                 Finding(
                     "INCOMPLETE_EVIDENCE_MATRIX",
@@ -1030,6 +1109,7 @@ def _validate_decision_evidence_matrix(
             )
         else:
             for evidence_id in evidence_ids:
+                assert isinstance(evidence_id, str)
                 source = sources.get(evidence_id)
                 if source is None:
                     findings.append(
@@ -1183,7 +1263,7 @@ def validate_repo(root: Path) -> tuple[list[Finding], int]:
                     + (f"; extra {', '.join(extra)}" if extra else ""),
                 )
             )
-    _validate_implementation_registry(implementation, findings)
+    work_orders = _validate_implementation_registry(implementation, findings)
 
     registries: dict[str, list[dict[str, Any]]] = {}
     record_count = 0
@@ -1202,6 +1282,9 @@ def validate_repo(root: Path) -> tuple[list[Finding], int]:
             _validate_program_reference(row, f"docs/canon/{name}", findings)
 
     _validate_critical_decisions(registries.get("decision_registry.jsonl", []), findings)
+    _validate_operator_question_links(
+        registries.get("open_questions.jsonl", []), work_orders, findings
+    )
     _validate_adr_coverage(
         root, registries.get("decision_registry.jsonl", []), findings
     )

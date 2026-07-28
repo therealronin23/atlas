@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — elegibilidad de work orders del operador forzada
+  (ADC-WO-113).** El gate canónico rechaza ahora un work order
+  `operator_decision_required` marcado `READY`, un `REQUIRES_OPERATOR` sin
+  flag explícito y una pregunta de operador que apunte a un bloqueo inexistente
+  o incompatible. El análisis P00/P01/P09 deja P01 sin migración segura: la
+  frontera Mission/Task y los POST 7341 conservan `REQUIRES_OPERATOR`; P09
+  cierra el gate de tipos y mantiene la validación amplia separada. Pruebas
+  canónicas (25), validator y mypy del script pasan. **Próxima acción:**
+  repetir la suite completa contra el commit actual y preparar los siguientes
+  lotes de decisión solo con evidencia fresca.
+
 - **2026-07-28 — gate de tipos de adapters opcionales cerrado (ADC-WO-112).**
   Los bordes `fal_client` de imagen/vídeo ya aceptan solo mappings con claves
   textuales, de modo que una forma maliciosa o errónea se convierte en fallo

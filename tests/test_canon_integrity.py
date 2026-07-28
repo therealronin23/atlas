@@ -44,6 +44,46 @@ def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
     )
 
 
+def _work_order(
+    *,
+    identifier: str = "ADC-WO-TEST",
+    operator_decision_required: bool = False,
+    status: str = "READY",
+) -> dict[str, object]:
+    return {
+        "id": identifier,
+        "program": "P00",
+        "title": "Test canonical work order",
+        "problem": "Exercise work-order eligibility validation.",
+        "evidence": ["fixture"],
+        "source_decisions": ["ADR-067"],
+        "current_state": "Fixture state.",
+        "target_state": "Validated fixture state.",
+        "scope": ["fixture"],
+        "files": ["ATLAS.md"],
+        "tests": ["pytest"],
+        "risks": ["fixture"],
+        "rollback": "Revert the fixture.",
+        "dependencies": [],
+        "acceptance": ["Validation is deterministic."],
+        "operator_decision_required": operator_decision_required,
+        "status": status,
+    }
+
+
+def _write_work_orders(root: Path, rows: list[dict[str, object]]) -> None:
+    (root / "docs" / "canon" / "implementation_registry.yaml").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "candidate": "ATLAS_DEFINITIVE_CANDIDATE",
+                "work_orders": rows,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _critical_decisions() -> list[dict[str, object]]:
     return [
         {
@@ -477,6 +517,81 @@ def test_valid_candidate_passes(tmp_path: Path) -> None:
     result = _run(_make_candidate(tmp_path))
     assert result.returncode == 0, result.stdout + result.stderr
     assert "canon integrity: PASS" in result.stdout
+
+
+def test_operator_decision_work_order_cannot_be_ready(tmp_path: Path) -> None:
+    """Break caught: a constitutional choice cannot enter the executable queue."""
+    root = _make_candidate(tmp_path)
+    _write_work_orders(root, [_work_order(operator_decision_required=True)])
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "OPERATOR_DECISION_WORK_ORDER_READY" in result.stdout
+
+
+def test_requires_operator_status_needs_an_explicit_operator_flag(tmp_path: Path) -> None:
+    """Break caught: status labels cannot smuggle an untracked human gate."""
+    root = _make_candidate(tmp_path)
+    _write_work_orders(root, [_work_order(status="REQUIRES_OPERATOR")])
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "REQUIRES_OPERATOR_WORK_ORDER_FLAG" in result.stdout
+
+
+def test_operator_question_requires_an_existing_compatible_work_order(
+    tmp_path: Path,
+) -> None:
+    """Break caught: a visible operator blocker cannot point at thin air."""
+    root = _make_candidate(tmp_path)
+    questions = root / "docs" / "canon" / "open_questions.jsonl"
+    _write_jsonl(
+        questions,
+        [
+            {
+                "id": "OPEN-TEST",
+                "program": "P00",
+                "status": "REQUIRES_OPERATOR",
+                "question": "Which authority owns this boundary?",
+                "operator_decision_required": True,
+                "blocking_work_order": "ADC-WO-MISSING",
+            }
+        ],
+    )
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "UNKNOWN_BLOCKING_WORK_ORDER" in result.stdout
+
+
+def test_operator_question_cannot_link_to_non_operator_work_order(
+    tmp_path: Path,
+) -> None:
+    """Break caught: an ordinary task must not masquerade as a decision gate."""
+    root = _make_candidate(tmp_path)
+    _write_work_orders(root, [_work_order(status="DONE")])
+    questions = root / "docs" / "canon" / "open_questions.jsonl"
+    _write_jsonl(
+        questions,
+        [
+            {
+                "id": "OPEN-TEST",
+                "program": "P00",
+                "status": "REQUIRES_OPERATOR",
+                "question": "Which authority owns this boundary?",
+                "operator_decision_required": True,
+                "blocking_work_order": "ADC-WO-TEST",
+            }
+        ],
+    )
+
+    result = _run(root)
+
+    assert result.returncode == 1
+    assert "OPERATOR_DECISION_WORK_ORDER_MISMATCH" in result.stdout
 
 
 def test_evidence_matrix_rejects_unknown_evidence_id(tmp_path: Path) -> None:

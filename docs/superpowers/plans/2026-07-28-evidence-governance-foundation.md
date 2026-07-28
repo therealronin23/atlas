@@ -443,6 +443,46 @@ remain runnable without the extra.
   git commit -m "fix(adapters): close optional SDK type gaps"
   ```
 
+### Task 6: Enforce operator-decision work-order eligibility
+
+**Files:**
+- Modify: `scripts/check_canon.py`
+- Modify: `tests/test_canon_integrity.py`
+- Modify: `docs/canon/implementation_registry.yaml`
+
+- [x] **Step 1: Audit the P00/P01/P09 continuation boundary**
+
+  P01 has no safe ownership migration before the reserved Mission/Task and
+  7341 decisions. P00 did have a runnable gap: the gate validated work-order
+  syntax but not whether a decision-gated work item was executable.
+
+- [x] **Step 2: Add red relationship tests**
+
+  A decision-required `READY` work order, a `REQUIRES_OPERATOR` item without
+  its explicit flag, an unknown blocker, and an incompatible blocker linkage
+  must all fail the real validator on a miniature candidate.
+
+- [x] **Step 3: Implement cross-registry eligibility checks**
+
+  The implementation validator now returns its registered work-order map;
+  operator questions resolve against it. The gate rejects untracked execution
+  eligibility and reports a stable actionable finding code.
+
+- [x] **Step 4: Remove focal static-type debt in the validator**
+
+  Mypy revealed three existing narrowing defects in `check_canon.py`; the
+  same slice now makes the script type-clean without changing validation
+  semantics.
+
+- [x] **Step 5: Verify and commit the governance enforcement slice**
+
+  ```bash
+  PYTHONPATH=src python -m pytest tests/test_canon_integrity.py -q
+  PYTHONPATH=src python scripts/check_canon.py
+  MYPYPATH=src python -m mypy scripts/check_canon.py
+  git commit -m "feat(canon): gate operator decision work orders"
+  ```
+
 ## Plan Self-Review
 
 - Spec coverage: sections 4–8 and 11–12 are implemented by Tasks 1–3. The

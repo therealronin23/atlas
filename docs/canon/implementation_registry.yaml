@@ -986,3 +986,44 @@ work_orders:
       - strict mypy completes with exit code 0
     operator_decision_required: false
     status: DONE
+
+  - id: ADC-WO-113
+    program: P00
+    title: Enforce operator-decision work-order eligibility
+    problem: The canonical gate validates work-order shape but does not reject a decision-gated item marked READY or an operator question whose blocking work order does not exist, allowing documentation state to imply unauthorized execution.
+    evidence:
+      - scripts/check_canon.py validates work-order fields and status vocabulary but not operator-decision semantics
+      - docs/canon/open_questions.jsonl links constitutional blockers to work orders
+      - current operator directive sections 15 and 17 reserve constitutional and irreversible decisions to the operator
+    source_decisions:
+      - ADR-067
+      - current operator directive sections 7, 15, and 17
+      - evidence-before-operator-choice standing rule
+    current_state: READY/BLOCKED/REQUIRES_OPERATOR labels are syntactically checked, while the cross-registry execution eligibility relationship is not enforced.
+    target_state: A decision-required work order cannot be marked READY, REQUIRES_OPERATOR has an explicit operator flag, and every blocking-work-order reference from an operator question resolves to a compatible registered work order.
+    scope:
+      - scripts/check_canon.py
+      - tests/test_canon_integrity.py
+      - docs/canon/implementation_registry.yaml
+      - docs/canon/open_questions.jsonl
+    files:
+      - scripts/check_canon.py
+      - tests/test_canon_integrity.py
+      - docs/canon/implementation_registry.yaml
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_canon_integrity.py -q
+      - PYTHONPATH=src python scripts/check_canon.py
+      - MYPYPATH=src python -m mypy scripts/check_canon.py
+    risks:
+      - rejecting a completed historical work order that correctly followed a prior operator decision
+      - overconstraining open questions that are informational rather than blockers
+    rollback: Revert the isolated validator commit; it changes no runtime authority and no decision disposition.
+    dependencies: []
+    acceptance:
+      - READY work orders never require an operator decision
+      - REQUIRES_OPERATOR work orders explicitly declare that requirement
+      - a missing or incompatible blocking work-order reference fails with an actionable code
+      - the current candidate remains valid
+    operator_decision_required: false
+    status: DONE
