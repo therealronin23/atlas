@@ -12,6 +12,14 @@
   que falta, o se reconoce formalmente que la Constitución vive en otro
   sitio? El operador eligió la segunda opción.
 
+## Proyección definitiva sin quinta constitución (2026-07-27)
+
+`ATLAS.md` es la entrada humana única y
+`docs/canon/authority_registry.yaml` el índice machine-readable de autoridad.
+Ninguno sustituye ni duplica la constitución distribuida de este ADR: ambos
+enlazan sus fuentes y separan decisión, estado actual y objetivo. Los registros
+de `docs/canon/` son compilación trazable, no una nueva fuente constitucional.
+
 ## Decisión
 
 1. **La Constitución de Atlas vive distribuida, no como fichero único**,

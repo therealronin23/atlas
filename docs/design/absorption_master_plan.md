@@ -100,6 +100,12 @@ apps no está justificado por lo encontrado.
 
 ## Política revisada 2026-07-18 (operador, sesión T2.1 IDE) — "fork inteligente"
 
+> **Disposición 2026-07-28:** ADR-078 convierte este precedente en un método
+> explícito de linaje: CodeOSS/VSCodium es host, Void donante de capacidades y
+> Zed donante ACP/de patrones. “Poseer código” no significa importar un árbol
+> entero ni crear una autoridad paralela; cada pieza se mueve, porta, envuelve
+> o rechaza con procedencia, licencia, contrato y rollback.
+
 La política original de abajo ("clone into /tmp... then delete the clone; do
 not vendor or keep full forks") queda **corregida**: el operador señaló que
 esto contradice lo que realmente conviene — todo este código es open source y
@@ -328,7 +334,9 @@ application-controlled, the model doesn't decide its own permissions. Cursor: sa
 seccomp on Linux, Seatbelt on macOS — the same mechanism `BwrapJail` already uses) is a structural
 layer independent of the LLM, with an "LLM safety classifier" only for the residual non-sandboxable
 case, never as the sole gate. This is strong independent validation of Atlas's own D2 invariant
-(`AutonomousDecider`, see [[conclave-recordingdecider-blindspots]]) — not an idiosyncratic overcaution.
+(`AutonomousDecider`, see the historical note
+`conclave-recordingdecider-blindspots`, not present as a document in this
+checkout) — not an idiosyncratic overcaution.
 
 ### Cross-cutting finding — Atlas is already ahead exactly where the user expected
 
@@ -441,7 +449,8 @@ skip = overlaps Atlas's own identity or solves a problem Atlas doesn't have.
    service), LLM-friendly markdown output, deep crawl (BFS/DFS), adaptive crawling
    (stops when enough context gathered), 3-tier anti-bot with proxy escalation,
    Shadow DOM flattening. Uses Playwright underneath — same engine already installed
-   in `.venv`. Fits [[adopt-real-not-shell]] perfectly: `pip install crawl4ai`,
+   in `.venv`. Fits the recorded principle `adopt-real-not-shell`
+   (historical note, not a document in this checkout): `pip install crawl4ai`,
    wrap as an Atlas tool routed through SSRFBridge/decider like `BrowserTool`.
    Community MCP servers exist but wrapping the library directly is less indirection.
 2. **Stirling PDF** (Stirling-Tools, v2.9.0 abr-2026) — capability Atlas has zero

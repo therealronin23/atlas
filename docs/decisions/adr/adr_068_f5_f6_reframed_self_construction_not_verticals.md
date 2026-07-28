@@ -10,6 +10,13 @@
   (no como clon de n8n), sería la superficie para ver/controlar/auditar los
   workflows dinámicos que Atlas ya ejecuta hoy sin superficie visible.
 
+## Disposición definitiva (2026-07-27)
+
+Se preservan simultáneamente las dos partes: ADR-066 mantiene aparcada la
+superficie completa y este ADR conserva el reencuadre. Los cortes read-only
+entregados después son código y arnés de validación; no equivalen a aceptar el
+producto final ni levantan por sí solos el parking del programa completo.
+
 ## Decisión
 
 1. **Se corrige el ENCUADRE, no el parking.** F5/F6 siguen sin

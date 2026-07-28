@@ -2,7 +2,9 @@
 
 Fecha: 2026-06-17 (actualizado 2026-06-19) · Estado: **En membrana** (`AttestedInspector` + `cause=` en gateway implementados; **compuerta de causa = `DriftTripwire` implementada 2026-06-19**, ver más abajo) · Origen: `idea avance 3.md` ·
 Contexto: ADR-053 (causa registrada), ADR-054 (capa 1), `src/atlas/transparency/attestation.py`
-(`AttestedInspector`), `src/atlas/security/drift.py` (compuerta de causa), [[OSM-001]] (métrica de campaña), [[OSM-024]], [[OSM-042]] (shadow router que consume el confidence).
+(`AttestedInspector`), `src/atlas/security/drift.py` (compuerta de causa),
+OSM-001 (registro de métrica de campaña sin fichero actual), [[OSM-024]],
+[[OSM-042]] (shadow router que consume el confidence).
 
 ---
 
@@ -32,7 +34,7 @@ si hay causa se inspecciona el contenido contra una lista cerrada.
   del chat es ese, renombrado. Esta OSM le antepone el monitor de metadata como compuerta de
   causa.
 - **Capa 1 (ADR-054)**: el monitor por causa es el front-end barato de la capa de filtro.
-- **[[OSM-001]] (métrica de campaña)**: las señales del monitor (similitud, volumen) son la
+- **OSM-001 (registro sin fichero actual; métrica de campaña)**: las señales del monitor (similitud, volumen) son la
   materia prima de C_attempts / K_attribution. Las dos OSM comparten el cómputo de similitud.
 - **Invariantes I2** (la causa se registra) e **I3** (no perfilar al usuario legítimo).
 
@@ -52,7 +54,7 @@ si hay causa se inspecciona el contenido contra una lista cerrada.
 
 1. **Verificable**: corregida la promesa "metadata vs contenido"; el esquema de dos niveles
    es estándar y honesto si se redacta bien.
-2. **Coherente**: I2 (causa registrada) + I3 (no perfilar); comparte cómputo con [[OSM-001]].
+2. **Coherente**: I2 (causa registrada) + I3 (no perfilar); comparte cómputo con el registro OSM-001.
 3. **Probado**: test de que sin causa no hay entrada `inspected=true` y de que la causa
    siempre precede a la inspección de contenido.
 4. **Mantenible**: embeddings ligeros podrían ir en Rust ([[OSM-029]]); la lista cerrada es

@@ -14,7 +14,8 @@ procedencia verificable.
 
 - Paquete PyPI: `graphifyy` (doble y); CLI/skill por plataforma (`/graphify`).
 - Exports nativos: JSON (GraphRAG-ready), HTML interactivo, **vault Obsidian**
-  (una nota .md por nodo con [[wikilinks]] + frontmatter YAML), **Cypher**, Canvas,
+  (una nota .md por nodo con sintaxis de wikilink de doble corchete + frontmatter YAML),
+  **Cypher**, Canvas,
   GraphML, SVG. Servidor MCP incluido (`python -m graphify.serve graph.json`).
 
 ## Corrida real sobre atlas-core/src (2026-07-09)

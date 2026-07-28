@@ -8,6 +8,16 @@
   2026-07-16 hallazgo 16 ("`atlas-twin` es el cliente canónico… las rutas
   antiguas fallan cerradas o quedan marcadas como compatibilidad REST").
 
+## Disposición definitiva (2026-07-27)
+
+La retirada del adapter REST legado permanece aceptada y realizada. No es
+evidencia de que Hermes esté desplegado o vivo hoy: el preflight fresco de esta
+candidata lo observa en modo mock, sin configuración ni verificación live. El
+cliente `atlas-twin` sigue siendo el canal objetivo, condicionado a una futura
+prueba operativa.
+`scripts/hermes_smoke.py` permanece únicamente como stub de retirada que falla
+de forma explícita; no reintroduce el canal REST.
+
 ## Decisión
 
 Se elimina `HermesRestAdapter` (y su smoke operacional REST) del árbol. El

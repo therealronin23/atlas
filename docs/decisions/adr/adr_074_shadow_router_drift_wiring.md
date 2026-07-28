@@ -10,6 +10,14 @@
   que la membrana exige antes de tocar producción)
 - Depende de: ADR-053/054 (protocolo de transparencia, `TransparencyGateway`)
 
+## Disposición definitiva (2026-07-27)
+
+El wiring existe detrás de `ATLAS_PIPELINE_GATE_D=1`. La observación de ese flag
+en un proceso demuestra `RUNTIME_CONFIGURED`, no por sí sola eficacia del
+tripwire, calidad del shadow model ni aprendizaje aceptado como producto. El
+umbral y el judge gate permanecen fail-closed; cualquier claim live debe
+vincular la comprobación fechada que lo observó.
+
 ## Contexto
 
 `ShadowRouter`, `SessionStateStore`, `ShadowModel` (`shadow_model.py`) y

@@ -8,6 +8,25 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — ATLAS DEFINITIVE CANDIDATE en convergencia aislada.** El
+  checkout original dirty quedó preservado mediante bundle/patch/tar
+  secret-safe y el trabajo vive en
+  `codex/atlas-definitive-convergence-20260727-154020`. `ATLAS.md` es la
+  entrada única; `VISION/ARCHITECTURE/PROGRAMS/PLAN/STATUS` y `docs/canon/`
+  separan decisión, código, test, wiring, configuración y runtime. Todos los
+  ADR tienen disposición; ADR-076 C sigue rechazado; el bridge 7341 mutante
+  frente a ADR-058/071 queda elevado como `ADC-WO-107`. La revisión
+  adversarial corrigió dos bypasses: high-sensitivity se normaliza después de
+  cualquier Decider y Sentinel ahora falla cerrado ante error/snapshot
+  corrupto, revocando MCPs con drift. La separación argv/admission evita
+  ejecutar terceros limpios pero no admitidos. La UI resuelve PostCSS 8.5.23
+  y audita sin vulnerabilidades. ADR-078 fija Atlas Engineering Workbench,
+  CodeOSS/VSCodium como host, Void como donante de capacidades y Zed como
+  donante ACP/de patrones; Cut 2 será integral y Android queda como proyección
+  posterior. **Próxima acción:** cerrar suite/mypy/reality/UI, auditoría final,
+  bundle/ZIP y publicación de commits; no elevar a `ATLAS CANON ACCEPTED` sin
+  el operador.
+
 - **2026-07-26 — publicación del grafo restaurada tras rebuild real.** El
   cargador bitemporal libera su `QueryResult` de Kuzu antes de cerrar la BD;
   ese objeto nativo retenía el lock que impedía cargar inmediatamente vault y
@@ -1379,7 +1398,12 @@ de escribir: `atlas reality --json`.
   (666 docs vs master plan) o F2.6 cuando el operador retome el token 401.
 - **ATLAS PRIME Cycle 2 — watchdog daemon + TimeoutStopSec (2026-07-22 10:50)**
   — TimeoutStopSec=30 en atlas-core.service (limita stop-sigterm hang de 90s a 30s). daemon_idle_guard.sh mejorado: auto-rearranca si inactivo >24h (salvaguarda: toque ~/.atlas/daemon_idle_parked para aparcar deliberadamente si la parada fue intencional). 11 tests dirigidos verdes. Ventana SIGTERM fija (handlers instalan DESPUÉS de start(), linea 401-408 en service_runner.py) diferida — bajo investigación abierta, ciclo propio. F2.6 test de sucesión SIGUE BLOQUEADO — intentado 2026-07-22 con token nuevo (setup-token corrido dos veces) y aún 401 "Invalid authentication credentials"; no es un problema de formato del token, algo más profundo en la credencial de cuenta. Diferido, operador decide cuándo retomar. OAuth google-workspace rotado (nuevo client ID: 228819788474-u6ts3hamsjplf307tifmqob3oon1jv2u; secret guardado fuera del repo en ~/.config/atlas/google-oauth.env, inyectado por wrapper vía safe_dotenv). **Próxima acción:** F2.6 execution (operador o Sonnet con presupuesto) + Cycle 3 GoldenRoute wiring.
-- **Desbloqueos operador (2026-07-22 09:30)** — Anthropic token renovado (sk-ant-oat01-..., válido 1 año); F2.6 test de sucesión EJECUTABLE ahora con `claude -p`. OAuth google-workspace rotado (228819788474-k5s30lhsop9e7rcspg503p7qsc607blt; secret en ~/.config/atlas/google-oauth.env 0600, fuera del repo, inyectado por wrapper vía safe_dotenv — argv limpio de credenciales ahora). Pending: F2.6 execution (operador o Sonnet con presupuesto) + 4 decisiones toasty (spec B+C, monitor graphify, higiene handoff INDEX).
+- **Desbloqueos operador (2026-07-22 09:30)** — Credenciales de Anthropic
+  y Google Workspace renovadas y almacenadas fuera del repositorio; F2.6 pasó
+  a ser ejecutable mediante `claude -p`, y el wrapper de Google usa
+  `safe_dotenv` con `argv` libre de credenciales. Los identificadores se
+  redactan en este ledger. Pendiente: ejecución F2.6 con presupuesto y cuatro
+  decisiones de producto/gobernanza.
 - **ATLAS PRIME Cycle 1 — daemon rearrancado + frescura del grafo en reality +
   proveedor muerto retirado (2026-07-22)** — el daemon llevaba PARADO desde el
   2026-07-17 12:21 (stop limpio vía systemctl, nunca rearrancado; la guarda

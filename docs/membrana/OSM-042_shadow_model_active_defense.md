@@ -2,12 +2,16 @@
 
 Fecha: 2026-06-17 · Estado: **Promovida a ADR-074** (2026-07-24, Fase 1 del
 plan de implementación de abajo: ShadowRouter + DriftTripwire + ShadowModel
-cableados en producción real, con Cónclave real convocado primero. Fase 2
+cableados detrás de Gate D y configurados en el proceso baseline, sin tráfico
+fresco `LIVE_VERIFIED`. Fase 2
 (red team) y Fase 4 (honeypot standalone) siguen sin construir) · Absorbida (2026-06-18) ·
 Origen: sesión 2026-06-17 — extensión natural de la capa 2 (output inspection) y de
 OSM-028 (inspección por causa) · Contexto: `src/atlas/security/` (nuevo módulo),
 `src/atlas/transparency/client_cosign.py` (`InspectionRecord.decision`),
 [[OSM-028]] (trigger), [[OSM-007]] (log), capa 2 output inspection.
+
+Disposición 2026-07-27: ADR-074 promueve únicamente Fase 1 como
+`CODE_PRESENT/TESTED/WIRED/RUNTIME_CONFIGURED`; Fases 2/4 siguen propuestas.
 
 ---
 

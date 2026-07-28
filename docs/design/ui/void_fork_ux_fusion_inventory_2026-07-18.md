@@ -12,6 +12,14 @@ fusión de verdad en una sesión fresca, con contexto limpio. Todo lo de abajo
 está verificado contra código real — repos clonados, commits reales, líneas
 de código reales — no asumido.
 
+## Disposición posterior
+
+ADR-078 (2026-07-28) conserva este inventario como evidencia precursora, pero
+refina su propuesta: CodeOSS/VSCodium es el host actualizado de Atlas
+Engineering Workbench, Void aporta capacidades portables y Zed aporta
+ACP/patrones seleccionados. Las frases históricas de abajo que llaman a Void
+“base” o a Zed solo “referencia” no son ya la autoridad de producto.
+
 ## 0. Por qué existe este documento
 
 La sesión de hoy conectó el backend de Atlas a un fork de Void (`~/proyectos/

@@ -1,10 +1,17 @@
 # ADR-072 — Escaneo local y acotado antes de admitir artefactos de terceros
 
-- **Estado**: aceptado (A1; aún sin consumidor de runtime)
+- **Estado**: aceptado (A1)
 - **Fecha**: 2026-07-20
 - **Contexto previo**: AGENTS.md invariantes 1, 4, 6 y 8; ADR-063 Gate
   Engine; investigación limpia de Cline/Aider/OpenHands y del escáner
   Bumblebee fijado a commit `4a02b80aaca86641767c0d6cbe77c6856e4b481b`.
+
+## Disposición definitiva (2026-07-27)
+
+La nota histórica “aún sin consumidor” quedó supersedida por ADR-073: el informe
+A1 se consume en la admisión declarativa y en el flujo materializador/recibo/
+activador. Sigue siendo evidencia local acotada, no permiso de ejecución ni
+prueba de seguridad semántica.
 
 ## Contexto
 
