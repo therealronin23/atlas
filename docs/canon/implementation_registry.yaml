@@ -295,7 +295,7 @@ work_orders:
       - independent reviewer findings
     source_decisions:
       - current operator directive sections 19 through 23
-    current_state: Pending implementation of the candidate.
+    current_state: Adversarial review and validation are complete at the substantive anchor; local delivery artifacts and portable bundles are assembled in the delivery commits.
     target_state: No blocking finding remains; resolvable major findings are fixed; reports, patch, commits, bundle, checksum, and documentary ZIP are verified.
     scope:
       - adversarial review
@@ -330,7 +330,7 @@ work_orders:
       - bundle and checksum verify
       - final diff and commit inventory match the final commit
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-100
     program: P10

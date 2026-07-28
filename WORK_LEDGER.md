@@ -23,9 +23,12 @@ de escribir: `atlas reality --json`.
   y audita sin vulnerabilidades. ADR-078 fija Atlas Engineering Workbench,
   CodeOSS/VSCodium como host, Void como donante de capacidades y Zed como
   donante ACP/de patrones; Cut 2 será integral y Android queda como proyección
-  posterior. **Próxima acción:** cerrar suite/mypy/reality/UI, auditoría final,
-  bundle/ZIP y publicación de commits; no elevar a `ATLAS CANON ACCEPTED` sin
-  el operador.
+  posterior. La validación final pasa: 4559 tests core, 26 browser, mypy sobre
+  318 módulos, Reality ampliado sin strict failures, UI build/audit, lock,
+  pip-audit y wheel smoke. Hermes sigue no live, MCP solo configurado y graph
+  stale por diseño para no sobrescribir el runtime compartido. **Próxima
+  acción:** revisión del operador sobre la rama/bundle; no elevar a
+  `ATLAS CANON ACCEPTED` ni abrir Cut 1 hasta esa aceptación.
 
 - **2026-07-26 — publicación del grafo restaurada tras rebuild real.** El
   cargador bitemporal libera su `QueryResult` de Kuzu antes de cerrar la BD;

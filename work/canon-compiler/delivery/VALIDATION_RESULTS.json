@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-07-28T13:08:00Z",
+  "candidate": "ATLAS DEFINITIVE CANDIDATE",
+  "branch": "codex/atlas-definitive-convergence-20260727-154020",
+  "base_commit": "c95038c9d7e97ddc6339f38abe6dad09b166f47d",
+  "substantive_validation_anchor": "ff439d2840e30754fbf8175e0b61c59cf4e3c4de",
+  "overall": "PASS_WITH_EXPLICIT_RUNTIME_LIMITS",
+  "checks": [
+    {
+      "id": "package_r21_integrity",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "Expected SHA-256 1642047ab0c44928359f6161eca7535b317410974abad541370eb889b7b736c6 and ZIP CRC verified.",
+      "classification": "VERIFIED_INPUT"
+    },
+    {
+      "id": "pytest_core",
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/ -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "4559 passed, 6 skipped, 27 deselected, 1 warning in 669.78s",
+      "classification": "NO_REGRESSION"
+    },
+    {
+      "id": "pytest_browser",
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/ -q -m computer_use",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "26 passed, 1 skipped, 4565 deselected in 71.79s",
+      "classification": "LIVE_BROWSER_VERIFIED"
+    },
+    {
+      "id": "mypy",
+      "command": "MYPYPATH=src .venv/bin/python -m mypy src/atlas/",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "Success: no issues found in 318 source files",
+      "classification": "NO_REGRESSION"
+    },
+    {
+      "id": "reality_basic",
+      "command": "PYTHONPATH=src .venv/bin/atlas reality --json",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "status=ok; Merkle ok; graph STALE; Hermes mock; MCP configured; providers absent",
+      "classification": "HONEST_RUNTIME_PROJECTION"
+    },
+    {
+      "id": "reality_extended",
+      "command": "PYTHONPATH=src .venv/bin/atlas reality --run-checks --include-browser --json",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "status=ok; strict_failures=[]; core, mypy and browser passed",
+      "classification": "LIVE_VERIFIED_WITH_DECLARED_LIMITS"
+    },
+    {
+      "id": "merkle_audit",
+      "command": "PYTHONPATH=src .venv/bin/atlas audit --verify",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "Merkle chain intact",
+      "classification": "LIVE_VERIFIED"
+    },
+    {
+      "id": "doctor_health",
+      "command": "atlas doctor && atlas health",
+      "status": "PASS_WITH_WARNINGS",
+      "exit_code": 0,
+      "summary": "Governance and Merkle healthy; warnings for absent external integration settings and unconfigured Hermes",
+      "classification": "RUNTIME_UNAVAILABLE_EXTERNAL"
+    },
+    {
+      "id": "canon_integrity",
+      "command": "python scripts/check_canon.py && pytest tests/test_canon_integrity.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "2062 JSONL records; 15 tests passed",
+      "classification": "NO_REGRESSION"
+    },
+    {
+      "id": "docs_index",
+      "command": "python scripts/docs_index_audit.py --strict",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "906 entries; no missing, orphan index entries or stale verification",
+      "classification": "NO_REGRESSION"
+    },
+    {
+      "id": "ui",
+      "command": "npm ci && npm run build && npm audit --audit-level=high",
+      "status": "PASS_WITH_WARNINGS",
+      "exit_code": 0,
+      "summary": "Build passed; 0 vulnerabilities; host Node/npm engine mismatch and 675 kB chunk warning",
+      "classification": "ENVIRONMENTAL_WARNING"
+    },
+    {
+      "id": "lock",
+      "command": "uv lock --check",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "301 packages resolved; lock current",
+      "classification": "NO_REGRESSION"
+    },
+    {
+      "id": "dependency_audit",
+      "command": "pip-audit --strict against uv export --frozen --extra dev",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "No known vulnerabilities found",
+      "classification": "NO_KNOWN_VULNERABILITY"
+    },
+    {
+      "id": "wheel_smoke",
+      "command": "uv build --wheel; install with Python 3.11 outside checkout",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "Installed import, packaged governance/fixtures/templates and atlas CLI passed",
+      "classification": "DISTRIBUTION_VERIFIED"
+    },
+    {
+      "id": "secret_scan",
+      "command": "changed-file credential/private-key pattern scan",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": "No changed file matched token, credential or private-key patterns",
+      "classification": "NO_SECRET_FINDING"
+    },
+    {
+      "id": "sanitation",
+      "command": "PYTHONPATH=src .venv/bin/python scripts/sanitation_audit.py",
+      "status": "PASS_WITH_INFO",
+      "exit_code": 0,
+      "summary": "No unclassified code vapor; navigation/archive debt remains explicitly deferred",
+      "classification": "PRE_EXISTING_INFORMATIONAL"
+    }
+  ],
+  "runtime_limits": {
+    "hermes": "mock_unconfigured_not_live",
+    "mcp": "two_configured_no_live_handshake",
+    "providers": "none_configured",
+    "structural_graph": "stale_against_candidate",
+    "f26": "never_run",
+    "product_acceptance": "operator_only"
+  },
+  "failure_history": [
+    {
+      "finding": "Semgrep resolution test depended on an undeclared venv-local executable.",
+      "classification": "PRE_EXISTING_ENVIRONMENT_COUPLED_TEST",
+      "resolution": "Hermetic local and PATH-fallback fixtures; focused and full suites pass."
+    },
+    {
+      "finding": "Extended Reality timed out a passing core suite at 600 seconds.",
+      "classification": "INTRODUCED_BY_SUITE_DURATION_EXPOSING_PRE_EXISTING_LIMIT",
+      "resolution": "TDD change to finite configurable 900-second default; extended Reality passes."
+    }
+  ]
+}

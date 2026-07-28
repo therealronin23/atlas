@@ -49,6 +49,34 @@ commit final cuando el mismo scope lo permita.
 El build produjo un chunk JS de ~675 kB y Vite advirtió sobre code splitting;
 es deuda de rendimiento, no fallo de compilación.
 
+## Validación de candidata
+
+Anchor sustantivo validado:
+`ff439d2840e30754fbf8175e0b61c59cf4e3c4de`.
+Los commits posteriores contienen únicamente estado/reportes y artefactos de
+entrega autocontenidos.
+
+| Comprobación | Resultado | Clasificación |
+|---|---|---|
+| `pytest tests/ -q` | PASS: 4559, 6 skipped, 27 deselected | sin regresiones |
+| `mypy src/atlas/` | PASS: 318 módulos | sin issues |
+| `atlas reality --run-checks --include-browser --json` | PASS / `status=ok`, 0 strict failures | core, mypy y browser proyectados |
+| Browser marker | PASS: 26, 1 skipped, 4565 deselected | navegador fresco |
+| `atlas audit --verify` | PASS | Merkle íntegro |
+| Canon + tests | PASS: 2062 registros / 15 tests | autoridad machine-readable íntegra |
+| Docs index strict | PASS: 906 entradas | 0 ausentes/huérfanas de índice |
+| UI install/build/audit | PASS / 0 vulnerabilidades | warning ambiental de engine y chunk |
+| `uv lock --check` | PASS: 301 paquetes | lock coherente |
+| `pip-audit --strict` | PASS | 0 vulnerabilidades conocidas |
+| Wheel Python 3.11 | PASS | import, recursos y CLI fuera del checkout |
+| Secret scan de cambios | PASS | 0 tokens/claves/credenciales detectados |
+
+Reality fresco conserva límites, no los maquilla: Hermes está mock/no
+configurado/no live; MCP tiene dos servidores configurados sin handshake; no
+hay proveedores externos; el grafo Kuzu compartido corresponde al baseline y
+está `STALE` frente a la candidata. No se sobrescribió desde el worktree para
+no contaminar el runtime del checkout original.
+
 ## Runtime base observado
 
 El checkout original, no este worktree candidato, estaba ejecutando
