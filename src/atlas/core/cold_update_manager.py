@@ -517,7 +517,10 @@ class ColdUpdateManager:
         if self._decider is None:
             return
 
-        from atlas.core.decider.decider import DecisionAction
+        from atlas.core.decider.decider import (
+            DecisionAction,
+            enforce_constitutional_verdict,
+        )
 
         action = DecisionAction(
             kind="cold_update_anomaly",
@@ -530,7 +533,9 @@ class ColdUpdateManager:
             "intent": proposal.intent,
             "forensics": proposal.forensics,
         }
-        verdict = self._decider.decide(action, proposal.intent, context)
+        verdict = enforce_constitutional_verdict(
+            action, self._decider.decide(action, proposal.intent, context)
+        )
         verdict_repr = repr(verdict)
         proposal.forensics["anomaly_verdict"] = verdict_repr
         self._merkle.log(

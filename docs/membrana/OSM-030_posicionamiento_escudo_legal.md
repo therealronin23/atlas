@@ -5,6 +5,10 @@ Origen: `idea avance 3.md` · Contexto: ADR-051 (Compliance Gateway),
 `docs/eu_ai_act_mapping.md`, `docs/compliance_gateway_carta_en.md`, [[OSM-024]].
 Pieza de narrativa: el motor de adopción del filtro es legal/regulatorio, no técnico.
 
+Disposición 2026-07-27: **RESEARCH / narrativa propuesta**. No constituye
+opinión legal ni prueba de cumplimiento, y la preferencia histórica por Osmosis
+no decide su guarantee/enforcement profile.
+
 ---
 
 ## Contexto
@@ -112,7 +116,9 @@ mapean directamente a esta OSM:
 3. **Probado**: "prueba" es coherencia interna con los artículos del EU AI Act listados
    arriba + validación por asesoría legal (pendiente, no bloqueante para arXiv).
 4. **Mantenible**: documentación/narrativa; 0 deps de código.
-5. **Sancionado**: posicionamiento de producto; decisión del usuario (ya tomada: Osmosis gana).
+5. **Preferencia histórica**: posicionamiento de producto; no equivale a
+   aceptación constitucional ni de enforcement (“Osmosis gana” queda como
+   dirección a decidir, no como `PRODUCT_ACCEPTED`).
 
 ## Límites honestos
 

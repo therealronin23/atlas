@@ -102,6 +102,7 @@ Atlas ecosystem taxonomy lives in `docs/design/atlas_ecosystem_map.md`.
 `no-gui-in-tests` · `no-deepen-hitl-coupling` · `no-security-lectures-local` ·
 `arxiv-citation-verification` · `adopt-real-not-shell` ·
 `research-before-deciding` · `challenge-the-trio` ·
+`evidence-before-operator-choice` ·
 `deep-onboarding-new-sessions` · `no-rewrite-git-history` ·
 `absorb-without-cloning` · `adversarial-audit-no-assumptions` ·
 `graph-rebuild-single-writer` · `semantic-full-scan-before-publish` ·

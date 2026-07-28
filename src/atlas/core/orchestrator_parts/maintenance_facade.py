@@ -227,9 +227,9 @@ class MaintenanceFacade:
 
         Traduce una ``McpProposal`` corroborada (slice 2) en una adopción real
         vía ``adopt_mcp_server``, que consulta el decisor (ADR-040). El adopter
-        no decide: bajo ``HumanDecider`` el seam exige aprobación humana y nada
-        se adopta; bajo autónomo/híbrido con la intención anclada, adopta y
-        registra el undo reversible (``remove_server``)."""
+        no decide: la acción es irreversible/high y el seam constitucional la
+        suspende o deniega bajo todos los modos soportados. No existe
+        auto-adopción remota ejecutable ni undo capaz de revertir sus efectos."""
         if self._maintenance_adopter is None:
             from atlas.core.self_maintenance import MaintenanceAdopter
 
@@ -268,10 +268,10 @@ class MaintenanceFacade:
         El cron no decide ni aplica por sí mismo: la adopción pasa SIEMPRE por
         ``adopt_mcp_server`` → seam del decisor (ADR-040). Bajo ``HumanDecider``
         (default) el seam devuelve "requiere aprobación humana" y nada se adopta
-        — paridad exacta con el HITL de hoy, surfado por el evento. Bajo
-        autónomo/híbrido con la intención anclada, adopta en caliente y registra
-        el undo reversible. Esto es human-ON-the-loop: el punto de decisión es el
-        decisor intercambiable, no un botón hardcodeado.
+        — paridad exacta con el HITL de hoy, surfado por el evento.
+        Autonomous deniega high y Hybrid lo enruta al humano; además el guard
+        constitucional normaliza cualquier ``Allow`` inyectado. El scheduler
+        descubre, analiza y propone: no auto-adopta.
 
         Cadencia: 24h por defecto (conservador en coste LLM/red), configurable
         vía ``ATLAS_MAINTENANCE_POLL_S`` (segundos) — sin esto,
@@ -303,16 +303,12 @@ class MaintenanceFacade:
                 # la auditoría del historial (110 intentos, 25 "adoptados") no
                 # era "esto salta el HITL" — `adopter.adopt()` YA pasaba
                 # siempre por `adopt_mcp_server` → el seam del decisor
-                # (ADR-040): bajo HumanDecider no hace nada, bajo
-                # autónomo/híbrido adopta con la intención anclada. El bug de
-                # verdad era que `McpRegistry.add_server()` solo mutaba la
-                # config EN MEMORIA — una adopción aprobada por el decisor
-                # nunca sobrevivía a un reinicio. Con `persist_path` cableado
-                # (McpRegistry ahora reescribe mcp_servers.json en cada
-                # add/remove), la adopción por fin es una acción durable, así
-                # que el cribado ya construido (SSRFBridge + MaintenanceAnalyst
-                # dual-LLM + decisor anclado) vuelve a tener un efecto real que
-                # gatear, en vez de evaporarse solo.
+                # (ADR-040). La llamada se conserva para producir el veredicto
+                # auditable, pero la acción es high/irreversible: Human e
+                # Hybrid requieren humano, Autonomous deniega, y el guard
+                # constitucional bloquea un custom Allow. `persist_path`
+                # garantiza durabilidad solo después de una futura ceremonia
+                # humana de adopción; no convierte propuesta en permiso.
                 adopter = self._orch.maintenance_adopter()
                 for proposal in proposals:
                     adopter.adopt(proposal)

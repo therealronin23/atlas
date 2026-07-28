@@ -19,6 +19,25 @@
 - NO enmienda: la regla constitucional #4 (`sensitivity="high"` → deny/require
   siempre) queda intacta y sin tocar en todos los casos.
 
+## Disposición atómica definitiva (2026-07-27)
+
+- **A — gate/informe/registro pre-Decider**: aceptada e implementada.
+- **B — activación**: aceptada, opt-in/default-off. El baseline observó
+  configuración, no tráfico fresco ni aceptación de producto.
+- **C — escalada universal a `Task.AWAITING_APPROVAL`**: limitación aceptada,
+  todavía no implementada universalmente.
+- **D — unblock**: código presente mediante comando humano convencional; el
+  string `actor` no prueba identidad criptográfica.
+- **Boundary**: sensibilidad alta exige humano o denegación y ADR-076 C sigue
+  rechazado.
+
+La candidata aplica la barrera después de cualquier `Decider`, antes de
+telemetría o efectos, y en consumidores directos conocidos. Un `Decider`
+personalizado no puede convertir sensibilidad alta en `Allow`. La permanencia
+de un rechazo sigue dependiendo de que el registro se persista; si esa
+persistencia falla, el intento actual queda bloqueado pero no se afirma
+protección de replay futura.
+
 ## Contexto — qué encontró la auditoría de hoy (verificado, no teórico)
 
 1. **`ATLAS_DECIDER=autonomous` está activo en producción** (confirmado contra

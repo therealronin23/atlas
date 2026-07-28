@@ -6,11 +6,12 @@ corroborada (slice 2) se traduce a ``McpServerConfig`` + ``Task`` y se delega en
 autoriza, hace ``add_server`` en caliente + registra el undo reversible.
 
 **El adopter NO decide.** El "botón HITL" del ADR es una implementación más del
-decisor (rumbo human-ON-the-loop): bajo ``HumanDecider`` el seam devuelve
-"requiere aprobación humana" y nada se adopta; bajo autónomo/híbrido con la
-intención anclada al nombre del server, adopta. Aquí no vive ninguna máquina de
-aprobación nueva — solo la traducción proposal→cfg+task, la invocación del seam
-y la auditoría del resultado.
+decisor (rumbo human-ON-the-loop). ``adopt_mcp_server`` clasifica la acción como
+irreversible y de sensibilidad alta: los decisores soportados la suspenden o
+deniegan, y el guard constitucional impide que un decisor inyectado la permita.
+Una adopción solo puede continuar mediante una ceremonia humana explícita
+separada; este adapter no la implementa. Aquí solo viven la traducción
+proposal→cfg+task, la invocación del seam y la auditoría del resultado.
 
 La intención se ancla léxicamente al nombre del server por construcción
 (``...{capability}...``) para satisfacer el invariante de coherencia del decisor
@@ -38,8 +39,8 @@ class MaintenanceAdopter:
 
     # El primer arranque de un server recién descubierto descarga su paquete
     # (npx baja de npm, uvx de PyPI) antes de responder al handshake. El budget
-    # por defecto (15s) lo agota; este es más holgado SOLO para la adopción
-    # autónoma (primer contacto), no para los servers ya configurados.
+    # por defecto (15s) lo agota; este budget queda reservado para una futura
+    # adopción aprobada explícitamente, no para auto-adopción.
     _FIRST_LAUNCH_TIMEOUT_S = 90.0
 
     def __init__(

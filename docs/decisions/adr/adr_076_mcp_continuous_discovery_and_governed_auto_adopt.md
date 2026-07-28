@@ -2,8 +2,9 @@
 
 - Estado: **Parcial** — secciones A (re-siembra continua) y B (vetting
   continuo cursor-driven) **Aceptadas** (código real, TDD, mypy limpio,
-  commiteadas). Sección C (auto-adopción real sin clic humano) **Propuesto,
-  bloqueado por el Cónclave** — ver veredicto íntegro más abajo. No existe
+  commiteadas). Sección C (auto-adopción real sin clic humano) **RECHAZADA,
+  NO IMPLEMENTADA y AUSENTE** tras el bloqueo del Cónclave — ver veredicto
+  íntegro más abajo. No existe
   hoy ningún código de auto-adopción en el repo; esta sección documenta por
   qué NO se construyó, no una feature apagada por flag.
 - Extiende: **ADR-075** (pipeline de vetting MCP, Aceptado 2026-07-24). Este
@@ -12,10 +13,21 @@
   del scheduler de mantenimiento, y evalúa la petición explícita del
   operador de sumar auto-adopción real.
 
+## Disposición atómica definitiva (2026-07-27)
+
+- **A**: `ACCEPTED`, código presente, activación opt-in.
+- **B**: `ACCEPTED`, código presente, activación opt-in; cubre stage1/stage2
+  acotado, no las etapas 3–6 completas de ADR-075.
+- **C**: `REJECTED`, `NOT_IMPLEMENTED`, `ABSENT`; no hay flag dormido.
+- La comprobación posterior es evidencia de B, no una capacidad autónoma nueva.
+
+Una variable observada en el proceso solo acredita `RUNTIME_CONFIGURED`, nunca
+`LIVE_VERIFIED`. Las cifras de 2026-07-24 son evidencia histórica.
+
 ## Contexto
 
-ADR-075 construyó y probó en vivo el pipeline completo de vetting (etapa 1
-pre-screen + etapa 2A stdio + etapa 2B http). La corrida real del
+ADR-075 construyó y ejercitó el pipeline manual acotado de vetting (etapa 1
+pre-screen + partes de etapa 2A stdio y 2B http). La corrida real del
 2026-07-24 sobre 2100 candidatos elegibles: 904 completados (192/229 stdio,
 712/1871 http), 10.406 tools reales devueltas, 4 candidatos con hallazgo
 MAJOR de semgrep. Todo esto corrió **a mano**, invocado por scripts uno a

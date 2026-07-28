@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/evidence_source.schema.json",
+  "title": "AtlasEvidenceSource",
+  "description": "One independently identifiable source or local observation used by a decision dossier.",
+  "type": "object",
+  "required": [
+    "id",
+    "program",
+    "kind",
+    "source_tier",
+    "locator",
+    "independence_key",
+    "retrieved_at",
+    "claim_scope",
+    "strength",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^EVD-[A-Z0-9][A-Z0-9-]*$"
+    },
+    "program": {
+      "type": "string",
+      "pattern": "^P(0[0-9]|1[0-2])$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "LOCAL_CHECKOUT",
+        "LOCAL_RUNTIME",
+        "PRIMARY_STANDARD",
+        "OFFICIAL_DOCUMENTATION",
+        "RESEARCH_PAPER",
+        "INDEPENDENT_REPLICATION",
+        "ATLAS_MEASUREMENT",
+        "VENDOR_CLAIM",
+        "ANALOGY"
+      ]
+    },
+    "source_tier": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8
+    },
+    "locator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "independence_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "claim_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strength": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ACTIVE", "SUPERSEDED", "HISTORICAL"]
+    }
+  },
+  "additionalProperties": false
+}

@@ -151,7 +151,8 @@ límites honestos declarados. No saltar de fase con la anterior en rojo.
     detector reconoce PROXIMIDAD TEMÁTICA, no "ataque-idad"; señal de intención REAL pero DÉBIL
     (~17-33 pts de margen en umbrales laxos); NO hay punto de operación usable (transferencia alta
     Y FP fronterizo bajo no coexisten). Refuerza la dirección: no apostar a DETECCIÓN, sino a
-    ATRIBUCIÓN+CONTENCIÓN ([[adaptive-defense-reframe]]).
+    ATRIBUCIÓN+CONTENCIÓN (principio histórico `adaptive-defense-reframe`;
+    no existe como documento en este checkout).
     GARAK REAL 2026-06-21 (c) — CIERRE: corpus real (probes promptinject.HijackHateHumans +
     phrasing.PastTense train; web_injection.MarkdownURIImageExfil + snowball.Primes held-out)
     CONFIRMA el hallazgo, más crudo: mejor margen heldout−borderline = +10 pts (recall 0.65:

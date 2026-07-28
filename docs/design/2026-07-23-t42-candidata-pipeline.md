@@ -135,6 +135,12 @@ línea por documento) en el informe de esta sesión — aquí el resumen acciona
   `docs/design/absorption_master_plan.md` línea ~142 ya cita el precedente "Void... y
   Zed... para el Atlas IDE" sin que ninguno tenga fila).
 
+Disposición posterior: ADR-078 y
+`docs/canon/product_lineage_registry.jsonl` completan esa disección. Void
+queda `PORT_SOURCE`, Zed `PATTERN_DONOR` y CodeOSS/VSCodium `HOST_BASELINE`
+para Atlas Engineering Workbench; esta sección preserva el hallazgo histórico,
+no una pregunta todavía abierta.
+
 Tabla de triage completa (33/33) y disección completa (2/2) en el resumen final de esta
 sesión (mismo texto, no se duplica aquí para no desincronizar dos copias).
 

@@ -24,7 +24,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Mapping
 
-from atlas.core.decider.decider import Allow, DecisionAction, Decider, Verdict
+from atlas.core.decider.decider import (
+    Allow,
+    DecisionAction,
+    Decider,
+    Verdict,
+    enforce_constitutional_verdict,
+)
 from atlas.core.lesson_store import Lesson, LessonProvenance, LessonStore
 from atlas.core.verify import Check, CostTier, Evidence, Verdict as EvidVerdict
 from atlas.transparency.log import TransparencyLog
@@ -179,10 +185,16 @@ class FalsePositiveApealer:
             reversible=True,
             sensitivity="normal",
         )
-        pdp_verdict: Verdict = self._pdp.decide(
+        pdp_verdict: Verdict = enforce_constitutional_verdict(
             action,
-            sanctioned_intent="false_positive_appeal",
-            context={"payload_hash": record.payload_hash, "reason_hash": record.reason_hash},
+            self._pdp.decide(
+                action,
+                sanctioned_intent="false_positive_appeal",
+                context={
+                    "payload_hash": record.payload_hash,
+                    "reason_hash": record.reason_hash,
+                },
+            ),
         )
 
         if isinstance(pdp_verdict, Allow):

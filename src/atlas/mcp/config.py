@@ -14,8 +14,17 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+
+_MCP_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
+
+
+def is_valid_mcp_identifier(value: str) -> bool:
+    """Identificador inyectivo para ``mcp__<server>__<tool>`` y snapshots."""
+    return bool(_MCP_IDENTIFIER.fullmatch(value)) and "__" not in value
 
 
 @dataclass(frozen=True)

@@ -666,13 +666,18 @@ def _project_check_evidence(report: dict[str, Any]) -> None:
 
 
 def _default_check_timeout() -> int:
-    """Timeout por check, configurable. El default de 180s daba un falso
-    `degraded` cuando la suite (sola ~80s) competía con mypy/browser en una
-    máquina cargada, y eso abortó la auditoría de 24h del 2026-06-12."""
+    """Timeout por check, configurable.
+
+    El límite anterior de 600s produjo un falso ``degraded`` el 2026-07-28:
+    la suite completa pasó directamente en 649s, pero Reality la cortó antes
+    de proyectar esa evidencia. 900s conserva un límite finito con margen
+    suficiente para la suite canónica actual; el operador puede ampliarlo
+    explícitamente mediante ``ATLAS_REALITY_TIMEOUT``.
+    """
     raw = os.environ.get("ATLAS_REALITY_TIMEOUT", "").strip()
     if raw.isdigit() and int(raw) > 0:
         return int(raw)
-    return 600
+    return 900
 
 
 def _run(

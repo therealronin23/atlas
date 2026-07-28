@@ -4,6 +4,11 @@ Fecha: 2026-06-17 · Estado: **En membrana** (módulo `transparency/appeal.py` +
 Contexto: ADR-040 (Decider/PDP), ADR-044 (LessonStore), ADR-049 (organismo de conocimiento),
 `src/atlas/immunity/`, [[OSM-024]], [[OSM-025]], [[OSM-028]].
 
+Disposición 2026-07-27: **CODE_PRESENT / TESTED con seam opcional**, no
+`LIVE_VERIFIED`. `TransparencyGateway(appealer=)` y `submit_appeal` existen,
+pero falta owner/configuración/runtime final y la autoridad de restauración
+sigue pendiente del boundary de producto.
+
 ---
 
 ## Contexto

@@ -11,6 +11,17 @@
   ADR-068 exigía antes de escribir UI de F5/F6 existe ahora:
   `docs/design/mission_layer_self_construction_spec.md`.
 
+## Disposición definitiva (2026-07-27)
+
+“Cerrado” significa que el contrato y el corte v0 de Mission Layer/Golden
+Route están implementados y probados. No significa que P06 Foundry, la UX
+final ni todos los tipos de plan estén terminados. Las cifras de misiones o
+validaciones vivas fechadas en este ADR son evidencia histórica; cualquier
+claim `LIVE_VERIFIED` requiere una comprobación fresca separada.
+La aprobación precede al efecto, pero el campo textual `actor` no acredita
+criptográficamente identidad humana; cerrar esa autoridad requiere una decisión
+y contrato adicionales.
+
 ## Decisión
 
 1. **Contratos primero** (Foundry Fase A, recortada): 3 schemas nuevos junto

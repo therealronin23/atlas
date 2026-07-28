@@ -8,6 +8,85 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-28 — harness de compatibilidad FastEmbed medido (ADC-WO-115).**
+  `PYTHONPATH=src HF_HUB_OFFLINE=1 python
+  scripts/benchmark_fastembed_compatibility.py` emitió `status=MEASURED` y
+  `passed=true` en los tres casos versionados, con FastEmbed 0.8.0, dimensión
+  384, fingerprint
+  `sha256:d2463fb0b4881ae9b8c05f19230bf3c40447db58afab336135727964f5d9882d`
+  y artifact SHA-256
+  `e844933822b84e4feda6da123ecfa5cf42eb5a0f409eb46e8f7b881e181394a9`.
+  El aviso upstream de mean pooling frente a CLS permanece visible. La salida
+  es únicamente `ATLAS_MEASUREMENT` de un `VALIDATION_HARNESS`: no cambia
+  configuración, dependencias, modelo, stores ni índice persistente. El plan
+  TDD queda en `docs/superpowers/plans/2026-07-28-fastembed-compatibility-benchmark.md`.
+  **Próxima acción:** comparar esta identidad con un baseline guardado y llevar
+  cualquier pin, modelo custom, rebuild o migración a una decisión separada.
+
+- **2026-07-28 — evidencia de entrega renovada (ADC-WO-114).** Los artefactos
+  de revisión quedan anclados al candidato sustantivo `aa71a98`: suite directa
+  4522 passed/57 skipped/1 deselected, Reality ampliado, mypy de 318 módulos,
+  canon (2085 JSONL/25 pruebas), índice, Merkle, UI, lock y auditoría de
+  dependencias pasan. Reality conserva límites honestos: browser sin
+  Playwright, Hermes mock, MCP solo configurado, proveedores ausentes y grafo
+  compartido stale. El bundle y ZIP documental se regeneran desde el commit de
+  entrega. **Próxima acción:** revisión e integración gobernada; no abrir las
+  fronteras Mission/Task, memoria, 7341, Hermes, Native u Osmosis sin su
+  decisión/evidencia correspondiente.
+
+- **2026-07-28 — elegibilidad de work orders del operador forzada
+  (ADC-WO-113).** El gate canónico rechaza ahora un work order
+  `operator_decision_required` marcado `READY`, un `REQUIRES_OPERATOR` sin
+  flag explícito y una pregunta de operador que apunte a un bloqueo inexistente
+  o incompatible. El análisis P00/P01/P09 deja P01 sin migración segura: la
+  frontera Mission/Task y los POST 7341 conservan `REQUIRES_OPERATOR`; P09
+  cierra el gate de tipos y mantiene la validación amplia separada. Pruebas
+  canónicas (25), validator, mypy del script, suite completa y Reality
+  ampliado pasan. **Próxima acción:** preparar únicamente lotes de decisión
+  respaldados por evidencia fresca; no migrar los límites reservados.
+
+- **2026-07-28 — gate de tipos de adapters opcionales cerrado (ADC-WO-112).**
+  Los bordes `fal_client` de imagen/vídeo ya aceptan solo mappings con claves
+  textuales, de modo que una forma maliciosa o errónea se convierte en fallo
+  auditable del adaptador. El enlace ACP conserva su import perezoso y ahora
+  se construye dinámicamente, sin una base `Any` que debilite mypy. Pruebas
+  focalizadas cubren payloads no estructurados y el binding lazy; `mypy`
+  estricto pasa sobre 318 módulos. **Próxima acción:** auditar P00/P01/P09 y
+  convertir solo gaps no constitucionales en work orders ejecutables.
+
+- **2026-07-28 — foundation de decisiones calificadas por evidencia
+  implementada en la rama de convergencia.** `evidence_registry.jsonl` y
+  `decision_evidence_matrix.jsonl` complementan —sin reemplazar— el registro
+  de decisiones; `scripts/check_canon.py` rechaza referencias inexistentes,
+  rutas locales inseguras, estados divergentes y decisiones calificadas sin
+  fuentes independientes. Cuatro ADR activos (057, 058, 069 y 078) quedan
+  explícitamente `PROVISIONAL` con dossiers, alternativas, falsificadores y
+  triggers de revisión. **Próxima acción:** auditar P00/P01/P09 y convertir el
+  boundary Mission/Task y el control plane en work orders respaldados por esos
+  dossiers; no declarar sus migraciones implementadas todavía.
+
+- **2026-07-28 — ATLAS DEFINITIVE CANDIDATE en convergencia aislada.** El
+  checkout original dirty quedó preservado mediante bundle/patch/tar
+  secret-safe y el trabajo vive en
+  `codex/atlas-definitive-convergence-20260727-154020`. `ATLAS.md` es la
+  entrada única; `VISION/ARCHITECTURE/PROGRAMS/PLAN/STATUS` y `docs/canon/`
+  separan decisión, código, test, wiring, configuración y runtime. Todos los
+  ADR tienen disposición; ADR-076 C sigue rechazado; el bridge 7341 mutante
+  frente a ADR-058/071 queda elevado como `ADC-WO-107`. La revisión
+  adversarial corrigió dos bypasses: high-sensitivity se normaliza después de
+  cualquier Decider y Sentinel ahora falla cerrado ante error/snapshot
+  corrupto, revocando MCPs con drift. La separación argv/admission evita
+  ejecutar terceros limpios pero no admitidos. La UI resuelve PostCSS 8.5.23
+  y audita sin vulnerabilidades. ADR-078 fija Atlas Engineering Workbench,
+  CodeOSS/VSCodium como host, Void como donante de capacidades y Zed como
+  donante ACP/de patrones; Cut 2 será integral y Android queda como proyección
+  posterior. La validación final pasa: 4559 tests core, 26 browser, mypy sobre
+  318 módulos, Reality ampliado sin strict failures, UI build/audit, lock,
+  pip-audit y wheel smoke. Hermes sigue no live, MCP solo configurado y graph
+  stale por diseño para no sobrescribir el runtime compartido. **Próxima
+  acción:** revisión del operador sobre la rama/bundle; no elevar a
+  `ATLAS CANON ACCEPTED` ni abrir Cut 1 hasta esa aceptación.
+
 - **2026-07-26 — publicación del grafo restaurada tras rebuild real.** El
   cargador bitemporal libera su `QueryResult` de Kuzu antes de cerrar la BD;
   ese objeto nativo retenía el lock que impedía cargar inmediatamente vault y
@@ -1379,7 +1458,12 @@ de escribir: `atlas reality --json`.
   (666 docs vs master plan) o F2.6 cuando el operador retome el token 401.
 - **ATLAS PRIME Cycle 2 — watchdog daemon + TimeoutStopSec (2026-07-22 10:50)**
   — TimeoutStopSec=30 en atlas-core.service (limita stop-sigterm hang de 90s a 30s). daemon_idle_guard.sh mejorado: auto-rearranca si inactivo >24h (salvaguarda: toque ~/.atlas/daemon_idle_parked para aparcar deliberadamente si la parada fue intencional). 11 tests dirigidos verdes. Ventana SIGTERM fija (handlers instalan DESPUÉS de start(), linea 401-408 en service_runner.py) diferida — bajo investigación abierta, ciclo propio. F2.6 test de sucesión SIGUE BLOQUEADO — intentado 2026-07-22 con token nuevo (setup-token corrido dos veces) y aún 401 "Invalid authentication credentials"; no es un problema de formato del token, algo más profundo en la credencial de cuenta. Diferido, operador decide cuándo retomar. OAuth google-workspace rotado (nuevo client ID: 228819788474-u6ts3hamsjplf307tifmqob3oon1jv2u; secret guardado fuera del repo en ~/.config/atlas/google-oauth.env, inyectado por wrapper vía safe_dotenv). **Próxima acción:** F2.6 execution (operador o Sonnet con presupuesto) + Cycle 3 GoldenRoute wiring.
-- **Desbloqueos operador (2026-07-22 09:30)** — Anthropic token renovado (sk-ant-oat01-..., válido 1 año); F2.6 test de sucesión EJECUTABLE ahora con `claude -p`. OAuth google-workspace rotado (228819788474-k5s30lhsop9e7rcspg503p7qsc607blt; secret en ~/.config/atlas/google-oauth.env 0600, fuera del repo, inyectado por wrapper vía safe_dotenv — argv limpio de credenciales ahora). Pending: F2.6 execution (operador o Sonnet con presupuesto) + 4 decisiones toasty (spec B+C, monitor graphify, higiene handoff INDEX).
+- **Desbloqueos operador (2026-07-22 09:30)** — Credenciales de Anthropic
+  y Google Workspace renovadas y almacenadas fuera del repositorio; F2.6 pasó
+  a ser ejecutable mediante `claude -p`, y el wrapper de Google usa
+  `safe_dotenv` con `argv` libre de credenciales. Los identificadores se
+  redactan en este ledger. Pendiente: ejecución F2.6 con presupuesto y cuatro
+  decisiones de producto/gobernanza.
 - **ATLAS PRIME Cycle 1 — daemon rearrancado + frescura del grafo en reality +
   proveedor muerto retirado (2026-07-22)** — el daemon llevaba PARADO desde el
   2026-07-17 12:21 (stop limpio vía systemctl, nunca rearrancado; la guarda

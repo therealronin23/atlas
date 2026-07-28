@@ -4,15 +4,24 @@
   de la voz EU del Cónclave (Mistral, ver ADR-074) sigue **sin cerrar** — la
   aprobación del operador es autoridad final y satisface la condición humana;
   el hueco EU queda como deuda de infraestructura registrada aparte (no bloquea
-  este ADR, pero tampoco se da por resuelto). Etapa 1 (pre-screen estático,
-  read-only) ya construida y corrida sobre los 2111 candidatos reales. Etapas
-  2–6 (fetch/probe/admisión/activación) siguen sin construir; requieren su
-  propio trabajo de ingeniería antes de tocar código o red de terceros.
+  este ADR, pero tampoco se da por resuelto).
 - Extiende (no reemplaza): **ADR-072** (supply-chain admission scan A1),
   **ADR-073** (PluginManifest v1 + A3 materializer/receipt/activator), **ADR-038**
   (SentinelGate), **ADR-055** (BwrapJail).
 - Toca el invariante duro de ADR-073: *"local-only; remote sources and executable
   plugin types require a new ADR"*. Este ES ese ADR.
+
+## Disposición definitiva (2026-07-27)
+
+La etapa 1 y partes acotadas de 2A/2B están implementadas: 2A hace
+fetch/hash/extract/entrypoint/scan estático sin ejecutar sandbox; 2B alcanza
+`initialize`/`tools/list`, no una admisión completa. ADR-076 A/B añade ticks
+opt-in para re-siembra y ese stage1/stage2 acotado. Las etapas 3–5 y el ciclo
+remoto completo de etapa 6 siguen sin cerrar. `revet_all` sí revoca y pone en
+cuarentena un server ya adoptado si no puede re-vetearse o detecta drift; eso
+no convierte un candidato remoto en instalado. Las cifras 2111/2100/904 son
+observaciones históricas, no estado vigente ni permiso de ejecución. ADR-076 C
+sigue rechazado y ausente.
 
 ## Contexto
 

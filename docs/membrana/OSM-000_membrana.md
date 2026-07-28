@@ -4,6 +4,15 @@ Fecha: 2026-06-17 · Estado: **Aceptado** (meta-doc; define el mecanismo, no una
 Contexto: ADR-049 (organismo de conocimiento), `src/atlas/immunity/` (sistema inmune),
 ADR-041 (UniversalVerifier / ley de entrada), ADR-040 (Decider/PDP), ADR-053/054 (gateway).
 
+## Disposición en ATLAS DEFINITIVE CANDIDATE (2026-07-27)
+
+OSM-000 sigue vigente como registro y mecanismo del programa permanente P12,
+no como autoridad de runtime. Las filas históricas se interpretan mediante la
+matriz canónica: una promoción de slice no promueve Osmosis completo.
+OSM-007/026/040 fueron absorbidas en el alcance de ADR-053; OSM-042 solo fue
+promovida por ADR-074 en su Fase 1. Guarantee profile, enforcement no-bypass y
+producto siguen pendientes del operador.
+
 ---
 
 ## Por qué existe esto
@@ -106,8 +115,9 @@ una pieza por entrada. Viabilidad = facilidad de cruce hoy, no valor.
 | 022 | Integración frontier API sin MITM (proxy + co-firma client-side) | interfaces | media | Suspensión |
 | 023 | Modelo de despliegue + benchmarks de overhead (latencia de log/co-firma) | operacional | media | Suspensión |
 
-Multi-tenancy del log **no** es candidata de membrana: es la siguiente decisión de
-núcleo real → entra directa como `ADR-055`, no como ósmosis.
+Multi-tenancy del log **no** es candidata de membrana. La reserva histórica
+“ADR-055” nunca se materializó con ese significado: ADR-055 es hoy el jail
+OS-level. Cualquier boundary multi-tenant requiere un ADR nuevo.
 
 ### Ola del chat 3 — Osmosis Filter (en Difusión)
 
@@ -132,12 +142,12 @@ piezas estaban en los chats pero no en el registro. Entran en Suspensión (sin d
 
 | OSM | Pieza | Destino (capa/módulo) | Viabilidad | Estado |
 |---|---|---|---|---|
-| 031 | SPARK / PRIVÉ — atestación de swarm anónima (familia ZK con [[OSM-016]]/[[OSM-017]]) | transparency / attestation | baja (horizonte; verificar paper antes de citar) | Suspensión |
+| 031 | SPARK / PRIVÉ — atestación de swarm anónima (familia ZK con OSM-016/OSM-017, registros sin fichero actual) | transparency / attestation | baja (horizonte; verificar paper antes de citar) | Suspensión |
 | 032 | Rate-limiting / anti-spam del log (un atacante podría llenarlo — DoS del log) | transparency | alta | Suspensión |
-| 033 | Dynamic System Prompt Rewriting por sesión (reformular instrucciones de seguridad) | Capa 2 | media (solapa con [[OSM-002]]/[[OSM-011]]) | Suspensión |
+| 033 | Dynamic System Prompt Rewriting por sesión (reformular instrucciones de seguridad) | Capa 2 | media (solapa con OSM-002/OSM-011, registros sin fichero actual) | Suspensión |
 | 034 | Graded Responder + modo consentimiento pre-emptivo (estilo Netflix; consentimiento co-firmado en metadata sospechosa) | gateway / governance | media | Suspensión |
 | 035 | Witness network externo (RFC 9162 STH gossip) — cierre real de split-view que [[OSM-026]] solo mitiga | transparency / ecosistema | baja (infra de ecosistema, no single-node) | Suspensión |
-| 036 | Reproducible builds / atestación de build (confianza en filtro open-source) | build / attestation | media (distinto de [[OSM-020]] hardware) | Suspensión |
+| 036 | Reproducible builds / atestación de build (confianza en filtro open-source) | build / attestation | media (distinto del registro OSM-020 hardware, sin fichero actual) | Suspensión |
 | 037 | JSON parsing robusto del LLM (json_repair / Instructor) | immunity / llm_scorer | — | **Rechazada**: ya se eligió stdlib `re`+`json`; dep nueva no justificada (regla 6 CLAUDE.md). El rechazo es conocimiento: queda documentado. |
 
 ### Segundo barrido (2026-06-17) — pieza núcleo rescatada
@@ -147,8 +157,9 @@ piezas estaban en los chats pero no en el registro. Entran en Suspensión (sin d
 | [038](OSM-038_token_kyc_residencia.md) | Interfaz de token KYC/residencia (no hacer KYC, exigirlo y verificarlo) — **export-control, razón del apagón de Fable 5** | gateway / identidad | media-baja (legal+operativo) | **Difusión** |
 
 Nota: el problema export-control aparece en los chats (`foreign national` ×13, `export` ×26,
-`cambio de IP` ×4) pero no estaba como pieza propia. Empareja con [[OSM-021]] (identidad),
-[[OSM-025]] (cert device-bound) y [[OSM-034]] (consentimiento Netflix-style). Refinada por el
+`cambio de IP` ×4) pero no estaba como pieza propia. Empareja con el registro
+OSM-021 (sin fichero actual), [[OSM-025]] (cert device-bound) y el registro
+OSM-034 (sin fichero actual). Refinada por el
 barrido Gemini: separar *hacer* KYC (legal) de *exigir* un token KYC (código en el path).
 
 ### Pieza derivada de la sesión (2026-06-17)
@@ -193,7 +204,8 @@ Cada punto se contrastó contra el código y los docs reales.
 - **HMAC vs Ed25519 en README (#10)**: ya resuelto — el README dice Ed25519 (verificado).
 - **device-bound = archivos en disco (#27)**: ya es límite §6.3 + [[OSM-025]] (hardware seguro).
 - **Git/worktree loop, self-audit estancado (#9/#16/#17)**: descartado por el usuario (proceso
-  de fondo conocido, ver [[project-loop-activated-2026-06-14]]).
+  de fondo conocido, ver el registro histórico
+  `project-loop-activated-2026-06-14`, sin fichero actual).
 - **seL4/agentic-OS, model drift, UX orgánica, latencia del Decider (#24/#25/#29)**: mezclan
   Atlas-OS con el filtro/paper (el usuario lo notó). Válidos para el roadmap de Atlas, fuera
   del alcance del paper de completitud. El #24 (inspección async/out-of-band) **rompería** la
@@ -219,7 +231,7 @@ regulatoria. Empareja con [[OSM-027]] (bucle de apelación, ya tiene interacció
 | OSM | Pieza | Destino (capa/módulo) | Viabilidad | Estado |
 |---|---|---|---|---|
 | capa 2 (integrada) | Inspección simétrica de output: `OutputInspectionRecord` committed antes de devolver el resultado; checks 5+6 en `SubjectLedger.ingest()`; Session G en demo | `client_cosign.py` / transparency | alta | **Absorbida** (implementada 2026-06-17; ADR-053) |
-| [042](OSM-042_shadow_model_active_defense.md) | Shadow model: defensa activa con honeypot pasivo/activo + red team dual-use. Detectado ataque → modelo sombra (Haiku) sustituye al real sin que el atacante lo note. Mismo componente como atacante sintético (red team periódico). | `src/atlas/security/shadow_model.py` + `red_team.py` | media-alta | **Difusión** (diseño 2026-06-17; implementación pendiente) |
+| [042](OSM-042_shadow_model_active_defense.md) | Shadow model: defensa activa con honeypot pasivo/activo + red team dual-use. | `src/atlas/security/shadow_model.py` | media-alta | **Promoción parcial ADR-074**: Fase 1 code/test/wired/configured; Fases 2/4 propuestas |
 
 ### Sesión 2026-06-19 — CLOSE-NOW batch (autobuild lean) + triaje
 
@@ -230,7 +242,7 @@ Verificación previa contra código real antes de construir (decide-con-hechos):
 | 010 | Anti-replay en co-firmas | **Absorbida** | `ReplayError` + `_committed` en `gateway.py`; guard fail-closed antes de append/modelo. Cierra el claim §6.8 (idempotent retry → no hojas duplicadas) a nivel gateway. |
 | 006 | Test de escala del log | **Absorbida** | `tests/test_transparency_scale.py` (10k entradas; inclusion+consistency verifican). Diseño escala a 100k+. |
 | 039 | provenance record (decision/action/cause) | **Absorbida** (ya existía) | `InspectionRecord.decision` + `.cause` ya presentes; no era trabajo, solo verificación. |
-| 008 | STRIDE threat model | **Cubierto** | Ya existe `docs/adr_036_threat_model.md`; extender al filtro Osmosis si hace falta, no reconstruir. |
+| 008 | STRIDE threat model | **Cubierto** | Ya existe `docs/decisions/adr/adr_036_threat_model.md`; extender al filtro Osmosis si hace falta, no reconstruir. |
 | 032 | Rate-limit / anti-spam del log | **Difusión (aparcado)** | No over-engineering: improductivo *sin consumidor*. Su valor está en el wiring al gateway → fase de hardening/demo, no como util huérfano. |
 
 ### Sesión 2026-06-18 — promociones verificadas contra código real
@@ -240,10 +252,10 @@ promocionar. Ninguna promoción se basa solo en docs.
 
 | OSM | Pieza | Código real | Promoción | Nota |
 |---|---|---|---|---|
-| [007](OSM-007_privacy_dp_log_crypto_shredding.md) | Crypto-shredding GDPR Art. 17 | `transparency/crypto_shred.py` → `SaltStore`, `InspectionRecord.salted_hash` wired | `En membrana` → **Absorbida** → ADR-053 | GDPR GAP-1 cerrado. `payload_hash` permanente (binding); `salted_hash` erasable. 12 tests en `test_crypto_shred.py`. |
-| [026](OSM-026_doble_copia_merkle.md) | Twin log replicas: proveedor + sujeto | `transparency/log.py` → `path=` persistente + fsync; `transparency/gossip.py` → `HttpWitnessTransport` + `has_quorum(min_witnesses=2)` Ed25519-verified | `Difusión` → **Absorbida** | Límite honesto: nodos witness independientes = infra de ecosistema, no código. Split-view parcialmente mitigado. Paper §6.1. |
+| [007](OSM-007_privacy_dp_log_crypto_shredding.md) | Crypto-shredding GDPR Art. 17 | mitigación acotada hash/contenido | `En membrana` → **Absorbida** → ADR-053 | No equivale a cerrar cumplimiento legal GDPR completo. |
+| [026](OSM-026_doble_copia_merkle.md) | Twin log replicas: proveedor + sujeto | `transparency/log.py` conserva primitivas; `transparency/gossip.py`/witness ya no existen en el árbol | `Difusión` → histórica/absorbida en alcance ADR-053 | Witness independiente sigue pendiente; no claim current-code. |
 | [040](OSM-040_protocolo_red_race_conditions.md) | Semántica de red: retry vs. omisión atribuible | `transparency/client_cosign.py` → `attributable_omissions(receipted, observed)` + `OperatorReceipt` | `Difusión` → **Absorbida** → ADR-053 | Session F del demo. `tests/test_network_reconciliation.py`. Paper §6.8. |
-| [042](OSM-042_shadow_model_active_defense.md) | Shadow model + honeypot cableado al gateway | `security/shadow_model.py` (`ShadowRouter`, `ShadowModel`, `ShadowMode`); `TransparencyGateway.__init__` acepta `shadow_router` + `shadow_model` | `Difusión` → **Absorbida** | Session H del demo. Tests de integración en `test_transparency_gateway.py`. |
+| [042](OSM-042_shadow_model_active_defense.md) | Shadow model, Fase 1 | `security/shadow_model.py`; gateway/orchestrator wiring detrás de Gate D | `Difusión` → **Promoción parcial ADR-074** | CODE_PRESENT/TESTED/WIRED/RUNTIME_CONFIGURED; sin tráfico fresco; honeypot/red-team posteriores ausentes. |
 | [054](OSM-054_behavioral_drift_detection.md) | Behavioral drift detection: 3 ángulos (delta, consistency, shadow) | `security/behavioral.py` → `BehavioralMonitor`, `BehavioralDelta`, `shadow_divergence`, `detect_covert_change` | `Difusión` → **En membrana** | Código existe y funciona; problema de investigación abierto (no detection guarantee). Paper §6.11 + Session J demo. No promover a Absorbida hasta que paper cierre los límites formalmente. |
 
 ---

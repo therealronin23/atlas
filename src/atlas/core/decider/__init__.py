@@ -19,6 +19,7 @@ from atlas.core.decider.decider import (
     RequiresHuman,
     Verdict,
     action_hash,
+    enforce_constitutional_verdict,
 )
 from atlas.core.decider.autonomous_decider import AutonomousDecider
 from atlas.core.decider.human_decider import HumanDecider
@@ -94,6 +95,7 @@ __all__ = [
     "UndoHandle",
     "Verdict",
     "action_hash",
+    "enforce_constitutional_verdict",
     "make_decider",
     "MIN_CORPUS_SIZE",
     "ShadowAccuracyLog",

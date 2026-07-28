@@ -37,6 +37,7 @@ from atlas.core.decider.decider import (
     Deny,
     RequiresHuman,
     Verdict,
+    enforce_constitutional_verdict,
 )
 from atlas.core.decider.human_decider import HumanDecider
 from atlas.logging.merkle_logger import MerkleLogger
@@ -120,14 +121,17 @@ class PluginReceiptBroker:
             reason=f"recibo de plugin staged ({admission.status})",
         )
         sanctioned_intent = f"emitir recibo para plugin staged {admission.plugin_id}"
-        verdict = self._decider.decide(
+        verdict = enforce_constitutional_verdict(
             action,
-            sanctioned_intent,
-            context={
-                "staged_root": result.staged_root,
-                "manifest_sha256": admission.manifest_sha256,
-                "admission_status": admission.status,
-            },
+            self._decider.decide(
+                action,
+                sanctioned_intent,
+                context={
+                    "staged_root": result.staged_root,
+                    "manifest_sha256": admission.manifest_sha256,
+                    "admission_status": admission.status,
+                },
+            ),
         )
 
         receipt_id = uuid.uuid4().hex[:12]

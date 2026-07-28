@@ -71,7 +71,7 @@ def test_revet_tick_detects_drift_and_never_rewrites_snapshot(
     try:
         snap_path = orch._workspace / "memory" / "sentinel" / "echo.json"
         snap = json.loads(snap_path.read_text(encoding="utf-8"))
-        snap["echo"] = "hash-falso-simulando-drift"
+        snap["echo"] = "0" * 64
         snap_path.write_text(json.dumps(snap), encoding="utf-8")
 
         result = orch.maintenance_sentinel_revet_tick()
@@ -79,8 +79,10 @@ def test_revet_tick_detects_drift_and_never_rewrites_snapshot(
         assert result["status"] == "ran"
         assert len(result["findings"]) == 1
         assert result["findings"][0]["server"] == "echo"
+        assert result["findings"][0]["revoked"] is True
+        assert orch._mcp.ensure_started("echo") is False
 
         # nunca re-arma TOFU: el snapshot manipulado sigue igual
-        assert json.loads(snap_path.read_text(encoding="utf-8"))["echo"] == "hash-falso-simulando-drift"
+        assert json.loads(snap_path.read_text(encoding="utf-8"))["echo"] == "0" * 64
     finally:
         orch._mcp.close_all()

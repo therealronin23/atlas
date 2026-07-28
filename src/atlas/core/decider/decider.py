@@ -4,10 +4,9 @@ Punto único por donde, más adelante, entrará la autonomía con un flip de con
 (`human | autonomous | hybrid`). En slice 1 solo se define el contrato; los
 call-sites del orquestador se enrutan aquí en slice 2.
 
-Modelo de rumbo: human-ON-the-loop. El veredicto objetivo es ``Allow | Deny`` sin
-``Escalate`` bloqueante. ``RequiresHuman`` es el estado transitorio que reproduce
-el HITL de hoy y que las slices futuras irán retirando a medida que el
-``AutonomousDecider`` (invariantes deterministas) asuma lo reversible.
+Modelo de rumbo: human-ON-the-loop. ``RequiresHuman`` puede retirarse de clases
+de acción que demuestren autonomía segura; nunca de ``sensitivity="high"``,
+que constitucionalmente conserva control humano o denegación.
 """
 
 from __future__ import annotations
@@ -63,6 +62,29 @@ class RequiresHuman:
 
 
 Verdict = Allow | Deny | RequiresHuman
+
+
+def enforce_constitutional_verdict(
+    action: DecisionAction, verdict: Verdict
+) -> Verdict:
+    """Aplica invariantes que ninguna implementación de ``Decider`` puede anular.
+
+    ADR-040 hizo el decisor inyectable. La inyección es un seam de estrategia,
+    no una vía para rebajar la regla constitucional #4: un ``Allow`` para
+    sensibilidad alta se convierte en ``RequiresHuman`` antes de telemetría o
+    efecto. ``Deny`` y ``RequiresHuman`` ya son fail-closed y se conservan.
+
+    El texto libre de ``reason`` no demuestra una ceremonia humana; una futura
+    autorización firmada deberá tener su propio artefacto/contrato.
+    """
+    if action.sensitivity == "high" and isinstance(verdict, Allow):
+        return RequiresHuman(
+            reason=(
+                "constitutional guard: sensitivity=high requires human "
+                "approval or denial"
+            )
+        )
+    return verdict
 
 
 def action_hash(action: DecisionAction, sanctioned_intent: str) -> str:

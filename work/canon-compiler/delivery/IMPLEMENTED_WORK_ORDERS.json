@@ -1,0 +1,782 @@
+{
+  "schema_version": "1.1",
+  "generated_at": "2026-07-28T19:19:02Z",
+  "anchor": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+  "artifact_commit_excluded_by_design": true,
+  "count": 15,
+  "work_orders": [
+    {
+      "id": "ADC-WO-000",
+      "program": "P00",
+      "title": "Preserve the operator checkout and establish an isolated baseline",
+      "problem": "The convergence must not overwrite the dirty operator checkout or lose uncommitted sources.",
+      "evidence": [
+        "git identity and worktree inspection captured on 2026-07-27",
+        "verified pre-convergence Git bundle and working-tree archives",
+        "exact package SHA-256 and ZIP CRC verification"
+      ],
+      "source_decisions": [
+        "current operator directive sections 3, 5, 6, and 19",
+        "AGENTS.md"
+      ],
+      "current_state": "Backup, isolated branch, isolated worktree, package extraction, and fresh preflight are complete.",
+      "target_state": "Every later work order runs only in the isolated worktree and remains locally reviewable.",
+      "scope": [
+        "original checkout inventory",
+        "secret-safe backup",
+        "integration worktree",
+        "baseline runtime and validation evidence"
+      ],
+      "files": [
+        "docs/canon/implementation_registry.yaml",
+        "work/canon-compiler/delivery/DEFINITIVE_CONVERGENCE_REPORT.md",
+        "work/canon-compiler/delivery/VALIDATION_RESULTS.json"
+      ],
+      "tests": [
+        "git bundle verify",
+        "sha256sum verification",
+        "package validator and package test suite",
+        "baseline Atlas test, type, UI, audit, doctor, health, and reality checks"
+      ],
+      "risks": [
+        "accidental exposure of secrets from the live process or untracked files",
+        "changing the operator checkout"
+      ],
+      "rollback": "Delete only the isolated worktree and branch after operator review; restore tracked state from the verified bundle and patches if ever required.",
+      "dependencies": [],
+      "acceptance": [
+        "original checkout remains unchanged",
+        "backup bundle verifies",
+        "branch starts at the operator checkout HEAD",
+        "no secret-bearing file is archived or printed"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-001",
+      "program": "P05",
+      "title": "Classify and selectively import dirty live sources",
+      "problem": "Uncommitted operator sources are evidence, but timestamp-only regeneration and unverified installed-state claims cannot be promoted.",
+      "evidence": [
+        "original dirty-tree inventory",
+        "semantic diff of MCP triage and classified catalog",
+        "review of four untracked research documents, including the post-backup 2026-07-28 source"
+      ],
+      "source_decisions": [
+        "current operator directive section 5.3",
+        "evidence rules in current operator directive sections 7 and 8"
+      ],
+      "current_state": "Every live dirty path is inventoried and has an explicit disposition; four research sources are semantically preserved with whitespace-only normalization and generated catalog/index churn is reconciled without false installed claims.",
+      "target_state": "Useful research remains preserved as proposed evidence, while noise and false installed claims have explicit dispositions and the original checkout remains untouched.",
+      "scope": [
+        "docs/knowledge/research_2026-07-25_inbox.md",
+        "docs/knowledge/research_2026-07-26.md",
+        "docs/knowledge/research_2026-07-27.md",
+        "docs/knowledge/research_2026-07-28.md",
+        "docs/INDEX.yaml",
+        "MCP catalog dirty diffs"
+      ],
+      "files": [
+        "docs/knowledge/research_2026-07-25_inbox.md",
+        "docs/knowledge/research_2026-07-26.md",
+        "docs/knowledge/research_2026-07-27.md",
+        "docs/knowledge/research_2026-07-28.md",
+        "docs/INDEX.yaml",
+        "docs/canon/source_registry.jsonl",
+        "work/canon-compiler/delivery/SOURCE_TRACEABILITY.jsonl",
+        "work/canon-compiler/delivery/DEFERRED_ITEMS.md"
+      ],
+      "tests": [
+        "python scripts/docs_index_audit.py --strict",
+        "JSONL parsing and source-disposition validation"
+      ],
+      "risks": [
+        "promoting research prose to implementation truth",
+        "claiming external MCP packages are installed without local evidence"
+      ],
+      "rollback": "Revert the dedicated source-import commit; the originals remain in the untouched checkout and backup archive.",
+      "dependencies": [
+        "ADC-WO-000"
+      ],
+      "acceptance": [
+        "every dirty path has an explicit imported, deferred, or rejected disposition",
+        "imported research remains PROPOSED or RESEARCH",
+        "timestamp-only churn is not imported",
+        "no external package is labelled installed without local proof"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-002",
+      "program": "P00",
+      "title": "Compile the definitive authority and traceability registries",
+      "problem": "The repository has distributed constitutional authority but no single discoverable machine registry linking sources, decisions, conflicts, supersessions, components, capabilities, contracts, and open questions.",
+      "evidence": [
+        "ADR-067 and every repository ADR",
+        "R2.1 package registries, marked proposed and refreshed against the checkout",
+        "current code, tests, configuration, structural graph, and runtime checks"
+      ],
+      "source_decisions": [
+        "current operator directive sections 7, 8, 11, 14, and 18",
+        "ADR-067",
+        "accepted and non-superseded repository ADRs"
+      ],
+      "current_state": "Authority is distributed correctly but discovery, atomic ADR lifecycle, and conflict disposition are incomplete.",
+      "target_state": "docs/canon is the sole machine-readable discovery layer; it indexes rather than replaces the constitutional sources named by ADR-067.",
+      "scope": [
+        "scoped precedence",
+        "source provenance",
+        "atomic decisions",
+        "conflicts and supersessions",
+        "component, capability, and contract ownership",
+        "unresolved operator questions"
+      ],
+      "files": [
+        "docs/canon/authority_registry.yaml",
+        "docs/canon/source_registry.jsonl",
+        "docs/canon/decision_registry.jsonl",
+        "docs/canon/conflict_registry.jsonl",
+        "docs/canon/supersession_registry.jsonl",
+        "docs/canon/component_registry.jsonl",
+        "docs/canon/capability_registry.jsonl",
+        "docs/canon/contract_registry.jsonl",
+        "docs/canon/open_questions.jsonl"
+      ],
+      "tests": [
+        "python scripts/check_canon.py",
+        "pytest tests/test_canon_integrity.py",
+        "JSON and YAML parse checks"
+      ],
+      "risks": [
+        "treating repeated derivative sources as independent corroboration",
+        "silently superseding ADR-067",
+        "collapsing multi-part ADRs into one status"
+      ],
+      "rollback": "Revert the canonical-authority commit; constitutional source documents remain untouched.",
+      "dependencies": [
+        "ADC-WO-001"
+      ],
+      "acceptance": [
+        "one discoverable machine authority registry",
+        "all repository ADRs have a disposition",
+        "ADR-076 A, B, and C are atomic",
+        "ADR-077 implementation, activation, escalation, and unblock limitations are atomic",
+        "every unresolved conflict remains visible or has scoped supersession evidence"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-003",
+      "program": "P00",
+      "title": "Establish the definitive candidate documents and permanent programs",
+      "problem": "The repository lacks the required single entrypoint and coherent current, target, and transition views.",
+      "evidence": [
+        "current ecosystem map, ADRs, MEMORY.md, WORK_LEDGER.md, backlog, code, tests, and runtime preflight",
+        "refreshed program dossiers P00 through P12"
+      ],
+      "source_decisions": [
+        "current operator directive sections 1, 2, 12, 13, and 21",
+        "ADR-067",
+        "ADR-068 through ADR-077"
+      ],
+      "current_state": "Multiple source documents describe overlapping scopes and historical claims; the required root candidate documents do not exist.",
+      "target_state": "ATLAS.md is the human entrypoint and the root documents are coherent projections over registered authorities, never a new constitutional source.",
+      "scope": [
+        "identity and vision",
+        "current, target, and transition architecture",
+        "thirteen permanent programs",
+        "executable transition plan",
+        "evidence-labelled status"
+      ],
+      "files": [
+        "ATLAS.md",
+        "VISION.md",
+        "ARCHITECTURE.md",
+        "PROGRAMS.md",
+        "PLAN.md",
+        "STATUS.md",
+        "README.md",
+        "docs/INDEX.yaml"
+      ],
+      "tests": [
+        "python scripts/check_canon.py",
+        "python scripts/docs_index_audit.py --strict"
+      ],
+      "risks": [
+        "creating duplicate authority",
+        "presenting target design as current implementation",
+        "hiding unresolved constitutional decisions"
+      ],
+      "rollback": "Revert the candidate-document commit; ADRs and original authorities remain available.",
+      "dependencies": [
+        "ADC-WO-002"
+      ],
+      "acceptance": [
+        "one human entrypoint",
+        "CURRENT, TARGET, and TRANSITION are explicit",
+        "P00 through P12 remain programs rather than waves",
+        "Hosted precedes Native and Wave 5 remains conditional",
+        "Membrane and Osmosis remain first-class",
+        "no harness or configured service is presented as accepted live product"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-004",
+      "program": "P09",
+      "title": "Enforce canonical integrity in tests and CI",
+      "problem": "Tracked canonical surfaces can currently drift without a fail-fast validation gate.",
+      "evidence": [
+        "current CI workflow and documentation-index audit",
+        "package registry drift that passed its own validator"
+      ],
+      "source_decisions": [
+        "current operator directive invariant 18",
+        "AGENTS.md testing and governance invariants"
+      ],
+      "current_state": "CI validates code, types, dependencies, browser behavior, and UI, but not definitive canon relationships.",
+      "target_state": "A dependency-free validator rejects missing candidate documents, malformed registries, invalid state labels, incomplete program coverage, non-atomic critical decisions, and unsupported LIVE_VERIFIED claims.",
+      "scope": [
+        "canonical document discovery",
+        "registry parsing and references",
+        "exact permanent-program coverage",
+        "reality-state vocabulary",
+        "critical ADR invariants",
+        "CI invocation"
+      ],
+      "files": [
+        "scripts/check_canon.py",
+        "tests/test_canon_integrity.py",
+        ".github/workflows/ci.yml"
+      ],
+      "tests": [
+        "focused red-green pytest cycle",
+        "python scripts/check_canon.py",
+        "full pytest and mypy"
+      ],
+      "risks": [
+        "brittle text assertions",
+        "a validator that validates its own generated assumptions"
+      ],
+      "rollback": "Revert the validator commit; no runtime state or dependency graph changes.",
+      "dependencies": [
+        "ADC-WO-002",
+        "ADC-WO-003"
+      ],
+      "acceptance": [
+        "tests exercise validator behavior against controlled temporary repositories",
+        "malformed or unsupported canonical state fails with actionable diagnostics",
+        "current repository passes the validator",
+        "CI runs the validator without a new dependency"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-005",
+      "program": "P09",
+      "title": "Reconcile component reality and living status claims",
+      "problem": "Code presence, tests, wiring, runtime configuration, live verification, and product acceptance are conflated across historical documentation.",
+      "evidence": [
+        "fresh reality, audit, doctor, health, test, type, UI, and browser checks",
+        "current structural graph and import blast radius",
+        "exact code and test references"
+      ],
+      "source_decisions": [
+        "current operator directive sections 7, 8, 10, 14, 19, and 20",
+        "ADR-071",
+        "ADR-074 through ADR-077"
+      ],
+      "current_state": "The package matrix covers only selected components and several live documents contain stale or contradictory claims.",
+      "target_state": "Every registered component and capability has a conservative reality record, evidence links, target state, and next action.",
+      "scope": [
+        "component reality matrix",
+        "root status",
+        "ecosystem and capability claim corrections",
+        "ADR lifecycle addenda where current state differs from original context",
+        "ledger update"
+      ],
+      "files": [
+        "docs/canon/component_reality_matrix.jsonl",
+        "STATUS.md",
+        "docs/design/atlas_ecosystem_map.md",
+        "docs/governance/CAPABILITIES.md",
+        "docs/decisions/adr/",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "python scripts/check_canon.py",
+        "focused tests for changed implementation claims",
+        "full repository validation"
+      ],
+      "risks": [
+        "claiming live state from unit tests or process configuration",
+        "erasing historical context while correcting current status"
+      ],
+      "rollback": "Revert the status-reconciliation commit; immutable execution evidence remains in delivery artifacts.",
+      "dependencies": [
+        "ADC-WO-002",
+        "ADC-WO-004"
+      ],
+      "acceptance": [
+        "no Hermes LIVE_VERIFIED claim without a fresh successful check",
+        "atlas-shell remains VALIDATION_HARNESS",
+        "Universal Bar simulation and LivingGraph context are explicit",
+        "ADR-076 C remains REJECTED and absent",
+        "ADR-077 remains opt-in and does not weaken high-sensitivity handling",
+        "every reality record has a next action"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-006",
+      "program": "P09",
+      "title": "Run independent adversarial review and assemble the local delivery",
+      "problem": "The candidate requires independent pressure testing, exact validation evidence, reversible local commits, and portable review artifacts.",
+      "evidence": [
+        "complete candidate diff",
+        "baseline and post-change validation outputs",
+        "independent reviewer findings"
+      ],
+      "source_decisions": [
+        "current operator directive sections 19 through 23"
+      ],
+      "current_state": "Adversarial review and validation are complete at the substantive anchor; local delivery artifacts and portable bundles are assembled in the delivery commits.",
+      "target_state": "No blocking finding remains; resolvable major findings are fixed; reports, patch, commits, bundle, checksum, and documentary ZIP are verified.",
+      "scope": [
+        "adversarial review",
+        "regression classification",
+        "delivery reports",
+        "local commits",
+        "Git bundle and documentary ZIP"
+      ],
+      "files": [
+        "work/canon-compiler/delivery/"
+      ],
+      "tests": [
+        "full pytest",
+        "full mypy",
+        "Atlas audit and reality",
+        "extended reality with browser where safe",
+        "UI exact install and build",
+        "canon and docs-index validators",
+        "secrets scan",
+        "git bundle verify",
+        "SHA-256 verification"
+      ],
+      "risks": [
+        "delivery artifacts becoming stale after a final fix",
+        "generated artifacts containing secrets or untracked caches"
+      ],
+      "rollback": "Revert only delivery commits or remove external bundles; implementation commits remain independently reviewable.",
+      "dependencies": [
+        "ADC-WO-003",
+        "ADC-WO-004",
+        "ADC-WO-005"
+      ],
+      "acceptance": [
+        "no BLOCKING finding",
+        "every resolvable MAJOR finding is fixed",
+        "validation results distinguish regressions, pre-existing failures, and environment limits",
+        "bundle and checksum verify",
+        "final diff and commit inventory match the final commit"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-101",
+      "program": "P08",
+      "title": "Select the Atlas Workbench desktop host and first complete product",
+      "problem": "ADR-071 established dedicated applications but left the desktop host and first complete product unresolved.",
+      "evidence": [
+        "current atlas-shell validation harness",
+        "verified CodeOSS, Void, Zed, and VSCodium lineage evidence",
+        "operator-approved Workbench symbiosis design"
+      ],
+      "source_decisions": [
+        "ADR-059 as superseded for final UX",
+        "ADR-071",
+        "ADR-078"
+      ],
+      "current_state": "The operator selected the CodeOSS/VSCodium host chain and Atlas Engineering Workbench; implementation remains future work.",
+      "target_state": "The product boundary is accepted without presenting the Workbench as code, live runtime, or accepted product.",
+      "scope": [
+        "desktop host chain",
+        "first complete product",
+        "donor roles and authority boundary"
+      ],
+      "files": [
+        "docs/canon/open_questions.jsonl",
+        "docs/decisions/adr/adr_078_atlas_workbench_lineage_convergence.md",
+        "PLAN.md"
+      ],
+      "tests": [
+        "canon decision and conflict integrity"
+      ],
+      "risks": [
+        "irreversible deep-fork maintenance burden",
+        "mistaking accepted design for implemented product"
+      ],
+      "rollback": "Revert ADR-078 while preserving all lineage evidence and atlas-shell as a validation harness.",
+      "dependencies": [],
+      "acceptance": [
+        "ADR-078 accepted by the operator",
+        "Atlas Engineering Workbench selected",
+        "CodeOSS/VSCodium, Void, and Zed roles are explicit",
+        "Android remains a separate honest follow-on"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-010",
+      "program": "P00",
+      "title": "Reconcile all Atlas product and construction lineages",
+      "problem": "Independent repositories, disconnected branches, and worktrees carried Atlas value without one disposition or canonical destination.",
+      "evidence": [
+        "live git topology and exact heads",
+        "semantic comparison of Doc0 capabilities and self-build commits",
+        "Void forward-port and CodeOSS/Zed baselines"
+      ],
+      "source_decisions": [
+        "operator-approved lineage symbiosis design",
+        "ADR-078"
+      ],
+      "current_state": "Every discovered lineage has a role, exact head, evidence, target cut, and disposition; no disconnected commit is blindly merged.",
+      "target_state": "Lineage admission remains reproducible for current and future forks.",
+      "scope": [
+        "product repositories",
+        "Doc0 branches",
+        "cold-update and self-build worktrees",
+        "semantic capability disposition"
+      ],
+      "files": [
+        "docs/canon/product_lineage_registry.jsonl",
+        "docs/canon/component_reality_matrix.jsonl",
+        "work/canon-compiler/delivery/LINEAGE_RECONCILIATION_REPORT.md"
+      ],
+      "tests": [
+        "product-lineage validator tests",
+        "canon integrity"
+      ],
+      "risks": [
+        "treating Git ancestry as semantic absorption",
+        "duplicate implementation authorities"
+      ],
+      "rollback": "Revert the lineage registry and report; source repositories and worktrees remain preserved.",
+      "dependencies": [
+        "ADC-WO-001"
+      ],
+      "acceptance": [
+        "one canonical target",
+        "every exact head has a disposition",
+        "every substantive precursor is present, deferred, rejected, or superseded"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-007",
+      "program": "P09",
+      "title": "Enforce the constitutional high-sensitivity verdict after every Decider",
+      "problem": "Injected Decider implementations and direct receipt clients could return Allow for sensitivity=high, bypassing the human-or-deny invariant.",
+      "evidence": [
+        "focused adversarial code review",
+        "red tests in test_decider, test_reversible_mutations and test_plugin_receipt_broker"
+      ],
+      "source_decisions": [
+        "ADR-040",
+        "ADR-063",
+        "ADR-075",
+        "ADR-076 C",
+        "ADR-077-BOUNDARY"
+      ],
+      "current_state": "A shared post-Decider guard is applied by Orchestrator and known direct Decider clients before telemetry or effects.",
+      "target_state": "No supported or injected Decider can convert high sensitivity into Allow.",
+      "scope": [
+        "Decider verdict normalization",
+        "Orchestrator",
+        "plugin receipt/activation",
+        "cold update and appeal clients"
+      ],
+      "files": [
+        "src/atlas/core/decider/decider.py",
+        "src/atlas/core/orchestrator.py",
+        "tests/test_decider.py"
+      ],
+      "tests": [
+        "focused 149-test security suite",
+        "full pytest and mypy"
+      ],
+      "risks": [
+        "accidental denial of lower-risk autonomous actions",
+        "telemetry recording a pre-guard verdict"
+      ],
+      "rollback": "Revert the dedicated security commit; no persisted state migration is involved.",
+      "dependencies": [],
+      "acceptance": [
+        "high plus Allow becomes RequiresHuman",
+        "lower sensitivity preserves the original verdict",
+        "telemetry observes the guarded verdict"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-008",
+      "program": "P09",
+      "title": "Make third-party MCP vetting and re-vetting fail closed",
+      "problem": "Internal vet_call errors and corrupt Sentinel snapshots permitted execution or rearmed TOFU; periodic drift only reported without revoking runtime access.",
+      "evidence": [
+        "independent ADR/code reconciliation review",
+        "red tests for corrupt snapshots, internal vet errors and drift revocation"
+      ],
+      "source_decisions": [
+        "ADR-038",
+        "ADR-075",
+        "third-party execution fail-closed invariant"
+      ],
+      "current_state": "Vet errors and invalid snapshots block; re-vet errors/drift revoke transport/tools and quarantine the server for the process lifetime.",
+      "target_state": "Protection degradation never becomes third-party execution authority.",
+      "scope": [
+        "Sentinel call boundary",
+        "snapshot integrity",
+        "McpRegistry re-vet and quarantine"
+      ],
+      "files": [
+        "src/atlas/security/sentinel_gate.py",
+        "src/atlas/mcp/registry.py",
+        "tests/test_sentinel_gate.py"
+      ],
+      "tests": [
+        "35 focused Sentinel/re-vet tests",
+        "full pytest and mypy"
+      ],
+      "risks": [
+        "availability loss on a Sentinel defect",
+        "operator must restart after explicit re-approval"
+      ],
+      "rollback": "Revert the dedicated security commit; existing snapshots and MCP configuration are not migrated or deleted.",
+      "dependencies": [
+        "ADC-WO-007"
+      ],
+      "acceptance": [
+        "invalid snapshot never rearms TOFU",
+        "internal call-check error blocks dispatch",
+        "drift/error removes tools and transport and prevents lazy restart",
+        "snapshot evidence is never rewritten by re-vet"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-009",
+      "program": "P08",
+      "title": "Remove the high-severity transitive PostCSS advisory from the UI lock",
+      "problem": "The exact baseline UI lock resolved PostCSS 8.5.16 with a high-severity advisory.",
+      "evidence": [
+        "baseline npm audit failure",
+        "candidate npm ci, npm audit and production build"
+      ],
+      "source_decisions": [
+        "dependency security gate in CI",
+        "no-new-dependency invariant"
+      ],
+      "current_state": "A package override resolves PostCSS 8.5.23 and nanoid 3.3.16 without adding a direct dependency; exact install reports zero vulnerabilities.",
+      "target_state": "The validation harness lock remains reproducible and free of high/critical advisories.",
+      "scope": [
+        "ui/atlas-shell package metadata and lock"
+      ],
+      "files": [
+        "ui/atlas-shell/package.json",
+        "ui/atlas-shell/package-lock.json"
+      ],
+      "tests": [
+        "npm ci",
+        "npm audit --audit-level=high",
+        "npm run build"
+      ],
+      "risks": [
+        "transitive CSS behavior regression",
+        "local host uses non-canonical Node 24"
+      ],
+      "rollback": "Revert the UI lock commit; CI Node 22 remains the canonical engine for comparison.",
+      "dependencies": [],
+      "acceptance": [
+        "exact install succeeds",
+        "npm audit reports zero vulnerabilities",
+        "TypeScript and Vite build pass"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-112",
+      "program": "P09",
+      "title": "Close optional-adapter type-safety debt",
+      "problem": "Strict mypy reports unchecked Any returns from the optional fal.ai SDK and an Any base class in the optional ACP adapter, obscuring malformed provider responses and weakening the repository type gate.",
+      "evidence": [
+        "MYPYPATH=src python -m mypy src/atlas/ on 2026-07-28 reported no-any-return in image_gen_tool.py and video_gen_tool.py plus an Any subclass in acp/server.py",
+        "pyproject.toml declares media-gen and acp as optional extras",
+        "current adapter tests exercise valid mocked payloads but not malformed SDK output or the dynamic ACP binding"
+      ],
+      "source_decisions": [
+        "current operator directive invariant 7",
+        "AGENTS.md definition of done",
+        "ADR-078 selective ACP assimilation"
+      ],
+      "current_state": "Runtime behavior is guarded by broad error handling, but static validation fails and malformed optional-SDK payloads are not rejected at the adapter boundary.",
+      "target_state": "Optional adapters normalize only mapping payloads, the ACP inheritance remains lazy at runtime, focused regressions cover both seams, and strict mypy is clean without adding dependencies.",
+      "scope": [
+        "src/atlas/tools/image_gen_tool.py",
+        "src/atlas/tools/video_gen_tool.py",
+        "src/atlas/acp/server.py",
+        "tests/test_image_gen_tool.py",
+        "tests/test_video_gen_tool.py",
+        "tests/test_acp_server.py"
+      ],
+      "files": [
+        "src/atlas/tools/image_gen_tool.py",
+        "src/atlas/tools/video_gen_tool.py",
+        "src/atlas/acp/server.py",
+        "tests/test_image_gen_tool.py",
+        "tests/test_video_gen_tool.py",
+        "tests/test_acp_server.py",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/test_image_gen_tool.py tests/test_video_gen_tool.py tests/test_acp_server.py -q",
+        "MYPYPATH=src python -m mypy src/atlas/"
+      ],
+      "risks": [
+        "treating a valid SDK mapping subtype as malformed",
+        "breaking lazy import behavior when the optional ACP package is absent"
+      ],
+      "rollback": "Revert the isolated type-safety commit; no persisted state, public protocol, dependency, or governance configuration changes.",
+      "dependencies": [],
+      "acceptance": [
+        "malformed fal.ai SDK payload becomes an auditable failed generation rather than an unchecked shape assumption",
+        "valid mapping payload behavior is preserved",
+        "ACP class still binds at runtime only when its optional package is available",
+        "strict mypy completes with exit code 0"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-113",
+      "program": "P00",
+      "title": "Enforce operator-decision work-order eligibility",
+      "problem": "The canonical gate validates work-order shape but does not reject a decision-gated item marked READY or an operator question whose blocking work order does not exist, allowing documentation state to imply unauthorized execution.",
+      "evidence": [
+        "scripts/check_canon.py validates work-order fields and status vocabulary but not operator-decision semantics",
+        "docs/canon/open_questions.jsonl links constitutional blockers to work orders",
+        "current operator directive sections 15 and 17 reserve constitutional and irreversible decisions to the operator"
+      ],
+      "source_decisions": [
+        "ADR-067",
+        "current operator directive sections 7, 15, and 17",
+        "evidence-before-operator-choice standing rule"
+      ],
+      "current_state": "READY/BLOCKED/REQUIRES_OPERATOR labels are syntactically checked, while the cross-registry execution eligibility relationship is not enforced.",
+      "target_state": "A decision-required work order cannot be marked READY, REQUIRES_OPERATOR has an explicit operator flag, and every blocking-work-order reference from an operator question resolves to a compatible registered work order.",
+      "scope": [
+        "scripts/check_canon.py",
+        "tests/test_canon_integrity.py",
+        "docs/canon/implementation_registry.yaml",
+        "docs/canon/open_questions.jsonl"
+      ],
+      "files": [
+        "scripts/check_canon.py",
+        "tests/test_canon_integrity.py",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/test_canon_integrity.py -q",
+        "PYTHONPATH=src python scripts/check_canon.py",
+        "MYPYPATH=src python -m mypy scripts/check_canon.py"
+      ],
+      "risks": [
+        "rejecting a completed historical work order that correctly followed a prior operator decision",
+        "overconstraining open questions that are informational rather than blockers"
+      ],
+      "rollback": "Revert the isolated validator commit; it changes no runtime authority and no decision disposition.",
+      "dependencies": [],
+      "acceptance": [
+        "READY work orders never require an operator decision",
+        "REQUIRES_OPERATOR work orders explicitly declare that requirement",
+        "a missing or incompatible blocking work-order reference fails with an actionable code",
+        "the current candidate remains valid"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-114",
+      "program": "P09",
+      "title": "Refresh definitive delivery evidence after governance hardening",
+      "problem": "Delivery reports, diff, commit inventory and bundle were anchored before the evidence, type-safety and operator-eligibility commits, so a reviewer could receive stale convergence evidence.",
+      "evidence": [
+        "work/canon-compiler/delivery/LOCAL_COMMITS.json ends before the current branch head",
+        "work/canon-compiler/delivery/VALIDATION_RESULTS.json references an earlier substantive anchor",
+        "current branch contains evidence-governance, optional-adapter and work-order-gate commits"
+      ],
+      "source_decisions": [
+        "current operator directive sections 19 through 23",
+        "ADR-067 traceability requirements",
+        "AGENTS.md definition of done"
+      ],
+      "current_state": "The prior delivery is valid historical evidence but does not describe the current candidate head.",
+      "target_state": "Reports distinguish prior and current validation, enumerate current atomic commits, include a current patch, bundle/checksum and documentary ZIP, and preserve runtime limitations without promotion.",
+      "scope": [
+        "work/canon-compiler/delivery/",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md",
+        "external local bundle and documentary ZIP under atlas-definitive-backup"
+      ],
+      "files": [
+        "work/canon-compiler/delivery/VALIDATION_RESULTS.json",
+        "work/canon-compiler/delivery/DEFINITIVE_CONVERGENCE_REPORT.md",
+        "work/canon-compiler/delivery/IMPLEMENTATION_REPORT.md",
+        "work/canon-compiler/delivery/ADVERSARIAL_AUDIT.md",
+        "work/canon-compiler/delivery/LOCAL_COMMITS.json",
+        "work/canon-compiler/delivery/FINAL_DIFF.patch",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/ -q",
+        "MYPYPATH=src python -m mypy src/atlas/",
+        "PYTHONPATH=src python scripts/check_canon.py",
+        "git bundle verify",
+        "sha256sum -c"
+      ],
+      "risks": [
+        "self-referential generated artifacts omitting their own delivery commit",
+        "recording a runtime service as live without a fresh proof",
+        "inadvertently archiving secrets or the repository itself"
+      ],
+      "rollback": "Revert only the delivery-evidence commit and remove the newly generated external bundle/ZIP; implementation commits remain intact and the prior bundle remains available.",
+      "dependencies": [
+        "ADC-WO-112",
+        "ADC-WO-113"
+      ],
+      "acceptance": [
+        "delivery anchor and commit inventory describe the current substantive head",
+        "all validation classifications are explicit",
+        "bundle and documentary ZIP verify and exclude secrets/source tree",
+        "review and non-destructive integration steps are current"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    }
+  ]
+}

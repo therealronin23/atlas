@@ -5,6 +5,10 @@ Origen: Respuesta a 6.10 paper (post-inspection capability masking) ·
 Contexto: `src/atlas/security/behavioral.py`, paper §6.11, Session J demo ·
 Referencias: [[OSM-042]] (shadow model), [[OSM-028]] (causa de inspección).
 
+Disposición 2026-07-27: **CODE_PRESENT / TESTED / VALIDATION_HARNESS**. Los
+tests, demo y exports no prueban hot-path, tráfico live ni garantía de
+detección; la investigación permanece abierta.
+
 ---
 
 ## Contexto

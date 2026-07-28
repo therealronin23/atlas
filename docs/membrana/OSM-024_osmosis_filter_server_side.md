@@ -4,6 +4,14 @@ Fecha: 2026-06-17 · Estado: **En membrana** (gateway implementado; enforcement 
 Origen: `idea avance 3.md` · Contexto: ADR-051 (Compliance Gateway), ADR-053 (completitud),
 ADR-054 (defensa en profundidad), `src/atlas/transparency/`.
 
+## Disposición definitiva (2026-07-27)
+
+Se conserva como `PROPOSED_DESIGN` de P12. Existen primitivas de transparencia,
+pero no un servicio obligatorio no-bypass ni un guarantee profile aceptado.
+“Osmosis gana el pitch” es preferencia/narrativa histórica, no autoridad para
+declarar enforcement o producto. La elección permanece en
+`OPEN-OPERATOR-OSMOSIS-ENFORCEMENT`.
+
 > OSM padre del chat 3. Las OSM-025..030 son sus mecanismos. Reencuadra el Compliance
 > Gateway de "log externo opcional que adoptáis" a "capa de cumplimiento en el path".
 

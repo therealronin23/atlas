@@ -1,8 +1,14 @@
 # OSM-026 — Doble copia del log Merkle (proveedor + usuario)
 
 Fecha: 2026-06-17 · Estado: **Absorbida** (2026-06-18) · Origen: `idea avance 3.md` ·
-Contexto: ADR-053, `src/atlas/transparency/witness.py`, `log.py`, [[OSM-025]].
+Contexto histórico: ADR-053, `log.py`, [[OSM-025]]. Los módulos
+`transparency/witness.py` y `transparency/gossip.py` citados por versiones
+anteriores no existen en el checkout actual.
 Límite honesto: nodos witness independientes = infra de ecosistema pendiente. Paper §6.1.
+
+Disposición 2026-07-27: **HISTORICAL / SUPERSEDED en su claim de current-code**.
+Se preserva el patrón y el alcance absorbido por ADR-053; no hay red witness
+actual ni garantía anti split-view live.
 
 ---
 

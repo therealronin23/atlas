@@ -17,7 +17,11 @@ from atlas.security.sentinel_gate import SentinelGate
 
 
 def _cfg(cmd: list[str] | None = None, name: str = "srv") -> McpServerConfig:
-    return McpServerConfig(name=name, cmd=cmd or ["mcp-server"])
+    return McpServerConfig(
+        name=name,
+        cmd=cmd
+        or [sys.executable, "-m", "atlas.mcp.memory_server", "/tmp/atlas-test.db"],
+    )
 
 
 def _tool(name: str, desc: str = "lee datos", schema: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -108,6 +112,40 @@ def test_ioc_command_in_cmd_vetoes_server(tmp_path: Path) -> None:
     res = gate.vet(_cfg(cmd=["mcp-server", "--flag", "rm -rf data"]), [_tool("x")])
     assert res.admitted is False
     assert "IOC" in res.server_reason
+
+
+def test_ioc_domain_in_cmd_vetoes_before_spawn(tmp_path: Path) -> None:
+    gate = SentinelGate(tmp_path)
+    res = gate.vet(
+        _cfg(cmd=["sh", "-c", "curl https://giftshop.club/collect"]),
+        [_tool("x")],
+    )
+    assert res.admitted is False
+    assert "IOC" in res.server_reason
+
+
+def test_inline_shell_command_is_not_an_argv_safety_boundary(tmp_path: Path) -> None:
+    gate = SentinelGate(tmp_path)
+    res = gate.vet(_cfg(cmd=["bash", "-c", "echo benign"]), [_tool("x")])
+    assert res.admitted is False
+    assert "shell" in res.server_reason.lower()
+
+
+def test_unmeasured_third_party_runtime_is_quarantined_pre_spawn(
+    tmp_path: Path,
+) -> None:
+    gate = SentinelGate(tmp_path)
+    result = gate.vet(_cfg(cmd=["npx", "-y", "@vendor/server@latest"]), [_tool("x")])
+
+    assert result.admitted is False
+    assert "third-party" in result.server_reason.lower()
+
+
+def test_ambiguous_server_name_is_rejected(tmp_path: Path) -> None:
+    result = SentinelGate(tmp_path).vet(_cfg(name="a/b"), [_tool("x")])
+
+    assert result.admitted is False
+    assert "identificador" in result.server_reason.lower()
 
 
 def test_ioc_domain_in_tool_surface_blocks_tool(tmp_path: Path) -> None:
@@ -223,6 +261,31 @@ def test_no_readonly_claim_means_nothing_to_contrast(tmp_path: Path) -> None:
 FIXTURE = Path(__file__).parent / "fixtures" / "mcp_echo_server.py"
 
 
+def test_governed_echo_fixture_command_is_admitted_with_two_argv_tokens(
+    tmp_path: Path,
+) -> None:
+    """Catches a length guard that accidentally requires an argument after
+    the tracked smoke script and therefore quarantines the real E2E fixture."""
+    cfg = McpServerConfig(name="echo", cmd=[sys.executable, str(FIXTURE)])
+
+    assert SentinelGate(tmp_path).vet_command(cfg) is None
+
+
+def test_echo_named_script_outside_tracked_fixture_remains_quarantined(
+    tmp_path: Path,
+) -> None:
+    """The smoke exception is path-bound, not an allowlist by basename."""
+    cfg = McpServerConfig(
+        name="echo",
+        cmd=[sys.executable, "/tmp/tests/fixtures/mcp_echo_server.py"],
+    )
+
+    reason = SentinelGate(tmp_path).vet_command(cfg)
+
+    assert reason is not None
+    assert "third-party" in reason
+
+
 def test_registry_with_sentinel_admits_clean_server(tmp_path: Path) -> None:
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
@@ -315,18 +378,19 @@ def test_incident_ioc_floor_is_not_overridable_by_empty_injected_set(tmp_path: P
 
 
 # ===========================================================================
-# Fail-open ruidoso en snapshot corrupto (2026-07-23, patron P4 de
-# claude-mcp-sentinel: "si la proteccion se degrada, avisa; nunca en silencio")
+# Fail-closed en snapshot corrupto (ATLAS DEFINITIVE CANDIDATE, 2026-07-27)
 # ===========================================================================
 
 
-def test_corrupt_snapshot_warns_instead_of_silent_tofu_rearm(tmp_path: Path, caplog: Any) -> None:
+def test_corrupt_snapshot_blocks_instead_of_rearming_tofu(
+    tmp_path: Path, caplog: Any
+) -> None:
     """Si memory/sentinel/<server>.json existe pero esta corrupto (crash a
     media escritura, disco danado, o borrado/reescrito por un atacante), el
-    gate lo trataba como 'no existe' -> TOFU se re-arma en SILENCIO y admite
-    lo que sea que este corriendo ahora como si fuera la primera vez. Debe
-    quedar constancia (falla degradada, no silenciosa) aunque el
-    comportamiento fail-open siga siendo el mismo (no bloquear por esto)."""
+    gate lo trataba como 'no existe' -> TOFU se re-arma y admite lo que esté
+    corriendo ahora como si fuera la primera vez. Una protección de ejecución
+    de terceros debe fallar cerrada: el server queda vetado y el snapshot no
+    se reescribe."""
     import logging
 
     snap_path = tmp_path / "srv.json"
@@ -334,8 +398,56 @@ def test_corrupt_snapshot_warns_instead_of_silent_tofu_rearm(tmp_path: Path, cap
     gate = SentinelGate(tmp_path)
     with caplog.at_level(logging.WARNING):
         res = gate.vet(_cfg(), [_tool("x")])
-    assert res.admitted is True  # fail-open intacto, sin cambio de comportamiento
+    assert res.admitted is False
+    assert "snapshot" in res.server_reason.lower()
+    assert snap_path.read_text(encoding="utf-8") == "{not valid json"
     assert any("srv" in rec.message and "corrupt" in rec.message.lower() for rec in caplog.records)
+
+
+def test_non_mapping_snapshot_blocks_adoption(tmp_path: Path) -> None:
+    snap_path = tmp_path / "srv.json"
+    snap_path.write_text('["not", "a", "snapshot"]', encoding="utf-8")
+
+    res = SentinelGate(tmp_path).vet(_cfg(), [_tool("x")])
+
+    assert res.admitted is False
+    assert "snapshot" in res.server_reason.lower()
+    assert snap_path.read_text(encoding="utf-8") == '["not", "a", "snapshot"]'
+
+
+def test_duplicate_tool_names_veto_the_server(tmp_path: Path) -> None:
+    gate = SentinelGate(tmp_path)
+
+    result = gate.vet(
+        _cfg(),
+        [
+            _tool("duplicate", desc="lee datos"),
+            _tool("duplicate", desc="devuelve un secret token"),
+        ],
+    )
+
+    assert result.admitted is False
+    assert "duplic" in result.server_reason.lower()
+    assert not (tmp_path / "srv.json").exists()
+
+
+def test_empty_first_adoption_is_not_analyzable(tmp_path: Path) -> None:
+    result = SentinelGate(tmp_path).vet(_cfg(), [])
+
+    assert result.admitted is False
+    assert "tool" in result.server_reason.lower()
+    assert not (tmp_path / "srv.json").exists()
+
+
+def test_missing_known_tool_is_server_drift(tmp_path: Path) -> None:
+    gate = SentinelGate(tmp_path)
+    first = gate.vet(_cfg(), [_tool("one"), _tool("two")])
+    assert first.admitted is True
+
+    result = gate.vet(_cfg(), [_tool("one")])
+
+    assert result.admitted is False
+    assert "ausente" in result.server_reason.lower()
 
 
 # ===========================================================================
@@ -364,10 +476,8 @@ def test_vet_call_allows_benign_arguments(tmp_path: Path) -> None:
     assert reason is None
 
 
-def test_vet_call_fail_open_on_internal_error(tmp_path: Path, monkeypatch: Any) -> None:
-    """El chequeo mismo NUNCA debe poder tumbar una llamada legitima por un
-    bug del propio gate -- fail-open en el ERROR del chequeo, distinto de
-    fail-closed en un IOC real encontrado."""
+def test_vet_call_fail_closed_on_internal_error(tmp_path: Path, monkeypatch: Any) -> None:
+    """Un fallo del propio gate no puede autorizar ejecución de terceros."""
     gate = SentinelGate(tmp_path)
 
     def _boom(*a: Any, **k: Any) -> str:
@@ -375,7 +485,8 @@ def test_vet_call_fail_open_on_internal_error(tmp_path: Path, monkeypatch: Any) 
 
     monkeypatch.setattr(gate, "_tool_surface_for_call", _boom)
     reason = gate.vet_call("read_file", {"path": "/tmp/x"})
-    assert reason is None
+    assert reason is not None
+    assert "interno" in reason.lower() or "internal" in reason.lower()
 
 
 def test_vet_call_overhead_is_low_ms(tmp_path: Path) -> None:
@@ -421,7 +532,7 @@ def test_revet_all_detects_drift_on_already_adopted_server(tmp_path: Path) -> No
 
         snap_path = tmp_path / "echo.json"
         snap = _json.loads(snap_path.read_text(encoding="utf-8"))
-        snap["echo"] = "hash-falso-simulando-drift"
+        snap["echo"] = "0" * 64
         snap_path.write_text(_json.dumps(snap), encoding="utf-8")
 
         findings = reg.revet_all()
@@ -430,6 +541,55 @@ def test_revet_all_detects_drift_on_already_adopted_server(tmp_path: Path) -> No
         assert findings[0]["server"] == "echo"
         blocked_tools = {b["tool"] for b in findings[0]["blocked"]}
         assert "echo" in blocked_tools
+        assert findings[0]["revoked"] is True
+        assert not any(
+            spec["function"]["name"].startswith("mcp__echo__")
+            for spec in reg.tool_specs()
+        )
+        assert reg.ensure_started("echo") is False
+        reg.close_all()
+        assert reg.ensure_started("echo") is False
+    finally:
+        reg.close_all()
+
+
+def test_revet_internal_error_revokes_and_quarantines(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    cfg = McpServerConfig(
+        name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
+    )
+    gate = SentinelGate(tmp_path)
+    reg = McpRegistry([cfg], sentinel=gate)
+    try:
+        reg.start_all()
+
+        def _boom(*args: Any, **kwargs: Any) -> Any:
+            raise RuntimeError("sentinel unavailable")
+
+        monkeypatch.setattr(gate, "vet_tools", _boom)
+        findings = reg.revet_all()
+
+        assert findings[0]["server"] == "echo"
+        assert findings[0]["revoked"] is True
+        assert reg.ensure_started("echo") is False
+    finally:
+        reg.close_all()
+
+
+def test_corrupt_snapshot_prevents_registry_activation(tmp_path: Path) -> None:
+    (tmp_path / "echo.json").write_text("{corrupt", encoding="utf-8")
+    cfg = McpServerConfig(
+        name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
+    )
+    reg = McpRegistry([cfg], sentinel=SentinelGate(tmp_path))
+    try:
+        reg.start_all()
+
+        assert reg.tool_specs() == []
+        assert reg.ensure_started("echo") is False
+        assert reg.remove_server("echo") is True
+        assert reg.ensure_started("echo") is False
     finally:
         reg.close_all()
 

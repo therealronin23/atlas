@@ -8,6 +8,14 @@
 - **Contexto previo**: ADR-063 Gate Engine; ADR-072 escaneo de admisión;
   invariantes 1, 4, 6 y 8 de `AGENTS.md`.
 
+## Disposición definitiva (2026-07-27)
+
+El camino local staged → receipt → activación reversible está presente y
+probado. El manifiesto continúa siendo declarativo y local-only; no concede a
+fuentes remotas ejecutables autoridad de instalación. Toda acción de
+sensibilidad alta atraviesa la barrera constitucional común aunque se inyecte
+un `Decider` personalizado.
+
 ## Contexto
 
 El grafo vivo muestra que `atlas.mcp.installer` sólo alimentaba a

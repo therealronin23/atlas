@@ -3,8 +3,9 @@
 Fecha: 2026-06-17 · Estado: **Difusión** (elevada y refinada desde Suspensión por el barrido
 Gemini; ver [[OSM-000]]) · Origen: registro OSM-000 (export-control, razón del apagón de
 Fable 5) + refinamiento Gemini 2026-06-17 · Contexto: paper §6.5 (residencia no resoluble
-en código), `src/atlas/security/` (membrana), [[OSM-021]] (identidad), [[OSM-025]]
-(device-bound), [[OSM-034]] (consentimiento Netflix-style).
+en código), `src/atlas/security/` (membrana), OSM-021 (registro de identidad
+sin fichero actual), [[OSM-025]] (device-bound), OSM-034 (registro de
+consentimiento Netflix-style sin fichero actual).
 
 ---
 

@@ -1,0 +1,207 @@
+{
+  "schema_version": "1.1",
+  "base_commit": "c95038c9d7e97ddc6339f38abe6dad09b166f47d",
+  "delivery_anchor": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+  "artifact_commit_excluded_by_design": true,
+  "count": 22,
+  "commits": [
+    {
+      "commit": "9a7f516f6d9339243fafcce60992a994a2319b47",
+      "parents": [
+        "c95038c9d7e97ddc6339f38abe6dad09b166f47d"
+      ],
+      "authored_at": "2026-07-28T12:23:42+02:00",
+      "subject": "docs(workbench): establish lineage symbiosis design",
+      "shortstat": "1 file changed, 508 insertions(+)"
+    },
+    {
+      "commit": "4d38b53b9cb1c8596a8c76bdbe4ec5fdc179ad7e",
+      "parents": [
+        "9a7f516f6d9339243fafcce60992a994a2319b47"
+      ],
+      "authored_at": "2026-07-28T12:32:21+02:00",
+      "subject": "docs(convergence): plan definitive lineage closure",
+      "shortstat": "1 file changed, 599 insertions(+)"
+    },
+    {
+      "commit": "29fca6109a12ef4993a35396656780c3186ee87e",
+      "parents": [
+        "4d38b53b9cb1c8596a8c76bdbe4ec5fdc179ad7e"
+      ],
+      "authored_at": "2026-07-28T12:40:22+02:00",
+      "subject": "docs(workbench): preserve comprehensive cut two scope",
+      "shortstat": "2 files changed, 14 insertions(+), 8 deletions(-)"
+    },
+    {
+      "commit": "07ebd41a2953e9ec82a7bee81f57d53d7e5e3804",
+      "parents": [
+        "29fca6109a12ef4993a35396656780c3186ee87e"
+      ],
+      "authored_at": "2026-07-28T13:13:56+02:00",
+      "subject": "canon(sources): reconcile live operator evidence",
+      "shortstat": "9 files changed, 4736 insertions(+), 211 deletions(-)"
+    },
+    {
+      "commit": "ffc08d2b7d9162c8abbbe35b2f855e6d3ff45f51",
+      "parents": [
+        "07ebd41a2953e9ec82a7bee81f57d53d7e5e3804"
+      ],
+      "authored_at": "2026-07-28T13:18:20+02:00",
+      "subject": "fix(mcp): enforce fail-closed auditable admission",
+      "shortstat": "9 files changed, 868 insertions(+), 146 deletions(-)"
+    },
+    {
+      "commit": "0e243cd1800bfc636fc3d2019738234d010deed8",
+      "parents": [
+        "ffc08d2b7d9162c8abbbe35b2f855e6d3ff45f51"
+      ],
+      "authored_at": "2026-07-28T13:58:09+02:00",
+      "subject": "fix(governance): enforce high-sensitivity human control",
+      "shortstat": "17 files changed, 226 insertions(+), 63 deletions(-)"
+    },
+    {
+      "commit": "cc1ec8d0a8c5c570828e697640bb280486adf3cc",
+      "parents": [
+        "0e243cd1800bfc636fc3d2019738234d010deed8"
+      ],
+      "authored_at": "2026-07-28T14:00:54+02:00",
+      "subject": "fix(mcp): separate argv screening from admission",
+      "shortstat": "2 files changed, 20 insertions(+), 8 deletions(-)"
+    },
+    {
+      "commit": "1a59c6d5e9c9708ba53d409a69bebd34febc6e92",
+      "parents": [
+        "cc1ec8d0a8c5c570828e697640bb280486adf3cc"
+      ],
+      "authored_at": "2026-07-28T14:01:40+02:00",
+      "subject": "fix(ui): resolve validation harness PostCSS advisory",
+      "shortstat": "2 files changed, 13 insertions(+), 8 deletions(-)"
+    },
+    {
+      "commit": "795e8734e4607598a6b77f5fcb2e512e199d0321",
+      "parents": [
+        "1a59c6d5e9c9708ba53d409a69bebd34febc6e92"
+      ],
+      "authored_at": "2026-07-28T14:15:04+02:00",
+      "subject": "canon(workbench): establish definitive authority and lineage",
+      "shortstat": "24 files changed, 3082 insertions(+), 55 deletions(-)"
+    },
+    {
+      "commit": "9b38920c92930b4e26dbe956e1772ea4d4608b84",
+      "parents": [
+        "795e8734e4607598a6b77f5fcb2e512e199d0321"
+      ],
+      "authored_at": "2026-07-28T14:15:14+02:00",
+      "subject": "test(canon): enforce definitive authority in CI",
+      "shortstat": "3 files changed, 1466 insertions(+)"
+    },
+    {
+      "commit": "0dd8763323e8161cd9088a16d411635cbc2ba66d",
+      "parents": [
+        "9b38920c92930b4e26dbe956e1772ea4d4608b84"
+      ],
+      "authored_at": "2026-07-28T14:17:05+02:00",
+      "subject": "docs(reality): reconcile living projections",
+      "shortstat": "26 files changed, 374 insertions(+), 82 deletions(-)"
+    },
+    {
+      "commit": "37b64d735e12892df76717b540993352400b4aee",
+      "parents": [
+        "0dd8763323e8161cd9088a16d411635cbc2ba66d"
+      ],
+      "authored_at": "2026-07-28T14:19:17+02:00",
+      "subject": "docs(cli): reconcile plugin activation contract",
+      "shortstat": "1 file changed, 5 insertions(+), 3 deletions(-)"
+    },
+    {
+      "commit": "e31414903f3d8fbea1dd5affcc68af26e7099be7",
+      "parents": [
+        "37b64d735e12892df76717b540993352400b4aee"
+      ],
+      "authored_at": "2026-07-28T14:31:20+02:00",
+      "subject": "test(mcp): make semgrep resolution hermetic",
+      "shortstat": "1 file changed, 29 insertions(+), 2 deletions(-)"
+    },
+    {
+      "commit": "ff439d2840e30754fbf8175e0b61c59cf4e3c4de",
+      "parents": [
+        "e31414903f3d8fbea1dd5affcc68af26e7099be7"
+      ],
+      "authored_at": "2026-07-28T14:55:11+02:00",
+      "subject": "fix(reality): allow canonical suite to complete",
+      "shortstat": "2 files changed, 13 insertions(+), 8 deletions(-)"
+    },
+    {
+      "commit": "793a8a8178edacbf9db2ae3b9c7371550d9e52ca",
+      "parents": [
+        "ff439d2840e30754fbf8175e0b61c59cf4e3c4de"
+      ],
+      "authored_at": "2026-07-28T15:15:26+02:00",
+      "subject": "docs(delivery): close definitive convergence audit",
+      "shortstat": "12 files changed, 599 insertions(+), 6 deletions(-)"
+    },
+    {
+      "commit": "4ac9c9ee7b94060c608650536c9e355dae4be800",
+      "parents": [
+        "793a8a8178edacbf9db2ae3b9c7371550d9e52ca"
+      ],
+      "authored_at": "2026-07-28T15:18:09+02:00",
+      "subject": "docs(delivery): add reproducible review artifacts",
+      "shortstat": "5 files changed, 16426 insertions(+)"
+    },
+    {
+      "commit": "78ecd44cff89b11f881b50de50787b05768fa033",
+      "parents": [
+        "4ac9c9ee7b94060c608650536c9e355dae4be800"
+      ],
+      "authored_at": "2026-07-28T15:18:47+02:00",
+      "subject": "chore(delivery): classify review patch whitespace",
+      "shortstat": "1 file changed, 4 insertions(+)"
+    },
+    {
+      "commit": "88926cab7020e7cfb00fd8ff8b627a7ccd397ef5",
+      "parents": [
+        "78ecd44cff89b11f881b50de50787b05768fa033"
+      ],
+      "authored_at": "2026-07-28T18:58:24+02:00",
+      "subject": "docs(governance): specify evidence-qualified decisions",
+      "shortstat": "1 file changed, 338 insertions(+)"
+    },
+    {
+      "commit": "85eb3c6251b834b5e423ed4385c81508c50827bb",
+      "parents": [
+        "88926cab7020e7cfb00fd8ff8b627a7ccd397ef5"
+      ],
+      "authored_at": "2026-07-28T20:29:03+02:00",
+      "subject": "feat(canon): enforce evidence traceability",
+      "shortstat": "20 files changed, 1696 insertions(+), 8 deletions(-)"
+    },
+    {
+      "commit": "6139eae9bd06d26f4564a548c6688d1b20a95391",
+      "parents": [
+        "85eb3c6251b834b5e423ed4385c81508c50827bb"
+      ],
+      "authored_at": "2026-07-28T20:29:36+02:00",
+      "subject": "test(validation): honor optional protocol extras",
+      "shortstat": "3 files changed, 17 insertions(+), 1 deletion(-)"
+    },
+    {
+      "commit": "f1711a028ee6f1eecbfe3c7baec3bb8f4537a8ea",
+      "parents": [
+        "6139eae9bd06d26f4564a548c6688d1b20a95391"
+      ],
+      "authored_at": "2026-07-28T20:38:57+02:00",
+      "subject": "fix(adapters): close optional SDK type gaps",
+      "shortstat": "9 files changed, 167 insertions(+), 8 deletions(-)"
+    },
+    {
+      "commit": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+      "parents": [
+        "f1711a028ee6f1eecbfe3c7baec3bb8f4537a8ea"
+      ],
+      "authored_at": "2026-07-28T20:46:12+02:00",
+      "subject": "feat(canon): gate operator decision work orders",
+      "shortstat": "5 files changed, 299 insertions(+), 9 deletions(-)"
+    }
+  ]
+}

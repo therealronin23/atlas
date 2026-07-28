@@ -2,7 +2,7 @@
 # Generado/validado por scripts/docs_index_audit.py (REPO_STANDARD §1).
 # Campos curados a mano que --write PRESERVA: type, status, verified, notes.
 # status: vigente | propuesto | superseded | historico
-generated: '2026-07-24'
+generated: '2026-07-28'
 entries:
 - path: docs/architecture/ARCHITECTURE_MAP.md
   type: conocimiento
@@ -172,138 +172,6 @@ entries:
   type: historia
   status: historico
   verified: null
-- path: docs/archive/_graveyard/2026-06-21/MANIFEST.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/orphan_modules/kyc_binding.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/orphan_modules/log_behavioral.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/orphan_modules/witness_server.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/orphan_tests/test_kyc_binding.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/orphan_tests/test_log_behavioral.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/orphan_tests/test_witness_server.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/AUDITORIA GROK.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/Gemini-Auditoría Técnica y Regulatoria de Atlas.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/conversation_summary.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/gpt.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/idea avance 2.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/idea avance 3.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/idea avance.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/idea.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/mcp grok.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21/scratch/texto arrastrado.txt
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/WHY.md
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/affinity_maturation.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/fuzzing.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/gossip.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/llm_scorer.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/red_team.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/scorers.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/security_worker.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_modules/witness.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_affinity_maturation.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_fuzzing.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_gossip.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_immunity_mutators_scorers.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_red_team.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_security_worker.py
-  type: historia
-  status: historico
-  verified: null
-- path: docs/archive/_graveyard/2026-06-21-f3/orphan_tests/test_transparency_witness.py
-  type: historia
-  status: historico
-  verified: null
 - path: docs/archive/_graveyard/2026-06-25-tech4-property-verifier/WHY.md
   type: historia
   status: historico
@@ -335,10 +203,6 @@ entries:
 - path: docs/archive/vscode_session_2026-06-17/osmosis_filter_design.md
   type: historia
   status: historico
-  verified: null
-- path: docs/audit_complete_latest.json
-  type: conocimiento
-  status: vigente
   verified: null
 - path: docs/audits/audit_adr051_052_premortem_2026-06-15.md
   type: evidencia
@@ -440,6 +304,32 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/canon/authority_registry.yaml
+  type: conocimiento
+  status: vigente
+  verified: null
+  notes: ATLAS DEFINITIVE CANDIDATE machine-readable projection; no reemplaza ADR-067.
+- path: docs/canon/decision_dossiers/EDR-ADR-057-memory-promotion.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/canon/decision_dossiers/EDR-ADR-058-control-plane.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/canon/decision_dossiers/EDR-ADR-069-durable-work.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/canon/decision_dossiers/EDR-ADR-078-workbench-lineage.md
+  type: conocimiento
+  status: vigente
+  verified: null
+- path: docs/canon/implementation_registry.yaml
+  type: conocimiento
+  status: vigente
+  verified: null
+  notes: ATLAS DEFINITIVE CANDIDATE machine-readable projection; no reemplaza ADR-067.
 - path: docs/compliance/compliance_gateway_carta.md
   type: compliance
   status: vigente
@@ -462,184 +352,229 @@ entries:
   verified: null
 - path: docs/continuation/ATLAS_WHAT_IT_IS_AND_COULD_BECOME.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/CONTEXT_LEDGER.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/CONTINUATION_STATE.md
   type: conocimiento
   status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/IMPLEMENTATION_LOG.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/KNOWN_RISKS.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/NEXT_AI_INSTRUCTIONS.md
   type: conocimiento
-  status: vigente
+  status: superseded
   verified: null
+  notes: Instrucción/work order supersedido por ATLAS.md y PLAN.md.
 - path: docs/continuation/OPEN_QUESTIONS.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/REPO_AUDIT.md
   type: conocimiento
   status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/TESTING_STATUS.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/IMPROVEMENT_PROPOSALS.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/NEW_GAPS_FOUND.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/PHASE_15_COMPLETION_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/PHASE_15_EXECUTION_PLAN.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/PHASE_15_FILES_TO_CREATE_OR_MODIFY.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/PHASE_15_RISK_REVIEW.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/RECOMMENDED_PHASE_16.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/REPO_ALIGNMENT_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/TESTING_STATUS.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/WHAT_WAS_IMPLEMENTED.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase15/WHAT_WAS_NOT_IMPLEMENTED.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/CURRENT_CHECKPOINT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/F15_F16_DEPENDENCY_AUDIT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/F15_F16_RECONCILIATION_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/GRAPH_MEMORY_DOCS_SYNC_AUDIT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/NEXT_AI_INSTRUCTIONS_AFTER_RECOVERY.md
   type: conocimiento
-  status: vigente
+  status: superseded
   verified: null
+  notes: Instrucción/work order supersedido por ATLAS.md y PLAN.md.
 - path: docs/continuation/phase_recovery/PACK_LOCATION_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PACK_MANIFEST_atlas_fable5_handoff_v1.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PACK_MANIFEST_atlas_os_build_pack_v1.md
   type: conocimiento
   status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PACK_MANIFEST_atlas_product_os_liquid_ui_pack_v1.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PHASE_1_14_BACKFILL_PLAN.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PHASE_1_16_COVERAGE_MATRIX.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PHASE_RECOVERY_FINAL_VERDICT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PHASE_SOURCE_INDEX.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/PROMPT_TASK_ASSIMILATION_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/phase_recovery/backfill/PHASE_5_6_BACKFILL_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/CANONICAL_WORK_ORDER_AFTER_ZIPS.md
   type: conocimiento
-  status: vigente
+  status: superseded
   verified: null
+  notes: Instrucción/work order supersedido por ATLAS.md y PLAN.md.
 - path: docs/continuation/zip_closure/CROSS_ZIP_CONFLICT_TABLE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/CURRENT_CHECKPOINT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/FINAL_ZIP_CLOSURE_VERDICT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/GRAPH_MEMORY_DOC_SYNC_CLOSURE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/ZIP1_ATLAS_OS_BUILD_PACK_CLOSURE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/ZIP2_FABLE5_HANDOFF_CLOSURE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/ZIP3_PRODUCT_OS_LIQUID_UI_CLOSURE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/ZIP_AUTHORITY_ORDER.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/continuation/zip_closure/ZIP_BACKFILL_REPORT.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot de continuación fechado; no autoridad de estado actual.
 - path: docs/decisions/adr/adr_013b_computer_use.md
   type: decision
   status: vigente
@@ -746,8 +681,9 @@ entries:
   verified: null
 - path: docs/decisions/adr/adr_047_adversarial_verification_and_grounding.md
   type: decision
-  status: vigente
+  status: propuesto
   verified: null
+  notes: Diseño propuesto; no adquiere autoridad de implementación por estar indexado.
 - path: docs/decisions/adr/adr_048_verified_producer.md
   type: decision
   status: vigente
@@ -758,20 +694,23 @@ entries:
   verified: null
 - path: docs/decisions/adr/adr_051_compliance_gateway.md
   type: decision
-  status: vigente
+  status: propuesto
   verified: null
+  notes: Diseño propuesto; no adquiere autoridad de implementación por estar indexado.
 - path: docs/decisions/adr/adr_052_odysseus_full_assimilation.md
   type: decision
-  status: vigente
+  status: propuesto
   verified: null
+  notes: Diseño propuesto; no adquiere autoridad de implementación por estar indexado.
 - path: docs/decisions/adr/adr_053_gateway_trust_completeness.md
   type: decision
   status: vigente
   verified: null
 - path: docs/decisions/adr/adr_054_defense_in_depth_deception.md
   type: decision
-  status: vigente
+  status: propuesto
   verified: null
+  notes: Diseño propuesto; no adquiere autoridad de implementación por estar indexado.
 - path: docs/decisions/adr/adr_055_os_level_sandbox_jail.md
   type: decision
   status: vigente
@@ -792,6 +731,7 @@ entries:
   type: decision
   status: vigente
   verified: null
+  notes: Vigente solo para arnés web/infra; UX final supersedida en alcance por ADR-071.
 - path: docs/decisions/adr/adr_060_integration_fabric_easy_connection_policy.md
   type: decision
   status: vigente
@@ -816,6 +756,7 @@ entries:
   type: decision
   status: vigente
   verified: null
+  notes: Parking vigente; ADR-068 supersede únicamente el framing.
 - path: docs/decisions/adr/adr_067_atlas_constitution_authority.md
   type: decision
   status: vigente
@@ -849,6 +790,21 @@ entries:
   status: vigente
   verified: null
 - path: docs/decisions/adr/adr_075_remote_mcp_continuous_vetting.md
+  type: decision
+  status: vigente
+  verified: null
+- path: docs/decisions/adr/adr_076_mcp_continuous_discovery_and_governed_auto_adopt.md
+  type: decision
+  status: vigente
+  verified: null
+  notes: 'Split atómico: A/B aceptadas opt-in; C rechazada, no implementada y ausente.'
+- path: docs/decisions/adr/adr_077_universal_security_council_gate_and_escalation.md
+  type: decision
+  status: vigente
+  verified: null
+  notes: Split atómico en decision_registry; C universal escalation falta y high permanece
+    humano-o-deny.
+- path: docs/decisions/adr/adr_078_atlas_workbench_lineage_convergence.md
   type: decision
   status: vigente
   verified: null
@@ -960,15 +916,17 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build (misión absorb_harness_patterns)
+  notes: matriz 4x5 Aider/Cursor/Codex/Claude Code escrita por el lazo self-build
+    (misión absorb_harness_patterns)
 - path: docs/design/atlas_ecosystem_map.md
   type: design
   status: vigente
   verified: null
 - path: docs/design/atlas_master_plan.md
   type: design
-  status: vigente
+  status: superseded
   verified: null
+  notes: Superseded como plan vivo por PLAN.md; se conserva como diseño histórico.
 - path: docs/design/atlas_max_capability_roadmap.md
   type: design
   status: vigente
@@ -987,8 +945,9 @@ entries:
   verified: null
 - path: docs/design/backlog.md
   type: design
-  status: vigente
+  status: superseded
   verified: null
+  notes: Superseded como autoridad de ejecución por PLAN.md e implementation_registry.yaml.
 - path: docs/design/design_catalog_enrichment.md
   type: design
   status: vigente
@@ -1021,7 +980,8 @@ entries:
   type: design
   status: vigente
   verified: '2026-07-09'
-  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido con OK del operador 2026-07-09
+  notes: cadena completa probada en vivo (4206 nodos, 4360 notas, 26392 links); promovido
+    con OK del operador 2026-07-09
 - path: docs/design/ideas/2026-07-02-vision-atlas-microkernel-universal.md
   type: design
   status: vigente
@@ -1176,44 +1136,62 @@ entries:
   verified: null
 - path: docs/governance/CAPABILITIES.md
   type: norma
-  status: vigente
+  status: superseded
   verified: null
+  notes: Redirect de compatibilidad; STATUS.md y component_reality_matrix.jsonl son
+    la realidad vigente.
 - path: docs/governance/REPO_STANDARD.md
   type: norma
   status: vigente
   verified: null
 - path: docs/handoff/GENERATED/00_ESTADO.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/01_QUIEN_ES_QUIEN.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/02_INVARIANTES.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/03_MEMORIA_CLAVE.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/04_PLAN.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/05_ECOSISTEMA.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/06_PRIMEROS_10_MINUTOS.md
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/GENERATED/MANIFEST.json
   type: conocimiento
-  status: vigente
+  status: historico
   verified: null
+  notes: Snapshot generado en commit 8317cf8; no usar para realidad actual ni Hermes
+    live.
 - path: docs/handoff/atlas_build_pack/README.md
   type: conocimiento
   status: propuesto
@@ -2598,6 +2576,7 @@ entries:
   type: conocimiento
   status: historico
   verified: null
+  notes: Fuente de principios de producto bajo ADR-067; no autoridad de estado runtime.
 - path: docs/handoff/atlas_product_os_liquid_ui_pack_v1/product/01_TRUE_LIQUID_SOFTWARE.md
   type: conocimiento
   status: historico
@@ -3446,6 +3425,10 @@ entries:
   type: conocimiento
   status: vigente
   verified: null
+- path: docs/knowledge/curated_sources.yaml
+  type: conocimiento
+  status: vigente
+  verified: null
 - path: docs/knowledge/research_2026-07-09.md
   type: conocimiento
   status: propuesto
@@ -3491,11 +3474,37 @@ entries:
   status: propuesto
   verified: null
   notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-25.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-25_inbox.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: Fuente viva importada del checkout dirty; investigación, no canon ni instalación.
+- path: docs/knowledge/research_2026-07-26.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: Fuente viva importada del checkout dirty; investigación, no canon ni instalación.
+- path: docs/knowledge/research_2026-07-27.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: Fuente viva importada del checkout dirty; investigación, no canon ni instalación.
+- path: docs/knowledge/research_2026-07-28.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: Fuente viva posterior al backup inicial; investigación, no canon ni instalación.
 - path: docs/knowledge/research_atlas_foundry_v0_2026-07-15.md
   type: conocimiento
   status: propuesto
   verified: null
-  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al sustrato 2026-07-16'
+  notes: 'triage: regla determinista (^research[_-]); destilado Foundry ingerido al
+    sustrato 2026-07-16'
 - path: docs/knowledge/t05b_paso3/audit_A.json
   type: conocimiento
   status: vigente
@@ -3536,54 +3545,79 @@ entries:
   type: compliance
   status: vigente
   verified: null
+  notes: Registro y mecanismo permanente P12; no autoridad runtime.
 - path: docs/membrana/OSM-007_privacy_dp_log_crypto_shredding.md
   type: compliance
-  status: vigente
+  status: superseded
   verified: null
+  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico,
+    no current-code claim.
 - path: docs/membrana/OSM-024_osmosis_filter_server_side.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-025_certificado_device_bound.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-026_doble_copia_merkle.md
   type: compliance
-  status: vigente
+  status: superseded
   verified: null
+  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico,
+    no current-code claim.
 - path: docs/membrana/OSM-027_bucle_apelacion_falsos_positivos.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-028_inspeccion_por_causa_metadata_first.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-029_nucleo_rendimiento_rust.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-030_posicionamiento_escudo_legal.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-038_token_kyc_residencia.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/membrana/OSM-040_protocolo_red_race_conditions.md
   type: compliance
-  status: vigente
+  status: superseded
   verified: null
+  notes: Absorbida/supersedida en su alcance por ADR-053; preservar contexto histórico,
+    no current-code claim.
 - path: docs/membrana/OSM-042_shadow_model_active_defense.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: Fase 1 promovida parcialmente por ADR-074; Fases 2/4 siguen propuestas; no
+    live traffic fresco.
 - path: docs/membrana/OSM-054_behavioral_drift_detection.md
   type: compliance
-  status: vigente
+  status: propuesto
   verified: null
+  notes: P12 propuesto/experimental; slices de código se clasifican aparte y no implican
+    producto/enforcement aceptado.
 - path: docs/operations/USAGE.md
   type: operacion
   status: vigente
@@ -3684,6 +3718,29 @@ entries:
   type: design
   status: vigente
   verified: null
+- path: docs/superpowers/plans/2026-07-25-mcp-discovery-precision.md
+  type: design
+  status: historico
+  verified: null
+  notes: Plan/spec fechado; estado vigente se consulta en PLAN.md y la matriz canónica.
+- path: docs/superpowers/plans/2026-07-25-multisource-discovery.md
+  type: design
+  status: historico
+  verified: null
+  notes: Plan/spec fechado; estado vigente se consulta en PLAN.md y la matriz canónica.
+- path: docs/superpowers/plans/2026-07-28-definitive-convergence-lineage-closure.md
+  type: design
+  status: vigente
+  verified: 2026-07-28
+  notes: Plan operativo aprobado para cerrar la Atlas Definitive Candidate.
+- path: docs/superpowers/plans/2026-07-28-evidence-governance-foundation.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/superpowers/plans/2026-07-28-fastembed-compatibility-benchmark.md
+  type: design
+  status: vigente
+  verified: null
 - path: docs/superpowers/specs/2026-06-24-council-v2.0-trio-reliability-design.md
   type: design
   status: vigente
@@ -3708,8 +3765,28 @@ entries:
   type: design
   status: vigente
   verified: null
-- path: docs/knowledge/research_2026-07-25.md
-  type: conocimiento
-  status: propuesto
+- path: docs/superpowers/specs/2026-07-25-mcp-discovery-precision-design.md
+  type: design
+  status: historico
   verified: null
-  notes: 'triage: regla determinista (^research[_-])'
+  notes: Plan/spec fechado; estado vigente se consulta en PLAN.md y la matriz canónica.
+- path: docs/superpowers/specs/2026-07-25-multisource-discovery-design.md
+  type: design
+  status: historico
+  verified: null
+  notes: Plan/spec fechado; estado vigente se consulta en PLAN.md y la matriz canónica.
+- path: docs/superpowers/specs/2026-07-28-atlas-lineage-workbench-symbiosis-design.md
+  type: design
+  status: vigente
+  verified: 2026-07-28
+  notes: Decisión del operador sobre convergencia por linaje y dirección Atlas Workbench.
+- path: docs/superpowers/specs/2026-07-28-evidence-qualified-decision-governance-design.md
+  type: design
+  status: vigente
+  verified: null
+- path: docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md
+  type: design
+  status: vigente
+  verified: 2026-07-28
+  notes: Harness de validación FastEmbed implementado y medido localmente; no decide
+    pin, modelo ni migración.

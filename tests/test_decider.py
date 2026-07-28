@@ -14,6 +14,7 @@ from atlas.core.decider import (
     Deny,
     HumanDecider,
     RequiresHuman,
+    enforce_constitutional_verdict,
 )
 
 
@@ -94,6 +95,34 @@ class TestDeciderContract:
         assert not isinstance(RequiresHuman(), Allow)
 
 
+class TestConstitutionalVerdictGuard:
+    def test_high_custom_allow_becomes_requires_human(self) -> None:
+        action = DecisionAction(kind="mcp_adopt", sensitivity="high")
+
+        verdict = enforce_constitutional_verdict(
+            action, Allow(reason="custom decider allowed")
+        )
+
+        assert isinstance(verdict, RequiresHuman)
+        assert "sensitivity=high" in verdict.reason
+
+    def test_moderate_custom_allow_remains_allow(self) -> None:
+        action = DecisionAction(kind="route", sensitivity="moderate")
+        allowed = Allow(reason="bounded")
+
+        verdict = enforce_constitutional_verdict(action, allowed)
+
+        assert verdict is allowed
+
+    def test_high_deny_remains_deny(self) -> None:
+        action = DecisionAction(kind="mcp_adopt", sensitivity="high")
+        denied = Deny(reason="scanner blocked")
+
+        verdict = enforce_constitutional_verdict(action, denied)
+
+        assert verdict is denied
+
+
 # ---------------------------------------------------------------------------
 # Slice 2 — el seam enruta los call-sites del orquestador.
 # ---------------------------------------------------------------------------
@@ -103,7 +132,7 @@ from pathlib import Path
 
 import pytest
 
-from atlas.core.contracts import RoutingLevel, TaskStatus
+from atlas.core.contracts import RoutingLevel, Task, TaskSource, TaskStatus
 
 
 class FakeDecider:
@@ -176,6 +205,27 @@ class TestDeciderRoutesCallSites:
         fake = FakeDecider(Allow())
         orch.set_decider(fake)
         assert orch._decider is fake
+
+    def test_orchestrator_normalizes_custom_high_allow_before_telemetry(
+        self, orch
+    ) -> None:
+        fake = FakeDecider(Allow(reason="unsafe custom allow"))
+        orch.set_decider(fake)
+        task = Task(intent="adopt weather", source=TaskSource.CLI)
+
+        verdict, _ = orch._consult_decider(
+            DecisionAction(
+                kind="mcp_adopt",
+                sensitivity="high",
+                descriptor="weather",
+            ),
+            task,
+        )
+
+        assert isinstance(verdict, RequiresHuman)
+        records = [r.to_dict() for r in orch._merkle.tail(20)]
+        decision = [r for r in records if r["action"] == "decider.verdict"][-1]
+        assert decision["payload"]["verdict"] == "RequiresHuman"
 
 
 # ---------------------------------------------------------------------------

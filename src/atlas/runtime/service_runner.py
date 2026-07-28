@@ -95,9 +95,10 @@ class AtlasServiceRunner:
 
         Activar con ``ATLAS_MAINTENANCE_SCHEDULER=1``. Descubre/analiza/propone y
         enruta cada propuesta corroborada al seam del decisor (ADR-040): bajo
-        ``HumanDecider`` (default) nada se adopta — solo se surfa el evento; bajo
-        autónomo/híbrido adopta lo reversible. La cadencia es ``ATLAS_MAINTENANCE_POLL_S``
-        (default 24h)."""
+        ``HumanDecider``/``HybridDecider`` requiere humano y bajo
+        ``AutonomousDecider`` se deniega por sensibilidad alta. Solo se surfa
+        el evento; el scheduler no auto-adopta. La cadencia es
+        ``ATLAS_MAINTENANCE_POLL_S`` (default 24h)."""
         if os.environ.get("ATLAS_MAINTENANCE_SCHEDULER", "").strip().lower() not in (
             "1",
             "true",

@@ -45,6 +45,7 @@ from atlas.core.decider.decider import (
     Deny,
     RequiresHuman,
     Verdict,
+    enforce_constitutional_verdict,
 )
 from atlas.core.decider.human_decider import HumanDecider
 from atlas.logging.merkle_logger import MerkleLogger
@@ -153,10 +154,13 @@ class PluginActivator:
             descriptor=receipt.plugin_id or "",
             reason=f"activar plugin staged {receipt.plugin_id} desde recibo {receipt_id}",
         )
-        verdict = self._decider.decide(
+        verdict = enforce_constitutional_verdict(
             action,
-            f"activate plugin {receipt.plugin_id}",
-            context={"receipt_id": receipt_id, "staged_root": str(staged_root)},
+            self._decider.decide(
+                action,
+                f"activate plugin {receipt.plugin_id}",
+                context={"receipt_id": receipt_id, "staged_root": str(staged_root)},
+            ),
         )
         return self._resolve(
             activation_id, receipt, verdict, manifest, active_root,
@@ -463,4 +467,3 @@ def _failed(
         created_at=_now(),
         decided_at=_now(),
     )
-

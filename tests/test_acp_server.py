@@ -9,13 +9,22 @@ el transporte stdio real.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
+from importlib.util import find_spec
+from types import ModuleType
 from unittest.mock import MagicMock
 
 import pytest
 
-from atlas.acp.server import AtlasACPAgent, _extract_text
+from atlas.acp.server import AtlasACPAgent, _extract_text, make_agent_class
 from atlas.core.inference_hub import InferenceResponse
+
+
+requires_acp = pytest.mark.skipif(
+    find_spec("acp") is None,
+    reason="requires the optional atlas-core[acp] extra",
+)
 
 
 @dataclass
@@ -38,7 +47,23 @@ class TestExtractText:
     def test_empty_list_returns_empty_string(self) -> None:
         assert _extract_text([]) == ""
 
+    def test_make_agent_class_binds_the_optional_sdk_lazily(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeAgent:
+            pass
 
+        fake_acp = ModuleType("acp")
+        setattr(fake_acp, "Agent", FakeAgent)
+        monkeypatch.setitem(sys.modules, "acp", fake_acp)
+
+        agent_class = make_agent_class()
+
+        assert issubclass(agent_class, AtlasACPAgent)
+        assert issubclass(agent_class, FakeAgent)
+
+
+@requires_acp
 class TestInitialize:
     async def test_returns_protocol_version_and_capabilities(self) -> None:
         agent = AtlasACPAgent(hub=MagicMock())
@@ -47,6 +72,7 @@ class TestInitialize:
         assert result.agent_info.name == "atlas"
 
 
+@requires_acp
 class TestNewSession:
     async def test_creates_a_session_with_real_uuid(self) -> None:
         agent = AtlasACPAgent(hub=MagicMock())
@@ -61,6 +87,7 @@ class TestNewSession:
         assert a.session_id != b.session_id
 
 
+@requires_acp
 class TestPrompt:
     async def test_unknown_session_returns_refusal(self) -> None:
         agent = AtlasACPAgent(hub=MagicMock())

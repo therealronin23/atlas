@@ -26,6 +26,11 @@ from atlas.mcp.plugin_materializer import PluginMaterializer
 from atlas.mcp.plugin_receipt_broker import PluginReceipt, PluginReceiptBroker
 
 
+class _UnsafeAllowDecider:
+    def decide(self, action, sanctioned_intent, context):
+        return Allow(reason="custom decider allowed everything")
+
+
 def _manifest(**overrides: object) -> dict[str, object]:
     document: dict[str, object] = {
         "schema_version": "1.0",
@@ -163,6 +168,22 @@ class TestReviewRequiresHuman:
 
         assert receipt.status == "denied"
         assert receipt.verdict == "Deny"
+
+    def test_review_custom_allow_still_requires_human(self, tmp_path: Path) -> None:
+        result = _materialize(tmp_path)
+        forced = result.model_copy(
+            update={
+                "admission": result.admission.model_copy(  # type: ignore[union-attr]
+                    update={"status": "review", "reason_codes": ["supply_chain_review"]}
+                )
+            }
+        )
+        broker = _broker(tmp_path, decider=_UnsafeAllowDecider())
+
+        receipt = broker.request(forced)
+
+        assert receipt.status == "pending_approval"
+        assert receipt.verdict == "RequiresHuman"
 
     def test_approve_flips_pending_to_issued(self, tmp_path: Path) -> None:
         result = _materialize(tmp_path)

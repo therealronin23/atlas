@@ -53,6 +53,7 @@ from atlas.core.decider import (
     RevertRegistry,
     Verdict,
     action_hash,
+    enforce_constitutional_verdict,
     make_decider,
 )
 from atlas.core.orchestrator_parts import agentic_helpers as _ah
@@ -456,17 +457,21 @@ class Orchestrator:
             action, task, gate_artifact=gate_artifact if gate_artifact is not None else action.descriptor
         )
         if gate_verdict is not None:
+            gate_verdict = enforce_constitutional_verdict(action, gate_verdict)
             self._emit_decider_telemetry(action, task, gate_verdict, act_hash)
             return gate_verdict, act_hash
 
-        verdict = self._decider.decide(
+        verdict = enforce_constitutional_verdict(
             action,
-            sanctioned_intent=task.intent,
-            context={
-                "source": task.source.value,
-                "task_id": task.id,
-                "action_hash": act_hash,
-            },
+            self._decider.decide(
+                action,
+                sanctioned_intent=task.intent,
+                context={
+                    "source": task.source.value,
+                    "task_id": task.id,
+                    "action_hash": act_hash,
+                },
+            ),
         )
         self._emit_decider_telemetry(action, task, verdict, act_hash)
         return verdict, act_hash
