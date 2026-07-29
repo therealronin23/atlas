@@ -8,6 +8,39 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — el pre-commit deja de mapear tests por nombre y pasa a
+  mapearlos por referencia (`b9afa9b`).** Causa: el gate corrió 83 tests en
+  verde sobre el commit que rompía los 37 del tronco MCP. Era ciego en dos
+  direcciones, medido: `docs/design/mcp_catalog.yaml` mapeaba a **0** ficheros
+  de test (10 lo referencian) y `src/atlas/mcp/catalog.py` mapeaba a **1 de
+  16** (los suyos se llaman `test_mcp_*`, no `test_catalog*`). La lógica sale
+  del bash a `atlas.engineering.impacted_tests`, donde se prueba; entra TODO lo
+  staged, no sólo los `.py`; el hook aborta fail-closed si el mapeo falla.
+  Se descartó una tabla explícita fichero→tests: se desfasaría igual que el
+  glob. **Verificado contra el caso real, no contra un fixture:** en un
+  worktree sobre `d2c614f` el set mapeado da **exit 1 con 35 de los 37 fallos
+  en 8,14 s** — habría abortado aquel commit. Worktree retirado con timeout.
+  Tope de 150 ficheros para que el gate no degenere en la suite completa, y si
+  recorta lo avisa por stderr en vez de aparentar cobertura total. TDD, 8 tests,
+  RED verificado antes de escribir el módulo. Suite completa **4688 passed**
+  exit 0, mypy **331** ficheros exit 0.
+  **Corrección medida de una cifra que llevaba semanas mal contada:** la
+  cabecera del hook justificaba el gate estrecho con "~7,5 GB y earlyoom la
+  mata SIEMPRE". Eso es PRE-ARREGLO: `2262de41` (julio) cacheó el ONNX de
+  FastEmbedEmbedder por proceso y bajó el pico a ~1,9 GB, pero el comentario
+  nunca se actualizó. Medido hoy con `/usr/bin/time -v`: **2,36 GB de pico,
+  5:47 de reloj, exit 0 con earlyoom vivo (PID 1184)**. La suite ya no muere
+  por RAM; la razón para no correrla en cada commit es el TIEMPO. Ambos
+  comentarios corregidos.
+  **Límites declarados:** el mapeo alcanza 35 de los 37 fallos, no 37;
+  `test_trunk_preflight.py` y `test_trunk_server_smoke.py` cargan el catálogo
+  por helper sin nombrarlo y siguen sin mapear. Es un gate rápido, no una
+  prueba de cobertura, y el módulo lo dice.
+  **Próxima acción:** ninguna abierta por este frente. Pendiente ajeno visto de
+  paso, no tocado: **6 worktrees `self-build-item-*` huérfanos** en
+  `git worktree list` — el leak que [[worktree-leak-root-cause-2026-07-09]]
+  daba por cerrado.
+
 - **2026-07-29 — revalidación fresca EJECUTADA + vocabulario `blocked-admission`
   cerrado; suite verde de punta a punta.** Anchor de evidencia
   `29d9ccb` **+ delta sin commitear** (16 tracked modificados + ZIP R2.1
