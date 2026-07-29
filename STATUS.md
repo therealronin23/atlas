@@ -48,6 +48,45 @@ audit y Reality antes de elevar la candidata. Reality fresco de este cierre
 proyectó: grafo `STALE` en `c95038c`, F2.6 `due` por siete ADR, navegador
 degradado sin Playwright y Hermes mock/no configurado.
 
+**Esa revalidación se ejecutó el 2026-07-29** (ver sección siguiente). Dos de
+sus proyecciones no se confirmaron al medirlas: el navegador estaba `ready` con
+Chromium presente, y el grafo estaba `DIRTY` frente a HEAD, no `STALE` en
+`c95038c`.
+
+## Revalidación ejecutada — 2026-07-29
+
+Evidencia fresca con exit code capturado. **No eleva la candidata a
+`LIVE_VERIFIED`**: concede `TESTED` fechado y nada más, porque parte se midió
+sobre un árbol con delta sin commitear (no reproducible por SHA) y el resto
+sobre `739ca8f`+.
+
+| Comprobación | Exit | Resultado |
+|---|---|---|
+| `pytest tests/ -q` | 0 | 4692 passed, 6 skipped, 27 deselected |
+| `mypy src/atlas/` | 0 | 331 ficheros |
+| `atlas audit --verify` | 0 | cadena Merkle íntegra |
+| `atlas reality --run-checks --include-browser` | — | `status=ok`, `strict_failures=[]`; browser 27 passed |
+| `uv lock --check` | 0 | 301 paquetes |
+| `pip-audit` | 0 | 0 vulnerabilidades tras ADR-079 |
+| UI `npm ci --engine-strict` | 1 | **ENVIRONMENTAL FAIL**: `EBADENGINE`, host npm 11.14.1 vs `>=10.9.0 <11` |
+| UI `npm ci` + `build` + `audit --audit-level=high` | 0/0/0 | 0 vulnerabilidades; chunk 674,82 kB |
+
+Hallazgos de la revalidación, ya cerrados: el vocabulario `blocked-admission`
+rompía el catálogo MCP en runtime (37 tests); el pre-commit no mapeaba ficheros
+de datos a tests y lo dejó pasar; `mcp` 1.23.3 arrastraba 3 advisories con
+exposición cero (ADR-079); 6 worktrees efímeros huérfanos y su causa.
+
+Sigue sin poder afirmarse: Hermes `mock`, MCP con 2 servidores **sin
+handshake**, sin proveedores externos en el entorno del comando. **F2.6 sigue
+`due`**: el dispatch del 2026-07-29 falló con `401 OAuth access token has been
+revoked`; sin transcript válido no se registró nada, que es el comportamiento
+correcto. Requiere reautenticar `claude setup-token`.
+
+**Nota durable:** `pip-audit --strict` no puede pasar en este checkout ni con
+cero vulnerabilidades — trata "no auditable" como fallo y `atlas-core` (local,
+0.12.0) no está en PyPI. La fila `pip-audit --strict | PASS` de la tabla
+histórica inferior no es reproducible aquí.
+
 El pack `docs/handoff/GENERATED/` se regenera desde las fuentes canónicas. Su
 gate admite únicamente el commit descendiente que contiene paths no vacíos y
 exclusivos del propio pack; cualquier commit vacío, ajeno o mezclado sigue

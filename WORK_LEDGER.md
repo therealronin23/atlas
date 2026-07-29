@@ -8,6 +8,48 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — cola de pendientes cerrada, salvo lo que no me pertenece.**
+  **Cerrado:** (a) los 6 worktrees `self-build-item-*` huérfanos retirados
+  —verificados seguros antes: cero sin commitear, HEAD preservado en ramas y
+  `origin`, mtime ≥6 días— y **la causa**, que era una asimetría real:
+  `ColdUpdateManager` barre worktrees rancios al construirse pero sólo los
+  suyos (`store_dir/worktree-*`), y los de self-build viven en el padre del
+  repo con otro prefijo. `SelfBuildRunner.sweep_stale_worktrees()` cubre ahora
+  `self-build-item-*` y `self-build-evo-*`, sólo por TTL (un item en vuelo
+  tiene mtime fresco y queda protegido), cableado en el accessor del facade
+  (`9bff4d5`). (b) `mcp` 1.23.3 → **1.29.0** con **ADR-079** (`8c2a68e`): la
+  restricción `>=1.2` resolvía hoy a 2.0.0, mayor que ELIMINA el transporte
+  WebSocket, así que se acotó a `>=1.28.1,<2`; `pip-audit` pasa de 3 advisories
+  a **exit 0, 0 vulnerabilidades**. Hallazgo no previsto y verificado, no
+  asumido: `semgrep 1.171.0` pinnea `mcp==1.23.3`, pero no está en `pyproject`
+  ni en `uv.lock` y Atlas lo invoca como binario en subproceso — probado con
+  1.29.0: `--version` y escaneo real, ambos exit 0. Conflicto de metadatos, no
+  funcional. (c) `STATUS.md` con sección fechada de la revalidación; **no se
+  tocaron sus tablas históricas**, que están etiquetadas como receipts a
+  propósito — reescribirlas habría falsificado evidencia pasada.
+  **CORRECCIÓN de un diagnóstico propio:** afirmé que los 17
+  `cold_update.rollback → failure` eran "la métrica más fea del cuadro". Es
+  falso. En `cold_update_manager.py:527-543` ese `result="failure"` describe el
+  resultado de LA ACTUALIZACIÓN, no del rollback: el parche se aplica, los
+  checks post-apply fallan, `_rollback_patch()` revierte y se registra. Si el
+  rollback fallase, esa línea no se alcanzaría. Son **17 reversiones
+  correctas** — la red de seguridad funcionando. Nada que arreglar.
+  **F2.6 NO se pudo cerrar pese a autorizarse el gasto:** `atlas f26 run` falló
+  el dispatch en 9 s con `401 OAuth access token has been revoked`, coste $0,
+  `recorded: false`. Sin transcript válido no registra nada, que es lo
+  correcto. **Sigue `due`; necesita `claude setup-token` del operador.**
+  **Siguen abiertos y son decisiones de boundary, no míos:** `ADC-WO-107`
+  (Bridge 7341 `CONTRADICTED`: los POST mutantes contradicen el contrato
+  read-only de ADR-058/071 — hay que autorizar la superficie con un boundary
+  nuevo o restaurar el read-only) y `ADC-WO-124` (admitir o mantener en
+  cuarentena `computer-control-mcp`: exige artefacto, hash, scan, aislamiento,
+  receipt y HITL antes de salir de `blocked-admission`).
+  Estado final verificado: suite **4692 passed** exit 0, mypy **331** ficheros
+  exit 0, `reality --run-checks --include-browser` `status=ok` con
+  `strict_failures=[]`, `uv lock --check` exit 0, `pip-audit` exit 0.
+  **Próxima acción:** reautenticar y correr F2.6; después decidir ADC-WO-107 y
+  ADC-WO-124.
+
 - **2026-07-29 — los forks externos dejan de ser invisibles desde una sesión
   limpia: índice versionado en `forks/README.md`.** Hallazgo: **ninguno** de
   los cuatro docs de arranque (`AGENTS.md`, `WORK_LEDGER.md`, `STATUS.md`,
