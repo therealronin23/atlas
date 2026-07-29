@@ -55,7 +55,10 @@ computer-use = [
 mcp = [
     # MCP trunk portable F1 — SDK oficial (incluye FastMCP). OPCIONAL: el núcleo
     # (MemoryTrunk) es usable sin esta dep; solo el shell de transporte la pide.
-    "mcp>=1.2",
+    # Suelo 1.28.1: cierra PYSEC-2026-3481/3482/3483 (exposición verificada CERO
+    # — stdio only, sin enable_tasks ni websocket_server). Techo <2: la v2
+    # elimina el transporte WebSocket; cruzarla es decisión aparte. ADR-079.
+    "mcp>=1.28.1,<2",
 ]
 embeddings = [
     # Memoria semántica LOCAL (ONNX, SIN torch) — embeddings in-process, offline
