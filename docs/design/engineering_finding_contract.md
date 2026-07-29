@@ -48,6 +48,14 @@ recomendación. Si Merkle falla, el evento no se publica. El bridge no crea Task
 no contacta al Orchestrator y no convierte el hash incluido como metadata en una
 referencia de auditoría verificable para la UI.
 
+`EngineeringReviewBaselineStore` conserva una revisión base sólo cuando un
+llamador presenta un `PASS` con al menos un reviewer y una `acceptance_ref`
+opaca. El journal append-only captura la revisión aceptada y un snapshot mínimo
+del lifecycle de findings, pero no verifica la referencia, no abre Git, no
+calcula ancestry/diff ni altera la resolución de un finding posterior. La
+selección resultante obliga al llamador a verificar ancestry antes de construir
+el delta incremental.
+
 ## Boundary
 
 Un finding es una observación con procedencia. No es una prueba automática, una
@@ -63,8 +71,8 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 ## Transition
 
 El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
-última revisión aceptada y reproducción aislada con hipótesis de
-grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
+última revisión aceptada, cálculo del delta tras verificar ancestry y reproducción
+aislada con hipótesis de grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
 producción y validación de correcciones y una proyección read-only esperan sus
 contratos y la frontera durable Mission/Task; no se declaran implementados por este
 contrato.

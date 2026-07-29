@@ -437,8 +437,11 @@ clasificación preserva `UNKNOWN`, no guarda salida cruda ni texto libre del
 clasificador y no ejecuta reparación.
 El publisher opt-in de findings/reviews obtiene primero un receipt Merkle y sólo
 después emite metadata mínima al `EventBus`; no está inyectado en runtime ni
-rutea al Orchestrator. Aún faltan reproducción aislada, hipótesis de
-grafo/historial/memoria, wiring gobernado, Orchestrator y superficie de producto.
+rutea al Orchestrator. `EngineeringReviewBaselineStore` selecciona una base
+aceptada sólo tras `PASS`, reviewer real y referencia de aceptación explícita;
+conserva lifecycle previo pero no abre Git ni calcula el diff. Aún faltan
+reproducción aislada, hipótesis de grafo/historial/memoria, cálculo incremental
+de diff, wiring gobernado, Orchestrator y superficie de producto.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,
 evaluación independiente, SLO/telemetría y recuperación no-LLM.
