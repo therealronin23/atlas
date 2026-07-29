@@ -8,6 +8,20 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — perfil Kuzu explícito y acotado (ADC-WO-119).** Todas las
+  aperturas Kuzu de `src/atlas` y de sus pruebas pasan por
+  `atlas.memory.kuzu_runtime`: perfil por defecto de mapa máximo de 1 GiB y
+  buffer pool de 256 MiB, nunca los defaults implícitos de 8 TiB/mapa virtual
+  y memoria del host. Un
+  guard impide reintroducir `kuzu.Database()` directo fuera de ese módulo. El
+  opener real pasó bajo `RLIMIT_AS=2 GiB`; el conjunto Kuzu/grafo pasó además
+  en Bwrap read-only/sin red con ese mismo techo (33 passed, 11 skipped). Esto
+  controla el default de aplicación, pero no crea un cgroup de memoria física
+  ni prueba un self-build completo. Una invocación completa en este canal no
+  entregó un receipt final, por lo que sigue **sin clasificar/no promovida**.
+  **Próxima acción:** obtener un receipt reproducible de la suite completa en
+  un runner con cgroup físico independiente, sin relajar Bwrap.
+
 - **2026-07-29 — ValidationRunner de ColdUpdate contenido por Bwrap
   (ADC-WO-118).** `pytest` y `mypy` de un candidato ya no arrancan mediante
   `subprocess` del host: ejecutan en un worktree read-only, sin red y con
@@ -17,12 +31,10 @@ de escribir: `atlas reality --json`.
   `config` común) y falla cerrado si Bwrap falta. Seccomp sigue bloqueando
   `clone3`; devuelve `ENOSYS` para que runtimes legítimos usen su fallback a
   `clone`, sin conceder la syscall. Pruebas unitarias, Bwrap real, Git y Kuzu
-  focal pasaron. La suite completa del candidato continúa **fail-closed**:
-  varios tests heredados invocan `kuzu.Database()` con su mmap por defecto de
-  8 TiB, incompatible con el techo fijo de espacio de direcciones de 14 GiB.
-  No se quitó el límite ni se declaró un build exitoso. **Próxima acción:**
-  diseñar un perfil Kuzu determinista con límite físico/cgroup antes de
-  promover validación completa de ColdUpdate.
+  focal pasaron. `ADC-WO-119` eliminó los opens heredados por defecto; ello no
+  convierte la suite completa en build exitoso ni sustituye un límite físico.
+  **Próxima acción:** conservar el jail fail-closed y recibir evidencia
+  completa desde un runner cgroup-bounded antes de cualquier promoción.
 
 - **2026-07-29 — intake de ColdUpdate cerrado sobre el artefacto revisado
   (ADC-WO-117).** La allowlist histórica de `src/`, `tests/`, `scripts/`,

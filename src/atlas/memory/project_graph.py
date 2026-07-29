@@ -154,7 +154,9 @@ def graph_freshness(
         return {**state, "status": "UNAVAILABLE", "reason": f"kuzu unavailable: {type(exc).__name__}"}
     graph_sha = ""
     try:
-        db = kuzu.Database(str(path), read_only=True)
+        from atlas.memory.kuzu_runtime import open_kuzu_database
+
+        db = open_kuzu_database(path, read_only=True)
         try:
             conn = kuzu.Connection(db)
             try:

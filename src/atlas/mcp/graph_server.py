@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 from atlas.core.graphs import QUERIES
+from atlas.memory.kuzu_runtime import open_kuzu_database
 from atlas.memory.project_graph import DEFAULT_GRAPH_DB, graph_freshness, graph_head_sha
 
 
@@ -45,7 +46,7 @@ def build_graph_server(
     server = FastMCP(name)
 
     def _connect() -> tuple[Any, Any]:
-        db = kuzu.Database(str(db_path), read_only=True)
+        db = open_kuzu_database(db_path, read_only=True)
         return db, kuzu.Connection(db)
 
     def _query(cypher: str, params: dict[str, Any] | None = None) -> list[tuple[Any, ...]]:

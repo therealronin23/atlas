@@ -26,6 +26,8 @@ from typing import Any, Protocol
 
 import kuzu
 
+from atlas.memory.kuzu_runtime import open_kuzu_database
+
 __all__ = [
     "list_files_at_commit",
     "read_file_at_commit",
@@ -186,7 +188,7 @@ def load_bitemporal_into_kuzu(
     snapshots = bg["snapshots"]
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    db = kuzu.Database(str(db_path), max_db_size=max_db_size)
+    db = open_kuzu_database(db_path, max_db_size=max_db_size)
     conn = kuzu.Connection(db)
     try:
         for ddl in _SCHEMA:

@@ -15,6 +15,7 @@ import kuzu
 import pytest
 
 from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 # content-hashes ficticios (64 hex chars, como los reales) — solo hace falta
 # que sean nombres de fichero válidos y distintos entre sí.
@@ -211,7 +212,7 @@ def test_load_callgraph_creates_symbols_and_calls(tmp_path: Path) -> None:
     assert result["symbols"] == 7
     assert result["calls"] == 2  # calls (foo→baz) + indirect_call (qux→foo)
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:Symbol) RETURN count(n)")
@@ -264,7 +265,7 @@ def test_load_callgraph_is_idempotent(tmp_path: Path) -> None:
     assert result2["symbols"] == 7
     assert result2["calls"] == 2
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:Symbol) RETURN count(n)")
@@ -289,7 +290,7 @@ def test_load_callgraph_reads_nested_cache_dir(tmp_path: Path) -> None:
         assert result["symbols"] == 7
         assert result["calls"] == 2
 
-        db = kuzu.Database(str(db_path))
+        db = open_kuzu_database(db_path)
         conn = kuzu.Connection(db)
         try:
             r = conn.execute("MATCH (n:Symbol) RETURN count(n)")
@@ -335,7 +336,7 @@ def test_load_callgraph_filters_and_replaces_with_requested_source_corpus(
     assert result["symbols"] == 5
     assert result["calls"] == 1
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         rows = conn.execute("MATCH (n:Symbol) RETURN n.source_file")
@@ -408,7 +409,7 @@ def test_graph_callers_before_ingestion_returns_clean_message(tmp_path: Path) ->
     # BD existente pero sin la tabla Symbol (nunca se corrió load_callgraph_into_kuzu) —
     # read_only=True en build_graph_server no puede *crear* una BD vacía, así que hay
     # que dejarla creada de antemano para reproducir el caso "tabla ausente" real.
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     kuzu.Connection(db).close()
     db.close()
 

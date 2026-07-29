@@ -10,6 +10,7 @@ import pytest
 
 from atlas.core.graphs import QUERIES, build_bitemporal_graph, load_bitemporal_into_kuzu
 from atlas.memory.embeddings import StubEmbedder
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -81,7 +82,7 @@ def test_load_bitemporal_into_kuzu_no_drift(tiny_repo: tuple[Path, list[str]], t
     assert metrics_1["nodes_created"] == metrics_1["nodes"]
     assert metrics_2["nodes_created"] == 0
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:FileVersion) RETURN count(n)")
@@ -154,7 +155,7 @@ def test_queries_diffs_impact_lineage(tiny_repo: tuple[Path, list[str]], tmp_pat
     db_path = tmp_path / "graphs.kuzu"
     load_bitemporal_into_kuzu(repo, db_path, shas, embedder=StubEmbedder(dim=8))
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         # 1. diff_modified: atlas.a cambió de c2 -> c3.

@@ -77,6 +77,7 @@ entrega, no sustitutos de P00–P12.
 | ADC-WO-010 | linajes externos y decisión ADR-078 reconciliados | Atlas Core único; host y donors sin claims de integración |
 | ADC-WO-117 | intake y binding de patch ColdUpdate fail-closed | rutas permitidas, governance inmutable y bytes aprobados revalidados antes de efecto |
 | ADC-WO-118 | validación ColdUpdate aislada por Bwrap | candidato read-only/sin red/entorno explícito; no fallback host ni falsa prueba de build completo |
+| ADC-WO-119 | perfil Kuzu de apertura explícito y acotado | ningún constructor directo; opener y rutas de grafo pasan bajo Bwrap de 2 GiB; no se afirma build completo |
 | ADC-WO-006 | auditoría independiente y entrega local | 0 BLOCKING; MAJOR resolubles corregidos; bundles verifican |
 
 ### Cambios de implementación autorizados
@@ -91,6 +92,9 @@ entrega, no sustitutos de P00–P12.
   autorizados;
 - ejecutar pytest/mypy de candidatos ColdUpdate dentro de Bwrap read-only y
   fail-closed, sin promover su compatibilidad focal a build completo;
+- fijar el perfil Kuzu de aplicación (mapa máximo y buffer pool explícitos)
+  antes de ejecutar grafos o índices dentro de un candidato; el límite físico
+  del runner y el receipt completo continúan como gates separados;
 - corregir comentarios/metadata que afirman auto-adopción, producto web-first,
   activación inexistente o datos vivos sin procedencia;
 - añadir validator y gate CI de canon;

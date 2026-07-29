@@ -33,6 +33,7 @@ from atlas.memory.embeddings import (
     StubEmbedder,
     embedding_identity_fingerprint,
 )
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 
 log = logging.getLogger(__name__)
@@ -127,7 +128,7 @@ class KuzuVectorStore:
                 db_path.unlink()
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._db = kuzu.Database(str(db_path), max_db_size=max_db_size)
+        self._db = open_kuzu_database(db_path, max_db_size=max_db_size)
         self._conn = kuzu.Connection(self._db)
         self._init_schema()
         self._verify_dim()

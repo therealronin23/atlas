@@ -97,8 +97,9 @@ the common Git configuration is deliberately not mounted and Git prompts/global
 configuration are disabled.
 
 This proves containment for the focused cases exercised on 2026-07-29, not a
-successful self-build. The current full suite contains legacy direct Kuzu
-opens whose upstream default reserves an 8 TiB virtual mmap; with the runner's
-fixed 14 GiB address-space ceiling it fails closed. Removing that ceiling or
-calling the build successful requires a separate physical-resource/cgroup and
-Kuzu-profile decision.
+successful self-build. `ADC-WO-119` subsequently routed every Atlas Kuzu open
+through an explicit default 1 GiB database-map / 256 MiB buffer-pool profile; the
+profile and graph routes passed in a real 2 GiB Bwrap jail. That application
+profile does not create a physical-memory cgroup or a full candidate receipt.
+Removing the fixed ceiling or calling the build successful still requires a
+separately reproducible runner with physical-resource/cgroup evidence.

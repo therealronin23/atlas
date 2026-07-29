@@ -187,8 +187,10 @@ independientes**: ninguna confía en la otra.
   Para el modelo de amenaza de Atlas (ejecutar codegen propio bajo verificación,
   no malware activo de terceros) es suficiente; decirlo explícitamente.
 - El límite de espacio de direcciones de la validación ColdUpdate es fijo, no
-  un cgroup de memoria física. Los defaults mmap de Kuzu hacen fallar cerrada
-  la suite completa actual; no debe relajarse ni describirse como validación
-  completa hasta contar con un perfil Kuzu/cgroup verificable.
+  un cgroup de memoria física. Las aperturas Kuzu de Atlas usan ya un mapa
+  máximo por defecto de 1 GiB y buffer pool de 256 MiB, verificados en rutas focales dentro
+  de un jail de 2 GiB; eso evita sus defaults virtuales, pero no equivale a una
+  validación completa. El techo no debe relajarse ni el build describirse como
+  completo hasta recibir un receipt repetible con perfil/cgroup físico.
 - Esta ADR cubre **contención de ejecución**. La detección de *qué* se ejecutó y
   su evidencia siguen en la capa de transparencia (ADR-053) y antivirus (ADR-054).

@@ -5,6 +5,7 @@ from pathlib import Path
 import kuzu
 
 from atlas.memory.obsidian_to_kuzu import load_vault_into_kuzu
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 
 def _mk_vault(root: Path) -> None:
@@ -29,7 +30,7 @@ def test_load_vault_creates_notes_and_links(tmp_path: Path):
     assert result["links"] == 2  # a→b y b→a
     assert result["unresolved"] == 1  # [[fantasma]] no existe
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:ObsidianNote) RETURN count(n)")
@@ -58,7 +59,7 @@ def test_load_vault_is_idempotent(tmp_path: Path):
     result2 = load_vault_into_kuzu(vault, db_path)
 
     assert result2["notes"] == 2
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:ObsidianNote) RETURN count(n)")
@@ -94,7 +95,7 @@ def test_cohesion_column_from_community_frontmatter(tmp_path: Path):
     result = load_vault_into_kuzu(vault, db_path)
     assert result["notes"] == 3
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute(
@@ -119,7 +120,7 @@ def test_cohesion_non_numeric_is_null_not_crash(tmp_path: Path):
     result = load_vault_into_kuzu(vault, db_path)
     assert result["notes"] == 1
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:ObsidianNote {path: 'c.md'}) RETURN n.cohesion")
@@ -140,7 +141,7 @@ def test_kuzu_alter_table_add_column_verdict(tmp_path: Path):
     CREATE ... IF NOT EXISTS no añade columnas) — ALTER TABLE es el remedio.
     """
     db_path = tmp_path / "old-schema.kuzu"
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         # Schema VIEJO (el de producción hasta 2026-07-15): sin cohesion.
@@ -182,7 +183,7 @@ def test_load_vault_spans_multiple_batches(tmp_path: Path):
 
     assert result == {"notes": n, "links": n, "unresolved": 0}
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:ObsidianNote) RETURN count(n)")

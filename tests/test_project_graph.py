@@ -14,6 +14,7 @@ from atlas.memory.project_graph import (
     recent_commits,
     resolve_graph_embedder,
 )
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -93,7 +94,7 @@ def test_note_neighborhood_before_vault_ingestion_returns_clean_message(
     db_path.parent.mkdir(parents=True, exist_ok=True)
     # BD existente pero sin la tabla ObsidianNote — read_only=True en
     # build_graph_server no puede crear una BD vacía, se deja creada antes.
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     kuzu.Connection(db).close()
     db.close()
 
@@ -241,7 +242,7 @@ def test_build_project_graph_propagates_embedder(tiny_repo: Path, tmp_path: Path
     metrics = build_project_graph(tiny_repo, db_path, commits=10, embedder=_FakeEmbedder8())
     assert metrics["bitemporal"]["nodes"] > 0
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:FileVersion) RETURN n.embedding LIMIT 1")
@@ -258,7 +259,7 @@ def test_build_project_graph_default_embedder_is_unchanged(tiny_repo: Path, tmp_
     db_path = tmp_path / "pg.kuzu"
     build_project_graph(tiny_repo, db_path, commits=10)
 
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         r = conn.execute("MATCH (n:FileVersion) RETURN n.embedding LIMIT 1")
@@ -362,7 +363,7 @@ def test_graph_freshness_server_sha_semantics(tiny_repo: Path, tmp_path: Path) -
 def test_graph_freshness_empty_db(tiny_repo: Path, tmp_path: Path) -> None:
     """BD kuzu existente pero sin FileVersion ingerido -> EMPTY, no excepción."""
     db_path = tmp_path / "empty.kuzu"
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     kuzu.Connection(db).close()
     del db
 

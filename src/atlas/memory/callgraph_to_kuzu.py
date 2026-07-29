@@ -46,6 +46,8 @@ from typing import Any
 
 import kuzu
 
+from atlas.memory.kuzu_runtime import open_kuzu_database
+
 __all__ = ["load_callgraph_into_kuzu"]
 
 _SCHEMA = (
@@ -107,7 +109,7 @@ def load_callgraph_into_kuzu(
         if p.is_file() and p.name != "stat-index.json"
     )
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    db = kuzu.Database(str(db_path), max_db_size=max_db_size)
+    db = open_kuzu_database(db_path, max_db_size=max_db_size)
     conn = kuzu.Connection(db)
     try:
         for ddl in _SCHEMA:

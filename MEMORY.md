@@ -35,6 +35,10 @@
 - `vault-and-trunk-wiring-is-tested`: las rutas de producción deben pasar el
   vault al grafo y el tronco debe conservar timeout/adopciones; cada cableado
   necesita un test de integración, no solo una función aislada.
+- `embedded-kuzu-profile-is-explicit`: los defaults nativos de Kuzu reservan
+  mapa virtual y buffer derivados del host; toda apertura Atlas pasa por un
+  perfil compartido explícito. Que rutas focales funcionen en Bwrap no acredita
+  un cgroup físico ni un self-build completo.
 
 Lecciones operativas que explican el porqué de las reglas vivas. El estado vive en
 `WORK_LEDGER.md`; los detalles de diseño viven en `docs/design/`.

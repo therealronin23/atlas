@@ -22,6 +22,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 from atlas.mcp.graph_server import build_graph_server
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 _SCHEMA = (
     "CREATE NODE TABLE IF NOT EXISTS ObsidianNote("
@@ -32,7 +33,7 @@ _SCHEMA = (
 
 
 def _seed_vault_db(db_path: Path) -> None:
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     try:
         for stmt in _SCHEMA:
@@ -94,7 +95,7 @@ def test_both_tools_survive_db_without_vault_tables(tmp_path: Path) -> None:
     """Mismo contrato que graph_note_neighborhood: BD recién creada sin
     ObsidianNote → mensaje limpio, no RuntimeError."""
     db_path = tmp_path / "empty.kuzu"
-    db = kuzu.Database(str(db_path))
+    db = open_kuzu_database(db_path)
     kuzu.Connection(db).close()
     db.close()
     tools = _tools(db_path)

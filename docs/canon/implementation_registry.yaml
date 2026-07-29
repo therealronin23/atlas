@@ -1117,13 +1117,13 @@ work_orders:
     evidence:
       - src/atlas/core/validation_runner.py invoked subprocess.run with os.environ.copy()
       - focused real Bwrap checks reproduced a viable runtime mount, Kuzu thread fallback and linked-worktree Git path
-      - the full candidate suite fails closed when legacy direct Kuzu tests request the upstream 8 TiB default virtual mmap
+      - the original full-candidate attempt exposed legacy direct Kuzu tests requesting the upstream 8 TiB virtual mmap
     source_decisions:
       - ADR-025
       - ADR-055
       - CTR-THIRD-PARTY-FAIL-CLOSED
       - CTR-LIVE-EVIDENCE
-    current_state: ValidationRunner constructs Bwrap lazily and has no host-process fallback. It mounts the candidate read-only plus required runtime and narrow linked-worktree Git metadata, supplies an explicit environment with ephemeral HOME/ATLAS_HOME, disables ambient Git config/prompting, disables pytest cache writes, and bounds CPU/address space. clone3 remains unavailable through seccomp but returns ENOSYS so legitimate pthread/Kuzu code falls back to clone. Unit and focused real-jail evidence pass; a full successful candidate build remains absent because legacy direct Kuzu defaults exceed the fixed address-space cap.
+    current_state: ValidationRunner constructs Bwrap lazily and has no host-process fallback. It mounts the candidate read-only plus required runtime and narrow linked-worktree Git metadata, supplies an explicit environment with ephemeral HOME/ATLAS_HOME, disables ambient Git config/prompting, disables pytest cache writes, and bounds CPU/address space. clone3 remains unavailable through seccomp but returns ENOSYS so legitimate pthread/Kuzu code falls back to clone. Unit and focused real-jail evidence pass. ADC-WO-119 removes direct Kuzu defaults; a full successful candidate receipt remains absent and is not inferred from focal compatibility.
     target_state: Every ColdUpdate candidate validation runs in a reproducible, fail-closed containment boundary with a separately accepted physical-resource/Kuzu profile for the full suite.
     scope:
       - ValidationRunner subprocess-to-Bwrap wiring
@@ -1145,7 +1145,7 @@ work_orders:
     risks:
       - the current address-space ceiling is not a physical-memory cgroup
       - a linked worktree necessarily exposes limited Git object/ref metadata to its own candidate tests
-      - a full candidate build is unavailable until Kuzu defaults receive a separately bounded validation profile
+      - a full candidate build remains absent until it receives a reproducible cgroup-backed receipt
     rollback: Revert the atomic validation-jail commit; this restores unsafe host subprocess validation and is not an operational fallback. No candidate worktree or proposal data is migrated.
     dependencies: []
     acceptance:
@@ -1154,6 +1154,54 @@ work_orders:
       - linked-worktree Git test passes with common config absent
       - clone3 remains unavailable while a real jail reports ENOSYS fallback
       - focused tests and mypy pass; no full candidate build is claimed
+    operator_decision_required: false
+    status: DONE
+
+  - id: ADC-WO-119
+    program: P04
+    title: Centralize an explicit bounded Kuzu opening profile
+    problem: Atlas production and test code invoked Kuzu directly, allowing the upstream 8 TiB virtual map and host-sized buffer-pool defaults to bypass the resource expectations of local processes and candidate validation.
+    evidence:
+      - Kuzu 0.11.3 defaults max_db_size to 8796093022208 bytes and buffer_pool_size to 0 (host-derived)
+      - a direct default open fails under RLIMIT_AS=2 GiB while max_db_size=1 GiB and buffer_pool_size=256 MiB succeeds
+      - focused graph/Kuzu paths pass in a real read-only networkless Bwrap jail with a 2 GiB address-space ceiling
+    source_decisions:
+      - ADR-034
+      - ADR-025
+      - ADR-055
+      - CTR-THIRD-PARTY-FAIL-CLOSED
+    current_state: atlas.memory.kuzu_runtime is the only Atlas constructor seam. Its explicit default 1 GiB database map and 256 MiB buffer pool are used by graph loaders, freshness reads, MCP graph reads, the vector store and all direct graph/Kuzu tests; a caller choosing another profile must do so explicitly. The profile rejects zero/false limits before starting the native engine. A full ColdUpdate candidate receipt is still absent.
+    target_state: Every Atlas-owned embedded Kuzu open is explicit, bounded and testable; full candidate validation is promoted only after an independent physical-memory/cgroup receipt.
+    scope:
+      - shared Kuzu opening helper
+      - graph, vector, freshness and MCP call-site migration
+      - regression guard against direct constructors
+      - real bounded-address-space and Bwrap evidence
+    files:
+      - src/atlas/memory/kuzu_runtime.py
+      - src/atlas/core/graphs.py
+      - src/atlas/memory/callgraph_to_kuzu.py
+      - src/atlas/memory/obsidian_to_kuzu.py
+      - src/atlas/memory/project_graph.py
+      - src/atlas/memory/vector_store.py
+      - src/atlas/mcp/graph_server.py
+      - tests/test_kuzu_runtime.py
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_kuzu_runtime.py tests/test_graphs.py tests/test_callgraph_to_kuzu.py tests/test_obsidian_to_kuzu.py tests/test_project_graph.py tests/test_project_graph_vault_wiring.py tests/test_graph_server_communities.py -q
+      - real Bwrap run of the same Kuzu/graph surface with RAM_LIMIT_BYTES=2 GiB
+      - MYPYPATH=src python -m mypy src/atlas/memory/kuzu_runtime.py src/atlas/core/graphs.py src/atlas/memory/callgraph_to_kuzu.py src/atlas/memory/obsidian_to_kuzu.py src/atlas/memory/vector_store.py src/atlas/memory/project_graph.py src/atlas/mcp/graph_server.py
+    risks:
+      - the application profile is an address/resource contract, not a physical-memory cgroup
+      - a deliberately larger real database needs an explicit caller profile and evidence rather than a return to upstream defaults
+      - focused jail success does not prove a complete ColdUpdate build
+    rollback: Revert the atomic profile commit to restore the prior direct constructors only if a separately reviewed profile replaces it; do not weaken the candidate jail as a fallback.
+    dependencies:
+      - ADC-WO-118
+    acceptance:
+      - no direct kuzu.Database constructor remains outside the shared helper in Atlas source or tests
+      - the shared opener succeeds under a 2 GiB RLIMIT_AS child where the upstream default fails
+      - affected graph/Kuzu paths pass in a real read-only networkless Bwrap jail at 2 GiB
+      - no full candidate build or physical cgroup is claimed
     operator_decision_required: false
     status: DONE
 

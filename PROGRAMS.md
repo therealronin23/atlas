@@ -195,8 +195,10 @@ sesiones, proveedores y nodos.
 tenancy, cifrado, retención, crypto-shred y promoción hacia conocimiento.
 
 **Current.** Stores y protecciones están implementados/probados; ADR-057
-asigna autoridad por caso de uso. No existe un mapa final ni un pipeline
-universal de destilación antes de compartir.
+asigna autoridad por caso de uso. Las aperturas Kuzu de Atlas usan un perfil
+por defecto explícito de 1 GiB de mapa máximo y 256 MiB de buffer, probado bajo Bwrap de
+2 GiB; no existe aún un mapa final ni un pipeline universal de destilación
+antes de compartir.
 
 **Target.** Clases de memoria con owner, sensibilidad, tiempo, procedencia,
 retención y promoción explícitos; privacidad demostrable y continuidad local.
@@ -284,9 +286,10 @@ AtlasCoder/ToolCoder, worktrees, gates y promoción. No posee aceptación.
 **Current.** Código y tests amplios; Golden Route v0 y ticks están wired.
 `ValidationRunner` ejecuta ahora pytest/mypy de candidatos mediante Bwrap
 read-only, sin red y sin entorno del host. La observación fresca fue un
-preflight bloqueado, no una mejora exitosa; la suite completa permanece
-fail-closed hasta que el perfil Kuzu de validación tenga un límite físico
-compatible y verificable.
+preflight bloqueado, no una mejora exitosa. El perfil Kuzu de aplicación ya
+evita los defaults virtuales del host y las rutas focales pasan con 2 GiB,
+pero falta un receipt de la suite completa en un runner con límite físico
+independiente; no se declara self-build exitoso.
 
 **Target.** Desde gap verificado hasta candidato, evaluación independiente,
 aprobación, aplicación, recibo, aprendizaje y rollback; sin mutar el checkout

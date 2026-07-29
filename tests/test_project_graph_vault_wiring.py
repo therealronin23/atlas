@@ -27,6 +27,7 @@ import kuzu
 import pytest
 
 from atlas.core.orchestrator import Orchestrator
+from atlas.memory.kuzu_runtime import open_kuzu_database
 
 
 @pytest.fixture
@@ -179,7 +180,7 @@ class TestVaultWiring:
         assert result["status"] == "ran"
         assert result["metrics"]["vault"] == {"notes": 2, "links": 2, "unresolved": 0}
 
-        kdb = kuzu.Database(str(db), read_only=True)
+        kdb = open_kuzu_database(db, read_only=True)
         conn = kuzu.Connection(kdb)
         try:
             r = conn.execute("MATCH (n:ObsidianNote) RETURN count(n)")
