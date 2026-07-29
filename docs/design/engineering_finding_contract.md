@@ -71,6 +71,16 @@ su `run_id` y `task_id` históricos: el normalizador verifica repositorio y
 revisiones, pero no reescribe esa procedencia para hacerla pasar por evidencia
 nueva.
 
+`EngineeringReproductionRunner` es el único subcorte que ejecuta una
+reproducción: admite sólo SHA completos, targets `tests/*.py` validados y un
+worktree efímero probado contra el mismo Git common-dir. Reutiliza el
+`BwrapJail` existente con mount read-only, red deshabilitada y timeout acotado.
+Registra metadata mínima en Merkle antes y después; si el audit inicial falla no
+crea worktree, y si falta el receipt final el resultado no es promocionable. No
+aplica diffs, no usa `ColdUpdate`, no crea Task ni persiste stdout/stderr: el
+llamador debe pasar cualquier evidencia a la capa diagnóstica que ya redacta
+antes de journal.
+
 ## Boundary
 
 Un finding es una observación con procedencia. No es una prueba automática, una
@@ -85,8 +95,8 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 
 ## Transition
 
-El siguiente subcorte de `ADC-WO-108` añade reproducción aislada con hipótesis
-de grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
+El siguiente subcorte de `ADC-WO-108` añade hipótesis de
+grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
 producción y validación de correcciones y una proyección read-only esperan sus
 contratos y la frontera durable Mission/Task; no se declaran implementados por este
 contrato.

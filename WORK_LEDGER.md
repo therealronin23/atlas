@@ -31,7 +31,10 @@ de escribir: `atlas reality --json`.
   coordinador existente y evita re-revisar un candidate ya aceptado. El
   normalizador incremental compara sólo claves opacas exactas y marca una
   ausencia como `NOT_REOBSERVED`, sin cambiar lifecycle ni inferir una
-  resolución. **Próxima acción:** diseñar reproducción aislada e hipótesis de
+  resolución. `EngineeringReproductionRunner` reusa worktree efímero y Bwrap
+  read-only/sin red para pytest restringido sobre commits inmutables; Merkle
+  debe registrar inicio y cierre, y la salida queda sólo en memoria. No usa
+  ColdUpdate ni aplica patches. **Próxima acción:** definir hipótesis de
   grafo/historial/memoria sin abrir los boundaries reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión

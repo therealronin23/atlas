@@ -164,7 +164,7 @@ salida cruda ni texto libre del clasificador.
 Puede existir antes de un owner durable Mission/Task porque no posee Task ni
 produce efectos. Un publisher opt-in ya registra finding/review metadata en
 Merkle antes de emitir eventos tipados al `EventBus`; tampoco crea Tasks ni
-llama al Orchestrator. Reproducción aislada, hipótesis de grafo/historial/memoria,
+llama al Orchestrator. Hipótesis de grafo/historial/memoria,
 producción/validación de correcciones y wiring de runtime, Orchestrator y
 proyección siguen ausentes y no se infieren
 como implementados. `EngineeringReviewBaselineStore` ya fija una base sólo tras un
@@ -177,6 +177,10 @@ runner pasa ese request al coordinador existente sólo cuando hay delta pendient
 El normalizador incremental compara únicamente `dedupe_key` opacas e idénticas
 con el snapshot aceptado: una ausencia queda `NOT_REOBSERVED`, nunca se infiere
 como `RESOLVED`, ni se escribe el journal.
+`EngineeringReproductionRunner` reproduce sólo targets pytest validados desde
+commits inmutables en un worktree efímero del mismo repositorio y jail Bwrap de
+solo lectura/sin red. Es fail-closed si falta Merkle o el jail; sus outputs son
+efímeros y no entran en la cadena ni en un finding sin el sanitizador diagnóstico.
 
 ### Cut 2 — convergencia desktop integral
 
@@ -259,7 +263,7 @@ pregunta empírica; tampoco autoriza Native.
 | Destilación privada→shared no universal | P04/P05 | contrato y pipeline después del ADR de memoria |
 | LivingGraph sin importadores | P08 | decidir integrar o archivar; no llamarlo productivo |
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
-| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, publisher Merkle/EventBus, baseline explícito y normalización observacional de diff/review code+tests presentes; faltan reproducción aislada, hipótesis de grafo/historial/memoria, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
+| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, reproducción Bwrap auditada, publisher Merkle/EventBus, baseline explícito y normalización observacional de diff/review code+tests presentes; faltan hipótesis de grafo/historial/memoria, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
 | Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |

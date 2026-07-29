@@ -106,6 +106,7 @@ AUDIT_ACTIONS = {
     "config.changed",
     "session.started", "session.ended",
     "engineering.finding.recorded", "engineering.review.completed",
+    "engineering.reproduction.started", "engineering.reproduction.completed",
     "chain.rotated", "chain.repaired",
 }
 
