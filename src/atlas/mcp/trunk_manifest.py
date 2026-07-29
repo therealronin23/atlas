@@ -148,6 +148,8 @@ def atlas_mcp_config(
         Lista con un dict listo para serializar como mcp_servers.json.
     """
     exe = python if python is not None else sys.executable
+    save_dir = Path(save_dir).expanduser().resolve()
+    repo_root = Path(repo_root).expanduser().resolve()
     entry: dict[str, object] = {
         "name": "atlas-trunk",
         "cmd": [exe, "-m", "atlas.mcp.trunk_server", str(save_dir), str(repo_root)],

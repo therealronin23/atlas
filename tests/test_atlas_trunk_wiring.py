@@ -144,6 +144,12 @@ class TestLoadServersCompatibility:
             config,
             cmd=[str(tmp_path / "python"), *config.cmd[1:]],
         )
+        symlinked_executable = tmp_path / "python-symlink"
+        symlinked_executable.symlink_to(sys.executable)
+        downgraded_venv_identity = replace(
+            config,
+            cmd=[str(symlinked_executable), *config.cmd[1:]],
+        )
         spoofed_cwd = replace(config, cwd=str(tmp_path / "shadow"))
         spoofed_repo = replace(
             config,
@@ -156,11 +162,71 @@ class TestLoadServersCompatibility:
 
         for altered in (
             spoofed_executable,
+            downgraded_venv_identity,
             spoofed_cwd,
             spoofed_repo,
             injected_import_path,
         ):
             assert gate.vet_command(altered) is not None
+
+    def test_native_gate_rejects_a_different_git_checkout_even_if_argv_matches(
+        self, tmp_path: Path
+    ) -> None:
+        """A caller cannot redefine the governed root with an env-like path."""
+        actual_root = Path(__file__).resolve().parents[1]
+        attacker_root = tmp_path / "attacker-repo"
+        attacker_root.mkdir()
+        (attacker_root / ".git").mkdir()
+        raw = atlas_mcp_config(
+            save_dir=tmp_path / "save",
+            repo_root=actual_root,
+            python=sys.executable,
+        )
+        path = tmp_path / "mcp_servers.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        [config] = load_servers(path)
+        attacker_config = replace(
+            config,
+            cwd=str(attacker_root),
+            cmd=[*config.cmd[:-1], str(attacker_root)],
+        )
+
+        gate = SentinelGate(
+            tmp_path / "sentinel", governed_repo_root=attacker_root
+        )
+
+        assert gate.vet_command(attacker_config) is not None
+
+    def test_orchestrator_governed_root_ignores_atlas_repo_root_environment(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Git grounding may be configurable; native execution authority is not."""
+        from atlas.core.orchestrator import Orchestrator
+
+        attacker_root = tmp_path / "attacker-repo"
+        attacker_root.mkdir()
+        (attacker_root / ".git").mkdir()
+        monkeypatch.setenv("ATLAS_REPO_ROOT", str(attacker_root))
+
+        orch = object.__new__(Orchestrator)
+
+        assert orch._governed_code_root() == Path(__file__).resolve().parents[1]
+
+    def test_relative_save_dir_is_normalized_before_native_admission(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Generators must not emit their own command shape as unauthorised."""
+        repo_root = Path(__file__).resolve().parents[1]
+        monkeypatch.chdir(tmp_path)
+        raw = atlas_mcp_config(
+            save_dir=Path("state"), repo_root=repo_root, python=sys.executable
+        )
+        assert raw[0]["cmd"][3] == str((tmp_path / "state").resolve())
+        path = tmp_path / "mcp_servers.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        [config] = load_servers(path)
+
+        assert SentinelGate(tmp_path / "sentinel").vet_command(config) is None
 
     def test_generated_atlas_trunk_config_reaches_registry_transport_factory(
         self, tmp_path: Path

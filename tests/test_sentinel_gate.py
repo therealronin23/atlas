@@ -16,14 +16,21 @@ from atlas.mcp.registry import McpRegistry
 from atlas.security.sentinel_gate import SentinelGate
 
 
-def _cfg(cmd: list[str] | None = None, name: str = "srv") -> McpServerConfig:
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _cfg(
+    cmd: list[str] | None = None, name: str = "atlas-memory"
+) -> McpServerConfig:
     return McpServerConfig(
         name=name,
-        cmd=cmd
-        or [
+        cmd=cmd or [
             sys.executable,
-            str(Path(__file__).parent / "fixtures" / "mcp_echo_server.py"),
+            "-m",
+            "atlas.mcp.memory_server",
+            "/tmp/atlas-test.db",
         ],
+        cwd=str(_REPO_ROOT),
     )
 
 
@@ -45,7 +52,7 @@ def test_first_adoption_admits_and_writes_snapshot(tmp_path: Path) -> None:
     res = gate.vet(_cfg(), [_tool("read_thing")])
     assert res.admitted
     assert [v.admitted for v in res.tools] == [True]
-    assert (tmp_path / "srv.json").exists()
+    assert (tmp_path / "atlas-memory.json").exists()
 
 
 def test_drift_blocks_changed_tool(tmp_path: Path) -> None:
@@ -267,11 +274,24 @@ FIXTURE = Path(__file__).parent / "fixtures" / "mcp_echo_server.py"
 def test_governed_echo_fixture_command_is_admitted_with_two_argv_tokens(
     tmp_path: Path,
 ) -> None:
-    """Catches a length guard that accidentally requires an argument after
-    the tracked smoke script and therefore quarantines the real E2E fixture."""
+    """The smoke fixture needs an explicit test-only exception."""
     cfg = McpServerConfig(name="echo", cmd=[sys.executable, str(FIXTURE)])
 
-    assert SentinelGate(tmp_path).vet_command(cfg) is None
+    assert SentinelGate(tmp_path).vet_command(cfg) is not None
+    assert SentinelGate(tmp_path, allow_test_fixture=True).vet_command(cfg) is None
+
+
+def test_test_fixture_rejects_spoofed_interpreter_even_with_opt_in(
+    tmp_path: Path,
+) -> None:
+    cfg = McpServerConfig(
+        name="echo", cmd=[str(tmp_path / "python"), str(FIXTURE)]
+    )
+
+    assert (
+        SentinelGate(tmp_path, allow_test_fixture=True).vet_command(cfg)
+        is not None
+    )
 
 
 def test_echo_named_script_outside_tracked_fixture_remains_quarantined(
@@ -293,7 +313,7 @@ def test_registry_with_sentinel_admits_clean_server(tmp_path: Path) -> None:
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()
@@ -312,7 +332,7 @@ def test_dispatch_blocks_real_exfiltration_attempt_with_ioc_domain(tmp_path: Pat
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()
@@ -328,7 +348,7 @@ def test_dispatch_allows_benign_call_through_sentinel(tmp_path: Path) -> None:
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()
@@ -396,7 +416,7 @@ def test_corrupt_snapshot_blocks_instead_of_rearming_tofu(
     se reescribe."""
     import logging
 
-    snap_path = tmp_path / "srv.json"
+    snap_path = tmp_path / "atlas-memory.json"
     snap_path.write_text("{not valid json", encoding="utf-8")
     gate = SentinelGate(tmp_path)
     with caplog.at_level(logging.WARNING):
@@ -404,11 +424,14 @@ def test_corrupt_snapshot_blocks_instead_of_rearming_tofu(
     assert res.admitted is False
     assert "snapshot" in res.server_reason.lower()
     assert snap_path.read_text(encoding="utf-8") == "{not valid json"
-    assert any("srv" in rec.message and "corrupt" in rec.message.lower() for rec in caplog.records)
+    assert any(
+        "atlas-memory" in rec.message and "corrupt" in rec.message.lower()
+        for rec in caplog.records
+    )
 
 
 def test_non_mapping_snapshot_blocks_adoption(tmp_path: Path) -> None:
-    snap_path = tmp_path / "srv.json"
+    snap_path = tmp_path / "atlas-memory.json"
     snap_path.write_text('["not", "a", "snapshot"]', encoding="utf-8")
 
     res = SentinelGate(tmp_path).vet(_cfg(), [_tool("x")])
@@ -431,7 +454,7 @@ def test_duplicate_tool_names_veto_the_server(tmp_path: Path) -> None:
 
     assert result.admitted is False
     assert "duplic" in result.server_reason.lower()
-    assert not (tmp_path / "srv.json").exists()
+    assert not (tmp_path / "atlas-memory.json").exists()
 
 
 def test_empty_first_adoption_is_not_analyzable(tmp_path: Path) -> None:
@@ -439,7 +462,7 @@ def test_empty_first_adoption_is_not_analyzable(tmp_path: Path) -> None:
 
     assert result.admitted is False
     assert "tool" in result.server_reason.lower()
-    assert not (tmp_path / "srv.json").exists()
+    assert not (tmp_path / "atlas-memory.json").exists()
 
 
 def test_missing_known_tool_is_server_drift(tmp_path: Path) -> None:
@@ -524,7 +547,7 @@ def test_revet_all_detects_drift_on_already_adopted_server(tmp_path: Path) -> No
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()  # adopcion real, snapshot correcto escrito
@@ -562,7 +585,7 @@ def test_revet_internal_error_revokes_and_quarantines(
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()
@@ -616,7 +639,7 @@ def test_revet_all_never_rewrites_snapshot(tmp_path: Path) -> None:
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()

@@ -175,12 +175,15 @@ def test_build_trunk_server_exposes_small_meta_surface() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_root_configs_map_each_root_to_its_launch_command(tmp_path: Path) -> None:
+def test_root_configs_map_each_root_to_its_launch_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from atlas.mcp.trunk_server import root_configs
 
     repo_root = Path(__file__).resolve().parents[1]
+    monkeypatch.chdir(tmp_path)
     cfgs = {c.name: c for c in root_configs(
-        save_dir=tmp_path / "save", repo_root=repo_root, python=sys.executable
+        save_dir=Path("save"), repo_root=repo_root, python=sys.executable
     )}
     assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
 

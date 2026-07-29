@@ -73,6 +73,8 @@ def root_configs(
     """McpServerConfig por raíz nativa: el tronco las spawnea como hijos stdio.
     El save (memoria/knowledge) en la capa neutra; operating apunta al repo."""
     exe = python if python is not None else sys.executable
+    save_dir = Path(save_dir).expanduser().resolve()
+    repo_root = Path(repo_root).expanduser().resolve()
     arg_for = {
         "db": str(Path(save_dir) / "memory.db"),
         "repo": str(repo_root),
@@ -510,6 +512,9 @@ def serve(*, save_dir: Path, repo_root: Path, name: str = "atlas-trunk") -> None
     externos no son visibles en trunk_tools hasta que se haya invocado al menos
     una vez su server dueño."""
     import os
+
+    save_dir = Path(save_dir).expanduser().resolve()
+    repo_root = Path(repo_root).expanduser().resolve()
 
     from atlas.mcp.catalog import load_catalog, load_taxonomy
 

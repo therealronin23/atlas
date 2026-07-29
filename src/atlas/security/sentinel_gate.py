@@ -40,12 +40,16 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
-from atlas.mcp.config import McpServerConfig, is_valid_mcp_identifier
+from atlas.mcp_identifiers import is_valid_mcp_identifier
+
+if TYPE_CHECKING:
+    from atlas.mcp.config import McpServerConfig
 
 _log = logging.getLogger(__name__)
 
@@ -168,20 +172,29 @@ class SentinelGate:
         ioc_domains: frozenset[str] = frozenset(),
         ioc_commands: frozenset[str] = frozenset(),
         governed_repo_root: Path | None = None,
+        allow_test_fixture: bool = False,
     ) -> None:
         self._snapshot_dir = Path(snapshot_dir)
         self._merkle_log = merkle_log
-        # La excepción nativa solo existe cuando el caller conoce el checkout
-        # que gobierna. Sin esa procedencia, ``python -m atlas...`` sigue siendo
-        # un comando no probado y permanece en cuarentena.
-        self._governed_repo_root = (
+        # La raíz no se toma de una variable de entorno o del JSON MCP: se
+        # deriva del módulo Sentinel ya cargado. El argumento opcional es una
+        # aserción de consistencia, no una autoridad que un caller pueda mover.
+        loaded_root = self._loaded_source_repo_root()
+        requested_root = (
             self._resolve_path(governed_repo_root, require_exists=True)
             if governed_repo_root is not None
-            else None
+            else loaded_root
         )
-        self._governed_python = self._resolve_path(
+        self._governed_repo_root = (
+            requested_root if requested_root is not None and requested_root == loaded_root else None
+        )
+        # No se resuelve el symlink del intérprete: su ruta léxica determina el
+        # entorno virtual. `/usr/bin/python` no es equivalente a
+        # `.venv/bin/python` aunque ambos apunten al mismo binario.
+        self._governed_python = self._lexical_executable_path(
             Path(sys.executable), require_exists=True
         )
+        self._allow_test_fixture = allow_test_fixture
         # Union con el suelo no anulable: pasar ioc_domains=frozenset() no
         # vacía la protección contra incidentes confirmados.
         self._ioc_domains = frozenset(d.lower() for d in ioc_domains) | _INCIDENT_IOC_DOMAINS
@@ -453,6 +466,41 @@ class SentinelGate:
         except (OSError, RuntimeError, ValueError):
             return None
 
+    @staticmethod
+    def _lexical_executable_path(
+        value: Path | str, *, require_exists: bool
+    ) -> Path | None:
+        """Normaliza una ruta absoluta sin colapsar symlinks de un venv."""
+        try:
+            path = Path(value).expanduser()
+            if not path.is_absolute():
+                return None
+            normalized = Path(os.path.normpath(str(path)))
+            if require_exists and not normalized.is_file():
+                return None
+            return normalized
+        except (OSError, RuntimeError, ValueError):
+            return None
+
+    @staticmethod
+    def _loaded_source_repo_root() -> Path | None:
+        """Encuentra el checkout que contiene *este* Sentinel importado.
+
+        Una instalación wheel/no editable no obtiene excepción nativa: no hay
+        checkout verificable del que pueda derivarse el `cwd` de un subprocess.
+        """
+        try:
+            module_path = Path(__file__).resolve()
+            repo_root = module_path.parents[3]
+            expected = repo_root / "src" / "atlas" / "security" / "sentinel_gate.py"
+            if expected.resolve(strict=True) != module_path:
+                return None
+            if not (repo_root / ".git").exists():
+                return None
+            return repo_root
+        except (OSError, RuntimeError, ValueError, IndexError):
+            return None
+
     def _has_governed_native_context(self, cfg: McpServerConfig) -> bool:
         """Prueba que el hijo no pueda sombrear el módulo Atlas a importar."""
         repo_root = self._governed_repo_root
@@ -465,7 +513,10 @@ class SentinelGate:
         # no los necesitan y deben arrancar con el entorno mínimo del registry.
         if cfg.env_extra or cfg.env_passthrough:
             return False
-        return self._resolve_path(cfg.cmd[0], require_exists=True) == self._governed_python
+        return (
+            self._lexical_executable_path(cfg.cmd[0], require_exists=True)
+            == self._governed_python
+        )
 
     def _is_governed_native_command(self, cfg: McpServerConfig) -> bool:
         """Admite solo comandos nativos ligados al proceso y checkout actual.
@@ -513,10 +564,17 @@ class SentinelGate:
             / "fixtures"
             / "mcp_echo_server.py"
         )
-        # Fixture trackeado, permitido únicamente para los smokes locales.
+        # Fixture trackeado, permitido únicamente por tests que lo habilitan
+        # explícitamente. Nunca es una excepción de producción ni permite
+        # cambiar intérprete, entorno de importación o cwd.
         return (
-            script.name == "mcp_echo_server.py"
-            and script.resolve() == tracked_fixture
+            self._allow_test_fixture
+            and cfg.cwd is None
+            and not cfg.env_extra
+            and not cfg.env_passthrough
+            and self._lexical_executable_path(cmd[0], require_exists=True)
+            == self._governed_python
+            and self._resolve_path(script, require_exists=True) == tracked_fixture
         )
 
     def _scan_iocs(self, surface: str) -> str | None:

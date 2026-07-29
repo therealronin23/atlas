@@ -2248,6 +2248,23 @@ class Orchestrator:
                 return None
         return cand if (cand / ".git").exists() else None
 
+    def _governed_code_root(self) -> Path | None:
+        """Checkout que contiene este Orchestrator, sin confiar en env vars.
+
+        ``ATLAS_REPO_ROOT`` sigue siendo útil para las herramientas Git de
+        grounding, pero no puede decidir qué código obtiene una excepción
+        pre-spawn en Sentinel.
+        """
+        try:
+            module_path = Path(__file__).resolve()
+            candidate = module_path.parents[3]
+            expected = candidate / "src" / "atlas" / "core" / "orchestrator.py"
+            if expected.resolve(strict=True) != module_path:
+                return None
+            return candidate if (candidate / ".git").exists() else None
+        except (OSError, RuntimeError, ValueError, IndexError):
+            return None
+
     def _init_dirs(self) -> None:
         for sub in ["projects", "tmp", "skills", "memory/system_context",
                     "memory/error_registry", "memory/approved_patterns",
@@ -2423,7 +2440,7 @@ class Orchestrator:
         self._sentinel = SentinelGate(
             self._workspace / "memory" / "sentinel",
             merkle_log=self._merkle.log,
-            governed_repo_root=self._repo_root(),
+            governed_repo_root=self._governed_code_root(),
         )
         self._mcp = McpRegistry(
             load_servers(mcp_config_path),
