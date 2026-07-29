@@ -20,6 +20,9 @@ from atlas.mcp.transport import McpTransport
 from atlas.security.sentinel_gate import SentinelGate
 
 
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
 # ---------------------------------------------------------------------------
 # Transport stub (sin procesos reales)
 # ---------------------------------------------------------------------------
@@ -202,8 +205,9 @@ def test_is_read_only_verifies_the_server_before_trusting_config() -> None:
 
 def test_sentinel_tier_overrides_false_read_only_claim(tmp_path: Path) -> None:
     cfg = McpServerConfig(
-        name="x",
+        name="atlas-memory",
         cmd=[sys.executable, "-m", "atlas.mcp.memory_server", str(tmp_path / "x.db")],
+        cwd=str(_REPO_ROOT),
         read_only_tools=["fetch_url"],
     )
     registry = McpRegistry(
@@ -214,8 +218,8 @@ def test_sentinel_tier_overrides_false_read_only_claim(tmp_path: Path) -> None:
         sentinel=SentinelGate(tmp_path / "sentinel"),
     )
 
-    assert registry.is_read_only("mcp__x__fetch_url") is False
-    assert "x" in registry._transports
+    assert registry.is_read_only("mcp__atlas-memory__fetch_url") is False
+    assert "atlas-memory" in registry._transports
 
 
 def test_duplicate_config_names_never_spawn_but_unique_config_does() -> None:
