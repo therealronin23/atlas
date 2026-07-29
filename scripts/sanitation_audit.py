@@ -209,6 +209,23 @@ def ecosystem_map_drift() -> list[str]:
         return [f"ecosystem_drift no pudo ejecutarse: {exc}"]
 
 
+def component_wiring_drift() -> list[str]:
+    """Filas de docs/canon/component_reality_matrix.jsonl cuya afirmación
+    de WIRED contradice al grafo real (AST, no grep). El 2026-07-29 se
+    encontraron 8 filas desfasadas así, sin corregir desde que se
+    escribieron. Lógica real vive en
+    atlas.core.self_maintenance.component_wiring_drift (TDD real, no un
+    script suelto); fail-open aquí, nunca rompe el radar."""
+    try:
+        from atlas.core.self_maintenance.component_wiring_drift import (
+            component_wiring_drift as _impl,
+        )
+
+        return _impl(ROOT)
+    except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
+        return [f"component_wiring_drift no pudo ejecutarse: {exc}"]
+
+
 def _section(title: str, items: list[str], ok: str) -> None:
     print(f"\n## {title}")
     if not items:
@@ -237,6 +254,8 @@ def main() -> int:
     _section("Grafo de docs (enlaces rotos + huérfanos)", docs_graph_drift(), "sin señales")
     _section("Mapa del ecosistema (ADR↔fila, spec B+C §5)", ecosystem_map_drift(),
              "todo ADR tiene fila o rango que lo cubre")
+    _section("Matriz de componentes↔grafo real (WIRED verificado)", component_wiring_drift(),
+             "ninguna fila de component_reality_matrix.jsonl contradice al grafo")
     print("\n(Radar read-only: decide KEEP/QUARANTINE/DELETE según REPO_STANDARD §3.)")
     return 0
 
