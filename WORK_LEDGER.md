@@ -8,6 +8,51 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-30 — canon corregido de nuevo + chequeo estructural que evita
+  que vuelva a desfasarse (`e64a07c`, `f5986c9`).** El operador pidió
+  "demasiadas cosas construidas, no conectadas como deben" verificado con
+  datos, no impresión. Fase 1: verificado con `graph_importers` (AST, no
+  grep) contra `component_reality_matrix.jsonl`, 8 filas P01/P10 estaban
+  desfasadas — `fabric/policy.py`, `security/authorization.py`,
+  `security/capabilities.py`, `core/event_bus.py`, `interfaces/telegram_bot.py`
+  SÍ tienen importadores reales (mayormente `orchestrator.py`), corregidas.
+  Dejadas sin tocar a propósito: `events/core_bridge.py`,
+  `engineering/incremental.py` (Cut 1), `security/node_identity.py`
+  (standalone por diseño) — 0 importadores confirmados — y las 2 filas
+  MIXTAS (`Event Kernel projection`, `OsEventStore and event bridge`) que
+  combinan un fichero cableado con otro que no, donde el NOMBRE del
+  componente nombra específicamente el papel del fichero sin cablear.
+  De paso, `ADR-079` (de ayer) tampoco tenía disposición en
+  `decision_registry.jsonl` — mismo tipo de omisión que `docs/INDEX.yaml`
+  ayer, corregida igual.
+  Fase 2: `component_wiring_drift.py` (TDD, 12 tests incl. uno end-to-end
+  contra un grafo Kuzu real vía `build_project_graph`) cruza automáticamente
+  las filas del canon contra el grafo real, en las DOS direcciones
+  (sobreclamado y subclamado), silencioso a propósito en filas mixtas.
+  Cablado en `sanitation_audit.py` como sección nueva, mismo patrón que
+  `ecosystem_map_drift` (lógica en `src/atlas`, el script sólo importa y
+  envuelve fail-open). **Al correrlo encontró 8 filas MÁS que la
+  verificación manual de ayer no cubrió** — prueba directa de que hacía
+  falta la herramienta: `LayeredIsolationSandbox`, `Runtime and executors`,
+  `Business Core` (×2), `runtime_isolation`, `Risk-tiered runtime isolation`,
+  y dos casos más severos — `Memory OS` y `Zed ACP` — cuyo `statuses` **ni
+  siquiera afirmaba `CODE_PRESENT`** pese a tener código real, importadores
+  reales y tests reales pasando (`Zed ACP` además con `tests: []` pese a que
+  `tests/test_acp_server.py` existe y pasa, 13 tests — verificado antes de
+  corregir, no asumido). Las 8 corregidas con el mismo cuidado (sin tocar
+  `target_state` cuando ya apuntaba más lejos que `WIRED`). El propio mensaje
+  del detector tenía un sesgo — asumía "CODE_PRESENT/TESTED" en el texto del
+  hallazgo, falso para esos 2 casos — corregido para citar los `statuses`
+  reales de la fila en vez de asumir.
+  Suite completa 4716 passed, mypy 333 ficheros. `check_canon.py`: mismos 5
+  hallazgos preexistentes (clúster de IDs duplicados `desktop-control` del
+  día 1 de esta sesión, confirmado ajeno vía `git stash`) — **no tocados**,
+  fuera de alcance de hoy.
+  **Próxima acción:** decidir si se investiga el clúster de 5 duplicados de
+  `computer-control-mcp`/`ADC-WO-124` (quién creó el ID duplicado y cuál de
+  los dos registros es el correcto) — es un frente distinto, no una
+  continuación mecánica de esto.
+
 - **2026-07-29 — F2.6 corrible SIN Claude, probado en vivo de punta a punta
   (`ee8003d`).** El bloqueo era doble: `atlas f26 run` sólo sabía disparar
   `claude -p` (OAuth revocado), pero el propio módulo ya declaraba el
