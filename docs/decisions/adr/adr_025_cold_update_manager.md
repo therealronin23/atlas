@@ -64,3 +64,24 @@ Only after this is stable should Atlas generate candidate patches itself.
 - Which directories are allowed for self-improvement?
 - How does this interact with GitHub PR creation?
 
+## Hardening compatible with this ADR (2026-07-29)
+
+The existing narrow self-maintenance scope is now enforced at the actual patch
+intake boundary, not merely declared by a constant in the manager. A candidate
+patch must be a UTF-8 unified text diff whose paths are confined to
+`src/`, `tests/`, `scripts/`, `docs/` or `config/`; the single root exception
+is `pyproject.toml`, required by the accepted ADR-039 dependency-bump path.
+`config/governance.json` is denied for every origin. Traversal, absolute or
+ambiguous paths, binary diffs, symlinks/submodules, and rename/copy forms fail
+closed before a worktree is created.
+
+The stored patch is SHA-256 bound to its proposal. Validation, approval, apply,
+tier-1 processing and rollback re-check both scope and digest, so an approval
+cannot be reused if the stored artifact changed. Ledger entries written before
+the digest field are intentionally non-applicable and must be re-proposed.
+
+This is an intake/integrity guard, not a claim that diff text is safe to run.
+It does not weaken the existing Bwrap/AST Guard, validation, Decider, human
+approval, Merkle or rollback requirements; it gives those later gates the same
+reviewed artifact and prevents a patch from reaching them outside its allowed
+scope.

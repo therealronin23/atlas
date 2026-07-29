@@ -131,8 +131,11 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 
 - Mission/Golden Route: **ACCEPTED_DESIGN / CODE_PRESENT / TESTED / WIRED**.
   Es v0 acotado; no `PRODUCT_ACCEPTED`.
-- SelfBuild/Foundry/ColdUpdate: **CODE_PRESENT / TESTED / WIRED**. El evento
-  fresco fue preflight bloqueado, no build exitoso.
+- SelfBuild/Foundry/ColdUpdate: **CODE_PRESENT / TESTED / WIRED**. ColdUpdate
+  rechaza antes de worktree/apply rutas fuera de su allowlist, cambios a
+  `config/governance.json` y artefactos cuyo SHA-256 ya no coincide con la
+  propuesta; esa protección no prueba un build exitoso. El evento fresco fue
+  preflight bloqueado, no build exitoso.
 - SQLite/BlockMemory: **CODE_PRESENT / TESTED / WIRED**. El owner final y la
   promoción entre stores requieren operador.
 - Knowledge/Research: **CODE_PRESENT / TESTED / WIRED**; ticks base

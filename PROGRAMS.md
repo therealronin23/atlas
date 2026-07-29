@@ -296,7 +296,9 @@ ColdUpdateManager, codegen, AST Guard y proposal ledger.
 `CTR-GOLDEN-ROUTE-APPROVAL`.
 
 **Invariantes.** Builder ≠ promoter; worktree ≠ process sandbox; validate-only
-por defecto; tests y rollback antes de apply.
+por defecto; el patch se limita a rutas permitidas, excluye
+`config/governance.json` y conserva su digest desde propuesta hasta rollback;
+tests y rollback antes de apply.
 
 **Dependencias.** P00 decisiones, P02 context, P03 cognition, P07 supply
 chain, P09 isolation/evaluation/recovery.

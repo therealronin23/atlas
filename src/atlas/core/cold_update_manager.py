@@ -5,6 +5,7 @@ No hot self-patch; no autonomous code generation in MVP.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import subprocess
@@ -27,6 +28,157 @@ TIPO1_TRANSFORMS: frozenset[str] = frozenset({
     "ensure_final_newline",
     "collapse_eof_blank_lines",
 })
+
+
+class PatchIntakeError(RuntimeError):
+    """A patch is malformed, escapes ColdUpdate scope, or lost its identity.
+
+    This is intentionally a ``RuntimeError`` so existing callers that already
+    treat an unappliable patch as an operational failure keep their behaviour.
+    The specialised type lets the proposal boundary distinguish an unsafe
+    intake from a regular hunk mismatch.
+    """
+
+
+_COLD_UPDATE_ALLOWED_PREFIXES = (
+    "src/",
+    "tests/",
+    "scripts/",
+    "docs/",
+    "config/",
+)
+_COLD_UPDATE_ALLOWED_ROOT_FILES = frozenset({"pyproject.toml"})
+_COLD_UPDATE_IMMUTABLE_PATHS = frozenset({"config/governance.json"})
+_UNSAFE_GIT_FILE_MODES = frozenset({"120000", "160000"})
+_UNSUPPORTED_EXTENDED_PATH_HEADERS = (
+    "rename from ",
+    "rename to ",
+    "copy from ",
+    "copy to ",
+)
+
+
+def _fail_patch_intake(reason: str) -> PatchIntakeError:
+    return PatchIntakeError(f"Patch no aplicable: intake fail-closed ({reason})")
+
+
+def _parse_patch_path(raw: str, *, expected_prefix: str) -> str | None:
+    """Parse one text-diff header path without accepting git's ambiguous forms.
+
+    ColdUpdate intentionally supports a narrow, reviewable subset of unified
+    diffs.  Quoted paths, timestamps, backslashes and dot-segments are rejected
+    rather than delegated to whichever patch parser happens to be installed.
+    """
+    if raw == "/dev/null":
+        return None
+    if not raw.startswith(expected_prefix):
+        raise _fail_patch_intake("cabecera de path no canónica")
+    path = raw[len(expected_prefix):]
+    if not path or any(char.isspace() or ord(char) < 32 for char in path):
+        raise _fail_patch_intake("path vacío o ambiguo")
+    if path.startswith("/") or "\\" in path:
+        raise _fail_patch_intake("path absoluto o no portable")
+    if any(part in {"", ".", ".."} for part in path.split("/")):
+        raise _fail_patch_intake("segmento inseguro en path")
+    return path
+
+
+def _validate_patch_scope(path: str) -> None:
+    if path in _COLD_UPDATE_IMMUTABLE_PATHS:
+        raise _fail_patch_intake("governance inmutable")
+    if path in _COLD_UPDATE_ALLOWED_ROOT_FILES:
+        return
+    if path.startswith(_COLD_UPDATE_ALLOWED_PREFIXES):
+        return
+    raise _fail_patch_intake("path fuera de la allowlist de ColdUpdate")
+
+
+def _parse_diff_git_header(line: str) -> tuple[str, str]:
+    """Extract the two paths from the only supported ``diff --git`` form."""
+    fields = line.split(" ")
+    if len(fields) != 4 or fields[:2] != ["diff", "--git"]:
+        raise _fail_patch_intake("cabecera diff --git ambigua")
+    old_path = _parse_patch_path(fields[2], expected_prefix="a/")
+    new_path = _parse_patch_path(fields[3], expected_prefix="b/")
+    if old_path is None or new_path is None:
+        raise _fail_patch_intake("diff --git no puede referir /dev/null")
+    return old_path, new_path
+
+
+def _validated_patch_paths(text: str) -> tuple[str, ...]:
+    """Return every path a supported unified diff may touch.
+
+    We inspect both ``diff --git`` and paired ``---``/``+++`` headers.  Git
+    extended rename/copy and binary forms are rejected: their path semantics
+    are broader than the ColdUpdate approval artifact and are not needed by the
+    accepted self-maintenance producers.
+    """
+    if "\x00" in text:
+        raise _fail_patch_intake("patch binario")
+
+    paths: list[str] = []
+    header_pairs = 0
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if line.startswith("diff --git "):
+            paths.extend(_parse_diff_git_header(line))
+        elif line.startswith(_UNSUPPORTED_EXTENDED_PATH_HEADERS):
+            raise _fail_patch_intake("rename/copy no soportado")
+        elif line.startswith(("GIT binary patch", "Binary files ")):
+            raise _fail_patch_intake("patch binario no soportado")
+        elif line.startswith(
+            ("new file mode ", "deleted file mode ", "old mode ", "new mode ")
+        ):
+            mode = line.rsplit(" ", 1)[-1]
+            if mode in _UNSAFE_GIT_FILE_MODES:
+                raise _fail_patch_intake("symlink o submodule no soportado")
+
+        if (
+            line.startswith("--- ")
+            and index + 1 < len(lines)
+            and lines[index + 1].startswith("+++ ")
+        ):
+            old_path = _parse_patch_path(line[4:], expected_prefix="a/")
+            new_path = _parse_patch_path(lines[index + 1][4:], expected_prefix="b/")
+            if old_path is not None:
+                paths.append(old_path)
+            if new_path is not None:
+                paths.append(new_path)
+            header_pairs += 1
+            index += 2
+            continue
+        index += 1
+
+    if header_pairs == 0:
+        raise _fail_patch_intake("sin cabeceras unificadas de fichero")
+    if not paths:
+        raise _fail_patch_intake("patch sin rutas tocadas")
+
+    ordered_paths = tuple(dict.fromkeys(paths))
+    for path in ordered_paths:
+        _validate_patch_scope(path)
+    return ordered_paths
+
+
+def _validate_patch_intake(patch: Path) -> tuple[str, ...]:
+    """Validate a patch before any worktree or root mutation is attempted."""
+    try:
+        text = patch.read_text(encoding="utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise _fail_patch_intake("patch no UTF-8") from exc
+    except OSError as exc:
+        raise _fail_patch_intake("patch ilegible") from exc
+    return _validated_patch_paths(text)
+
+
+def _patch_sha256(patch: Path) -> str:
+    """Content digest used to bind validation, review and application together."""
+    try:
+        return hashlib.sha256(patch.read_bytes()).hexdigest()
+    except OSError as exc:
+        raise _fail_patch_intake("patch ilegible") from exc
 
 
 def _is_tipo1_diff(diff_text: str) -> bool:
@@ -73,28 +225,6 @@ def _is_tipo1_diff(diff_text: str) -> bool:
     return has_hunk
 
 
-def _patch_touched_paths(patch: Path) -> list[str]:
-    """Rutas que un patch unificado toca, leídas de sus cabeceras
-    `--- a/<path>` / `+++ b/<path>` — sin aplicar nada. `/dev/null` (fichero
-    nuevo o borrado en ese lado) se ignora; orden estable, sin duplicados.
-    Vive aquí porque `_commit_with_evidence` la usa para escopar `git add` a
-    SOLO lo que la propuesta tocó, nunca al árbol entero."""
-    paths: list[str] = []
-    seen: set[str] = set()
-    try:
-        text = patch.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return paths
-    for line in text.splitlines():
-        for prefix in ("--- a/", "+++ b/"):
-            if line.startswith(prefix):
-                candidate = line[len(prefix):].strip()
-                if candidate and candidate not in seen:
-                    seen.add(candidate)
-                    paths.append(candidate)
-    return paths
-
-
 @dataclass
 class ColdUpdateProposal:
     id: str
@@ -103,6 +233,7 @@ class ColdUpdateProposal:
     worktree_path: str
     patch_path: str
     base_ref: str
+    patch_sha256: str = ""
     origin: str = "manual"  # manual | self_audit
     risk: str = "medium"    # low | medium | high | critical
     evidence: dict[str, Any] = field(default_factory=dict)
@@ -122,7 +253,9 @@ class ColdUpdateProposal:
 class ColdUpdateManager:
     """MVP: accept patch, worktree, validate, await approval, apply with rollback guard."""
 
-    ALLOWED_PREFIXES = ("src/", "tests/", "scripts/", "docs/", "config/")
+    ALLOWED_PREFIXES = _COLD_UPDATE_ALLOWED_PREFIXES
+    ALLOWED_ROOT_FILES = _COLD_UPDATE_ALLOWED_ROOT_FILES
+    IMMUTABLE_PATHS = _COLD_UPDATE_IMMUTABLE_PATHS
 
     def __init__(
         self,
@@ -192,6 +325,10 @@ class ColdUpdateManager:
             raise FileNotFoundError(f"Patch no encontrado: {patch_path}")
         self._validate_origin(origin)
         self._validate_risk(risk)
+        # Reject before allocating an isolated worktree.  The same check runs
+        # again against the stored artifact before every mutation because a
+        # proposal file can be modified after it is created.
+        _validate_patch_intake(patch_path)
 
         proposal_id = str(uuid.uuid4())[:12]
         wt_dir = self._store_dir / f"worktree-{proposal_id}"
@@ -205,7 +342,8 @@ class ColdUpdateManager:
         stored_patch = self._store_dir / f"patch-{proposal_id}.patch"
         try:
             shutil.copy2(patch_path, stored_patch)
-            self._apply_patch(wt_dir, stored_patch)
+            patch_sha256 = _patch_sha256(stored_patch)
+            self._apply_patch(wt_dir, stored_patch, expected_sha256=patch_sha256)
         except Exception:
             # Worktree creado pero patch no copiable/aplicable: limpiar antes de propagar.
             _stub = ColdUpdateProposal(
@@ -226,6 +364,7 @@ class ColdUpdateManager:
             worktree_path=str(wt_dir),
             patch_path=str(stored_patch),
             base_ref=base_ref,
+            patch_sha256=patch_sha256,
             origin=origin,
             risk=risk,
             evidence=evidence or {},
@@ -269,6 +408,7 @@ class ColdUpdateManager:
 
     def validate(self, proposal_id: str) -> ValidationReport:
         proposal = self._require(proposal_id)
+        self._require_intact_patch(proposal)
         worktree = Path(proposal.worktree_path)
         runner = self._runner_factory(worktree)
         report = runner.run()
@@ -359,6 +499,7 @@ class ColdUpdateManager:
             )
         if not proposal.validation or not proposal.validation.get("passed"):
             raise RuntimeError("Validacion fallida; no se puede aprobar")
+        self._require_intact_patch(proposal)
         proposal.status = "approved"
         proposal.updated_at = datetime.now(timezone.utc).isoformat()
         self._save()
@@ -376,11 +517,19 @@ class ColdUpdateManager:
         if proposal.status != "approved":
             raise RuntimeError("Requiere aprobacion explicita antes de apply")
 
-        patch = Path(proposal.patch_path)
-        self._apply_patch(self._root, patch)
+        patch = self._require_intact_patch(proposal)
+        touched_paths = self._apply_patch(
+            self._root,
+            patch,
+            expected_sha256=proposal.patch_sha256,
+        )
         post = self._runner_factory(self._root).run()
         if not post.passed:
-            self._rollback_patch(self._root, patch)
+            self._rollback_patch(
+                self._root,
+                patch,
+                expected_sha256=proposal.patch_sha256,
+            )
             proposal.status = "failed"
             self._save()
             self._merkle.log(
@@ -403,7 +552,7 @@ class ColdUpdateManager:
             risk_level="critical",
             payload={"proposal_id": proposal_id},
         )
-        self._commit_with_evidence(proposal, post)
+        self._commit_with_evidence(proposal, post, touched_paths)
         self._remove_worktree(proposal)
         return {"proposal_id": proposal_id, "status": "applied", "validation": post.to_dict()}
 
@@ -416,7 +565,12 @@ class ColdUpdateManager:
         proposal = self._proposals.get(proposal_id)
         if proposal is None or proposal.status != "applied":
             return False
-        self._rollback_patch(self._root, Path(proposal.patch_path))
+        patch = self._require_intact_patch(proposal)
+        self._rollback_patch(
+            self._root,
+            patch,
+            expected_sha256=proposal.patch_sha256,
+        )
         proposal.status = "rolled_back"
         proposal.updated_at = datetime.now(timezone.utc).isoformat()
         self._save()
@@ -446,7 +600,8 @@ class ColdUpdateManager:
                 f"tier1_auto_apply solo para origin='swarm', recibido '{proposal.origin}'"
             )
 
-        diff_text = Path(proposal.patch_path).read_text(encoding="utf-8")
+        patch = self._require_intact_patch(proposal)
+        diff_text = patch.read_text(encoding="utf-8")
         if not _is_tipo1_diff(diff_text):
             raise ValueError(
                 "Diff contiene cambios no-whitespace — no es tipo-1. Requiere HITL."
@@ -563,6 +718,23 @@ class ColdUpdateManager:
             raise KeyError(f"Proposal no encontrado: {proposal_id}")
         return p
 
+    def _require_intact_patch(self, proposal: ColdUpdateProposal) -> Path:
+        """Return the stored patch only when it still matches its proposal hash.
+
+        ``approved`` is meaningful only for the same bytes that were isolated
+        and validated.  Old ledger entries without a digest deliberately fail
+        closed and must be re-proposed instead of inheriting an unverifiable
+        approval.
+        """
+        patch = Path(proposal.patch_path)
+        if not proposal.patch_sha256:
+            raise _fail_patch_intake("propuesta sin digest de patch")
+        _validate_patch_intake(patch)
+        actual = _patch_sha256(patch)
+        if actual != proposal.patch_sha256:
+            raise _fail_patch_intake("digest de patch no coincide con la propuesta")
+        return patch
+
     def _create_worktree(self, path: Path, base_ref: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         result = subprocess.run(
@@ -584,7 +756,17 @@ class ColdUpdateManager:
                 dirs_exist_ok=True,
             )
 
-    def _apply_patch(self, target: Path, patch: Path) -> None:
+    def _apply_patch(
+        self,
+        target: Path,
+        patch: Path,
+        *,
+        expected_sha256: str | None = None,
+    ) -> tuple[str, ...]:
+        """Apply one intact, scope-checked patch and return its staged paths."""
+        touched_paths = _validate_patch_intake(patch)
+        if expected_sha256 is not None and _patch_sha256(patch) != expected_sha256:
+            raise _fail_patch_intake("digest de patch no coincide con la propuesta")
         last_err = ""
         for cmd in (
             ["git", "apply", str(patch)],
@@ -599,11 +781,20 @@ class ColdUpdateManager:
                 check=False,
             )
             if result.returncode == 0:
-                return
+                return touched_paths
             last_err = result.stderr or result.stdout or ""
         raise RuntimeError(f"Patch no aplicable: {last_err[:500]}")
 
-    def _rollback_patch(self, target: Path, patch: Path) -> None:
+    def _rollback_patch(
+        self,
+        target: Path,
+        patch: Path,
+        *,
+        expected_sha256: str | None = None,
+    ) -> None:
+        _validate_patch_intake(patch)
+        if expected_sha256 is not None and _patch_sha256(patch) != expected_sha256:
+            raise _fail_patch_intake("digest de patch no coincide con la propuesta")
         subprocess.run(
             ["patch", "-p1", "-R", "-i", str(patch)],
             cwd=target,
@@ -684,6 +875,7 @@ class ColdUpdateManager:
         self,
         proposal: ColdUpdateProposal,
         report: ValidationReport,
+        touched_paths: tuple[str, ...],
     ) -> None:
         """Commit best-effort tras apply exitoso.
 
@@ -716,14 +908,13 @@ class ColdUpdateManager:
         )
         env = clean_git_env()
         try:
-            touched = _patch_touched_paths(Path(proposal.patch_path))
-            if not touched:
+            if not touched_paths:
                 raise RuntimeError(
                     f"no se pudo determinar qué ficheros toca el patch de "
                     f"{proposal.id}; me niego a hacer 'git add -A' a ciegas"
                 )
             add = subprocess.run(
-                ["git", "add", "--", *touched],
+                ["git", "add", "--", *touched_paths],
                 cwd=self._root,
                 env=env,
                 capture_output=True,

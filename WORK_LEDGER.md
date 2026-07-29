@@ -8,6 +8,21 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — intake de ColdUpdate cerrado sobre el artefacto revisado
+  (ADC-WO-117).** La allowlist histórica de `src/`, `tests/`, `scripts/`,
+  `docs/` y `config/` ahora se impone antes de crear un worktree y antes de
+  cualquier apply/rollback; `pyproject.toml` queda como la excepción raíz
+  estrecha que necesita el bump de dependencias ADR-039, mientras
+  `config/governance.json` permanece denegado para todos los origins. Diffs
+  binarios, rename/copy, symlink/submodule, rutas absolutas/traversal o headers
+  ambiguos fallan cerrados. Cada propuesta nueva guarda el SHA-256 del patch y
+  validate/approve/apply/tier-1/rollback lo revalidan, de modo que una revisión
+  no puede aplicarse sobre bytes sustituidos; un ledger legado sin digest exige
+  repropuesta. Es **CODE_PRESENT / TESTED**, no una prueba de un build real ni
+  un sustituto de Bwrap, AST Guard, Decider, HITL, Merkle o rollback. **Próxima
+  acción:** completar sólo las hipótesis no invasivas de ADC-WO-108 o cerrar
+  validación/adversarial de la rama antes de abrir boundaries reservados.
+
 - **2026-07-29 — comenzó el Cut 1 interno autorizado por el operador
   (ADC-WO-108).** La instrucción explícita de ejecutar el plan desbloquea este
   corte, pero no eleva la candidata a `ATLAS CANON ACCEPTED` ni modifica los

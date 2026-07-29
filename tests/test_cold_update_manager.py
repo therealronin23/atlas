@@ -974,7 +974,8 @@ def _make_git_repo_tier1(tmp_path: Path, name: str = "tier1proj"):
     (root / "tests" / "test_dummy.py").write_text("def test_ok():\n    assert True\n")
     (root / "pyproject.toml").write_text("[project]\nname='x'\n")
     # Archivo con una línea de solo espacios al final — objetivo del patch tipo-1.
-    (root / "hello.py").write_text("x = 1\ny = 2\n   \n")
+    # Vive bajo src/ para respetar la allowlist de intake de ColdUpdate.
+    (root / "src" / "atlas" / "hello.py").write_text("x = 1\ny = 2\n   \n")
 
     env = clean_git_env()
     subprocess.run(["git", "init", "-b", "main"], cwd=root, env=env,
@@ -1007,10 +1008,10 @@ def _ok_runner_factory():
 
 
 def _whitespace_only_patch() -> str:
-    """Diff que elimina una línea de solo espacios de hello.py (tipo-1 whitespace)."""
+    """Diff que elimina una línea de solo espacios de src/atlas/hello.py."""
     return (
-        "--- a/hello.py\n"
-        "+++ b/hello.py\n"
+        "--- a/src/atlas/hello.py\n"
+        "+++ b/src/atlas/hello.py\n"
         "@@ -1,3 +1,2 @@\n"
         " x = 1\n"
         " y = 2\n"
@@ -1021,8 +1022,8 @@ def _whitespace_only_patch() -> str:
 def _code_change_patch() -> str:
     """Diff con cambio de código real (no tipo-1)."""
     return (
-        "--- a/hello.py\n"
-        "+++ b/hello.py\n"
+        "--- a/src/atlas/hello.py\n"
+        "+++ b/src/atlas/hello.py\n"
         "@@ -1,3 +1,3 @@\n"
         "-x = 1\n"
         "+x = 42\n"

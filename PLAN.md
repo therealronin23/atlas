@@ -75,6 +75,7 @@ entrega, no sustitutos de P00–P12.
 | ADC-WO-008 | admission y vetting MCP fail-closed sin ejecutar candidatos | argv peligroso bloqueado; clean-unadmitted queda en cuarentena |
 | ADC-WO-009 | dependencia UI saneada sin cambiar el runtime objetivo | build y audit exactos; cero advisories |
 | ADC-WO-010 | linajes externos y decisión ADR-078 reconciliados | Atlas Core único; host y donors sin claims de integración |
+| ADC-WO-117 | intake y binding de patch ColdUpdate fail-closed | rutas permitidas, governance inmutable y bytes aprobados revalidados antes de efecto |
 | ADC-WO-006 | auditoría independiente y entrega local | 0 BLOCKING; MAJOR resolubles corregidos; bundles verifican |
 
 ### Cambios de implementación autorizados
@@ -84,6 +85,9 @@ entrega, no sustitutos de P00–P12.
 - aplicar el mismo guard al ReceiptBroker de plugins;
 - hacer fail-closed el vetting de llamadas/snapshots de terceros y revocar en
   runtime un MCP que falle su re-vet o presente drift;
+- imponer la allowlist/digest de los patches ColdUpdate antes de worktree,
+  validación, aprobación, apply, tier-1 o rollback, sin ampliar los efectos
+  autorizados;
 - corregir comentarios/metadata que afirman auto-adopción, producto web-first,
   activación inexistente o datos vivos sin procedencia;
 - añadir validator y gate CI de canon;

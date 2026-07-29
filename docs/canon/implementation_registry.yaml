@@ -1061,6 +1061,55 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-117
+    program: P06
+    title: Fail-close ColdUpdate patch intake and bind approval to artifact bytes
+    problem: The manager declared a narrow path allowlist but did not enforce it before patch parsers or root application, and an approved proposal was not cryptographically bound to the stored patch that could later be applied or rolled back.
+    evidence:
+      - src/atlas/core/cold_update_manager.py contained ALLOWED_PREFIXES without an intake check
+      - ADR-025 requires isolated, auditable, human-approved and reversible updates
+      - ADR-039 permits the narrow pyproject.toml dependency-bump producer while config/governance.json remains constitutionally immutable
+      - red tests covered governance mutation, out-of-scope paths, traversal, hidden diff headers and post-review artifact replacement
+    source_decisions:
+      - ADR-025
+      - ADR-039
+      - CTR-GOVERNANCE-IMMUTABLE
+      - CTR-NO-SELF-PROMOTION
+    current_state: ColdUpdate now accepts only a supported UTF-8 unified text diff in its declared scope, explicitly permits pyproject.toml for ADR-039, rejects config/governance.json and ambiguous/binary/rename/symlink/submodule paths before worktree creation, and stores a SHA-256 that validation, approval, apply, tier-1 and rollback re-check. Old proposals without a digest fail closed.
+    target_state: A review or approval always refers to one constrained artifact; no rejected path or substituted patch reaches a worktree, root apply, rollback or commit staging.
+    scope:
+      - ColdUpdate patch parsing and path allowlist
+      - immutable governance path exclusion
+      - proposal artifact digest binding
+      - apply, tier-1 and rollback revalidation
+      - scoped commit staging from validated paths
+    files:
+      - src/atlas/core/cold_update_manager.py
+      - tests/test_cold_update_patch_intake.py
+      - tests/test_cold_update_manager.py
+      - docs/decisions/adr/adr_025_cold_update_manager.md
+      - docs/canon/contract_registry.jsonl
+      - docs/canon/component_reality_matrix.jsonl
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_cold_update_patch_intake.py tests/test_cold_update_manager.py tests/test_apply_patch_failures.py tests/test_cold_update_decider.py tests/test_cold_update_batcher.py tests/test_swarm_reconcile.py -q
+      - MYPYPATH=src python -m mypy src/atlas/core/cold_update_manager.py
+      - PYTHONPATH=src python scripts/check_canon.py
+    risks:
+      - a legitimate unsupported patch form now requires an explicit compatible extension rather than parser fallback
+      - a historical proposal without a stored digest must be re-proposed before it can be advanced
+      - this path/integrity validation is not a substitute for jail, generated-code lint, independent validation, Decider or human approval
+    rollback: Revert the atomic ColdUpdate hardening commit. No patch ledger migration is performed; legacy proposals remain fail-closed by design until re-proposed.
+    dependencies: []
+    acceptance:
+      - governance and out-of-scope paths fail before a worktree or stored proposal exists
+      - a real Git new-file diff under an allowed path remains proposable
+      - altered stored bytes fail before root mutation even when their replacement path is otherwise allowed
+      - no-digest legacy proposal fails before root mutation
+      - focused tests, mypy and canonical validation pass
+    operator_decision_required: false
+    status: DONE
+
   - id: ADC-WO-114
     program: P09
     title: Refresh definitive delivery evidence after governance hardening
