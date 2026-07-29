@@ -73,6 +73,11 @@ docs/reality_after_24h.json
 docs/security_audit_latest.json
 docs/self_audit_latest.json
 docs/self_audit_*.md
+# maintenance_mcp_vetting_tick (ATLAS_MCP_VETTING=1) reescribe este jsonl en
+# cada ciclo al re-verificar endpoints HTTP remotos (p.ej. 500->503): es
+# snapshot runtime, no evidencia canónica citada por ADR/canon; los tests que
+# lo tocan usan ATLAS_CORE_ROOT aislado en tmp_path y no dependen del real.
+docs/design/mcp_catalog_stage2_report.jsonl
 .atlas_self_audit_stop
 patches/
 # Artefactos de sesión de Playwright MCP (logs de consola, capturas, snapshots)
