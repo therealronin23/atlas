@@ -53,7 +53,11 @@ class StdioTransport:
         timeout_seconds: float = 15.0,
     ) -> None:
         self._cmd = list(cmd)
-        self._env = dict(env) if env else None
+        # ``None`` means the caller intentionally delegates environment
+        # selection to Popen. An explicit ``{}`` is different: it is the
+        # least-privilege environment resolved by McpServerConfig when PATH
+        # is unavailable, and must never become host-environment inheritance.
+        self._env = dict(env) if env is not None else None
         self._cwd = cwd
         self._timeout = float(timeout_seconds)
         self._proc: subprocess.Popen[str] | None = None

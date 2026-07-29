@@ -133,6 +133,27 @@ def test_stdio_transport_starts_server_in_hardened_session(
     assert callable(captured["kwargs"]["preexec_fn"])
 
 
+def test_stdio_transport_preserves_an_explicit_empty_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un PATH ausente no puede degradar env={} a herencia del padre."""
+    captured: dict[str, Any] = {}
+
+    def _fake_popen(*args: Any, **kwargs: Any) -> object:
+        captured["kwargs"] = kwargs
+        return object()
+
+    monkeypatch.delenv("PATH", raising=False)
+    env, missing = McpServerConfig(name="native", cmd=["python"]).resolve_env()
+    assert env == {}
+    assert missing == []
+    monkeypatch.setattr("atlas.mcp.transport.subprocess.Popen", _fake_popen)
+
+    StdioTransport(cmd=["fake-mcp"], env=env).start()
+
+    assert captured["kwargs"]["env"] == {}
+
+
 # ===========================================================================
 # Config / secrets
 # ===========================================================================
