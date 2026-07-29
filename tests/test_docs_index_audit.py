@@ -60,6 +60,20 @@ class TestWriteAndValidate:
         (docs / "design" / "nuevo.md").write_text("n", encoding="utf-8")
         assert m.validate(docs)["missing"] == ["docs/design/nuevo.md"]
 
+    def test_runtime_audit_snapshot_is_excluded_but_audit_evidence_is_indexed(
+        self, tmp_path: Path
+    ) -> None:
+        m = _mod()
+        docs = _make_docs(tmp_path)
+        (docs / "audit_complete_latest.json").write_text("{}", encoding="utf-8")
+        (docs / "audits").mkdir()
+        (docs / "audits" / "audit_complete_latest.json").write_text("{}", encoding="utf-8")
+
+        scanned = {str(path) for path in m.scan_tree(docs)}
+
+        assert "docs/audit_complete_latest.json" not in scanned
+        assert "docs/audits/audit_complete_latest.json" in scanned
+
     def test_deleted_file_reported_orphan(self, tmp_path: Path) -> None:
         m = _mod()
         docs = _make_docs(tmp_path)

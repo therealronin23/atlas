@@ -1,6 +1,6 @@
 # Status — Atlas Definitive Candidate
 
-Fecha de corte: 2026-07-28. Baseline:
+Fecha de corte: 2026-07-29. Baseline:
 `c95038c9d7e97ddc6339f38abe6dad09b166f47d`.
 
 Este fichero no concede aceptación. El estado granular de 137 componentes y
@@ -31,6 +31,30 @@ La candidata no hereda `LIVE_VERIFIED` del baseline después de cambiar el
 árbol. Las observaciones base se preservan abajo y deben repetirse contra el
 commit final cuando el mismo scope lo permita.
 
+## Integración y continuidad
+
+El 2026-07-29 la rama definitiva se integró y publicó por fast-forward:
+`main`, `origin/main` y la rama candidata coincidían en `0fea4c6` antes del
+commit de continuidad posterior. El checkout no conserva cambios de esta
+sesión fuera de Git; sólo el ZIP fuente R2.1 permanece deliberadamente
+untracked. Las variantes vivas anteriores están publicadas en
+`recovery/pre-definitive-live-20260729`.
+
+La tabla de candidata inferior es evidencia histórica de sus anchors, no una
+validación integral del HEAD actual. Después se añadieron hardenings de
+ColdUpdate/Bwrap/Kuzu/editor/router con pruebas focales y receipts Bwrap, por
+lo que la siguiente sesión debe ejecutar suite completa, mypy completo, UI,
+audit y Reality antes de elevar la candidata. Reality fresco de este cierre
+proyectó: grafo `STALE` en `c95038c`, F2.6 `due` por siete ADR, navegador
+degradado sin Playwright y Hermes mock/no configurado.
+
+El pack `docs/handoff/GENERATED/` se regenera desde las fuentes canónicas. Su
+gate admite únicamente el commit descendiente que contiene paths no vacíos y
+exclusivos del propio pack; cualquier commit vacío, ajeno o mezclado sigue
+marcándolo `STALE`. El snapshot runtime gitignorado
+`docs/audit_complete_latest.json` queda fuera del índice documental, mientras
+`docs/audits/audit_complete_latest.json` conserva su papel de evidencia.
+
 ## Validación de baseline
 
 | Comprobación | Resultado fresco | Interpretación |
@@ -53,8 +77,9 @@ es deuda de rendimiento, no fallo de compilación.
 
 Anchor sustantivo validado:
 `ff439d2840e30754fbf8175e0b61c59cf4e3c4de`.
-Los commits posteriores contienen únicamente estado/reportes y artefactos de
-entrega autocontenidos.
+En ese corte los commits posteriores eran estado/reportes; esta afirmación
+quedó supersedida por los hardenings integrados después. La tabla se conserva
+como receipt histórico y no se extrapola al HEAD actual.
 
 | Comprobación | Resultado | Clasificación |
 |---|---|---|

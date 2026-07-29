@@ -118,6 +118,79 @@ def head_sha(repo_root: Path) -> str:
     return proc.stdout.strip() if proc.returncode == 0 else "unknown"
 
 
+def only_generated_pack_changed(
+    repo_root: Path,
+    *,
+    manifest_head: str,
+    current_head: str,
+    out_dir: Path,
+) -> bool:
+    """True si desde ``manifest_head`` sólo se publicó el pack generado.
+
+    El manifiesto se calcula antes de crear el commit que lo contiene, de modo
+    que comparar únicamente ``HEAD`` vuelve obsoleto al pack por
+    autorreferencia. La excepción es deliberadamente estrecha: el SHA grabado
+    debe ser ancestro, debe existir al menos un path cambiado y todos los paths
+    deben estar dentro de ``out_dir``.
+    """
+    if not manifest_head or manifest_head == "unknown" or current_head == "unknown":
+        return False
+    try:
+        generated_root = out_dir.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return False
+    if not generated_root or generated_root == ".":
+        return False
+
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_ENV_LEAK_VARS}
+    try:
+        ancestor = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-base",
+                "--is-ancestor",
+                manifest_head,
+                current_head,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            env=env,
+        )
+        if ancestor.returncode != 0:
+            return False
+        diff = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "diff",
+                "--name-only",
+                "--no-renames",
+                manifest_head,
+                current_head,
+                "--",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            env=env,
+        )
+    except Exception:
+        return False
+    if diff.returncode != 0:
+        return False
+    changed_paths = [line for line in diff.stdout.splitlines() if line]
+    prefix = f"{generated_root}/"
+    return bool(changed_paths) and all(
+        path == generated_root or path.startswith(prefix) for path in changed_paths
+    )
+
+
 def extract_where_block(ledger_text: str) -> str | None:
     """Extrae de `ledger_text` el bloque desde `## WHERE` hasta la SEGUNDA
     entrada `- **` (exclusive): incluye la primera entrada completa (con sus

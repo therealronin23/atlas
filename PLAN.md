@@ -81,6 +81,7 @@ entrega, no sustitutos de P00–P12.
 | ADC-WO-120 | DNS determinista sólo para tests candidatos con fetcher inyectado | Bwrap sigue sin red; SSRF de producción no cambia; rutas focales reales pasan dentro del jail |
 | ADC-WO-121 | bloqueo permanente de lectura antes de sondear el path | `/etc` conserva deny bajo Bwrap; rutas externas no protegidas conservan “no encontrado” |
 | ADC-WO-122 | routing stateless sin dependencia de HOME | `--no-state` pasa sin passwd/home dentro del jail; el estado normal conserva resolución perezosa y fail-soft |
+| ADC-WO-123 | pack de sucesión commiteable sin autorreferencia | sólo el commit no vacío y exclusivo de `docs/handoff/GENERATED/` conserva frescura; cualquier cambio mezclado sigue stale |
 | ADC-WO-006 | auditoría independiente y entrega local | 0 BLOCKING; MAJOR resolubles corregidos; bundles verifican |
 
 ### Cambios de implementación autorizados

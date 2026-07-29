@@ -963,7 +963,11 @@ def _handoff_db_path() -> Path:
 def handoff(check_only: bool, out_dir: Path | None) -> None:
     """Pack de sucesión GENERADO desde el sustrato (WORK_LEDGER, AGENTS,
     actor_roles, master plan, memoria harness migrada) — nunca a mano."""
-    from atlas.core.handoff import generate_handoff, head_sha  # noqa: PLC0415
+    from atlas.core.handoff import (  # noqa: PLC0415
+        generate_handoff,
+        head_sha,
+        only_generated_pack_changed,
+    )
 
     repo_root = _handoff_repo_root()
     resolved_out_dir = out_dir if out_dir is not None else repo_root / "docs" / "handoff" / "GENERATED"
@@ -990,7 +994,17 @@ def handoff(check_only: bool, out_dir: Path | None) -> None:
             )
             raise click.exceptions.Exit(1)
         current_head = head_sha(repo_root)
-        if manifest.get("head_sha") != current_head:
+        manifest_head = manifest.get("head_sha")
+        pack_commit_is_current = (
+            isinstance(manifest_head, str)
+            and only_generated_pack_changed(
+                repo_root,
+                manifest_head=manifest_head,
+                current_head=current_head,
+                out_dir=resolved_out_dir,
+            )
+        )
+        if manifest_head != current_head and not pack_commit_is_current:
             console.print(
                 f"[bold red]STALE: el pack de handoff en {resolved_out_dir} no refleja HEAD "
                 f"({current_head}); regenera con 'atlas handoff'[/bold red]"

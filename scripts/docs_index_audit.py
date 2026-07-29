@@ -19,8 +19,10 @@ Reglas del validador:
   3. `status: vigente` con `verified` a más de VERIFY_MAX_DAYS → CADUCADO
      (afirma estado sin contraste reciente; re-verificar o degradar).
 
-Exclusiones: `docs/inbox/` (aún sin triage), `docs/self_audit_*` (estado
-runtime, gitignorado), `__pycache__`, ficheros no documentales (.pyc, etc.).
+Exclusiones: `docs/inbox/` (aún sin triage), `docs/self_audit_*` y el snapshot
+raíz `docs/audit_complete_latest.json` (estado runtime, gitignorado),
+`__pycache__`, ficheros no documentales (.pyc, etc.). Los receipts versionados
+bajo `docs/audits/` sí se indexan.
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ import argparse
 import sys
 from datetime import date, datetime
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -68,6 +71,8 @@ def _is_indexable(path: Path, docs_dir: Path) -> bool:
         return False
     if rel.name.startswith("self_audit_"):
         return False  # estado runtime, gitignorado
+    if len(parts) == 1 and rel.name == "audit_complete_latest.json":
+        return False  # snapshot runtime gitignorado; docs/audits/ sí es evidencia
     return path.suffix.lower() in _DOC_SUFFIXES
 
 
@@ -99,7 +104,7 @@ def scan_tree(docs_dir: Path | None = None) -> list[Path]:
     )
 
 
-def load_index(docs_dir: Path | None = None) -> dict[str, dict]:
+def load_index(docs_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     docs_dir = docs_dir or (ROOT / "docs")
     index_path = docs_dir / INDEX_NAME
     if not index_path.is_file():

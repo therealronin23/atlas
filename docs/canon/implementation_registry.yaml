@@ -1345,6 +1345,57 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-123
+    program: P00
+    title: Publish a self-consistent generated succession pack
+    problem: atlas handoff records the source HEAD before its generated files are committed, so the original exact-SHA check marked a freshly published pack stale because of its own artifact commit.
+    evidence:
+      - the tracked pack still recorded 8317cf8 while main had advanced to 0fea4c6
+      - a new CLI regression test failed after generating and committing only docs/handoff/GENERATED
+      - exact-HEAD freshness already rejected empty or unrelated later commits and that protection must remain
+      - the original checkout contained a gitignored docs/audit_complete_latest.json runtime snapshot that made strict docs audit fail despite not being a canonical document
+    source_decisions:
+      - AGENTS.md operating loop and How To Resume
+      - docs/design/atlas_master_plan.md T0.1
+      - CTR-CI-TRACKED-SURFACES
+    current_state: The check accepts a descendant only when the manifest SHA is an ancestor, at least one path changed and every changed path is inside the selected generated pack. Empty, mixed, unrelated, divergent or external-directory transitions remain stale.
+    target_state: A clean clone can verify the committed succession pack without an impossible self-referential SHA and without weakening drift detection.
+    scope:
+      - handoff freshness predicate
+      - CLI behavior
+      - committed-pack and mixed-change regressions
+      - regenerated succession pack
+    files:
+      - src/atlas/core/handoff.py
+      - src/atlas/interfaces/cli.py
+      - tests/test_handoff.py
+      - scripts/docs_index_audit.py
+      - tests/test_docs_index_audit.py
+      - docs/handoff/GENERATED/
+      - AGENTS.md
+      - WORK_LEDGER.md
+      - MEMORY.md
+      - docs/design/atlas_master_plan.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_handoff.py -q
+      - PYTHONPATH=src python -m pytest tests/test_docs_index_audit.py -q
+      - MYPYPATH=src python -m mypy src/atlas/core/handoff.py src/atlas/interfaces/cli.py
+      - PYTHONPATH=src atlas handoff --check after committing only the generated pack
+      - PYTHONPATH=src python scripts/docs_index_audit.py --strict
+    risks:
+      - allowing arbitrary descendants would hide stale packs; the accepted path set therefore remains exact and non-empty
+      - an out-dir outside the repository cannot use the artifact-commit exception
+    rollback: Revert the predicate and tests, then regenerate the pack after every checkout while accepting that a tracked generated commit immediately reports stale.
+    dependencies:
+      - ADC-WO-004
+    acceptance:
+      - the test fails under exact-SHA-only behavior and passes with the narrow exception
+      - an empty commit remains stale
+      - a commit mixing the pack with any other path remains stale
+      - a clean clone of final main reports atlas handoff --check current
+    operator_decision_required: false
+    status: DONE
+
   - id: ADC-WO-114
     program: P09
     title: Refresh definitive delivery evidence after governance hardening

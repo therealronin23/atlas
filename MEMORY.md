@@ -1,5 +1,12 @@
 # MEMORY
 
+- `generated-artifact-commit-is-not-drift`: un manifiesto generado desde HEAD
+  registra necesariamente el commit anterior al que publica sus propios
+  bytes. La frescura puede aceptar esa única transición solo si el SHA
+  registrado es ancestro, existe al menos un path cambiado y todos los cambios
+  están dentro del directorio generado; un commit vacío, mezclado, ajeno o una
+  historia divergente sigue siendo stale. Así se evita tanto la
+  autorreferencia imposible como una excepción de frescura demasiado amplia.
 - `evidence-before-operator-choice`: el operador decide intención
   constitucional y apetito de riesgo; los medios técnicos requieren evidencia
   local/primaria, alternativas comparadas, falsificadores y límites de

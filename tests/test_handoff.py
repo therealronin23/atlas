@@ -329,6 +329,73 @@ def test_cli_handoff_check_ok_right_after_generate(
     assert check.exit_code == 0, check.output
 
 
+def test_cli_handoff_check_ok_after_committing_only_generated_pack(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publicar el pack no puede volver obsoleto al propio pack."""
+    from click.testing import CliRunner
+
+    from atlas.interfaces.cli import cli
+
+    repo = _make_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+    monkeypatch.setenv("ATLAS_MEMORY_DB", str(tmp_path / "no-such-dir" / "memory.db"))
+    runner = CliRunner()
+
+    gen = runner.invoke(cli, ["handoff"])
+    assert gen.exit_code == 0, gen.output
+    _git(repo, "add", "docs/handoff/GENERATED")
+    _git(
+        repo,
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "user.name=t",
+        "commit",
+        "-qm",
+        "publish generated handoff",
+    )
+
+    check = runner.invoke(cli, ["handoff", "--check"])
+
+    assert check.exit_code == 0, check.output
+    assert "al día" in check.output
+
+
+def test_cli_handoff_check_stays_stale_when_pack_commit_has_other_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """La excepción autorreferencial no oculta cambios ajenos al pack."""
+    from click.testing import CliRunner
+
+    from atlas.interfaces.cli import cli
+
+    repo = _make_repo(tmp_path)
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(repo))
+    monkeypatch.setenv("ATLAS_MEMORY_DB", str(tmp_path / "no-such-dir" / "memory.db"))
+    runner = CliRunner()
+
+    gen = runner.invoke(cli, ["handoff"])
+    assert gen.exit_code == 0, gen.output
+    (repo / "unrelated.txt").write_text("cambio real\n", encoding="utf-8")
+    _git(repo, "add", "docs/handoff/GENERATED", "unrelated.txt")
+    _git(
+        repo,
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "user.name=t",
+        "commit",
+        "-qm",
+        "publish mixed handoff",
+    )
+
+    check = runner.invoke(cli, ["handoff", "--check"])
+
+    assert check.exit_code == 1
+    assert "STALE" in check.output
+
+
 def test_cli_handoff_check_exits_1_stale_after_new_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

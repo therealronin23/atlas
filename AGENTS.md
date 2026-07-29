@@ -258,10 +258,17 @@ For agent-facing knowledge navigation in this repo, prefer `AGENTS.md` (and the 
 
 ## How To Resume
 
-1. Activate the venv.
-2. Run `atlas reality --json`.
-3. Query the live graph for the code area you will touch (`graph_importers` /
+1. Confirm `git branch --show-current`, `git status --short --branch` and
+   `git rev-parse HEAD`; continuation starts from tracked `main`, never from an
+   unidentified worktree.
+2. Activate the venv and run `atlas handoff --check`. Read
+   `docs/handoff/GENERATED/00_ESTADO.md`; if stale, reconcile its source
+   documents before regenerating rather than trusting the old pack.
+3. Run `atlas reality --json`. If F2.6 is `due`, surface its exact notification
+   as required by the operating loop; never launch the expensive run silently.
+4. Query the live graph for the code area you will touch (`graph_importers` /
    `graph_blast_radius` via the MCP trunk).
-4. Read `WORK_LEDGER.md` and `docs/design/atlas_ecosystem_map.md`.
-5. Read only the design doc named by the active node.
-6. Prefer small reversible changes with tests.
+5. Read `WORK_LEDGER.md`, `ATLAS.md`, `STATUS.md` and
+   `docs/design/atlas_ecosystem_map.md`.
+6. Read only the design doc named by the active node.
+7. Prefer small reversible changes with tests.
