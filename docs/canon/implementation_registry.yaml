@@ -457,7 +457,7 @@ work_orders:
     source_decisions:
       - ADR-078
       - approved Workbench symbiosis design section 6
-    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, and an EngineeringReviewCoordinator composed over UniversalVerifier are code-present and tested; DiagnosticCoordinator, Merkle/event routing, Orchestrator integration, incremental-review baseline selection, and a read-only API projection remain absent.
+    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, an EngineeringReviewCoordinator composed over UniversalVerifier, and a capture-only EngineeringDiagnosticCoordinator composed over ValidationReport and an injected RootCauseClassifier are code-present and tested; isolated reproduction, graph/history/memory hypotheses, correction production, Merkle/event routing, Orchestrator integration, incremental-review baseline selection, and a read-only API projection remain absent.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -469,12 +469,15 @@ work_orders:
       - schemas/engineering_finding.schema.json
       - src/atlas/engineering/findings.py
       - src/atlas/engineering/review.py
+      - src/atlas/engineering/diagnostics.py
       - tests/test_engineering_findings.py
       - tests/test_engineering_review.py
+      - tests/test_engineering_diagnostics.py
       - docs/design/engineering_finding_contract.md
     tests:
       - versioned contract/schema parity
       - deterministic UniversalVerifier review composition
+      - captured ValidationReport diagnostic classification and redaction
       - deterministic complete and incremental review
       - finding deduplication and lifecycle
       - BLOCKING and MAJOR elevation

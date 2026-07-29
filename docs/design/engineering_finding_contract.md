@@ -31,6 +31,15 @@ coordinador verifica `run_id`, Task, repositorio, revisiones y source del
 finding; un adapter que intenta cruzar ese contexto queda `UNKNOWN` y no escribe
 el journal.
 
+`EngineeringDiagnosticCoordinator` recibe un `ValidationReport` ya capturado y
+un `RootCauseClassifier` inyectado: no vuelve a ejecutar el comando ni crea un
+worktree. Normaliza el vocabulario de diagnóstico de ADR-078, conserva una
+excepción o clasificación no soportada como `UNKNOWN`, filtra paths absolutos o
+con traversal y no copia salida cruda ni el texto libre del clasificador al
+journal. La clasificación y el uso de modelo quedan como evidencia estructurada,
+no sólo texto. El llamador conserva la política que decide si el
+clasificador puede usar un modelo; el coordinador no configura proveedores.
+
 ## Boundary
 
 Un finding es una observación con procedencia. No es una prueba automática, una
@@ -46,9 +55,11 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 ## Transition
 
 El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
-última revisión aceptada y `DiagnosticCoordinator`. Eventos Merkle, routing
-hacia Orchestrator y una proyección read-only esperan sus contratos y la
-frontera durable Mission/Task; no se declaran implementados por este contrato.
+última revisión aceptada y reproducción aislada con hipótesis de
+grafo/historial/memoria. Eventos Merkle, routing hacia Orchestrator, producción
+y validación de correcciones y una proyección read-only esperan sus contratos y
+la frontera durable Mission/Task; no se declaran implementados por este
+contrato.
 
 ## Rollback
 

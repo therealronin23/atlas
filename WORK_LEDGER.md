@@ -13,12 +13,15 @@ de escribir: `atlas reality --json`.
   corte, pero no eleva la candidata a `ATLAS CANON ACCEPTED` ni modifica los
   límites Mission/Task, memoria, 7341, Native, Hermes u Osmosis. Ya existe el
   contrato `EngineeringFinding` v1, schema, journal append-only/deduplicado,
-  adaptador de `SelfAuditFinding` y `EngineeringReviewCoordinator` sobre el
-  `UniversalVerifier` existente; las pruebas focalizadas y mypy del módulo se
-  ejecutaron localmente. No hay aún DiagnosticCoordinator, eventos/Merkle,
-  routing a Orchestrator, API, runtime configurado ni producto. **Próxima
-  acción:** añadir diagnóstico y baseline incremental manteniendo `UNKNOWN`
-  explícito y sin aplicación de patches.
+  adaptador de `SelfAuditFinding`, `EngineeringReviewCoordinator` sobre el
+  `UniversalVerifier` existente y `EngineeringDiagnosticCoordinator` sobre un
+  `ValidationReport` capturado y un `RootCauseClassifier` inyectado. El
+  diagnóstico normaliza categorías, conserva `UNKNOWN`, descarta paths no
+  relativos y no copia salida cruda ni texto libre del clasificador al journal;
+  no reproduce, no repara ni aplica patches. Las pruebas focalizadas y mypy del módulo se ejecutaron
+  localmente. No hay eventos/Merkle, routing a Orchestrator, API, runtime
+  configurado ni producto. **Próxima acción:** añadir baseline incremental y
+  diseñar reproducción aislada sin abrir los boundaries reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
   local (ADC-WO-114/116).**
