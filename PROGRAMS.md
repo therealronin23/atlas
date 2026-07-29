@@ -281,8 +281,12 @@ reversibles.
 **Alcance.** Mission v0, Golden Route, Foundry/SelfBuildRunner, ColdUpdate,
 AtlasCoder/ToolCoder, worktrees, gates y promoción. No posee aceptación.
 
-**Current.** Código y tests amplios; Golden Route v0 y ticks están wired. La
-observación fresca fue un preflight bloqueado, no una mejora exitosa.
+**Current.** Código y tests amplios; Golden Route v0 y ticks están wired.
+`ValidationRunner` ejecuta ahora pytest/mypy de candidatos mediante Bwrap
+read-only, sin red y sin entorno del host. La observación fresca fue un
+preflight bloqueado, no una mejora exitosa; la suite completa permanece
+fail-closed hasta que el perfil Kuzu de validación tenga un límite físico
+compatible y verificable.
 
 **Target.** Desde gap verificado hasta candidato, evaluación independiente,
 aprobación, aplicación, recibo, aprendizaje y rollback; sin mutar el checkout

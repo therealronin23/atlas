@@ -6,6 +6,7 @@ para verificar el rootfs mínimo y el seccomp BPF activo.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import struct
 from pathlib import Path
@@ -216,15 +217,18 @@ def test_bwrap_argv_no_seccomp_when_none():
 
 def test_seccomp_bpf_structure():
     bpf = build_seccomp_bpf()
-    # Cada filtro son 8 bytes; nº instrucciones = 4 + M bloqueadas + 2 (allow/errno).
+    # Cada filtro son 8 bytes; nº instrucciones = 4 + M bloqueadas +
+    # allow + EPERM + ENOSYS (clone3 fallback).
     m = len(_BLOCKED_X86_64)
-    assert len(bpf) == (4 + m + 2) * 8
+    assert len(bpf) == (4 + m + 3) * 8
     filters = [struct.unpack("<HBBI", bpf[i:i + 8]) for i in range(0, len(bpf), 8)]
-    # [0] load arch (offset 4); [1] JEQ arch; última es RET ERRNO EPERM.
+    # [0] load arch (offset 4); [1] JEQ arch; clone3 returns ENOSYS
+    # so libc can safely use its pre-clone3 compatibility path.
     assert filters[0] == (0x20, 0, 0, 4)
     assert filters[1][0] == 0x15 and filters[1][3] == 0xC000003E
-    assert filters[-1] == (0x06, 0, 0, 0x00050001)   # RET ERRNO|EPERM
-    assert filters[-2] == (0x06, 0, 0, 0x7FFF0000)   # RET ALLOW (default)
+    assert filters[-1] == (0x06, 0, 0, 0x00050026)   # RET ERRNO|ENOSYS
+    assert filters[-2] == (0x06, 0, 0, 0x00050001)   # RET ERRNO|EPERM
+    assert filters[-3] == (0x06, 0, 0, 0x7FFF0000)   # RET ALLOW (default)
     # Cada syscall bloqueada aparece como JEQ con k == nr.
     blocked_ks = {f[3] for f in filters if f[0] == 0x15 and f[3] != 0xC000003E}
     assert set(_BLOCKED_X86_64) <= blocked_ks
@@ -406,8 +410,10 @@ def test_execute_in_jail_clean_code_calls_jail_run():
 # ---------------------------------------------------------------------------
 
 _bwrap_available = shutil.which("bwrap") is not None
+_nested_bwrap_validation = os.environ.get("ATLAS_NESTED_TEST_RUN") == "1"
 pytestmark_bwrap = pytest.mark.skipif(
-    not _bwrap_available, reason="bwrap no disponible en este entorno"
+    not _bwrap_available or _nested_bwrap_validation,
+    reason="bwrap no disponible o la prueba se ejecuta dentro de un jail Bwrap",
 )
 
 
@@ -488,6 +494,29 @@ else:
     result = real_jail.run(script)
     assert result.success, f"stderr: {result.stderr}"
     assert "ok" in result.stdout
+
+
+@pytestmark_bwrap
+def test_real_jail_clone3_returns_enosys_for_libc_fallback(real_jail: BwrapJail) -> None:
+    """clone3 stays unavailable without breaking thread runtimes that fall back."""
+    import platform
+    if platform.machine() != "x86_64":
+        pytest.skip("seccomp blocklist solo definida para x86_64")
+
+    script = """
+import ctypes, errno, sys
+libc = ctypes.CDLL(None, use_errno=True)
+ret = libc.syscall(435, 0, 0)
+err = ctypes.get_errno()
+if ret == -1 and err == errno.ENOSYS:
+    print('ok: clone3 ENOSYS fallback')
+else:
+    print(f'FAIL: ret={ret} errno={err} (esperado ENOSYS={errno.ENOSYS})', file=sys.stderr)
+    sys.exit(1)
+"""
+    result = real_jail.run(script)
+    assert result.success, f"stderr: {result.stderr}"
+    assert "clone3 ENOSYS" in result.stdout
 
 
 @pytestmark_bwrap

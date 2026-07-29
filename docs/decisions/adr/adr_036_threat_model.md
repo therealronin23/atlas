@@ -73,8 +73,8 @@ línea por línea contra código real (callers, no solo el nombre del ADR):
 | P1 | Anclaje de la cadena Merkle | 🟡 sigue parcial | sin cambio verificado esta pasada |
 | P2 | Confused-deputy en el loop | ✅ hecho | namespacing `mcp__<server>__<tool>` real en `registry.py`/`trunk_aggregator.py` — un tool nunca hereda confianza de otro server |
 | P2 | Integridad de la aprobación (atar OK a hash de acción) | ✅ hecho | `_consult_decider` devuelve `(verdict, action_hash)`; `register_undo(act_hash, ...)`; `decider.verdict` en Merkle incluye `action_hash` real (verificado contra 603 entradas reales del log) |
-| P2 | Profundidad del sandbox | ✅ hecho | `BwrapJail` (`--unshare-all`), 6 callers reales (`spawn_trial`, `lesson_runner`, `tool_coder`, `cold_update_manager`, `security/executor`, `security/sandbox`) |
-| Futuro | Integridad del validador de ColdUpdate | ⏳ sigue pendiente | sin cambio verificado |
+| P2 | Profundidad del sandbox | ✅ hecho con límites declarados | `BwrapJail` (`--unshare-all`); `ValidationRunner` es el caller efectivo de ColdUpdate, junto a `spawn_trial`, `lesson_runner`, `tool_coder`, `security/executor` y `security/sandbox` |
+| Futuro | Integridad del validador de ColdUpdate | 🟡 parcial | pytest/mypy de candidato ya corren en Bwrap read-only/sin red/sin env host; la suite completa falla cerrada por defaults mmap de Kuzu, sin build exitoso declarado |
 | Futuro | Cadena de suministro del modelo | 🟡 parcial | `maintenance_provider_smoke_tick` detecta modelos muertos/renombrados (no es supply-chain del modelo en sí, es liveness de proveedor) |
 | Futuro | Confianza inter-nodo (Flota) | ⏳ sin cambio | depende de hardware, no priorizado |
 | Futuro | Post-quantum | anotado, sin cambio | — |

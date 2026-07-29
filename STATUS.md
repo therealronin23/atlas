@@ -134,8 +134,10 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 - SelfBuild/Foundry/ColdUpdate: **CODE_PRESENT / TESTED / WIRED**. ColdUpdate
   rechaza antes de worktree/apply rutas fuera de su allowlist, cambios a
   `config/governance.json` y artefactos cuyo SHA-256 ya no coincide con la
-  propuesta; esa protección no prueba un build exitoso. El evento fresco fue
-  preflight bloqueado, no build exitoso.
+  propuesta. `ValidationRunner` ejecuta candidatos en Bwrap read-only/sin red
+  y no hereda secretos del host, pero la suite completa actual falla cerrada
+  por mmap Kuzu heredado; ninguna de estas protecciones prueba un build
+  exitoso. El evento fresco fue preflight bloqueado, no build exitoso.
 - SQLite/BlockMemory: **CODE_PRESENT / TESTED / WIRED**. El owner final y la
   promoción entre stores requieren operador.
 - Knowledge/Research: **CODE_PRESENT / TESTED / WIRED**; ticks base
@@ -227,6 +229,9 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 - **Aparcado:** Native research y surfaces de producto posteriores.
 - **Bloqueado:** Native Wave 5; cualquier debilitamiento de high; MCP remote
   executable auto-adoption.
+- **Bloqueado técnicamente:** promoción de validación completa ColdUpdate:
+  tests Kuzu heredados solicitan mmap de 8 TiB y requieren un perfil con límite
+  físico/cgroup antes de relajar o declarar suficiente el techo actual.
 - **Supersedido:** ADR-059 solo para UX final por ADR-071; ADR-066 solo en su
   framing F5/F6 por ADR-068, conservando parking; Hermes REST por ADR-070.
 - **No resuelto pero visible:** records derivados “recovered component

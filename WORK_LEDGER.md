@@ -8,6 +8,22 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — ValidationRunner de ColdUpdate contenido por Bwrap
+  (ADC-WO-118).** `pytest` y `mypy` de un candidato ya no arrancan mediante
+  `subprocess` del host: ejecutan en un worktree read-only, sin red y con
+  entorno explícito sin secretos heredados. El runner remapea `HOME` y
+  `ATLAS_HOME` a `/tmp`, impide overrides de cargador/Git, monta únicamente
+  runtime Python y los metadatos Git mínimos de un worktree enlazado (sin
+  `config` común) y falla cerrado si Bwrap falta. Seccomp sigue bloqueando
+  `clone3`; devuelve `ENOSYS` para que runtimes legítimos usen su fallback a
+  `clone`, sin conceder la syscall. Pruebas unitarias, Bwrap real, Git y Kuzu
+  focal pasaron. La suite completa del candidato continúa **fail-closed**:
+  varios tests heredados invocan `kuzu.Database()` con su mmap por defecto de
+  8 TiB, incompatible con el techo fijo de espacio de direcciones de 14 GiB.
+  No se quitó el límite ni se declaró un build exitoso. **Próxima acción:**
+  diseñar un perfil Kuzu determinista con límite físico/cgroup antes de
+  promover validación completa de ColdUpdate.
+
 - **2026-07-29 — intake de ColdUpdate cerrado sobre el artefacto revisado
   (ADC-WO-117).** La allowlist histórica de `src/`, `tests/`, `scripts/`,
   `docs/` y `config/` ahora se impone antes de crear un worktree y antes de

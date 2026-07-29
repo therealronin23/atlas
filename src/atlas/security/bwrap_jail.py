@@ -115,7 +115,7 @@ def _require_bwrap() -> str:
 # Slice 2 — seccomp-bpf blocklist (ADR-055)
 # ---------------------------------------------------------------------------
 # Allowlist sería más fuerte pero rompe el arranque de CPython (cientos de
-# syscalls). Esta es una BLOCKLIST honesta: deniega (EPERM) syscalls claramente
+# syscalls). Esta es una BLOCKLIST honesta: deniega syscalls claramente
 # peligrosas y deja pasar el resto. x86_64 únicamente; en otra arquitectura
 # build_seccomp_bpf lanza UnsupportedArchError y el jail corre SIN seccomp (el
 # resto del endurecimiento sigue) con warning — no se aplica un filtro con
@@ -124,6 +124,9 @@ def _require_bwrap() -> str:
 _AUDIT_ARCH_X86_64 = 0xC000003E
 _SECCOMP_RET_ALLOW = 0x7FFF0000
 _SECCOMP_RET_ERRNO_EPERM = 0x00050001  # RET_ERRNO | EPERM(1)
+# glibc/pthread probes clone3 first. Returning ENOSYS (rather than EPERM)
+# preserves its established fallback to clone while clone3 stays unavailable.
+_SECCOMP_RET_ERRNO_ENOSYS = 0x00050026  # RET_ERRNO | ENOSYS(38)
 _SECCOMP_RET_KILL_PROCESS = 0x80000000
 
 _BLOCKED_X86_64: tuple[int, ...] = (
@@ -164,7 +167,8 @@ def build_seccomp_bpf(blocked: tuple[int, ...] = _BLOCKED_X86_64) -> bytes:
     """Programa BPF (array de struct sock_filter) para bwrap --seccomp.
 
     Verifica arch==x86_64 (si no, KILL); por cada syscall bloqueada devuelve
-    EPERM; por defecto ALLOW. Lanza UnsupportedArchError fuera de x86_64.
+    EPERM excepto clone3, que devuelve ENOSYS para activar el fallback seguro
+    de runtimes; por defecto ALLOW. Lanza UnsupportedArchError fuera de x86_64.
     """
     import platform
     import struct
@@ -186,9 +190,14 @@ def build_seccomp_bpf(blocked: tuple[int, ...] = _BLOCKED_X86_64) -> bytes:
     prog += f(BPF_LD_W_ABS, 0, 0, 0)                        # [3] cargar nr
     m = len(blocked)
     for i, nr in enumerate(blocked):                        # [4..] bloqueadas → RET ERRNO final
-        prog += f(BPF_JEQ_K, m - i, 0, nr)
+        # clone3 remains unavailable. ENOSYS, unlike EPERM, makes glibc use
+        # its older clone fallback; this is needed by legitimate thread
+        # runtimes such as Kuzu without granting clone3 itself.
+        jump_to_errno = m + 1 - i if nr == 435 else m - i
+        prog += f(BPF_JEQ_K, jump_to_errno, 0, nr)
     prog += f(BPF_RET_K, 0, 0, _SECCOMP_RET_ALLOW)          # RET ALLOW (default)
     prog += f(BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO_EPERM)    # RET EPERM (destino de bloqueos)
+    prog += f(BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO_ENOSYS)   # RET ENOSYS (clone3)
     return prog
 
 

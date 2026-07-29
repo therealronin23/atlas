@@ -85,3 +85,20 @@ It does not weaken the existing Bwrap/AST Guard, validation, Decider, human
 approval, Merkle or rollback requirements; it gives those later gates the same
 reviewed artifact and prevents a patch from reaching them outside its allowed
 scope.
+
+## Candidate validation containment (2026-07-29)
+
+`ValidationRunner` is now the actual Bwrap caller for ColdUpdate validation:
+candidate `pytest` and `mypy` receive a read-only worktree, network-less
+namespace, explicit runtime mounts, ephemeral `HOME`/`ATLAS_HOME`, no inherited
+host environment, and no unsafe subprocess fallback. A linked worktree may
+expose only its required Git metadata and selected common Git object/ref paths;
+the common Git configuration is deliberately not mounted and Git prompts/global
+configuration are disabled.
+
+This proves containment for the focused cases exercised on 2026-07-29, not a
+successful self-build. The current full suite contains legacy direct Kuzu
+opens whose upstream default reserves an 8 TiB virtual mmap; with the runner's
+fixed 14 GiB address-space ceiling it fails closed. Removing that ceiling or
+calling the build successful requires a separate physical-resource/cgroup and
+Kuzu-profile decision.

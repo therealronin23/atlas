@@ -147,6 +147,15 @@ independientes**: ninguna confía en la otra.
   escribible explícito; entradas fuera del workspace se rechazan.
 - **Captura acotada.** stdout/stderr se respaldan por ficheros temporales y se
   limitan; se mantienen timeout y rlimits.
+- **Compatibilidad de runtime sin abrir `clone3`.** El filtro sigue denegando
+  `clone3`, pero devuelve `ENOSYS` en vez de `EPERM`; glibc/Kuzu usa entonces
+  su fallback previo a clone3. Una prueba real verifica tanto el `ENOSYS` como
+  que `ptrace` continúa en `EPERM`.
+- **ColdUpdate usa el jail para validar candidatos.** `ValidationRunner` monta
+  el worktree read-only, runtime explícito y metadatos Git mínimos; no hereda
+  ambiente/secretos del host y no tiene fallback a subprocess. Las pruebas
+  reales de Bwrap se omiten sólo cuando ya están dentro de ese jail, porque un
+  segundo user namespace no es una prueba válida del kernel exterior.
 - **Slice 2 parcial, no cerrado.** En x86_64 existe un filtro seccomp BPF de
   *denylist* para syscalls de alto riesgo. No es la allowlist propuesta en esta
   ADR y, fuera de x86_64, el jail continúa sin filtro seccomp con warning. La
@@ -177,5 +186,9 @@ independientes**: ninguna confía en la otra.
 - Un jail correcto NO resuelve canales laterales (timing, recursos compartidos).
   Para el modelo de amenaza de Atlas (ejecutar codegen propio bajo verificación,
   no malware activo de terceros) es suficiente; decirlo explícitamente.
+- El límite de espacio de direcciones de la validación ColdUpdate es fijo, no
+  un cgroup de memoria física. Los defaults mmap de Kuzu hacen fallar cerrada
+  la suite completa actual; no debe relajarse ni describirse como validación
+  completa hasta contar con un perfil Kuzu/cgroup verificable.
 - Esta ADR cubre **contención de ejecución**. La detección de *qué* se ejecutó y
   su evidencia siguen en la capa de transparencia (ADR-053) y antivirus (ADR-054).

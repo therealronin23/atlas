@@ -1110,6 +1110,53 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-118
+    program: P06
+    title: Contain ColdUpdate candidate validation in a fail-closed Bwrap jail
+    problem: ValidationRunner executed candidate pytest and mypy directly on the host while ADR-025/055 required an isolated, auditable candidate path; the prior Bwrap caller claim for ColdUpdate was not true at this boundary.
+    evidence:
+      - src/atlas/core/validation_runner.py invoked subprocess.run with os.environ.copy()
+      - focused real Bwrap checks reproduced a viable runtime mount, Kuzu thread fallback and linked-worktree Git path
+      - the full candidate suite fails closed when legacy direct Kuzu tests request the upstream 8 TiB default virtual mmap
+    source_decisions:
+      - ADR-025
+      - ADR-055
+      - CTR-THIRD-PARTY-FAIL-CLOSED
+      - CTR-LIVE-EVIDENCE
+    current_state: ValidationRunner constructs Bwrap lazily and has no host-process fallback. It mounts the candidate read-only plus required runtime and narrow linked-worktree Git metadata, supplies an explicit environment with ephemeral HOME/ATLAS_HOME, disables ambient Git config/prompting, disables pytest cache writes, and bounds CPU/address space. clone3 remains unavailable through seccomp but returns ENOSYS so legitimate pthread/Kuzu code falls back to clone. Unit and focused real-jail evidence pass; a full successful candidate build remains absent because legacy direct Kuzu defaults exceed the fixed address-space cap.
+    target_state: Every ColdUpdate candidate validation runs in a reproducible, fail-closed containment boundary with a separately accepted physical-resource/Kuzu profile for the full suite.
+    scope:
+      - ValidationRunner subprocess-to-Bwrap wiring
+      - explicit candidate environment and runtime mounts
+      - linked worktree Git metadata minimization
+      - seccomp clone3 compatibility without allowing clone3
+      - nested Bwrap test classification
+    files:
+      - src/atlas/core/validation_runner.py
+      - src/atlas/security/bwrap_jail.py
+      - tests/test_validation_runner.py
+      - tests/test_bwrap_jail.py
+      - docs/decisions/adr/adr_025_cold_update_manager.md
+      - docs/decisions/adr/adr_055_os_level_sandbox_jail.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_validation_runner.py tests/test_bwrap_jail.py -q
+      - MYPYPATH=src python -m mypy src/atlas/core/validation_runner.py src/atlas/security/bwrap_jail.py
+      - focused real Bwrap candidate Git, Kuzu and seccomp checks
+    risks:
+      - the current address-space ceiling is not a physical-memory cgroup
+      - a linked worktree necessarily exposes limited Git object/ref metadata to its own candidate tests
+      - a full candidate build is unavailable until Kuzu defaults receive a separately bounded validation profile
+    rollback: Revert the atomic validation-jail commit; this restores unsafe host subprocess validation and is not an operational fallback. No candidate worktree or proposal data is migrated.
+    dependencies: []
+    acceptance:
+      - missing Bwrap prevents candidate execution rather than falling back to host subprocess
+      - candidate environment excludes host secrets and protected loader/Git overrides
+      - linked-worktree Git test passes with common config absent
+      - clone3 remains unavailable while a real jail reports ENOSYS fallback
+      - focused tests and mypy pass; no full candidate build is claimed
+    operator_decision_required: false
+    status: DONE
+
   - id: ADC-WO-114
     program: P09
     title: Refresh definitive delivery evidence after governance hardening
