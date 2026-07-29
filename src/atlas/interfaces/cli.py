@@ -1203,25 +1203,43 @@ def f26_status(as_json: bool) -> None:
     "--doc-path", default=None,
     help="Doc fuente de la rúbrica (default: docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md).",
 )
+@click.option(
+    "--driver", type=click.Choice(["claude", "agentic"]), default="claude",
+    help=(
+        "Mecanismo de dispatch. 'claude' (default): `claude -p --model sonnet`, "
+        "requiere sesión OAuth viva. 'agentic': bucle de tool-calling de "
+        "InferenceHub sobre cualquier proveedor de .env con supports_tools "
+        "(Groq/OpenRouter/Gemini/NVIDIA) — no depende de Claude Code ni de "
+        "su credencial. Mismo grading (grade_f26_transcript) en ambos casos."
+    ),
+)
 @click.option("--json", "as_json", is_flag=True, help="Salida JSON completa del resultado.")
-def f26_run(doc_path: str | None, as_json: bool) -> None:
+def f26_run(doc_path: str | None, driver: str, as_json: bool) -> None:
     """Dispara F2.6: construye el prompt LEYENDO el doc fuente (nunca copiado
-    a mano) y lanza una sesión fría (`claude -p --model sonnet --output-format
-    stream-json --verbose`, hoy 401 por credencial revocada — fallo conocido,
-    se reporta estructurado, no se esconde). Guarda el transcript crudo
-    (JSONL) y, si el dispatch tuvo éxito, gradea la rúbrica
-    (`grade_f26_transcript`) y se AUTO-REGISTRA vía `record_f26_run` —
-    ya no hace falta un `atlas f26 record-run` manual después. Si el
-    dispatch falló, no hay transcript válido: no se gradea ni se registra
-    nada (falsearía un resultado que nunca ocurrió)."""
+    a mano) y lanza una sesión fría. Guarda el transcript crudo (JSONL) y, si
+    el dispatch tuvo éxito, gradea la rúbrica (`grade_f26_transcript`) y se
+    AUTO-REGISTRA vía `record_f26_run` — ya no hace falta un
+    `atlas f26 record-run` manual después. Si el dispatch falló, no hay
+    transcript válido: no se gradea ni se registra nada (falsearía un
+    resultado que nunca ocurrió)."""
     import os
 
     from atlas.core.self_maintenance.f26_gate import F26PromptExtractionError, run_f26
 
     root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
     doc = Path(doc_path).expanduser() if doc_path else None
+
+    dispatch = None
+    if driver == "agentic":
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        import subprocess
+
+        def dispatch(prompt: str, cwd: Path) -> subprocess.CompletedProcess[str]:  # noqa: A001
+            return agentic_dispatch(prompt, cwd)
+
     try:
-        record = run_f26(root, doc_path=doc)
+        record = run_f26(root, doc_path=doc, dispatch=dispatch)
     except F26PromptExtractionError as exc:
         console.print(f"[red]no se pudo construir el prompt de F2.6[/red]: {exc}")
         raise SystemExit(1) from exc
