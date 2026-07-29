@@ -261,6 +261,25 @@ class _UnavailableJail(_Jail):
         raise BwrapUnavailableError("no bubblewrap")
 
 
+class _FailingJail(_Jail):
+    def run_command(
+        self,
+        command: tuple[str, ...],
+        *,
+        working_dir: Path,
+        working_dir_writable: bool,
+        read_only_paths: tuple[Path, ...],
+        timeout_s: int,
+        extra_env: dict[str, str],
+    ) -> _JailResult:
+        self.timeline.append("jail")
+        return _JailResult(
+            returncode=1,
+            stdout="FAILED tests/test_example.py::test_example",
+            stderr="assertion failed",
+        )
+
+
 def test_missing_jail_is_reported_without_an_execution_claim(tmp_path: Path) -> None:
     from atlas.core.swarm_backend import WorktreeManager
 
@@ -344,3 +363,47 @@ def test_completion_audit_failure_never_promotes_a_completed_execution(tmp_path:
     assert report.test_exit == 0
     assert report.audit_start_hash
     assert report.audit_result_hash is None
+
+
+def test_only_audited_completed_reproduction_becomes_validation_capture(tmp_path: Path) -> None:
+    from atlas.core.swarm_backend import WorktreeManager
+
+    repo, candidate = _repository(tmp_path)
+    timeline: list[str] = []
+    runner = EngineeringReproductionRunner(
+        repo_root=repo,
+        worktrees=WorktreeManager(repo, worktrees_dir=tmp_path / "worktrees"),
+        audit=_Audit(timeline),
+        jail=_FailingJail(timeline),
+    )
+
+    report = runner.reproduce(_request(candidate))
+    validation = report.to_validation_report()
+
+    assert report.status is ReproductionStatus.FAILED
+    assert validation.passed is False
+    assert validation.pytest_exit == 1
+    assert validation.mypy_exit == 0
+    assert "assertion failed" in validation.pytest_summary
+
+
+def test_unreceipted_execution_cannot_become_validation_capture(tmp_path: Path) -> None:
+    from atlas.core.swarm_backend import WorktreeManager
+
+    repo, candidate = _repository(tmp_path)
+    timeline: list[str] = []
+    runner = EngineeringReproductionRunner(
+        repo_root=repo,
+        worktrees=WorktreeManager(repo, worktrees_dir=tmp_path / "worktrees"),
+        audit=_Audit(timeline, fail_on=2),
+        jail=_FailingJail(timeline),
+    )
+
+    report = runner.reproduce(_request(candidate))
+
+    try:
+        report.to_validation_report()
+    except ValueError as exc:
+        assert "audited completed" in str(exc)
+    else:
+        raise AssertionError("unreceipted execution became validation evidence")

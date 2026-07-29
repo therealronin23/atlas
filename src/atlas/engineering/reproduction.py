@@ -20,6 +20,7 @@ from typing import Any, Protocol
 
 from atlas.core.git_checkpoint import is_ephemeral_worktree
 from atlas.core.git_env import clean_git_env
+from atlas.core.validation_runner import ValidationReport
 from atlas.security.bwrap_jail import BwrapJail, BwrapUnavailableError
 
 
@@ -65,6 +66,36 @@ class EngineeringReproductionReport:
     audit_start_hash: str | None
     audit_result_hash: str | None
     reason: str = ""
+
+    def to_validation_report(self) -> ValidationReport:
+        """Expose an audited test capture to the existing diagnostic seam.
+
+        The returned report is intentionally in-memory.  The diagnostic
+        coordinator remains responsible for redacting and reducing it before
+        anything becomes a persistent EngineeringFinding.
+        """
+
+        if (
+            not self.execution_completed
+            or self.audit_result_hash is None
+            or self.status not in {ReproductionStatus.PASSED, ReproductionStatus.FAILED}
+            or self.test_exit is None
+        ):
+            raise ValueError(
+                "only an audited completed reproduction can become a validation capture"
+            )
+        pytest_summary = "\n".join(
+            part for part in (self.stdout, self.stderr) if part
+        )
+        return ValidationReport(
+            passed=self.status is ReproductionStatus.PASSED,
+            pytest_exit=self.test_exit,
+            mypy_exit=0,
+            pytest_summary=pytest_summary,
+            mypy_summary="",
+            duration_s=round((self.duration_ms or 0) / 1000, 3),
+            errors=[] if self.test_exit == 0 else ["pytest failed"],
+        )
 
 
 class _WorktreeManagerLike(Protocol):

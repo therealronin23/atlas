@@ -79,7 +79,9 @@ Registra metadata mínima en Merkle antes y después; si el audit inicial falla 
 crea worktree, y si falta el receipt final el resultado no es promocionable. No
 aplica diffs, no usa `ColdUpdate`, no crea Task ni persiste stdout/stderr: el
 llamador debe pasar cualquier evidencia a la capa diagnóstica que ya redacta
-antes de journal.
+antes de journal. Sólo un resultado completado con receipt final puede
+convertirse a `ValidationReport` en memoria para el `EngineeringDiagnosticCoordinator`;
+sin ese receipt no existe captura diagnóstica reutilizable.
 
 ## Boundary
 

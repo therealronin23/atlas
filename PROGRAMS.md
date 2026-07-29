@@ -452,7 +452,8 @@ gobernado, Orchestrator y superficie de producto.
 un único target pytest validado sobre un commit inmutable. El worktree debe
 pertenecer al mismo repositorio, es read-only dentro del jail sin red y el
 intento se registra en Merkle antes de ejecutar; sin receipt final no promueve
-el resultado. No aplica patches ni persiste salida de test.
+el resultado. Sólo entonces puede convertir la captura en el `ValidationReport`
+en memoria que consume diagnóstico; no aplica patches ni persiste salida de test.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,
 evaluación independiente, SLO/telemetría y recuperación no-LLM.

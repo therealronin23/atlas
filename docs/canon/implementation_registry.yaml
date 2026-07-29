@@ -457,7 +457,7 @@ work_orders:
     source_decisions:
       - ADR-078
       - approved Workbench symbiosis design section 6
-    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, an EngineeringReviewCoordinator composed over UniversalVerifier, a capture-only EngineeringDiagnosticCoordinator composed over ValidationReport and an injected RootCauseClassifier, an opt-in Merkle-before-EventBus publisher, an explicit-acceptance baseline journal/selector, an ancestry-verified read-only Git diff preparer/runner composed over the existing coordinator, an exact-key incremental normalizer that never alters lifecycle, and an audited fail-closed Bwrap reproduction runner over immutable same-repository worktrees are code-present and tested; graph/history/memory hypotheses, correction production, runtime event wiring, Orchestrator integration, and a read-only API projection remain absent.
+    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, an EngineeringReviewCoordinator composed over UniversalVerifier, a capture-only EngineeringDiagnosticCoordinator composed over ValidationReport and an injected RootCauseClassifier, an opt-in Merkle-before-EventBus publisher, an explicit-acceptance baseline journal/selector, an ancestry-verified read-only Git diff preparer/runner composed over the existing coordinator, an exact-key incremental normalizer that never alters lifecycle, and an audited fail-closed Bwrap reproduction runner over immutable same-repository worktrees that exposes only receipted in-memory ValidationReport capture to diagnosis are code-present and tested; graph/history/memory hypotheses, correction production, runtime event wiring, Orchestrator integration, and a read-only API projection remain absent.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -497,6 +497,7 @@ work_orders:
       - incremental runner delegates only verified pending deltas to the existing coordinator
       - exact-key incremental comparison never infers resolution or writes a finding journal
       - reproduction permits only immutable commits and restricted pytest targets in an audited read-only Bwrap worktree
+      - only a completed reproduction with a final audit receipt converts to ValidationReport for existing diagnostic composition
       - deterministic complete and incremental review
       - finding deduplication and lifecycle
       - BLOCKING and MAJOR elevation

@@ -34,7 +34,8 @@ de escribir: `atlas reality --json`.
   resolución. `EngineeringReproductionRunner` reusa worktree efímero y Bwrap
   read-only/sin red para pytest restringido sobre commits inmutables; Merkle
   debe registrar inicio y cierre, y la salida queda sólo en memoria. No usa
-  ColdUpdate ni aplica patches. **Próxima acción:** definir hipótesis de
+  ColdUpdate ni aplica patches; sólo un receipt final permite convertirla al
+  `ValidationReport` del diagnóstico existente. **Próxima acción:** definir hipótesis de
   grafo/historial/memoria sin abrir los boundaries reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión

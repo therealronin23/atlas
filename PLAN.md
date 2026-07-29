@@ -181,6 +181,8 @@ como `RESOLVED`, ni se escribe el journal.
 commits inmutables en un worktree efímero del mismo repositorio y jail Bwrap de
 solo lectura/sin red. Es fail-closed si falta Merkle o el jail; sus outputs son
 efímeros y no entran en la cadena ni en un finding sin el sanitizador diagnóstico.
+Sólo una ejecución completada y recibida puede proyectarse en memoria al
+`ValidationReport` ya consumido por el coordinador de diagnóstico.
 
 ### Cut 2 — convergencia desktop integral
 
