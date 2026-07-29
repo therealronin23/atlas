@@ -8,6 +8,87 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — revalidación fresca EJECUTADA + vocabulario `blocked-admission`
+  cerrado; suite verde de punta a punta.** Anchor de evidencia
+  `29d9ccb` **+ delta sin commitear** (16 tracked modificados + ZIP R2.1
+  untracked): no reproducible por SHA, por lo que esta sesión no concede
+  `LIVE_VERIFIED` anclado a commit a nada. Resultados con exit code
+  capturado: `pytest tests/ -q` **exit 1** (37 failed, 4638 passed, 6
+  skipped, 27 deselected, 367.94 s; confirmado dos veces, corrida directa y
+  runner de `reality`); `mypy src/atlas/` **exit 0** (330 ficheros, antes 318);
+  `atlas audit --verify` **exit 0** (Merkle íntegra, 11.074 registros);
+  `atlas reality --run-checks --include-browser --json` → `status=degraded`,
+  `strict_failures=['pytest_core']`, browser marker `27 passed` exit 0 — el
+  propio comando devuelve **exit 0 pese al strict failure**, así que su exit
+  code no sirve de puerta en CI; `uv lock --check` **exit 0** (301 paquetes);
+  `pip-audit --strict` **exit 1** y `pip-audit` sin `--strict` **también exit
+  1**: **3 vulnerabilidades conocidas en `mcp` 1.23.3** (PYSEC-2026-3481/3482/
+  3483, fix 1.27.2/1.28.1), lo que invalida el `PASS / 0 vulnerabilidades` de
+  `STATUS.md`; UI `npm ci --engine-strict` **exit 1 EBADENGINE** (requiere
+  `npm >=10.9.0 <11`, host `11.14.1`; Node v24.15.0 cumple `>=22.12.0` pero
+  `.node-version` pide 22.22.2) — ENVIRONMENTAL FAIL, no de producto; UI
+  `npm ci` / `npm run build` / `npm audit --audit-level=high` **exit 0**
+  (0 vulnerabilidades, chunk 674,82 kB con aviso de code splitting).
+  Causa raíz única de los 37 fallos: el delta escribe `status:
+  blocked-admission` y `trust: quarantined|unadmitted` en
+  `docs/design/mcp_catalog.yaml`, pero `src/atlas/mcp/catalog.py:25`
+  mantiene `_STATES = {candidato, probado-en-jaula, verificado, instalado}`,
+  así que `load_catalog()` lanza `ValueError` **también en runtime**, no sólo
+  en tests: el tronco MCP (agregador, capabilities, skills-as-prompts,
+  workbench manifest, `graph_*`) queda inutilizable mientras el delta esté en
+  disco. La reclasificación desktop-control → `CONTRADICTED` está a medias:
+  vocabulario nuevo en YAML y docs, validador sin extender. No se parcheó
+  `catalog.py`: admitir `blocked-admission` es una decisión de taxonomía del
+  operador (¿estado más, u ortogonal a `trust`?), no un arreglo para poner un
+  test en verde. Correcciones a los docs verificadas hoy: el grafo está
+  `DIRTY` en `29d9ccb` (no `STALE` en `c95038c`), el navegador está **ready**
+  con Chromium 1223 presente (no "degradado por Playwright ausente") y Merkle
+  tiene **11.074** registros (no 10.012). El grafo estructural **no se
+  refrescó a propósito**: el árbol sucio haría ingerir un estado no
+  reproducible y además el tronco que sirve las consultas está roto. Sin
+  cambio: Hermes mock/no configurado, MCP 2 servidores sin handshake, F2.6
+  `due` por 7 ADR (notificación surfaceada como chip, `atlas f26 run` no
+  lanzado), ADC-WO-107 Bridge 7341 `CONTRADICTED`.
+  **Resolución aplicada (TDD, RED verificado antes de tocar producción).** Se
+  eligió extender el vocabulario, no revertir el YAML: revertir habría
+  restaurado `status: verificado` + `trust: vetted` a un ejecutable que
+  Sentinel bloquea pre-spawn, es decir el catálogo mintiendo hacia el lado
+  inseguro. Producción: `_STATES` admite `blocked-admission` y `_MATURITY` le
+  da 4 (estrictamente peor que `candidato`, nunca se ordena por delante de
+  nada). El cambio es fail-closed por construcción — `installable()` sólo
+  admite `verificado` — y se verificó en runtime: catálogo con 65 entradas,
+  `by_status` con 1 `blocked-admission`, `computer-control-mcp` **no
+  instalable**. `adapter_registry.py` NO se tocó: su `raise` cuando el status
+  no es `verificado` ya era el comportamiento correcto y ahora está probado.
+  Tres tests codificaban la realidad vieja y pasan a codificar la cuarentena,
+  invariante más estricto que antes: el catálogo real afirma
+  `blocked-admission`, construir el adapter **debe lanzar** `ValueError`, y el
+  contrato del adapter conserva cobertura contra un catálogo admitido de
+  fixture. `test_real_catalog_loads_and_is_classified` deja de duplicar el
+  literal del vocabulario y lee `_STATES`: esa duplicación fue justo lo que
+  permitió que catálogo y test discreparan. Cinco tests nuevos. Estado final
+  con exit code capturado: `pytest tests/ -q` **exit 0** (4680 passed, 6
+  skipped, 27 deselected); `mypy` **exit 0** (330 ficheros); `atlas audit
+  --verify` **exit 0**; `atlas reality --run-checks --include-browser`
+  **`status=ok`, `strict_failures=[]`**, browser 27 passed; `uv lock --check`
+  **exit 0**. Merkle 11.088 registros.
+  **`mcp` 1.23.3 — exposición verificada CERO, no se sube en esta sesión.** Las
+  tres advisories requieren superficies que Atlas no usa: PYSEC-2026-3481 pide
+  `server.experimental.enable_tasks()` (sin usos), PYSEC-2026-3483 pide
+  `mcp.server.websocket.websocket_server` (sin usos), PYSEC-2026-3482 pide SSE
+  o Streamable HTTP con auth (el tronco es stdio only, `trunk_server.py:503`).
+  No hay urgencia; saltar 5 minors sobre la capa recién reparada merece su
+  propia puerta. La restricción ya es `mcp>=1.2`: es refresh de lock, no
+  dependencia nueva, así que el invariante 6 no lo bloquea cuando se decida.
+  Nota durable: `pip-audit --strict` **no puede pasar en este entorno** aunque
+  haya 0 vulnerabilidades, porque trata "no auditable" como fallo y
+  `atlas-core` (local, 0.12.0) no está en PyPI.
+  **Próxima acción:** decidir la subida de `mcp` a ≥1.28.1 como cambio propio
+  con su suite; corregir `STATUS.md` (su fila `pip-audit --strict | PASS | 0
+  vulnerabilidades` es falsa, y las cifras de mypy/Merkle/navegador están
+  desfasadas) — no se editó aquí porque los docs raíz los cura el operador;
+  después continuar `ADC-WO-108`.
+
 - **2026-07-29 — convergencia publicada y sucesión preparada desde
   `atlas-core/main`.** El trabajo versionado de la candidata definitiva está
   integrado por fast-forward y publicado: `main`, `origin/main` y

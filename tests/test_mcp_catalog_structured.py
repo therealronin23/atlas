@@ -119,9 +119,13 @@ def test_real_catalog_loads_and_is_classified() -> None:
     # Dominios humanos autoexplicativos (v3).
     for required in ("programacion", "diseno", "ciberseguridad", "conocimiento-memoria", "infraestructura"):
         assert required in tax, f"falta sector {required}"
-    # Toda entrada tiene un sector y un estado válido.
+    # Toda entrada tiene un sector y un estado válido. El vocabulario se lee de
+    # `_STATES`, no se duplica: duplicarlo ya provocó que el catálogo aceptara un
+    # estado que este test rechazaba (y al revés).
+    from atlas.mcp.catalog import _STATES
+
     for e in entries:
-        assert e.sector and e.status in {"candidato", "probado-en-jaula", "verificado", "instalado"}
+        assert e.sector and e.status in _STATES
 
 
 def test_real_catalog_verified_are_vetted_and_installable() -> None:
@@ -487,3 +491,69 @@ def test_dedupe_by_kind_name_same_name_different_kind_not_deduped(tmp_path: Path
     entries = [_e("mcp", "Foo"), _e("skill", "Foo")]
     result = dedupe_by_kind_name(entries)
     assert len(result) == 2
+
+
+# ---------------------------------------------------------------------------
+# `blocked-admission`: estado de cuarentena (ADC-WO-116/124)
+#
+# Una entrada que estuvo admitida y luego queda bloqueada pre-spawn NO es
+# `candidato` (eso subestimaría el bloqueo) ni `verificado` (mentiría en la
+# dirección insegura). Es su propio estado, y debe ser estrictamente el peor.
+# ---------------------------------------------------------------------------
+
+_BLOCKED_SAMPLE = """
+sectors:
+  infra:
+    label: Infraestructura
+    entries:
+      - name: quarantined-thing
+        kind: mcp
+        purpose: bloqueado pre-spawn
+        source: ""
+        install: "run-me"
+        trust: quarantined
+        status: blocked-admission
+      - name: ok-thing
+        kind: mcp
+        purpose: admitido
+        source: ""
+        install: "run-me"
+        trust: vetted
+        status: verificado
+"""
+
+
+def test_load_catalog_accepts_blocked_admission_status(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import load_catalog
+
+    p = tmp_path / "b.yaml"
+    p.write_text(_BLOCKED_SAMPLE, encoding="utf-8")
+    by_name = {e.name: e for e in load_catalog(p)}
+    assert by_name["quarantined-thing"].status == "blocked-admission"
+
+
+def test_blocked_admission_is_never_installable(tmp_path: Path) -> None:
+    from atlas.mcp.catalog import installable, load_catalog
+
+    p = tmp_path / "b.yaml"
+    p.write_text(_BLOCKED_SAMPLE, encoding="utf-8")
+    names = {e.name for e in installable(load_catalog(p))}
+    assert names == {"ok-thing"}
+
+
+def test_blocked_admission_ranks_strictly_worse_than_candidato() -> None:
+    """Un bloqueado nunca debe ordenarse por delante de un simple candidato."""
+    from atlas.mcp.catalog import _MATURITY
+
+    assert _MATURITY["blocked-admission"] > _MATURITY["candidato"]
+
+
+def test_real_catalog_computer_control_is_quarantined_not_verified() -> None:
+    """ADC-WO-124: el ejecutable sigue en cuarentena; el catálogo no debe
+    reclamar `verificado` mientras Sentinel lo bloquee pre-spawn."""
+    from atlas.mcp.catalog import installable, load_catalog
+
+    entries = load_catalog(_CATALOG)
+    entry = next(e for e in entries if e.name == "computer-control-mcp")
+    assert entry.status == "blocked-admission"
+    assert entry.name not in {e.name for e in installable(entries)}

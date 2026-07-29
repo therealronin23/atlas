@@ -22,7 +22,12 @@ from typing import Any
 
 import yaml
 
-_STATES = {"candidato", "probado-en-jaula", "verificado", "instalado"}
+# `blocked-admission`: estuvo admitido y ahora está bloqueado pre-spawn a la
+# espera de artefacto/hash/scan/aislamiento/receipt (ADC-WO-116/124). No es
+# `candidato` (subestimaría el bloqueo) ni `verificado` (mentiría hacia el lado
+# inseguro). Fail-closed por construcción: `installable()` sólo admite
+# `verificado`, así que un bloqueado nunca se instala ni se ofrece como usable.
+_STATES = {"candidato", "probado-en-jaula", "verificado", "instalado", "blocked-admission"}
 # Taxonomía completa de "líneas" del ecosistema de extensión (2026): cada kind es
 # una línea propia del catálogo (StormMCP por línea).
 _KINDS = {
@@ -141,7 +146,11 @@ def load_taxonomy(path: Path) -> dict[str, Any]:
     return out
 
 
-_MATURITY = {"instalado": 0, "verificado": 1, "probado-en-jaula": 2, "candidato": 3}
+_MATURITY = {
+    "instalado": 0, "verificado": 1, "probado-en-jaula": 2, "candidato": 3,
+    # estrictamente el peor: un bloqueado no se ordena por delante de nada
+    "blocked-admission": 4,
+}
 
 
 def find(

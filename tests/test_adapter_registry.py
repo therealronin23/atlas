@@ -109,20 +109,44 @@ def test_registry_rejects_unknown_extra_field() -> None:
 
 def test_computer_control_mcp_adapter_matches_real_catalog_entry() -> None:
     """El catálogo real (docs/design/mcp_catalog.yaml) sigue teniendo la
-    entrada computer-control-mcp, verificada — si esto cambia, el wiring de
-    t3-3 debe revisarse, no servir un adapter obsoleto en silencio."""
+    entrada computer-control-mcp, pero ADC-WO-116/124 la dejan en cuarentena
+    pre-spawn: su estado es `blocked-admission`, no `verificado`. Este test es
+    la trampa que obliga a revisar el wiring de t3-3 si el estado se mueve, en
+    vez de servir un adapter obsoleto en silencio."""
     from atlas.mcp.catalog import load_catalog
 
     entries = load_catalog(CATALOG_PATH)
     entry = next((e for e in entries if e.name == "computer-control-mcp"), None)
     assert entry is not None
-    assert entry.status == "verificado"
+    assert entry.status == "blocked-admission"
     assert entry.kind == "mcp"
 
 
-def test_computer_control_mcp_adapter_validates_via_registry() -> None:
+def test_computer_control_mcp_adapter_refuses_while_quarantined() -> None:
+    """Mientras la entrada esté bloqueada, construir el adapter debe fallar
+    ruidosamente. Servirlo sería confiar en una integración que Sentinel
+    bloquea pre-spawn."""
+    with pytest.raises(ValueError, match="blocked-admission"):
+        computer_control_mcp_adapter(CATALOG_PATH)
+
+
+def test_computer_control_mcp_adapter_validates_via_registry(tmp_path: Path) -> None:
+    """El contrato del adapter sigue siendo válido cuando la entrada SÍ está
+    admitida: se prueba contra un catálogo `verificado` explícito, para no
+    perder cobertura del contrato mientras el catálogo real está en cuarentena."""
+    admitted = tmp_path / "mcp_catalog.yaml"
+    admitted.write_text(
+        "sectors:\n"
+        "  infraestructura:\n"
+        "    label: Infraestructura\n"
+        "    entries:\n"
+        "      - {name: computer-control-mcp, kind: mcp, subsector: escritorio,"
+        " install: \"env DISPLAY=:99 computer-control-mcp\", transport: stdio,"
+        " trust: vetted, purpose: \"GUI contra Xvfb :99\", status: verificado}\n",
+        encoding="utf-8",
+    )
     registry = AdapterRegistry()
-    adapter = registry.register(computer_control_mcp_adapter(CATALOG_PATH))
+    adapter = registry.register(computer_control_mcp_adapter(admitted))
     assert adapter.provider_type == ProviderType.MCP
     assert adapter.sandbox_required is True
     assert adapter.risk_profile in {Risk.LOW, Risk.MEDIUM, Risk.HIGH}
