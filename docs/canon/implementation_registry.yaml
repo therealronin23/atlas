@@ -457,7 +457,7 @@ work_orders:
     source_decisions:
       - ADR-078
       - approved Workbench symbiosis design section 6
-    current_state: Specialized findings and verification loops exist without one serializable projection or end-to-end Orchestrator channel.
+    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, and a SelfAuditFinding adapter are code-present and tested; ReviewCoordinator, DiagnosticCoordinator, Merkle/event routing, Orchestrator integration, and a read-only API projection remain absent.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -467,9 +467,11 @@ work_orders:
       - read-only projection
     files:
       - schemas/engineering_finding.schema.json
-      - src/atlas/
-      - tests/
+      - src/atlas/engineering/findings.py
+      - tests/test_engineering_findings.py
+      - docs/design/engineering_finding_contract.md
     tests:
+      - versioned contract/schema parity
       - deterministic complete and incremental review
       - finding deduplication and lifecycle
       - BLOCKING and MAJOR elevation
@@ -479,13 +481,13 @@ work_orders:
       - leaking secrets in findings
     rollback: Disable coordinator wiring while preserving specialized verifiers and immutable findings.
     dependencies:
-      - operator acceptance of ATLAS DEFINITIVE CANDIDATE
+      - operator execution authorization recorded in WORK_LEDGER.md on 2026-07-29
     acceptance:
       - one versioned finding contract
       - failed reviewers produce UNKNOWN
       - proposals still pass governed approval paths
     operator_decision_required: false
-    status: BLOCKED
+    status: READY
 
   - id: ADC-WO-109
     program: P08

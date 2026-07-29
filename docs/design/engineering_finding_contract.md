@@ -1,0 +1,51 @@
+# EngineeringFinding v1 — contrato de proyección interna
+
+**Autoridad.** ADR-078 y
+`docs/superpowers/specs/2026-07-28-atlas-lineage-workbench-symbiosis-design.md`
+§6.1. Este documento describe el primer subcorte de `ADC-WO-108`; no sustituye
+los tipos especializados ni autoriza efectos.
+
+## Current (2026-07-29)
+
+`schemas/engineering_finding.schema.json` y
+`atlas.engineering.findings.EngineeringFinding` definen un contrato v1
+serializable con identidad, revisión, fuente, severidad, lifecycle, ubicación,
+evidencia, reproducción, acción sugerida y referencia opaca de patch.
+
+`EngineeringFindingStore` recibe un path de runtime del llamador y conserva un
+journal JSONL append-only. Repetir la misma `dedupe_key` devuelve el finding
+original sin crear una alerta nueva; toda transición de estado conserva el
+snapshot anterior y exige una razón. El store no recibe un root de repositorio
+ni abre `patch_ref`, por lo que no puede aplicar un patch estructuralmente.
+
+`from_self_audit_finding()` proyecta el tipo existente `SelfAuditFinding` sin
+modificarlo. Sólo la severidad `critical` de self-audit se normaliza a
+`BLOCKING`; el routing, Merkle y cualquier elevación posterior pertenecen a un
+coordinador y a Policy, no al adaptador.
+
+## Boundary
+
+Un finding es una observación con procedencia. No es una prueba automática, una
+propuesta aprobada, un permiso ni un efecto. Sus estados son `OPEN`,
+`ACKNOWLEDGED`, `FIX_PROPOSED`, `RESOLVED`, `DISMISSED` y `BLOCKED`; la
+transición persistida no ejecuta ninguna acción ni sustituye los gates de
+aprobación.
+
+Los campos requeridos, incluidos los que todavía no se conocen, aparecen como
+valor explícito o `null`. Así un cliente no puede convertir por omisión la
+ausencia de `task_id`, SHA o patch en un hecho positivo.
+
+## Transition
+
+El siguiente subcorte de `ADC-WO-108` compone los verificadores deterministas
+existentes en un `EngineeringReviewCoordinator`, conserva `UNKNOWN` de
+revisores fallidos y añade deduplicación incremental. `DiagnosticCoordinator`,
+eventos Merkle, routing hacia Orchestrator y una proyección read-only esperan
+sus contratos y la frontera durable Mission/Task; no se declaran implementados
+por este contrato.
+
+## Rollback
+
+Desconectar el futuro coordinador o sus llamadores deja intactos los
+verificadores especializados. El journal existente permanece como evidencia
+append-only; no se reescribe ni se convierte en autorización de patch.

@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — comenzó el Cut 1 interno autorizado por el operador
+  (ADC-WO-108).** La instrucción explícita de ejecutar el plan desbloquea este
+  corte, pero no eleva la candidata a `ATLAS CANON ACCEPTED` ni modifica los
+  límites Mission/Task, memoria, 7341, Native, Hermes u Osmosis. Ya existe el
+  contrato `EngineeringFinding` v1, schema, journal append-only/deduplicado y
+  adaptador de `SelfAuditFinding`; las pruebas focalizadas y mypy del módulo se
+  ejecutaron localmente. No hay aún ReviewCoordinator, DiagnosticCoordinator,
+  eventos/Merkle, routing a Orchestrator, API, runtime configurado ni producto.
+  **Próxima acción:** componer revisión determinista sobre verificadores
+  existentes manteniendo `UNKNOWN` explícito y sin aplicación de patches.
+
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
   local (ADC-WO-114/116).**
   `codex/atlas-definitive-integration-20260728-230000` conserva el checkout

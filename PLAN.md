@@ -155,6 +155,12 @@ diagnóstico automático con el orquestador. Debe producir alertas tipadas,
 deduplicables, atribuibles y accionables sin conceder a la UI permiso de
 ejecución.
 
+El primer subcorte (2026-07-29) ya fija el schema v1, journal append-only,
+deduplicación y adaptación de self-audit. Puede existir antes de un owner
+durable Mission/Task porque no posee Task ni produce efectos. Coordinadores,
+Merkle, Orchestrator y proyección siguen condicionados por esos boundaries y
+no se infieren como implementados.
+
 ### Cut 2 — convergencia desktop integral
 
 `ADC-WO-109` mueve/adapta el trabajo útil de CodeOSS/VSCodium y Void, y
@@ -236,7 +242,7 @@ pregunta empírica; tampoco autoriza Native.
 | Destilación privada→shared no universal | P04/P05 | contrato y pipeline después del ADR de memoria |
 | LivingGraph sin importadores | P08 | decidir integrar o archivar; no llamarlo productivo |
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
-| Plano findings/review/debug | P03/P08/P09 | ADC-WO-108, después de aceptar la candidata |
+| Plano findings/review/debug | P03/P08/P09 | contrato/journal SelfAudit presentes; falta ReviewCoordinator, diagnóstico, routing, Merkle y proyección gobernada (`ADC-WO-108`) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
 | Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |

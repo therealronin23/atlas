@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas.local/schemas/engineering_finding.schema.json",
+  "title": "AtlasEngineeringFinding",
+  "description": "A serializable, evidence-bearing projection for engineering review and diagnosis. A finding is not a patch application or approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "run_id",
+    "task_id",
+    "repository",
+    "base_revision",
+    "candidate_revision",
+    "source",
+    "category",
+    "severity",
+    "status",
+    "summary",
+    "detail",
+    "locations",
+    "evidence",
+    "reproduction",
+    "suggested_action",
+    "patch_ref",
+    "dedupe_key",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^finding_[A-Za-z0-9_-]+$"},
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": ["string", "null"]},
+    "repository": {"type": "string", "minLength": 1},
+    "base_revision": {"type": ["string", "null"]},
+    "candidate_revision": {"type": ["string", "null"]},
+    "source": {"type": "string", "minLength": 1},
+    "category": {"type": "string", "minLength": 1},
+    "severity": {"type": "string", "enum": ["INFO", "MINOR", "MAJOR", "BLOCKING"]},
+    "status": {"type": "string", "enum": ["OPEN", "ACKNOWLEDGED", "FIX_PROPOSED", "RESOLVED", "DISMISSED", "BLOCKED"]},
+    "summary": {"type": "string", "minLength": 1},
+    "detail": {"type": "string", "minLength": 1},
+    "locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "start_line": {"type": ["integer", "null"], "minimum": 1},
+          "end_line": {"type": ["integer", "null"], "minimum": 1},
+          "column": {"type": ["integer", "null"], "minimum": 1}
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "reference"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "reference": {"type": "string", "minLength": 1},
+          "detail": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "reproduction": {"type": ["string", "null"]},
+    "suggested_action": {"type": ["string", "null"]},
+    "patch_ref": {"type": ["string", "null"]},
+    "dedupe_key": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "minLength": 1},
+    "updated_at": {"type": "string", "minLength": 1},
+    "risk": {"type": "string", "enum": ["none", "low", "medium", "high", "critical"], "default": "none"},
+    "owner": {"type": ["string", "null"], "default": null},
+    "approval_ref": {"type": ["string", "null"], "default": null}
+  }
+}
