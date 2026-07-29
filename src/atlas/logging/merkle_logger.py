@@ -105,6 +105,7 @@ AUDIT_ACTIONS = {
     "memory.block.created", "memory.block.edited", "memory.block.deleted",
     "config.changed",
     "session.started", "session.ended",
+    "engineering.finding.recorded", "engineering.review.completed",
     "chain.rotated", "chain.repaired",
 }
 

@@ -162,9 +162,11 @@ un `ValidationReport` existente, compone el `RootCauseClassifier` inyectado,
 normaliza la clasificación y persiste sólo evidencia estructurada segura, no
 salida cruda ni texto libre del clasificador.
 Puede existir antes de un owner durable Mission/Task porque no posee Task ni
-produce efectos. Reproducción aislada, hipótesis de grafo/historial/memoria,
-producción/validación de correcciones, baseline incremental, Merkle, Orchestrator
-y proyección siguen ausentes y no se infieren como implementados.
+produce efectos. Un publisher opt-in ya registra finding/review metadata en
+Merkle antes de emitir eventos tipados al `EventBus`; tampoco crea Tasks ni
+llama al Orchestrator. Reproducción aislada, hipótesis de grafo/historial/memoria,
+producción/validación de correcciones, baseline incremental, wiring de runtime,
+Orchestrator y proyección siguen ausentes y no se infieren como implementados.
 
 ### Cut 2 — convergencia desktop integral
 
@@ -247,7 +249,7 @@ pregunta empírica; tampoco autoriza Native.
 | Destilación privada→shared no universal | P04/P05 | contrato y pipeline después del ADR de memoria |
 | LivingGraph sin importadores | P08 | decidir integrar o archivar; no llamarlo productivo |
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
-| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator determinista y diagnóstico de captura/clasificación presentes; faltan reproducción aislada, baseline incremental, routing, Merkle y proyección gobernada (`ADC-WO-108`) |
+| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico de captura/clasificación y publisher Merkle/EventBus code+tests presentes; faltan reproducción aislada, baseline incremental, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
 | Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |

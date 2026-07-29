@@ -434,8 +434,11 @@ aporta schema, journal append-only, deduplicación, adaptación de self-audit,
 revisión determinista sobre `UniversalVerifier` y diagnóstico de un
 `ValidationReport` capturado mediante un `RootCauseClassifier` inyectado. La
 clasificación preserva `UNKNOWN`, no guarda salida cruda ni texto libre del
-clasificador y no ejecuta reparación. Aún faltan reproducción aislada, hipótesis de grafo/historial/memoria,
-Merkle/event routing, Orchestrator y superficie de producto.
+clasificador y no ejecuta reparación.
+El publisher opt-in de findings/reviews obtiene primero un receipt Merkle y sólo
+después emite metadata mínima al `EventBus`; no está inyectado en runtime ni
+rutea al Orchestrator. Aún faltan reproducción aislada, hipótesis de
+grafo/historial/memoria, wiring gobernado, Orchestrator y superficie de producto.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,
 evaluación independiente, SLO/telemetría y recuperación no-LLM.

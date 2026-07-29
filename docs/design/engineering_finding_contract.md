@@ -40,6 +40,14 @@ journal. La clasificación y el uso de modelo quedan como evidencia estructurada
 no sólo texto. El llamador conserva la política que decide si el
 clasificador puede usar un modelo; el coordinador no configura proveedores.
 
+`EngineeringEventPublisher` es un bridge opt-in: antes de publicar
+`engineering.finding` o `engineering.review_completed` en el `EventBus`,
+escribe un receipt en Merkle. Su payload se limita a identidad, revisión,
+estado, severidad, conteos y riesgo; no lleva diff, detalle, evidencia, patch o
+recomendación. Si Merkle falla, el evento no se publica. El bridge no crea Task,
+no contacta al Orchestrator y no convierte el hash incluido como metadata en una
+referencia de auditoría verificable para la UI.
+
 ## Boundary
 
 Un finding es una observación con procedencia. No es una prueba automática, una
@@ -56,8 +64,8 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 
 El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
 última revisión aceptada y reproducción aislada con hipótesis de
-grafo/historial/memoria. Eventos Merkle, routing hacia Orchestrator, producción
-y validación de correcciones y una proyección read-only esperan sus contratos y
+grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
+producción y validación de correcciones y una proyección read-only esperan sus contratos y
 la frontera durable Mission/Task; no se declaran implementados por este
 contrato.
 

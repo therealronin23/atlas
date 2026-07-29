@@ -19,9 +19,12 @@ de escribir: `atlas reality --json`.
   diagnóstico normaliza categorías, conserva `UNKNOWN`, descarta paths no
   relativos y no copia salida cruda ni texto libre del clasificador al journal;
   no reproduce, no repara ni aplica patches. Las pruebas focalizadas y mypy del módulo se ejecutaron
-  localmente. No hay eventos/Merkle, routing a Orchestrator, API, runtime
-  configurado ni producto. **Próxima acción:** añadir baseline incremental y
-  diseñar reproducción aislada sin abrir los boundaries reservados.
+  localmente. `EngineeringEventPublisher` registra metadata mínima en Merkle
+  antes de emitir `engineering.finding` o `engineering.review_completed`; una
+  falla de auditoría bloquea el evento. Sigue sin inyección de runtime, routing
+  a Orchestrator, API ni producto. **Próxima acción:** añadir baseline
+  incremental y diseñar reproducción aislada sin abrir los boundaries
+  reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
   local (ADC-WO-114/116).**

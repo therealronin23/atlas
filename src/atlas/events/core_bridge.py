@@ -34,12 +34,32 @@ def project_core_event(event: Event) -> OsEvent:
         summary=f"{event.type.value}"
         + (f" (task {event.task_id})" if event.task_id else ""),
         status=EventStatus.COMPLETED,
-        risk=_RISK_BY_TYPE.get(event.type, Risk.LOW),
+        risk=_risk_for_event(event),
         visible=True,
         simulated=False,
         payload=dict(event.payload),
         audit=None,  # el hash Merkle solo lo aporta transparency/, no este bridge
     )
+
+
+def _risk_for_event(event: Event) -> Risk:
+    """Read dynamic risk only for the typed engineering projections.
+
+    The bridge does not fabricate an audit reference from this payload.  The
+    publisher's preceding Merkle receipt remains a separate, verifiable fact.
+    """
+
+    if event.type in {
+        EventType.ENGINEERING_FINDING,
+        EventType.ENGINEERING_REVIEW_COMPLETED,
+    }:
+        raw_risk = event.payload.get("risk")
+        if isinstance(raw_risk, str):
+            try:
+                return Risk(raw_risk)
+            except ValueError:
+                pass
+    return _RISK_BY_TYPE.get(event.type, Risk.LOW)
 
 
 class CoreEventBridge:

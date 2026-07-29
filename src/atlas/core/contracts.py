@@ -180,6 +180,8 @@ class EventType(str, Enum):
     DECIDER_VERDICT         = "decider.verdict"   # ADR-040: canal on-the-loop
     MAINTENANCE_PROPOSED    = "maintenance.proposed"  # ADR-039: cron propone, no aplica
     COLD_UPDATE_BATCH_READY = "cold_update.batch_ready"  # lote de self_audit probado, esperando revisión episódica
+    ENGINEERING_FINDING = "engineering.finding"  # ADR-078: finding auditable, sin efecto
+    ENGINEERING_REVIEW_COMPLETED = "engineering.review_completed"  # ADR-078: resultado de review, sin promoción
 
 
 @dataclass
