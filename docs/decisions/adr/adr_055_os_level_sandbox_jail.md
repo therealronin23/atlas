@@ -147,6 +147,10 @@ independientes**: ninguna confía en la otra.
   escribible explícito; entradas fuera del workspace se rechazan.
 - **Captura acotada.** stdout/stderr se respaldan por ficheros temporales y se
   limitan; se mantienen timeout y rlimits.
+- **Enlaces de sistema mínimos.** El rootfs monta opcionalmente
+  `/etc/alternatives` en solo lectura para que alias ya presentes en `/usr`
+  (por ejemplo `awk`) no queden rotos en Debian-family; no se monta `/etc`
+  general ni el jail depende de que exista ese directorio.
 - **Compatibilidad de runtime sin abrir `clone3`.** El filtro sigue denegando
   `clone3`, pero devuelve `ENOSYS` en vez de `EPERM`; glibc/Kuzu usa entonces
   su fallback previo a clone3. Una prueba real verifica tanto el `ENOSYS` como

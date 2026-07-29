@@ -8,6 +8,14 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — enlaces de sistema mínimos disponibles dentro de Bwrap.** El
+  rootfs read-only ya exponía `/usr`, pero alias como `/usr/bin/awk` resuelven
+  por `/etc/alternatives` en sistemas Debian y quedaban rotos. Bwrap monta
+  ahora solo ese directorio de enlaces, read-only y con `--ro-bind-try`; no
+  abre `/etc` ni modifica el jail cuando el mecanismo no existe. Una prueba
+  real ejecuta `awk` dentro del jail. **Próxima acción:** seguir separando
+  fallos de tests offline/jaula anidada sin permitir red ni fallback host.
+
 - **2026-07-29 — perfil Kuzu explícito y acotado (ADC-WO-119).** Todas las
   aperturas Kuzu de `src/atlas` y de sus pruebas pasan por
   `atlas.memory.kuzu_runtime`: perfil por defecto de mapa máximo de 1 GiB y

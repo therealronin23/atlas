@@ -578,6 +578,20 @@ def test_real_command_jail_has_no_network(real_jail: BwrapJail, tmp_path: Path) 
     assert result.success is False
 
 
+@pytestmark_bwrap
+def test_real_command_jail_resolves_system_alternative_binary(
+    real_jail: BwrapJail, tmp_path: Path,
+) -> None:
+    """The minimal root keeps /usr command symlinks usable without mounting /etc."""
+    work = tmp_path / "work"
+    work.mkdir()
+
+    result = real_jail.run_command(["awk", "BEGIN { print 42 }"], working_dir=work)
+
+    assert result.success, result.stderr
+    assert result.stdout.strip() == "42"
+
+
 def test_new_lpe_syscalls_in_blocklist() -> None:
     """io_uring (425-427), userfaultfd (323) y clone3 (435) están en _BLOCKED_X86_64."""
     new_syscalls = {323, 425, 426, 427, 435}

@@ -220,7 +220,8 @@ def build_bwrap_argv(
     - --unshare-all: user, net, mount, uts, ipc, pid. Sin veth → sin red.
     - uid/gid mapeados a 65534 (nobody) dentro del namespace de usuario.
     - Rootfs MÍNIMO: solo /usr (+ symlinks para /bin /lib /lib64 /sbin),
-      /etc/ssl (certs SSL para Python), /tmp efímero, /proc y /dev mínimos.
+      /etc/ssl (certs SSL para Python), enlaces de sistema opcionales bajo
+      /etc/alternatives, /tmp efímero, /proc y /dev mínimos.
       NO se monta $HOME ni / completo → los secretos del host (~/.ssh, .env,
       .aws) son inaccesibles dentro del jail.
     - script_path bind-mounted read-only en /tmp/atlas_script.py.
@@ -245,6 +246,10 @@ def build_bwrap_argv(
         "--symlink", "usr/sbin", "/sbin",
         # SSL certs para Python (urllib/ssl)
         "--ro-bind", "/etc/ssl", "/etc/ssl",
+        # Debian-family command aliases (e.g. /usr/bin/awk) point through
+        # /etc/alternatives.  This directory contains system symlinks only;
+        # bind it read-only when it exists without exposing broad /etc state.
+        "--ro-bind-try", "/etc/alternatives", "/etc/alternatives",
         # /tmp efímero (vacío — el script se añade a continuación)
         "--tmpfs", "/tmp",
         # /proc y /dev mínimos (Python los necesita)
@@ -343,6 +348,7 @@ def build_command_bwrap_argv(
         "--symlink", "usr/lib64", "/lib64",
         "--symlink", "usr/sbin", "/sbin",
         "--ro-bind", "/etc/ssl", "/etc/ssl",
+        "--ro-bind-try", "/etc/alternatives", "/etc/alternatives",
         "--tmpfs", "/tmp",
         "--proc", "/proc",
         "--dev", "/dev",
