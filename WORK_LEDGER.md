@@ -8,6 +8,37 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — los forks externos dejan de ser invisibles desde una sesión
+  limpia: índice versionado en `forks/README.md`.** Hallazgo: **ninguno** de
+  los cuatro docs de arranque (`AGENTS.md`, `WORK_LEDGER.md`, `STATUS.md`,
+  `PLAN.md`) citaba las rutas de los checkouts de terceros, y `atlas-forks`
+  (727 MB) tenía **cero** menciones en el ecosystem map. Consecuencia real
+  medida en esta sesión: preguntado "¿hemos forkeado algo?", mirar sólo
+  `atlas-core` responde *no* —cero submódulos, cero `vendor/`— y es engañoso.
+  Verificado con `git rev-parse` contra cada checkout el 2026-07-29:
+  **TERMINADO** — `~/proyectos/atlas-ide` (`voideditor/void`,
+  `feat/atlas-bridge-baseline`, `d8e96ed`) y `~/proyectos/atlas-ide-forward-port`
+  (mismo upstream, `feat/atlas-desktop-forward-port`, `34803da`, 443
+  inserciones en 8 ficheros); ambos limpios, cero sin commitear.
+  **PENDIENTE** — `~/proyectos/atlas-codeoss-1.129.1` (`microsoft/vscode`,
+  `8a7abeba`, `HOST_BASELINE`) y `~/proyectos/atlas-editor-zed`
+  (`zed-industries/zed`, `c9e8e61`, `PATTERN_DONOR`): clonados y en el commit
+  de upstream, sin una sola línea nuestra. Sólo Void está forkeado de verdad;
+  **Zed no se forkea** por diseño (referencia ACP con boundary Apache/GPL).
+  Todo tiene `target_cut: CUT-2` y Cut 2 sigue cerrado tras Cut 1
+  (`ADC-WO-108`). El índice no crea autoridad nueva: manda
+  `docs/canon/product_lineage_registry.jsonl` y el ecosystem map.
+  **Propuesta del operador NO aplicada:** mover los repos dentro de
+  `atlas-core/forks/`. Datos para decidir: >3 GB (`atlas-ide` 764 MB,
+  `atlas-forks` 727 MB, `atlas-codeoss` 459 MB, `atlas-ide-forward-port`
+  224 MB, `atlas-ui-prototypes` 824 MB, `atlas-editor-zed` sin medir por
+  timeout), historias git independientes que exigirían submódulo o subtree, y
+  el boundary de licencia de Zed. Se implementó el índice versionado, que es
+  el hueco real; el traslado físico queda a decisión del operador vía ADR
+  (invariante 6).
+  **Próxima acción:** ninguna abierta por este frente. Decidir el traslado, o
+  cerrarlo como "no se mueven" y dejar el índice como contrato.
+
 - **2026-07-29 — el pre-commit deja de mapear tests por nombre y pasa a
   mapearlos por referencia (`b9afa9b`).** Causa: el gate corrió 83 tests en
   verde sobre el commit que rompía los 37 del tronco MCP. Era ciego en dos
