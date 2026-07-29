@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-23T16:18:38.103790+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-29T12:23:37.192595+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ---
 title: "ATLAS — Plan Maestro de Implantación"
@@ -131,6 +131,10 @@ Porqué primero: todos los tramos siguientes los construirán IAs distintas de
 Fable; sin T0, cada una re-deriva o malinterpreta.
 - T0.1 `atlas handoff` generado desde el sustrato (spec B+C §2, aprobada en
   arquitectura). Evidencia: pack regenerable, gate de frescura.
+  Nota operativa 2026-07-29: el gate admite el commit que publica
+  exclusivamente `docs/handoff/GENERATED/` aunque el manifiesto registre su
+  padre; exige ancestry, al menos un path cambiado y cero paths externos al
+  pack. Cualquier otro commit conserva resultado `STALE`.
 - T0.2 Migración de la memoria privada del harness al sustrato (spec B+C §3).
   Evidencia: recall con procedencia desde sesión sin acceso al dir privado.
 - T0.3 Onboarding ejecutable + test de sucesión F2.6 como gate recurrente

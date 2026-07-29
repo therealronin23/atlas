@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-23T16:18:38.103790+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-29T12:23:37.192595+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ---
 status: vigente
