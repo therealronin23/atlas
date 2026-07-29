@@ -430,9 +430,9 @@ Security Council está opt-in/configurado en el proceso original pero sin acció
 fresca completa. Esta candidata aplica el guard high después de todo Decider y
 hace fail-closed los errores, snapshots inválidos y drift de Sentinel, revocando
 el transporte MCP afectado durante la vida del proceso. `EngineeringFinding` v1
-aporta schema, journal append-only, deduplicación y adaptación de self-audit;
-todavía no tiene coordinadores, Merkle/event routing, Orchestrator ni superficie
-de producto.
+aporta schema, journal append-only, deduplicación, adaptación de self-audit y
+revisión determinista sobre `UniversalVerifier`; todavía no tiene diagnóstico,
+Merkle/event routing, Orchestrator ni superficie de producto.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,
 evaluación independiente, SLO/telemetría y recuperación no-LLM.

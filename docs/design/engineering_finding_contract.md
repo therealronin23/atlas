@@ -23,6 +23,14 @@ modificarlo. Sólo la severidad `critical` de self-audit se normaliza a
 `BLOCKING`; el routing, Merkle y cualquier elevación posterior pertenecen a un
 coordinador y a Policy, no al adaptador.
 
+`EngineeringReviewCoordinator` ya compone adapters en orden determinista. Su
+adaptador `UniversalVerifierReviewAdapter` reutiliza el seam `UniversalVerifier`
+para un diff acotado: `PASS` no crea finding, `FAIL` se proyecta con evidencia y
+una excepción de reviewer queda como `UNKNOWN`. Antes de persistir, el
+coordinador verifica `run_id`, Task, repositorio, revisiones y source del
+finding; un adapter que intenta cruzar ese contexto queda `UNKNOWN` y no escribe
+el journal.
+
 ## Boundary
 
 Un finding es una observación con procedencia. No es una prueba automática, una
@@ -37,12 +45,10 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 
 ## Transition
 
-El siguiente subcorte de `ADC-WO-108` compone los verificadores deterministas
-existentes en un `EngineeringReviewCoordinator`, conserva `UNKNOWN` de
-revisores fallidos y añade deduplicación incremental. `DiagnosticCoordinator`,
-eventos Merkle, routing hacia Orchestrator y una proyección read-only esperan
-sus contratos y la frontera durable Mission/Task; no se declaran implementados
-por este contrato.
+El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
+última revisión aceptada y `DiagnosticCoordinator`. Eventos Merkle, routing
+hacia Orchestrator y una proyección read-only esperan sus contratos y la
+frontera durable Mission/Task; no se declaran implementados por este contrato.
 
 ## Rollback
 
