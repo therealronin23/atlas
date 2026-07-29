@@ -624,10 +624,15 @@ def test_revet_all_reports_nothing_for_unchanged_server(tmp_path: Path) -> None:
     cfg = McpServerConfig(
         name="echo", cmd=[sys.executable, str(FIXTURE)], read_only_tools=["echo"],
     )
-    gate = SentinelGate(tmp_path)
+    gate = SentinelGate(tmp_path, allow_test_fixture=True)
     reg = McpRegistry([cfg], sentinel=gate)
     try:
         reg.start_all()
+        assert "echo" in reg._transports
+        assert any(
+            spec["function"]["name"] == "mcp__echo__echo"
+            for spec in reg.tool_specs()
+        )
         findings = reg.revet_all()
         assert findings == []
     finally:
