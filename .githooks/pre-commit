@@ -5,9 +5,23 @@
 # 2026-07-10: la suite completa (`pytest tests/ -q`) acumula ~7.5GB RSS y el
 # daemon earlyoom del sistema la mata con SIGTERM SIEMPRE — el hook viejo
 # nunca terminaba de correr. Por eso este hook mide SOLO lo staged: mypy de
-# los .py bajo src/ y pytest de los tests que esos ficheros tocan por
-# convención de nombres. La suite completa sigue existiendo (ColdUpdateBatcher
-# / CI) o corre aquí a mano con ATLAS_PRECOMMIT_FULL=1.
+# los .py bajo src/ y pytest de los tests impactados. La suite completa sigue
+# existiendo (ColdUpdateBatcher / CI) o corre aquí a mano con
+# ATLAS_PRECOMMIT_FULL=1.
+#
+# 2026-07-29: el mapeo por convención de nombres (`src/<stem>.py` ->
+# `tests/test_<stem>*.py`) resultó ciego en dos direcciones y dejó pasar un
+# cambio que rompía los 37 tests del tronco MCP. Se sustituye por un mapeo por
+# REFERENCIA sobre TODO lo staged, en atlas.engineering.impacted_tests.
+# Sigue siendo un gate rápido, no una prueba de cobertura.
+#
+# 2026-07-29, corrección medida: el "~7,5 GB + earlyoom la mata SIEMPRE" de
+# arriba quedó OBSOLETO y nunca se actualizó aquí. 2262de41 (julio) cacheó el
+# ONNX de FastEmbedEmbedder por proceso y bajó el pico a ~1,9 GB. Medido hoy con
+# /usr/bin/time -v: 2,36 GB de pico, 5:47 de reloj, exit 0 con earlyoom vivo
+# (PID 1184). La suite completa YA NO muere por RAM; la razón para no correrla
+# en cada commit es el TIEMPO. Se conserva el párrafo de arriba como historia
+# de por qué nació el hook, no como estado actual.
 #
 # Instalacion: git config core.hooksPath .githooks
 
@@ -38,7 +52,6 @@ fi
 staged_files="$(git diff --cached --name-only --diff-filter=ACM)"
 
 staged_src_py="$(printf '%s\n' "$staged_files" | grep -E '^src/.*\.py$' || true)"
-staged_test_py="$(printf '%s\n' "$staged_files" | grep -E '^tests/test_.*\.py$' || true)"
 
 # --- (a) mypy: solo los .py staged bajo src/ ---
 if [ -n "$staged_src_py" ]; then
@@ -54,32 +67,21 @@ else
     echo "→ mypy: sin .py staged bajo src/, se salta."
 fi
 
-# --- (b) pytest: solo los tests mapeados desde los staged ---
-mapped_tests=""
-
-if [ -n "$staged_src_py" ]; then
-    while IFS= read -r f; do
-        [ -z "$f" ] && continue
-        stem="$(basename "$f" .py)"
-        for t in tests/test_"${stem}"*.py; do
-            [ -e "$t" ] || continue
-            mapped_tests="$mapped_tests
-$t"
-        done
-    done <<< "$staged_src_py"
+# --- (b) pytest: los tests que el cambio staged puede romper ---
+# El mapeo vive en atlas.engineering.impacted_tests (probado en
+# tests/test_impacted_tests.py), no aquí: el glob por stem que había en este
+# hook dejó pasar el 2026-07-29 un cambio en docs/design/mcp_catalog.yaml que
+# rompía los 37 tests del tronco MCP. Los ficheros de datos no mapeaban a nada
+# y el glob alcanzaba 1 de los 16 tests del módulo. Ahora se mapea por
+# REFERENCIA y entra TODO lo staged, no sólo los .py.
+if ! mapped_tests="$(printf '%s\n' "$staged_files" \
+        | grep -v '^$' \
+        | xargs -r python -m atlas.engineering.impacted_tests)"; then
+    echo ""
+    echo "✗ El mapeo de tests impactados falló. Commit cancelado (fail-closed)."
+    echo "  Escape consciente: ATLAS_PRECOMMIT_FULL=1 git commit ..."
+    exit 1
 fi
-
-if [ -n "$staged_test_py" ]; then
-    while IFS= read -r f; do
-        [ -z "$f" ] && continue
-        [ -e "$f" ] || continue
-        mapped_tests="$mapped_tests
-$f"
-    done <<< "$staged_test_py"
-fi
-
-# Deduplicar preservando orden.
-mapped_tests="$(printf '%s\n' "$mapped_tests" | awk 'NF && !seen[$0]++')"
 
 if [ -n "$mapped_tests" ]; then
     echo "→ pytest (solo tests mapeados desde lo staged)..."
