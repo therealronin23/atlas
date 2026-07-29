@@ -172,7 +172,8 @@ como implementados. `EngineeringReviewBaselineStore` ya fija una base sólo tras
 snapshot de lifecycle previo, exige que el llamador verifique ancestry y no
 convierte un resultado verde en promoción automática. El preparador incremental
 verifica ancestry contra objetos Git y calcula el delta con diff externo y
-textconv deshabilitados, sin ejecutar código candidato ni tocar el worktree.
+textconv deshabilitados, sin ejecutar código candidato ni tocar el worktree; el
+runner pasa ese request al coordinador existente sólo cuando hay delta pendiente.
 
 ### Cut 2 — convergencia desktop integral
 
@@ -255,7 +256,7 @@ pregunta empírica; tampoco autoriza Native.
 | Destilación privada→shared no universal | P04/P05 | contrato y pipeline después del ADR de memoria |
 | LivingGraph sin importadores | P08 | decidir integrar o archivar; no llamarlo productivo |
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
-| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, publisher Merkle/EventBus, baseline explícito y preparador de diff code+tests presentes; faltan reproducción aislada, normalización incremental de resoluciones, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
+| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, publisher Merkle/EventBus, baseline explícito y runner de diff/review code+tests presentes; faltan reproducción aislada, normalización incremental de resoluciones, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
 | Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |

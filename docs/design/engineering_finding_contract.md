@@ -56,8 +56,9 @@ altera la resolución de un finding posterior. `EngineeringIncrementalReviewPrep
 verifica ancestry contra commits inmutables y construye el delta mediante
 `git diff --no-ext-diff --no-textconv`; no ejecuta código, no lee cambios sin
 commit ni modifica el worktree. Devuelve un request compatible con el
-`EngineeringReviewCoordinator`, pero la inyección y ejecución runtime siguen
-fuera de este subcorte.
+`EngineeringReviewCoordinator`. `EngineeringIncrementalReviewRunner` compone
+ambos explícitamente y no re-revisa un candidate ya aceptado; la inyección y
+ejecución runtime siguen fuera de este subcorte.
 
 ## Boundary
 

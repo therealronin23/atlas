@@ -11,13 +11,14 @@ import re
 import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Protocol
 
 from atlas.core.git_env import clean_git_env
 from atlas.engineering.baselines import (
     EngineeringReviewBaselineStore,
     IncrementalReviewSelection,
 )
-from atlas.engineering.review import EngineeringReviewRequest
+from atlas.engineering.review import EngineeringReviewReport, EngineeringReviewRequest
 
 
 class IncrementalReviewPreparationError(RuntimeError):
@@ -31,6 +32,18 @@ class PreparedIncrementalReview:
     selection: IncrementalReviewSelection
     request: EngineeringReviewRequest | None
     ancestry_verified: bool
+
+
+class _ReviewCoordinatorLike(Protocol):
+    def review(self, request: EngineeringReviewRequest) -> EngineeringReviewReport: ...
+
+
+@dataclass(frozen=True)
+class IncrementalReviewExecution:
+    """A prepared incremental review and its report when a review was required."""
+
+    prepared: PreparedIncrementalReview
+    report: EngineeringReviewReport | None
 
 
 _COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{7,64}$")
@@ -159,3 +172,31 @@ class EngineeringIncrementalReviewPreparer:
             raise IncrementalReviewPreparationError(
                 f"Git incremental review preparation failed with {type(exc).__name__}"
             ) from exc
+
+
+class EngineeringIncrementalReviewRunner:
+    """Compose the verified read-only delta with the existing review coordinator.
+
+    This runner intentionally has no publisher, Task, Orchestrator, patch, or
+    approval dependency.  It returns the baseline state alongside the report so
+    a later governed normalizer can reason about prior resolutions without
+    silently changing them.
+    """
+
+    def __init__(
+        self,
+        *,
+        preparer: EngineeringIncrementalReviewPreparer,
+        coordinator: _ReviewCoordinatorLike,
+    ) -> None:
+        self._preparer = preparer
+        self._coordinator = coordinator
+
+    def run(self, request: EngineeringReviewRequest) -> IncrementalReviewExecution:
+        prepared = self._preparer.prepare(request)
+        if prepared.request is None:
+            return IncrementalReviewExecution(prepared=prepared, report=None)
+        return IncrementalReviewExecution(
+            prepared=prepared,
+            report=self._coordinator.review(prepared.request),
+        )

@@ -441,7 +441,8 @@ rutea al Orchestrator. `EngineeringReviewBaselineStore` selecciona una base
 aceptada sólo tras `PASS`, reviewer real y referencia de aceptación explícita;
 conserva lifecycle previo. `EngineeringIncrementalReviewPreparer` verifica
 ancestry y lee el delta entre objetos Git con external diff/textconv desactivados,
-sin ejecutar el candidato. Aún faltan reproducción aislada, hipótesis de
+sin ejecutar el candidato; `EngineeringIncrementalReviewRunner` entrega ese
+request al coordinador existente sólo si todavía requiere revisión. Aún faltan reproducción aislada, hipótesis de
 grafo/historial/memoria, normalización incremental de resoluciones, wiring
 gobernado, Orchestrator y superficie de producto.
 

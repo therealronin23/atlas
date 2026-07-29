@@ -11,11 +11,14 @@ from atlas.core.git_env import clean_git_env
 from atlas.core.verify import Verdict
 from atlas.engineering.baselines import EngineeringReviewBaselineStore
 from atlas.engineering.incremental import (
+    EngineeringIncrementalReviewRunner,
     EngineeringIncrementalReviewPreparer,
     IncrementalReviewPreparationError,
 )
+from atlas.engineering.findings import EngineeringFindingStore
 from atlas.engineering.review import (
     EngineeringReviewReport,
+    EngineeringReviewCoordinator,
     EngineeringReviewRequest,
     ReviewOutcome,
 )
@@ -193,3 +196,72 @@ def test_preparer_rejects_an_oversized_diff_before_review(
             baselines=baselines,
             max_diff_bytes=1,
         ).prepare(_request(base=first, candidate=candidate))
+
+
+class _CapturingAdapter:
+    adapter_id = "capturing"
+
+    def __init__(self) -> None:
+        self.requests: list[EngineeringReviewRequest] = []
+
+    def review(self, request: EngineeringReviewRequest) -> ReviewOutcome:
+        self.requests.append(request)
+        return ReviewOutcome(adapter_id=self.adapter_id, verdict=Verdict.PASS)
+
+
+def test_incremental_runner_composes_verified_delta_with_existing_review_coordinator(
+    repository: tuple[Path, str, str, str], tmp_path: Path
+) -> None:
+    repo, first, accepted, candidate = repository
+    baselines = EngineeringReviewBaselineStore(tmp_path / "baselines.jsonl")
+    baselines.record_accepted(
+        _pass_report(base=first, candidate=accepted),
+        acceptance_ref="approval_001",
+        accepted_by="operator",
+        at="2026-07-29T16:01:00+00:00",
+    )
+    adapter = _CapturingAdapter()
+    coordinator = EngineeringReviewCoordinator(
+        store=EngineeringFindingStore(tmp_path / "findings.jsonl"),
+        adapters=[adapter],
+    )
+    runner = EngineeringIncrementalReviewRunner(
+        preparer=EngineeringIncrementalReviewPreparer(repo_root=repo, baselines=baselines),
+        coordinator=coordinator,
+    )
+
+    execution = runner.run(_request(base=first, candidate=candidate))
+
+    assert execution.report is not None
+    assert execution.report.verdict is Verdict.PASS
+    assert execution.prepared.ancestry_verified is True
+    assert adapter.requests[0].base_revision == accepted
+    assert "+three" in adapter.requests[0].diff
+
+
+def test_incremental_runner_does_not_re_review_an_already_accepted_candidate(
+    repository: tuple[Path, str, str, str], tmp_path: Path
+) -> None:
+    repo, first, accepted, _candidate = repository
+    baselines = EngineeringReviewBaselineStore(tmp_path / "baselines.jsonl")
+    baselines.record_accepted(
+        _pass_report(base=first, candidate=accepted),
+        acceptance_ref="approval_001",
+        accepted_by="operator",
+        at="2026-07-29T16:01:00+00:00",
+    )
+    adapter = _CapturingAdapter()
+    coordinator = EngineeringReviewCoordinator(
+        store=EngineeringFindingStore(tmp_path / "findings.jsonl"),
+        adapters=[adapter],
+    )
+    runner = EngineeringIncrementalReviewRunner(
+        preparer=EngineeringIncrementalReviewPreparer(repo_root=repo, baselines=baselines),
+        coordinator=coordinator,
+    )
+
+    execution = runner.run(_request(base=first, candidate=accepted))
+
+    assert execution.report is None
+    assert execution.prepared.selection.review_required is False
+    assert adapter.requests == []

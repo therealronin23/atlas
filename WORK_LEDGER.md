@@ -27,8 +27,9 @@ de escribir: `atlas reality --json`.
   no convierte PASS en promoción. `EngineeringIncrementalReviewPreparer`
   verifica ancestry contra commits inmutables y calcula sólo el delta Git con
   external diff/textconv desactivados; no ejecuta código ni modifica el
-  worktree. **Próxima acción:** diseñar reproducción aislada y normalización de
-  resoluciones sin abrir los boundaries
+  worktree. `EngineeringIncrementalReviewRunner` compone ese delta con el
+  coordinador existente y evita re-revisar un candidate ya aceptado. **Próxima
+  acción:** diseñar reproducción aislada y normalización de resoluciones sin abrir los boundaries
   reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
