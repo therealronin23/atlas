@@ -1467,6 +1467,16 @@ class MaintenanceFacade:
                 self._orch.cold_update(),
                 backlog_path=self._project_root() / "docs" / "backlog.yaml",
             )
+            # Higiene al construir, igual que ColdUpdateManager con los suyos:
+            # `_run_item` destruye su worktree en un `finally`, pero un kill
+            # duro del daemon se lo salta. El 2026-07-29 había 6 huérfanos, el
+            # más viejo del 10 de julio. Sólo por TTL, así que un item en vuelo
+            # (mtime fresco) queda protegido. Mejor esfuerzo: si el barrido
+            # falla, el tick sigue — no es la función del runner.
+            try:
+                self._maintenance_self_build_runner.sweep_stale_worktrees()
+            except Exception:  # pragma: no cover - limpieza best-effort
+                pass
         return self._maintenance_self_build_runner
 
     def maintenance_cold_update_batcher(self) -> Any:

@@ -933,3 +933,69 @@ def test_run_item_with_evolution_evaluator_file_is_a_path_and_is_cleaned_up(
 
     gate.evolve.assert_called_once()
     assert not Path(seen_path_during_call["path"]).exists()  # limpiado tras la corrida
+
+
+# ---------------------------------------------------------------------------
+# Barrido de worktrees rancios (2026-07-29)
+#
+# `_run_item` destruye su worktree en un `finally`, pero un kill duro del
+# daemon se lo salta: el 2026-07-29 había 6 `self-build-item-*` huérfanos, el
+# más viejo del 10 de julio. ColdUpdateManager ya cubre justo esto con
+# `sweep_stale_worktrees` al construirse; SelfBuildRunner no tenía equivalente.
+# Un item EN VUELO tiene mtime fresco, así que el TTL lo protege.
+# ---------------------------------------------------------------------------
+
+
+def _stale_worktree(parent: Path, name: str, *, age_days: float) -> Path:
+    import os
+    import time
+
+    path = parent / name
+    path.mkdir(parents=True)
+    stamp = time.time() - age_days * 86400
+    os.utime(path, (stamp, stamp))
+    return path
+
+
+def test_sweep_removes_stale_self_build_worktrees(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    old = _stale_worktree(tmp_path, "self-build-item-deadbeef1234", age_days=9.0)
+    fresh = _stale_worktree(tmp_path, "self-build-item-cafe12345678", age_days=0.1)
+
+    runner = SelfBuildRunner(
+        repo_root=repo, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    removed = runner.sweep_stale_worktrees(ttl_days=3.0)
+
+    assert not old.exists(), "el worktree rancio debe irse"
+    assert fresh.exists(), "un item en vuelo (mtime fresco) NO se toca"
+    assert str(old) in removed
+
+
+def test_sweep_also_covers_evo_worktrees(tmp_path: Path) -> None:
+    """`_evaluate_candidate_in_worktree` usa el prefijo `self-build-evo-`;
+    fuga por la misma vía y debe barrerse igual."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    evo = _stale_worktree(tmp_path, "self-build-evo-0123456789ab", age_days=9.0)
+
+    runner = SelfBuildRunner(
+        repo_root=repo, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    runner.sweep_stale_worktrees(ttl_days=3.0)
+
+    assert not evo.exists()
+
+
+def test_sweep_never_touches_the_live_repo_root(tmp_path: Path) -> None:
+    """Salvaguarda: el barrido mira el PADRE del repo. Un repo cuyo propio
+    nombre casara con el prefijo no debe autodestruirse."""
+    repo = _stale_worktree(tmp_path, "self-build-item-liverepo0001", age_days=9.0)
+
+    runner = SelfBuildRunner(
+        repo_root=repo, hub=MagicMock(), cold_update_manager=MagicMock(),
+    )
+    runner.sweep_stale_worktrees(ttl_days=3.0)
+
+    assert repo.exists(), "el árbol vivo nunca se borra a sí mismo"

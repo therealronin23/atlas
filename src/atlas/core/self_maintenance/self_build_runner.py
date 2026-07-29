@@ -577,6 +577,40 @@ class SelfBuildRunner:
         except (OSError, subprocess.SubprocessError):
             pass
 
+    def sweep_stale_worktrees(self, ttl_days: float = 3.0) -> list[str]:
+        """Barrido de higiene: retira worktrees efímeros huérfanos del padre
+        del repo. Devuelve los paths eliminados.
+
+        `_run_item` y `_evaluate_candidate_in_worktree` ya destruyen el suyo en
+        un `finally`, pero un kill duro del daemon (restart, SIGKILL, earlyoom)
+        se lo salta y el worktree queda colgado — el 2026-07-29 había 6, el más
+        viejo del 10 de julio. `ColdUpdateManager.sweep_stale_worktrees` cubre
+        exactamente este caso para SUS worktrees; esto es el equivalente para
+        los nuestros, que viven fuera de su store y con otro prefijo.
+
+        Sólo por TTL: un item EN VUELO tiene mtime fresco y queda protegido.
+        Nunca toca el árbol vivo, aunque su nombre casara con el prefijo.
+        """
+        import time
+
+        cutoff = time.time() - ttl_days * 86400
+        live = self._repo_root.resolve()
+        removed: list[str] = []
+        for prefix in ("self-build-item-", "self-build-evo-"):
+            for wt in sorted(self._repo_root.parent.glob(f"{prefix}*")):
+                if not wt.is_dir() or wt.resolve() == live:
+                    continue
+                try:
+                    stale = wt.stat().st_mtime < cutoff
+                except OSError:
+                    continue
+                if not stale:
+                    continue
+                self._remove_worktree_path(wt)
+                if not wt.exists():
+                    removed.append(str(wt))
+        return removed
+
     def _tracked_py_files(self) -> list[str]:
         """Todos los .py trackeados del repo — alimenta el repo-map del coder
         (firmas AST, no contenido; barato incluso con ~200 módulos). Lista

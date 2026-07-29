@@ -703,3 +703,29 @@ def test_isolated_cycle_logs_failures_instead_of_swallowing(caplog) -> None:
     assert any(
         "grafo" in rec.message and rec.exc_info for rec in caplog.records
     ), "el fallo del ciclo debe quedar logueado con traceback"
+
+
+class TestSelfBuildWorktreeSweepWiring:
+    """El barrido de worktrees rancios existe en SelfBuildRunner, pero un método
+    sin caller es código muerto: el 2026-07-29 había 6 huérfanos porque nadie
+    barría. ColdUpdateManager barre al construirse; este contrato fija que el
+    accessor del facade haga lo mismo con los suyos."""
+
+    def test_accessor_sweeps_stale_worktrees_on_first_construction(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import os
+        import time
+
+        repo = tmp_path / "repo"
+        repo.mkdir(parents=True, exist_ok=True)
+        stale = tmp_path / "self-build-item-0badc0de1234"
+        stale.mkdir()
+        stamp = time.time() - 9 * 86400
+        os.utime(stale, (stamp, stamp))
+
+        orch.maintenance_self_build_runner()
+
+        assert not stale.exists(), (
+            "el accessor debe barrer worktrees rancios al construir el runner"
+        )
