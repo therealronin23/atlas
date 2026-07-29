@@ -36,7 +36,12 @@ def orch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
         }]),
         encoding="utf-8",
     )
-    return Orchestrator(workspace=workspace)
+    orchestrator = Orchestrator(workspace=workspace)
+    # La única excepción al fixture está habilitada explícitamente por esta
+    # prueba de transporte/re-vetting; no existe ruta de configuración ni de
+    # entorno que la active en el Orchestrator de producción.
+    orchestrator._sentinel._allow_test_fixture = True
+    return orchestrator
 
 
 def test_disabled_without_env_flag(orch: Orchestrator) -> None:
