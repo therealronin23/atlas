@@ -282,6 +282,7 @@ pregunta empírica; tampoco autoriza Native.
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
 | Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, reproducción Bwrap auditada, publisher Merkle/EventBus, baseline explícito y normalización observacional de diff/review code+tests presentes; faltan hipótesis de grafo/historial/memoria, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
+| Desktop-control third-party | P08/P09 | ADC-WO-124; cuarentena por defecto hasta decisión, artefacto/receipt y E2E fresco |
 | Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |
 | Unblock con actor no criptográfico | P01/P09 | incluir identidad/ceremonia en ADR futuro |
@@ -303,6 +304,8 @@ pregunta empírica; tampoco autoriza Native.
 8. Apertura de Native Wave 5.
 9. Autorizar los POST mutantes del bridge 7341 mediante un nuevo boundary o
    restaurar el contrato read-only de ADR-058/071 (`ADC-WO-107`).
+10. Admitir o mantener en cuarentena `computer-control-mcp==0.3.10` mediante
+    la vía de artefacto/receipt/aislamiento de `ADC-WO-124`.
 
 Los defaults fail-closed están registrados en
 `docs/canon/open_questions.jsonl`. Una decisión sobre un lote no bloquea trabajo

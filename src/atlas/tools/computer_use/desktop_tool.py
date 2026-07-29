@@ -1,10 +1,10 @@
 """
 Atlas Core — DesktopTool (Gate F/desktop, t3-1-universal-gui-operator).
 
-Wrapper fino sobre el servidor MCP `computer-control-mcp`
-(docs/design/mcp_catalog.yaml, status verificado — GUI mouse/keyboard/OCR
-contra el display VIRTUAL Xvfb :99, nunca el real). No abre un cliente MCP
-propio: recibe `invoke`/`invoke_readonly` como callables narrow inyectados
+Wrapper fino sobre el servidor MCP `computer-control-mcp`. El código y wiring
+están presentes, pero el runtime third-party permanece en cuarentena hasta
+completar ADC-WO-124; la antigua prueba Xvfb no equivale a admisión vigente.
+No abre un cliente MCP propio: recibe `invoke`/`invoke_readonly` como callables narrow inyectados
 por el caller (mismo estilo que check_gate_h_allowed/record_receipt en
 GateFExecutor), construidos en producción sobre McpRegistry.dispatch (el
 cliente MCP real que el Orchestrator ya posee).

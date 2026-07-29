@@ -1,22 +1,18 @@
-"""Test E2E de aceptación — t3-1-universal-gui-operator (2026-07-23).
+"""Aceptación de seguridad y runtime — t3-1 universal GUI operator.
 
-Cierra el bloqueo explícito registrado en WORK_LEDGER.md: los tests unitarios
-de Gate F (``tests/test_orchestrator_gate_f.py``) inyectan un
-``DummyDesktopTool`` vía ``attach_gate_f_tools`` y nunca tocan el camino real
-(``_desktop_mcp_invoke`` -> ``McpRegistry.dispatch`` -> ``computer-control-mcp``
--> Xvfb). Este test SÍ recorre ese camino completo, sin fakes, contra:
+La implementación de Gate F y el adaptador desktop están presentes, pero el
+ejecutable third-party ``computer-control-mcp`` no tiene todavía el artefacto,
+hash, receipt e aislamiento exigidos por ADR-075/ADC-WO-116. Por ello se
+prueban dos carriles sin falsear el estado:
 
-  * Xvfb real en ``:99`` (systemd user unit ``atlas-xvfb.service``).
-  * ``computer-control-mcp`` real (paquete PyPI, venv aislado
-    ``.venv-desktop/``), arrancado como subproceso MCP real por el
-    ``McpRegistry`` real del ``Orchestrator``.
-  * Dos apps de escritorio REALES (``xclock``, ``xcalc``) corriendo como
-    procesos X11 de verdad sobre ese display.
+* la cuarentena pre-spawn es una aceptación de seguridad siempre activa;
+* los E2E funcionales reales se conservan y solo corren cuando Sentinel admite
+  el artefacto exacto. Mientras ADC-WO-124 esté abierto se saltan como
+  ``CONTRADICTED``, nunca como evidencia de producto vivo.
 
-Se salta automáticamente (no falla) si Xvfb :99, el venv de escritorio o los
-binarios X11 no están disponibles en la máquina — es un test de
-infraestructura real, no reproducible sin ese entorno (igual que
-``pytest -m computer_use`` para el navegador).
+Los E2E admitidos recorren ``_desktop_mcp_invoke`` ->
+``McpRegistry.dispatch`` -> ``computer-control-mcp`` -> Xvfb, con xclock y
+xcalc reales. No se concede ninguna excepción por basename, ruta o fixture.
 """
 
 from __future__ import annotations
@@ -36,6 +32,11 @@ from atlas.core.orchestrator import Orchestrator
 
 DISPLAY = ":99"
 DESKTOP_MCP_BIN = Path(__file__).resolve().parents[2] / ".venv-desktop" / "bin" / "computer-control-mcp"
+_QUARANTINE_REASON = "third-party executable"
+_ADC_WO_124_SKIP = (
+    "ADC-WO-124 / CONTRADICTED: computer-control-mcp no está admitido aún "
+    "mediante artefacto+hash+scan+aislamiento+receipt Merkle+HITL de ADR-075"
+)
 
 
 def _xvfb_is_up() -> bool:
@@ -49,8 +50,13 @@ def _xvfb_is_up() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(
-    not (_xvfb_is_up() and DESKTOP_MCP_BIN.is_file() and shutil.which("xclock") and shutil.which("xcalc")),
+requires_real_desktop_infrastructure = pytest.mark.skipif(
+    not (
+        _xvfb_is_up()
+        and DESKTOP_MCP_BIN.is_file()
+        and shutil.which("xclock")
+        and shutil.which("xcalc")
+    ),
     reason="requiere Xvfb :99 + .venv-desktop/computer-control-mcp + xclock/xcalc reales",
 )
 
@@ -76,9 +82,11 @@ def two_real_desktop_apps() -> Iterator[list[subprocess.Popen[bytes]]]:
                 p.kill()
 
 
-@pytest.fixture
-def orch_with_real_desktop_mcp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Orchestrator:
-    """Orchestrator real con computer-control-mcp real cableado (sin fakes)."""
+def _configured_desktop_orchestrator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Orchestrator:
+    """Construye el wiring real sin arrancar todavía el ejecutable externo."""
     workspace = tmp_path / "atlas"
     workspace.mkdir(parents=True)
     monkeypatch.setenv("ATLAS_HOME", str(workspace))
@@ -98,8 +106,66 @@ def orch_with_real_desktop_mcp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         % (DESKTOP_MCP_BIN, DISPLAY),
         encoding="utf-8",
     )
-    orch = Orchestrator(workspace=workspace)
+    return Orchestrator(workspace=workspace)
+
+
+def _sentinel_quarantine_record(orch: Orchestrator) -> dict[str, Any] | None:
+    for record in reversed(orch.audit_tail(50)):
+        payload = record.get("payload", {})
+        if (
+            record.get("action") == "sentinel.server_vetoed"
+            and isinstance(payload, dict)
+            and payload.get("server") == "computer-control-mcp"
+        ):
+            return record
+    return None
+
+
+def test_unreceipted_desktop_mcp_is_audited_and_quarantined_pre_spawn(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """ADC-WO-116: la configuración histórica no puede crear un proceso."""
+    orch = _configured_desktop_orchestrator(tmp_path, monkeypatch)
+    spawned: list[str] = []
+
+    def forbidden_factory(config: Any) -> Any:
+        spawned.append(str(config.name))
+        raise AssertionError("Sentinel debía vetar antes de crear el transporte")
+
+    orch._mcp._factory = forbidden_factory
     orch.start_mcp_servers()
+
+    record = _sentinel_quarantine_record(orch)
+    assert spawned == []
+    assert orch._mcp._transports == {}
+    assert record is not None
+    assert record["result"] == "blocked"
+    assert _QUARANTINE_REASON in str(record["payload"]["detail"]).lower()
+    assert not any(
+        item.get("action") == "mcp.server_start_requested"
+        for item in orch.audit_tail(50)
+    )
+
+
+@pytest.fixture
+def orch_with_real_desktop_mcp(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Orchestrator:
+    """Arranca el MCP real únicamente si la admisión gobernada ya existe."""
+    orch = _configured_desktop_orchestrator(tmp_path, monkeypatch)
+    orch.start_mcp_servers()
+    if "computer-control-mcp" not in orch._mcp._transports:
+        record = _sentinel_quarantine_record(orch)
+        if record is not None and _QUARANTINE_REASON in str(
+            record["payload"]["detail"]
+        ).lower():
+            pytest.skip(_ADC_WO_124_SKIP)
+        pytest.fail(
+            "computer-control-mcp no alcanzó el transporte y no existe un "
+            "veto Sentinel clasificable como ADC-WO-124"
+        )
     return orch
 
 
@@ -144,6 +210,7 @@ def _extract_window_list(windows_field: Any) -> list[Any]:
     return windows
 
 
+@requires_real_desktop_infrastructure
 def test_list_windows_sees_two_real_desktop_apps(
     orch_with_real_desktop_mcp: Orchestrator,
     two_real_desktop_apps: list[subprocess.Popen[bytes]],
@@ -163,6 +230,7 @@ def test_list_windows_sees_two_real_desktop_apps(
     )
 
 
+@requires_real_desktop_infrastructure
 def test_screenshot_returns_real_pixels(
     orch_with_real_desktop_mcp: Orchestrator,
     two_real_desktop_apps: list[subprocess.Popen[bytes]],
@@ -172,8 +240,13 @@ def test_screenshot_returns_real_pixels(
     assert task.status == TaskStatus.DONE
     assert task.route == RoutingLevel.DETERMINISTIC_TOOL
     assert task.result is not None
+    screenshot = task.result["screenshot"]
+    assert isinstance(screenshot, str)
+    assert screenshot.strip()
+    assert not screenshot.lower().startswith("error:")
 
 
+@requires_real_desktop_infrastructure
 def test_desktop_plan_executes_across_two_different_real_apps(
     orch_with_real_desktop_mcp: Orchestrator,
     two_real_desktop_apps: list[subprocess.Popen[bytes]],
@@ -217,6 +290,7 @@ def test_desktop_plan_executes_across_two_different_real_apps(
         assert "error" not in str(step["result"]).lower()
 
 
+@requires_real_desktop_infrastructure
 def test_real_click_requires_approval_then_executes_against_real_mcp(
     orch_with_real_desktop_mcp: Orchestrator,
     two_real_desktop_apps: list[subprocess.Popen[bytes]],

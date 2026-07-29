@@ -1302,10 +1302,10 @@ class Orchestrator:
         """t3-1-universal-gui-operator: invoke/invoke_readonly narrow para
         DesktopTool, montado sobre McpRegistry.dispatch (el cliente MCP real
         que el Orchestrator ya posee — no un segundo cliente stdio propio).
-        Namespacing mcp__<server>__<tool> (ADR-035). computer-control-mcp
-        aún no está en la config MCP real de ningún entorno de esta sesión
-        (Fase 8/9, pendiente de Xvfb + .venv-desktop); si el server no está
-        registrado, McpRegistry.dispatch devuelve un string de error
+        Namespacing mcp__<server>__<tool> (ADR-035). El adaptador y una config
+        histórica Xvfb existen, pero Sentinel mantiene el ejecutable externo
+        en cuarentena hasta el receipt gobernado de ADC-WO-124; si el server
+        no está admitido, McpRegistry.dispatch devuelve un string de error
         (contrato ya fail-closed, no una excepción no controlada)."""
         return self._mcp.dispatch(f"mcp__computer-control-mcp__{tool}", args)
 

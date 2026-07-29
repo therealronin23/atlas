@@ -388,7 +388,7 @@
 {"track": "http", "name": "ai.fantopy/fantopy", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.fathom.api/mcp", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.fiber/mcp", "completed": false, "reason": "HTTP 307 del endpoint remoto", "tool_count": 0}
-{"track": "http", "name": "ai.filegraph/document-processing", "completed": false, "reason": "HTTP 307 del endpoint remoto", "tool_count": 0}
+{"track": "http", "name": "ai.filegraph/document-processing", "completed": true, "reason": "ok", "tool_count": 9}
 {"track": "http", "name": "ai.filepad/filepad", "completed": false, "reason": "HTTP 500 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.filtrix.mcp/filtrix-ai", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}
 {"track": "http", "name": "ai.fincontext/fincontext", "completed": false, "reason": "HTTP 401 del endpoint remoto", "tool_count": 0}

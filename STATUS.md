@@ -134,7 +134,7 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 | P05 | research/knowledge code+tests+wiring; ticks base | temporal claims y promoción verificable |
 | P06 | Golden Route/Foundry/ColdUpdate v0 wired | build completo medido y rollback aceptado |
 | P07 | plugins, MCP/ACP, vetting A/B implementados | smokes live; C permanece ausente |
-| P08 | shell como harness; host/donors del Workbench aceptados, no integrados | Cut 1 interno, Workbench integral y Android |
+| P08 | shell como harness; host/donors aceptados; desktop MCP code/wiring presente pero runtime `CONTRADICTED` por cuarentena | Cut 1 interno, admisión desktop gobernada, Workbench integral y Android |
 | P09 | seguridad/eval/ops reales; Merkle base verificado; EngineeringFinding v1, review, diagnóstico, reproducción Bwrap auditada, publisher Merkle/EventBus, baseline, normalizador incremental observacional y preflight de bloqueo absoluto del editor code+tests sin wiring | routing gobernado, recovery y traffic evidence |
 | P10 | Hermes Kanban wired; NodeIdentity code+tests | pairing/federation live autorizado |
 | P11 | Hosted Linux actual | Hosted product; Native Wave 5 bloqueada |
@@ -216,6 +216,10 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 - NebulaGraph: fixture/snapshot baked; sin commit/date/schema, no live.
 - LivingGraph: **CODE_PRESENT en harness**, sin importadores; integrar o
   aparcar, nunca sobreafirmar.
+- Desktop-control: **CODE_PRESENT / WIRED / CONTRADICTED**. Sentinel demuestra
+  cuarentena pre-spawn auditada para el ejecutable sin receipt; los cuatro E2E
+  Xvfb se conservan pero se difieren por `ADC-WO-124`. La ejecución de
+  2026-07-24 es histórica y no concede `TESTED` actual ni `LIVE_VERIFIED`.
 - Bridge 7341: **CODE_PRESENT / TESTED / WIRED / CONTRADICTED**. ADR-058/071
   lo definen read-only, pero el código contiene POST mutantes; `ADC-WO-107`
   requiere decisión del operador y la candidata no amplía esa superficie.

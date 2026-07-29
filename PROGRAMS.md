@@ -390,7 +390,10 @@ como donante de capacidades y Zed como donante ACP/de patrones; todavía no
 están importados ni wired en esta candidata. ADR-071 mantiene Android como
 proyección dedicada posterior. El bridge 7341 está implementado y probado,
 pero sus POST mutantes contradicen el boundary read-only de ADR-058/071;
-`ADC-WO-107` requiere decisión del operador.
+`ADC-WO-107` requiere decisión del operador. El adaptador/planner de escritorio
+está en código y wired, pero su ejecutable `computer-control-mcp` permanece en
+cuarentena pre-spawn bajo Sentinel: la prueba Xvfb histórica no es evidencia
+runtime actual y `ADC-WO-124` gobierna cualquier futura admisión.
 
 **Target.** Atlas Engineering Workbench como primer producto dedicado,
 local-first y accesible, con intención, revisión/diagnóstico, explicación,

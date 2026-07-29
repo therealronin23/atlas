@@ -1428,26 +1428,14 @@ items:
       ninguna rama de código condicionada al nombre de la app. mypy limpio; suite
       verde; ningún cambio de comportamiento en browser/editor/vision existentes.
     priority: 1
-    status: done  # 2026-07-24: CERRADO. Infraestructura llegó vía atlas-xvfb.service
-    # (fluxbox instalado 2026-07-23) + .venv-desktop real. Faltaba solo:
-    # (a) test E2E obligatorio con >=2 apps de escritorio distintas
-    # (test_desktop_plan_executes_across_two_different_real_apps,
-    # tests/acceptance/test_t3_1_desktop_operator_e2e.py) -- planner con
-    # InferenceHub FAKE determinista (cero LLM real) pero EJECUCIÓN real
-    # contra Xvfb :99/computer-control-mcp, misma DesktopTool que
-    # click/type/key, cero rama condicionada al nombre de la app; (b)
-    # wiring de InferenceHub -> GateFExecutor.get_desktop_planner()
-    # (getter lazy, mismo patrón que timetravel) + rama "plan" real en
-    # execute_desktop_command (antes rechazaba honesto con "Unsupported
-    # desktop action: plan"). De paso: DesktopTool.move() añadido (tool MCP
-    # move_mouse real); kinds scroll/drag documentados como sin ejecutor
-    # real hoy (sin tool MCP de scroll; drag necesita 2 pares de coordenadas
-    # que DesktopAction no expresa) -- se reportan honestos, no se fingen.
-    # 118 tests verdes (gate_f_executor+parser+orchestrator_gate_f+
-    # desktop_tool+desktop_planner+acceptance E2E), mypy limpio (303
-    # ficheros). Sigue pendiente como item aparte: t3-2-gui-recipe-library
-    # (biblioteca de recetas reutilizables) y soporte real de scroll/drag
-    # si algún día hace falta.
+    status: deferred
+    # 2026-07-29: RECLASIFICADO, no desimplementado. El código/planner/wiring
+    # y la evidencia Xvfb histórica existen, pero ADC-WO-116 ahora exige
+    # procedencia de ejecución third-party y Sentinel veta pre-spawn el binario
+    # no materializado/hasheado/receipted/aislado. La aceptación se divide en
+    # cuarentena siempre activa y cuatro E2E reales bloqueados por ADC-WO-124.
+    # No restaurar "done" hasta que el artefacto exacto pase ADR-075 y los E2E
+    # vuelvan a ejecutarse; no usar una excepción por basename/ruta.
 
   - id: t3-2-gui-recipe-library
     title: "Biblioteca de recetas GUI aprendidas: secuencias de acciones reutilizables"
@@ -1475,7 +1463,7 @@ items:
       un tiempo (o número de pasos de exploración OCR) estrictamente menor que la
       1ª. Sin dependencias nuevas; mypy limpio.
     priority: 2
-    status: pending
+    status: deferred  # depende de la admisión gobernada T3.1 / ADC-WO-124
 
   # --- Adapter contract: describir CUALQUIER capacidad con un contrato único ---
   - id: t3-3-harness-adapter-contract-registry

@@ -1,5 +1,10 @@
 # MEMORY
 
+- `security-hardening-invalidates-old-live-claims`: cuando una frontera
+  posterior bloquea correctamente un runtime antes admitido, la evidencia E2E
+  antigua pasa a histórica. Conservar código y pruebas, separar el carril de
+  cuarentena del funcional y reclasificar canon/backlog; nunca debilitar el
+  gate ni usar un skip para mantener `done` o `LIVE_VERIFIED`.
 - `generated-artifact-commit-is-not-drift`: un manifiesto generado desde HEAD
   registra necesariamente el commit anterior al que publica sus propios
   bytes. La frescura puede aceptar esa única transición solo si el SHA

@@ -50,6 +50,91 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-124
+    program: P08
+    title: Admit the pinned desktop-control MCP through governed third-party execution
+    date: "2026-07-29"
+    problem: >-
+      The desktop operator code and Orchestrator wiring exist, but
+      computer-control-mcp==0.3.10 is an untrusted third-party executable
+      without a materialized immutable artifact, verified hash, supply-chain
+      receipt, isolation profile, or explicit admission decision. Sentinel
+      therefore quarantines it before spawn, while historical product
+      documents and E2E claims had treated that path as active.
+    evidence:
+      - 2026-07-29 fresh canonical-venv full-suite execution reached the desktop acceptance lane and exposed three failures caused by the pre-spawn Sentinel veto.
+      - 2026-07-29 independent reproduction confirmed Sentinel emits sentinel.server_vetoed and never creates a transport for the configured executable.
+      - The installed local donor reports computer-control-mcp version 0.3.10 and exposes the expected list_windows and click_screen tools, so the current blocker is governed admission rather than an upstream tool rename.
+      - tests/acceptance/test_t3_1_desktop_operator_e2e.py separates always-active quarantine acceptance from functional E2E that remains blocked until a real admission exists.
+    source_decisions:
+      - ADR-038
+      - ADR-075
+      - ADR-076
+      - ADC-WO-008
+      - ADC-WO-116
+      - third-party execution fail-closed invariant
+      - high-sensitivity human-control invariant
+    current_state: >-
+      Gate F, desktop planning/tool adapters, MCP dispatch wiring and the Xvfb
+      acceptance harness are code-present. The exact third-party executable is
+      not admitted: Sentinel correctly vetoes it before spawn and records the
+      denial. Functional desktop E2E is therefore CONTRADICTED as current
+      acceptance evidence, not TESTED or LIVE_VERIFIED.
+    target_state: >-
+      If and only if the operator authorizes this dependency and admission
+      boundary, the exact computer-control-mcp==0.3.10 bytes are pinned,
+      hashed, licensed, inventoried, statically vetted, constrained to an
+      Xvfb-only jail, associated with a revocable Merkle receipt, and admitted
+      by Sentinel without weakening approval before desktop effects.
+    scope:
+      - exact executable and dependency artifact pinning
+      - SHA-256, license, dependency inventory, static analysis and provenance
+      - Xvfb-only sandbox profile with no access to the operator's real display
+      - revocable ADR-075 admission receipt recorded in Merkle evidence
+      - explicit human approval before every external desktop effect
+      - Sentinel positive-path verification without basename, path, TOFU or test bypasses
+      - functional two-application desktop acceptance and rollback rehearsal
+    files:
+      - docs/design/mcp_catalog.yaml
+      - docs/canon/evidence_registry.jsonl
+      - src/atlas/security/sentinel_gate.py
+      - src/atlas/mcp/registry.py
+      - tests/acceptance/test_t3_1_desktop_operator_e2e.py
+      - tests/test_sentinel_gate.py
+      - tests/test_mcp_registry_lazy.py
+    tests:
+      - quarantine remains pre-spawn when the receipt is absent, corrupt, expired or revoked
+      - exact artifact/hash/receipt positive path reaches transport creation only inside the Xvfb jail
+      - list_windows and screenshot observe two real Xvfb applications
+      - desktop plan and click require human approval before the real effect
+      - dependency, license and static-analysis evidence verifies against the pinned bytes
+      - revocation immediately restores quarantine and no real-display access is possible
+    risks:
+      - desktop control is a high-impact external-effect capability
+      - a compromised executable or transitive dependency could capture input or display data
+      - accidental binding to the operator's real display would escape the acceptance boundary
+      - version or artifact drift could invalidate the admission evidence
+      - an overly broad Sentinel exception would weaken every third-party MCP boundary
+    rollback: >-
+      Revoke the exact receipt, remove the pinned artifact and desktop MCP
+      configuration, terminate its isolated process, and verify Sentinel again
+      vetoes before spawn. Gate F and the rest of Atlas remain available while
+      the desktop runtime returns to quarantined status.
+    dependencies:
+      - ADC-WO-008
+      - ADC-WO-116
+      - explicit operator authorization for the pinned dependency and boundary
+    acceptance:
+      - operator explicitly accepts the pinned dependency and Xvfb-only execution boundary
+      - exact bytes, version, hash, license, dependency inventory and static scan are independently reproducible
+      - Sentinel verifies a revocable Merkle admission receipt before transport creation
+      - no basename, path, TOFU, environment or fixture bypass grants authority
+      - high-sensitivity approval remains mandatory before every desktop effect
+      - the real functional E2E passes against at least two Xvfb applications
+      - receipt revocation and process teardown return the component to fail-closed quarantine
+    operator_decision_required: true
+    status: REQUIRES_OPERATOR
+
   - id: ADC-WO-001
     program: P05
     title: Classify and selectively import dirty live sources
@@ -1594,3 +1679,66 @@ work_orders:
       - Sentinel imports directly in a fresh interpreter
     operator_decision_required: false
     status: DONE
+
+  - id: ADC-WO-124
+    program: P08
+    title: Admit the pinned desktop-control MCP through governed third-party execution
+    problem: >-
+      T3.1 code is wired, but ADC-WO-116 correctly quarantines its
+      unmaterialized third-party executable; historical Xvfb E2E evidence no
+      longer proves current runtime admission.
+    evidence:
+      - "The canonical 2026-07-29 full suite reached all local prerequisites and failed only three desktop E2E paths because Sentinel vetoed the executable before spawn."
+      - "The focused reconciled suite passes the pre-spawn quarantine acceptance and skips four functional E2Es with an explicit CONTRADICTED/ADC-WO-124 reason."
+      - "computer-control-mcp==0.3.10 is installed locally and exposes the expected tools, but package presence and historical prove-it are not an executable-artifact receipt."
+    source_decisions:
+      - ADR-038
+      - ADR-075
+      - ADR-076
+      - ADC-WO-116
+    current_state: >-
+      The desktop action, tool, planner, Gate F parser/executor and Xvfb
+      fixtures exist. Sentinel vetoes computer-control-mcp pre-spawn because
+      no materialized executable-artifact receipt is consumed by the gate.
+    target_state: >-
+      Exact package bytes are pinned, inventoried, scanned, isolated,
+      Merkle-receipted, human-approved, reversibly activated and admitted
+      without a basename, path or test-fixture exception.
+    scope:
+      - exact artifact pin, hash, license and dependency inventory
+      - static source and package scan
+      - Xvfb-only jail and explicit child environment
+      - Merkle receipt plus HITL activation, expiry and revocation
+      - Sentinel positive path bound to the receipted bytes
+      - quarantine and real functional E2E acceptance lanes
+    files:
+      - src/atlas/security/sentinel_gate.py
+      - src/atlas/mcp/registry.py
+      - src/atlas/tools/computer_use/
+      - tests/acceptance/test_t3_1_desktop_operator_e2e.py
+      - docs/design/mcp_catalog.yaml
+      - docs/backlog.yaml
+    tests:
+      - unreceipted or altered artifact is vetoed and audited before spawn
+      - revoked or expired receipt is vetoed
+      - admitted exact artifact reaches tools/list inside an Xvfb-only jail
+      - four real Xvfb E2Es pass and prove transport/process admission
+    risks:
+      - a path or basename allowlist masquerading as provenance
+      - a skip producing a green suite while canon still claims the capability live
+      - accidental access to the operator's real display
+      - receipt validation that is not bound to the exact executed bytes
+    rollback: >-
+      Revoke the receipt and disable the MCP configuration; preserve the code,
+      historical evidence and quarantine-by-default behavior.
+    dependencies:
+      - ADC-WO-116
+      - ADC-WO-008
+    acceptance:
+      - the operator explicitly authorizes the pinned Xvfb-only capability
+      - artifact identity, scan, isolation and receipt are independently reviewable
+      - altered, expired and revoked artifacts remain fail-closed pre-spawn
+      - all four real functional E2Es run rather than skip
+      - no authority is granted for DISPLAY=:0
+    operator_decision_required: true
+    status: REQUIRES_OPERATOR
