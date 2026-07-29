@@ -8,6 +8,59 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — F2.6 corrible SIN Claude, probado en vivo de punta a punta
+  (`ee8003d`).** El bloqueo era doble: `atlas f26 run` sólo sabía disparar
+  `claude -p` (OAuth revocado), pero el propio módulo ya declaraba el
+  mecanismo sustituible ("el spec no fija cuál") y `grade_f26_transcript`
+  sólo depende de la FORMA del transcript, no de quién lo generó — la
+  arquitectura ya apuntaba a esto. `f26_agentic_dispatch.py` reutiliza el
+  patrón de tool-calling de `tool_coder.py` sobre cualquier proveedor de
+  `.env` con `supports_tools`, con tools nombradas para casar los patrones
+  que `f26_grading.py` YA reconoce (Read/Grep/Bash/Edit/GoldenRoute/
+  trunk_invoke_readonly) — cero cambios en el grader. Reutiliza capacidades
+  reales: `trunk_invoke_readonly` invoca `build_graph_server()` contra la BD
+  Kuzu real; `GoldenRoute` usa `Orchestrator.golden_route()` perezoso —
+  nunca `GoldenRoute.for_repo()`, que crea un store aislado invisible a
+  `atlas update` (advertencia ya existente en el propio Orchestrator);
+  `Bash` corre en BwrapJail con working dir SIEMPRE read-only. TDD encontró
+  y corrigió dos bugs reales antes de tocar nada más: `_tool_read`/
+  `_tool_edit` leían `/etc/passwd` de verdad (`cwd / "/etc/passwd"` en
+  pathlib descarta `cwd` con un path absoluto — corregido con
+  `_resolve_in_repo`, rechaza absolutos y escapes vía `..`), y
+  `_tool_trunk_invoke_readonly` no capturaba `RuntimeError` de freshness
+  (el grafo está `STALE` ahora mismo) y tumbaba todo el dispatch en vez de
+  degradar limpio. CLI: `atlas f26 run --driver agentic` (default sigue
+  `claude`). 9+3 tests, RED verificado antes de producción, suite completa
+  4704 passed, mypy 332 ficheros.
+  **Verificado en vivo, no sólo en tests.** `InferenceHub(mode="auto")` con
+  `infer_for_role` recorre candidatos y puede colgarse minutos en uno lento
+  por diseño (`INFER_REQUEST_TIMEOUT_S=120 × INFER_MAX_RETRIES=2` reintentos
+  — comentario propio del código: "un proveedor colgado no puede bloquear al
+  caller"); un hub acotado a un proveedor (mismo patrón que
+  `scripts/inference_smoke.py`, `InferenceHub(providers=[p], mode="live")`)
+  responde en segundos. `groq_llama_70b`: rate limit real de cuota diaria
+  (97282/100000 tokens) — fail-closed correcto, `recorded: false`, nada
+  falseado. `gemini_free`: **corrida real completa, 29,3s, exit 0**,
+  auto-registrada (`recorded: true`, `last_run_sha=ee8003d`). F2.6 pasó de
+  `due` a `current` — **con `last_result: fail`, score 2/6**, no un pase
+  forzado. Transcript real inspeccionado: el modelo leyó 2 ficheros con
+  `Read` ANTES de `trunk_invoke_readonly` (falla ítem 2, heurística
+  documentada: cualquier Read/Grep antes del PRIMER tool_use de grafo
+  cuenta, aunque fuera para otra pregunta) y terminó en 3 turnos con
+  contenido VACÍO en el último — nunca llegó a responder en texto ni a
+  intentar el ítem 3 (GoldenRoute), así que ítems 1/2/4/6 fallan y el 3
+  "pasa por defecto" (nunca hubo Edit/Write que penalizar, tampoco hubo
+  intento real). Señal genuina sobre el prompt/scaffolding del harness con
+  un modelo free-tier pequeño, no un bug — no se tocó el prompt para forzar
+  un pase mejor, sería justo el gaming de rúbrica que F2.6 existe para
+  evitar. Árbol limpio tras la corrida: `workspace/self_build/` está
+  gitignorado, transcript y estado del gate quedan fuera del tracking.
+  Merkle verificada íntegra después.
+  **Próxima acción:** si se quiere un score real ≥pass, es trabajo de
+  scaffolding/prompt del harness (más cercano al de `tool_coder.py`,
+  explícito en pasos) o un modelo con más capacidad agéntica — decisión del
+  operador, no una corrección de bug.
+
 - **2026-07-29 — cola de pendientes cerrada, salvo lo que no me pertenece.**
   **Cerrado:** (a) los 6 worktrees `self-build-item-*` huérfanos retirados
   —verificados seguros antes: cero sin commitear, HEAD preservado en ramas y
