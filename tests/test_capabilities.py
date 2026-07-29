@@ -94,6 +94,18 @@ def executor(
 
 class TestIssueRead:
 
+    def test_absolute_block_decision_does_not_require_path_existence(
+        self,
+        permission_profile: PermissionProfile,
+    ) -> None:
+        """Permanent policy blocks are knowable before checking target existence."""
+        decision = permission_profile.absolute_block_decision(Path("/etc/atlas-never-exists"))
+
+        assert decision is not None
+        assert decision.allowed is False
+        assert decision.level is PermissionLevel.BLOCKED
+        assert "bloqueo absoluto" in decision.reason.lower()
+
     def test_workspace_path_ok(self, issuer: CapabilityIssuer, workspace: Path) -> None:
         cap = issuer.issue_read(workspace / "projects" / "test.py")
         assert isinstance(cap, ReadCapability)

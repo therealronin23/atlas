@@ -96,6 +96,17 @@ class PermissionProfile:
     # Evaluacion de rutas
     # ------------------------------------------------------------------
 
+    def absolute_block_decision(self, path: Path | str) -> AccessDecision | None:
+        """Return a permanent path denial before checking target existence.
+
+        Callers that expose a filesystem-facing result can use this narrow
+        preflight before ``exists()``.  Other denials still belong to the
+        normal capability-issuance flow, preserving its historical behavior
+        for missing paths outside the workspace.
+        """
+        resolved = Path(path).expanduser().resolve()
+        return self._absolute_block_decision(resolved)
+
     def evaluate_path(self, path: str, write: bool = False) -> AccessDecision:
         """
         Evalua si Atlas puede acceder a `path`.
@@ -105,13 +116,9 @@ class PermissionProfile:
         str_path = str(resolved)
 
         # 1. Bloqueo absoluto
-        if self._is_absolute_block(resolved):
-            return AccessDecision(
-                allowed=False,
-                level=PermissionLevel.BLOCKED,
-                reason=f"Ruta en lista de bloqueo absoluto: {str_path}",
-                path=str_path,
-            )
+        absolute_block = self._absolute_block_decision(resolved)
+        if absolute_block is not None:
+            return absolute_block
 
         # 2. Dentro del workspace
         if self._is_inside_workspace(resolved):
@@ -298,6 +305,17 @@ class PermissionProfile:
                 if str_path.startswith(f"{home}/{block}") or f"/{block}/" in str_path:
                     return True
         return False
+
+    def _absolute_block_decision(self, path: Path) -> AccessDecision | None:
+        if not self._is_absolute_block(path):
+            return None
+        str_path = str(path)
+        return AccessDecision(
+            allowed=False,
+            level=PermissionLevel.BLOCKED,
+            reason=f"Ruta en lista de bloqueo absoluto: {str_path}",
+            path=str_path,
+        )
 
     def _is_inside_workspace(self, path: Path) -> bool:
         try:

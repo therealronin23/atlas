@@ -466,6 +466,10 @@ pertenecer al mismo repositorio, es read-only dentro del jail sin red y el
 intento se registra en Merkle antes de ejecutar; sin receipt final no promueve
 el resultado. Sólo entonces puede convertir la captura en el `ValidationReport`
 en memoria que consume diagnóstico; no aplica patches ni persiste salida de test.
+`EditorTool` rechaza ahora un bloqueo absoluto de `PermissionProfile` antes de
+sondear existencia o montaje; una ruta externa no protegida y ausente conserva
+su resultado histórico de “no encontrado”. Es un cierre de frontera de lectura,
+no una superficie de producto ni una promoción de runtime.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,
 evaluación independiente, SLO/telemetría y recuperación no-LLM.

@@ -8,6 +8,18 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — bloqueo absoluto del editor antes del sondeo (ADC-WO-121).**
+  La jaula candidata reveló que `EditorTool.read_file(/etc/passwd)` devolvía
+  “no encontrado” si `/etc` no estaba montado, antes de consultar
+  `PermissionProfile`. Ahora el perfil expone la misma decisión de bloqueo
+  permanente que ya usa el issuer y el editor la aplica antes de `exists()`;
+  sólo ese caso se adelanta, por lo que una ruta externa no protegida y ausente
+  conserva “no encontrado”. Las suites de capability/editor/orchestrator
+  pasaron (**87**) y `TestReadFile` pasó dentro de Bwrap (**7**). No se amplió
+  ninguna allowlist, no se tocó gobernanza y no existe efecto externo.
+  **Próxima acción:** seguir clasificando el resto de fallos candidatos por
+  contrato, no por el contenido visible del rootfs.
+
 - **2026-07-29 — DNS determinista sólo en pytest candidato (ADC-WO-120).**
   La validación de ColdUpdate conserva Bwrap read-only y sin red. Para que
   tests que ya inyectan un fetcher alcancen el comportamiento que prueban tras

@@ -1253,6 +1253,53 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-121
+    program: P09
+    title: Deny permanent editor path blocks before filesystem probing
+    problem: EditorTool.read_file checked exists() before PermissionProfile. In the read-only candidate jail, an unmounted /etc/passwd therefore returned "not found" instead of the permanent policy denial, making the result depend on mount layout and leaking a different observable condition for a protected path.
+    evidence:
+      - the real candidate Bwrap run of TestReadFile failed because /etc/passwd was not mounted and the result was Archivo no encontrado
+      - a new missing /etc/ regression test failed on the host before the policy preflight existed
+      - the historical non-protected missing path contract expects Archivo no encontrado rather than an outside-workspace policy error
+    source_decisions:
+      - ADR-013B
+      - CTR-CODE-TESTS
+      - CTR-THIRD-PARTY-FAIL-CLOSED
+    current_state: PermissionProfile exposes absolute_block_decision from the same immutable absolute-block predicate used by evaluate_path. EditorTool uses only that narrow decision before exists()/is_file(); it preserves the historical missing-file result for non-permanent paths and still routes permitted reads through CapabilityIssuer and AtlasExecutor.
+    target_state: Every permanent filesystem block presented through the editor is denied consistently before host or jail mount state is probed, without broadly changing ordinary missing-path semantics.
+    scope:
+      - PermissionProfile permanent-block query and shared decision construction
+      - EditorTool read preflight for permanent blocks only
+      - host and real candidate-Bwrap regression coverage
+    files:
+      - src/atlas/governance/permission_profile.py
+      - src/atlas/tools/editor.py
+      - tests/test_capabilities.py
+      - tests/test_editor.py
+      - docs/decisions/adr/adr_013b_computer_use.md
+      - docs/canon/component_registry.jsonl
+      - docs/canon/component_reality_matrix.jsonl
+      - docs/canon/contract_registry.jsonl
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_editor.py tests/test_capabilities.py tests/test_orchestrator_executor.py -q
+      - real read-only networkless Bwrap run of tests/test_editor.py::TestReadFile (7 passed)
+      - MYPYPATH=src python -m mypy src/atlas/governance/permission_profile.py src/atlas/tools/editor.py
+    risks:
+      - this intentionally preflights only immutable permanent blocks; extending it to configurable or workspace decisions would require a separately reviewed contract because it changes missing-path semantics
+      - a caller that bypasses EditorTool still relies on the existing CapabilityIssuer/AtlasExecutor path and is not promoted by this surface-specific fix
+    rollback: Revert the atomic preflight commit. This restores the prior mount-dependent editor response for protected missing paths and is not a recommended security rollback; no persistent data or policy configuration migrates.
+    dependencies:
+      - ADC-WO-118
+    acceptance:
+      - a missing /etc path reports the permanent absolute block without probing existence
+      - a non-protected missing external path retains Archivo no encontrado
+      - existing issuer/executor and editor suites pass
+      - the read-only networkless candidate jail reports the same denial for TestReadFile
+      - no path allowlist, governance configuration, approval rule or external effect changes
+    operator_decision_required: false
+    status: DONE
+
   - id: ADC-WO-114
     program: P09
     title: Refresh definitive delivery evidence after governance hardening

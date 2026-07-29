@@ -110,7 +110,7 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 | P06 | Golden Route/Foundry/ColdUpdate v0 wired | build completo medido y rollback aceptado |
 | P07 | plugins, MCP/ACP, vetting A/B implementados | smokes live; C permanece ausente |
 | P08 | shell como harness; host/donors del Workbench aceptados, no integrados | Cut 1 interno, Workbench integral y Android |
-| P09 | seguridad/eval/ops reales; Merkle base verificado; EngineeringFinding v1, review, diagnóstico, reproducción Bwrap auditada, publisher Merkle/EventBus, baseline y normalizador incremental observacional code+tests sin wiring | routing gobernado, recovery y traffic evidence |
+| P09 | seguridad/eval/ops reales; Merkle base verificado; EngineeringFinding v1, review, diagnóstico, reproducción Bwrap auditada, publisher Merkle/EventBus, baseline, normalizador incremental observacional y preflight de bloqueo absoluto del editor code+tests sin wiring | routing gobernado, recovery y traffic evidence |
 | P10 | Hermes Kanban wired; NodeIdentity code+tests | pairing/federation live autorizado |
 | P11 | Hosted Linux actual | Hosted product; Native Wave 5 bloqueada |
 | P12 | corpus OSM + slice ADR-074 | guarantee profile y promotions medibles |

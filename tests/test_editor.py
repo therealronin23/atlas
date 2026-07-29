@@ -146,6 +146,13 @@ class TestReadFile:
         assert result.success is False
         assert "bloqueo absoluto" in result.error.lower()
 
+    def test_read_blocks_protected_path_before_existence_check(self, editor: EditorTool) -> None:
+        """Policy denial must not depend on whether a protected path is mounted."""
+        result = editor.read_file(Path("/etc/atlas-never-exists"))
+
+        assert result.success is False
+        assert "bloqueo absoluto" in result.error.lower()
+
 
 class TestWriteFile:
 

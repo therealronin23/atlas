@@ -29,6 +29,15 @@ go through `PermissionProfile`, capability tokens and `AtlasExecutor`.
 - No runtime dependency on Open Interpreter, Aider, Anthropic, Codex or OpenAI
   APIs is introduced by this ADR.
 
+### Read-path correction (2026-07-29)
+
+`EditorTool.read_file` now asks `PermissionProfile` for a permanent absolute
+block before checking whether the target exists or is mounted. This keeps a
+blocked `/etc/...` path denied in a restricted jail and avoids exposing a
+mount-dependent result. The preflight is deliberately narrow: an absent path
+that is not permanently blocked still returns the historical not-found result,
+and any allowed read continues through capability issuance and `AtlasExecutor`.
+
 ## Accepted Implementation
 
 - `src/atlas/tools/browser.py`

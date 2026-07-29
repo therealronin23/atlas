@@ -204,6 +204,12 @@ class EditorTool:
     def read_file(self, path: Path, *, max_bytes: int = 1_000_000) -> FileReadResult:
         """Lee el contenido de un archivo en el proyecto."""
         resolved = path.expanduser().resolve()
+        absolute_block = self._executor.issuer.profile.absolute_block_decision(resolved)
+        if absolute_block is not None:
+            return FileReadResult(
+                success=False, path=str(resolved), content="", size_bytes=0,
+                error=absolute_block.reason,
+            )
         if not resolved.exists():
             return FileReadResult(
                 success=False, path=str(resolved), content="", size_bytes=0,
