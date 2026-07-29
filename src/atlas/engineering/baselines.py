@@ -218,12 +218,16 @@ class EngineeringReviewBaselineStore:
         candidate_revision: str,
     ) -> tuple[BaselineFindingState, ...]:
         states: list[BaselineFindingState] = []
+        seen_dedupe_keys: set[str] = set()
         for finding in findings:
             if (
                 finding.repository != repository
                 or finding.candidate_revision != candidate_revision
             ):
                 raise ValueError("finding snapshot is outside accepted review context")
+            if finding.dedupe_key in seen_dedupe_keys:
+                raise ValueError("finding snapshot contains duplicate finding dedupe_key")
+            seen_dedupe_keys.add(finding.dedupe_key)
             states.append(
                 BaselineFindingState(
                     finding_id=finding.id,

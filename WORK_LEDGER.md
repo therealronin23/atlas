@@ -28,9 +28,11 @@ de escribir: `atlas reality --json`.
   verifica ancestry contra commits inmutables y calcula sólo el delta Git con
   external diff/textconv desactivados; no ejecuta código ni modifica el
   worktree. `EngineeringIncrementalReviewRunner` compone ese delta con el
-  coordinador existente y evita re-revisar un candidate ya aceptado. **Próxima
-  acción:** diseñar reproducción aislada y normalización de resoluciones sin abrir los boundaries
-  reservados.
+  coordinador existente y evita re-revisar un candidate ya aceptado. El
+  normalizador incremental compara sólo claves opacas exactas y marca una
+  ausencia como `NOT_REOBSERVED`, sin cambiar lifecycle ni inferir una
+  resolución. **Próxima acción:** diseñar reproducción aislada e hipótesis de
+  grafo/historial/memoria sin abrir los boundaries reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
   local (ADC-WO-114/116).**

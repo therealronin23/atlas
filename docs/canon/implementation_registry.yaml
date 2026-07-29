@@ -457,7 +457,7 @@ work_orders:
     source_decisions:
       - ADR-078
       - approved Workbench symbiosis design section 6
-    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, an EngineeringReviewCoordinator composed over UniversalVerifier, a capture-only EngineeringDiagnosticCoordinator composed over ValidationReport and an injected RootCauseClassifier, an opt-in Merkle-before-EventBus publisher, an explicit-acceptance baseline journal/selector, and an ancestry-verified read-only Git diff preparer/runner composed over the existing coordinator are code-present and tested; isolated reproduction, graph/history/memory hypotheses, correction production, incremental resolution normalization, runtime event wiring, Orchestrator integration, and a read-only API projection remain absent.
+    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, an EngineeringReviewCoordinator composed over UniversalVerifier, a capture-only EngineeringDiagnosticCoordinator composed over ValidationReport and an injected RootCauseClassifier, an opt-in Merkle-before-EventBus publisher, an explicit-acceptance baseline journal/selector, an ancestry-verified read-only Git diff preparer/runner composed over the existing coordinator, and an exact-key incremental normalizer that never alters lifecycle are code-present and tested; isolated reproduction, graph/history/memory hypotheses, correction production, runtime event wiring, Orchestrator integration, and a read-only API projection remain absent.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -473,6 +473,7 @@ work_orders:
       - src/atlas/engineering/events.py
       - src/atlas/engineering/baselines.py
       - src/atlas/engineering/incremental.py
+      - src/atlas/engineering/normalization.py
       - src/atlas/core/contracts.py
       - src/atlas/events/core_bridge.py
       - src/atlas/logging/merkle_logger.py
@@ -482,6 +483,7 @@ work_orders:
       - tests/test_engineering_events.py
       - tests/test_engineering_baselines.py
       - tests/test_engineering_incremental.py
+      - tests/test_engineering_normalization.py
       - docs/design/engineering_finding_contract.md
     tests:
       - versioned contract/schema parity
@@ -491,6 +493,7 @@ work_orders:
       - explicit acceptance baseline and ancestry-required incremental selection
       - ancestry-verified bounded Git diff without external diff or textconv
       - incremental runner delegates only verified pending deltas to the existing coordinator
+      - exact-key incremental comparison never infers resolution or writes a finding journal
       - deterministic complete and incremental review
       - finding deduplication and lifecycle
       - BLOCKING and MAJOR elevation

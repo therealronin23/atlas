@@ -150,10 +150,10 @@ conserva estado, autoridad y contratos.
 
 ### Cut 1 — plano de ingeniería
 
-`ADC-WO-108` define `EngineeringFinding` y conecta revisores de código y
-diagnóstico automático con el orquestador. Debe producir alertas tipadas,
-deduplicables, atribuibles y accionables sin conceder a la UI permiso de
-ejecución.
+`ADC-WO-108` define `EngineeringFinding` y prepara evidencia de revisión de
+código y diagnóstico automático para una futura ruta gobernada al orquestador.
+Debe producir alertas tipadas, deduplicables, atribuibles y accionables sin
+conceder a la UI permiso de ejecución.
 
 El primer subcorte (2026-07-29) ya fija el schema v1, journal append-only,
 deduplicación, adaptación de self-audit, composición determinista del
@@ -165,8 +165,8 @@ Puede existir antes de un owner durable Mission/Task porque no posee Task ni
 produce efectos. Un publisher opt-in ya registra finding/review metadata en
 Merkle antes de emitir eventos tipados al `EventBus`; tampoco crea Tasks ni
 llama al Orchestrator. Reproducción aislada, hipótesis de grafo/historial/memoria,
-producción/validación de correcciones, normalización incremental de resoluciones
-y wiring de runtime, Orchestrator y proyección siguen ausentes y no se infieren
+producción/validación de correcciones y wiring de runtime, Orchestrator y
+proyección siguen ausentes y no se infieren
 como implementados. `EngineeringReviewBaselineStore` ya fija una base sólo tras un
 `PASS` con reviewers y una referencia explícita de aceptación; conserva el
 snapshot de lifecycle previo, exige que el llamador verifique ancestry y no
@@ -174,6 +174,9 @@ convierte un resultado verde en promoción automática. El preparador incrementa
 verifica ancestry contra objetos Git y calcula el delta con diff externo y
 textconv deshabilitados, sin ejecutar código candidato ni tocar el worktree; el
 runner pasa ese request al coordinador existente sólo cuando hay delta pendiente.
+El normalizador incremental compara únicamente `dedupe_key` opacas e idénticas
+con el snapshot aceptado: una ausencia queda `NOT_REOBSERVED`, nunca se infiere
+como `RESOLVED`, ni se escribe el journal.
 
 ### Cut 2 — convergencia desktop integral
 
@@ -256,7 +259,7 @@ pregunta empírica; tampoco autoriza Native.
 | Destilación privada→shared no universal | P04/P05 | contrato y pipeline después del ADR de memoria |
 | LivingGraph sin importadores | P08 | decidir integrar o archivar; no llamarlo productivo |
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
-| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, publisher Merkle/EventBus, baseline explícito y runner de diff/review code+tests presentes; faltan reproducción aislada, normalización incremental de resoluciones, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
+| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, publisher Merkle/EventBus, baseline explícito y normalización observacional de diff/review code+tests presentes; faltan reproducción aislada, hipótesis de grafo/historial/memoria, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
 | Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |

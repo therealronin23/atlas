@@ -60,6 +60,17 @@ commit ni modifica el worktree. Devuelve un request compatible con el
 ambos explícitamente y no re-revisa un candidate ya aceptado; la inyección y
 ejecución runtime siguen fuera de este subcorte.
 
+`EngineeringIncrementalFindingNormalizer` compara el report con el snapshot
+de la base aceptada sólo cuando una `dedupe_key` opaca coincide exactamente. El
+resultado es una proyección determinista `NEW`, `REOBSERVED` o
+`NOT_REOBSERVED`: esta última sólo expresa que el review acotado no volvió a
+emitir esa clave, nunca que el finding se resolvió. No escribe ningún journal,
+no cambia lifecycle y rechaza snapshots o reports ambiguos por clave duplicada.
+Si el journal devuelve un finding deduplicado de una ejecución previa, conserva
+su `run_id` y `task_id` históricos: el normalizador verifica repositorio y
+revisiones, pero no reescribe esa procedencia para hacerla pasar por evidencia
+nueva.
+
 ## Boundary
 
 Un finding es una observación con procedencia. No es una prueba automática, una
@@ -74,9 +85,8 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 
 ## Transition
 
-El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
-última revisión aceptada, normalización de resoluciones y reproducción aislada
-con hipótesis de grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
+El siguiente subcorte de `ADC-WO-108` añade reproducción aislada con hipótesis
+de grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
 producción y validación de correcciones y una proyección read-only esperan sus
 contratos y la frontera durable Mission/Task; no se declaran implementados por este
 contrato.

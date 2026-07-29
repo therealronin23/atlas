@@ -189,6 +189,22 @@ def test_cross_context_finding_snapshot_is_rejected(tmp_path: Path) -> None:
         )
 
 
+def test_accepted_snapshot_rejects_ambiguous_dedupe_keys(tmp_path: Path) -> None:
+    store = EngineeringReviewBaselineStore(tmp_path / "baselines.jsonl")
+    duplicate = _resolved_finding().model_copy(update={"id": "finding_baseline_002"})
+
+    with pytest.raises(ValueError, match="duplicate finding dedupe_key"):
+        store.record_accepted(
+            _report(),
+            acceptance_ref="approval_001",
+            accepted_by="operator",
+            at="2026-07-29T15:01:00+00:00",
+            finding_snapshot=(_resolved_finding(), duplicate),
+        )
+
+    assert store.count() == 0
+
+
 def test_without_an_accepted_baseline_selection_preserves_the_requested_base(tmp_path: Path) -> None:
     store = EngineeringReviewBaselineStore(tmp_path / "baselines.jsonl")
 

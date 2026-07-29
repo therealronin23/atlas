@@ -442,8 +442,10 @@ aceptada sólo tras `PASS`, reviewer real y referencia de aceptación explícita
 conserva lifecycle previo. `EngineeringIncrementalReviewPreparer` verifica
 ancestry y lee el delta entre objetos Git con external diff/textconv desactivados,
 sin ejecutar el candidato; `EngineeringIncrementalReviewRunner` entrega ese
-request al coordinador existente sólo si todavía requiere revisión. Aún faltan reproducción aislada, hipótesis de
-grafo/historial/memoria, normalización incremental de resoluciones, wiring
+request al coordinador existente sólo si todavía requiere revisión. El
+normalizador incremental correlaciona sólo `dedupe_key` opacas e idénticas y
+expone `NOT_REOBSERVED` sin cambiar lifecycle ni inferir una resolución. Aún
+faltan reproducción aislada, hipótesis de grafo/historial/memoria, wiring
 gobernado, Orchestrator y superficie de producto.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,

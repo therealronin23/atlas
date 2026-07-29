@@ -18,6 +18,10 @@ from atlas.engineering.baselines import (
     EngineeringReviewBaselineStore,
     IncrementalReviewSelection,
 )
+from atlas.engineering.normalization import (
+    EngineeringIncrementalFindingNormalizer,
+    IncrementalFindingNormalization,
+)
 from atlas.engineering.review import EngineeringReviewReport, EngineeringReviewRequest
 
 
@@ -44,6 +48,7 @@ class IncrementalReviewExecution:
 
     prepared: PreparedIncrementalReview
     report: EngineeringReviewReport | None
+    normalization: IncrementalFindingNormalization | None
 
 
 _COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{7,64}$")
@@ -188,15 +193,26 @@ class EngineeringIncrementalReviewRunner:
         *,
         preparer: EngineeringIncrementalReviewPreparer,
         coordinator: _ReviewCoordinatorLike,
+        normalizer: EngineeringIncrementalFindingNormalizer | None = None,
     ) -> None:
         self._preparer = preparer
         self._coordinator = coordinator
+        self._normalizer = normalizer or EngineeringIncrementalFindingNormalizer()
 
     def run(self, request: EngineeringReviewRequest) -> IncrementalReviewExecution:
         prepared = self._preparer.prepare(request)
         if prepared.request is None:
-            return IncrementalReviewExecution(prepared=prepared, report=None)
+            return IncrementalReviewExecution(
+                prepared=prepared,
+                report=None,
+                normalization=None,
+            )
+        report = self._coordinator.review(prepared.request)
         return IncrementalReviewExecution(
             prepared=prepared,
-            report=self._coordinator.review(prepared.request),
+            report=report,
+            normalization=self._normalizer.normalize(
+                report=report,
+                selection=prepared.selection,
+            ),
         )

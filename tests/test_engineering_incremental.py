@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -15,13 +16,20 @@ from atlas.engineering.incremental import (
     EngineeringIncrementalReviewPreparer,
     IncrementalReviewPreparationError,
 )
-from atlas.engineering.findings import EngineeringFindingStore
+from atlas.engineering.findings import (
+    EngineeringFinding,
+    EngineeringFindingStore,
+    FindingEvidence,
+    FindingSeverity,
+    FindingStatus,
+)
 from atlas.engineering.review import (
     EngineeringReviewReport,
     EngineeringReviewCoordinator,
     EngineeringReviewRequest,
     ReviewOutcome,
 )
+from atlas.events.schemas import Risk
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -209,6 +217,38 @@ class _CapturingAdapter:
         return ReviewOutcome(adapter_id=self.adapter_id, verdict=Verdict.PASS)
 
 
+class _StableFindingAdapter:
+    adapter_id = "stable_finding"
+
+    def review(self, request: EngineeringReviewRequest) -> ReviewOutcome:
+        finding = EngineeringFinding(
+            id="finding_stable_incremental_001",
+            run_id=request.run_id,
+            task_id=request.task_id,
+            repository=request.repository,
+            base_revision=request.base_revision,
+            candidate_revision=request.candidate_revision,
+            source=self.adapter_id,
+            category="review",
+            severity=FindingSeverity.MAJOR,
+            status=FindingStatus.OPEN,
+            summary="A stable deterministic finding",
+            detail="The store may retain this record across review runs.",
+            locations=(),
+            evidence=(FindingEvidence(kind="test", reference=self.adapter_id),),
+            reproduction=None,
+            suggested_action=None,
+            patch_ref=None,
+            dedupe_key=(
+                f"{request.repository}:{request.candidate_revision}:{self.adapter_id}:stable"
+            ),
+            created_at=request.at,
+            updated_at=request.at,
+            risk=Risk.MEDIUM,
+        )
+        return ReviewOutcome(adapter_id=self.adapter_id, verdict=Verdict.FAIL, findings=(finding,))
+
+
 def test_incremental_runner_composes_verified_delta_with_existing_review_coordinator(
     repository: tuple[Path, str, str, str], tmp_path: Path
 ) -> None:
@@ -235,6 +275,8 @@ def test_incremental_runner_composes_verified_delta_with_existing_review_coordin
     assert execution.report is not None
     assert execution.report.verdict is Verdict.PASS
     assert execution.prepared.ancestry_verified is True
+    assert execution.normalization is not None
+    assert execution.normalization.relations == ()
     assert adapter.requests[0].base_revision == accepted
     assert "+three" in adapter.requests[0].diff
 
@@ -263,5 +305,38 @@ def test_incremental_runner_does_not_re_review_an_already_accepted_candidate(
     execution = runner.run(_request(base=first, candidate=accepted))
 
     assert execution.report is None
+    assert execution.normalization is None
     assert execution.prepared.selection.review_required is False
     assert adapter.requests == []
+
+
+def test_incremental_runner_preserves_prior_finding_provenance_on_a_repeat_run(
+    repository: tuple[Path, str, str, str], tmp_path: Path
+) -> None:
+    repo, first, accepted, candidate = repository
+    baselines = EngineeringReviewBaselineStore(tmp_path / "baselines.jsonl")
+    baselines.record_accepted(
+        _pass_report(base=first, candidate=accepted),
+        acceptance_ref="approval_001",
+        accepted_by="operator",
+        at="2026-07-29T16:01:00+00:00",
+    )
+    findings = EngineeringFindingStore(tmp_path / "findings.jsonl")
+    runner = EngineeringIncrementalReviewRunner(
+        preparer=EngineeringIncrementalReviewPreparer(repo_root=repo, baselines=baselines),
+        coordinator=EngineeringReviewCoordinator(store=findings, adapters=[_StableFindingAdapter()]),
+    )
+    first_execution = runner.run(_request(base=first, candidate=candidate))
+    repeated_request = replace(
+        _request(base=first, candidate=candidate),
+        run_id="run_incremental_002",
+    )
+
+    repeated_execution = runner.run(repeated_request)
+
+    assert first_execution.report is not None
+    assert repeated_execution.report is not None
+    assert repeated_execution.report.findings[0].run_id == "run_incremental_001"
+    assert repeated_execution.normalization is not None
+    assert repeated_execution.normalization.relations[0].current == repeated_execution.report.findings[0]
+    assert findings.count() == 1
