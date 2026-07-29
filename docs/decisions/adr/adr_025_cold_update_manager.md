@@ -103,3 +103,11 @@ profile and graph routes passed in a real 2 GiB Bwrap jail. That application
 profile does not create a physical-memory cgroup or a full candidate receipt.
 Removing the fixed ceiling or calling the build successful still requires a
 separately reproducible runner with physical-resource/cgroup evidence.
+
+`ADC-WO-120` keeps tests that already inject a fetcher meaningful under that
+networkless boundary: only candidate pytest receives a protected test-profile
+flag, and its test fixture returns a deterministic public DNS answer for
+hostnames. The Bwrap network namespace still has no route, and neither
+`SSRFBridge` nor any production request path receives a DNS or egress bypass.
+Tests that need to assert DNS failure must own that condition explicitly. This
+test-only compatibility seam is not a full candidate receipt.

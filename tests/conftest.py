@@ -9,6 +9,9 @@ sigue activa como segunda barrera.
 
 from __future__ import annotations
 
+import ipaddress
+import os
+import socket
 from typing import Generator
 
 import pytest
@@ -78,6 +81,8 @@ _SECURITY_COUNCIL_ENV_KEYS = ("ATLAS_SECURITY_COUNCIL_GATE",)
 # propio monkeypatch.setenv("ATLAS_NESTED_TEST_RUN", "1") en el cuerpo del
 # test (corre después de este autouse).
 _NESTED_TEST_RUN_ENV_KEYS = ("ATLAS_NESTED_TEST_RUN",)
+_CANDIDATE_VALIDATION_ENV = "ATLAS_CANDIDATE_VALIDATION"
+_OFFLINE_TEST_PUBLIC_IP = "93.184.216.34"
 
 
 @pytest.fixture(autouse=True)
@@ -107,6 +112,41 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     # el semántico real puede seguir haciendo su propio
     # monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed") dentro del test.
     monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
+
+
+@pytest.fixture(autouse=True)
+def _candidate_validation_uses_deterministic_dns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep injected-fetch tests deterministic in the networkless candidate jail.
+
+    ``SSRFBridge`` deliberately fails closed when DNS is absent. Candidate
+    validation deliberately has no network, yet most unit tests inject their
+    fetcher and intend to exercise parsing or policy after that gate. Supply a
+    public fixture address only in the runner's explicit test profile; real
+    egress remains impossible in Bwrap and tests that patch DNS themselves
+    still take precedence.
+    """
+    if os.environ.get(_CANDIDATE_VALIDATION_ENV) != "1":
+        return
+
+    real_getaddrinfo = socket.getaddrinfo
+
+    def _fixture_getaddrinfo(host: object, port: object, *args: object, **kwargs: object):
+        if isinstance(host, str):
+            try:
+                ipaddress.ip_address(host)
+            except ValueError:
+                return [
+                    (
+                        socket.AF_INET,
+                        socket.SOCK_STREAM,
+                        socket.IPPROTO_TCP,
+                        "",
+                        (_OFFLINE_TEST_PUBLIC_IP, int(port) if isinstance(port, int) else 0),
+                    )
+                ]
+        return real_getaddrinfo(host, port, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", _fixture_getaddrinfo)
 
 
 @pytest.fixture(autouse=True)

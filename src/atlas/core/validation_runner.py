@@ -78,6 +78,7 @@ _PROTECTED_JAIL_ENV = frozenset(
         "GIT_WORK_TREE",
         "GIT_TERMINAL_PROMPT",
         "GIT_OPTIONAL_LOCKS",
+        "ATLAS_CANDIDATE_VALIDATION",
     }
 )
 
@@ -340,6 +341,11 @@ class ValidationRunner:
             "HOME": _JAIL_HOME,
             "ATLAS_HOME": _JAIL_ATLAS_HOME,
             "ATLAS_MEMORY_VECTOR": "0",
+            # Tests running in this intentionally networkless jail use an
+            # injected public-DNS fixture for fake fetchers.  This flag is a
+            # test-profile signal only; it never grants egress to production
+            # code or bypasses SSRFBridge outside pytest.
+            "ATLAS_CANDIDATE_VALIDATION": "1",
             # Guardia anti-recursión (incidente 2026-07-09): la suite lanzada
             # por el lazo no puede volver a disparar ticks de mantenimiento.
             "ATLAS_NESTED_TEST_RUN": "1",

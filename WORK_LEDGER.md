@@ -8,6 +8,17 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — DNS determinista sólo en pytest candidato (ADC-WO-120).**
+  La validación de ColdUpdate conserva Bwrap read-only y sin red. Para que
+  tests que ya inyectan un fetcher alcancen el comportamiento que prueban tras
+  la compuerta SSRF, `ValidationRunner` activa un flag protegido y
+  `tests/conftest.py` responde hostnames con una IP pública fija sólo bajo ese
+  perfil de pytest. El grupo real dentro del jail pasó **64 tests**; no se
+  habilitó egress, no cambió `SSRFBridge` de producción y un test que quiera
+  validar un fallo DNS debe declarar su propio double. **Próxima acción:**
+  medir y clasificar el resto de la suite completa sin convertir fallos de
+  infraestructura en permisos.
+
 - **2026-07-29 — enlaces de sistema mínimos disponibles dentro de Bwrap.** El
   rootfs read-only ya exponía `/usr`, pero alias como `/usr/bin/awk` resuelven
   por `/etc/alternatives` en sistemas Debian y quedaban rotos. Bwrap monta

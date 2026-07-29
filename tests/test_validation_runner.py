@@ -95,6 +95,7 @@ def test_default_validation_uses_read_only_jail_without_host_secrets(
         assert str(tmp_path / "src") in call.extra_env["PYTHONPATH"]
         assert "ATLAS_TEST_SECRET" not in call.extra_env
         assert call.extra_env["HOME"] == "/tmp/atlas-validation-user"
+        assert call.extra_env["ATLAS_CANDIDATE_VALIDATION"] == "1"
         assert "PATH" not in call.extra_env
 
 
@@ -204,6 +205,7 @@ def test_protected_extra_env_is_remapped_away_from_host(
             "PATH": "/host/bin",
             "PYTHONPATH": "/host/site-packages",
             "LD_PRELOAD": "/host/evil.so",
+            "ATLAS_CANDIDATE_VALIDATION": "0",
         },
         jail_factory=lambda: jail,
     )
@@ -216,6 +218,7 @@ def test_protected_extra_env_is_remapped_away_from_host(
         assert "/host/site-packages" not in call.extra_env["PYTHONPATH"]
         assert "PATH" not in call.extra_env
         assert "LD_PRELOAD" not in call.extra_env
+        assert call.extra_env["ATLAS_CANDIDATE_VALIDATION"] == "1"
 
 
 def test_sin_extra_env_funciona(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

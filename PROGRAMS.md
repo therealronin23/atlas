@@ -289,7 +289,10 @@ read-only, sin red y sin entorno del host. La observación fresca fue un
 preflight bloqueado, no una mejora exitosa. El perfil Kuzu de aplicación ya
 evita los defaults virtuales del host y las rutas focales pasan con 2 GiB,
 pero falta un receipt de la suite completa en un runner con límite físico
-independiente; no se declara self-build exitoso.
+independiente; no se declara self-build exitoso. El perfil de pytest candidato
+usa DNS público determinista únicamente cuando un test ya inyecta su fetcher:
+no restaura red, no cambia `SSRFBridge` en runtime y no transforma esa ruta
+focal en un build completo.
 
 **Target.** Desde gap verificado hasta candidato, evaluación independiente,
 aprobación, aplicación, recibo, aprendizaje y rollback; sin mutar el checkout

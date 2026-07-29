@@ -1205,6 +1205,54 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-120
+    program: P06
+    title: Keep injected-fetch candidate tests deterministic without granting egress
+    problem: Candidate validation intentionally runs in a networkless Bwrap namespace, but several unit tests inject a fetcher and still traverse SSRFBridge's DNS gate before their fake can exercise parsing or policy. Missing jail DNS therefore produced environmental failures unrelated to the injected behavior.
+    evidence:
+      - the real read-only/networkless candidate jail reported DNS-resolution failures before injected fetchers ran
+      - a candidate-profile Bwrap run of registry, fetch, package, stage-2, panorama and MCP-seed tests passed 64 tests with no egress
+      - SSRFBridge remains fail-closed when normal runtime DNS resolution fails
+    source_decisions:
+      - ADR-025
+      - ADR-055
+      - CTR-COLDUPDATE-VALIDATION-JAIL
+      - CTR-THIRD-PARTY-FAIL-CLOSED
+      - CTR-LIVE-EVIDENCE
+    current_state: ValidationRunner supplies a protected ATLAS_CANDIDATE_VALIDATION=1 test-profile flag only to candidate pytest/mypy. tests/conftest.py installs a deterministic public DNS answer only when that exact flag is present, so injected-fetch tests reach their fake after the existing SSRF policy gate. The Bwrap network namespace remains absent; no production request path, SSRFBridge rule or real egress path changes. A passing full candidate receipt and physical cgroup evidence remain separate gates.
+    target_state: Candidate tests that explicitly inject network behavior remain reproducible in the no-network jail without converting DNS absence into a security bypass or an assertion of live egress.
+    scope:
+      - protected candidate-validation test-profile environment
+      - pytest-only deterministic DNS fixture for hostnames
+      - no-network Bwrap regression evidence for injected-fetch surfaces
+    files:
+      - src/atlas/core/validation_runner.py
+      - tests/conftest.py
+      - tests/test_validation_runner.py
+      - docs/decisions/adr/adr_025_cold_update_manager.md
+      - docs/canon/component_reality_matrix.jsonl
+      - docs/canon/contract_registry.jsonl
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_validation_runner.py tests/test_candidate_fetch.py tests/test_candidate_package_lookup.py tests/test_candidate_stage2.py tests/test_panorama_scout.py tests/test_mcp_registry_seed.py -q
+      - real read-only networkless Bwrap run of tests/test_registry_scout.py, candidate fetch/package/stage-2, panorama and MCP seed (64 passed)
+      - MYPYPATH=src python -m mypy src/atlas/core/validation_runner.py
+    risks:
+      - a DNS-failure test that does not explicitly patch DNS could see the test fixture rather than the intended failure; such a test must own its DNS double
+      - the fixture is valid only under pytest with the protected candidate flag and must never move into production runtime code
+      - a green injected-fetch group does not prove a successful full candidate validation or enable network access
+    rollback: Revert the atomic candidate-test-profile commit. Candidate validation remains networkless and fail-closed, but injected-fetch tests return to DNS-environment failures until they are individually adapted.
+    dependencies:
+      - ADC-WO-118
+    acceptance:
+      - callers cannot override ATLAS_CANDIDATE_VALIDATION through ValidationRunner extra_env
+      - ordinary pytest remains outside the fixture unless the candidate flag is explicitly supplied by the runner
+      - injected-fetch candidate tests pass in a real read-only/networkless Bwrap jail
+      - no production SSRFBridge behavior, Bwrap network policy or host subprocess fallback is changed
+      - no full candidate build or physical cgroup claim is made
+    operator_decision_required: false
+    status: DONE
+
   - id: ADC-WO-114
     program: P09
     title: Refresh definitive delivery evidence after governance hardening

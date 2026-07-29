@@ -78,6 +78,7 @@ entrega, no sustitutos de P00–P12.
 | ADC-WO-117 | intake y binding de patch ColdUpdate fail-closed | rutas permitidas, governance inmutable y bytes aprobados revalidados antes de efecto |
 | ADC-WO-118 | validación ColdUpdate aislada por Bwrap | candidato read-only/sin red/entorno explícito; no fallback host ni falsa prueba de build completo |
 | ADC-WO-119 | perfil Kuzu de apertura explícito y acotado | ningún constructor directo; opener y rutas de grafo pasan bajo Bwrap de 2 GiB; no se afirma build completo |
+| ADC-WO-120 | DNS determinista sólo para tests candidatos con fetcher inyectado | Bwrap sigue sin red; SSRF de producción no cambia; rutas focales reales pasan dentro del jail |
 | ADC-WO-006 | auditoría independiente y entrega local | 0 BLOCKING; MAJOR resolubles corregidos; bundles verifican |
 
 ### Cambios de implementación autorizados
