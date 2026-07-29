@@ -1,9 +1,9 @@
 {
-  "schema_version": "1.1",
-  "generated_at": "2026-07-28T19:19:02Z",
-  "anchor": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+  "schema_version": "1.3",
+  "generated_at": "2026-07-29T07:31:44Z",
+  "anchor": "fac6bca34831533ae248564adf615e052c59be16",
   "artifact_commit_excluded_by_design": true,
-  "count": 15,
+  "count": 17,
   "work_orders": [
     {
       "id": "ADC-WO-000",
@@ -535,7 +535,8 @@
       "problem": "Internal vet_call errors and corrupt Sentinel snapshots permitted execution or rearmed TOFU; periodic drift only reported without revoking runtime access.",
       "evidence": [
         "independent ADR/code reconciliation review",
-        "red tests for corrupt snapshots, internal vet errors and drift revocation"
+        "red tests for corrupt snapshots, internal vet errors and drift revocation",
+        "integration review reproduced a generated atlas-trunk command quarantined before spawn because its governed entrypoint was absent from the native module set"
       ],
       "source_decisions": [
         "ADR-038",
@@ -547,15 +548,18 @@
       "scope": [
         "Sentinel call boundary",
         "snapshot integrity",
-        "McpRegistry re-vet and quarantine"
+        "McpRegistry re-vet and quarantine",
+        "generated Atlas trunk native-command admission"
       ],
       "files": [
         "src/atlas/security/sentinel_gate.py",
         "src/atlas/mcp/registry.py",
-        "tests/test_sentinel_gate.py"
+        "tests/test_sentinel_gate.py",
+        "tests/test_atlas_trunk_wiring.py"
       ],
       "tests": [
         "35 focused Sentinel/re-vet tests",
+        "generated atlas-trunk config passes the loader and Sentinel pre-spawn boundary",
         "full pytest and mypy"
       ],
       "risks": [
@@ -570,7 +574,8 @@
         "invalid snapshot never rearms TOFU",
         "internal call-check error blocks dispatch",
         "drift/error removes tools and transport and prevents lazy restart",
-        "snapshot evidence is never rewritten by re-vet"
+        "snapshot evidence is never rewritten by re-vet",
+        "the generated governed atlas-trunk command is admitted while unmeasured third-party commands remain quarantined"
       ],
       "operator_decision_required": false,
       "status": "DONE"
@@ -727,7 +732,8 @@
       "evidence": [
         "work/canon-compiler/delivery/LOCAL_COMMITS.json ends before the current branch head",
         "work/canon-compiler/delivery/VALIDATION_RESULTS.json references an earlier substantive anchor",
-        "current branch contains evidence-governance, optional-adapter and work-order-gate commits"
+        "current branch contains evidence-governance, optional-adapter and work-order-gate commits",
+        "2026-07-28 integration validation at b72fe6e completed the direct Python suite, full mypy, canon/index checks, Merkle audit, Reality, doctor, health, lock check and offline FastEmbed measurement with declared runtime limits"
       ],
       "source_decisions": [
         "current operator directive sections 19 through 23",
@@ -747,6 +753,9 @@
         "work/canon-compiler/delivery/DEFINITIVE_CONVERGENCE_REPORT.md",
         "work/canon-compiler/delivery/IMPLEMENTATION_REPORT.md",
         "work/canon-compiler/delivery/ADVERSARIAL_AUDIT.md",
+        "work/canon-compiler/delivery/CANON_COMPILATION_REPORT.md",
+        "work/canon-compiler/delivery/IMPLEMENTED_WORK_ORDERS.json",
+        "work/canon-compiler/delivery/DEFERRED_WORK_ORDERS.json",
         "work/canon-compiler/delivery/LOCAL_COMMITS.json",
         "work/canon-compiler/delivery/FINAL_DIFF.patch",
         "docs/canon/implementation_registry.yaml",
@@ -767,13 +776,153 @@
       "rollback": "Revert only the delivery-evidence commit and remove the newly generated external bundle/ZIP; implementation commits remain intact and the prior bundle remains available.",
       "dependencies": [
         "ADC-WO-112",
-        "ADC-WO-113"
+        "ADC-WO-113",
+        "ADC-WO-115",
+        "ADC-WO-116"
       ],
       "acceptance": [
         "delivery anchor and commit inventory describe the current substantive head",
         "all validation classifications are explicit",
         "bundle and documentary ZIP verify and exclude secrets/source tree",
         "review and non-destructive integration steps are current"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-115",
+      "program": "P04",
+      "title": "Register the FastEmbed compatibility measurement as a validation harness",
+      "problem": "The FastEmbed 0.8.0 upstream mean-pooling warning identifies a possible semantic change, but a local corpus result was not yet governed and must not be mistaken for a dependency, model, rebuild, or memory-migration decision.",
+      "evidence": [
+        "Commits 748a40a, 8c5c52c, 3c3c82c, 05d6ef3, and 24b784b provide the evaluator, actionable fixture validation, offline runner/corpus, hardened runner boundary, and JSON-only usage boundary used by this measurement.",
+        "2026-07-28: PYTHONPATH=src HF_HUB_OFFLINE=1 python scripts/benchmark_fastembed_compatibility.py exited 0 with status=MEASURED and passed=true.",
+        "The versioned corpus reported passed=true for its three cases: restablecer-contrasena, declaracion-iva, and programar-reunion.",
+        "The measured implementation was FastEmbed 0.8.0 at dimension 384 with fingerprint sha256:d2463fb0b4881ae9b8c05f19230bf3c40447db58afab336135727964f5d9882d and artifact_sha256 e844933822b84e4feda6da123ecfa5cf42eb5a0f409eb46e8f7b881e181394a9.",
+        "Upstream emitted its mean-pooling-versus-CLS UserWarning for sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2; no recommendation from that warning was applied.",
+        "Integration review added a finite-extreme vector regression: an overflow-prone cosine calculation now becomes MEASUREMENT_FAILED rather than a non-standard JSON NaN payload."
+      ],
+      "source_decisions": [
+        "docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md",
+        "current operator directive evidence-before-decision rule"
+      ],
+      "current_state": "The offline runner has measured the versioned Spanish corpus against one local FastEmbed identity. Its JSON output is an ATLAS_MEASUREMENT from a VALIDATION_HARNESS; it has not changed runtime behavior, dependencies, model registration, persisted vectors, or memory ownership.",
+      "target_state": "The measurement remains traceable and reproducible while a separate baseline comparison and explicit dependency/memory decision determine whether any pin, custom model, rebuild, or migration is justified.",
+      "scope": [
+        "offline FastEmbed identity and semantic-ranking measurement",
+        "versioned Spanish compatibility corpus",
+        "finite-score and strict-JSON output boundary",
+        "canonical continuation record without runtime promotion"
+      ],
+      "files": [
+        "src/atlas/memory/embedding_benchmark.py",
+        "fixtures/fastembed_compatibility_cases.json",
+        "scripts/benchmark_fastembed_compatibility.py",
+        "tests/test_embedding_benchmark.py",
+        "tests/test_fastembed_embedder.py",
+        "tests/test_embedding_identity.py",
+        "docs/canon/implementation_registry.yaml",
+        "WORK_LEDGER.md",
+        "MEMORY.md",
+        "docs/INDEX.yaml",
+        "docs/superpowers/specs/2026-07-28-fastembed-compatibility-benchmark-design.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src HF_HUB_OFFLINE=1 python scripts/benchmark_fastembed_compatibility.py",
+        "PYTHONPATH=src python -m pytest tests/test_embedding_benchmark.py tests/test_fastembed_embedder.py tests/test_embedding_identity.py -q",
+        "MYPYPATH=src python -m mypy src/atlas/memory/embedding_benchmark.py",
+        "PYTHONPATH=src python scripts/check_canon.py",
+        "PYTHONPATH=src python scripts/docs_index_audit.py --write && PYTHONPATH=src python scripts/docs_index_audit.py --strict"
+      ],
+      "risks": [
+        "The three-case local corpus is too small to establish compatibility for every persisted-memory workload or future embedder identity.",
+        "The upstream pooling warning may represent semantic drift outside the measured corpus.",
+        "A finite but extreme vector now fails measurement instead of producing an invalid JSON report; this is conservative and does not change a persisted embedding.",
+        "Treating one passing measurement as authority for a dependency or storage change would bypass the required comparison and decision."
+      ],
+      "rollback": "Revert this governed-evidence commit; the harness wrote no report to persistent storage and this work order changes no configuration, dependency, model registration, vector store, or migration state.",
+      "dependencies": [],
+      "acceptance": [
+        "the offline runner emits the explicit MEASURED classification with exit code 0",
+        "all three versioned cases and the overall report pass while recording identity, fingerprint, artifact digest, and dimension",
+        "non-finite or overflowed cosine values cannot be serialized as JSON NaN",
+        "focused tests, mypy, canon, and documentation-index checks pass",
+        "the output remains recorded only as a validation harness measurement pending a separate decision"
+      ],
+      "operator_decision_required": false,
+      "status": "DONE"
+    },
+    {
+      "id": "ADC-WO-116",
+      "program": "P09",
+      "title": "Bind native MCP admission to a governed execution context",
+      "problem": "The native MCP exception previously recognized only a Python basename and module name. A user-editable configuration could therefore substitute a python-named executable, a shadowing cwd, a different repository, or an import-path environment while still looking like atlas-trunk.",
+      "evidence": [
+        "Independent integration review reproduced the module-name provenance gap before the delivery commit.",
+        "Regression tests alter executable, lexical venv identity, cwd, repository argument and PYTHONPATH, and each altered configuration is quarantined pre-spawn.",
+        "The generated trunk configuration and native child-root configuration pass the stricter Sentinel boundary.",
+        "A fresh Python process imports Sentinel directly after the dependency boundary was made acyclic.",
+        "The lazy registry tier regression uses a valid governed native memory-server configuration, so it continues to test tiering rather than a deliberately quarantined malformed native context.",
+        "The Orchestrator re-vetting fixture enables the tracked echo server only by an explicit test-local Sentinel opt-in; production configuration and environment cannot activate it.",
+        "The unchanged re-vetting regression asserts that the explicitly opted-in echo server is registered before accepting an empty finding list, preventing a quarantine-only false green.",
+        "An empty resolved child environment remains `{}` at `Popen`; it can never silently become inherited `PYTHONPATH`, `PYTHONHOME` or parent secrets when `PATH` is absent."
+      ],
+      "source_decisions": [
+        "ADR-035",
+        "ADR-038",
+        "ADR-075",
+        "third-party execution fail-closed invariant"
+      ],
+      "current_state": "Sentinel derives the checkout from its loaded source module and admits a native MCP command only when it binds the current lexical Atlas interpreter, that checkout as cwd, the expected native server identity and exact positional contract, with no editable child import environment. Unknown context remains quarantined.",
+      "target_state": "A module string alone never grants execution authority; an altered MCP JSON entry cannot shadow the code Atlas will import before a subprocess is created.",
+      "scope": [
+        "Sentinel native-command provenance boundary",
+        "atlas-trunk manifest cwd binding",
+        "native child-root cwd binding",
+        "Orchestrator and trunk Sentinel context wiring",
+        "direct Sentinel import boundary",
+        "regression coverage for positive and spoofed configurations"
+      ],
+      "files": [
+        "src/atlas/security/sentinel_gate.py",
+        "src/atlas/mcp_identifiers.py",
+        "src/atlas/mcp/config.py",
+        "src/atlas/mcp/trunk_manifest.py",
+        "src/atlas/mcp/trunk_server.py",
+        "src/atlas/mcp/transport.py",
+        "src/atlas/core/orchestrator.py",
+        "tests/test_atlas_trunk_wiring.py",
+        "tests/test_mcp_trunk_aggregator.py",
+        "tests/test_sentinel_gate.py",
+        "tests/test_sentinel_import_boundary.py",
+        "tests/test_mcp_registry_lazy.py",
+        "tests/test_sentinel_revet_tick.py",
+        "tests/test_mcp_client.py",
+        "docs/decisions/adr/adr_038_atlas_sentinel_gate.md"
+      ],
+      "tests": [
+        "PYTHONPATH=src python -m pytest tests/test_atlas_trunk_wiring.py tests/test_mcp_trunk_aggregator.py tests/test_sentinel_gate.py tests/test_mcp_registry_lazy.py tests/test_sentinel_revet_tick.py tests/test_mcp_client.py tests/test_trunk_timeout_and_extras.py -q",
+        "MYPYPATH=src python -m mypy src/atlas/mcp_identifiers.py src/atlas/mcp/config.py src/atlas/security/sentinel_gate.py src/atlas/mcp/trunk_manifest.py src/atlas/mcp/trunk_server.py src/atlas/core/orchestrator.py",
+        "PYTHONPATH=src python -m pytest tests/ -q"
+      ],
+      "risks": [
+        "A native MCP configuration created from a different Python environment is deliberately rejected until regenerated from the running Atlas environment.",
+        "A checkout that cannot be proven as the loaded governed root loses the native exception rather than falling back to a basename allowlist."
+      ],
+      "rollback": "Revert commits fac6bca, 9794680, 6f21148, 500690a, 439ca05 and 7a810c6; this restores the earlier module-name exception and is not a recommended operational rollback because it reopens the provenance gap. No runtime data or third-party process is migrated.",
+      "dependencies": [
+        "ADC-WO-008"
+      ],
+      "acceptance": [
+        "generated atlas-trunk configuration reaches the transport boundary without spawning a real process",
+        "a spoofed executable, cwd, repository argument or PYTHONPATH is vetoed before spawn",
+        "a symlink spelling that would downgrade a venv and a foreign Git checkout are vetoed before spawn",
+        "native child roots use the governed cwd and pass the same boundary",
+        "tracked echo fixtures require an explicit test-local opt-in and are never admitted by production wiring",
+        "an unchanged re-vetting test proves that its fixture was actually admitted before it reports no findings",
+        "an explicit empty child environment reaches `Popen` unchanged instead of inheriting the parent environment",
+        "third-party executables remain quarantined",
+        "Sentinel imports directly in a fresh interpreter"
       ],
       "operator_decision_required": false,
       "status": "DONE"

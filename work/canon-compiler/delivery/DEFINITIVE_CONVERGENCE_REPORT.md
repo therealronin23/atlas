@@ -1,6 +1,6 @@
 # Atlas Definitive Convergence Report
 
-Date: 2026-07-28
+Date: 2026-07-29
 
 ## Outcome
 
@@ -9,14 +9,15 @@ Atlas has one reviewable **ATLAS DEFINITIVE CANDIDATE**. It is not
 
 - Base: `c95038c9d7e97ddc6339f38abe6dad09b166f47d`
 - Current substantive validation anchor:
-  `aa71a980cef53f1a9ddf1374615a461c0eadfa0c`
-- Branch: `codex/atlas-definitive-convergence-20260727-154020`
-- Worktree: `/home/ronin/proyectos/atlas-definitive-convergence`
+  `fac6bca34831533ae248564adf615e052c59be16`
+- Branch: `codex/atlas-definitive-integration-20260728-230000`
+- Worktree: `/home/ronin/proyectos/atlas-definitive-integration`
+- Substantive local commits: 44
 - Canonical implementation target: Atlas Core
 
 The delivery-artifact commit is deliberately excluded from its own commit
 inventory and patch. The final bundle contains it; the review patch and
-validation anchor stop at `aa71a98` to avoid self-referential evidence.
+validation anchor stop at `fac6bca` to avoid self-referential evidence.
 
 `ATLAS.md` is the sole human entry. `docs/canon/authority_registry.yaml` is
 the machine discovery entry. `VISION.md`, `ARCHITECTURE.md`, `PROGRAMS.md`,
@@ -56,31 +57,47 @@ was created.
   incompatible operator-question blockers.
 - Optional adapters now validate `fal_client` response shape at the boundary;
   lazy ACP binding no longer weakens the strict type gate.
+- The generated `atlas-trunk` command now crosses Sentinel's governed-native
+  admission boundary; its own child registry still vets each child before
+  spawn, and third-party executables remain quarantined.
+- Native MCP admission is bound to the loaded Atlas checkout, the exact lexical
+  interpreter, governed cwd, exact argv and an empty editable child environment.
+  A foreign Git root, interpreter alias, cwd, repository argument or
+  `PYTHONPATH` is rejected before spawn; direct Sentinel import is also covered.
+- An explicitly empty child environment remains empty at `Popen`; an absent
+  `PATH` can no longer turn into inherited `PYTHONPATH`, `PYTHONHOME` or parent
+  secrets.
+- The FastEmbed corpus is an offline `VALIDATION_HARNESS` with strict JSON
+  output. It records a measurement only and changes no dependency, model,
+  vector store, index or memory migration.
 
 The branch introduced no project dependency and did not modify
 `config/governance.json`.
 
 ## Current validation
 
-At `aa71a98`:
+At `fac6bca`:
 
-- direct core suite: 4522 passed, 57 skipped, 1 deselected, 1 warning;
-- extended Reality rerun: same core result, strict mypy clean across 318
-  source files, and `computer_use` skipped because Playwright is absent;
-- canon: 2085 JSONL records and 25 integrity tests pass;
-- docs index: no missing/orphan/stale entries (912 entries);
+- direct core suite: 4550 passed, 58 skipped, 1 deselected, 1 warning;
+- strict mypy: clean across 320 source files;
+- focused native-MCP/security suite: 137 passed, 6 skipped, including the
+  explicit fixture, re-vetting and empty-environment regressions;
+- canon: 2085 JSONL records pass the canonical integrity gate;
+- docs index: no missing/orphan/stale entries (915 entries);
 - Merkle audit, doctor and health exit successfully with explicit external
   integration warnings;
-- UI exact install, build and high-severity audit pass with zero known
-  vulnerabilities;
-- `uv lock --check` and `pip-audit --strict` pass; no known Python dependency
-  vulnerability is reported;
-- sanitation finds no unclassified code vapor.
+- `uv lock --check` passes (301 resolved packages);
+- the UI tree is byte-identical to the candidate source tree and builds with
+  its already-local dependencies; the integration worktree intentionally did
+  not install `node_modules` merely to turn an environmental absence green;
+- the offline FastEmbed runner emitted `MEASURED` and passed all three
+  versioned Spanish cases.
 
-Runtime limits are intentionally not promoted: browser is degraded without
-Playwright; Hermes is mock/unconfigured/not live; two MCP servers are only
-configured, not handshake-verified; external providers are absent; F2.6 has
-never run; and the shared structural graph remains stale against the candidate
+Runtime limits are intentionally not promoted: the delivery workspace is dirty
+only while these documentation artifacts are generated; browser is degraded
+without Playwright; Hermes is mock/unconfigured/not live; two MCP servers are
+only configured, not handshake-verified; external providers are absent; F2.6
+has never run; and the shared structural graph remains stale against `fac6bca`
 because it was not overwritten from the isolated worktree.
 
 ## Review and integration
@@ -91,7 +108,8 @@ because it was not overwritten from the isolated worktree.
 3. Review the atomic commit list and `FINAL_DIFF.patch` at its documented
    anchor.
 4. Resolve only operator-owned decisions that should alter the candidate.
-5. If accepted, merge through the protected-main workflow; do not fast-forward
-   the preserved original checkout.
+5. If accepted, promote this local integration branch through the
+   protected-main workflow; do not fast-forward or overwrite the preserved
+   original checkout while it carries operator changes.
 6. Rebuild the structural graph on the integrated commit, rerun Reality, and
    only then promote graph freshness or live-service claims.

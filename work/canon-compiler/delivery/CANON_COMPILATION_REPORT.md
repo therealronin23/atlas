@@ -12,7 +12,7 @@ living status. Target architecture is derived from the operator directive,
 explicit operator decisions, invariants and accepted ADRs. Repeated or
 derivative documents never count as independent corroboration.
 
-## Corpus result at `aa71a98`
+## Corpus result at `fac6bca`
 
 | Registry | Records |
 |---|---:|
@@ -30,7 +30,7 @@ derivative documents never count as independent corroboration.
 | Decision-evidence matrix | 4 |
 | **Total JSONL** | **2085** |
 
-All 912 tracked documents are discoverable through `docs/INDEX.yaml`. Four
+All 915 tracked documents are discoverable through `docs/INDEX.yaml`. Four
 decision dossiers expose alternatives, falsifiers and revisit triggers without
 claiming that their `PROVISIONAL` recommendations are accepted implementation.
 
@@ -58,9 +58,21 @@ dossiers. It also validates that a work order needing the operator cannot be
 `READY`, that `REQUIRES_OPERATOR` explicitly says so, and that an operator
 question links only to a registered compatible blocker.
 
-The current candidate passes the gate with 2085 JSONL records and 25 behavioral
-tests. This is an authority/discovery control, not evidence that external
+The integrated candidate passes the gate with 2085 JSONL records. The full
+Python suite includes the behavioral integrity coverage. This is an
+authority/discovery control, not evidence that external
 services or product surfaces are live.
+
+## Native MCP provenance closure
+
+ADR-038 now treats a native module string as insufficient evidence. The
+generated trunk and its native child roots are admitted only when the current
+lexical Atlas interpreter, the checkout containing the loaded Sentinel source,
+the governed cwd, expected server identity and command shape agree, and the
+child has an explicit non-inherited import environment, even when it is empty.
+Direct Sentinel import remains
+acyclic. This closes a code/runtime boundary; it does not promote any MCP
+connection to live status.
 
 ## Reality discipline
 

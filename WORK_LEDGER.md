@@ -8,6 +8,21 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
+  local (ADC-WO-114/116).**
+  `codex/atlas-definitive-integration-20260728-230000` conserva el checkout
+  original y trabaja en un worktree separado desde `main@c95038c`. La cabeza
+  sustantiva `fac6bca` pasó 4550 pruebas, 58 skips y 1 deselected; mypy cubre
+  320 módulos. La revisión adversarial cerró la procedencia MCP (checkout
+  cargado, intérprete léxico, cwd, argv, fixture explícito y entorno hijo
+  vacío no heredado). Canon, índice, Merkle, Reality, doctor, health, lock y
+  la medición FastEmbed offline se verificaron con sus límites explícitos. La
+  UI no cambió desde la candidata y compiló contra sus dependencias locales;
+  el worktree integrado no trae `node_modules`, por lo que no se instaló nada.
+  **Próxima acción:** verificar bundle/commit documental y decidir promoción
+  de la rama, sin mover el checkout original ni declarar servicios externos
+  vivos.
+
 - **2026-07-28 — límite JSON estricto del harness FastEmbed (ADC-WO-115).**
   La revisión detectó que vectores finitos extremos podían desbordar el coseno
   y llegar a `NaN`, que no es JSON estándar. El evaluador ahora rechaza normas

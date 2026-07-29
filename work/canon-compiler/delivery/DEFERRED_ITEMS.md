@@ -49,6 +49,6 @@ not implemented, wired, configured, live or product-accepted.
 - Daily research is `RESEARCH`, not adoption evidence; deduplication, source
   verification, licensing, dependency decision and trial remain separate.
 - 165 current documents have no markdown-link edges. They are classified in
-  the 912-entry index; this is navigation debt, not missing authority.
+  the 915-entry index; this is navigation debt, not missing authority.
 - One expired graveyard item and historical broken links remain visible rather
   than being rewritten out of history.

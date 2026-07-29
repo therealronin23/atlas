@@ -1,7 +1,7 @@
 # Adversarial Audit
 
-Date: 2026-07-28
-Anchor reviewed: `aa71a980cef53f1a9ddf1374615a461c0eadfa0c`
+Date: 2026-07-29
+Anchor reviewed: `fac6bca34831533ae248564adf615e052c59be16`
 
 ## Verdict
 
@@ -11,11 +11,16 @@ Anchor reviewed: `aa71a980cef53f1a9ddf1374615a461c0eadfa0c`
 - `MINOR`: 4
 - `INFO`: 5
 
-The three requested independent reviewer contexts were unavailable because the
-subagent quota was exhausted. The primary agent therefore performed a separate
-adversarial pass over the complete candidate, validation results, canon
-registries and runtime evidence. This is not represented as independent
-approval.
+Independent review found two MCP-native admission defects: the aggregate trunk
+was missing from the native set, then the initial repair still relied on a
+module-name match that did not prove which interpreter or package the child
+would execute. The corrective delta derives authority from the loaded Sentinel
+checkout and binds the lexical interpreter, cwd, command contract and clean
+child environment. A direct-import cycle and an obsolete lazy-registry fixture
+were also reproduced and closed. The final review found that `{}` could become
+`Popen(env=None)` when `PATH` was absent; explicit-empty environment propagation
+and a regression now close that post-admission shadowing path. This is a review
+finding and remediation record, not an external approval.
 
 ## Resolved findings
 
@@ -32,6 +37,15 @@ approval.
 | MAJOR | tracked UI retained a high-severity PostCSS advisory | compatible lock remediation; current audit is clean |
 | MAJOR | semgrep test depended on undeclared local executable | hermetic local/PATH fallback fixtures |
 | MAJOR | Reality could cut a passing suite at 600 seconds | finite configurable 900-second default |
+| IMPORTANT | generated `atlas-trunk` configuration was quarantined before registry spawn | governed aggregate entrypoint plus serialized-config and registry-boundary regressions |
+| BLOCKING | native module-name allowlist could accept a python-named executable or shadowing cwd/package | native admission now derives the root from loaded code and binds lexical interpreter, governed repo/cwd, expected server identity, exact args and no editable child import environment; spoofed configurations are vetoed pre-spawn |
+| MAJOR | direct `SentinelGate` import could traverse a circular `atlas.mcp` import edge | identifier validation moved to a dependency-light module; a fresh interpreter import regression passes |
+| MINOR | a tiering test used a malformed native fixture and therefore tested quarantine rather than tier precedence | fixture now uses the governed native memory command and retains the tier assertion |
+| MINOR | the Orchestrator re-vetting test implicitly relied on a tracked echo fixture | the fixture enables Sentinel's test-only exception directly in the test; no production setting can activate it |
+| MAJOR | unchanged re-vetting coverage could pass after the fixture was quarantined before start | the regression now proves the echo transport and tool were admitted before it accepts an empty finding list |
+| MAJOR | an explicit empty MCP child environment was converted to `Popen(env=None)` and inherited the parent process | transport preserves `{}`; a `PATH`-absent regression proves that no host environment is substituted |
+| MINOR | finite extreme embedding vectors could serialize a non-standard JSON `NaN` | reject non-finite norm/score and enforce strict JSON serialization |
+| MINOR | the measured offline benchmark lacked a discoverable operating contract | indexed knowledge document names limits, execution and decision boundary |
 
 ## Open findings
 
@@ -51,9 +65,9 @@ silently blesses it.
 3. The runtime lacks the optional Playwright package. `computer_use` tests
    skip, and browser capability remains degraded rather than live-verified.
 4. FastEmbed 0.8.0 warns that the multilingual model changed pooling behavior.
-   Existing implementation/version/artifact identity guards prevent silent
-   persistent-vector mixing; a retrieval benchmark is needed before a pin or
-   custom-model change.
+   The offline corpus measured the current identity, but a baseline comparison
+   and migration-cost evidence are still needed before a pin or custom-model
+   change.
 
 ### INFO
 
@@ -71,7 +85,8 @@ silently blesses it.
 - ADR-076 C: rejected and absent.
 - High-sensitivity rule: structurally enforced.
 - Generated-code AST Guard invariant: unchanged.
-- `pip-audit --strict` and UI high-severity audit: no known vulnerability.
+- Historical dependency audits remain evidence only; this integration reran the
+  lock check and did not add a dependency.
 - Third-party execution remains reversible/fail-closed; no remote executable
   MCP candidate was installed or run by this convergence.
 

@@ -1,9 +1,10 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.3",
   "base_commit": "c95038c9d7e97ddc6339f38abe6dad09b166f47d",
-  "delivery_anchor": "aa71a980cef53f1a9ddf1374615a461c0eadfa0c",
+  "delivery_anchor": "fac6bca34831533ae248564adf615e052c59be16",
   "artifact_commit_excluded_by_design": true,
-  "count": 22,
+  "generated_at": "2026-07-29T07:31:44Z",
+  "count": 44,
   "commits": [
     {
       "commit": "9a7f516f6d9339243fafcce60992a994a2319b47",
@@ -202,6 +203,205 @@
       "authored_at": "2026-07-28T20:46:12+02:00",
       "subject": "feat(canon): gate operator decision work orders",
       "shortstat": "5 files changed, 299 insertions(+), 9 deletions(-)"
+    },
+    {
+      "commit": "6976e4a33c6c95a8f6a91cf9d244888e00245566",
+      "parents": [
+        "aa71a980cef53f1a9ddf1374615a461c0eadfa0c"
+      ],
+      "authored_at": "2026-07-28T21:20:29+02:00",
+      "subject": "docs(delivery): refresh definitive candidate evidence",
+      "shortstat": "13 files changed, 20038 insertions(+), 527 deletions(-)"
+    },
+    {
+      "commit": "fc73fa171c2caef410329e758c9c354d5d89ae32",
+      "parents": [
+        "6976e4a33c6c95a8f6a91cf9d244888e00245566"
+      ],
+      "authored_at": "2026-07-28T21:35:01+02:00",
+      "subject": "docs(memory): specify offline embedding compatibility benchmark",
+      "shortstat": "4 files changed, 72 insertions(+)"
+    },
+    {
+      "commit": "be47d180d51d387ee4db3eb99db5ce7b194dd22e",
+      "parents": [
+        "fc73fa171c2caef410329e758c9c354d5d89ae32"
+      ],
+      "authored_at": "2026-07-28T21:49:49+02:00",
+      "subject": "docs(memory): plan offline embedding compatibility benchmark",
+      "shortstat": "4 files changed, 349 insertions(+), 5 deletions(-)"
+    },
+    {
+      "commit": "748a40a465bf68053d417795be12da98fd1d1e3e",
+      "parents": [
+        "be47d180d51d387ee4db3eb99db5ce7b194dd22e"
+      ],
+      "authored_at": "2026-07-28T22:06:31+02:00",
+      "subject": "feat(memory): add embedding compatibility evaluator",
+      "shortstat": "2 files changed, 479 insertions(+)"
+    },
+    {
+      "commit": "63b538a23a662edb8652c9cce90ab765647910cc",
+      "parents": [
+        "748a40a465bf68053d417795be12da98fd1d1e3e"
+      ],
+      "authored_at": "2026-07-28T22:11:06+02:00",
+      "subject": "fix(memory): report invalid benchmark threshold first",
+      "shortstat": "2 files changed, 28 insertions(+), 2 deletions(-)"
+    },
+    {
+      "commit": "8c5c52cd45cbea5c4b46ca734703d8563c41ffb5",
+      "parents": [
+        "63b538a23a662edb8652c9cce90ab765647910cc"
+      ],
+      "authored_at": "2026-07-28T22:16:22+02:00",
+      "subject": "fix(memory): preserve actionable fixture validation",
+      "shortstat": "2 files changed, 28 insertions(+), 2 deletions(-)"
+    },
+    {
+      "commit": "3c3c82c0143bf6bcf91bddf3511d8bfcf4ba4ed4",
+      "parents": [
+        "8c5c52cd45cbea5c4b46ca734703d8563c41ffb5"
+      ],
+      "authored_at": "2026-07-28T22:18:03+02:00",
+      "subject": "feat(memory): add offline FastEmbed compatibility benchmark",
+      "shortstat": "3 files changed, 304 insertions(+)"
+    },
+    {
+      "commit": "05d6ef33caf8e0d57cba35804e3a778a8f946766",
+      "parents": [
+        "3c3c82c0143bf6bcf91bddf3511d8bfcf4ba4ed4"
+      ],
+      "authored_at": "2026-07-28T22:26:39+02:00",
+      "subject": "fix(memory): harden offline benchmark boundary",
+      "shortstat": "2 files changed, 58 insertions(+), 26 deletions(-)"
+    },
+    {
+      "commit": "b238e61babbe0c566e88b1228e330d16f8ee3a1c",
+      "parents": [
+        "05d6ef33caf8e0d57cba35804e3a778a8f946766"
+      ],
+      "authored_at": "2026-07-28T22:28:09+02:00",
+      "subject": "canon(memory): register embedding compatibility evidence",
+      "shortstat": "5 files changed, 82 insertions(+), 15 deletions(-)"
+    },
+    {
+      "commit": "24b784bf7b3a86f80d3271b03ed46a3dd9c41851",
+      "parents": [
+        "b238e61babbe0c566e88b1228e330d16f8ee3a1c"
+      ],
+      "authored_at": "2026-07-28T22:29:26+02:00",
+      "subject": "fix(memory): serialize benchmark usage output",
+      "shortstat": "2 files changed, 25 insertions(+), 1 deletion(-)"
+    },
+    {
+      "commit": "b257bc8448f29a6d4df6b553419a5f70defd1c35",
+      "parents": [
+        "24b784bf7b3a86f80d3271b03ed46a3dd9c41851"
+      ],
+      "authored_at": "2026-07-28T22:30:05+02:00",
+      "subject": "docs(memory): trace benchmark boundary hardening",
+      "shortstat": "1 file changed, 1 insertion(+), 1 deletion(-)"
+    },
+    {
+      "commit": "5565cffd8f86a9621ee47b2a34f94b16923556f6",
+      "parents": [
+        "c95038c9d7e97ddc6339f38abe6dad09b166f47d",
+        "b257bc8448f29a6d4df6b553419a5f70defd1c35"
+      ],
+      "authored_at": "2026-07-28T23:26:34+02:00",
+      "subject": "merge: integrate Atlas definitive candidate",
+      "shortstat": "133 files changed, 52305 insertions(+), 547 deletions(-)"
+    },
+    {
+      "commit": "5ffb88429866ea1f88b8277500ec68b8058aa3ba",
+      "parents": [
+        "5565cffd8f86a9621ee47b2a34f94b16923556f6"
+      ],
+      "authored_at": "2026-07-28T23:34:43+02:00",
+      "subject": "fix(mcp): admit governed atlas trunk entrypoint",
+      "shortstat": "4 files changed, 41 insertions(+)"
+    },
+    {
+      "commit": "fab225e0c3dc4bcfcd0fb7738f83b7cd07145ac1",
+      "parents": [
+        "5ffb88429866ea1f88b8277500ec68b8058aa3ba"
+      ],
+      "authored_at": "2026-07-28T23:38:11+02:00",
+      "subject": "test(mcp): cover atlas trunk registry admission",
+      "shortstat": "1 file changed, 29 insertions(+)"
+    },
+    {
+      "commit": "22939b49e42edecf7ad90bde7c410f56b2574c6d",
+      "parents": [
+        "fab225e0c3dc4bcfcd0fb7738f83b7cd07145ac1"
+      ],
+      "authored_at": "2026-07-28T23:38:41+02:00",
+      "subject": "fix(memory): enforce finite benchmark JSON output",
+      "shortstat": "5 files changed, 55 insertions(+), 5 deletions(-)"
+    },
+    {
+      "commit": "b72fe6e385dfb89744b095c9e7b90d1b1ac285bc",
+      "parents": [
+        "22939b49e42edecf7ad90bde7c410f56b2574c6d"
+      ],
+      "authored_at": "2026-07-28T23:40:17+02:00",
+      "subject": "docs(memory): publish offline benchmark operating contract",
+      "shortstat": "2 files changed, 74 insertions(+)"
+    },
+    {
+      "commit": "7a810c606beed691a44745601386c9dfcdc819b7",
+      "parents": [
+        "b72fe6e385dfb89744b095c9e7b90d1b1ac285bc"
+      ],
+      "authored_at": "2026-07-29T00:08:51+02:00",
+      "subject": "fix(mcp): bind native entrypoints to governed context",
+      "shortstat": "8 files changed, 184 insertions(+), 28 deletions(-)"
+    },
+    {
+      "commit": "439ca05202edbcd9b3ce1fd2d029efe1ac95295d",
+      "parents": [
+        "7a810c606beed691a44745601386c9dfcdc819b7"
+      ],
+      "authored_at": "2026-07-29T08:38:50+02:00",
+      "subject": "fix(mcp): bind native execution to loaded checkout",
+      "shortstat": "11 files changed, 261 insertions(+), 46 deletions(-)"
+    },
+    {
+      "commit": "500690ad83cda7352c6f56bf45095b11163ffc96",
+      "parents": [
+        "439ca05202edbcd9b3ce1fd2d029efe1ac95295d"
+      ],
+      "authored_at": "2026-07-29T08:50:15+02:00",
+      "subject": "test(mcp): align native tier fixture with provenance gate",
+      "shortstat": "1 file changed, 7 insertions(+), 3 deletions(-)"
+    },
+    {
+      "commit": "6f21148f03fa51bfd5ce8ba23232ba6231d095ac",
+      "parents": [
+        "500690ad83cda7352c6f56bf45095b11163ffc96"
+      ],
+      "authored_at": "2026-07-29T09:03:24+02:00",
+      "subject": "test(mcp): make revet fixture opt-in explicit",
+      "shortstat": "1 file changed, 6 insertions(+), 1 deletion(-)"
+    },
+    {
+      "commit": "979468018309c3836b8b1922c59305b0977f39ec",
+      "parents": [
+        "6f21148f03fa51bfd5ce8ba23232ba6231d095ac"
+      ],
+      "authored_at": "2026-07-29T09:14:35+02:00",
+      "subject": "test(mcp): prove unchanged revet path is admitted",
+      "shortstat": "1 file changed, 6 insertions(+), 1 deletion(-)"
+    },
+    {
+      "commit": "fac6bca34831533ae248564adf615e052c59be16",
+      "parents": [
+        "979468018309c3836b8b1922c59305b0977f39ec"
+      ],
+      "authored_at": "2026-07-29T09:18:03+02:00",
+      "subject": "fix(mcp): preserve explicit empty child environments",
+      "shortstat": "3 files changed, 27 insertions(+), 2 deletions(-)"
     }
   ]
 }
