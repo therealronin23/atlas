@@ -3713,3 +3713,28 @@ entries:
   status: propuesto
   verified: null
   notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-25_inbox.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-26.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-27.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-28.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-07-29.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'
