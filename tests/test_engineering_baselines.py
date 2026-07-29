@@ -172,6 +172,7 @@ def test_same_accepted_candidate_is_idempotent_and_does_not_require_a_new_review
     assert selection.source is ReviewBaselineSource.ALREADY_ACCEPTED
     assert selection.review_required is False
     assert selection.base_revision == "b" * 40
+    assert selection.requires_ancestry_verification is False
 
 
 def test_cross_context_finding_snapshot_is_rejected(tmp_path: Path) -> None:

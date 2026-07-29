@@ -180,6 +180,7 @@ class EngineeringReviewBaselineStore:
                 accepted_baseline=baseline,
                 prior_finding_state=baseline.finding_state,
                 review_required=False,
+                requires_ancestry_verification=False,
             )
         return IncrementalReviewSelection(
             source=ReviewBaselineSource.ACCEPTED_BASELINE,

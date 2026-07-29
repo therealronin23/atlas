@@ -52,9 +52,12 @@ referencia de auditoría verificable para la UI.
 llamador presenta un `PASS` con al menos un reviewer y una `acceptance_ref`
 opaca. El journal append-only captura la revisión aceptada y un snapshot mínimo
 del lifecycle de findings, pero no verifica la referencia, no abre Git, no
-calcula ancestry/diff ni altera la resolución de un finding posterior. La
-selección resultante obliga al llamador a verificar ancestry antes de construir
-el delta incremental.
+altera la resolución de un finding posterior. `EngineeringIncrementalReviewPreparer`
+verifica ancestry contra commits inmutables y construye el delta mediante
+`git diff --no-ext-diff --no-textconv`; no ejecuta código, no lee cambios sin
+commit ni modifica el worktree. Devuelve un request compatible con el
+`EngineeringReviewCoordinator`, pero la inyección y ejecución runtime siguen
+fuera de este subcorte.
 
 ## Boundary
 
@@ -71,8 +74,8 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 ## Transition
 
 El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
-última revisión aceptada, cálculo del delta tras verificar ancestry y reproducción
-aislada con hipótesis de grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
+última revisión aceptada, normalización de resoluciones y reproducción aislada
+con hipótesis de grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
 producción y validación de correcciones y una proyección read-only esperan sus
 contratos y la frontera durable Mission/Task; no se declaran implementados por este
 contrato.

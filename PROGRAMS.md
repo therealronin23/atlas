@@ -439,9 +439,11 @@ El publisher opt-in de findings/reviews obtiene primero un receipt Merkle y sól
 después emite metadata mínima al `EventBus`; no está inyectado en runtime ni
 rutea al Orchestrator. `EngineeringReviewBaselineStore` selecciona una base
 aceptada sólo tras `PASS`, reviewer real y referencia de aceptación explícita;
-conserva lifecycle previo pero no abre Git ni calcula el diff. Aún faltan
-reproducción aislada, hipótesis de grafo/historial/memoria, cálculo incremental
-de diff, wiring gobernado, Orchestrator y superficie de producto.
+conserva lifecycle previo. `EngineeringIncrementalReviewPreparer` verifica
+ancestry y lee el delta entre objetos Git con external diff/textconv desactivados,
+sin ejecutar el candidato. Aún faltan reproducción aislada, hipótesis de
+grafo/historial/memoria, normalización incremental de resoluciones, wiring
+gobernado, Orchestrator y superficie de producto.
 
 **Target.** Defensa por capas, secretos dedicados, aislamiento por riesgo,
 evaluación independiente, SLO/telemetría y recuperación no-LLM.

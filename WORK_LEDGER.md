@@ -24,9 +24,11 @@ de escribir: `atlas reality --json`.
   falla de auditoría bloquea el evento. Sigue sin inyección de runtime, routing
   a Orchestrator, API ni producto. `EngineeringReviewBaselineStore` acepta sólo
   un `PASS` con outcome real y `acceptance_ref`, conserva lifecycle previo y
-  exige ancestry al llamador; no calcula un diff ni convierte PASS en promoción.
-  **Próxima acción:** diseñar reproducción aislada y conectar baseline a la
-  construcción del diff sin abrir los boundaries
+  no convierte PASS en promoción. `EngineeringIncrementalReviewPreparer`
+  verifica ancestry contra commits inmutables y calcula sólo el delta Git con
+  external diff/textconv desactivados; no ejecuta código ni modifica el
+  worktree. **Próxima acción:** diseñar reproducción aislada y normalización de
+  resoluciones sin abrir los boundaries
   reservados.
 
 - **2026-07-29 — candidata integrada, endurecida y revalidada para revisión
