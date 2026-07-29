@@ -65,8 +65,8 @@ ausencia de `task_id`, SHA o patch en un hecho positivo.
 El siguiente subcorte de `ADC-WO-108` añade deduplicación incremental sobre la
 última revisión aceptada y reproducción aislada con hipótesis de
 grafo/historial/memoria. El wiring de eventos Merkle, routing hacia Orchestrator,
-producción y validación de correcciones y una proyección read-only esperan sus contratos y
-la frontera durable Mission/Task; no se declaran implementados por este
+producción y validación de correcciones y una proyección read-only esperan sus
+contratos y la frontera durable Mission/Task; no se declaran implementados por este
 contrato.
 
 ## Rollback
