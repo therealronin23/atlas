@@ -808,6 +808,10 @@ entries:
   type: decision
   status: vigente
   verified: null
+- path: docs/decisions/adr/adr_079_mcp_sdk_security_bound.md
+  type: decision
+  status: vigente
+  verified: null
 - path: docs/decisions/gates/CLOSURE.md
   type: decision
   status: vigente
