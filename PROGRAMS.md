@@ -293,6 +293,9 @@ independiente; no se declara self-build exitoso. El perfil de pytest candidato
 usa DNS público determinista únicamente cuando un test ya inyecta su fetcher:
 no restaura red, no cambia `SSRFBridge` en runtime y no transforma esa ruta
 focal en un build completo.
+El hook de routing resuelve su estado de workbench sólo en modo stateful:
+`--no-state` funciona con un uid mínimo sin HOME ni entrada passwd, sin ampliar
+mounts o permisos del jail.
 
 **Target.** Desde gap verificado hasta candidato, evaluación independiente,
 aprobación, aplicación, recibo, aprendizaje y rollback; sin mutar el checkout

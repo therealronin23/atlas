@@ -1663,6 +1663,12 @@ de escribir: `atlas reality --json`.
 
 ## Archivo
 
+- **ATLAS DEFINITIVE — ADC-WO-122 (2026-07-29)** — el candidate Bwrap reveló
+  que `capability_route_hook.py --no-state` resolvía `Path.home()` al importar
+  y fallaba con un uid sin HOME/passwd. La ruta de estado ahora es perezosa y
+  fail-soft; prueba TDD sin home, 15 tests, mypy y el target original dentro
+  de Bwrap real pasan. No cambia red, mounts, governance ni aprobación.
+
 Entradas más antiguas (2026-07-08 a 2026-07-16, 28 entradas) plegadas
 el 2026-07-23 a `docs/archive/2026-07-work-ledger-fold-1/WORK_LEDGER_ARCHIVE.md`
 para cumplir la disciplina de ≤40 entradas de este fichero.

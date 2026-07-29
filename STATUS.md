@@ -141,7 +141,9 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
   protecciones prueba un build exitoso. El evento fresco fue preflight
   bloqueado, no build exitoso. Para tests que ya inyectan fetchers, el perfil
   candidato aporta sólo una respuesta DNS pública determinista dentro de
-  pytest; Bwrap sigue sin red y `SSRFBridge` de runtime no se relaja.
+  pytest; Bwrap sigue sin red y `SSRFBridge` de runtime no se relaja. El hook
+  de routing `--no-state` ya no exige HOME al importarse y pasa dentro del
+  jail real; esto tampoco constituye un receipt completo.
 - SQLite/BlockMemory: **CODE_PRESENT / TESTED / WIRED**. El owner final y la
   promoción entre stores requieren operador.
 - Knowledge/Research: **CODE_PRESENT / TESTED / WIRED**; ticks base

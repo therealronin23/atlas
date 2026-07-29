@@ -13,10 +13,13 @@ turnos; segunda invocación con el mismo prompt → bloque vacío/reducido.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 from atlas.mcp.capability_router import RouteHit
 from atlas.mcp.router_telemetry import (
@@ -273,3 +276,47 @@ def test_hook_no_state_flag_skips_cooldown_and_telemetry(tmp_path: Path) -> None
         assert "react-helper" in proc.stdout  # sin cooldown: repite
 
     assert not (tmp_path / "workspace" / "mcp").exists()  # sin estado escrito
+
+
+def test_hook_no_state_does_not_require_a_home_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """El hook stateless puede arrancar incluso si el sandbox no tiene HOME/pwd.
+
+    ``Path.home()`` no debe evaluarse al importar el script: en un bwrap con el
+    uid sin entrada passwd esa operación falla antes de que ``--no-state``
+    pueda respetar su contrato.
+    """
+    design = tmp_path / "docs" / "design"
+    design.mkdir(parents=True)
+    (design / "mcp_catalog.yaml").write_text(_HOOK_CATALOG, encoding="utf-8")
+
+    def no_home(cls: type[Path]) -> Path:
+        del cls
+        raise RuntimeError("home directory unavailable")
+
+    monkeypatch.setattr(Path, "home", classmethod(no_home))
+    module_name = "_atlas_test_capability_route_hook_no_home"
+    spec = importlib.util.spec_from_file_location(
+        module_name, _REPO_ROOT / "scripts" / "capability_route_hook.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                str(_REPO_ROOT / "scripts" / "capability_route_hook.py"),
+                "--prompt",
+                "revisar componentes react",
+                "--repo-root",
+                str(tmp_path),
+                "--no-state",
+            ],
+        )
+        assert module.main() == 0
+    finally:
+        sys.modules.pop(module_name, None)

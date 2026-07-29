@@ -27,10 +27,19 @@ from atlas.mcp.router_telemetry import (
 )
 from atlas.mcp.workbench_compliance import check_and_maybe_synthesize
 
-# Mismo save_dir que .cursor/mcp.json / el --mcp-config real de la CLI
-# ("${userHome}/atlas-mcp"): la raíz del tronco, no del repo -- es donde
-# workbench://manifest deja su rastro de consulta cada vez que se lee.
-_WORKBENCH_SAVE_DIR = Path.home() / "atlas-mcp"
+def _workbench_save_dir() -> Path:
+    """Devuelve el estado compartido de la mesa de trabajo cuando se necesita.
+
+    El hook también se ejecuta de forma stateless dentro de sandboxes mínimos.
+    En ellos puede no existir ``HOME`` ni una entrada passwd para su uid, por
+    lo que resolver ``Path.home()`` al importar el módulo convertiría un
+    contrato ``--no-state`` en una dependencia ambiental accidental.
+    """
+
+    # Mismo save_dir que .cursor/mcp.json / el --mcp-config real de la CLI
+    # ("${userHome}/atlas-mcp"): la raíz del tronco, no del repo -- es donde
+    # workbench://manifest deja su rastro de consulta cada vez que se lee.
+    return Path.home() / "atlas-mcp"
 
 
 def _extract_prompt(raw: str) -> str:
@@ -50,7 +59,9 @@ def _extract_prompt(raw: str) -> str:
     return ""
 
 
-def _build_manifest_json_fn(repo_root: Path, entries: list[CatalogEntry]) -> Callable[[], str]:
+def _build_manifest_json_fn(
+    repo_root: Path, entries: list[CatalogEntry], workbench_save_dir: Path
+) -> Callable[[], str]:
     """Construcción PEREZOSA del manifiesto de la mesa de trabajo (catálogo ya
     cargado + lecciones + backlog + memoria) -- solo se invoca cuando
     check_and_maybe_synthesize decide que toca síntesis (primera vez de la
@@ -77,7 +88,7 @@ def _build_manifest_json_fn(repo_root: Path, entries: list[CatalogEntry]) -> Cal
 
         memory_count = 0
         try:
-            memory_db = _WORKBENCH_SAVE_DIR / "memory.db"
+            memory_db = workbench_save_dir / "memory.db"
             if memory_db.is_file():
                 import sqlite3
 
@@ -98,7 +109,7 @@ def _build_manifest_json_fn(repo_root: Path, entries: list[CatalogEntry]) -> Cal
 
 
 def _build_workbench_synth_fn_safe(
-    repo_root: Path, entries: list[CatalogEntry]
+    repo_root: Path, entries: list[CatalogEntry], workbench_save_dir: Path
 ) -> Callable[[str], str | None] | None:
     """Compone hub (gemini_free dedicado) + manifiesto perezoso. Si el propio
     import/construcción del hub falla, no hay synth_fn -- check_and_maybe_synthesize
@@ -109,7 +120,7 @@ def _build_workbench_synth_fn_safe(
 
         hub = InferenceHub(mode="auto")
         synth_fn: Callable[[str], str | None] = build_workbench_synth_fn(
-            hub, _build_manifest_json_fn(repo_root, entries)
+            hub, _build_manifest_json_fn(repo_root, entries, workbench_save_dir)
         )
         return synth_fn
     except Exception:  # noqa: BLE001 — nunca bloquea el hook
@@ -191,14 +202,18 @@ def main() -> int:
     # es "no toca workspace/mcp" — el mismo que cooldown/telemetría).
     workbench_notice = None
     if not args.no_state:
-        synth_fn = _build_workbench_synth_fn_safe(repo, entries)
-        workbench_notice = check_and_maybe_synthesize(
-            consultation_log_path=_WORKBENCH_SAVE_DIR / "workbench_consultations.jsonl",
-            findings_path=repo / "workspace" / "mcp" / "workbench_compliance_findings.jsonl",
-            prompt=prompt,
-            goal=prompt,
-            synth_fn=synth_fn,
-        )
+        try:
+            workbench_save_dir = _workbench_save_dir()
+            synth_fn = _build_workbench_synth_fn_safe(repo, entries, workbench_save_dir)
+            workbench_notice = check_and_maybe_synthesize(
+                consultation_log_path=workbench_save_dir / "workbench_consultations.jsonl",
+                findings_path=repo / "workspace" / "mcp" / "workbench_compliance_findings.jsonl",
+                prompt=prompt,
+                goal=prompt,
+                synth_fn=synth_fn,
+            )
+        except Exception:  # noqa: BLE001 — mesa de trabajo nunca bloquea el hook
+            workbench_notice = None
 
     combined = "\n\n".join(part for part in (block, workbench_notice) if part)
     if not combined:

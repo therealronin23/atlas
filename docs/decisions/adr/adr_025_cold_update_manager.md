@@ -111,3 +111,11 @@ hostnames. The Bwrap network namespace still has no route, and neither
 `SSRFBridge` nor any production request path receives a DNS or egress bypass.
 Tests that need to assert DNS failure must own that condition explicitly. This
 test-only compatibility seam is not a full candidate receipt.
+
+`ADC-WO-122` removes another accidental host dependency exposed by that same
+boundary. The capability routing hook no longer resolves `Path.home()` while
+the module is imported: its workbench directory is lazy and used only by the
+stateful path. Consequently `--no-state` runs under a minimal uid with neither
+`HOME` nor a passwd entry. Stateful compliance retains its original location
+when available and remains fail-soft when it is not. No jail mount, network
+rule or approval boundary changed; this focused pass is not a full receipt.

@@ -1300,6 +1300,51 @@ work_orders:
     operator_decision_required: false
     status: DONE
 
+  - id: ADC-WO-122
+    program: P06
+    title: Keep stateless capability routing independent from a home directory
+    problem: capability_route_hook resolved Path.home() at import, so minimal Bwrap validation failed before --no-state could honor its no-persistent-state contract.
+    evidence:
+      - candidate Bwrap failed because its uid had no HOME or passwd entry
+      - a deterministic test reproduced the import-time failure
+      - the hook suite and original target pass in a real read-only networkless Bwrap jail after the fix
+    source_decisions:
+      - ADR-025
+      - ADR-055
+      - CTR-COLDUPDATE-VALIDATION-JAIL
+    current_state: Workbench state is resolved lazily only for stateful compliance. Stateless routing runs without HOME; stateful resolution retains its path and remains fail-soft.
+    target_state: Candidate-safe stateless hooks depend only on their declared mode while stateful features remain explicit and fail-soft.
+    scope:
+      - lazy workbench-state path resolution
+      - no-home regression coverage
+      - real candidate-Bwrap evidence
+    files:
+      - scripts/capability_route_hook.py
+      - tests/test_router_telemetry.py
+      - docs/decisions/adr/adr_025_cold_update_manager.md
+      - docs/canon/implementation_registry.yaml
+      - PLAN.md
+      - PROGRAMS.md
+      - STATUS.md
+      - WORK_LEDGER.md
+    tests:
+      - PYTHONPATH=src python -m pytest tests/test_router_telemetry.py -q
+      - real Bwrap run of tests/test_router_telemetry.py::test_hook_no_state_flag_skips_cooldown_and_telemetry
+      - MYPYPATH=src python -m mypy scripts/capability_route_hook.py
+    risks:
+      - stateful compliance still needs a resolvable home and degrades fail-soft when absent
+      - focused compatibility evidence is not a full candidate receipt
+    rollback: Revert the atomic router commit; stateless candidate routing again depends on host passwd/home layout, with no persistent migration to undo.
+    dependencies:
+      - ADC-WO-118
+    acceptance:
+      - importing and running --no-state never resolves Path.home
+      - stateful hook tests retain existing behavior
+      - the original failing target passes inside the real candidate jail
+      - no Bwrap mount, network, governance or approval boundary changes
+    operator_decision_required: false
+    status: DONE
+
   - id: ADC-WO-114
     program: P09
     title: Refresh definitive delivery evidence after governance hardening
