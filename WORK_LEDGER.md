@@ -8,6 +8,40 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-30 — clúster de 5 IDs duplicados (desktop-control/ADC-WO-124)
+  fusionado, `check_canon.py` en PASS (`ba4cca6`).** Investigado y leído
+  cada par completo antes de tocar nada: no eran dos cosas distintas con el
+  mismo ID por error, era la reclasificación desktop-control del día 1
+  (`d2c614f`) añadiendo un registro nuevo y más detallado sobre la MISMA
+  decisión (admitir/poner en cuarentena `computer-control-mcp==0.3.10`) en 5
+  ficheros canon, sin retirar el registro anterior. Fusión que preserva
+  contenido, no "borrar el más viejo": `implementation_registry.yaml`
+  ADC-WO-124 (1745→1691 líneas, edición por rango de línea con asserts de
+  frontera exactos, sin re-serializar el YAML entero) unió evidencia,
+  ficheros y criterios de aceptación — el registro más nuevo tenía un
+  criterio de seguridad real ("no authority is granted for DISPLAY=:0") que
+  el más viejo no tenía y se habría perdido eligiendo uno solo.
+  `component_registry.jsonl`/`component_reality_matrix.jsonl`
+  `CMP-DESKTOP-CONTROL`: se quedó con la lista de ficheros granular del
+  registro nuevo (`desktop_action.py`, `vision_loop.py`, `sentinel_gate.py`…)
+  en vez de la referencia a directorio del viejo — además hace la fila
+  comprobable por `component_wiring_drift.py` de hoy, que sólo inspecciona
+  `.py`, no directorios. `conflict_registry.jsonl`
+  `CONFLICT-P08-DESKTOP-MCP-ADMISSION`: desacuerdo real, no sólo detalle
+  complementario — `status` difería (`REQUIRES_OPERATOR` vs `UNRESOLVED`).
+  Comprobado el vocabulario del propio fichero antes de decidir:
+  `REQUIRES_OPERATOR` aparecía UNA sola vez en todo el registro (esta
+  fila); `UNRESOLVED` 73 veces, incluida cada otra fila con
+  `resolution_status=ELEVATED_TO_OPERATOR`. Se quedó `UNRESOLVED` porque
+  era el valor consistente con el vocabulario real del fichero, no porque
+  "el más nuevo gana" por defecto. `open_questions.jsonl`
+  `OPEN-OPERATOR-DESKTOP-MCP-ADMISSION`: `status` coincidía en ambos,
+  fusión directa.
+  `check_canon.py`: FAIL (5 hallazgos) → PASS (2103 registros JSONL). El
+  detector de hoy (`component_wiring_drift`) reverificado limpio tras el
+  merge. Suite completa 4716 passed.
+  **Próxima acción:** ninguna abierta por este frente.
+
 - **2026-07-30 — canon corregido de nuevo + chequeo estructural que evita
   que vuelva a desfasarse (`e64a07c`, `f5986c9`).** El operador pidió
   "demasiadas cosas construidas, no conectadas como deben" verificado con
