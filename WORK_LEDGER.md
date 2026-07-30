@@ -8,6 +8,41 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-30 — dos hallazgos del Cónclave sobre sí mismo, verificados y
+  cerrados/documentados.**
+  **`min_providers` contaba proveedores muertos como voces vivas.** En un
+  Cónclave real convocado esta misma sesión, `nvidia_glm` (que
+  `provider_smoke` ya marca `dead`) entró al panel, respondió fail-closed
+  (`Severity.MAJOR`, "revisión no disponible"), y `AdversarialPanel` lo contó
+  como (a) una de las 3 voces distintas exigidas por `min_providers` y (b)
+  una objeción sustantiva capaz de tumbar el veredicto a FAIL por sí sola —
+  sin que nadie hubiera objetado nada real. `Objection` gana un campo
+  `reachable: bool = True` (default compatible con toda construcción
+  posicional existente, verificado por grep); `LlmReviewer.review()` lo pone
+  `False` en la rama fail-closed; `AdversarialPanel.verify()` excluye
+  no-alcanzables de `blocking` Y recalcula diversidad DESPUÉS de la llamada
+  real (antes solo se comprobaba en construcción) — cae a UNKNOWN si los
+  alcanzables quedan por debajo de `min_providers`, con razón que nombra
+  quién no respondió. La voz muerta sigue en `checks` para auditoría, solo
+  deja de contar. TDD: 5 tests nuevos (RED verificado), 27/27 en
+  `test_adversarial_panel.py`, 171 tests impactados incluyendo
+  `security_council_*` (que consume este módulo), mypy limpio.
+  **`e93734c` (regresión del gate de ColdUpdate): investigada a fondo,
+  CERRADA sin implementación — causa raíz más profunda de lo que vio el
+  Cónclave.** La tercera opción que propuso el trío (jail anidado) se midió
+  en serio: `BwrapJail` instala por defecto un filtro seccomp que bloquea
+  `mount`(165)/`unshare`(272) — exactamente lo que un `bwrap` interno
+  necesita para montarse. Confirmado con `pytest tests/test_sandbox.py` real
+  dentro del jail de producción (14/17 pasan; los 3 que fallan son justo los
+  que invocan bwrap real, mismo error `Failed to make / slave` = el EPERM
+  del filtro) y con una prueba aislada sin pytest de por medio. Abrir esos
+  syscalls reabriría exactamente el vector que ADR-055 cerró — seccomp no
+  distingue intención, solo syscall. Detalle: ningún test corre en un
+  esquema por-syscall que pudiera excusarlo; las tres opciones puestas sobre
+  la mesa (marcador, impacto, anidado) están descartadas, cada una por razón
+  distinta y verificada. Ver memoria `conclave-fail-coldupdate-gate-narrowing-2026-07-30.md`
+  para el detalle técnico completo. Sigue BLOQUEADO — hace falta una idea
+  arquitectónica nueva, no una cuarta variante de las mismas tres.
 - **2026-07-30 — sincronización con catálogo/estado de proveedores, pedido
   directo del operador ("es una llamada rápida y barata que nos ahorra
   dolores de cabeza").**

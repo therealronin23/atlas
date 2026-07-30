@@ -81,6 +81,7 @@ class LlmReviewer:
             return Objection(
                 self._id, self._provider, Severity.MAJOR,
                 "revisión no disponible (fail-closed)",
+                reachable=False,
             )
         lines = resp.text.strip().splitlines()
         first_norm = lines[0].strip().strip("[](){}*#:.- ").upper() if lines else ""

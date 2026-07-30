@@ -26,9 +26,10 @@ class FakeReviewer:
     provider: str
     severity: Severity = Severity.NONE
     detail: str = ""
+    reachable: bool = True
 
     def review(self, diff: str, context: str = "") -> Objection:
-        return Objection(self.reviewer_id, self.provider, self.severity, self.detail)
+        return Objection(self.reviewer_id, self.provider, self.severity, self.detail, self.reachable)
 
 
 def _panel(*reviewers, **kw) -> AdversarialPanel:
@@ -69,6 +70,75 @@ class TestDiversity:
     def test_min_providers_configurable(self) -> None:
         panel = _panel(FakeReviewer("a", "groq"), min_providers=1)
         assert panel.verify("diff").verdict is Verdict.PASS
+
+
+class TestUnreachableReviewers:
+    """2026-07-30: hallazgo de un Cónclave real -- nvidia_glm entró muerto
+    (provider_smoke ya lo sabía), respondió fail-closed, y el panel lo contó
+    como voz viva de un trío de 3 Y como objeción sustantiva bloqueante. Un
+    reviewer inalcanzable no es una opinión: no debe contar para diversidad
+    ni para bloquear."""
+
+    def test_unreachable_reviewer_does_not_count_toward_diversity(self) -> None:
+        panel = _panel(
+            FakeReviewer("a", "gemini", Severity.NONE),
+            FakeReviewer("b", "nvidia_glm", Severity.MAJOR, "revisión no disponible (fail-closed)", reachable=False),
+            FakeReviewer("c", "mistral", Severity.MAJOR, "objeción real"),
+        )
+        ev = panel.verify("diff")
+        # Solo 2 proveedores ALCANZABLES distintos (gemini, mistral) de 3
+        # configurados -- por debajo del mínimo de 3 exigido por defecto? No:
+        # min_providers por defecto es 2, así que con 2 alcanzables SÍ certifica,
+        # pero la objeción bloqueante real de "mistral" debe seguir bloqueando.
+        assert ev.verdict is Verdict.FAIL
+        assert "objeción real" in ev.reason
+        # La voz muerta NO aparece como si fuera una objeción sustantiva propia.
+        assert "fail-closed" not in ev.reason
+
+    def test_unreachable_reviewer_never_counts_as_blocking_objection(self) -> None:
+        """Caso puro: SOLO el reviewer muerto tendría severidad MAJOR. Si
+        contara, el panel diría FAIL sin que nadie haya objetado nada real."""
+        panel = _panel(
+            FakeReviewer("a", "gemini", Severity.NONE),
+            FakeReviewer("b", "mistral", Severity.NONE),
+            FakeReviewer("c", "nvidia_glm", Severity.MAJOR, "revisión no disponible (fail-closed)", reachable=False),
+        )
+        ev = panel.verify("diff")
+        assert ev.verdict is Verdict.PASS
+
+    def test_falls_below_min_providers_after_unreachable_is_excluded(self) -> None:
+        """3 configurados, diversidad de CONSTRUCCIÓN pasa (3 proveedores
+        distintos), pero solo 2 respondieron de verdad -- con min_providers=3
+        el veredicto debe caer a UNKNOWN, no colarse como PASS/FAIL con un
+        panel de 2 voces reales disfrazado de panel de 3."""
+        panel = _panel(
+            FakeReviewer("a", "gemini", Severity.NONE),
+            FakeReviewer("b", "mistral", Severity.NONE),
+            FakeReviewer("c", "nvidia_glm", Severity.MAJOR, "revisión no disponible (fail-closed)", reachable=False),
+            min_providers=3,
+        )
+        ev = panel.verify("diff")
+        assert ev.verdict is Verdict.UNKNOWN
+        assert "diversidad" in ev.reason or "alcanzable" in ev.reason.lower()
+
+    def test_unreachable_reviewer_still_recorded_in_checks(self) -> None:
+        """Transparencia: la voz muerta debe seguir apareciendo en checks
+        (para que se pueda auditar QUIÉN no respondió), solo que no cuenta
+        como objeción sustantiva ni como voz de diversidad."""
+        panel = _panel(
+            FakeReviewer("a", "gemini", Severity.NONE),
+            FakeReviewer("b", "mistral", Severity.NONE),
+            FakeReviewer("c", "nvidia_glm", Severity.MAJOR, "revisión no disponible (fail-closed)", reachable=False),
+        )
+        ev = panel.verify("diff")
+        names = {chk.name for chk in ev.checks}
+        assert "c@nvidia_glm" in names
+
+    def test_objection_reachable_defaults_to_true(self) -> None:
+        """Compatibilidad hacia atrás: construir Objection posicionalmente
+        con 4 argumentos (como hace todo el código existente) no debe romper."""
+        obj = Objection("id", "prov", Severity.NONE, "detalle")
+        assert obj.reachable is True
 
 
 class TestAggregation:

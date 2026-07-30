@@ -42,6 +42,13 @@ class Objection:
     provider: str
     severity: Severity
     detail: str = ""
+    # 2026-07-30: hallazgo de un Cónclave real -- un reviewer inalcanzable
+    # (proveedor muerto, `LlmReviewer.review` fail-closed) respondía con
+    # Severity.MAJOR y el panel lo contaba como voz viva de diversidad Y como
+    # objeción sustantiva bloqueante, sin distinguir "no pudo opinar" de
+    # "opinó que esto está mal". `reachable=False` marca la primera; default
+    # True preserva construcción posicional existente en todo el repo.
+    reachable: bool = True
 
 
 class Reviewer(Protocol):
@@ -84,13 +91,13 @@ class AdversarialPanel:
         self._block_at = block_at
 
     def verify(self, diff: str, context: str = "") -> Evidence:
-        providers = {r.provider for r in self._reviewers}
-        if len(providers) < self._min_providers:
+        configured_providers = {r.provider for r in self._reviewers}
+        if len(configured_providers) < self._min_providers:
             return Evidence(
                 verdict=Verdict.UNKNOWN,
                 total_cost=CostTier.MODEL,
                 reason=(
-                    f"diversidad insuficiente: {len(providers)} proveedor(es) "
+                    f"diversidad insuficiente: {len(configured_providers)} proveedor(es) "
                     f"distinto(s), se exigen {self._min_providers} — el panel no "
                     "puede certificar"
                 ),
@@ -98,9 +105,14 @@ class AdversarialPanel:
 
         checks: list[Check] = []
         blocking: list[Objection] = []
+        objections: list[Objection] = []
         for reviewer in self._reviewers:
             objection = reviewer.review(diff, context)
-            substantive = objection.severity >= self._block_at
+            objections.append(objection)
+            # Un reviewer inalcanzable no opinó nada: no cuenta como objeción
+            # sustantiva propia, aunque LlmReviewer lo marque MAJOR fail-closed
+            # (severidad conservada para el detalle/registro, no para bloquear).
+            substantive = objection.reachable and objection.severity >= self._block_at
             checks.append(
                 Check(
                     name=f"{reviewer.reviewer_id}@{reviewer.provider}",
@@ -111,6 +123,26 @@ class AdversarialPanel:
             )
             if substantive:
                 blocking.append(objection)
+
+        # Diversidad REAL: proveedores distintos que de verdad respondieron.
+        # Un panel construido con 3 proveedores donde 1 cae fail-closed no es
+        # un panel de 3 voces — "unknown > mentir" se aplica también aquí, no
+        # solo en construcción.
+        reachable_providers = {o.provider for o in objections if o.reachable}
+        if len(reachable_providers) < self._min_providers:
+            unreachable = sorted({o.provider for o in objections if not o.reachable})
+            return Evidence(
+                verdict=Verdict.UNKNOWN,
+                checks=tuple(checks),
+                total_cost=CostTier.MODEL,
+                verifier_ids=("adversarial_panel",),
+                reason=(
+                    f"diversidad insuficiente tras la llamada real: "
+                    f"{len(reachable_providers)} proveedor(es) alcanzable(s) de "
+                    f"{self._min_providers} exigidos — inalcanzable(s): "
+                    f"{', '.join(unreachable) if unreachable else 'ninguno'}"
+                ),
+            )
 
         if blocking:
             reason = "; ".join(
