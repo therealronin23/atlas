@@ -899,7 +899,21 @@ class InferenceHub:
 
         completion: Any = None
         last_exc: BaseException | None = None
+        # 2026-07-30: `timeout_s` es un PRESUPUESTO TOTAL de pared, no un tope
+        # por intento. Medido en vivo: `nvidia_glm` no devuelve error, se cuelga
+        # -- y como un cuelgue se clasifica transitorio-reintentable, el coste
+        # real por proveedor era 120s x 3 intentos = 360s, anulando el propósito
+        # declarado de la constante ("un proveedor colgado no puede bloquear al
+        # caller"). Con el panel adversarial recorriendo reviewers en serie, un
+        # asiento colgado costaba hasta 6min y el Cónclave hasta 18 (cuelgues de
+        # ~7-10min observados hoy). Un fallo RÁPIDO sigue teniendo sus 3
+        # intentos: solo se corta cuando ya no queda presupuesto.
+        deadline = time.monotonic() + timeout_s
         for attempt in range(max_retries + 1):
+            remaining = deadline - time.monotonic()
+            if attempt > 0 and remaining <= 0:
+                break
+            attempt_timeout = timeout_s if attempt == 0 else min(timeout_s, remaining)
             try:
                 # 2026-07-23: `timeout=timeout_s` pasado a litellm NO acota el
                 # tiempo real de vuelta — probado en vivo con nvidia_nim
@@ -924,11 +938,11 @@ class InferenceHub:
                     messages=messages,
                     max_tokens=request.max_tokens,
                     temperature=request.temperature,
-                    timeout=timeout_s,
+                    timeout=attempt_timeout,
                     **extra_kwargs,
                 )
                 try:
-                    completion = future.result(timeout=timeout_s)
+                    completion = future.result(timeout=attempt_timeout)
                 finally:
                     pool.shutdown(wait=False)
                 last_exc = None
@@ -938,7 +952,9 @@ class InferenceHub:
                     f"hard timeout tras {timeout_s}s (litellm no devolvió a tiempo)"
                 )
                 last_exc.__cause__ = exc
-                if attempt < max_retries:
+                # Un cuelgue agota el presupuesto total en el propio intento:
+                # no queda tiempo para reintentar (ver `deadline` arriba).
+                if attempt < max_retries and (deadline - time.monotonic()) > 0:
                     backoff = INFER_RETRY_BASE_S * (2 ** attempt)
                     self._sleep(backoff + random.uniform(0.0, INFER_RETRY_BASE_S))
                     continue

@@ -5,6 +5,7 @@ Comprueba clasificacion de errores, fallback chain y cooldown.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -1125,6 +1126,85 @@ class TestRequestPolicyOverrides:
         resp = hub.probe_provider(
             providers[0],
             InferenceRequest(prompt="ping", level=InferenceLevel.L1),
+        )
+
+        assert resp.success is False
+        assert len(calls) == INFER_MAX_RETRIES + 1
+
+    def test_hard_timeout_is_a_total_budget_not_per_attempt(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """2026-07-30, medido en vivo: `nvidia_glm` no devuelve error — SE CUELGA.
+        Un probe aislado murió por timeout externo a los 150s habiendo impreso
+        solo la config del proveedor (exit 124).
+
+        `INFER_REQUEST_TIMEOUT_S` existe, según su propio comentario, para que
+        "un proveedor colgado no puede bloquear al caller (Cónclave >20min,
+        2026-07-17)". Pero el corte es POR INTENTO y un cuelgue es transitorio
+        reintentable, así que el coste real era 120s x 3 = 360s por proveedor.
+        Con el panel adversarial recorriendo sus reviewers en serie
+        (`adversarial_panel.verify`), un solo asiento colgado se comía hasta 6
+        minutos y el Cónclave entero hasta 18 — exactamente los cuelgues de
+        ~7-10min observados hoy al intentar el Cónclave preliminar de T2.1.
+
+        El invariante que este test fija: el tope es un PRESUPUESTO TOTAL de
+        pared. Un fallo rápido sigue reintentándose (3 intentos de 2s caben de
+        sobra); un cuelgue consume el presupuesto en el primer intento y no hay
+        segundo. Nota: `_sleep` se inyecta a no-op, así que el tiempo medido es
+        solo el de las llamadas colgadas, no el backoff.
+        """
+        providers = _providers_with_keys(monkeypatch)
+        calls: list[int] = []
+
+        def hangs_forever(**kwargs: Any) -> Any:
+            calls.append(1)
+            time.sleep(10.0)  # más largo que cualquier timeout del test
+            raise AssertionError("no debería llegar aquí")
+
+        monkeypatch.setattr(litellm, "completion", hangs_forever)
+        hub = InferenceHub(providers=providers, mode="live", sleep_fn=lambda _s: None)
+
+        started = time.monotonic()
+        resp = hub.probe_provider(
+            providers[0],
+            InferenceRequest(prompt="ping", level=InferenceLevel.L1, timeout_s=0.3),
+        )
+        elapsed = time.monotonic() - started
+
+        assert resp.success is False
+        assert len(calls) == 1, (
+            f"un cuelgue debe consumir el presupuesto en un intento, no reintentarse "
+            f"(hubo {len(calls)} intentos)"
+        )
+        assert elapsed < 0.9, (
+            f"el tope duro debe ser un presupuesto TOTAL: {elapsed:.2f}s con "
+            f"timeout_s=0.3 significa que se reintentó el cuelgue"
+        )
+
+    def test_fast_failures_still_get_their_retries_within_budget(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Contraparte del test anterior: el presupuesto total NO debe matar el
+        reintento de fallos rápidos, que es barato y valioso (503/500/conn de
+        un blip de red). Tres intentos inmediatos caben dentro del presupuesto.
+        """
+        from atlas.core.inference_hub import INFER_MAX_RETRIES
+
+        providers = _providers_with_keys(monkeypatch)
+        calls: list[int] = []
+
+        class FakeTimeout(Exception):
+            pass
+
+        def fails_fast(**kwargs: Any) -> Any:
+            calls.append(1)
+            raise FakeTimeout("blip")
+
+        monkeypatch.setattr(litellm, "completion", fails_fast)
+        hub = InferenceHub(providers=providers, mode="live", sleep_fn=lambda _s: None)
+        resp = hub.probe_provider(
+            providers[0],
+            InferenceRequest(prompt="ping", level=InferenceLevel.L1, timeout_s=5.0),
         )
 
         assert resp.success is False
