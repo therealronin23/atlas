@@ -1,0 +1,51 @@
+{
+  "screen": "t2-1-micropoc-compose",
+  "stack": "compose",
+  "evaluated_at": "2026-07-30T21:00:00Z",
+  "passed": false,
+  "reason": "Banco de pruebas técnico de una sola pantalla (glow + partículas + fps + WS), nunca se propuso como pantalla de producto — falla por diseño, no por defecto de calidad.",
+  "questions": {
+    "donde_estoy": {
+      "answered": false,
+      "detail": "Sin chrome de navegación ni breadcrumb; es una ventana única sin contexto de ubicación dentro de Atlas."
+    },
+    "objetivo_activo": {
+      "answered": false,
+      "detail": "No muestra ningún objetivo real de Atlas — es un arnés de medición, no consume el estado de misión."
+    },
+    "accion_actual": {
+      "answered": "partial",
+      "detail": "El contador de fps y el estado de WS ('conectado'/eventos recibidos) sí comunican estado en vivo del propio proceso, pero no de una tarea u objetivo real de Atlas."
+    },
+    "datos_usados": {
+      "answered": "partial",
+      "detail": "Usa datos reales (los 23 eventos históricos del bridge 7341 real, no mockeados), visibles como contador, pero sin panel de datos ni procedencia."
+    },
+    "riesgo": {
+      "answered": false,
+      "detail": "No existe ninguna noción de riesgo en la pantalla."
+    },
+    "accion_siguiente": {
+      "answered": false,
+      "detail": "No hay ninguna acción propuesta ni siguiente paso mostrado."
+    },
+    "control_usuario": {
+      "answered": false,
+      "detail": "Sin simular/pausar/cancelar/rechazar — la única interacción es el resize de ventana del propio SO."
+    },
+    "evidencia_auditoria": {
+      "answered": false,
+      "detail": "No hay panel de evidencia ni enlace a auditoría/Merkle."
+    }
+  },
+  "rejection_checklist": {
+    "dashboard_card_soup": false,
+    "jarvis_barato_hud_decorativo": true,
+    "plantilla_generica": false,
+    "nodos_sin_significado": true,
+    "movimiento_decorativo": true,
+    "paleta_comandos_salta_permisos": false,
+    "movil_sin_adaptar": "not_applicable",
+    "falta_reduced_motion": true
+  }
+}

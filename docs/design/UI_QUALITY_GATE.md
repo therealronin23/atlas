@@ -34,7 +34,65 @@ producto de Atlas (no solo la nativa futura).
   (ver `ui/atlas-shell/README.md`). No se aplica este gate como criterio de
   aceptación de producto sobre el shell; se usa solo para no romper su
   utilidad como panel de pruebas de endpoints/eventos/conectores.
-- La superficie de producto real (nativa, Slint/wgpu o equivalente) queda
-  diferida; cuando se construya, este documento es su checklist de
-  aceptación obligatoria — `fixtures/ui/ui_quality_gate_results.json` del
-  pack es el formato de referencia para automatizar la comprobación.
+- La superficie de producto real (nativa — Flutter, Compose Multiplatform o
+  Qt6/QML, ver `DECISION_STACK_T21.md`; la mención previa a "Slint/wgpu" en
+  esta línea quedó superada por la medición real de T2.1, ninguno de los
+  tres candidatos evaluados es Slint) queda diferida; cuando se construya,
+  este documento es su checklist de aceptación obligatoria.
+
+## Esquema real de `ui_quality_gate_results.json` (2026-07-30)
+
+El fixture del pack (`fixtures/ui/ui_quality_gate_results.json`) es un
+placeholder de demo de 2 líneas (`{"passed": false, "reason": "demo
+fixture..."}`), sin desglose por pregunta. Esquema real, con un archivo
+por pantalla evaluada, junto al propio prototipo/pantalla:
+
+```json
+{
+  "screen": "<id de la pantalla o del ítem de backlog>",
+  "stack": "<flutter|compose|qt|...>",
+  "evaluated_at": "<ISO 8601>",
+  "passed": <bool — true solo si las 8 preguntas están respondidas Y ningún ítem de rechazo aplica>,
+  "reason": "<una frase, el motivo del passed/failed>",
+  "questions": {
+    "donde_estoy": {"answered": <bool>, "detail": "<por qué sí/no>"},
+    "objetivo_activo": {"answered": <bool>, "detail": "..."},
+    "accion_actual": {"answered": <bool>, "detail": "..."},
+    "datos_usados": {"answered": <bool>, "detail": "..."},
+    "riesgo": {"answered": <bool>, "detail": "..."},
+    "accion_siguiente": {"answered": <bool>, "detail": "..."},
+    "control_usuario": {"answered": <bool>, "detail": "..."},
+    "evidencia_auditoria": {"answered": <bool>, "detail": "..."}
+  },
+  "rejection_checklist": {
+    "dashboard_card_soup": <bool>,
+    "jarvis_barato_hud_decorativo": <bool>,
+    "plantilla_generica": <bool>,
+    "nodos_sin_significado": <bool>,
+    "movimiento_decorativo": <bool>,
+    "paleta_comandos_salta_permisos": <bool>,
+    "movil_sin_adaptar": <bool | "not_applicable">,
+    "falta_reduced_motion": <bool>
+  }
+}
+```
+
+Un `true` en cualquier ítem de `rejection_checklist` significa "este
+problema SÍ está presente" (coincide con el rechazo) — no es un check que
+pasa, es una alarma que se dispara.
+
+**Aplicado por primera vez a los tres micro-PoCs de T2.1** (2026-07-30,
+`prototypes/atlas_ui/{flutter,compose,qt}_micropoc/ui_quality_gate_results.json`):
+los tres dan `passed: false` — **por diseño, no por defecto de calidad**.
+Los micro-PoCs son bancos de pruebas técnicos de una sola pantalla (glow +
+partículas + fps + WS), nunca se propusieron como pantallas de producto:
+no hay objetivo activo, riesgo, Gate, evidencia ni control de
+usuario porque ninguno de esos conceptos existe todavía en el bridge que
+consumen. El glow y las partículas SÍ disparan
+`jarvis_barato_hud_decorativo` y `movimiento_decorativo` con honestidad —
+son decoración pura, medida así a propósito (el objetivo de esa sesión era
+fps/RAM/GPU, no UX). Los tres resultados son idénticos entre sí porque los
+tres implementan la MISMA pantalla de referencia — este gate no
+diferencia entre candidatos en esta ronda, queda probado y listo para
+aplicarse de verdad cuando se construyan las ~20 pantallas de producto
+sobre el stack que gane el Cónclave final.
