@@ -1,16 +1,16 @@
-<!-- GENERADO por atlas handoff 2026-07-29T12:23:37.192595+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-30T09:36:51.488754+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # Mapa del ecosistema — resumen
 
 ## Conteo por estado
 
-- ACTIVO: 34
+- ACTIVO: 33
 - PENDIENTE: 6
 - SELLADO: 5
 - ACTIVO parcial: 3
+- CONTRADICTED: 2
 - MURO: 1
 - PENDIENTE (scheduling) / ACTIVO (substrate): 1
-- CONTRADICTED: 1
 - ACCEPTED_DESIGN / PORT_SOURCE: 1
 - ACCEPTED_DESIGN / PATTERN_DONOR: 1
 
