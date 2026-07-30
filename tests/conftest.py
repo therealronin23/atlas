@@ -81,6 +81,21 @@ _SECURITY_COUNCIL_ENV_KEYS = ("ATLAS_SECURITY_COUNCIL_GATE",)
 # propio monkeypatch.setenv("ATLAS_NESTED_TEST_RUN", "1") en el cuerpo del
 # test (corre después de este autouse).
 _NESTED_TEST_RUN_ENV_KEYS = ("ATLAS_NESTED_TEST_RUN",)
+
+# 2026-07-30: tres flags de tick opt-in añadidos al .env de producción esta
+# misma sesión (provider_status, provider_discovery, workbench_compliance_review)
+# nunca se sumaron aquí -- mismo mecanismo de fuga que _AUTONOMY_ENV_KEYS. Se
+# quedó sin efecto ~2 semanas porque una regresión aparte (5da5f5f, 2026-07-16)
+# eliminó el load_dotenv() de inference_hub.py sin que nada lo notara; al
+# restaurarlo (tests/test_inference_hub_dotenv.py) estos tres flags empezaron
+# a colarse de verdad y rompieron test_maintenance_provider_discovery_tick.py
+# (que asume "first run" == flag nunca visto) y
+# TestProviderSmokeTick::test_runs_and_classifies_providers.
+_MAINTENANCE_TICK_FLAG_KEYS = (
+    "ATLAS_PROVIDER_STATUS",
+    "ATLAS_PROVIDER_DISCOVERY",
+    "ATLAS_WORKBENCH_COMPLIANCE_REVIEW",
+)
 _CANDIDATE_VALIDATION_ENV = "ATLAS_CANDIDATE_VALIDATION"
 _OFFLINE_TEST_PUBLIC_IP = "93.184.216.34"
 
@@ -100,6 +115,7 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
         *_AUTONOMY_ENV_KEYS,
         *_SECURITY_COUNCIL_ENV_KEYS,
         *_NESTED_TEST_RUN_ENV_KEYS,
+        *_MAINTENANCE_TICK_FLAG_KEYS,
     ):
         monkeypatch.delenv(key, raising=False)
     # Pending approvals HMAC (tests; no secretos reales)
@@ -112,6 +128,28 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     # el semántico real puede seguir haciendo su propio
     # monkeypatch.setenv("ATLAS_EMBEDDER", "fastembed") dentro del test.
     monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
+
+
+@pytest.fixture(autouse=True)
+def _reset_default_providers_state() -> None:
+    """`DEFAULT_PROVIDERS` es una lista de `Provider` mutables a nivel de
+    módulo -- `InferenceHub` actualiza `status`/`last_used`/`error_count`
+    in-place (diseño correcto para un daemon de un solo proceso de larga
+    vida, ver `inference_hub.py`). En la suite, cientos de tests comparten
+    los MISMOS objetos `Provider` sin copiar; el primer test que dispare una
+    llamada real o stub deja `status=OK`/`last_used` poblado para el resto
+    de la sesión de pytest. Descubierto 2026-07-30 al restaurar
+    `load_dotenv()` en `inference_hub.py` (la regresión de 5da5f5f llevaba
+    ~2 semanas enmascarando esto sin querer): 5 tests de
+    `test_maintenance_provider_discovery_tick.py`/`test_self_improvement_wiring.py`
+    fallaban SOLO en combinación con otros tests, nunca en aislamiento.
+    """
+    from atlas.core.inference_hub import DEFAULT_PROVIDERS, ProviderStatus
+
+    for provider in DEFAULT_PROVIDERS:
+        provider.status = ProviderStatus.OK
+        provider.last_used = None
+        provider.error_count = 0
 
 
 @pytest.fixture(autouse=True)

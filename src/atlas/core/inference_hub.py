@@ -54,6 +54,22 @@ import logging as _logging  # noqa: E402
 _logging.getLogger("LiteLLM").setLevel(_logging.ERROR)
 _logging.getLogger("litellm").setLevel(_logging.ERROR)
 
+# 2026-07-30: restaurado tras una regresión real -- el refactor a import
+# perezoso de litellm (5da5f5f, 2026-07-16) se llevó por delante esta
+# llamada sin que el mensaje del commit lo mencionara. Sin esto, cualquier
+# proceso que construya InferenceHub sin las API keys ya en el entorno cae
+# fail-closed en silencio para TODOS los proveedores (ver
+# tests/test_inference_hub_dotenv.py). load_dotenv() del paquete
+# python-dotenv parsea como datos literales -- no es el mismo riesgo que
+# `source .env` en shell (ver scripts/safe_dotenv.py y tests/test_safe_dotenv.py
+# para el contrato de seguridad de scripts sueltos).
+try:
+    from dotenv import load_dotenv as _load_dotenv
+
+    _load_dotenv()
+except ImportError:  # pragma: no cover
+    pass
+
 litellm: Any | None = None
 _HAS_LITELLM = importlib.util.find_spec("litellm") is not None
 

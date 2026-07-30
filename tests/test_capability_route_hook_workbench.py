@@ -10,6 +10,33 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# 2026-07-30: `inference_hub.load_dotenv()` busca `.env` a partir de la
+# ubicación en disco de `inference_hub.py` (dentro del repo real), no del
+# `cwd`/`env` restringido que le pasamos al subprocess -- así que un `env`
+# minimalista NO basta para garantizar "sin API key": python-dotenv respeta
+# cualquier valor YA presente en el entorno (override=False por defecto,
+# incluida una cadena vacía), así que fijar estas keys a "" aquí sí bloquea
+# la fuga real. Mismo set que `_EXTERNAL_API_KEYS` de tests/conftest.py.
+_BLOCKED_API_KEYS = {
+    "GROQ_API_KEY": "",
+    "OPENROUTER_API_KEY": "",
+    "TOGETHERAI_API_KEY": "",
+    "GEMINI_API_KEY": "",
+    "ANTHROPIC_API_KEY": "",
+    "OPENAI_API_KEY": "",
+    "NVIDIA_API_KEY": "",
+}
+
+
+def _isolated_env(fake_home: Path) -> dict[str, str]:
+    return {
+        "HOME": str(fake_home),
+        "PYTHONPATH": str(ROOT / "src"),
+        "PATH": "/usr/bin:/bin",
+        **_BLOCKED_API_KEYS,
+    }
+
+
 _MIN_CATALOG = """
 taxonomy: {}
 sectors:
@@ -30,7 +57,7 @@ def test_hook_prints_workbench_notice_when_stale(tmp_path: Path) -> None:
     repo = _isolated_repo(tmp_path)
     fake_home = tmp_path / "home"
     fake_home.mkdir()
-    env = {"HOME": str(fake_home), "PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"}
+    env = _isolated_env(fake_home)
 
     result = subprocess.run(
         [
@@ -53,7 +80,7 @@ def test_hook_omits_workbench_notice_when_fresh(tmp_path: Path) -> None:
     from atlas.mcp.workbench_resources import record_consultation
 
     record_consultation(fake_home / "atlas-mcp" / "workbench_consultations.jsonl")
-    env = {"HOME": str(fake_home), "PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"}
+    env = _isolated_env(fake_home)
 
     result = subprocess.run(
         [
@@ -84,7 +111,7 @@ def test_hook_stale_beyond_synthesis_cooldown_falls_back_safely_without_key(
     (fake_home / "atlas-mcp" / "workbench_consultations.jsonl").write_text(
         json.dumps({"at": old}) + "\n", encoding="utf-8"
     )
-    env = {"HOME": str(fake_home), "PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"}
+    env = _isolated_env(fake_home)
 
     result = subprocess.run(
         [
@@ -104,7 +131,7 @@ def test_hook_no_state_flag_also_skips_workbench_check(tmp_path: Path) -> None:
     repo = _isolated_repo(tmp_path)
     fake_home = tmp_path / "home"
     fake_home.mkdir()
-    env = {"HOME": str(fake_home), "PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"}
+    env = _isolated_env(fake_home)
 
     result = subprocess.run(
         [
