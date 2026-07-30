@@ -302,6 +302,65 @@ def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
     assert [p.name for p in cn._hub._providers] == ["nvidia_glm", "groq_qwen3"]
 
 
+def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
+    """2026-07-30 — el fallback de linaje estaba CONSTRUIDO pero INALCANZABLE
+    en 2 de los 3 asientos. Los tests previos verifican qué proveedores lleva
+    el hub (construcción); ninguno verificaba que se llegue a ellos al LLAMAR.
+
+    `InferenceHub._walk_chain` filtra candidatos con `p.level == request.level`
+    (filtro DURO; la única escapatoria entre niveles es L1->L0). Y
+    `build_trio_reviewers` pasa `primary.level` como nivel de la petición. Con
+    los niveles reales del catálogo:
+
+        US  gemini_free           L0  ->  groq_llama_70b            L1   INALCANZABLE
+        CN  nvidia_glm            L2  ->  groq_qwen3                L0   INALCANZABLE
+        EU  nvidia_mistral_large  L2  ->  openrouter_mistral_large  L2   ok
+
+    Medido en vivo el mismo día: el asiento CN tardó 123.0s y devolvió
+    `reachable=False` — `nvidia_glm` se cuelga y `groq_qwen3` NUNCA se intentó.
+    Es la causa de que el Cónclave no alcanzara quórum (2/3) pese a tener el
+    fallback "configurado". El asiento EU sí respondió, porque es el único con
+    ambos proveedores en el mismo nivel.
+    """
+    import litellm  # type: ignore
+
+    from atlas.core.deliberation_council import build_trio_reviewers
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-nvidia")
+    monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+    # build_trio_reviewers construye hubs en modo "auto", que dentro de pytest
+    # resuelve a stub: sin esto no se llamaría a NINGÚN proveedor y el test
+    # verificaría el stub, no el enrutado real por nivel que es lo que falla.
+    monkeypatch.setenv("ATLAS_INFERENCE_MODE", "live")
+
+    seen: list[str] = []
+
+    def fake_completion(**kwargs):
+        model = kwargs.get("model", "")
+        seen.append(model)
+        if "glm" in model:  # el primario CN se cae
+            raise RuntimeError("boom: primario del linaje caído")
+        msg = type("M", (), {"content": "MINOR\nel fallback del linaje contestó"})()
+        choice = type("C", (), {"message": msg})()
+        return type("R", (), {"choices": [choice], "usage": None})()
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    cn = next(r for r in build_trio_reviewers() if r.provider == "nvidia_glm")
+    obj = cn.review("¿decisión de prueba?", "")
+
+    assert any("qwen" in m for m in seen), (
+        f"el fallback del MISMO linaje debe intentarse aunque su nivel difiera "
+        f"del primario; modelos realmente llamados: {seen}"
+    )
+    assert obj.reachable is True, (
+        "un asiento cuyo fallback de linaje contesta NO es un asiento muerto"
+    )
+    assert obj.provider == "nvidia_glm", (
+        "la etiqueta sigue siendo el primario: la diversidad se mide por linaje"
+    )
+
+
 # ---------------------------------------------------------------------------
 # v2.1 — debate por rondas (opt-in, rounds>1)
 # ---------------------------------------------------------------------------

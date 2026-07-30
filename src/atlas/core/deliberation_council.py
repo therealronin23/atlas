@@ -56,11 +56,22 @@ class LlmReviewer:
         provider: str,
         hub: InferenceHub,
         level: InferenceLevel,
+        levels: tuple[InferenceLevel, ...] | None = None,
     ) -> None:
         self._id = reviewer_id
         self._provider = provider
         self._hub = hub
         self._level = level
+        # 2026-07-30: `InferenceHub._walk_chain` filtra candidatos con
+        # `p.level == request.level` (filtro DURO; la única escapatoria entre
+        # niveles es L1->L0). Pedir siempre `primary.level` dejaba INALCANZABLE
+        # cualquier fallback del mismo linaje declarado en otro nivel -- 2 de
+        # los 3 asientos del trío (US L0->L1, CN L2->L0). Medido en vivo: el
+        # asiento CN tardó 123s y devolvió reachable=False porque `nvidia_glm`
+        # se cuelga y `groq_qwen3` NUNCA se intentó. Recorrer los niveles del
+        # propio linaje, en orden, arregla la alcanzabilidad sin tocar el
+        # enrutado del hub para el resto de callers.
+        self._levels: tuple[InferenceLevel, ...] = levels or (level,)
 
     @property
     def reviewer_id(self) -> str:
@@ -71,13 +82,13 @@ class LlmReviewer:
         return self._provider
 
     def review(self, diff: str, context: str = "") -> Objection:
-        resp = self._hub.infer(
-            InferenceRequest(
-                prompt=_HOSTILE_PROMPT.format(diff=diff, context=context),
-                level=self._level,
-            )
-        )
-        if not resp.success or not resp.text.strip():
+        prompt = _HOSTILE_PROMPT.format(diff=diff, context=context)
+        resp = None
+        for level in self._levels:
+            resp = self._hub.infer(InferenceRequest(prompt=prompt, level=level))
+            if resp.success and resp.text.strip():
+                break
+        if resp is None or not resp.success or not resp.text.strip():
             return Objection(
                 self._id, self._provider, Severity.MAJOR,
                 "revisión no disponible (fail-closed)",
@@ -149,8 +160,20 @@ def build_trio_reviewers(providers: list[Provider] | None = None) -> list[Review
         if not available:
             continue
         primary = available[0]
+        # Niveles del linaje EN ORDEN, sin repetir: el reviewer los recorre
+        # para que un fallback declarado en otro nivel siga siendo alcanzable
+        # (ver comentario en LlmReviewer.__init__).
+        levels: tuple[InferenceLevel, ...] = tuple(
+            dict.fromkeys(p.level for p in available)
+        )
         out.append(
-            LlmReviewer(primary.name, primary.name, InferenceHub(providers=available), primary.level)
+            LlmReviewer(
+                primary.name,
+                primary.name,
+                InferenceHub(providers=available),
+                primary.level,
+                levels=levels,
+            )
         )
     return out
 
