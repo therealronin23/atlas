@@ -57,6 +57,7 @@ def collect_reality(
         "mcp": _mcp_state(root, ws),
         "autonomy": _autonomy_state(),
         "docs": _docs_state(root),
+        "cold_update": _cold_update_state(root),
         "provider_smoke": _provider_smoke_state(root),
         "provider_discovery": _provider_discovery_state(root),
         "graph": _graph_state(root),
@@ -377,6 +378,7 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
     merkle = report["workspace"]["merkle"]
     autonomy = report["autonomy"]
     graph = report["graph"]
+    cold_update = report.get("cold_update") or {}
     bwrap_available = shutil.which("bwrap") is not None
     return [
         {
@@ -449,11 +451,14 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "name": "self_improvement.cold_update",
-            "status": "ready",
+            "status": cold_update.get("status", "unknown"),
             "trusted": True,
             "mutating": True,
             "reversible": True,
-            "evidence": "ColdUpdate validates in isolated worktree before apply",
+            "evidence": (
+                "ColdUpdate validates in isolated worktree before apply; "
+                f"{cold_update.get('reason', 'not measured')}"
+            ),
         },
         {
             "name": "autonomy.decider",
@@ -486,6 +491,76 @@ def _docs_state(root: Path) -> dict[str, Any]:
         "unique_test_count_claims": unique,
         "status": "stale" if stale else "ok",
         "reason": "multiple contradictory test-count claims" if stale else "no contradictory test-count claims detected",
+    }
+
+
+def _cold_update_state(root: Path) -> dict[str, Any]:
+    """Proyecta el resultado de la ÚLTIMA validación real de ColdUpdate sin
+    ejecutar nada: solo lee el store que ya escribió el manager
+    (``<root>.parent/atlas-cold-updates/proposals.json``, ver
+    ``ColdUpdateManager._store_dir``). Fichero ausente, ilegible o sin ninguna
+    validación registrada -> ``unknown`` con razón honesta, jamás una excepción
+    (mismo principio fail-honesto que ``_provider_smoke_state`` y ``_mcp_state``).
+
+    Existe porque este plano se declaraba ``ready`` con un literal. La regresión
+    de e93734c (2026-07-29, validación candidata movida dentro de BwrapJail)
+    dejó el gate sin poder pasar y ``atlas reality`` — el comando que AGENTS.md
+    manda correr antes de afirmar estado — siguió diciendo que el lazo de
+    automejora estaba listo. Un plano de capacidades que no se mide no es
+    evidencia, es decoración.
+    """
+    path = root.parent / "atlas-cold-updates" / "proposals.json"
+    unknown: dict[str, Any] = {
+        "status": "unknown",
+        "last_validation_passed": None,
+        "last_validation_at": None,
+        "proposal_count": 0,
+    }
+    if not path.is_file():
+        return {**unknown, "reason": f"no proposals.json found at {path}"}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        proposals = raw.get("proposals") if isinstance(raw, dict) else raw
+        if not isinstance(proposals, list):
+            raise ValueError("proposals is not a list")
+    except Exception:
+        return {**unknown, "reason": f"proposals.json unreadable or malformed: {path}"}
+
+    validated = [
+        item
+        for item in proposals
+        if isinstance(item, dict)
+        and isinstance(item.get("validation"), dict)
+        and item["validation"].get("passed") is not None
+    ]
+    if not validated:
+        return {
+            **unknown,
+            "proposal_count": len(proposals),
+            "reason": "no proposal in proposals.json carries a validation result yet",
+        }
+
+    last = max(
+        validated,
+        key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""),
+    )
+    validation = last["validation"]
+    passed = bool(validation.get("passed"))
+    when = str(last.get("updated_at") or last.get("created_at") or "") or None
+    if passed:
+        reason = "last ColdUpdate validation passed"
+    else:
+        reason = (
+            "last ColdUpdate validation failed "
+            f"(pytest_exit={validation.get('pytest_exit')}, "
+            f"mypy_exit={validation.get('mypy_exit')})"
+        )
+    return {
+        "status": "ready" if passed else "degraded",
+        "last_validation_passed": passed,
+        "last_validation_at": when,
+        "proposal_count": len(proposals),
+        "reason": reason,
     }
 
 

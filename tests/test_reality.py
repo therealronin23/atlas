@@ -495,3 +495,93 @@ def test_collect_reality_wires_self_build_pause_section(tmp_path: Path) -> None:
     paused = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
     assert paused["self_build_pause"]["paused"] is True
     assert paused["self_build_pause"]["reason"] == "sesion de desarrollo"
+
+
+def _write_proposals(root: Path, proposals: list[dict]) -> Path:
+    """Escribe el store real de ColdUpdate (root.parent/atlas-cold-updates)."""
+    store = root.parent / "atlas-cold-updates"
+    store.mkdir(parents=True, exist_ok=True)
+    path = store / "proposals.json"
+    path.write_text(json.dumps({"proposals": proposals}), encoding="utf-8")
+    return path
+
+
+def test_cold_update_state_unknown_without_store(tmp_path: Path) -> None:
+    """Sin store no se INVENTA 'ready': se declara unknown con razón honesta."""
+    from atlas.core import reality
+
+    state = reality._cold_update_state(tmp_path / "repo")
+
+    assert state["status"] == "unknown"
+    assert state["last_validation_passed"] is None
+    assert "proposals.json" in state["reason"]
+
+
+def test_cold_update_state_unknown_on_corrupt_json(tmp_path: Path) -> None:
+    """JSON corrupto -> unknown, jamás una excepción (patrón _mcp_state)."""
+    from atlas.core import reality
+
+    root = tmp_path / "repo"
+    store = root.parent / "atlas-cold-updates"
+    store.mkdir(parents=True, exist_ok=True)
+    (store / "proposals.json").write_text("{no es json", encoding="utf-8")
+
+    state = reality._cold_update_state(root)
+
+    assert state["status"] == "unknown"
+    assert state["last_validation_passed"] is None
+
+
+def test_cold_update_state_ready_when_last_validation_passed(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    root = tmp_path / "repo"
+    _write_proposals(root, [
+        {"id": "old", "status": "failed", "updated_at": "2026-07-01T00:00:00+00:00",
+         "validation": {"passed": False, "pytest_exit": 1}},
+        {"id": "new", "status": "validated", "updated_at": "2026-07-29T00:00:00+00:00",
+         "validation": {"passed": True, "pytest_exit": 0}},
+    ])
+
+    state = reality._cold_update_state(root)
+
+    assert state["status"] == "ready"
+    assert state["last_validation_passed"] is True
+    assert state["last_validation_at"] == "2026-07-29T00:00:00+00:00"
+
+
+def test_cold_update_state_degraded_when_last_validation_failed(tmp_path: Path) -> None:
+    """Regresión e93734c: el gate no pasa desde 2026-07-29 y reality lo callaba."""
+    from atlas.core import reality
+
+    root = tmp_path / "repo"
+    _write_proposals(root, [
+        {"id": "old", "status": "applied", "updated_at": "2026-07-25T00:00:00+00:00",
+         "validation": {"passed": True, "pytest_exit": 0}},
+        {"id": "new", "status": "failed", "updated_at": "2026-07-30T00:00:00+00:00",
+         "validation": {"passed": False, "pytest_exit": 1}},
+    ])
+
+    state = reality._cold_update_state(root)
+
+    assert state["status"] == "degraded"
+    assert state["last_validation_passed"] is False
+    assert "pytest_exit=1" in state["reason"]
+
+
+def test_cold_update_capability_is_measured_not_hardcoded(tmp_path: Path) -> None:
+    """El verde de self_improvement.cold_update era un literal en reality.py:452.
+    Con la última validación en rojo, la capacidad NO puede decir 'ready'."""
+    root = _mini_repo(tmp_path)
+    _write_proposals(root, [
+        {"id": "new", "status": "failed", "updated_at": "2026-07-30T00:00:00+00:00",
+         "validation": {"passed": False, "pytest_exit": 1}},
+    ])
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+    caps = [c for c in report["capabilities"] if c["name"] == "self_improvement.cold_update"]
+
+    assert len(caps) == 1
+    assert caps[0]["status"] == "degraded"
+    assert "pytest_exit=1" in caps[0]["evidence"]
+    assert report["cold_update"]["last_validation_passed"] is False

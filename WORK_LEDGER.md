@@ -8,6 +8,39 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-30 — sesión adversarial: hallazgo OAuth cerrado en la superficie
+  que se había quedado fuera, y el verde falso de `cold_update` medido.**
+  **OAuth (superficie Codex).** La mitigación del incidente 2026-07-17 se aplicó
+  el 07-22 a `~/.claude.json` y **Codex se quedó fuera**: `.codex/config.toml`
+  seguía fijando el client viejo/expuesto `344051770277-…` con el secreto
+  **inline** en `[mcp_servers.google-workspace.env]` — la forma exacta que el
+  paso 3 del runbook manda eliminar. Comparado por sha256, no coincidía con el
+  par rotado de `~/.config/atlas/google-oauth.env` (`228819788474-…`). Ahora
+  lanza `scripts/google_workspace_mcp_wrapper.sh` sin bloque `env`. Verificado
+  ANTES de retirar las viejas: handshake MCP real `initialize` →
+  `google_workspace 3.4.5`, y escaneo de argv de todo el árbol hijo (`uv` →
+  `python`) durante el handshake = **cero** procesos con el secreto. El operador
+  confirma el paso 1 (revocado en consola) — evidencia *reportada*, no
+  verificable por máquina desde el repo. Las tres superficies barridas a cero.
+  Lección: el runbook razonaba por *credencial*; la mitigación se aplica por
+  *cliente*, y `.codex/config.toml` está gitignored, así que ni CI ni
+  pre-commit ni `sanitation_audit` lo ven.
+  **`reality.cold_update` era un literal.** `reality.py:452` declaraba
+  `self_improvement.cold_update` = `"ready"` **hardcodeado**, nunca medido. Con
+  la regresión de `e93734c` (2026-07-29, validación candidata movida dentro de
+  `BwrapJail`) el gate no puede pasar desde entonces, y `atlas reality` — el
+  comando que AGENTS.md manda correr antes de afirmar estado — siguió diciendo
+  que el lazo de automejora estaba listo. Ahora `_cold_update_state()` lee el
+  store real (`../atlas-cold-updates/proposals.json`, 289 propuestas) y proyecta
+  la ÚLTIMA validación, fail-honesto como `_provider_smoke_state`: hoy reporta
+  `degraded`, `pytest_exit=1`. 5 tests TDD (RED verificado primero), 30/30 en
+  `test_reality.py`, 58 impactados verdes, mypy limpio. NO lo metí en
+  `strict_failures`: eso volvería rojo `--strict` y es estrechar/ampliar un
+  gate, decisión del operador, no efecto colateral de un fix.
+  **Próxima acción:** la regresión `e93734c` en sí sigue ABIERTA — el racimo de
+  sandbox necesita bwrap dentro de bwrap y no se arregla desde dentro del jail;
+  propuesta pendiente de decisión: marcador `requires_host_sandbox` + recuento
+  explícito de deseleccionados en `ValidationReport` (estrecha un gate ⇒ ADR).
 - **2026-07-30 — cierre de sesión: README real, drift al preflight, churn de
   INDEX.yaml eliminada, y salida autónoma del daemon integrada.**
   **README** (`bf7cd1e`): de stub de 8 líneas a puerta de entrada real.
