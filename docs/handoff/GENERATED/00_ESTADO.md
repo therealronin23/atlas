@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-30T09:36:51.488754+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-30T10:01:52.818711+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
@@ -50,6 +50,18 @@
   Estado final: `check_canon` **PASS** (2103 registros),
   `docs_index_audit --strict` exit 0, suite **4716 passed**, mypy **333**
   ficheros.
+  **CORRECCIÓN de un error propio, señalado por el operador:** al cerrar
+  escribí que "F2.6 necesita `claude setup-token`". **Es falso, y lo era
+  cuando lo escribí.** El 2026-07-29 se construyó y se ejecutó
+  `--driver agentic`: F2.6 corrió con `gemini_free` en 29,3 s, exit 0,
+  auto-registrada, y el gate pasó de `due` a `current`. **F2.6 ya no depende
+  de ninguna credencial de Claude.** Lo que falta para un pase es scaffolding
+  del prompt/harness o un modelo con más capacidad agéntica — no una
+  credencial. El error se propagó a `STATUS.md` y al pack de handoff (que se
+  genera desde este ledger); las tres fuentes corregidas, más el doc de
+  diseño de F2.6, que seguía declarando "bloqueado por credencial (N3)" desde
+  el 2026-07-17. Las entradas históricas de este ledger NO se reescriben: eran
+  ciertas cuando se escribieron y son receipts, no estado vigente.
   **Próxima acción:** sesión nueva. Pendientes del operador sin tocar:
-  ADC-WO-107 (bridge 7341), ADC-WO-124 (admisión desktop), F2.6 necesita
-  `claude setup-token`, y el batching del grafo si la suite molesta.
+  ADC-WO-107 (bridge 7341), ADC-WO-124 (admisión desktop), el scaffolding de
+  F2.6 para un score real, y el batching del grafo si la suite molesta.

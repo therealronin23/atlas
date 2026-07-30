@@ -77,10 +77,18 @@ de datos a tests y lo dejó pasar; `mcp` 1.23.3 arrastraba 3 advisories con
 exposición cero (ADR-079); 6 worktrees efímeros huérfanos y su causa.
 
 Sigue sin poder afirmarse: Hermes `mock`, MCP con 2 servidores **sin
-handshake**, sin proveedores externos en el entorno del comando. **F2.6 sigue
-`due`**: el dispatch del 2026-07-29 falló con `401 OAuth access token has been
-revoked`; sin transcript válido no se registró nada, que es el comportamiento
-correcto. Requiere reautenticar `claude setup-token`.
+handshake**, sin proveedores externos en el entorno del comando.
+
+**F2.6: `current`, con veredicto `fail` (2/6).** El primer intento del
+2026-07-29 con el driver `claude` falló (`401 OAuth access token has been
+revoked`) y correctamente no registró nada sin transcript válido. Después se
+construyó `--driver agentic` (`f26_agentic_dispatch.py`): bucle de
+tool-calling de `InferenceHub` sobre cualquier proveedor de `.env`, mismo
+grading sin tocar. Corrida real con `gemini_free`: 29,3 s, exit 0,
+auto-registrada (`last_run_sha=ee8003d`). **F2.6 ya no depende de una
+credencial de Claude.** Lo que falta para un pase es scaffolding del
+prompt/harness o un modelo con más capacidad agéntica — el 2/6 se conserva
+sin retocar el prompt, que sería gaming de la propia rúbrica.
 
 **Nota durable:** `pip-audit --strict` no puede pasar en este checkout ni con
 cero vulnerabilidades — trata "no auditable" como fallo y `atlas-core` (local,

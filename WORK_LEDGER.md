@@ -56,9 +56,21 @@ de escribir: `atlas reality --json`.
   Estado final: `check_canon` **PASS** (2103 registros),
   `docs_index_audit --strict` exit 0, suite **4716 passed**, mypy **333**
   ficheros.
+  **CORRECCIÓN de un error propio, señalado por el operador:** al cerrar
+  escribí que "F2.6 necesita `claude setup-token`". **Es falso, y lo era
+  cuando lo escribí.** El 2026-07-29 se construyó y se ejecutó
+  `--driver agentic`: F2.6 corrió con `gemini_free` en 29,3 s, exit 0,
+  auto-registrada, y el gate pasó de `due` a `current`. **F2.6 ya no depende
+  de ninguna credencial de Claude.** Lo que falta para un pase es scaffolding
+  del prompt/harness o un modelo con más capacidad agéntica — no una
+  credencial. El error se propagó a `STATUS.md` y al pack de handoff (que se
+  genera desde este ledger); las tres fuentes corregidas, más el doc de
+  diseño de F2.6, que seguía declarando "bloqueado por credencial (N3)" desde
+  el 2026-07-17. Las entradas históricas de este ledger NO se reescriben: eran
+  ciertas cuando se escribieron y son receipts, no estado vigente.
   **Próxima acción:** sesión nueva. Pendientes del operador sin tocar:
-  ADC-WO-107 (bridge 7341), ADC-WO-124 (admisión desktop), F2.6 necesita
-  `claude setup-token`, y el batching del grafo si la suite molesta.
+  ADC-WO-107 (bridge 7341), ADC-WO-124 (admisión desktop), el scaffolding de
+  F2.6 para un score real, y el batching del grafo si la suite molesta.
 
 - **2026-07-30 — clúster de 5 IDs duplicados (desktop-control/ADC-WO-124)
   fusionado, `check_canon.py` en PASS (`ba4cca6`).** Investigado y leído
@@ -218,10 +230,14 @@ de escribir: `atlas reality --json`.
   checks post-apply fallan, `_rollback_patch()` revierte y se registra. Si el
   rollback fallase, esa línea no se alcanzaría. Son **17 reversiones
   correctas** — la red de seguridad funcionando. Nada que arreglar.
-  **F2.6 NO se pudo cerrar pese a autorizarse el gasto:** `atlas f26 run` falló
-  el dispatch en 9 s con `401 OAuth access token has been revoked`, coste $0,
-  `recorded: false`. Sin transcript válido no registra nada, que es lo
-  correcto. **Sigue `due`; necesita `claude setup-token` del operador.**
+  **F2.6 con el driver `claude` no se pudo cerrar pese a autorizarse el
+  gasto:** `atlas f26 run` falló el dispatch en 9 s con `401 OAuth access
+  token has been revoked`, coste $0, `recorded: false`. Sin transcript válido
+  no registra nada, que es lo correcto. *(SUPERADO el mismo día por la entrada
+  de `--driver agentic`, más arriba: F2.6 corrió sin Claude y el gate está
+  `current`. La frase "necesita `claude setup-token`" que este receipt
+  contenía era cierta sólo para el driver `claude`, y se propagó como si fuera
+  del gate — ver la corrección en la entrada de cierre.)*
   **Siguen abiertos y son decisiones de boundary, no míos:** `ADC-WO-107`
   (Bridge 7341 `CONTRADICTED`: los POST mutantes contradicen el contrato
   read-only de ADR-058/071 — hay que autorizar la superficie con un boundary

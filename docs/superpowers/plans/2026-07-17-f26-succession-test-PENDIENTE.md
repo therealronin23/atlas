@@ -36,20 +36,32 @@ repetir aquí — así que la otra mitad se deja diseñada, no parcheada:
    ya disponible en este entorno (chip visible, un gesto humano lo lanza).
    Construir esto ANTES que 1-3 sería precisamente el parche a evitar.
 
-**Bloqueador abierto, no resuelto por esta sesión**: `claude -p --model
-sonnet` sigue dando 401 (credencial revocada) desde 2026-07-17 — requiere
-`claude setup-token` del operador en terminal interactiva. El sustituto
-(subagente Sonnet vía Agent tool) ya está VALIDADO como equivalente
-funcional (PRIME Cycle 6: 6/6 en comportamiento) si el bloqueo persiste.
+**BLOQUEADOR DE CREDENCIAL RESUELTO (2026-07-29): F2.6 ya NO depende de
+Claude.** `atlas f26 run --driver agentic` corre la rúbrica con el bucle de
+tool-calling de `InferenceHub` sobre cualquier proveedor de `.env` con
+`supports_tools` — Groq/OpenRouter/Gemini/NVIDIA. Implementado en
+`src/atlas/core/self_maintenance/f26_agentic_dispatch.py`; el grading
+(`grade_f26_transcript`) NO cambió, porque sólo depende de la FORMA del
+transcript, no de quién lo generó.
 
+Corrida real 2026-07-29 21:57 con `gemini_free`: **29,3 s, exit 0,
+auto-registrada** (`recorded: true`, `last_run_sha=ee8003d`). El gate pasó de
+`due` a `current`.
 
-**Estado**: PENDIENTE — **bloqueado por credencial (N3)**. Intento real
-2026-07-17 08:3x: `claude -p --model sonnet` devolvió `401 OAuth access token
-has been revoked` (también con env limpio: las credenciales guardadas de la
-CLI están revocadas). Prerequisito del OPERADOR: en una terminal interactiva,
-`claude setup-token` (o `claude login`) para refrescar la credencial de la
-CLI — el mismo bloqueo ya documentado en la memoria desktop-control
-2026-07-03. Después, cualquier driver puede correr el comando de abajo.
+**Estado**: EJECUTADO, **veredicto `fail` con score 2/6** — no un pase. El
+transcript real muestra que el modelo leyó dos ficheros con `Read` ANTES de
+`trunk_invoke_readonly` (falla ítem 2) y terminó en 3 turnos con contenido
+vacío, sin intentar el ítem 3 (`GoldenRoute` nunca se llamó), así que 1/2/4/6
+fallan y el 3 "pasa por defecto" sin intento real.
+
+**Lo que falta NO es una credencial**: es scaffolding del prompt/harness
+(acercarlo al de `tool_coder.py`, explícito en pasos) o un modelo con más
+capacidad agéntica que un free-tier pequeño. **No se tocó el prompt para
+forzar mejor nota** — sería el gaming de rúbrica que F2.6 existe para evitar.
+
+El driver `claude` sigue existiendo como default y sigue dando 401 desde
+2026-07-17 (credencial de la CLI revocada, `claude setup-token` la
+refrescaría). Ya no es un bloqueador del gate: es una vía alternativa.
 
 **Qué es**: la métrica (d) del plan maestro §2.9 — un Sonnet FRÍO en sesión
 real debe poder operar Atlas 6/6. Rúbrica original: plan toasty F2.6
