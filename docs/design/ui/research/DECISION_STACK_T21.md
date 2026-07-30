@@ -58,3 +58,28 @@ capa por configuración; lo correcto es su fondo: medir el build primero.
 4. Los 2-3 prototipos instalados en el portátil y el Android del operador +
    tabla de métricas → el operador elige carácter; Cónclave final de stack
    con datos de ESTA máquina.
+
+## Estado 2026-07-30: pasos 1-3 cerrados, Cónclave preliminar sin quórum
+
+Los tres micro-PoCs (Flutter/Compose/Qt) están medidos en la GTX 960M real
+de esta máquina, los tres PASA — ver
+`docs/design/ui/research/{2026-07-23-t21-micropoc-flutter,2026-07-30-t21-micropoc-compose,2026-07-30-t21-micropoc-qt}-resultados.md`.
+Resumen: Qt gana en build/arranque/RAM/fps, pero con un matiz honesto —
+MultiEffect (su ventaja estética original) requiere Qt 6.5+ y esta
+máquina solo tiene 6.4.2 en repos oficiales, no verificable.
+
+Se intentó un Cónclave PRELIMINAR (solo datos Linux, vía `deliberation_council`
+→ `adversarial_panel`) el mismo día: **UNKNOWN**, no PASS/FAIL — solo 2/3
+linajes respondieron (`nvidia_glm` fail-closed), el panel exige 3 voces
+distintas y correctamente rehúsa sintetizar sin esa diversidad ("unknown
+> mentir"). De las dos voces que sí respondieron, `nvidia_mistral_large`
+dio una objeción sustantiva real (riesgo de que la ventaja de Qt no
+escale a ~20 pantallas / >10-15 `ShaderEffect` simultáneos, cita un
+`QTBUG-98765` no verificado — tratar como no confirmado; coincide con el
+hallazgo ya documentado sobre MultiEffect); `gemini_free` dio una
+respuesta hostil cortada a media frase, sin contenido aprovechable. Un
+reintento se colgó ~10min sin responder (killed). No re-litigiar este
+intento fallido sin repetirlo con `nvidia_glm` confirmado vivo primero.
+
+El ADR de stack GANADOR sigue sin cerrarse — paso 4 (Android + elección
+del operador) pendiente, a pedir explícitamente.
