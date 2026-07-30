@@ -152,7 +152,12 @@ def write_index(docs_dir: Path | None = None) -> int:
         "# status: vigente | propuesto | superseded | historico\n"
     )
     (docs_dir / INDEX_NAME).write_text(
-        header + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+        # width=4096 IGUAL que scripts/docs_triage.py: son DOS escritores del
+        # mismo fichero. Sin esto, el default (80) de este script envuelve las
+        # `notes` largas y el triage las desenvuelve, así que cada alternancia
+        # reformateaba el índice entero — el 2026-07-30 un alta de un solo doc
+        # produjo 31 líneas de diff, de las cuales 1 era el cambio real.
+        header + yaml.safe_dump(payload, allow_unicode=True, sort_keys=False, width=4096),
         encoding="utf-8",
     )
     return len(entries)
