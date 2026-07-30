@@ -484,7 +484,16 @@ _COUNT_CLAIM_RE = re.compile(r"\b(\d{3,5})\s+passed\b", re.IGNORECASE)
 # que compararlas como si fueran el mismo reclamo lo dejaría "stale" para
 # siempre, sin señal real. Se escanean solo los docs cuyo ROL es declarar un
 # resumen ÚNICO y actual del estado del suite completo.
-_SUMMARY_CLAIM_DOCS = ("STATUS.md", "docs/handoff/GENERATED/00_ESTADO.md")
+#
+# Corrección 2026-07-30 (misma sesión que introdujo este escaneo):
+# `docs/handoff/GENERATED/00_ESTADO.md` SALE de la lista. Era incoherente con
+# excluir el ledger: `handoff.estado_body()` devuelve VERBATIM el bloque
+# `## WHERE` más reciente de `WORK_LEDGER.md`, así que hereda su misma
+# naturaleza narrativa -- una entrada legítima cita a la vez la cifra del suite
+# completo y la de un subconjunto de tests impactados, ambas ciertas. Medido
+# contra el repo real tras regenerar el pack: 4774 (suite) y 1315 (subconjunto)
+# marcados como contradictorios, `stale` permanente sin señal real.
+_SUMMARY_CLAIM_DOCS = ("STATUS.md",)
 
 
 def _docs_state(root: Path) -> dict[str, Any]:

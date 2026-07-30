@@ -204,7 +204,15 @@ def test_collect_reality_flags_contradictory_doc_counts(
     tmp_path: Path,
 ) -> None:
     root = _mini_repo(tmp_path)
-    (root / "STATUS.md").write_text("`pytest tests/ -q` -> 753 passed, 2 skipped\n", encoding="utf-8")
+    # Contradicción DENTRO de STATUS.md: dos afirmaciones de suite completa que
+    # no pueden ser ciertas a la vez. Desde 2026-07-30 el escaneo se limita a
+    # este doc (el único cuyo rol es declarar un resumen único), así que la
+    # contradicción tiene que estar aquí, no repartida entre docs.
+    (root / "STATUS.md").write_text(
+        "`pytest tests/ -q` -> 753 passed, 2 skipped\n"
+        "suite completa verificada: 965 passed\n",
+        encoding="utf-8",
+    )
 
     report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
 
@@ -252,6 +260,36 @@ def test_docs_state_never_scans_work_ledger_as_a_summary_claim(tmp_path: Path) -
     assert "WORK_LEDGER.md" not in report["docs"]["test_count_claims"]
 
 
+def test_docs_state_never_scans_the_generated_handoff_projection(tmp_path: Path) -> None:
+    """Corrección 2026-07-30 (misma sesión que lo introdujo): incluir
+    `docs/handoff/GENERATED/00_ESTADO.md` en el escaneo era incoherente con
+    excluir `WORK_LEDGER.md`. `handoff.estado_body()` devuelve VERBATIM el
+    bloque `## WHERE` más reciente del ledger (ver `src/atlas/core/handoff.py`),
+    así que hereda exactamente la misma naturaleza narrativa append-only: una
+    entrada legítima cita a la vez la cifra del suite completo y la de un
+    subconjunto de tests impactados ('1315 passed'), y ambas son ciertas.
+    Tratarlas como reclamos contradictorios deja `docs` en `stale` de forma
+    permanente sin señal real -- el mismo fallo que el escaneo del ledger.
+    El único doc cuyo ROL es declarar un resumen único es `STATUS.md`.
+    """
+    root = _mini_repo(tmp_path)
+    (root / "STATUS.md").write_text(
+        "`pytest tests/ -q` -> 965 passed, 6 skipped\n", encoding="utf-8"
+    )
+    (root / "docs" / "handoff" / "GENERATED" / "00_ESTADO.md").write_text(
+        "## WHERE\n"
+        "- suite completa verificada: 4774 passed, exit 0\n"
+        "- 90 tests impactados, 1315 passed/1 skipped, mypy limpio\n",
+        encoding="utf-8",
+    )
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["docs"]["status"] == "ok"
+    assert "docs/handoff/GENERATED/00_ESTADO.md" not in report["docs"]["test_count_claims"]
+    assert report["docs"]["unique_test_count_claims"] == [965]
+
+
 def test_reality_cli_json(monkeypatch, tmp_path: Path) -> None:
     root = _mini_repo(tmp_path)
     monkeypatch.setenv("ATLAS_CORE_ROOT", str(root))
@@ -270,7 +308,11 @@ def test_reality_cli_strict_exits_nonzero_on_stale_docs(
     tmp_path: Path,
 ) -> None:
     root = _mini_repo(tmp_path)
-    (root / "STATUS.md").write_text("`pytest tests/ -q` -> 753 passed, 2 skipped\n", encoding="utf-8")
+    (root / "STATUS.md").write_text(
+        "`pytest tests/ -q` -> 753 passed, 2 skipped\n"
+        "suite completa verificada: 965 passed\n",
+        encoding="utf-8",
+    )
     monkeypatch.setenv("ATLAS_CORE_ROOT", str(root))
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
 

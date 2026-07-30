@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-30T10:04:17.070674+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-30T21:12:18.432350+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # ATLAS CORE — Operating Context For Agents
 
@@ -23,8 +23,11 @@ Pre-flight, cheap and factual:
    dependencies" from the live project graph (MCP trunk → `trunk_invoke_readonly`
    with `graph_importers`, `graph_blast_radius`, `graph_imports_of`,
    `graph_churn`, `graph_overview`) BEFORE reading files or docs. Docs are
-   past/future; the graph is the present (auto-regenerated after every commit
-   by the scheduler's project-graph cycle).
+   past/future; the graph is meant to be the present, but it is NOT
+   auto-regenerated after every commit — it requires `ATLAS_PROJECT_GRAPH=1`
+   (set) and the scheduler daemon alive running `maintenance_project_graph_tick`.
+   Check `atlas reality --json`'s `graph.status` before trusting it; `STALE`
+   means run a daemon tick or `trunk_invoke` a manual rebuild first.
 3. Locate the work in the shallowest matrioska node: `Gate -> ADR -> Fase -> Tipo`.
    Tipo 2 correctness/foundation comes before Tipo 1 build-on-top; Tipo 3 is a real
    wall to route around or accept.

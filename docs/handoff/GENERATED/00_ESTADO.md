@@ -1,67 +1,70 @@
-<!-- GENERADO por atlas handoff 2026-07-30T10:04:17.070674+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-30T21:12:18.432350+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
-- **2026-07-30 — cierre de sesión: README real, drift al preflight, churn de
-  INDEX.yaml eliminada, y salida autónoma del daemon integrada.**
-  **README** (`bf7cd1e`): de stub de 8 líneas a puerta de entrada real.
-  Deliberadamente SIN cifras de tests (AGENTS.md lo prohíbe y el número se
-  movió 4515→4716 en una sesión): lleva los comandos para derivarlas. Cada
-  afirmación verificada antes de escribir; dos sobre-afirmaciones propias
-  cazadas y corregidas antes del commit (decía "cableados al pre-commit",
-  falso; y un encabezado "Licencia" sin fichero LICENSE). Excluida a
-  propósito la tesis del auditor externo ("aparato de auditoría que contiene
-  un runtime", "nadie más tiene detección bidireccional"): plausible y NO
-  medida contra el SOTA, así que meterla habría sido el defecto que el propio
-  README denuncia. Sus hechos observables sí entran, como descripción.
-  **`component_wiring_drift` cableado a `PreflightGate`** (`bf7cd1e`):
-  corrección de una infra-afirmación mía. `ecosystem_map_drift` YA corría en
-  el preflight desde MAXIMUS Cycle 13 —lo describí como "a mano", falso— y
-  `component_wiring_drift` genuinamente no estaba, porque
-  `_run_sanitation()` devuelve un dict EXPLÍCITO de claves: añadir un
-  detector a `sanitation_audit.py` no llega al gate solo. El preflight corre
-  antes de cada ciclo de autoconstrucción, así que es la colocación de mayor
-  valor: el lazo no se propone cambios mientras el canon miente sobre qué
-  está cableado. El test afirma el conjunto exacto de claves, que es lo que
-  fuerza a cablear el próximo a propósito.
-  **Churn permanente de `docs/INDEX.yaml` eliminada:** tiene DOS escritores
-  —`docs_triage.py` (`width=4096`, lo corre el daemon) y
-  `docs_index_audit.py` (default 80)— y cada alternancia reformateaba el
-  fichero entero. Medido: el alta de UN doc produjo **31 líneas de diff, de
-  las cuales 1 era el cambio real**. Unificado a `width=4096` y verificado
-  idempotente (escribir con uno y luego con el otro ya no produce diff).
-  **Salida autónoma del daemon integrada:** `docs/knowledge/research_2026-07-30.md`
-  (666 líneas, 113 hallazgos desde 3 semillas expandidas a 12 consultas),
-  dado de alta como `propuesto` por la regla determinista de triage. Es el
-  lazo research→acción funcionando sin intervención.
-  **LÍMITE HONESTO, no resuelto:** un run previo de la suite mostró UNA `F`
-  al 97% y se cortó por timeout antes de nombrarla. El run completo posterior
-  dio **4716 passed, 0 failed, exit 0**, así que NO reprodujo y no puedo
-  identificarla. Descartados por aislamiento: índice/triage (17), preflight
-  (7), los otros dos que afirman sobre `sanitation_findings` (45), workbench
-  (44) — todos verdes. Descartado también que el daemon estuviera escribiendo
-  (cero ficheros del repo tocados en la ventana). Queda como **flaky sin
-  identificar**, registrado en vez de dado por arreglado.
-  **Regresión medida del bucle de desarrollo:** la suite pasó de ~370s a
-  **520-564s** porque los tests del preflight ejercitan
-  `component_wiring_drift` de verdad (11,3s por invocación: `graph_server`
-  abre la BD Kuzu por consulta, su diseño). Deuda declarada; el arreglo es
-  batchear las consultas al grafo, no mockear el contrato.
-  Estado final: `check_canon` **PASS** (2103 registros),
-  `docs_index_audit --strict` exit 0, suite **4716 passed**, mypy **333**
-  ficheros.
-  **CORRECCIÓN de un error propio, señalado por el operador:** al cerrar
-  escribí que "F2.6 necesita `claude setup-token`". **Es falso, y lo era
-  cuando lo escribí.** El 2026-07-29 se construyó y se ejecutó
-  `--driver agentic`: F2.6 corrió con `gemini_free` en 29,3 s, exit 0,
-  auto-registrada, y el gate pasó de `due` a `current`. **F2.6 ya no depende
-  de ninguna credencial de Claude.** Lo que falta para un pase es scaffolding
-  del prompt/harness o un modelo con más capacidad agéntica — no una
-  credencial. El error se propagó a `STATUS.md` y al pack de handoff (que se
-  genera desde este ledger); las tres fuentes corregidas, más el doc de
-  diseño de F2.6, que seguía declarando "bloqueado por credencial (N3)" desde
-  el 2026-07-17. Las entradas históricas de este ledger NO se reescriben: eran
-  ciertas cuando se escribieron y son receipts, no estado vigente.
-  **Próxima acción:** sesión nueva. Pendientes del operador sin tocar:
-  ADC-WO-107 (bridge 7341), ADC-WO-124 (admisión desktop), el scaffolding de
-  F2.6 para un score real, y el batching del grafo si la suite molesta.
+- **2026-07-30 — plan "el montón": F2.6 2/6→5/6, enforcer de cifras real,
+  nvidia_mistral_large diagnosticado (410 Gone real, no bug), tick de
+  compliance del workbench cableado.**
+  **F2.6** (test de sucesión): causa real no era la rúbrica — el driver
+  (`gemini_free`, L1 por defecto) se quedaba sin texto en el turno 3.
+  Arreglado en dos frentes elegidos por el operador: (1) bug de calibración
+  real en item_4 (`historical_language` solo reconocía español; `AGENTS.md`
+  usa "SUPERSEDED"/"historical" en inglés — ampliado); (2) scaffolding
+  reforzado en `f26_agentic_dispatch.py` (prohíbe terminar vacío, exige
+  contestar cada pregunta numerada, exige `GoldenRoute` antes de `Edit` en
+  docs rastreados, exige citar rutas exactas) + nivel subido L1→L2. Dos
+  corridas reales verificadas: 2/6 → 3/6 → 5/6. Único fallo restante,
+  `item_2`: el heurístico no distingue "leer AGENTS.md para conocer la regla
+  grafo-primero" de "ignorar la regla" — límite de la rúbrica, NO tocado
+  (`f26_grading.py` solo cambió en el fix de item_4, según lo acordado).
+  Aparte, aplicado el diff ya preparado a `AGENTS.md` (afirmación falsa de
+  auto-regeneración del grafo) — no es el fix de F2.6, corrección de
+  exactitud independiente.
+  **Enforcer de cifras** (`reality.py:_docs_state`): escaneaba
+  `["AGENTS.md","CLAUDE.md","ROADMAP.md"]`, 2 de 3 inexistentes → verde
+  vacío. Rediseñado: NO "escanear todo .md" (WORK_LEDGER.md es log
+  append-only por diseño, escanearlo lo dejaría "stale" para siempre sin
+  señal real) sino los docs cuyo ROL es declarar un resumen único
+  (`STATUS.md`, `docs/handoff/GENERATED/00_ESTADO.md`), con regex anclado a
+  `N passed` (el genérico `\d+ (tests?|passed|...)` sobre-matcheaba dentro
+  del mismo doc: "19 tests" del paquete ZIP, "37 tests" de un hallazgo
+  histórico). Contra el repo real: `stale`, 4692 (STATUS.md) vs 4716
+  (00_ESTADO.md). Diff de reconciliación de `STATUS.md` preparado
+  (scratchpad, NO aplicado — cifra real medida hoy: **4774 passed, 6
+  skipped, 27 deselected**, mypy 334 ficheros, suite completa ~10min);
+  `00_ESTADO.md` NO se reconcilia a mano (`atlas handoff --help`: "GENERADO
+  desde el sustrato... nunca a mano" — confirmado `STALE` vía
+  `atlas handoff --check`, se regenera después de reconciliar `STATUS.md`).
+  **nvidia_mistral_large**: investigado, NO es bug — 410 Gone real del
+  vendor desde 2026-07-23 (confirmado con Merkle: 7 días consecutivos
+  muerto). Corregí una lectura mía anterior: el label del Cónclave por
+  linaje (no por vendor de hosting) es diseño deliberado y testeado, no un
+  fallo de atribución. Patrón ya establecido en el repo (asiento CN pasó por
+  esto 2 veces): remapear a un NIM nuevo tras prove-it en vivo, no retirar
+  en silencio — remapeo requiere investigación de catálogo aparte, NO
+  ejecutado en este plan.
+  **`t4-workbench-compliance-review-tick`**: 107 hallazgos acumulados desde
+  2026-07-23 (`workspace/mcp/workbench_compliance_findings.jsonl`), nada los
+  leía. `summarize_compliance_findings` (`workbench_compliance.py`) cuenta
+  total/recientes (ventana 24h) y decide veredicto honesto
+  (`no_findings`/`normal`/`elevated`, umbral 20) sin borrar ni mutar el
+  fichero. Tick mismo patrón que `provider_status`/`provider_discovery`
+  (opt-in, guardia anti-recursión, cadencia 24h, Merkle, cableado en
+  `atlas reality`). Corrida real: `total=107, recent=38, verdict=elevated`.
+  TDD en las 4 piezas de este frente, RED verificado en cada una. 90 tests
+  impactados, 1315 passed/1 skipped, mypy limpio. Suite completa verificada
+  aparte (ver arriba): 4774 passed, exit 0.
+  **Pedido del operador a mitad de sesión**: alcance de T2.1 excluye Android
+  hasta que lo pida explícitamente — los micro-PoC de Flutter/Compose se
+  quedan en el tramo Linux, sin medición de teléfono.
+  **T2.1 PAUSADA — bloqueo real de hardware, no mío**: al verificar el
+  renderer del micro-PoC Flutter, `nvidia-smi` falla ("Driver/library
+  version mismatch", kernel 535.309.01 vs NVML 580.173.02, ambas familias
+  de paquetes de driver coexistiendo); forzar offload
+  (`__NV_PRIME_RENDER_OFFLOAD=1`) da error X real (`BadValue`), no
+  fallback silencioso. **El informe de medición existente de Flutter
+  (2026-07-23, PASA, 58-61fps) casi seguro midió la iGPU Intel HD 530, no
+  la GTX 960M** — veredicto en duda hasta remedir. Requiere `apt` +
+  reinicio de la máquina real, fuera de lo que toco sin permiso. Operador
+  eligió parar toda la Fase 2 aquí y arreglar el driver por su cuenta;
+  próxima acción cuando confirme `nvidia-smi`/`glxinfo -B` con la GPU real.
