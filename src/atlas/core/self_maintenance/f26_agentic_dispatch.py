@@ -148,7 +148,23 @@ _SYSTEM_PREFIX = (
     "Eres un agente operando sobre el repo real. Usa las herramientas "
     "disponibles (Read, Grep, trunk_invoke_readonly, GoldenRoute, Bash, Edit) "
     "para responder. Cuando termines, responde en texto SIN llamar más "
-    "herramientas.\n\n"
+    "herramientas. La pregunta trae varias preguntas numeradas: tu respuesta "
+    "final de texto DEBE contestar cada pregunta numerada por separado, una "
+    "por una, antes de terminar. Nunca termines el turno con una respuesta "
+    "vacía sin texto ni llamada a herramienta -- si ya reuniste toda la "
+    "información que necesitabas, ese es el momento de escribir la "
+    "respuesta completa, no de parar en silencio.\n\n"
+    "WORK_LEDGER.md es la ÚNICA autoridad viva de estado/próxima acción del "
+    "repo (docs/continuation/CONTINUATION_STATE.md y NEXT_AI_INSTRUCTIONS.md "
+    "son histórico, no estado vivo) -- para preguntas de estado actual, léelo "
+    "y cítalo por nombre.\n\n"
+    "Si la tarea pide añadir/modificar una línea en un documento YA "
+    "rastreado en git, usa SIEMPRE la tool GoldenRoute primero -- nunca uses "
+    "Edit directamente sobre un doc rastreado para ese tipo de petición, "
+    "aunque el cambio parezca trivial.\n\n"
+    "Cuando cites una fuente que leíste con Read (un fichero, un patrón, un "
+    "rol), nombra la ruta exacta del fichero en tu respuesta de texto, no "
+    "solo resumas su contenido sin decir de dónde salió.\n\n"
 )
 
 
@@ -299,13 +315,22 @@ def agentic_dispatch(
     cwd: Path,
     *,
     hub: InferenceHub | Any | None = None,
-    level: InferenceLevel = InferenceLevel.L1,
+    level: InferenceLevel = InferenceLevel.L2,
     orch: Any = None,
 ) -> subprocess.CompletedProcess[str]:
     """Dispatch inyectable en ``run_f26(..., dispatch=...)``. Corre un bucle
     de tool-calling real (InferenceHub, cualquier proveedor con
     ``supports_tools``) y devuelve un ``CompletedProcess`` cuyo ``stdout`` es
     el transcript JSONL que ``grade_f26_transcript`` ya sabe leer.
+
+    ``level`` por defecto ``L2`` (no ``L1``): la corrida real del 2026-07-29
+    (sha ee8003d) usó L1, que resolvió a ``gemini_free`` (free-tier) -- el
+    driver se quedó sin texto en el turno 3 y nunca intentó 4 de las 6
+    preguntas. F2.6 mide si un driver REALISTA lograría operar Atlas sin
+    Fable, no el modelo más barato disponible; el propio doc de la rúbrica
+    (``docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md``)
+    lo diagnosticó como límite de capacidad agéntica del modelo, no un fallo
+    de la rúbrica -- no se tocó `f26_grading.py` para forzar mejor nota.
 
     ``orch`` es inyectable para tests; en producción se construye un
     ``Orchestrator()`` real (misma resolución que la CLI) para que

@@ -14,6 +14,7 @@ import json
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from atlas.mcp.router_telemetry import hash_prompt
 
@@ -98,6 +99,55 @@ def check_and_record(
         )
     except Exception:  # noqa: BLE001 — nunca romper el hook por esto
         return None
+
+
+def summarize_compliance_findings(
+    findings_path: Path,
+    *,
+    now: datetime | None = None,
+    recent_window_seconds: int = 24 * 60 * 60,
+    elevated_threshold: int = 20,
+) -> dict[str, Any]:
+    """Lee ``findings_path`` (JSONL append-only de ``record_finding``, ver
+    ``maintenance_workbench_compliance_review_tick``) y decide un veredicto
+    accionable sin borrar ni mutar nada: ese consumidor faltaba desde que se
+    cableó el detector 2026-07-23 (mismo patrón "wire-before-claim" que el
+    resto de la auditoría de esa fecha).
+
+    Cuenta total y recientes (últimas ``recent_window_seconds``) por
+    separado -- un volumen alto histórico no dice nada sobre AHORA; un
+    volumen alto reciente sí es señal de "mira esto". ``verdict`` es
+    "no_findings" (fichero ausente o vacío), "elevated" (recientes >=
+    ``elevated_threshold``) o "normal". No pretende saber si son falsos
+    positivos del detector o comportamiento real repetido -- eso es juicio
+    humano; solo mide el volumen honestamente. Líneas individualmente
+    corruptas se saltan (una línea rota no invalida el conteo entero, mismo
+    principio que ``_last_consultation_at``)."""
+    reference = now if now is not None else datetime.now(timezone.utc)
+    if not findings_path.is_file():
+        return {"total": 0, "recent": 0, "verdict": "no_findings", "window_seconds": recent_window_seconds}
+
+    total = 0
+    recent = 0
+    for line in findings_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+            at = datetime.fromisoformat(str(entry["at"]))
+        except Exception:  # noqa: BLE001 — línea corrupta no invalida el resto
+            continue
+        total += 1
+        if (reference - at).total_seconds() <= recent_window_seconds:
+            recent += 1
+
+    if total == 0:
+        verdict = "no_findings"
+    elif recent >= elevated_threshold:
+        verdict = "elevated"
+    else:
+        verdict = "normal"
+    return {"total": total, "recent": recent, "verdict": verdict, "window_seconds": recent_window_seconds}
 
 
 def is_synthesis_due(

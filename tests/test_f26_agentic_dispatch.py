@@ -231,3 +231,118 @@ class TestGoldenRouteToolUsesSharedStore:
         assert "Proposal" in result or "proposal" in result
         proposals = orch.cold_update().list_proposals()
         assert proposals, "la propuesta debe existir en el ColdUpdateManager COMPARTIDO"
+
+
+class TestAgenticDispatchDefaultLevel:
+    """2026-07-30: la corrida real de F2.6 del 2026-07-29 (sha ee8003d) usó
+    el nivel L1 por defecto (nunca se pasó `level=` explícito desde el CLI),
+    que resolvió a gemini_free (free-tier) — el driver se quedó SIN TEXTO en
+    el turno 3 y nunca intentó 4 de las 6 preguntas. F2.6 mide si un driver
+    REALISTA lo lograría, no el modelo más barato disponible -- el propio
+    doc de la rúbrica (docs/superpowers/plans/2026-07-17-f26-succession-
+    test-PENDIENTE.md) lo diagnosticó como límite de capacidad agéntica, no
+    de rúbrica. Default subido a L2 (tier NIM: más capacidad agéntica)."""
+
+    def test_default_level_is_l2_not_l1(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
+
+        assert hub.requests[0].level == InferenceLevel.L2
+
+    def test_explicit_level_override_still_respected(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub, level=InferenceLevel.L1)
+
+        assert hub.requests[0].level == InferenceLevel.L1
+
+
+class TestSystemPrefixRemindsLiveStateAuthority:
+    """2026-07-30, segunda corrida real (3/6): el driver citó
+    docs/continuation/CONTINUATION_STATE.md como fuente de estado -- un doc
+    histórico, no la autoridad viva. AGENTS.md instrucción 5 ya dice
+    literalmente "WORK_LEDGER.md = live WHERE/status and next action only".
+    El prefijo debe recordarlo explícito, no dejar que el driver elija
+    cualquier doc de continuidad que encuentre."""
+
+    def test_prefix_names_work_ledger_as_live_authority(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
+
+        sent = hub.requests[0].messages[0]["content"]
+        assert "WORK_LEDGER" in sent
+
+
+class TestSystemPrefixRequiresGoldenRouteForDocAppends:
+    """2026-07-30, misma corrida: ante 'añade la línea X al final de Y.md'
+    el driver llamó Edit directamente sobre un doc rastreado, sin pasar por
+    GoldenRoute -- exactamente el failure mode que AGENTS.md 4b nombra como
+    "the failure mode the F2.6 succession rubric checks for". El prefijo no
+    lo prohibía explícitamente, solo listaba GoldenRoute como una tool más
+    entre otras."""
+
+    def test_prefix_requires_golden_route_before_doc_append_edit(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
+
+        sent = hub.requests[0].messages[0]["content"]
+        # Frase distintiva de la instrucción de precedencia real, no
+        # palabras sueltas que ya aparecían en el prefijo por otra razón
+        # (GoldenRoute/Edit/"nunca" ya estaban ahí sin decir esto).
+        assert "nunca uses edit directamente" in sent.lower()
+
+
+class TestSystemPrefixRequiresCitingReadSources:
+    """2026-07-30, misma corrida: el driver SÍ leyó docs/design/actor_roles.md
+    (tool_use Read real) pero su respuesta final nunca citó esa ruta como
+    string -- substrate_markers_found=[] pese a haber consultado la fuente
+    correcta. Comportamiento correcto, cita incompleta."""
+
+    def test_prefix_requires_naming_exact_paths_of_sources_cited(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
+
+        sent = hub.requests[0].messages[0]["content"]
+        assert "ruta exacta" in sent.lower() or "nombra la ruta" in sent.lower()
+
+
+class TestSystemPrefixForbidsEmptyStop:
+    """2026-07-30: la sesión fallida terminó su turno 3 con `tool_calls=[]`
+    Y `text=""` -- ni preguntó nada, ni contestó nada. El prefijo de sistema
+    solo decía "cuando termines, responde en texto", sin prohibir
+    explícitamente terminar vacío ni exigir que las preguntas numeradas del
+    prompt queden todas contestadas antes de parar."""
+
+    def test_prefix_forbids_finishing_with_empty_response(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
+
+        sent = hub.requests[0].messages[0]["content"]
+        assert "vac" in sent.lower()  # "vacía"/"vacío" -- prohibición explícita
+
+    def test_prefix_requires_answering_every_numbered_question(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([_resp(text="respuesta final sin tools")])
+
+        agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
+
+        sent = hub.requests[0].messages[0]["content"]
+        assert "cada" in sent.lower() and ("numerada" in sent.lower() or "pregunta" in sent.lower())

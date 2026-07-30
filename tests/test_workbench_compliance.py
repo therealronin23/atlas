@@ -19,6 +19,7 @@ from atlas.mcp.workbench_compliance import (
     is_stale,
     is_synthesis_due,
     record_finding,
+    summarize_compliance_findings,
 )
 
 
@@ -215,3 +216,85 @@ def test_check_and_maybe_synthesize_never_raises_when_synth_fn_raises(tmp_path: 
         synth_fn=_boom,
     )
     assert result is not None  # cae al aviso plano, no revienta
+
+
+# --- summarize_compliance_findings (2026-07-30, t4-workbench-compliance-review-tick) ---
+# t4-workbench-mandatory-hook deja hallazgos durables cuando una sesión
+# arranca sin consultar workbench://manifest, pero nada LEÍA ese fichero
+# (mismo patrón "wire-before-claim" que el resto de la auditoría 2026-07-23).
+# Nunca borra el fichero de hallazgos; solo cuenta y decide un veredicto.
+
+
+def _write_findings(path: Path, ats: list[datetime]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        json.dumps({"at": at.isoformat(), "prompt_hash": "x" * 10, "finding": "workbench_not_consulted"})
+        for at in ats
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_summarize_no_findings_file_is_honest_zero(tmp_path: Path) -> None:
+    result = summarize_compliance_findings(tmp_path / "nope.jsonl")
+
+    assert result["total"] == 0
+    assert result["recent"] == 0
+    assert result["verdict"] == "no_findings"
+
+
+def test_summarize_counts_total_and_recent_separately(tmp_path: Path) -> None:
+    path = tmp_path / "findings.jsonl"
+    now = datetime.now(timezone.utc)
+    _write_findings(path, [
+        now - timedelta(days=10),  # fuera de la ventana de 24h
+        now - timedelta(hours=1),
+        now - timedelta(hours=2),
+    ])
+
+    result = summarize_compliance_findings(path, now=now)
+
+    assert result["total"] == 3
+    assert result["recent"] == 2
+
+
+def test_summarize_verdict_normal_below_threshold(tmp_path: Path) -> None:
+    path = tmp_path / "findings.jsonl"
+    now = datetime.now(timezone.utc)
+    _write_findings(path, [now - timedelta(hours=1)] * 5)
+
+    result = summarize_compliance_findings(path, now=now, elevated_threshold=20)
+
+    assert result["verdict"] == "normal"
+
+
+def test_summarize_verdict_elevated_at_or_above_threshold(tmp_path: Path) -> None:
+    path = tmp_path / "findings.jsonl"
+    now = datetime.now(timezone.utc)
+    _write_findings(path, [now - timedelta(hours=1)] * 20)
+
+    result = summarize_compliance_findings(path, now=now, elevated_threshold=20)
+
+    assert result["verdict"] == "elevated"
+
+
+def test_summarize_skips_individually_corrupt_lines_never_raises(tmp_path: Path) -> None:
+    path = tmp_path / "findings.jsonl"
+    now = datetime.now(timezone.utc)
+    good = json.dumps({"at": now.isoformat(), "prompt_hash": "x", "finding": "workbench_not_consulted"})
+    path.write_text(f"{{not json\n{good}\n", encoding="utf-8")
+
+    result = summarize_compliance_findings(path, now=now)
+
+    assert result["total"] == 1
+    assert result["verdict"] in ("normal", "elevated")
+
+
+def test_summarize_never_deletes_or_mutates_findings_file(tmp_path: Path) -> None:
+    path = tmp_path / "findings.jsonl"
+    now = datetime.now(timezone.utc)
+    _write_findings(path, [now])
+    before = path.read_text(encoding="utf-8")
+
+    summarize_compliance_findings(path, now=now)
+
+    assert path.read_text(encoding="utf-8") == before

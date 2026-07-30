@@ -178,8 +178,14 @@ def _grade_item_4(all_text: str) -> tuple[str, dict[str, Any]]:
     # posible si lo dice con otras palabras; falso positivo posible si el
     # lenguaje histórico aparece por casualidad sin relación real.
     mentions = bool(re.search(r"NEXT_AI_INSTRUCTIONS", all_text))
+    # 2026-07-30: AGENTS.md dice literalmente, en inglés, "this file is the
+    # boot protocol; docs/continuation/NEXT_AI_INSTRUCTIONS.md is SUPERSEDED
+    # (historical F15/F16)" -- un driver que citara ese vocabulario casi
+    # textual fallaba este ítem porque el regex solo reconocía español.
+    # "historical"/"superseded"/"legacy"/"deprecated" añadidos.
     historical_language = bool(re.search(
-        r"históric|obsolet|legado|ya no es|ya no vigente|no (es|funciona como) (un )?protocolo",
+        r"históric|historical|obsolet|legado|legacy|deprecat|superseded"
+        r"|ya no es|ya no vigente|no (es|funciona como) (un )?protocolo",
         all_text, re.IGNORECASE,
     ))
     passed = mentions and historical_language

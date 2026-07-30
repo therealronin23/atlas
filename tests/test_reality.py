@@ -27,6 +27,11 @@ def _mini_repo(tmp_path: Path) -> Path:
     (root / "AGENTS.md").write_text("965 tests verdes\n", encoding="utf-8")
     (root / "CLAUDE.md").write_text("Alias only\n", encoding="utf-8")
     (root / "ROADMAP.md").write_text("965 tests verdes\n", encoding="utf-8")
+    (root / "STATUS.md").write_text("`pytest tests/ -q` -> 965 passed, 0 skipped\n", encoding="utf-8")
+    (root / "docs" / "handoff" / "GENERATED").mkdir(parents=True)
+    (root / "docs" / "handoff" / "GENERATED" / "00_ESTADO.md").write_text(
+        "suite **965 passed**, mypy limpio\n", encoding="utf-8"
+    )
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     subprocess.run(["git", "add", "-A"], cwd=root, check=True)
     subprocess.run(
@@ -199,13 +204,52 @@ def test_collect_reality_flags_contradictory_doc_counts(
     tmp_path: Path,
 ) -> None:
     root = _mini_repo(tmp_path)
-    (root / "CLAUDE.md").write_text("753 tests\n", encoding="utf-8")
+    (root / "STATUS.md").write_text("`pytest tests/ -q` -> 753 passed, 2 skipped\n", encoding="utf-8")
 
     report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
 
     assert report["docs"]["status"] == "stale"
     assert report["status"] == "degraded"
     assert report["docs"]["unique_test_count_claims"] == [753, 965]
+
+
+def test_docs_state_ignores_subset_and_unrelated_counts_in_same_doc(tmp_path: Path) -> None:
+    """2026-07-30: el regex viejo (`\\d+ (tests?|passed|green|verdes?)`) sobre-
+    matchea DENTRO de un mismo doc -- STATUS.md real mezcla '19 tests' del
+    paquete ZIP, '37 tests' de un hallazgo histórico y '27 deselected' junto
+    a la cifra real del suite completo. El regex anclado a 'N passed' evita
+    tratar esas cifras no relacionadas como reclamos contradictorios."""
+    root = _mini_repo(tmp_path)
+    (root / "STATUS.md").write_text(
+        "`pytest tests/ -q` -> 965 passed, 6 skipped, 27 deselected\n"
+        "validator/secret scan/tests del paquete | PASS / 19 tests\n"
+        "un hallazgo histórico ya cerrado (37 tests)\n",
+        encoding="utf-8",
+    )
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["docs"]["status"] == "ok"
+    assert report["docs"]["unique_test_count_claims"] == [965]
+
+
+def test_docs_state_never_scans_work_ledger_as_a_summary_claim(tmp_path: Path) -> None:
+    """WORK_LEDGER.md es un log de sesión por diseño (entradas nuevas
+    ARRIBA, disciplina propia de AGENTS.md instrucción 5) -- cada entrada
+    fechada legítimamente lleva una cifra distinta ('903 passed' de un
+    commit, '1290 passed' de otro). Escanearlo como si fuera un resumen
+    único lo dejaría 'stale' para siempre por diseño, no por un problema
+    real. No debe formar parte del escaneo de contradicción."""
+    root = _mini_repo(tmp_path)
+    (root / "WORK_LEDGER.md").write_text(
+        "- 2026-07-30: commit A, 903 passed\n- 2026-07-29: commit B, 1290 passed\n",
+        encoding="utf-8",
+    )
+
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["docs"]["status"] == "ok"
+    assert "WORK_LEDGER.md" not in report["docs"]["test_count_claims"]
 
 
 def test_reality_cli_json(monkeypatch, tmp_path: Path) -> None:
@@ -226,7 +270,7 @@ def test_reality_cli_strict_exits_nonzero_on_stale_docs(
     tmp_path: Path,
 ) -> None:
     root = _mini_repo(tmp_path)
-    (root / "CLAUDE.md").write_text("753 tests\n", encoding="utf-8")
+    (root / "STATUS.md").write_text("`pytest tests/ -q` -> 753 passed, 2 skipped\n", encoding="utf-8")
     monkeypatch.setenv("ATLAS_CORE_ROOT", str(root))
     monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas"))
 
@@ -383,6 +427,56 @@ def test_collect_reality_wires_provider_status_section(tmp_path: Path) -> None:
     report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
 
     assert report["provider_status"]["status"] == "never_ran"
+
+
+def test_workbench_compliance_review_state_never_ran_without_file(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state = reality._workbench_compliance_review_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["last_run_date"] is None
+    assert "ATLAS_WORKBENCH_COMPLIANCE_REVIEW" in state["reason"]
+
+
+def test_workbench_compliance_review_state_projects_last_result(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "workbench_compliance_review_state.json").write_text(
+        json.dumps({
+            "last_run_date": "2026-07-30",
+            "last_result": {"total": 107, "recent": 38, "verdict": "elevated", "window_seconds": 86400},
+        }),
+        encoding="utf-8",
+    )
+
+    state = reality._workbench_compliance_review_state(tmp_path)
+
+    assert state["status"] == "ran"
+    assert state["verdict"] == "elevated"
+    assert state["recent"] == 38
+
+
+def test_workbench_compliance_review_state_never_ran_on_corrupt_json(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "workbench_compliance_review_state.json").write_text("{not valid json", encoding="utf-8")
+
+    state = reality._workbench_compliance_review_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert "unreadable" in state["reason"]
+
+
+def test_collect_reality_wires_workbench_compliance_review_section(tmp_path: Path) -> None:
+    root = _mini_repo(tmp_path)
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["workbench_compliance_review"]["status"] == "never_ran"
 
 
 def test_collect_reality_wires_provider_smoke_section(tmp_path: Path) -> None:

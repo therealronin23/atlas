@@ -61,6 +61,7 @@ def collect_reality(
         "provider_smoke": _provider_smoke_state(root),
         "provider_discovery": _provider_discovery_state(root),
         "provider_status": _provider_status_state(root),
+        "workbench_compliance_review": _workbench_compliance_review_state(root),
         "graph": _graph_state(root),
         "f26_gate": _f26_gate_state(root),
         "self_build_pause": _self_build_pause_state(root),
@@ -472,13 +473,23 @@ def _capability_plane(report: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-_COUNT_CLAIM_RE = re.compile(r"\b(\d{2,4})\s+(?:tests?|passed|green|verdes?)\b", re.IGNORECASE)
+_COUNT_CLAIM_RE = re.compile(r"\b(\d{3,5})\s+passed\b", re.IGNORECASE)
+
+# 2026-07-30: la lista original ["AGENTS.md", "CLAUDE.md", "ROADMAP.md"]
+# escaneaba 2 ficheros que no existen en este repo -- docs.status == "ok"
+# vacío, no verificado (72 ficheros con cifras reales contradictorias, nunca
+# detectadas). El reemplazo NO es "escanear todo .md rastreado": WORK_LEDGER.md
+# es un log append-only por diseño (AGENTS.md instrucción 5, "entradas nuevas
+# ARRIBA") -- cada entrada fechada lleva legítimamente una cifra distinta, así
+# que compararlas como si fueran el mismo reclamo lo dejaría "stale" para
+# siempre, sin señal real. Se escanean solo los docs cuyo ROL es declarar un
+# resumen ÚNICO y actual del estado del suite completo.
+_SUMMARY_CLAIM_DOCS = ("STATUS.md", "docs/handoff/GENERATED/00_ESTADO.md")
 
 
 def _docs_state(root: Path) -> dict[str, Any]:
-    docs = ["AGENTS.md", "CLAUDE.md", "ROADMAP.md"]
     claims: dict[str, list[int]] = {}
-    for name in docs:
+    for name in _SUMMARY_CLAIM_DOCS:
         path = root / name
         if not path.is_file():
             claims[name] = []
@@ -562,6 +573,57 @@ def _cold_update_state(root: Path) -> dict[str, Any]:
         "last_validation_at": when,
         "proposal_count": len(proposals),
         "reason": reason,
+    }
+
+
+def _workbench_compliance_review_state(root: Path) -> dict[str, Any]:
+    """Proyecta el último resultado del tick de revisión de hallazgos de
+    mesa de trabajo no consultada (``summarize_compliance_findings``, ver
+    ``maintenance_facade.maintenance_workbench_compliance_review_tick``)
+    sin recontar nada: solo lee el fichero de estado que ya escribió el
+    daemon. Fichero ausente o ilegible -> ``never_ran`` con razón honesta,
+    jamás una excepción (mismo principio fail-honesto que
+    ``_provider_status_state``)."""
+    path = root / "workspace" / "self_build" / "workbench_compliance_review_state.json"
+    never_ran: dict[str, Any] = {
+        "status": "never_ran",
+        "last_run_date": None,
+        "total": 0,
+        "recent": 0,
+        "verdict": None,
+    }
+    if not path.is_file():
+        return {
+            **never_ran,
+            "reason": (
+                "no workbench_compliance_review_state.json found; set "
+                "ATLAS_WORKBENCH_COMPLIANCE_REVIEW=1 to enable the daily review"
+            ),
+        }
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {
+            **never_ran,
+            "reason": f"workbench_compliance_review_state.json unreadable: {type(exc).__name__}",
+        }
+    if not isinstance(raw, dict):
+        return {
+            **never_ran,
+            "reason": "workbench_compliance_review_state.json is not a JSON object",
+        }
+    last_run_date = raw.get("last_run_date")
+    result = raw.get("last_result")
+    if not isinstance(result, dict):
+        result = {}
+    verdict = result.get("verdict")
+    return {
+        "status": "ran" if last_run_date else "never_ran",
+        "last_run_date": last_run_date,
+        "total": result.get("total", 0),
+        "recent": result.get("recent", 0),
+        "verdict": verdict,
+        "reason": f"último veredicto: {verdict}" if verdict else "sin veredicto registrado",
     }
 
 

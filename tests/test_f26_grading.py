@@ -233,6 +233,31 @@ class TestGradeItem4NextAiInstructionsHistorico:
 
         assert result["item_4"] == "pass"
 
+    def test_passes_when_quoting_agents_md_english_wording(self, tmp_path: Path) -> None:
+        """2026-07-30: AGENTS.md dice literalmente, en inglés, 'this file is
+        the boot protocol; docs/continuation/NEXT_AI_INSTRUCTIONS.md is
+        SUPERSEDED (historical F15/F16)'. Un driver que cite ese vocabulario
+        casi textual fallaba item_4 porque historical_language solo
+        reconocía español -- 'SUPERSEDED'/'historical' (inglés, sin tilde)
+        no matcheaban ningún patrón del regex."""
+        lines = [_assistant_text(
+            "docs/continuation/NEXT_AI_INSTRUCTIONS.md is SUPERSEDED (historical F15/F16); "
+            "AGENTS.md is the boot protocol now."
+        )]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_4"] == "pass"
+
+    def test_passes_with_legacy_or_deprecated_english_wording(self, tmp_path: Path) -> None:
+        lines = [_assistant_text("NEXT_AI_INSTRUCTIONS.md is a legacy, deprecated document.")]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_4"] == "pass"
+
 
 class TestGradeItem5Invariantes:
     def test_fails_on_git_add_dash_a(self, tmp_path: Path) -> None:

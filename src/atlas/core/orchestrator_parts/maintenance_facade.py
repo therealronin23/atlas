@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from atlas.core.contracts import EventType
 from atlas.core.provider_discovery import discover_available_models
 from atlas.core.provider_status import check_provider_status
+from atlas.mcp.workbench_compliance import summarize_compliance_findings
 
 _log = logging.getLogger(__name__)
 
@@ -359,6 +360,12 @@ class MaintenanceFacade:
                 # igual que los demás ciclos.
                 _isolated_cycle("provider_status", self.maintenance_provider_status_tick)
 
+            def _workbench_compliance_review_cycle() -> None:
+                # Consumo de hallazgos de mesa de trabajo no consultada: ver
+                # maintenance_workbench_compliance_review_tick. Aislado
+                # igual que los demás ciclos.
+                _isolated_cycle("workbench_compliance_review", self.maintenance_workbench_compliance_review_tick)
+
             def _knowledge_ingest_cycle() -> None:
                 # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
                 _isolated_cycle("knowledge_ingest", self.maintenance_knowledge_ingest_tick)
@@ -437,7 +444,7 @@ class MaintenanceFacade:
                     _research_cycle, _knowledge_ingest_cycle, _project_graph_cycle,
                     _mcp_vetting_cycle, _mcp_trial_cycle, _sentinel_revet_cycle,
                     _provider_smoke_cycle, _provider_discovery_cycle, _provider_status_cycle,
-                    _mcp_reseed_cycle,
+                    _workbench_compliance_review_cycle, _mcp_reseed_cycle,
                     _dep_cycle, _self_build_cycle,
                     _batch_cycle,
                 ),
@@ -1223,6 +1230,61 @@ class MaintenanceFacade:
             payload={"degraded": degraded, "unmonitored": unmonitored},
         )
         return {"status": "ran", "degraded": degraded, "unmonitored": unmonitored}
+
+    def maintenance_workbench_compliance_review_tick(self) -> dict[str, Any]:
+        """Consume ``workspace/mcp/workbench_compliance_findings.jsonl``
+        (backlog t4-workbench-compliance-review-tick, 2026-07-30).
+        `t4-workbench-mandatory-hook` deja hallazgos durables cuando una
+        sesión arranca sin consultar ``workbench://manifest``, pero nada
+        LEÍA ese fichero -- mismo patrón "wire-before-claim" que el resto de
+        la auditoría 2026-07-23. ``summarize_compliance_findings``
+        (``workbench_compliance.py``) cuenta total/recientes y decide un
+        veredicto honesto ("elevated" solo mide volumen, no pretende saber
+        si son falsos positivos del detector -- eso es juicio humano); NUNCA
+        borra ni muta el fichero de hallazgos.
+
+        Opt-in explícito: requiere ``ATLAS_WORKBENCH_COMPLIANCE_REVIEW=1``.
+        Cadencia propia de 24h -- espejo exacto de
+        ``maintenance_provider_status_tick``."""
+        # Guardia anti-recursión -- ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_WORKBENCH_COMPLIANCE_REVIEW", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "self_build" / "workbench_compliance_review_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        orch = self._orch
+        findings_path = self._project_root() / "workspace" / "mcp" / "workbench_compliance_findings.jsonl"
+        # `summarize_compliance_findings` referenciado por nombre a nivel de
+        # módulo (no reimportado aquí) para que los tests puedan
+        # monkeypatchear `maintenance_facade.summarize_compliance_findings`
+        # -- mismo patrón que `discover_available_models`/`check_provider_status`.
+        result = summarize_compliance_findings(findings_path)
+
+        state["last_run_date"] = today
+        state["last_result"] = result
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.workbench_compliance_review_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=result,
+        )
+        return {"status": "ran", **result}
 
     def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
         """Cierre del ciclo investigación→acción (2026-07-09): los informes que
