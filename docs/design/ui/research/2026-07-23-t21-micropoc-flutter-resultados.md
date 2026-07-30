@@ -2,6 +2,7 @@
 title: "T2.1 micro-PoC Flutter — resultados de medición (tramo Linux desktop)"
 status: vigente
 date: 2026-07-23
+updated: 2026-07-30
 ---
 
 # Resultados del micro-PoC Flutter (t2-1-micropoc-flutter)
@@ -14,6 +15,52 @@ mano en esta sesión — ver decisión abajo. Este ítem NO se marca `done` en
 
 Proyecto: `prototypes/atlas_ui/flutter_micropoc/` (nuevo, creado en esta
 sesión, nada reaprovechado — no existía previamente).
+
+## Corrección 2026-07-30: la tabla original medía la iGPU, no la GTX 960M
+
+Esta máquina tenía en ese momento un mismatch de driver NVIDIA (535/580
+coexistiendo) que dejaba la GPU discreta inutilizable; `glxinfo -B` sin
+forzar nada mostraba (y sigue mostrando por defecto en modo `on-demand`)
+`Mesa Intel(R) HD Graphics 530` como renderer. La tabla de la sección
+siguiente, aunque el veredicto global sigue siendo el mismo, **se midió
+casi con toda seguridad contra esa iGPU**, no contra la GTX 960M — nadie lo
+verificó explícitamente en el momento.
+
+Reconstruido y remedido el 2026-07-30 tras arreglar el driver
+(`nvidia-smi` limpio, 580.173.02) y, con permiso explícito del operador,
+cambiar `prime-select nvidia` (renderer NVIDIA por defecto para todo el
+sistema, no solo offload) + reinicio. Hallazgo intermedio real: **forzar
+la GTX 960M vía PRIME render offload (`__GLX_VENDOR_LIBRARY_NAME=nvidia`)
+en modo `on-demand` hace que este binario reviente con un segfault dentro
+de GTK3** (`gdk_gl_context_make_current` recibe un contexto nulo;
+confirmado por `systemd-coredump`/`journalctl`) — incompatibilidad
+conocida GTK3+Optimus, no un fallo de la app. Solo con `prime-select
+nvidia` como modo del sistema (no offload) la app renderiza en la GTX
+960M sin crashear.
+
+**Medición real en GTX 960M (build limpio, `prime-select nvidia`,
+2026-07-30):**
+
+| Métrica | iGPU (2026-07-23, ahora sabemos que fue esto) | GTX 960M real (2026-07-30) |
+|---|---|---|
+| Build release limpio | 29.49s, RSS pico ~509MB | 31.58s, RSS pico ~550MB (build es CPU-only, coherente) |
+| Arranque en frío | ~1.3s | ~1.5s |
+| fps en régimen estable | 58-61fps | 53-61fps (mismo rango, mayoría 59-61) |
+| RAM en ejecución (steady state) | ~149MB RSS | ~186MB RSS |
+| WS vivo contra 127.0.0.1:7341/events | conecta, 23 eventos | conecta, 23 eventos (idéntico) |
+| Resize de ventana | sin crash | sin crash (2 resizes, `wmctrl`) |
+| GPU confirmada por evidencia externa | no verificado en su momento | `nvidia-smi` muestra el proceso `flutter_micropoc` con memoria asignada en la GTX 960M (28MiB) durante la ejecución — prueba directa, no inferencia |
+
+**Lectura honesta:** el veredicto PASA de la tabla original se sostiene —
+el fps en la GTX 960M real (53-61, mayoría en 59-61) está en el mismo
+rango que en la iGPU, y ningún criterio empeora lo suficiente para
+cambiar el veredicto. Pero esto NO estaba garantizado de antemano (una
+Maxwell de 2015 con VRAM y ancho de banda distintos a una iGPU moderna
+podría haber rendido peor) y el hallazgo del crash con PRIME offload es
+nuevo y real: cualquier despliegue futuro que dependa de offload en modo
+`on-demand` (en vez de `prime-select nvidia` fijo) se romperá igual con
+este mismo stack GTK3. Aplica también a Compose y Qt si intentan el mismo
+camino de offload.
 
 ## Qué se midió y cómo
 
