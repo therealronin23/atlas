@@ -1014,6 +1014,10 @@ class Orchestrator:
         """Descubrimiento diario de catálogo servido vs model_id configurado. Delegado al facade."""
         return self._maintenance_facade.maintenance_provider_discovery_tick()
 
+    def maintenance_provider_status_tick(self) -> dict[str, Any]:
+        """Sincronización diaria con la página de estado pública de cada proveedor. Delegado al facade."""
+        return self._maintenance_facade.maintenance_provider_status_tick()
+
     def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
         """Triage de informes de investigación + ingesta al sustrato. Delegado al facade."""
         return self._maintenance_facade.maintenance_knowledge_ingest_tick()

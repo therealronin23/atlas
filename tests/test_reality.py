@@ -322,6 +322,69 @@ def test_provider_smoke_state_never_ran_on_corrupt_json(tmp_path: Path) -> None:
     assert "unreadable" in state["reason"]
 
 
+def test_provider_status_state_never_ran_without_file(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state = reality._provider_status_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["last_run_date"] is None
+    assert state["degraded"] == []
+    assert state["unmonitored"] == []
+    assert "ATLAS_PROVIDER_STATUS" in state["reason"]
+
+
+def test_provider_status_state_projects_last_run_with_degraded_vendor(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_status_state.json").write_text(
+        json.dumps(
+            {
+                "last_run_date": "2026-07-30",
+                "last_results": [
+                    {"vendor": "groq", "outcome": "ok", "state": "degraded", "reason": "incidente en curso"},
+                    {"vendor": "together", "outcome": "ok", "state": "operational", "reason": ""},
+                    {"vendor": "openrouter", "outcome": "no_public_status_page", "state": "unknown", "reason": ""},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    state = reality._provider_status_state(tmp_path)
+
+    assert state["status"] == "ran"
+    assert state["last_run_date"] == "2026-07-30"
+    assert state["degraded"] == ["groq"]
+    assert state["unmonitored"] == ["openrouter"]
+    assert "groq" in state["reason"]
+
+
+def test_provider_status_state_never_ran_on_corrupt_json(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "provider_status_state.json").write_text("{not valid json", encoding="utf-8")
+
+    state = reality._provider_status_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["degraded"] == []
+    assert "unreadable" in state["reason"]
+
+
+def test_collect_reality_wires_provider_status_section(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    root = _mini_repo(tmp_path)
+    report = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
+
+    assert report["provider_status"]["status"] == "never_ran"
+
+
 def test_collect_reality_wires_provider_smoke_section(tmp_path: Path) -> None:
     root = _mini_repo(tmp_path)
 

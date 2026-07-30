@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from atlas.core.contracts import EventType
 from atlas.core.provider_discovery import discover_available_models
+from atlas.core.provider_status import check_provider_status
 
 _log = logging.getLogger(__name__)
 
@@ -352,6 +353,12 @@ class MaintenanceFacade:
                 # demás ciclos (T6, plan 2026-07-23-t5-provider-discovery-plan.md).
                 _isolated_cycle("provider_discovery", self.maintenance_provider_discovery_tick)
 
+            def _provider_status_cycle() -> None:
+                # Sincronización con la página de estado pública de cada
+                # proveedor: ver maintenance_provider_status_tick. Aislado
+                # igual que los demás ciclos.
+                _isolated_cycle("provider_status", self.maintenance_provider_status_tick)
+
             def _knowledge_ingest_cycle() -> None:
                 # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
                 _isolated_cycle("knowledge_ingest", self.maintenance_knowledge_ingest_tick)
@@ -429,7 +436,8 @@ class MaintenanceFacade:
                 extra_cycles=(
                     _research_cycle, _knowledge_ingest_cycle, _project_graph_cycle,
                     _mcp_vetting_cycle, _mcp_trial_cycle, _sentinel_revet_cycle,
-                    _provider_smoke_cycle, _provider_discovery_cycle, _mcp_reseed_cycle,
+                    _provider_smoke_cycle, _provider_discovery_cycle, _provider_status_cycle,
+                    _mcp_reseed_cycle,
                     _dep_cycle, _self_build_cycle,
                     _batch_cycle,
                 ),
@@ -1135,6 +1143,65 @@ class MaintenanceFacade:
             payload={"missing": missing, "present": present, "skipped": skipped},
         )
         return {"status": "ran", "missing": missing, "present": present, "skipped": skipped}
+
+    def maintenance_provider_status_tick(self) -> dict[str, Any]:
+        """Sincronización diaria con la página de estado PÚBLICA de cada
+        proveedor (2026-07-30, pedido directo del operador: "deberíamos estar
+        sincronizados... con la URL de estado de la red por si reportan
+        caídas, es una llamada rápida y barata"). Complementa a discovery
+        (qué modelos sirve) y smoke (invocación real): esto responde "¿el
+        proveedor mismo reporta una incidencia AHORA?" -- ``check_provider_status``
+        (``provider_status.py``) golpea 3 endpoints JSON públicos verificados
+        en vivo (Groq/Together/Google), cero inferencia, cero tokens; declara
+        explícitamente los vendors sin página de estado fiable (OpenRouter,
+        NVIDIA) en vez de omitirlos en silencio.
+
+        Opt-in explícito: requiere ``ATLAS_PROVIDER_STATUS=1``. Cadencia
+        propia de 24h (fichero de estado, independiente del poll del
+        scheduler) -- espejo exacto de ``maintenance_provider_discovery_tick``."""
+        # Guardia anti-recursión -- ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_PROVIDER_STATUS", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "self_build" / "provider_status_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.inference_hub import DEFAULT_PROVIDERS
+
+        orch = self._orch
+        # `check_provider_status` referenciado por nombre a nivel de módulo
+        # (no reimportado aquí) para que los tests puedan monkeypatchear
+        # `maintenance_facade.check_provider_status` sin tocar red real --
+        # mismo patrón que `discover_available_models` arriba.
+        results = check_provider_status(DEFAULT_PROVIDERS)
+
+        degraded = [r.vendor for r in results if r.state in ("degraded", "outage")]
+        unmonitored = [r.vendor for r in results if r.outcome == "no_public_status_page"]
+
+        state["last_run_date"] = today
+        state["last_results"] = [r.to_dict() for r in results]
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.provider_status_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload={"degraded": degraded, "unmonitored": unmonitored},
+        )
+        return {"status": "ran", "degraded": degraded, "unmonitored": unmonitored}
 
     def maintenance_knowledge_ingest_tick(self) -> dict[str, Any]:
         """Cierre del ciclo investigación→acción (2026-07-09): los informes que

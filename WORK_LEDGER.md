@@ -8,6 +8,40 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-30 — sincronización con catálogo/estado de proveedores, pedido
+  directo del operador ("es una llamada rápida y barata que nos ahorra
+  dolores de cabeza").**
+  **Catálogo de modelos: ya estaba construido, nunca activado.**
+  `provider_discovery.py`/`model_catalog_drift.py` (plan T5, 2026-07-23)
+  cruzan el `/models` real de cada proveedor contra el `model_id`
+  configurado, cero inferencia. `ATLAS_PROVIDER_DISCOVERY` faltaba en `.env`
+  — vecino olvidado de `ATLAS_PROVIDER_SMOKE`. Activado; tick real corrido:
+  `nvidia_mistral_large` sale `missing` del catálogo AHORA MISMO (coincide
+  con que `provider_smoke` lo marca muerto, pero en el Cónclave de esta misma
+  sesión esa voz respondió con contenido sustantivo — discrepancia anotada,
+  no perseguida, fuera de alcance de este pedido).
+  **Estado de red: no existía, construido de cero.** Investigado en vivo
+  (curl + browser real, nunca de memoria) antes de escribir una línea:
+  Groq (`groqstatus.com/api/v1/summary`, incident.io) y Together
+  (`status.together.ai/index.json`, Betterstack `/index.json`) tienen JSON
+  público limpio, verificados con `curl` real. Google Cloud
+  (`status.cloud.google.com/incidents.json`) también, pero con cobertura
+  INCIERTA para `gemini_free` — el feed solo vio "Vertex Gemini API"
+  (producto de pago), no `generativelanguage.googleapis.com` (tier gratis
+  que usamos); el `reason` de cada resultado lo dice explícito, nunca se
+  presenta como confirmación fuerte. OpenRouter (SPA React Router tras reto
+  Cloudflare) y NVIDIA NIM (sin página de estado dedicada) NO tienen endpoint
+  fiable — se declaran `no_public_status_page` en vez de omitirse en
+  silencio, mismo principio que el resto del reality plane.
+  `provider_status.py` nuevo, dedupe por vendor (3 providers Groq -> 1 sola
+  llamada HTTP, verificado por test). Tick diario espejo exacto de
+  `maintenance_provider_discovery_tick` (opt-in `ATLAS_PROVIDER_STATUS=1`,
+  guardia anti-recursión, cadencia 24h, Merkle), cableado en el scheduler y
+  en `atlas reality` (`_provider_status_state`, mismo patrón fail-honesto que
+  `_provider_smoke_state`). TDD en las 3 piezas (módulo, tick, reality): RED
+  verificado antes de cada GREEN. Corrida en vivo hoy: `degraded=[]`,
+  `unmonitored=[openrouter, nvidia]`. 89 tests impactados, 1290 passed/1
+  skipped, mypy limpio en los 4 ficheros de producción tocados.
 - **2026-07-30 — sesión adversarial: hallazgo OAuth cerrado en la superficie
   que se había quedado fuera, y el verde falso de `cold_update` medido.**
   **OAuth (superficie Codex).** La mitigación del incidente 2026-07-17 se aplicó

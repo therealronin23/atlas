@@ -60,6 +60,7 @@ def collect_reality(
         "cold_update": _cold_update_state(root),
         "provider_smoke": _provider_smoke_state(root),
         "provider_discovery": _provider_discovery_state(root),
+        "provider_status": _provider_status_state(root),
         "graph": _graph_state(root),
         "f26_gate": _f26_gate_state(root),
         "self_build_pause": _self_build_pause_state(root),
@@ -560,6 +561,74 @@ def _cold_update_state(root: Path) -> dict[str, Any]:
         "last_validation_passed": passed,
         "last_validation_at": when,
         "proposal_count": len(proposals),
+        "reason": reason,
+    }
+
+
+def _provider_status_state(root: Path) -> dict[str, Any]:
+    """Proyecta el último resultado del ciclo diario de páginas de estado
+    públicas de cada proveedor (``check_provider_status``, ver
+    ``maintenance_facade.maintenance_provider_status_tick``) sin disparar
+    ninguna llamada de red: solo lee el fichero de estado que ya escribió el
+    daemon. Fichero ausente o ilegible -> ``never_ran`` con razón honesta,
+    jamás una excepción (mismo principio fail-honesto que
+    ``_provider_smoke_state``/``_mcp_state``)."""
+    path = root / "workspace" / "self_build" / "provider_status_state.json"
+    never_ran: dict[str, Any] = {
+        "status": "never_ran",
+        "last_run_date": None,
+        "degraded": [],
+        "unmonitored": [],
+    }
+    if not path.is_file():
+        return {
+            **never_ran,
+            "reason": (
+                "no provider_status_state.json found; set ATLAS_PROVIDER_STATUS=1 "
+                "to enable the daily provider status page sync"
+            ),
+        }
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {
+            **never_ran,
+            "reason": f"provider_status_state.json unreadable: {type(exc).__name__}",
+        }
+    if not isinstance(raw, dict):
+        return {
+            **never_ran,
+            "reason": "provider_status_state.json is not a JSON object",
+        }
+    last_run_date = raw.get("last_run_date")
+    results = raw.get("last_results")
+    if not isinstance(results, list):
+        results = []
+
+    degraded = [
+        entry["vendor"]
+        for entry in results
+        if isinstance(entry, dict)
+        and isinstance(entry.get("vendor"), str)
+        and entry.get("state") in ("degraded", "outage")
+    ]
+    unmonitored = [
+        entry["vendor"]
+        for entry in results
+        if isinstance(entry, dict)
+        and isinstance(entry.get("vendor"), str)
+        and entry.get("outcome") == "no_public_status_page"
+    ]
+    reason = (
+        f"{len(degraded)} vendor(s) reporting degraded/outage: {', '.join(degraded)}"
+        if degraded
+        else "no vendor reporting degraded/outage"
+    )
+    return {
+        "status": "ran" if last_run_date else "never_ran",
+        "last_run_date": last_run_date,
+        "degraded": degraded,
+        "unmonitored": unmonitored,
         "reason": reason,
     }
 
