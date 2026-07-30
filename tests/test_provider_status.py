@@ -35,6 +35,10 @@ class _FakeResponse:
     def json(self) -> Any:
         return self._payload
 
+    @property
+    def text(self) -> str:
+        return self._payload if isinstance(self._payload, str) else ""
+
 
 def _groq_provider(name: str = "groq_llama_70b") -> Provider:
     return Provider(
@@ -117,10 +121,7 @@ def test_status_vendor_google() -> None:
     assert status_vendor(_gemini_provider()) == "google"
 
 
-def test_status_vendor_openrouter_is_recognized_but_unmonitored() -> None:
-    """SPA tras reto Cloudflare, sin endpoint JSON descubierto -- verificado
-    en vivo 2026-07-30. Se reconoce el vendor (para declararlo explícitamente
-    en check_provider_status), no tiene URL de estado."""
+def test_status_vendor_openrouter_is_recognized() -> None:
     assert status_vendor(_openrouter_provider()) == "openrouter"
 
 
@@ -151,14 +152,85 @@ def test_dedupes_same_vendor_across_multiple_providers() -> None:
     assert len([r for r in results if r.vendor == "groq"]) == 1
 
 
-def test_unmonitored_vendors_are_declared_not_silently_skipped() -> None:
-    providers = [_openrouter_provider(), _nvidia_provider(), _ollama_provider()]
-    results = check_provider_status(providers, http_get=lambda *a, **k: (_ for _ in ()).throw(AssertionError("no debería llamar a red")))
+def test_nvidia_is_declared_not_silently_skipped() -> None:
+    """NVIDIA sigue sin página de estado dedicada tras dos búsquedas
+    (2026-07-30) -- se declara, no se omite en silencio."""
+    providers = [_nvidia_provider(), _ollama_provider()]
+    results = check_provider_status(
+        providers,
+        http_get=lambda *a, **k: (_ for _ in ()).throw(AssertionError("no debería llamar a red")),
+        rss_get=lambda *a, **k: (_ for _ in ()).throw(AssertionError("no debería llamar a red")),
+    )
 
     outcomes = {r.vendor: r.outcome for r in results}
-    assert outcomes["openrouter"] == "no_public_status_page"
     assert outcomes["nvidia"] == "no_public_status_page"
     assert "ollama" not in outcomes  # local, ni siquiera se declara como "no monitorizado"
+
+
+# --- OpenRouter (feed RSS de suscripción, status.openrouter.ai/incidents.rss) ----
+# 2026-07-30: la página web es una SPA tras reto de Cloudflare, sin JSON. Su
+# MECANISMO DE SUSCRIPCIÓN documentado (RSS) sí responde limpio, sin reto,
+# verificado en vivo con curl real -- esto es usar el endpoint que la propia
+# página ofrece para monitorización programática, no sortear el bot-detection.
+
+_OPENROUTER_RESOLVED_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+<item><title>Erroneous outage status</title>
+<description><![CDATA[<p><small>Jul 23, 9:17 PM UTC</small><br/><strong>RESOLVED</strong> - <p>Todo bien.</p></p>]]></description>
+<pubDate>Thu, 23 Jul 2026 21:17:36 GMT</pubDate></item>
+</channel></rss>"""
+
+_OPENROUTER_OPEN_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+<item><title>Elevated error rates</title>
+<description><![CDATA[<p><small>Jul 30, 2:00 PM UTC</small><br/><strong>INVESTIGATING</strong> - <p>Estamos investigando.</p></p>]]></description>
+<pubDate>Thu, 30 Jul 2026 14:00:00 GMT</pubDate></item>
+</channel></rss>"""
+
+
+def test_openrouter_operational_when_latest_incident_resolved() -> None:
+    def fake_rss_get(url: str, **_: Any) -> _FakeResponse:
+        assert url == "https://status.openrouter.ai/incidents.rss"
+        return _FakeResponse(200, _OPENROUTER_RESOLVED_RSS)
+
+    [result] = check_provider_status([_openrouter_provider()], rss_get=fake_rss_get)
+    assert result.outcome == "ok"
+    assert result.state == "operational"
+
+
+def test_openrouter_degraded_when_latest_incident_open() -> None:
+    def fake_rss_get(url: str, **_: Any) -> _FakeResponse:
+        return _FakeResponse(200, _OPENROUTER_OPEN_RSS)
+
+    [result] = check_provider_status([_openrouter_provider()], rss_get=fake_rss_get)
+    assert result.state == "degraded"
+    assert "INVESTIGATING" in result.reason or "Elevated error rates" in result.reason
+
+
+def test_openrouter_operational_when_feed_empty() -> None:
+    empty = '<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
+
+    def fake_rss_get(url: str, **_: Any) -> _FakeResponse:
+        return _FakeResponse(200, empty)
+
+    [result] = check_provider_status([_openrouter_provider()], rss_get=fake_rss_get)
+    assert result.state == "operational"
+
+
+def test_openrouter_unreachable_never_raises() -> None:
+    def fake_rss_get(url: str, **_: Any) -> Any:
+        raise TimeoutError("boom")
+
+    [result] = check_provider_status([_openrouter_provider()], rss_get=fake_rss_get)
+    assert result.outcome == "unreachable"
+
+
+def test_openrouter_malformed_xml_never_raises() -> None:
+    def fake_rss_get(url: str, **_: Any) -> _FakeResponse:
+        return _FakeResponse(200, "no es xml")
+
+    [result] = check_provider_status([_openrouter_provider()], rss_get=fake_rss_get)
+    assert result.outcome == "unreachable"
 
 
 # --- Groq (incident.io) --------------------------------------------------
@@ -213,63 +285,70 @@ def test_together_degraded_state_passthrough() -> None:
     assert result.state == "degraded"
 
 
-# --- Google Cloud incidents feed (cobertura de gemini_free incierta) -----
+# --- Google AI Studio / Gemini API status (aistudio.google.com/status) ----
+# 2026-07-30: status.cloud.google.com/incidents.json SOLO confirmaba "Vertex
+# Gemini API" (producto de pago), nunca generativelanguage.googleapis.com
+# (tier gratis que usa gemini_free) -- reemplazado por la página de estado
+# REAL de AI Studio/Gemini API, verificada en vivo con browser real (incluye
+# incidentes de "ListModels", claves de API, límites de modelo -- la
+# superficie correcta). Esa página no tiene JSON: requiere JS, así que se lee
+# vía navegador (browser_fetch inyectable, igual que http_get -- ningún test
+# de este bloque levanta un navegador real).
 
 
-def test_google_operational_when_no_matching_incident() -> None:
-    def fake_http_get(url: str, **_: Any) -> _FakeResponse:
-        assert url == "https://status.cloud.google.com/incidents.json"
-        return _FakeResponse(200, [])
+def test_google_operational_when_page_says_all_systems_operational() -> None:
+    def fake_browser_fetch(url: str) -> str:
+        assert url == "https://aistudio.google.com/status"
+        return "Google AI Studio and the Gemini API Status\ncheck\nAll Systems Operational\nAPI\n30 days"
 
-    [result] = check_provider_status([_gemini_provider()], http_get=fake_http_get)
+    [result] = check_provider_status([_gemini_provider()], browser_fetch=fake_browser_fetch)
     assert result.outcome == "ok"
     assert result.state == "operational"
-    assert "cobertura" in result.reason.lower() or "generativelanguage" in result.reason.lower()
 
 
-def test_google_flags_open_incident_affecting_gemini() -> None:
-    def fake_http_get(url: str, **_: Any) -> _FakeResponse:
-        return _FakeResponse(
-            200,
-            [
-                {
-                    "external_desc": "Vertex Gemini API elevated errors",
-                    "affected_products": [{"title": "Vertex Gemini API"}],
-                    "end": None,
-                }
-            ],
-        )
+def test_google_degraded_when_page_does_not_say_all_systems_operational() -> None:
+    def fake_browser_fetch(url: str) -> str:
+        return "Google AI Studio and the Gemini API Status\ncheck\nPartial System Outage\nAPI\n30 days"
 
-    [result] = check_provider_status([_gemini_provider()], http_get=fake_http_get)
+    [result] = check_provider_status([_gemini_provider()], browser_fetch=fake_browser_fetch)
     assert result.state == "degraded"
+    assert "Partial System Outage" in result.reason
 
 
-def test_google_ignores_resolved_incidents() -> None:
-    def fake_http_get(url: str, **_: Any) -> _FakeResponse:
-        return _FakeResponse(
-            200,
-            [
-                {
-                    "external_desc": "Vertex Gemini API elevated errors (resuelto)",
-                    "affected_products": [{"title": "Vertex Gemini API"}],
-                    "end": "2026-02-27T14:35:00+00:00",
-                }
-            ],
-        )
+def test_google_unrecognized_page_shape_is_unreachable_not_operational() -> None:
+    """Si el texto no trae NI 'Operational' NI un indicador de degradación
+    reconocido, no se asume 'todo bien' -- unknown > mentir."""
 
-    [result] = check_provider_status([_gemini_provider()], http_get=fake_http_get)
-    assert result.state == "operational"
+    def fake_browser_fetch(url: str) -> str:
+        return "<html>algo cambió en el maquetado y esto ya no es lo que esperábamos</html>"
+
+    [result] = check_provider_status([_gemini_provider()], browser_fetch=fake_browser_fetch)
+    assert result.outcome == "unreachable"
 
 
-def test_google_ignores_incidents_for_unrelated_products() -> None:
-    def fake_http_get(url: str, **_: Any) -> _FakeResponse:
-        return _FakeResponse(
-            200,
-            [{"external_desc": "VMWare engine outage", "affected_products": [{"title": "VMWare engine"}], "end": None}],
-        )
+def test_google_browser_fetch_exception_never_raises() -> None:
+    def fake_browser_fetch(url: str) -> str:
+        raise RuntimeError("playwright boom")
 
-    [result] = check_provider_status([_gemini_provider()], http_get=fake_http_get)
-    assert result.state == "operational"
+    [result] = check_provider_status([_gemini_provider()], browser_fetch=fake_browser_fetch)
+    assert result.outcome == "unreachable"
+    assert "playwright boom" in result.reason
+
+
+def test_google_never_uses_http_get() -> None:
+    """El vendor google ahora es 100% vía navegador; http_get no debe
+    llamarse para él aunque se inyecte uno que fallaría si lo hiciera."""
+
+    def fake_http_get(url: str, **_: Any) -> Any:
+        raise AssertionError("no debería llamar a http_get para google")
+
+    def fake_browser_fetch(url: str) -> str:
+        return "All Systems Operational"
+
+    [result] = check_provider_status(
+        [_gemini_provider()], http_get=fake_http_get, browser_fetch=fake_browser_fetch
+    )
+    assert result.outcome == "ok"
 
 
 # --- nunca lanza -----------------------------------------------------------

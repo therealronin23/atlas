@@ -1151,14 +1151,21 @@ class MaintenanceFacade:
         caídas, es una llamada rápida y barata"). Complementa a discovery
         (qué modelos sirve) y smoke (invocación real): esto responde "¿el
         proveedor mismo reporta una incidencia AHORA?" -- ``check_provider_status``
-        (``provider_status.py``) golpea 3 endpoints JSON públicos verificados
-        en vivo (Groq/Together/Google), cero inferencia, cero tokens; declara
-        explícitamente los vendors sin página de estado fiable (OpenRouter,
-        NVIDIA) en vez de omitirlos en silencio.
+        (``provider_status.py``) golpea Groq/Together (JSON), Google
+        (navegador, su página no expone JSON) y OpenRouter (feed RSS de
+        suscripción), todo verificado en vivo; cero inferencia, cero tokens.
+        Declara explícitamente los vendors sin página de estado fiable
+        (NVIDIA, tras dos búsquedas) en vez de omitirlos en silencio.
 
         Opt-in explícito: requiere ``ATLAS_PROVIDER_STATUS=1``. Cadencia
         propia de 24h (fichero de estado, independiente del poll del
-        scheduler) -- espejo exacto de ``maintenance_provider_discovery_tick``."""
+        scheduler) -- espejo exacto de ``maintenance_provider_discovery_tick``.
+
+        El vendor `google` navega de verdad (Playwright, su página no expone
+        JSON) -- invariante 1 (todo efecto externo Merkle-auditado): se
+        construye un `BrowserTool` con el merkle logger real del orchestrator
+        en vez de dejar que `check_provider_status` use su propio default
+        silencioso."""
         # Guardia anti-recursión -- ver maintenance_self_build_tick.
         if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
             return {"status": "nested_run_guard"}
@@ -1178,13 +1185,27 @@ class MaintenanceFacade:
             return {"status": "already_ran_today"}
 
         from atlas.core.inference_hub import DEFAULT_PROVIDERS
+        from atlas.security.ssrf_bridge import SSRFBridge
+        from atlas.tools.browser import BrowserTool
 
         orch = self._orch
+
+        def _audited_browser_fetch(url: str) -> str:
+            bt = BrowserTool(
+                workspace=orch._workspace,
+                bridge=SSRFBridge(extra_allowed={"aistudio.google.com"}),
+                merkle=orch._merkle,
+            )
+            try:
+                return bt.navigate(url).text
+            finally:
+                bt.close()
+
         # `check_provider_status` referenciado por nombre a nivel de módulo
         # (no reimportado aquí) para que los tests puedan monkeypatchear
         # `maintenance_facade.check_provider_status` sin tocar red real --
         # mismo patrón que `discover_available_models` arriba.
-        results = check_provider_status(DEFAULT_PROVIDERS)
+        results = check_provider_status(DEFAULT_PROVIDERS, browser_fetch=_audited_browser_fetch)
 
         degraded = [r.vendor for r in results if r.state in ("degraded", "outage")]
         unmonitored = [r.vendor for r in results if r.outcome == "no_public_status_page"]

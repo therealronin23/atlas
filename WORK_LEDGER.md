@@ -8,6 +8,34 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-30 — provider_status: OpenRouter desbloqueado, Google corregido a
+  la página real de Gemini, NVIDIA confirmado sin endpoint tras 2ª búsqueda.**
+  Pedido explícito: "si openrouter hay que desbloquearlos y mejorar el
+  resto". **OpenRouter**: la web es una SPA tras reto Cloudflare sin JSON —
+  no se intentó sortear el reto (fuera de lo permitido). Su MECANISMO DE
+  SUSCRIPCIÓN documentado sí responde limpio:
+  `status.openrouter.ai/incidents.rss`, verificado con curl real, sin reto.
+  Parseo conservador: solo un set CERRADO de estados (`RESOLVED`,
+  `COMPLETED`) cuenta como operational; cualquier otra palabra en el último
+  incidente → degraded (nunca se ha visto un incidente abierto en vivo para
+  confirmar el vocabulario de "en curso", así que no se adivina).
+  **Google**: `status.cloud.google.com/incidents.json` (lo que había) solo
+  confirmaba "Vertex Gemini API" — nunca `generativelanguage.googleapis.com`
+  (gemini_free). Encontrada la página REAL: `aistudio.google.com/status`
+  ("Google AI Studio and the Gemini API Status", incidentes de ListModels,
+  claves de API, límites de modelo — la superficie correcta). No expone
+  JSON — decisión del operador (preguntada explícitamente, dado el cambio de
+  coste): leerla vía navegador real (Playwright, ya dependencia del
+  proyecto), con SSRFBridge ampliada explícitamente a `aistudio.google.com`
+  (allowlist curada, no se tocó el default global). El tick cablea un
+  `BrowserTool` con el merkle del orchestrator (invariante 1: navegar es un
+  efecto externo) — verificado en vivo: `browser.navigate` real quedó en
+  `~/atlas/memory/audit/merkle.jsonl`. **NVIDIA**: dos búsquedas reales,
+  sigue sin página de estado dedicada — declarado, no omitido.
+  Corrida real hoy tras el cambio: `degraded=[]`, `unmonitored=[nvidia]`
+  (antes `[openrouter, nvidia]`). TDD en dos ciclos (Google, luego
+  OpenRouter): RED verificado en cada uno. 274 tests impactados, mypy
+  limpio en `provider_status.py` y `maintenance_facade.py`.
 - **2026-07-30 — dos hallazgos del Cónclave sobre sí mismo, verificados y
   cerrados/documentados.**
   **`min_providers` contaba proveedores muertos como voces vivas.** En un
