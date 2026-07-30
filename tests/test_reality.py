@@ -471,6 +471,58 @@ def test_collect_reality_wires_provider_status_section(tmp_path: Path) -> None:
     assert report["provider_status"]["status"] == "never_ran"
 
 
+def test_engineering_review_state_never_ran_without_file(tmp_path: Path) -> None:
+    """ADC-WO-108: el plano de hallazgos de ingeniería llevaba 2209 líneas
+    dormidas sin proyección alguna en `atlas reality`. Un plano que no se
+    mide no es evidencia, es decoración."""
+    from atlas.core import reality
+
+    state = reality._engineering_review_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert state["last_run_date"] is None
+    assert "ATLAS_ENGINEERING_REVIEW" in state["reason"]
+
+
+def test_engineering_review_state_projects_last_result(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "engineering_review_state.json").write_text(
+        json.dumps({
+            "last_run_date": "2026-07-30",
+            "last_result": {
+                "reviewed": True,
+                "verdict": "pass",
+                "findings": 0,
+                "journal_total": 3,
+                "candidate_revision": "a" * 40,
+            },
+        }),
+        encoding="utf-8",
+    )
+
+    state = reality._engineering_review_state(tmp_path)
+
+    assert state["status"] == "ran"
+    assert state["reviewed"] is True
+    assert state["journal_total"] == 3
+
+
+def test_engineering_review_state_never_ran_on_corrupt_json(tmp_path: Path) -> None:
+    from atlas.core import reality
+
+    state_dir = tmp_path / "workspace" / "self_build"
+    state_dir.mkdir(parents=True)
+    (state_dir / "engineering_review_state.json").write_text("{no json", encoding="utf-8")
+
+    state = reality._engineering_review_state(tmp_path)
+
+    assert state["status"] == "never_ran"
+    assert "unreadable" in state["reason"]
+
+
 def test_workbench_compliance_review_state_never_ran_without_file(tmp_path: Path) -> None:
     from atlas.core import reality
 

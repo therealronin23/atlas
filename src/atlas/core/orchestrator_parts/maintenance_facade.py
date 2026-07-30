@@ -366,6 +366,12 @@ class MaintenanceFacade:
                 # igual que los demás ciclos.
                 _isolated_cycle("workbench_compliance_review", self.maintenance_workbench_compliance_review_tick)
 
+            def _engineering_review_cycle() -> None:
+                # Revisión de ingeniería incremental sobre el delta de HEAD
+                # (ADC-WO-108): ver maintenance_engineering_review_tick. Aislado
+                # igual que los demás ciclos.
+                _isolated_cycle("engineering_review", self.maintenance_engineering_review_tick)
+
             def _knowledge_ingest_cycle() -> None:
                 # Cierre investigación→acción: ver maintenance_knowledge_ingest_tick.
                 _isolated_cycle("knowledge_ingest", self.maintenance_knowledge_ingest_tick)
@@ -444,7 +450,8 @@ class MaintenanceFacade:
                     _research_cycle, _knowledge_ingest_cycle, _project_graph_cycle,
                     _mcp_vetting_cycle, _mcp_trial_cycle, _sentinel_revet_cycle,
                     _provider_smoke_cycle, _provider_discovery_cycle, _provider_status_cycle,
-                    _workbench_compliance_review_cycle, _mcp_reseed_cycle,
+                    _workbench_compliance_review_cycle, _engineering_review_cycle,
+                    _mcp_reseed_cycle,
                     _dep_cycle, _self_build_cycle,
                     _batch_cycle,
                 ),
@@ -1279,6 +1286,150 @@ class MaintenanceFacade:
 
         orch._merkle.log(
             action="self_maintenance.workbench_compliance_review_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=result,
+        )
+        return {"status": "ran", **result}
+
+    def maintenance_engineering_review_tick(self) -> dict[str, Any]:
+        """Despierta el plano de hallazgos de ingeniería (ADC-WO-108).
+
+        `src/atlas/engineering/` estaba COMPLETO y DORMIDO: 2209 líneas de
+        producción + 1868 de tests con cero callers fuera del propio paquete.
+        Es el único work order `READY` del canon vivo, con la autorización de
+        ejecución del operador ya registrada (WORK_LEDGER.md 2026-07-29).
+
+        Este tick es la pieza "Orchestrator integration" del WO. COMPONE lo
+        que ya existe -- baselines + preparer + coordinator + store -- en vez
+        de crear otro verificador, que es el riesgo que el propio WO nombra
+        ("creating another verifier instead of composing existing ones").
+
+        Revisa el delta entre la baseline aceptada (o el padre de HEAD en la
+        primera corrida) y HEAD, con un diff Git de solo lectura y ancestría
+        verificada. NO aplica parches ni propone nada: solo registra hallazgos
+        en el journal append-only.
+
+        Opt-in explícito: requiere ``ATLAS_ENGINEERING_REVIEW=1``. Cadencia
+        propia de 24h -- espejo de ``maintenance_workbench_compliance_review_tick``.
+        """
+        # Guardia anti-recursión -- ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_ENGINEERING_REVIEW", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        import subprocess
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        root = self._project_root()
+        state_path = root / "workspace" / "self_build" / "engineering_review_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.verify import UnifiedDiffVerifier, UniversalVerifier
+        from atlas.engineering.baselines import EngineeringReviewBaselineStore
+        from atlas.engineering.findings import EngineeringFindingStore
+        from atlas.engineering.incremental import (
+            EngineeringIncrementalReviewPreparer,
+            EngineeringIncrementalReviewRunner,
+            IncrementalReviewPreparationError,
+        )
+        from atlas.engineering.review import (
+            EngineeringReviewCoordinator,
+            EngineeringReviewRequest,
+            UniversalVerifierReviewAdapter,
+        )
+
+        def _rev(*args: str) -> str | None:
+            try:
+                out = subprocess.run(
+                    ["git", *args],
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=False,
+                )
+            except (OSError, subprocess.SubprocessError):
+                return None
+            value = out.stdout.strip()
+            return value if out.returncode == 0 and value else None
+
+        head = _rev("rev-parse", "HEAD")
+        if head is None:
+            return {"status": "ran", "reviewed": False, "reason": "sin HEAD legible"}
+        # Primera corrida (sin baseline aceptada): el padre de HEAD es la base
+        # honesta. Un repo de un solo commit no tiene delta que revisar.
+        parent = _rev("rev-parse", "HEAD~1")
+
+        engineering_dir = root / "workspace" / "engineering"
+        engineering_dir.mkdir(parents=True, exist_ok=True)
+        findings = EngineeringFindingStore(engineering_dir / "findings.jsonl")
+        baselines = EngineeringReviewBaselineStore(engineering_dir / "baselines.jsonl")
+        coordinator = EngineeringReviewCoordinator(
+            store=findings,
+            adapters=[
+                UniversalVerifierReviewAdapter(
+                    adapter_id="unified_diff",
+                    verifier=UniversalVerifier([UnifiedDiffVerifier()]),
+                )
+            ],
+        )
+        runner = EngineeringIncrementalReviewRunner(
+            preparer=EngineeringIncrementalReviewPreparer(
+                repo_root=root, baselines=baselines
+            ),
+            coordinator=coordinator,
+        )
+        request = EngineeringReviewRequest(
+            run_id=f"maintenance-{today}",
+            task_id=None,
+            mission_id=None,
+            repository=str(root),
+            base_revision=parent,
+            candidate_revision=head,
+            diff="",
+            scope=(),
+            acceptance_criteria=(),
+            at=datetime.now(timezone.utc).isoformat(),
+        )
+
+        # Fail-honesto: un tick NUNCA propaga una excepción al scheduler.
+        try:
+            execution = runner.run(request)
+            reviewed = execution.report is not None
+            verdict = execution.report.verdict.value if execution.report else None
+            finding_count = len(execution.report.findings) if execution.report else 0
+            reason = "" if reviewed else "sin delta que revisar"
+        except (IncrementalReviewPreparationError, OSError, ValueError) as exc:
+            reviewed, verdict, finding_count = False, None, 0
+            reason = f"{type(exc).__name__}: {exc}"
+
+        result: dict[str, Any] = {
+            "reviewed": reviewed,
+            "verdict": verdict,
+            "findings": finding_count,
+            "journal_total": findings.count(),
+            "base_revision": parent,
+            "candidate_revision": head,
+            "reason": reason,
+        }
+
+        state["last_run_date"] = today
+        state["last_result"] = result
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        self._orch._merkle.log(
+            action="self_maintenance.engineering_review_tick",
             agent="maintenance_facade",
             result="ran",
             risk_level="safe",

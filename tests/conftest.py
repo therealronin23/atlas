@@ -95,6 +95,9 @@ _MAINTENANCE_TICK_FLAG_KEYS = (
     "ATLAS_PROVIDER_STATUS",
     "ATLAS_PROVIDER_DISCOVERY",
     "ATLAS_WORKBENCH_COMPLIANCE_REVIEW",
+    # ADC-WO-108 (2026-07-30): añadido A LA VEZ que el tick, no después --
+    # olvidarlo es exactamente el fallo cometido con los tres de arriba.
+    "ATLAS_ENGINEERING_REVIEW",
 )
 _CANDIDATE_VALIDATION_ENV = "ATLAS_CANDIDATE_VALIDATION"
 _OFFLINE_TEST_PUBLIC_IP = "93.184.216.34"

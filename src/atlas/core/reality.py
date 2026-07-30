@@ -62,6 +62,7 @@ def collect_reality(
         "provider_discovery": _provider_discovery_state(root),
         "provider_status": _provider_status_state(root),
         "workbench_compliance_review": _workbench_compliance_review_state(root),
+        "engineering_review": _engineering_review_state(root),
         "graph": _graph_state(root),
         "f26_gate": _f26_gate_state(root),
         "self_build_pause": _self_build_pause_state(root),
@@ -582,6 +583,66 @@ def _cold_update_state(root: Path) -> dict[str, Any]:
         "last_validation_at": when,
         "proposal_count": len(proposals),
         "reason": reason,
+    }
+
+
+def _engineering_review_state(root: Path) -> dict[str, Any]:
+    """Proyecta el último resultado del tick de revisión de ingeniería
+    (ADC-WO-108, ver ``maintenance_facade.maintenance_engineering_review_tick``)
+    sin revisar nada: solo lee el fichero de estado que ya escribió el daemon.
+
+    Existe porque el plano entero (``src/atlas/engineering/``, 2209 líneas de
+    producción + 1868 de tests) estaba construido, testeado y con CERO callers:
+    dormido y, sobre todo, invisible. Fichero ausente o ilegible ->
+    ``never_ran`` con razón honesta, jamás una excepción (mismo principio
+    fail-honesto que ``_workbench_compliance_review_state``)."""
+    path = root / "workspace" / "self_build" / "engineering_review_state.json"
+    never_ran: dict[str, Any] = {
+        "status": "never_ran",
+        "last_run_date": None,
+        "reviewed": False,
+        "verdict": None,
+        "findings": 0,
+        "journal_total": 0,
+    }
+    if not path.is_file():
+        return {
+            **never_ran,
+            "reason": (
+                "no engineering_review_state.json found; set "
+                "ATLAS_ENGINEERING_REVIEW=1 to enable the daily review"
+            ),
+        }
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {
+            **never_ran,
+            "reason": f"engineering_review_state.json unreadable: {type(exc).__name__}",
+        }
+    if not isinstance(raw, dict):
+        return {
+            **never_ran,
+            "reason": "engineering_review_state.json is not a JSON object",
+        }
+    last_run_date = raw.get("last_run_date")
+    result = raw.get("last_result")
+    if not isinstance(result, dict):
+        result = {}
+    reviewed = bool(result.get("reviewed"))
+    verdict = result.get("verdict")
+    return {
+        "status": "ran" if last_run_date else "never_ran",
+        "last_run_date": last_run_date,
+        "reviewed": reviewed,
+        "verdict": verdict,
+        "findings": result.get("findings", 0),
+        "journal_total": result.get("journal_total", 0),
+        "candidate_revision": result.get("candidate_revision"),
+        "reason": (
+            f"último veredicto: {verdict}" if verdict
+            else (result.get("reason") or "sin revisión registrada")
+        ),
     }
 
 

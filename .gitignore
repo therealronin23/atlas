@@ -132,6 +132,9 @@ skills-lock.json
 workspace/self_build/
 workspace/research/
 workspace/knowledge/
+# Journal append-only de hallazgos de ingeniería (ADC-WO-108): evidencia
+# runtime con receipt Merkle, no artefacto fuente.
+workspace/engineering/
 # Router telemetry/cooldown are local runtime state; prompt hashes and turn
 # state are evidence inputs, not source artifacts to publish.
 workspace/mcp/*.jsonl
