@@ -96,6 +96,13 @@ class PreflightGate:
                 "docs_index_drift": module.docs_index_drift(),
                 "docs_graph_drift": module.docs_graph_drift(),
                 "ecosystem_map_drift": module.ecosystem_map_drift(),
+                # 2026-07-30: la deriva canon↔grafo AST pertenece a ESTA
+                # puerta y no sólo al radar manual. Es la que gobierna la
+                # automodificación: el lazo no debería proponerse cambios
+                # mientras `component_reality_matrix.jsonl` miente sobre qué
+                # está cableado, porque ese mismo canon es lo que un driver
+                # nuevo lee para decidir dónde tocar.
+                "component_wiring_drift": module.component_wiring_drift(),
             }
         except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
             return {"error": [f"sanitation_audit no pudo ejecutarse: {exc}"]}

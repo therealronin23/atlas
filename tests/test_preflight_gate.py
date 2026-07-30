@@ -119,6 +119,13 @@ def test_sanitation_findings_has_expected_keys(monkeypatch):
         "docs_index_drift",  # 2026-07-08: el orden de docs entra al preflight
         "docs_graph_drift",  # 2026-07-08: y el grafo de enlaces también
         "ecosystem_map_drift",  # 2026-07-22: MAXIMUS Cycle 13, spec B+C §5
+        # 2026-07-30: la deriva canon↔grafo AST pertenece a ESTA puerta, no
+        # sólo al radar manual — es la que gobierna la automodificación, así
+        # que el lazo no debe poder proponerse cambios mientras el canon
+        # miente sobre qué está cableado. El dict de _run_sanitation es
+        # explícito: un detector nuevo en sanitation_audit.py NO llega aquí
+        # solo, y este test es lo que lo fuerza.
+        "component_wiring_drift",
     }
     for key, value in result.sanitation_findings.items():
         assert isinstance(value, list)
