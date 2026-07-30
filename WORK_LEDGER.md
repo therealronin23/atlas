@@ -63,6 +63,17 @@ de escribir: `atlas reality --json`.
   **Pedido del operador a mitad de sesión**: alcance de T2.1 excluye Android
   hasta que lo pida explícitamente — los micro-PoC de Flutter/Compose se
   quedan en el tramo Linux, sin medición de teléfono.
+  **T2.1 PAUSADA — bloqueo real de hardware, no mío**: al verificar el
+  renderer del micro-PoC Flutter, `nvidia-smi` falla ("Driver/library
+  version mismatch", kernel 535.309.01 vs NVML 580.173.02, ambas familias
+  de paquetes de driver coexistiendo); forzar offload
+  (`__NV_PRIME_RENDER_OFFLOAD=1`) da error X real (`BadValue`), no
+  fallback silencioso. **El informe de medición existente de Flutter
+  (2026-07-23, PASA, 58-61fps) casi seguro midió la iGPU Intel HD 530, no
+  la GTX 960M** — veredicto en duda hasta remedir. Requiere `apt` +
+  reinicio de la máquina real, fuera de lo que toco sin permiso. Operador
+  eligió parar toda la Fase 2 aquí y arreglar el driver por su cuenta;
+  próxima acción cuando confirme `nvidia-smi`/`glxinfo -B` con la GPU real.
 - **2026-07-30 — provider_status: OpenRouter desbloqueado, Google corregido a
   la página real de Gemini, NVIDIA confirmado sin endpoint tras 2ª búsqueda.**
   Pedido explícito: "si openrouter hay que desbloquearlos y mejorar el
