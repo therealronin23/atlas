@@ -45,8 +45,27 @@ DEFAULT_TRANSPORT = "ssh"
 DEFAULT_SERVICE_USER = "hermes"
 DEFAULT_SERVICE_HOME = "/var/lib/hermes"
 MAX_TRANSPORT_OUTPUT_BYTES = 1_048_576
+# `diagnostics` y `repair` se añaden el 2026-08-01 ("haz que Hermes corrija y se
+# autocorrija"). Hermes YA traía las dos mitades y Atlas no las llamaba nunca:
+# `diagnostics` sólo lee, y `repair` es fail-closed de fábrica — corre
+# `PRAGMA integrity_check` y auto-repara SÓLO corrupción de índices (REINDEX
+# tras dejar una copia en cuarentena), reportando intacto cualquier otro tipo.
+# Ninguna borra tareas. Las acciones que SÍ mutan el tablero (`unblock`, `edit`,
+# `reassign`) quedan fuera a propósito: amplían la superficie de escritura sobre
+# un tablero durable y entran por ADR, con el decider delante.
 ALLOWED_KANBAN_ACTIONS = frozenset(
-    {"boards", "create", "list", "show", "comment", "complete", "stats", "archive"}
+    {
+        "boards",
+        "create",
+        "list",
+        "show",
+        "comment",
+        "complete",
+        "stats",
+        "archive",
+        "diagnostics",
+        "repair",
+    }
 )
 _SSH_DESTINATION_RE = re.compile(
     r"^[a-z_][a-z0-9_-]{0,31}@(?:[A-Za-z0-9][A-Za-z0-9.-]{0,252}|\[[0-9A-Fa-f:]+\])$"
@@ -304,10 +323,42 @@ class KanbanBridge:
         return self.run(*args)
 
     def list_tasks(self, status: str | None = None) -> KanbanResult:
-        args = ["list"]
+        # `--json` no es cosmético: sin él el CLI emite una tabla para humanos,
+        # `_try_json` devuelve None y `KanbanResult.parsed` queda vacío. Todo el
+        # que quisiera RAZONAR sobre las tareas recibía None en silencio.
+        args = ["list", "--json"]
         if status:
             args += ["--status", status]
         return self.run(*args)
+
+    def diagnostics(
+        self, *, severity: str | None = None, task_id: str | None = None
+    ) -> KanbanResult:
+        """Lo que Hermes ya sabía y Atlas no preguntaba.
+
+        Detecta tareas varadas (`stranded_in_ready`), atascadas
+        (`stuck_in_blocked`) o con fallos repetidos (`repeated_failures`), y
+        emite acciones sugeridas estructuradas. Es de sólo lectura.
+
+        ``severity`` filtra a `warning|error|critical`: la orden en pie del
+        operador para las alertas es "sólo lo grave, nada de ruido".
+        """
+        args = ["diagnostics", "--json"]
+        if severity:
+            args += ["--severity", severity]
+        if task_id:
+            args += ["--task", task_id]
+        return self.run(*args)
+
+    def repair(self) -> KanbanResult:
+        """`PRAGMA integrity_check` sobre la BD del tablero.
+
+        Fail-closed por diseño de Hermes: auto-repara SÓLO corrupción de
+        índices (REINDEX, tras dejar una copia `.corrupt.<hash>.bak` en
+        cuarentena) y deja intacto y reportado cualquier otro tipo. Nunca borra
+        tareas. Sale 0 si la BD está sana o se reparó.
+        """
+        return self.run("repair", "--json")
 
     def show_task(self, task_id: str) -> KanbanResult:
         return self.run("show", task_id)
@@ -348,7 +399,10 @@ class KanbanBridge:
         local_cli = os.environ.get("HERMES_KANBAN_LOCAL_BIN", DEFAULT_LOCAL_KANBAN_BIN)
         if shutil.which(local_cli):
             argv = [local_cli, "kanban", action, *args]
-            returncode, stdout, stderr = _default_runner(argv, self._timeout)
+            # `self._runner`, no `_default_runner`: este camino ignoraba el
+            # runner inyectado, así que un test que creía estar aislado acababa
+            # invocando el Hermes REAL de la máquina que lo corriera.
+            returncode, stdout, stderr = self._runner(argv, self._timeout)
             parsed = _try_json(stdout)
             ok = returncode == 0
             self._log(

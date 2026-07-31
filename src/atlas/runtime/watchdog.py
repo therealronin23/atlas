@@ -35,6 +35,7 @@ import subprocess
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from typing import Any
 from pathlib import Path
 
 REALERT_SECONDS = 12 * 3600.0
@@ -203,6 +204,45 @@ def merkle_probe(workspace: Path | None = None) -> Check:
     return Check("cadena Merkle", ok, "íntegra" if ok else "ROTA")
 
 
+#: Severidades de Hermes que merecen molestar al operador. `warning` NO entra:
+#: dos tareas llevan 198 h bloqueadas y eso es real, pero no es una emergencia,
+#: y la orden en pie es "sólo lo grave, nada de ruido".
+GRAVE_HERMES_SEVERITIES = frozenset({"critical", "error"})
+
+
+def hermes_probe(
+    diagnose: Callable[[], list[dict[str, Any]]] | None = None,
+) -> Check:
+    """Hermes lleva 23 días diagnosticándose solo y nadie le escuchaba.
+
+    ``hermes kanban diagnostics`` detecta tareas varadas, atascadas o con
+    fallos repetidos, y lo emite en JSON con acciones sugeridas. Atlas ni
+    siquiera tenía la acción en su lista de permitidas hasta hoy.
+    """
+    if diagnose is None:
+        diagnose = _default_hermes_diagnose
+    try:
+        findings = diagnose()
+    except Exception:  # noqa: BLE001 — no medible jamás es "roto"
+        return Check("Hermes", None, "tablero no interrogable")
+
+    grave: list[str] = []
+    for task in findings or []:
+        for item in task.get("diagnostics", []):
+            if str(item.get("severity", "")).lower() in GRAVE_HERMES_SEVERITIES:
+                grave.append(f"{item.get('kind', '?')}: {task.get('title', '?')[:40]}")
+    if grave:
+        return Check("Hermes", False, "; ".join(grave[:4]))
+    return Check("Hermes", True, "sin hallazgos graves")
+
+
+def _default_hermes_diagnose() -> list[dict[str, Any]]:
+    from atlas.hermes.kanban_bridge import KanbanBridge
+
+    parsed = KanbanBridge().diagnostics().parsed
+    return parsed if isinstance(parsed, list) else []
+
+
 def default_probes() -> list[Callable[[], Check]]:
     return [
         service_probe,
@@ -210,6 +250,7 @@ def default_probes() -> list[Callable[[], Check]]:
         lambda: disk_probe("/tmp"),
         memory_probe,
         merkle_probe,
+        hermes_probe,
     ]
 
 

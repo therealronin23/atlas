@@ -219,7 +219,10 @@ def test_list_tasks_status_filter():
     runner = FakeRunner()
     bridge = KanbanBridge(runner=runner, transport="ssh")
     bridge.list_tasks(status="ready")
-    assert runner.calls[0][-1].endswith("kanban list --status ready")
+    # Desde 2026-08-01 se pide `--json` siempre: sin él el CLI emite una tabla
+    # para humanos y `KanbanResult.parsed` quedaba None, así que nadie podía
+    # razonar sobre las tareas. Se afirma el filtro, no el comando literal.
+    assert runner.calls[0][-1].endswith("kanban list --json --status ready")
 
 
 def test_reachable_true_on_success():
