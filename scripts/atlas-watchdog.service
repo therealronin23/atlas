@@ -1,0 +1,24 @@
+[Unit]
+Description=Atlas watchdog — vigilante local, avisa por Telegram
+# DELIBERADAMENTE sin After=/Requires= sobre atlas-core.service: este vigilante
+# existe para detectar que atlas-core está MUERTO. Acoplarlo al daemon
+# reproduciría el punto ciego que documenta scripts/daemon_idle_guard.sh — un
+# radar que corre dentro del daemon nunca ve que el daemon no corre.
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ronin/proyectos/atlas-core
+# TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID viven aquí.
+EnvironmentFile=/home/ronin/proyectos/atlas-core/.env
+Environment="PYTHONPATH=/home/ronin/proyectos/atlas-core/src"
+ExecStart=/home/ronin/proyectos/atlas-core/.venv/bin/python -m atlas.runtime.watchdog
+# Una pasada debe ser barata y acotada: si tarda más de un minuto, algo va mal
+# y es mejor fallar que solaparse con la siguiente.
+TimeoutStartSec=60
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=false
+MemoryAccounting=yes
+MemoryMax=512M
+StandardOutput=append:/home/ronin/proyectos/atlas-core/.atlas-watchdog.log
+StandardError=append:/home/ronin/proyectos/atlas-core/.atlas-watchdog.log

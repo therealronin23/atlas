@@ -1,0 +1,15 @@
+[Unit]
+Description=Atlas watchdog cada 15 min — "cuando no esté, monitoriza el servidor"
+
+[Timer]
+# 15 min acota la ceguera sin coste real. Referencia medida: la caída del
+# 2026-07-30 duró ~23 h sin que nadie se enterara.
+OnBootSec=2min
+OnUnitActiveSec=15min
+# Si el portátil estuvo suspendido, correr al despertar en vez de saltarse el
+# hueco: los fallos no dejan de ocurrir porque la máquina duerma.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

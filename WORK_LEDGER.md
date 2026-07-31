@@ -8,6 +8,62 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (vigilante) — el lazo autónomo llevaba ~23 h MUERTO y nadie se
+  enteró. Ahora hay un vigilante que avisa por Telegram cada 15 min.**
+  **Cómo se descubrió**: el operador pidió investigar por qué el grafo Kuzu
+  estaba `STALE`. No era el grafo: `atlas-core.service` llevaba parado desde
+  el 30-jul 18:19, y tras el reinicio de las 18:45 **no rearrancó**. Grafo 31
+  commits atrás, cero ticks de mantenimiento, `cold_update` en `degraded`, y
+  ningún canal que lo dijera.
+  **Causa del no-arranque, confirmada por prueba**: `systemctl --user show
+  atlas-core -p WantedBy` daba **vacío** pese a estar `enabled`, con el
+  symlink en `default.target.wants/` desde el 9-jul y `Linger=yes`. Un
+  `daemon-reload` lo pobló a `default.target` — de vacío a poblado, esa era la
+  causa de que alcanzar `default.target` no arrastrara el servicio.
+  **Lo que NO sé, y lo digo**: por qué el estado del gestor estaba rancio. Los
+  ficheros de unidad son del 25-jul y 9-jul, todos ANTERIORES al arranque, así
+  que no fue una edición sin recargar. **No verificado contra un reinicio
+  real**: puede repetirse.
+  **Corrección de una afirmación mía imprecisa**: dije "10 SIGKILL por memoria
+  contra `MemoryMax=4G`". Falso en la parte importante — el `MemoryMax` del
+  cgroup **nunca disparó** (cero OOM de cgroup en todo el journal), y earlyoom
+  mandó **SIGTERM 15 veces** (jul 10/11/12/23) pero **nunca SIGKILL**. Pico
+  real observado 3.655 MiB. Y sobre todo: **la caída actual no fue por
+  memoria**. Eran dos problemas distintos y los había mezclado.
+  **Vigilante construido** (`src/atlas/runtime/watchdog.py`, TDD real, 17
+  tests): 5 sondas (servicio, disco `/`, disco `/tmp`, memoria, cadena
+  Merkle), UN solo mensaje agregado, aviso en la TRANSICIÓN a mal estado,
+  silencio 12 h si sigue mal, y aviso de recuperación una sola vez. Regla del
+  operador: *"sólo lo grave, nada de ruido"*.
+  **Tres decisiones de diseño que vienen de fallos reales**: (a) una sonda que
+  no puede medir queda `ok=None` y **NO avisa** — confundir "no sé" con "está
+  roto" enseña a ignorar el canal; (b) si el ENVÍO falla no se persiste el
+  estado, porque marcarlo silenciaría la caída 12 h; (c) el vigilante corre en
+  un timer **independiente de atlas-core** — restricción que
+  `scripts/daemon_idle_guard.sh` ya había razonado: un radar dentro del daemon
+  jamás detecta que el daemon murió.
+  **Prior art respetado**: `daemon_idle_guard.sh` ya existía y cubre el aviso
+  al arrancar una sesión de agente. No lo sustituyo. Por qué no bastó: su
+  umbral es 24 h y esta caída duró 23 h (silencio correcto, daemon muerto
+  igualmente), y sólo corre en sesiones de agente, así que por diseño no puede
+  avisar a un humano ausente.
+  **Verificado de verdad, no afirmado**: las 5 sondas corridas contra esta
+  máquina; el camino de fallo probado entero (avisa 1×, calla a la hora,
+  repite a las 13 h); **mensaje real enviado a Telegram con autorización
+  explícita del operador y RECEPCIÓN EN EL MÓVIL CONFIRMADA POR ÉL** — el
+  canal está probado de punta a punta (sonda → decisión → API → móvil), no
+  sólo cableado. Timer instalado, `enabled`, `NEXT` programado.
+  **Estado**: daemon VIVO (arrancado con autorización), pico medido en vivo
+  3.074 MiB durante la reconstrucción del grafo.
+  **Credencial**: `HETZNER_API_TOKEN` borrado del `.env` por orden del
+  operador (cero referencias en código, ningún script usa `hcloud`; respaldo
+  previo en scratchpad). **Borrarlo NO lo invalida: hay que revocarlo en el
+  panel de Hetzner, y eso es del operador.**
+  **Próxima acción**: arreglar el bug de protocolo del worker de Hermes
+  (`worker exited cleanly (rc=0) without calling kanban_complete or
+  kanban_block`), y después el orden que fijó el operador: Cónclave ADR-069 →
+  dossier Osmosis → replanteo de UI.
+
 - **2026-07-31 (F1.4) — las 9 filas `CODE_PRESENT`+`TESTED` sin `WIRED` son 4
   sujetos, no 9 problemas. 2 corregidas, 7 confirmadas correctas.**
   Medido fichero a fichero con resolución de imports, no leído:
