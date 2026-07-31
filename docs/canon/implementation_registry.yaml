@@ -551,7 +551,21 @@ work_orders:
     source_decisions:
       - ADR-078
       - approved Workbench symbiosis design section 6
-    current_state: EngineeringFinding v1, an append-only local journal, lifecycle replay, deterministic deduplication, a SelfAuditFinding adapter, an EngineeringReviewCoordinator composed over UniversalVerifier, a capture-only EngineeringDiagnosticCoordinator composed over ValidationReport and an injected RootCauseClassifier, an opt-in Merkle-before-EventBus publisher, an explicit-acceptance baseline journal/selector, an ancestry-verified read-only Git diff preparer/runner composed over the existing coordinator, an exact-key incremental normalizer that never alters lifecycle, and an audited fail-closed Bwrap reproduction runner over immutable same-repository worktrees that exposes only receipted in-memory ValidationReport capture to diagnosis are code-present and tested; graph/history/memory hypotheses, correction production, runtime event wiring, Orchestrator integration, and a read-only API projection remain absent.
+    current_state: >-
+      CLOSED 2026-07-31, all 5 remaining pieces: Orchestrator maintenance
+      tick (opt-in, 24h cadence, Merkle-logged), runtime event wiring to the
+      real EventBus (Merkle-before-EventBus verified by a subscriber-side
+      audit_ref resolution test), a read-only API projection
+      (`GET /engineering/findings`, no mutating verbs), graph/history/memory
+      hypotheses (composes existing atlas.core.graphs.QUERIES + git log +
+      LessonStore, no new engine — verified with real data: 5 importers, 14
+      blast-radius, 101 commits), and correction production (routes a
+      finding's patch_ref to ColdUpdateManager.propose(), invariant "no
+      patch application from a finding" preserved). All 8 previously
+      code-present pieces (findings/review/diagnostics/events/baselines/
+      incremental/normalization/reproduction) plus these 5 now have real
+      callers outside src/atlas/engineering/ — verified by grep, not just
+      passing tests.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -607,7 +621,7 @@ work_orders:
       - failed reviewers produce UNKNOWN
       - proposals still pass governed approval paths
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-109
     program: P08
@@ -740,7 +754,15 @@ work_orders:
       - ADR-062
       - ADR-063
       - ADR-069
-    current_state: Multiple components participate in task lifecycle; no final service boundary has operator authority.
+    current_state: >-
+      Operator decision recorded 2026-07-31: accept ADR-069's
+      SELECTIVE_DURABLE_HISTORY recommendation (EDR-ADR-069, evidence
+      DEM-ADR-069-DURABLE-WORK). TaskPersistence recovery across a real
+      process boundary is built and tested
+      (tests/test_task_persistence_recovery.py); Mission recovery and
+      concurrent-writer throughput remain unmeasured. Multiple components
+      still participate in task lifecycle; the explicit unified interface
+      set is not yet built.
     target_state: One mutable-state owner with explicit Mission, Task, Orchestrator, Policy, and Evidence interfaces.
     scope:
       - Mission schema
@@ -763,8 +785,8 @@ work_orders:
     acceptance:
       - one authority per mutable state
       - migration and compatibility policy accepted
-    operator_decision_required: true
-    status: REQUIRES_OPERATOR
+    operator_decision_required: false
+    status: READY
 
   - id: ADC-WO-103
     program: P04
@@ -778,7 +800,17 @@ work_orders:
       - ADR-049
       - ADR-057
       - current operator directive invariants 16 and 17
-    current_state: Use-case-specific stores exist and are tested; cross-store promotion authority is not settled.
+    current_state: >-
+      Operator decision recorded 2026-07-31: accept ADR-057's
+      GOVERNED_PROMOTION direction (EDR-ADR-057, evidence
+      DEM-ADR-057-MEMORY-PROMOTION) — retain the three-layer topology, gate
+      future automatic low/medium promotion behind provenance, sensitivity,
+      corroboration and benchmark evaluation. LongMemEval_S n=500 measured
+      Recall@5 0.9300-0.9340 across modes as the retrieval-quality baseline;
+      this is the accepted direction, not an activated promoter. No
+      automatic promotion path exists or is authorized to run yet — the
+      maintenance/promoter boundary separate from the primary agent
+      required by the recommendation is still unbuilt.
     target_state: An operator-approved ownership map preserves private distillation, provenance, retention, deletion, and shared-graph boundaries.
     scope:
       - operational memory
@@ -804,8 +836,8 @@ work_orders:
     acceptance:
       - one owner per memory class
       - explicit promotion and deletion contracts
-    operator_decision_required: true
-    status: REQUIRES_OPERATOR
+    operator_decision_required: false
+    status: READY
 
   - id: ADC-WO-104
     program: P11

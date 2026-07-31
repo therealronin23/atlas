@@ -45,6 +45,14 @@ Semantic graph claims remain hypotheses until verified.
 This is not yet an implementation decision: no automatic promotion path or
 benchmark result is claimed by this dossier.
 
+**Operator decision recorded 2026-07-31**: accept the GOVERNED_PROMOTION
+direction. `docs/canon/implementation_registry.yaml` ADC-WO-103 moved
+`REQUIRES_OPERATOR` → `READY` (direction decided; automatic promotion is
+explicitly **not** authorized to run — the maintenance/promoter boundary
+separate from the primary agent still needs to be built and pass its own
+TDD cycle before activation). `docs/canon/open_questions.jsonl`
+`OPEN-OPERATOR-MEMORY-AUTHORITY` marked `RESOLVED`.
+
 ## Confidence and limits
 
 **Confidence:** medium-high (raised from `medium` on 2026-07-31 — LongMemEval

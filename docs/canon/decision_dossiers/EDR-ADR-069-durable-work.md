@@ -49,6 +49,13 @@ idempotency key, status query or reconciliation protocol.
 
 No runtime persistence migration is complete yet.
 
+**Operator decision recorded 2026-07-31**: accept this recommendation
+(SELECTIVE_DURABLE_HISTORY). `docs/canon/implementation_registry.yaml`
+ADC-WO-102 moved `REQUIRES_OPERATOR` → `READY` (decision made; the unified
+Mission/Task/Orchestrator/Policy/Evidence interface set described in its
+`target_state` is not yet built). `docs/canon/open_questions.jsonl`
+`OPEN-OPERATOR-MISSION-TASK` marked `RESOLVED`.
+
 ## Confidence and limits
 
 **Confidence:** medium-high (raised from `medium` on 2026-07-31 — the
