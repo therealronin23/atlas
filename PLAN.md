@@ -280,32 +280,48 @@ pregunta empírica; tampoco autoriza Native.
 | Destilación privada→shared no universal | P04/P05 | contrato y pipeline después del ADR de memoria |
 | LivingGraph sin importadores | P08 | decidir integrar o archivar; no llamarlo productivo |
 | Snapshot UI sin provenance/freshness | P08 | añadir schema/commit/date o mantener label fixture |
-| Plano findings/review/debug | P03/P08/P09 | contract/journal, ReviewCoordinator, diagnóstico, reproducción Bwrap auditada, publisher Merkle/EventBus, baseline explícito y normalización observacional de diff/review code+tests presentes; faltan hipótesis de grafo/historial/memoria, wiring runtime/Orchestrator y proyección gobernada (`ADC-WO-108`) |
+| Plano findings/review/debug | P03/P08/P09 | 2026-07-31 medido por resolución de imports: tick de Orchestrator, wiring de eventos y proyección read-only **CABLEADOS**; `hypotheses.py` (211 loc) y `correction.py` (104 loc) escritas ese día pero con **cero callers**; `reproduction.py` (489) y `diagnostics.py` (391) dormidas de antes. **1.315 loc sin cablear** (`ADC-WO-108`, devuelto a READY tras retractar una afirmación de cierre falsa) |
 | Workbench desktop integral | P08 | ADC-WO-109/110, después de boundaries R1 |
-| Desktop-control third-party | P08/P09 | ADC-WO-124; cuarentena por defecto hasta decisión, artefacto/receipt y E2E fresco |
-| Proyección Android | P08/P11 | ADC-WO-111, tras estabilizar Surface API/Workbench |
+| Desktop-control third-party | P08/P09 | **CERRADO 2026-07-31**: `computer-control-mcp==0.3.10` admitido con receipt Merkle revocable (hash recomputado en cada spawn, Xvfb-only); los 4 E2E reales corren y pasan. Revocable con `atlas mcp revoke-third-party` (`ADC-WO-124` DONE) |
+| Proyección Android | P08/P11 | **Fuera de alcance** por decisión del operador 2026-07-31; `ADC-WO-111` sigue BLOCKED y P08 queda incompleto en esa mitad |
 | Security Council no encola Task universalmente | P03/P09 | depende de Mission/Task boundary |
 | Unblock con actor no criptográfico | P01/P09 | incluir identidad/ceremonia en ADR futuro |
-| Hermes/pairing/node identity no live | P10 | ADC-WO-100 |
+| Hermes/pairing/node identity no live | P10 | 2026-07-31: el canal local **está VIVO** (`HermesKanbanAdapter`, `reachable=True`, kanban con cola real) — la afirmación previa de "solo mock" era un artefacto de que `reality.py` no cargaba `.env`. Falta ejecutar el smoke de pairing y registrarlo (`ADC-WO-100`, autorizado por el operador 2026-07-31) |
 | Judge vs baseline sin run real | P09 | ejecutar solo con presupuesto/autoridad de proveedor |
 | Membrane enforcement profile | P12 | ADC-WO-105 |
 | Native | P11 | ADC-WO-104 bloqueado |
 
 ## Decisiones reservadas al operador
 
-1. Mission/Task authority.
-2. Memory/Knowledge authority y promotion map.
-3. Alcance exacto y ADRs de boundary del Cut 2 integral, sin reabrir su
+Abiertas:
+
+1. Alcance exacto y ADRs de boundary del Cut 2 integral, sin reabrir su
    naturaleza ni el producto/host ya aceptados.
-4. Arquitectura de la proyección Android cuando sus dependencias estén listas.
-5. Cualquier cambio a high-sensitivity/human control.
-6. Credenciales y pairing Hermes externo.
-7. Guarantee profile de Osmosis.
-8. Apertura de Native Wave 5.
-9. Autorizar los POST mutantes del bridge 7341 mediante un nuevo boundary o
-   restaurar el contrato read-only de ADR-058/071 (`ADC-WO-107`).
-10. Admitir o mantener en cuarentena `computer-control-mcp==0.3.10` mediante
-    la vía de artefacto/receipt/aislamiento de `ADC-WO-124`.
+2. Cualquier cambio a high-sensitivity/human control.
+3. Pairing Hermes en vivo. *(2026-07-31: el canal local está VIVO —
+   `HermesKanbanAdapter`, `reachable=True`, kanban con cola. Ya no faltan
+   credenciales: falta ejecutar el smoke y registrarlo, autorizado.)*
+4. Guarantee profile de Osmosis (`ADC-WO-105`).
+5. Apertura de Native Wave 5 (`ADC-WO-104`).
+
+Cerradas el 2026-07-31:
+
+- **Mission/Task authority** → `EDR-ADR-069-durable-work.md`
+  (SELECTIVE_DURABLE_HISTORY); `ADC-WO-102` READY.
+- **Memory/Knowledge authority y promotion map** →
+  `EDR-ADR-057-memory-promotion.md` (GOVERNED_PROMOTION, dirección aceptada
+  sin activar promoción automática); `ADC-WO-103` READY.
+- **POST mutantes del bridge 7341** → **ADR-080**, excepción acotada: la
+  superficie de producto (Fase 15) sigue mutante, el núcleo sigue read-only,
+  y `business/core/activate|reject` ganaron receipt Merkle. `ADC-WO-107` DONE.
+- **`computer-control-mcp==0.3.10`** → admitido con receipt Merkle revocable
+  y los 4 E2E reales corriendo. `ADC-WO-124` DONE.
+
+Fuera de alcance por decisión del operador (2026-07-31):
+
+- **Arquitectura de la proyección Android** (`ADC-WO-111`). "Atlas terminado"
+  se define como Workbench desktop Linux aceptado E2E. Consecuencia asumida
+  y no disimulada: **P08 queda incompleto en su mitad Android**.
 
 Los defaults fail-closed están registrados en
 `docs/canon/open_questions.jsonl`. Una decisión sobre un lote no bloquea trabajo

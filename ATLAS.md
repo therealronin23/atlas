@@ -148,8 +148,11 @@ Límites actuales que deben permanecer visibles:
 - ADR-077 A/B/D tienen implementación parcial y el proceso observado tenía el
   flag configurado; C (escalado universal a `Task.AWAITING_APPROVAL`) falta y
   no hay evidencia fresca de tráfico exitoso;
-- el bridge 7341 contradice el boundary read-only de ADR-058/071 por sus POST
-  mutantes; queda elevado al operador en `ADC-WO-107`;
+- el bridge 7341 tiene una **excepción acotada aceptada** (ADR-080,
+  2026-07-31): la superficie de producto de Fase 15 (Fabric, onboarding,
+  Business Core) es mutante por diseño, mientras las rutas del núcleo siguen
+  read-only según ADR-058/071. `business/core/activate|reject` escriben
+  receipt Merkle verificable (`ADC-WO-107` DONE);
 - Hosted Linux es el sustrato actual; Native Wave 5 sigue bloqueada;
 - Membrane/Osmosis permanece como programa propio, con una sola promoción
   acotada mediante ADR-074.

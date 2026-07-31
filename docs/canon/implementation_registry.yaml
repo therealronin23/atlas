@@ -1,7 +1,7 @@
 schema_version: 1
 candidate: ATLAS_DEFINITIVE_CANDIDATE
-generated_at: "2026-07-28"
-base_commit: c95038c9d7e97ddc6339f38abe6dad09b166f47d
+generated_at: "2026-07-31"
+base_commit: 11301e053a4029fb8ff6b6b5a1e2508dd2531dbd
 status_vocabulary:
   - READY
   - BLOCKED
@@ -805,7 +805,7 @@ work_orders:
       - bypassed approval gates
     rollback: Retain current APIs and introduce no migration until an accepted ADR defines compatibility.
     dependencies:
-      - explicit operator boundary decision
+      - "operator boundary decision recorded 2026-07-31 (EDR-ADR-069-durable-work.md)"
     acceptance:
       - one authority per mutable state
       - migration and compatibility policy accepted
@@ -856,7 +856,7 @@ work_orders:
       - dual authority
     rollback: Preserve ADR-057 use-case authorities and prohibit new automatic promotion.
     dependencies:
-      - explicit operator memory decision
+      - "operator memory decision recorded 2026-07-31 (EDR-ADR-057-memory-promotion.md)"
     acceptance:
       - one owner per memory class
       - explicit promotion and deletion contracts

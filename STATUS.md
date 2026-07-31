@@ -306,8 +306,14 @@ prueban el worktree candidato, tráfico de todos los gates ni producto aceptado.
 
 ## Pendiente, aparcado, bloqueado y supersedido
 
-- **Pendiente operador:** Mission/Task, memory authority, boundaries exactos
-  del Cut 2, arquitectura Android, Hermes live y Osmosis enforcement.
+- **Pendiente operador:** boundaries exactos del Cut 2, Hermes live y Osmosis
+  enforcement. *(Mission/Task y memory authority cerradas el 2026-07-31 —
+  EDR-ADR-069 y EDR-ADR-057; frontera del bridge 7341 cerrada por ADR-080;
+  admisión del MCP de escritorio cerrada en ADC-WO-124.)*
+- **Fuera de alcance declarado:** proyección Android (`ADC-WO-111`), por
+  decisión del operador 2026-07-31. "Atlas terminado" = Workbench desktop
+  Linux aceptado E2E; **P08 queda incompleto en su mitad Android** y este
+  documento no lo disimula.
 - **Aparcado:** Native research y surfaces de producto posteriores.
 - **Bloqueado:** Native Wave 5; cualquier debilitamiento de high; MCP remote
   executable auto-adoption.

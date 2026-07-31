@@ -261,3 +261,18 @@ todo lo anterior encima. Reabrir es decisión N3 (dinero + credenciales).
   final). T0 en curso (spec B+C aprobada en arquitectura; F2 le dio la
   primera generación manual). Próxima acción: revisión del operador de este
   plan + spec B+C → writing-plans de T0.1-T0.2.
+- 2026-07-31: **T0 y T1 cerrados** (14/14 ítems `t1-` en `done`). **T3.1
+  desbloqueado**: `computer-control-mcp` admitido con receipt Merkle
+  revocable y los 4 E2E reales corriendo contra Xvfb (ADC-WO-124). **T5.1**
+  cerrada desde el 17-jul. **T2 es el ÚNICO tramo entero pendiente**: sus 8
+  ítems siguen sin hacer y el Cónclave (quórum 3/3 real) dio `FAIL` al stack
+  por benchmark demasiado estrecho — antes de medir más ancho hay que
+  replantear cuánta superficie cubre ya el Workbench CodeOSS de ADR-078.
+  **Android queda FUERA de alcance** por decisión del operador: "Atlas
+  terminado" = Workbench desktop Linux aceptado E2E.
+  Dato duro que ordena la prioridad: **cero `LIVE_VERIFIED` en los 142
+  registros** de la matriz de realidad — T6.1/Hermes (ya vivo en local, solo
+  falta el smoke) es la vía más corta al primero.
+  Próxima acción: plan vivo en `~/.claude/plans/stateless-prancing-pebble.md`
+  — F0 integridad → F1 cablear los 1.315 loc dormidos de
+  `src/atlas/engineering/` → F2 dossier Osmosis + smoke Hermes → F3 UI.

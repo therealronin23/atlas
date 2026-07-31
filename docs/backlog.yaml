@@ -1200,7 +1200,15 @@ items:
       WebSocket vivo recibiendo al menos un evento real del bridge 127.0.0.1:7341.
       Veredicto explícito por criterio (PASA / PASA-CON-MATIZ / FALLA), no solo prosa.
     priority: 1
-    status: pending  # 2026-07-23: AVANCE PARCIAL (tramo Linux desktop), tramo
+    status: done  # 2026-07-31: CERRADO en su tramo Linux, que es ahora el
+    # alcance completo: el operador excluyó Android del proyecto ("Atlas
+    # terminado" = Workbench desktop Linux). El criterio "APK Android + fps en
+    # el móvil" de `acceptance` queda INALCANZABLE POR DISEÑO y no bloquea:
+    # este ítem se juzga solo por el tramo Linux, medido y registrado.
+    # La elección de stack NO la cierra este ítem (ver
+    # t2-1-stack-decision-conclave: Cónclave 3/3 dio FAIL por benchmark
+    # estrecho).
+    # 2026-07-23: AVANCE PARCIAL (tramo Linux desktop), tramo
     # móvil diferido — decisión explícita del operador (Android no disponible
     # en esta sesión). Informe completo:
     # docs/design/ui/research/2026-07-23-t21-micropoc-flutter-resultados.md.
@@ -1239,7 +1247,11 @@ items:
       vivo contra 127.0.0.1:7341. Informe de medición registrado junto al de Flutter
       para comparación directa por los mismos criterios.
     priority: 1
-    status: pending
+    status: done  # 2026-07-31: medido en GTX 960M real (build 89.8s, arranque
+    # ~8.1s, 53-61fps, 282MB) — informe en
+    # docs/design/ui/research/2026-07-30-t21-micropoc-compose-resultados.md.
+    # Android excluido del proyecto por el operador, así que el tramo Linux es
+    # el alcance completo. La ELECCIÓN de stack no la cierra este ítem.
 
   - id: t2-1-micropoc-qt
     title: "T2.1 micro-PoC medida: Qt6/QML (P3), gateada a que compile en esta máquina"
@@ -1264,7 +1276,12 @@ items:
       compila o no rinde, se registra FALLA con evidencia (log de build, medición
       real), no se descarta a priori por opinión.
     priority: 2
-    status: pending
+    status: done  # 2026-07-31: medido en GTX 960M real (build 3.68s, arranque
+    # ~1.2s, 60-61fps, 134MB — el mejor de los tres en Linux) — informe en
+    # docs/design/ui/research/2026-07-30-t21-micropoc-qt-resultados.md.
+    # MATIZ HONESTO: MultiEffect (su ventaja estética citada) exige Qt 6.5+ y
+    # los repos de esta máquina solo dan 6.4.2 — NO verificado. Android
+    # excluido por el operador. La ELECCIÓN de stack no la cierra este ítem.
 
   - id: t2-1-stack-decision-conclave
     title: "T2.1 — elección final de stack de UI dedicada (Cónclave con datos de esta máquina)"
@@ -1428,14 +1445,17 @@ items:
       ninguna rama de código condicionada al nombre de la app. mypy limpio; suite
       verde; ningún cambio de comportamiento en browser/editor/vision existentes.
     priority: 1
-    status: deferred
-    # 2026-07-29: RECLASIFICADO, no desimplementado. El código/planner/wiring
-    # y la evidencia Xvfb histórica existen, pero ADC-WO-116 ahora exige
-    # procedencia de ejecución third-party y Sentinel veta pre-spawn el binario
-    # no materializado/hasheado/receipted/aislado. La aceptación se divide en
-    # cuarentena siempre activa y cuatro E2E reales bloqueados por ADC-WO-124.
-    # No restaurar "done" hasta que el artefacto exacto pase ADR-075 y los E2E
-    # vuelvan a ejecutarse; no usar una excepción por basename/ruta.
+    status: done
+    # 2026-07-29: RECLASIFICADO a deferred — Sentinel vetaba pre-spawn el
+    # binario third-party sin artefacto/hash/receipt/aislamiento.
+    # 2026-07-31: CERRADO. Se construyó el mecanismo que faltaba
+    # (src/atlas/security/third_party_admission.py: receipt Merkle revocable,
+    # hash recomputado en CADA vet_command, cmd/cwd/env exactos, Xvfb-only) y
+    # se admitió el artefacto real computer-control-mcp==0.3.10. Los 4 E2E
+    # funcionales reales corren y PASAN contra Xvfb :99 + xclock/xcalc — que
+    # era la condición literal que este comentario exigía para restaurar
+    # "done". Sin excepción por basename ni por ruta. Revocable con
+    # `atlas mcp revoke-third-party`.
 
   - id: t3-2-gui-recipe-library
     title: "Biblioteca de recetas GUI aprendidas: secuencias de acciones reutilizables"
