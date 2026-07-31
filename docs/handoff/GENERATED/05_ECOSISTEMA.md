@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-31T13:43:30.335467+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-31T13:54:56.727354+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # Mapa del ecosistema — resumen
 

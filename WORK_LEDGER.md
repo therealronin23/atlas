@@ -38,9 +38,10 @@ de escribir: `atlas reality --json`.
   aislar). Consecuencia real: esa salida alimentó la afirmación de canon de
   ADC-WO-100 ("Hermes solo existe como mock").
   **Hallazgo de seguridad reportado, NO tocado**: `VPS_ROOT_PASSWORD` en
-  texto plano en `.env:81` (root de `100.108.132.116`, junto a
+  texto plano en `.env:81` (credencial root del VPS, junto a
   `HETZNER_API_TOKEN` full-access). `.env` gitignored y nunca commiteado.
-  Decisión del operador.
+  Decisión del operador. (Host y valor deliberadamente omitidos aquí: este
+  fichero se publica.)
   **Estado medido**: suite 4854 passed, mypy 337 ficheros, `check_canon.py`
   PASS (2105 registros).
   **Próxima acción**: plan completo en
