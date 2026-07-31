@@ -8,6 +8,42 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (F1.3 cierre) — `reproduction.py` no estaba dormido: estaba
+  ROTO, y fallaba en la dirección peligrosa. 1.211 de 1.315 loc despiertos.**
+  **El defecto, medido con una corrida real contra `BwrapJail`, no deducido**:
+  reproducir un test que PASA devolvía `FAILED`, `exit=1`, en 64 ms, con
+  `/usr/bin/python3.12: No module named pytest` en stderr.
+  Causa exacta: `reproduction.py:304` hacía `Path(sys.executable).resolve()`.
+  En un venv, `bin/python` es un symlink al intérprete del sistema y seguirlo
+  **se sale del virtualenv**; `_runtime_paths()` monta `sys.prefix` (el venv,
+  donde SÍ está pytest) pero el intérprete resuelto ya no lo mira. Fuera del
+  jail el fallo era invisible porque el python del sistema encontraba pytest
+  en `~/.local/`, que dentro del jail no se monta.
+  **Por qué importa la dirección del fallo**: no decía "no puedo", decía
+  **FAILED con confianza**. Cableado tal cual, habría marcado como
+  "reproducido fallando" absolutamente todo — un reproductor que miente es
+  peor que no tener reproductor.
+  **Por qué 1.868 loc de tests del paquete no lo cazaron**:
+  `EngineeringReproductionRunner` acepta `jail=` inyectable y los tests le
+  pasan un jail falso, así que la ruta real con `BwrapJail` **nunca se
+  ejecutó**. Es la lección de ADC-WO-108 otra vez, en otro módulo: tests en
+  verde no son evidencia de que algo funcione.
+  **Arreglo + prueba real**: quitar el `.resolve()` (TDD, RED verificado).
+  Tras el arreglo, la MISMA corrida real da `PASSED`, `exit=0`, 20 tests
+  dentro del jail en 1.066 ms.
+  **Cableado** (F1.3 decidido: cablear, no archivar — ya funciona y tiene
+  papel claro): `maintenance_engineering_review_tick` reproduce los tests
+  impactados por el delta (`impacted_tests`, tope 16 targets) en worktree
+  efímero dentro del jail sin red, con receipt Merkle. Nada más en el repo
+  produce esa evidencia: el hook de pre-commit corre tests, pero ni aislado
+  ni auditado. Ojo al detalle que costó un intento: `_SAFE_ID` no admite
+  '/', así que `repository` es el NOMBRE del repo, no su ruta.
+  **Radar**: 13→12 dormidos. `reproduction`/`diagnostics`/`hypotheses`
+  CABLEADOS; sólo queda `correction.py` (104 loc), bloqueado en la decisión
+  del Cónclave sobre ADR-069.
+  **Próxima acción**: F1.4 (los `CODE_PRESENT`+`TESTED` sin `WIRED` de la
+  matriz) — no depende de ninguna decisión del operador.
+
 - **2026-07-31 (F1.3+F1.1) — 602 de los 1.315 loc dormidos, DESPIERTOS. Y la
   fase estaba ordenada al revés: lo descubrí midiendo, no leyendo.**
   **El hallazgo que reordena F1.** Los 1.315 loc no eran cinco piezas

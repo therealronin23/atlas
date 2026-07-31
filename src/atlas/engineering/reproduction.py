@@ -301,7 +301,14 @@ class EngineeringReproductionRunner:
             raise ValueError("reproduction requires between 1 and 16 test targets")
         targets = tuple(self._validate_target(target) for target in request.test_targets)
         return (
-            str(Path(sys.executable).resolve()),
+            # SIN `.resolve()`: en un venv, `bin/python` es un symlink al
+            # intérprete del sistema y seguirlo SE SALE del virtualenv --
+            # `_runtime_paths()` monta `sys.prefix` (donde vive pytest) pero
+            # el intérprete resuelto ya no lo mira. Medido el 2026-07-31 con
+            # una corrida real: reproducir un test que pasa daba FAILED en
+            # 64 ms con "No module named pytest". El peor fallo posible para
+            # un reproductor: no dice "no puedo", dice FAILED con confianza.
+            sys.executable,
             "-m",
             "pytest",
             "-q",

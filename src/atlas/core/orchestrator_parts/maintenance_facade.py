@@ -1454,11 +1454,56 @@ class MaintenanceFacade:
         except Exception:  # noqa: BLE001 — señal, jamás rompe el tick
             hypotheses_written = 0
 
+        # ADC-WO-108 (F1.3, 2026-07-31): reproducción AUDITADA de los tests
+        # impactados por el delta, en worktree efímero dentro del jail sin red.
+        # Nada más en el repo produce esta evidencia: el hook de pre-commit
+        # corre tests, pero ni aislado ni con receipt Merkle.
+        # Se arregló antes un defecto medido que lo hacía inservible: resolvía
+        # el symlink de `sys.executable` y se salía del venv, así que devolvía
+        # FAILED con confianza para CUALQUIER test. Ver reproduction.py:304.
+        reproduction_status = None
+        try:
+            from atlas.core.swarm_backend import WorktreeManager
+            from atlas.engineering.impacted_tests import impacted_tests
+            from atlas.engineering.reproduction import (
+                EngineeringReproductionRequest,
+                EngineeringReproductionRunner,
+            )
+
+            changed = _rev("diff", "--name-only", f"{parent}..{head}") if parent else None
+            targets = tuple(
+                impacted_tests(changed.splitlines(), root=root)[:16]
+            ) if changed else ()
+            if targets and parent:
+                report = EngineeringReproductionRunner(
+                    repo_root=root,
+                    worktrees=WorktreeManager(root),
+                    audit=self._orch._merkle,
+                ).reproduce(
+                    EngineeringReproductionRequest(
+                        run_id=f"maintenance-{today}",
+                        task_id=None,
+                        mission_id=None,
+                        # `_SAFE_ID` no admite '/': el NOMBRE del repo, no su ruta.
+                        repository=root.name,
+                        base_revision=parent,
+                        candidate_revision=head,
+                        correlation_id=f"engineering-review-{today}",
+                        test_targets=targets,
+                        at=datetime.now(timezone.utc).isoformat(),
+                        timeout_s=240,
+                    )
+                )
+                reproduction_status = report.status.value
+        except Exception:  # noqa: BLE001 — señal, jamás rompe el tick
+            reproduction_status = None
+
         result: dict[str, Any] = {
             "reviewed": reviewed,
             "verdict": verdict,
             "findings": finding_count,
             "hypotheses_written": hypotheses_written,
+            "reproduction": reproduction_status,
             "events_published": published,
             "journal_total": findings.count(),
             "base_revision": parent,
