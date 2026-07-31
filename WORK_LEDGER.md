@@ -8,6 +8,44 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (Hermes) — el "bug del worker" NO era nuestro: era un bug de
+  terceros YA ARREGLADO upstream. Actualizado `f64e4f4` → `v2026.7.30`.**
+  **Lo que cambió el encuadre**: `~/.hermes/hermes-agent` es un clon de
+  `NousResearch/hermes-agent`, código de TERCEROS. Nuestro checkout era del
+  2026-07-08 — el mismo día en que se crearon las tareas que se bloquearon —
+  y estaba **19.483 commits por detrás**, con el subsistema kanban reescrito
+  (`kanban_db.py` +1.543 líneas).
+  **El arreglo ya existía upstream**: el worker enruta ahora por
+  `_record_task_failure(outcome="timed_out")` *"rather than treating it as a
+  protocol violation"*, citando su propio issue (#29747 gap 2). Parchear
+  nuestra copia habría sido un fork sin mantenedor de un proyecto que saca
+  release semanal, para arreglar algo ya arreglado.
+  **Límite de confianza declarado**: verifiqué que upstream cubre la ruta de
+  "presupuesto de iteraciones agotado" con nuestra misma clase de error. **NO
+  puedo probar** que nuestras 2 tareas concretas murieran por ese sub-camino
+  exacto: los logs de aquellas ejecuciones ya no existen.
+  **Actualización ejecutada con autorización del operador**, con reversión
+  preparada ANTES de tocar nada: respaldo de `kanban.db`/`config.yaml`/
+  `auth.json` + commit anterior en `~/.hermes-backup-20260731-191459`, y
+  runbook de rollback escrito. Riesgo real reducido por dos hechos medidos:
+  el checkout estaba LIMPIO (cero modificaciones nuestras que preservar) y
+  upstream trae migraciones ADITIVAS que contemplan BDs *"partially migrated
+  in older releases"*. Se fue a un TAG, no a `main`.
+  **Un paso casi dado por bueno sin serlo**: `pip install -e .` falló en
+  silencio porque el venv **no tiene pip** (lo gestiona `uv`), y el
+  `import hermes_cli` posterior seguía funcionando con el código ya instalado.
+  El exit code no lo delataba. Cazado mirando la salida. Mismo patrón que
+  `reproduction.py`: algo que "pasa" sin haber hecho nada. Resuelto con
+  `uv sync --frozen`.
+  **Verificado tras arrancar, no afirmado**: corriendo `v2026.7.30`; gateway
+  `active`; **las 19 tareas intactas con la distribución EXACTA de antes**
+  (11 done / 4 blocked / 3 todo / 1 ready); Atlas sigue viendo
+  `hermes.mode=kanban_local`.
+  **El smoke SIGUE PARADO** por decisión del operador sobre las 3 tareas
+  "monitoriza servidor A/B/C", que son intención real suya. `live_verified`
+  sigue `False` a propósito — exige una delegación real que no se ha hecho.
+  **Próxima acción**: Cónclave ADR-069 → dossier Osmosis → replanteo de UI.
+
 - **2026-07-31 (vigilante) — el lazo autónomo llevaba ~23 h MUERTO y nadie se
   enteró. Ahora hay un vigilante que avisa por Telegram cada 15 min.**
   **Cómo se descubrió**: el operador pidió investigar por qué el grafo Kuzu
