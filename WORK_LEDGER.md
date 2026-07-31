@@ -55,8 +55,29 @@ de escribir: `atlas reality --json`.
   **Decisión del operador sobre Hermes**: las 3 tareas `blocked`
   "monitoriza servidor A/B/C" son **intención real suya**; F2.2 **para antes
   del smoke** y le lleva qué haría falta para que funcionen de verdad.
-  **Próxima acción**: Cónclave del productor de parches (F1.2 ampliado), y
-  decidir `reproduction.py` (F1.3 restante).
+  **Medido DESPUÉS de commitear, para que nadie lo re-derive**: el productor
+  de parches **ya existe casi entero** en la ruta dorada.
+  `missions/golden_route.py` tiene `unified_patch_for_append()` y
+  `unified_patch_for_rename()` más la cadena gobernada completa (worktree →
+  validación → soul_review → aprobación humana → apply con receipt). Lo que
+  NO existe es un planificador: ADR-069 dejó escrito, a propósito, *"sin LLM:
+  la petición se parsea determinista; lo que no entiende se rechaza con
+  honestidad, no se improvisa"* y *"ampliar el vocabulario sigue siendo
+  trabajo futuro"*.
+  Eso parte F1.2 en dos opciones que NO son la misma decisión:
+  (a) adaptador determinista finding→vocabulario actual (append/rename):
+  barato y seguro, pero casi inútil — los findings son fallos de validación y
+  "añade una línea a un doc" no los arregla; cablearía `correction.py` sin que
+  sirviera, otro cableado hueco;
+  (b) planificador con LLM: es lo que lo haría útil, y es exactamente la línea
+  que ADR-069 trazó a propósito — exige ADR nuevo y revisión de seguridad.
+  **La pregunta del Cónclave no es "cómo genero parches" sino "¿cruzamos la
+  línea de ADR-069, o aceptamos que `correction.py` sólo sirve si la
+  cruzamos?"**
+  **Próxima acción**: Cónclave con esa pregunta, y decidir `reproduction.py`
+  (489 loc; tiene `to_validation_report()`, o sea produce el MISMO contrato
+  `ValidationReport` que ahora consume el puente — sospecha no verificada: es
+  el reproductor de fallos aguas arriba de `diagnostics`).
 
 - **2026-07-31 (F0.2) — el radar de código dormido pasa de regex a AST: veía
   2 dormidos donde había 16.**
