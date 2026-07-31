@@ -1,70 +1,62 @@
-<!-- GENERADO por atlas handoff 2026-07-30T21:12:18.432350+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-31T00:12:53.280453+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
-- **2026-07-30 — plan "el montón": F2.6 2/6→5/6, enforcer de cifras real,
-  nvidia_mistral_large diagnosticado (410 Gone real, no bug), tick de
-  compliance del workbench cableado.**
-  **F2.6** (test de sucesión): causa real no era la rúbrica — el driver
-  (`gemini_free`, L1 por defecto) se quedaba sin texto en el turno 3.
-  Arreglado en dos frentes elegidos por el operador: (1) bug de calibración
-  real en item_4 (`historical_language` solo reconocía español; `AGENTS.md`
-  usa "SUPERSEDED"/"historical" en inglés — ampliado); (2) scaffolding
-  reforzado en `f26_agentic_dispatch.py` (prohíbe terminar vacío, exige
-  contestar cada pregunta numerada, exige `GoldenRoute` antes de `Edit` en
-  docs rastreados, exige citar rutas exactas) + nivel subido L1→L2. Dos
-  corridas reales verificadas: 2/6 → 3/6 → 5/6. Único fallo restante,
-  `item_2`: el heurístico no distingue "leer AGENTS.md para conocer la regla
-  grafo-primero" de "ignorar la regla" — límite de la rúbrica, NO tocado
-  (`f26_grading.py` solo cambió en el fix de item_4, según lo acordado).
-  Aparte, aplicado el diff ya preparado a `AGENTS.md` (afirmación falsa de
-  auto-regeneración del grafo) — no es el fix de F2.6, corrección de
-  exactitud independiente.
-  **Enforcer de cifras** (`reality.py:_docs_state`): escaneaba
-  `["AGENTS.md","CLAUDE.md","ROADMAP.md"]`, 2 de 3 inexistentes → verde
-  vacío. Rediseñado: NO "escanear todo .md" (WORK_LEDGER.md es log
-  append-only por diseño, escanearlo lo dejaría "stale" para siempre sin
-  señal real) sino los docs cuyo ROL es declarar un resumen único
-  (`STATUS.md`, `docs/handoff/GENERATED/00_ESTADO.md`), con regex anclado a
-  `N passed` (el genérico `\d+ (tests?|passed|...)` sobre-matcheaba dentro
-  del mismo doc: "19 tests" del paquete ZIP, "37 tests" de un hallazgo
-  histórico). Contra el repo real: `stale`, 4692 (STATUS.md) vs 4716
-  (00_ESTADO.md). Diff de reconciliación de `STATUS.md` preparado
-  (scratchpad, NO aplicado — cifra real medida hoy: **4774 passed, 6
-  skipped, 27 deselected**, mypy 334 ficheros, suite completa ~10min);
-  `00_ESTADO.md` NO se reconcilia a mano (`atlas handoff --help`: "GENERADO
-  desde el sustrato... nunca a mano" — confirmado `STALE` vía
-  `atlas handoff --check`, se regenera después de reconciliar `STATUS.md`).
-  **nvidia_mistral_large**: investigado, NO es bug — 410 Gone real del
-  vendor desde 2026-07-23 (confirmado con Merkle: 7 días consecutivos
-  muerto). Corregí una lectura mía anterior: el label del Cónclave por
-  linaje (no por vendor de hosting) es diseño deliberado y testeado, no un
-  fallo de atribución. Patrón ya establecido en el repo (asiento CN pasó por
-  esto 2 veces): remapear a un NIM nuevo tras prove-it en vivo, no retirar
-  en silencio — remapeo requiere investigación de catálogo aparte, NO
-  ejecutado en este plan.
-  **`t4-workbench-compliance-review-tick`**: 107 hallazgos acumulados desde
-  2026-07-23 (`workspace/mcp/workbench_compliance_findings.jsonl`), nada los
-  leía. `summarize_compliance_findings` (`workbench_compliance.py`) cuenta
-  total/recientes (ventana 24h) y decide veredicto honesto
-  (`no_findings`/`normal`/`elevated`, umbral 20) sin borrar ni mutar el
-  fichero. Tick mismo patrón que `provider_status`/`provider_discovery`
-  (opt-in, guardia anti-recursión, cadencia 24h, Merkle, cableado en
-  `atlas reality`). Corrida real: `total=107, recent=38, verdict=elevated`.
-  TDD en las 4 piezas de este frente, RED verificado en cada una. 90 tests
-  impactados, 1315 passed/1 skipped, mypy limpio. Suite completa verificada
-  aparte (ver arriba): 4774 passed, exit 0.
-  **Pedido del operador a mitad de sesión**: alcance de T2.1 excluye Android
-  hasta que lo pida explícitamente — los micro-PoC de Flutter/Compose se
-  quedan en el tramo Linux, sin medición de teléfono.
-  **T2.1 PAUSADA — bloqueo real de hardware, no mío**: al verificar el
-  renderer del micro-PoC Flutter, `nvidia-smi` falla ("Driver/library
-  version mismatch", kernel 535.309.01 vs NVML 580.173.02, ambas familias
-  de paquetes de driver coexistiendo); forzar offload
-  (`__NV_PRIME_RENDER_OFFLOAD=1`) da error X real (`BadValue`), no
-  fallback silencioso. **El informe de medición existente de Flutter
-  (2026-07-23, PASA, 58-61fps) casi seguro midió la iGPU Intel HD 530, no
-  la GTX 960M** — veredicto en duda hasta remedir. Requiere `apt` +
-  reinicio de la máquina real, fuera de lo que toco sin permiso. Operador
-  eligió parar toda la Fase 2 aquí y arreglar el driver por su cuenta;
-  próxima acción cuando confirme `nvidia-smi`/`glxinfo -B` con la GPU real.
+- **2026-07-30/31 — T2.1 los 3 candidatos medidos, dos causas raíz del
+  Cónclave arregladas, ADC-WO-108 despertado (1/5).**
+  **T2.1 REANUDADA Y CERRADA en su tramo Linux**: el operador arregló el
+  driver NVIDIA (paquetes 535 fuera) y, con permiso explícito, cambió a
+  `prime-select nvidia` + reinicio. Los tres candidatos medidos en la GTX
+  960M REAL: Qt 3.68s build/~1.2s arranque/60-61fps/134MB; Flutter
+  31.58s/~1.5s/53-61/186MB; Compose 89.8s/~8.1s/53-61/282MB. Los tres PASA.
+  **Corrección medida**: el informe de Flutter de 2026-07-23 (58-61fps) había
+  medido la iGPU Intel, no la dGPU. Hallazgo permanente: forzar la dGPU vía
+  PRIME offload en modo `on-demand` **revienta GTK3 con segfault real**
+  (`systemd-coredump`); solo `prime-select nvidia` fijo funciona. Matiz
+  honesto de Qt: `MultiEffect` (su ventaja estética citada) exige Qt 6.5+ y
+  los repos de esta máquina solo dan 6.4.2 — NO verificable aquí.
+  `UI_QUALITY_GATE` pasó de fixture-demo de 2 líneas a esquema real (8
+  preguntas + checklist de rechazo) aplicado a los tres; los tres dan
+  `passed:false` POR DISEÑO (bancos de prueba de una pantalla, no producto).
+  **Cónclave: DOS causas raíz, ambas medidas.** (1) `nvidia_glm` no devuelve
+  error, SE CUELGA (probe aislado, exit 124 a los 150s) — y
+  `INFER_REQUEST_TIMEOUT_S` era tope POR INTENTO, no presupuesto total, así
+  que un colgado costaba 120s×3=360s; con el panel recorriendo reviewers EN
+  SERIE, hasta 18min. Arreglado con presupuesto total: **360s → 123.0s
+  medido**. (2) El fallback de linaje estaba CONSTRUIDO pero INALCANZABLE en
+  2 de 3 asientos: `_walk_chain` filtra por nivel de forma dura y
+  `build_trio_reviewers` pedía siempre `primary.level` (US L0→L1, CN L2→L0;
+  solo EU coincidía). Los 4 tests previos verificaban qué proveedores lleva
+  el hub, ninguno que se llegara a ellos al LLAMAR — wire-before-claim.
+  **Medido: el asiento CN pasó de `reachable=False` a `reachable=True`.**
+  **Regresión real cazada de paso**: `inference_hub.py` perdió su
+  `load_dotenv()` en `5da5f5f` (2026-07-16) como efecto colateral no
+  mencionado de un refactor a import perezoso de litellm; ~2 semanas sin que
+  nada lo notara. Restaurarlo destapó dos fugas de aislamiento en tests (un
+  test "aislado" hacía una llamada REAL a Gemini) y los 3 flags de tick de
+  esta sesión sin scrubbear en `conftest.py`.
+  **ADC-WO-108 (único WO `READY` del canon) 1/5**: `src/atlas/engineering/`
+  eran 2209 líneas de producción + 1868 de tests con CERO callers — completo,
+  testeado y dormido. Cableado el tick de Orchestrator componiendo lo que ya
+  existía (baselines+preparer+coordinator+store, verificador
+  `UnifiedDiffVerifier`), no otro verificador. Corrida real sobre el delta
+  del repo: `verdict: pass`. Proyectado en `atlas reality`.
+  **Corrección a trabajo mío del mismo día**: mi enforcer de cifras escaneaba
+  `docs/handoff/GENERATED/00_ESTADO.md`, que es la proyección LITERAL del
+  bloque `## WHERE` de este ledger — incoherente con excluir el ledger. Ya
+  solo mira `STATUS.md`.
+  **Estado medido ahora**: suite completa **4807 passed, 6 skipped, 27
+  deselected** (exit 0, 475s); mypy **334 ficheros** limpio; Merkle íntegra.
+  `cold_update` sigue `degraded` y NO es estado rancio: sus 20 fallos son la
+  firma exacta de la regresión `e93734c` (sandbox anidado + tests que
+  necesitan red, dentro de un BwrapJail sin red) — seguirá así hasta que eso
+  tenga solución arquitectónica.
+  **Próxima acción**: ADC-WO-108 2/5 (eventos runtime al EventBus, Merkle
+  ANTES que bus), luego 3/5 proyección read-only en API (estrictamente sin
+  verbos mutantes: ADC-WO-107 es REQUIRES_OPERATOR), 4/5 hipótesis
+  graph/history/memory, 5/5 producción de correcciones (jamás aplica un
+  parche desde un finding; sale por ColdUpdate/GoldenRoute).
+  **Pendiente del operador**: 3 diffs propuestos en scratchpad (STATUS.md
+  cifras, `backlog.yaml`, decisión nº10 ADC-WO-124 que falta en
+  `OPERATOR_DECISIONS_REQUIRED.md`). Android sigue EXCLUIDO por orden
+  expresa.

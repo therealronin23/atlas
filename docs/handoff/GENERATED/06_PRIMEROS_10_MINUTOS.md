@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-30T21:12:18.432350+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-31T00:12:53.280453+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # Primeros 10 minutos — arranque en frío
 
