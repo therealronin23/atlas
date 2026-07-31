@@ -8,6 +8,38 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (F1.4) — las 9 filas `CODE_PRESENT`+`TESTED` sin `WIRED` son 4
+  sujetos, no 9 problemas. 2 corregidas, 7 confirmadas correctas.**
+  Medido fichero a fichero con resolución de imports, no leído:
+  **(1) Plano de findings — 2 filas (`CMP-ENGINEERING-FINDING-PLANE`,
+  `CAP-ENGINEERING-FINDING`): CANON DESINCRONIZADO POR MI PROPIO TRABAJO DE
+  HOY.** Su `next_action` decía literalmente *"Add graph/history/memory
+  hypotheses, then inject the publisher through governed runtime/Orchestrator
+  paths without granting patch application"* — que es exactamente lo hecho en
+  F1.1/F1.3. 10 de sus 11 ficheros tienen callers reales. Añadido `WIRED` y
+  reescrito `next_action` con los huecos **nombrados, no escondidos**:
+  `core_bridge.py` sigue sin cablear y `correction.py` no tiene productor de
+  parches. `check_canon.py` PASS; diff acotado a 2 líneas.
+  **(2) Proyección Event Kernel — 2 filas** (`core_bridge.py` + `store.py`,
+  duplicadas): `store.py` tiene 12 callers, `core_bridge.py` CERO. La fila se
+  queda correctamente SIN `WIRED`: lo que el nombre describe —la proyección—
+  es justo la mitad que no está cableada. Ya tiene motivo escrito (PARK,
+  ADR-058: nada vivo lo suscribe; Mission Layer/Radar leen el bus directo).
+  Sin cambio, y es el mismo caso que `component_wiring_drift.py` cita en su
+  docstring como ejemplo de por qué calla en filas mixtas.
+  **(3) `node_identity` — 2 filas**: 0 callers, standalone por diseño,
+  bloqueado en que exista un SEGUNDO NODO real. Hermes está vivo en local,
+  pero eso no es un segundo nodo y F2.2 está parada. Sin cambio.
+  **(4) `ui/atlas-shell/` — 3 filas**: no es Python, cae en F3 (replanteo de
+  UI), no en F1. Fuera de alcance aquí, dicho explícitamente.
+  **Cautela**: `component_wiring_drift` reporta 0 deriva, pero consulta el
+  grafo Kuzu que está `STALE` — eso NO es confirmación fuerte. La evidencia
+  buena es el grep por fichero.
+  **Próxima acción**: F1 queda cerrada salvo `correction.py`, bloqueado en la
+  decisión del Cónclave (ADR-069). Siguiente sin dependencias del operador:
+  F2.1 (dossier Osmosis, que desbloquea tu ADC-WO-105) o F3.1 (replanteo de
+  alcance de UI, que puede reducir T2.1 drásticamente).
+
 - **2026-07-31 (F1.3 cierre) — `reproduction.py` no estaba dormido: estaba
   ROTO, y fallaba en la dirección peligrosa. 1.211 de 1.315 loc despiertos.**
   **El defecto, medido con una corrida real contra `BwrapJail`, no deducido**:
