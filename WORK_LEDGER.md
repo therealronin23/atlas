@@ -8,6 +8,56 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (reality, rediseño) — `atlas reality` leía el HUMO del motor y
+  nunca miraba el motor. Ahora mide, y declara de qué clase es cada evidencia.**
+  **Cómo salió**: el operador dijo *"atlas reality verdaderamente no hace nada,
+  debería estar vinculado al grafo, a Hermes, a la seguridad, a todo"*. La
+  medida que lo confirma es de una línea: **las 7 menciones a `daemon` en
+  `reality.py` estaban TODAS en docstrings que describen leer ficheros que el
+  daemon escribió; ninguna comprobaba si el daemon estaba vivo.** Es el mismo
+  agujero por el que `atlas-core.service` estuvo 23 h muerto sin que nadie se
+  enterara: durante todo ese tiempo el informe habría seguido en verde.
+  **Arreglo 1 — clase de evidencia por sección** (`reality_live.py` nuevo):
+  cada sección declara si es `live` (interroga al sistema AHORA), `config`
+  (prueba que algo está declarado) o `history` (fue verdad cuando se escribió).
+  La tabla vive junta en `reality._EVIDENCE_CLASS` porque **el reparto ES el
+  hallazgo**. Medido en el sistema real: **6 vivas · 6 configuración · 8
+  historia**. Una sección nueva sin clase sale como `unclassified`, nunca
+  aprobada por defecto. Esto convierte la condición no negociable del operador
+  —*nunca afirmar LIVE_VERIFIED sin sonda real*— en estructura, no en cuidado
+  del lector.
+  **Arreglo 2 — el daemon se mide** (`daemon_state`): `systemctl is-active`, y
+  fail-honest (si no se puede medir, `active=None`, jamás `False`). Visible
+  también en el render humano, con color.
+  **Arreglo 3 — Hermes deja de ser una constante**: `live_verified` estaba
+  CLAVADO a `False`, sin ninguna entrada capaz de ponerlo a `True`, mientras el
+  tablero local respondía con 19 tareas en cola. Ahora se sondea reutilizando
+  el `KanbanBridge.reachable()` que ya usa `atlas doctor` (una sonda, no dos) y
+  **sólo en transporte local**: sondear SSH sería una llamada de red escondida
+  detrás de un comando de estado. **Resultado: el primer `live_verified: true`
+  del proyecto con sonda real detrás.**
+  **Bug que me comí y arreglé (TDD, RED primero)**: sellar `checks` —que es un
+  CONTENEDOR de resultados, no una sección-sonda— le metía dentro una clave
+  `evidence`, con lo que dejaba de estar vacío y el renderizador del CLI lo
+  recorría como si cada entrada fuese un check: `atlas reality` reventaba con
+  `TypeError`. **El hueco que lo permitió**: en el CLI sólo se probaba
+  `reality --json`; el renderizador para humanos —el que usa el operador— no
+  tenía ni un test. Ahora sí.
+  **Arreglo 4 — sección `security` nueva, medida en disco**: nadie en el repo
+  comprobaba la higiene del fichero de secretos. Ahora `stat` + `git ls-files`
+  contestan dos preguntas sin coste ni red: si `.env` es legible por grupo u
+  otros, y —lo grave— si git lo está SIGUIENDO (un push publicaría las
+  credenciales). Medido hoy: `600`, sin trackear, `ATLAS_SECURITY_COUNCIL_GATE`
+  activo → `ok`. No lee el CONTENIDO: una herramienta de estado no tiene por
+  qué abrir los secretos.
+  **Reparto final medido: 7 vivas · 6 configuración · 8 historia (21).**
+  **Lo que NO cubre todavía**: `--run-checks` sigue siendo la única forma de
+  que `tests` sea `live`, y **"que se actualice habitualmente" sigue ABIERTO**
+  — el watchdog de cada 15 min ya cubre la parte GRAVE en vivo (daemon, disco,
+  memoria, Merkle), pero no hay registro periódico del informe completo. Antes
+  de construirlo hay que decidir QUIÉN lo consume: un snapshot que nadie lee es
+  exactamente el código dormido que esta campaña acaba de limpiar.
+
 - **2026-07-31 (Cónclave) — el panel AHOGABA a los modelos de razonamiento:
   una de las tres voces llevaba votando con un fragmento.**
   **Cómo salió**: el operador preguntó *"¿qué le pasa a Gemini que habla de

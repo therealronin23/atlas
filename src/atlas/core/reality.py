@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tomllib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib.util import find_spec
@@ -43,6 +44,17 @@ except ImportError:  # pragma: no cover
     pass
 
 
+from atlas.core.reality_live import (
+    EVIDENCE_CONFIG,
+    EVIDENCE_HISTORY,
+    EVIDENCE_LIVE,
+    daemon_state,
+    hermes_probe,
+    security_state,
+    evidence_summary,
+)
+
+
 @dataclass(frozen=True)
 class CommandEvidence:
     command: list[str]
@@ -57,14 +69,72 @@ class CommandEvidence:
         }
 
 
+#: De qué CLASE es la evidencia de cada sección. La tabla vive aquí, junta y a
+#: la vista, en vez de repartida por veinte funciones: el reparto entre `live`,
+#: `config` e `history` ES el hallazgo, y sólo se ve de un vistazo.
+#:
+#: Regla para clasificar: `live` sólo si la sección interroga al sistema en el
+#: momento de preguntar. Que el dato se *calcule* ahora no basta — leer un
+#: fichero que escribió otro proceso sigue siendo historia, por reciente que
+#: sea. Ante la duda, la clase menos halagüeña.
+_EVIDENCE_CLASS: dict[str, str] = {
+    # --- miden el presente ---
+    "repo": EVIDENCE_LIVE,  # interroga a git ahora
+    "workspace": EVIDENCE_LIVE,  # verifica la cadena Merkle de verdad
+    "runtime": EVIDENCE_LIVE,  # recuenta ficheros y lee la versión del intérprete
+    "graph": EVIDENCE_LIVE,  # compara el sha del grafo contra el HEAD de ahora
+    "daemon": EVIDENCE_LIVE,  # el agujero de las 23 h
+    "security": EVIDENCE_LIVE,  # stat + git ls-files sobre el fichero de secretos
+    # --- prueban que algo está declarado, no que funcione ---
+    "tests": EVIDENCE_CONFIG,  # lee addopts de pyproject; sin --run-checks es `unknown`
+    "browser": EVIDENCE_CONFIG,  # que el ejecutable exista no es que arranque
+    "hermes": EVIDENCE_CONFIG,  # variables puestas != delegación viva
+    "llm": EVIDENCE_CONFIG,  # claves presentes != proveedor que responde
+    "mcp": EVIDENCE_CONFIG,  # servidores registrados != servidores vivos
+    "autonomy": EVIDENCE_CONFIG,  # governance.json
+    "self_build_pause": EVIDENCE_CONFIG,  # estado de un interruptor
+    # --- fue verdad cuando se escribió; nadie garantiza que lo siga siendo ---
+    "docs": EVIDENCE_HISTORY,
+    "cold_update": EVIDENCE_HISTORY,
+    "provider_smoke": EVIDENCE_HISTORY,
+    "provider_discovery": EVIDENCE_HISTORY,
+    "provider_status": EVIDENCE_HISTORY,
+    "workbench_compliance_review": EVIDENCE_HISTORY,
+    "engineering_review": EVIDENCE_HISTORY,
+    "f26_gate": EVIDENCE_HISTORY,
+}
+
+
+def _stamp_evidence(report: dict[str, Any]) -> None:
+    """Marca cada sección con su clase. Una sección nueva sin entrada en la
+    tabla queda SIN marcar a propósito: así aparece en ``unclassified`` en vez
+    de colarse como si estuviera medida.
+
+    Una sección que ya declara su clase MANDA sobre la tabla: la tabla es el
+    valor por defecto estático, y una sonda que de verdad midió (Hermes cuando
+    el tablero es local) no puede quedar degradada a ``config`` por ella.
+    """
+    for name, klass in _EVIDENCE_CLASS.items():
+        section = report.get(name)
+        if isinstance(section, dict):
+            section.setdefault("evidence", klass)
+
+
 def collect_reality(
     *,
     repo_root: Path | None = None,
     workspace: Path | None = None,
     run_checks: bool = False,
     include_browser: bool = False,
+    hermes_reachable: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
-    """Collect a factual report for the current Atlas checkout."""
+    """Collect a factual report for the current Atlas checkout.
+
+    ``hermes_reachable`` existe para que la suite no interrogue el tablero REAL
+    del operador: por defecto se usa la sonda de verdad, pero un test que fije
+    ``HERMES_KANBAN_TRANSPORT=local`` acabaría midiendo la máquina que lo corre
+    y dando resultados distintos aquí y en CI.
+    """
     root = (repo_root or _project_root()).resolve()
     ws = (workspace or Path(os.environ.get("ATLAS_HOME", "~/atlas")).expanduser()).resolve()
     report: dict[str, Any] = {
@@ -74,7 +144,7 @@ def collect_reality(
         "runtime": _runtime_state(root),
         "tests": _test_state(root),
         "browser": _browser_state(),
-        "hermes": _hermes_state(),
+        "hermes": hermes_probe(_hermes_state(), reachable=hermes_reachable),
         "llm": _llm_state(),
         "mcp": _mcp_state(root, ws),
         "autonomy": _autonomy_state(),
@@ -88,12 +158,16 @@ def collect_reality(
         "graph": _graph_state(root),
         "f26_gate": _f26_gate_state(root),
         "self_build_pause": _self_build_pause_state(root),
+        "daemon": daemon_state(),
+        "security": security_state(root),
         "checks": {},
     }
     report["capabilities"] = _capability_plane(report)
     if run_checks:
         report["checks"] = _run_checks(root, include_browser=include_browser)
         _project_check_evidence(report)
+    _stamp_evidence(report)
+    report["evidence_summary"] = evidence_summary(report)
     report["status"] = _overall_status(report)
     report["strict_failures"] = strict_failures(report)
     return report
@@ -1058,6 +1132,14 @@ def _overall_status(report: dict[str, Any]) -> str:
     merkle = report.get("workspace", {}).get("merkle", {})
     if merkle.get("status") == "corrupt":
         return "degraded"
+    # Sin esto, medir el daemon no serviría de nada: la cabecera imprime
+    # "Atlas reality — OK" en grande, y durante las 23 h de apagón lo habría
+    # seguido imprimiendo. `active is False` sólo — un `None` (no medible) NO
+    # degrada, porque no saber no es una avería.
+    if report.get("daemon", {}).get("active") is False:
+        return "degraded"
+    if report.get("security", {}).get("status") == "degraded":
+        return "degraded"
     return "ok"
 
 
@@ -1074,6 +1156,12 @@ def strict_failures(report: dict[str, Any]) -> list[str]:
             failures.append(name)
     if report.get("browser", {}).get("status") != "ready":
         failures.append("browser readiness")
+    # `--strict` es una puerta de preparación: sin daemon no hay lazo autónomo,
+    # por muy verde que esté todo lo demás.
+    if report.get("daemon", {}).get("active") is False:
+        failures.append("daemon liveness")
+    if report.get("security", {}).get("status") == "degraded":
+        failures.append("secrets hygiene")
     return failures
 
 

@@ -922,11 +922,29 @@ def reality(run_checks: bool, include_browser: bool, as_json: bool, strict: bool
     console.print(f"  Source files:  {report['runtime']['source_file_count']}")
     console.print(f"  Test files:    {report['runtime']['test_file_count']}")
     console.print(f"  Merkle:        {report['workspace']['merkle']['status']}")
+    daemon = report["daemon"]
+    daemon_color = {True: "green", False: "red", None: "yellow"}[daemon["active"]]
+    console.print(f"  Daemon:        [{daemon_color}]{daemon['reason']}[/{daemon_color}]")
     console.print(f"  Browser:       {report['browser']['status']} — {report['browser']['reason']}")
     console.print(f"  Hermes:        {report['hermes']['mode']} — {report['hermes']['reason']}")
     console.print(f"  LLM:           {report['llm']['status']} — {report['llm']['reason']}")
     console.print(f"  Decider:       {report['autonomy']['decider']}")
     console.print(f"  Docs:          {report['docs']['status']} — {report['docs']['reason']}")
+    sec = report["security"]
+    sec_color = "red" if sec["status"] == "degraded" else "white"
+    console.print(f"  Seguridad:     [{sec_color}]{sec['status']} — {sec['reason']}[/{sec_color}]")
+    # Sin esta línea el informe se lee como si todo estuviera medido. Es la
+    # respuesta, en números, a "atlas reality verdaderamente no hace nada".
+    ev = report["evidence_summary"]
+    console.print(
+        f"\n  Evidencia:     [green]{ev['live']} vivas[/green] · "
+        f"{ev['config']} configuración · [dim]{ev['history']} historia[/dim]"
+        + (f" · [yellow]{ev['unclassified']} sin clasificar[/yellow]" if ev["unclassified"] else "")
+    )
+    console.print(
+        "  [dim]`configuración` prueba que algo está declarado; `historia`, que "
+        "fue verdad cuando se escribió.[/dim]"
+    )
     if report["checks"]:
         table = Table(title="Live checks", show_header=True)
         table.add_column("Check", style="cyan")

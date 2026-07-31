@@ -110,6 +110,33 @@ def _isolate_git_hook_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _never_probe_the_real_kanban_board(monkeypatch: pytest.MonkeyPatch) -> None:
+    """La suite NO interroga el tablero Hermes real del operador.
+
+    Desde 2026-07-31 `collect_reality()` sondea Hermes en vivo (antes
+    `live_verified` era una constante `False`). Eso convirtió cualquier test que
+    llame a `collect_reality()` sin inyectar sonda en un test que ejecuta el
+    kanban de verdad — con su entrada en el log Merkle y su dependencia de la
+    máquina que lo corra.
+
+    El scrubbing de `_HERMES_ENV_KEYS` de abajo NO basta, y el motivo es fino:
+    `_reset_provider_status` (autouse, más abajo) importa `inference_hub`, que
+    hace `load_dotenv()` en tiempo de import. En el test donde ese import ocurre
+    por primera vez, el `.env` REPUEBLA `HERMES_KANBAN_TRANSPORT` *después* de
+    que este fixture lo haya borrado. Cortar aquí, en la sonda misma, no depende
+    del orden de los fixtures ni del de los tests.
+
+    Se sustituye por un `False` DETERMINISTA en vez de por algo que lance:
+    `hermes_probe` atrapa toda excepción para ser fail-honest, así que una
+    sonda que reventara acabaría como "desconocido" silencioso. Un test que
+    necesite un tablero vivo debe inyectar `hermes_reachable=` y decirlo.
+    """
+    monkeypatch.setattr(
+        "atlas.core.reality_live._default_hermes_reachable", lambda: False, raising=True
+    )
+
+
+@pytest.fixture(autouse=True)
 def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     for key in (
         *_EXTERNAL_API_KEYS,

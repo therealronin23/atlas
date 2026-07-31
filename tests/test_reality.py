@@ -114,7 +114,11 @@ def test_collect_reality_prefers_kanban_transport_for_hermes(tmp_path: Path, mon
     monkeypatch.setenv("HERMES_BASE_URL", "https://legacy-hermes.invalid")
     monkeypatch.setenv("HERMES_API_KEY", "legacy-key")
 
-    report = collect_reality(repo_root=root, workspace=workspace)
+    # La sonda se inyecta: sin esto el test interrogaría el tablero kanban REAL
+    # de la máquina que lo corre y daría resultados distintos aquí y en CI.
+    report = collect_reality(
+        repo_root=root, workspace=workspace, hermes_reachable=lambda: False
+    )
 
     assert report["hermes"]["mode"] == "kanban_local"
     assert report["hermes"]["base_url_set"] is True
@@ -737,9 +741,13 @@ def test_collect_reality_wires_self_build_pause_section(tmp_path: Path) -> None:
     root = _mini_repo(tmp_path)
 
     not_paused = collect_reality(repo_root=root, workspace=tmp_path / "atlas")
-    assert not_paused["self_build_pause"] == {
-        "paused": False, "paused_at": None, "reason": None,
-    }
+    # Se afirman los campos del estado de pausa, no la forma exacta del dict:
+    # desde 2026-07-31 toda sección lleva además su clase de evidencia
+    # (ver reality_live._EVIDENCE_CLASS), y una igualdad exacta convertía ese
+    # añadido deliberado en un falso fallo.
+    assert not_paused["self_build_pause"]["paused"] is False
+    assert not_paused["self_build_pause"]["paused_at"] is None
+    assert not_paused["self_build_pause"]["reason"] is None
 
     from atlas.core.self_maintenance.self_build_pause import pause
 
