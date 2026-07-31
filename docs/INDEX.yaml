@@ -3781,3 +3781,8 @@ entries:
   status: vigente
   verified: 2026-07-28
   notes: Harness de validación FastEmbed implementado y medido localmente; no decide pin, modelo ni migración.
+- path: docs/knowledge/research_2026-07-31.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'

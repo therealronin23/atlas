@@ -1,11 +1,10 @@
 _generated:
   by: scripts/mcp_classify_seeded.py
   at: '2026-07-23T21:34:52.432274+00:00'
-  note: >-
-    MÁQUINA-GENERADO. Clasificación automática por alias; todo candidato.
-    Las entradas de research_digest no están instaladas ni admitidas:
-    requieren validación de fuente/licencia, vetting, TrialGate, Decider/HITL
-    y recibo antes de cualquier promoción.
+  note: 'MÁQUINA-GENERADO. Clasificación automática por alias; todo candidato. Las
+    entradas de research_digest no están instaladas ni admitidas: requieren validación
+    de fuente/licencia, vetting, TrialGate, Decider/HITL y recibo antes de cualquier
+    promoción.'
 sectors:
   ciberseguridad:
     label: Ciberseguridad
@@ -76,6 +75,39 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-27T01:21:12.605086+00:00'
+    - name: nambok/mentedb
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/nambok/mentedb
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:12
+      - informe:3
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-31T16:46:04.815313+00:00'
+    - name: njfio/rust-synaptic
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/njfio/rust-synaptic
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:4
+      - informe:5
+      - informe:6
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-31T16:46:04.815313+00:00'
   datos:
     label: Datos
     entries:
@@ -97,6 +129,24 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-27T01:21:12.605086+00:00'
+    - name: agnesebelloni/Advanced-Data-Management-Benchmark
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/agnesebelloni/Advanced-Data-Management-Benchmark
+      install: ''
+      status: candidato
+      tags:
+      - datos
+      evidence:
+      - tema:graph database benchmark
+      - informe:2
+      - informe:3
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-07-31T16:46:04.815313+00:00'
   diseno:
     label: Diseño
     entries: []
