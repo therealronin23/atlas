@@ -103,11 +103,66 @@ solo endurecería el caso para no admitir sin re-verificar.
 qué cuenta como "comando nativo gobernado" en Sentinel, del que depende el
 segundo hueco).
 
+## Decisión del operador — 2026-07-31: admitir con condiciones (alternativa 1)
+
+Los 2 huecos de código se cerraron:
+
+1. **Camino de recibo en Sentinel** (`src/atlas/security/third_party_admission.py`,
+   `SentinelGate._vet_third_party_receipt`): un receipt Merkle revocable es
+   la ÚNICA vía que levanta el veto por defecto. Recomputa el SHA-256 del
+   ejecutable REAL en cada `vet_command()` (nunca confía un hash
+   declarado); exige `cmd`/`cwd`/`env_extra`/`env_passthrough` idénticos
+   byte a byte al receipt admitido — ninguna variable de entorno extra,
+   ningún argv distinto, ningún `DISPLAY` distinto al aislado (`:99`)
+   levanta el veto. `sentinel_gate.py` solo LEE receipts; crearlos/revocarlos
+   es `atlas mcp admit-third-party`/`revoke-third-party` (CLI nueva, acción
+   humana explícita con confirmación interactiva).
+2. **Jaula Xvfb-only**: no se construyó un `.service` systemd nuevo (fuera
+   de alcance razonable hoy) — el enforcement real es que el receipt pina
+   `env_extra: {"DISPLAY": ":99"}` exacto, y cualquier intento de arrancar
+   con `DISPLAY=:0` (el gemelo `computer-control-mcp-real-display`) no
+   coincide con el receipt y queda vetado. Verificado por test
+   (`test_third_party_receipt_real_display_is_never_admitted`).
+
+No se re-materializó desde sdist/wheel limpio (el falsifier propuesto
+arriba sigue sin ejecutar) — se admitió el artefacto YA instalado, con su
+hash real pinado hoy. Si una re-materialización futura diera un hash
+distinto, es un revisit trigger real, no una contradicción de lo admitido
+aquí (el receipt pina bytes exactos, no "el paquete en general").
+
+**Admitido en `$ATLAS_HOME` real**: hash
+`026352a0712ea33f3aac7dcdf1c4d7fbc583b8923f4c84e4def597cefbfe2451` del
+binario `.venv-desktop/bin/computer-control-mcp`, `merkle_receipt_id`
+verificado en la cadena real (`atlas audit --verify` → íntegra tras la
+admisión). El re-scan de semgrep en vivo tardó ~11 minutos en completar
+(el primer intento se dio por expirado a los 90s y se admitió con el
+resultado del mismo día como evidencia — luego el proceso en segundo plano
+SÍ terminó y confirmó, en vivo, el mismo resultado: 79 reglas, 14 rutas, 0
+hallazgos, 0 errores; se re-admitió con el verdict confirmado). Los 4 E2E
+funcionales reales de
+`tests/acceptance/test_t3_1_desktop_operator_e2e.py` corren y pasan contra
+Xvfb `:99` + `fluxbox` + `xclock`/`xcalc` reales (antes: `SKIPPED
+CONTRADICTED`). `docs/design/mcp_catalog.yaml`: `trust: quarantined` →
+`vetted`, `status: blocked-admission` → `verificado`.
+
+**Efecto en producción, dicho sin rodeos**: `~/atlas/mcp_servers.json` ya
+tenía esta entrada `enabled: true` desde antes (Gate F/ADC-WO-116); lo
+único que la bloqueaba era el veto de Sentinel. Con el receipt admitido,
+la próxima vez que el Orchestrator real arranque sus servers MCP (o
+re-vetee) e `Xvfb :99` esté arriba, este ejecutable de terceros SÍ se
+arrancará de verdad, confinado a `:99` — nunca al display real `:0` (ese
+gemelo sigue `unadmitted`). No había daemon Atlas vivo en el momento de
+esta admisión, así que no hubo arranque inmediato; el receipt queda listo
+para la próxima vez que lo haya.
+
 ## Security and rollback
 
-Ninguna acción mutante en este dossier: no se reinstaló, no se movió el
-paquete, no se tocó `mcp_catalog.yaml`, no se cambió el estado de
-`blocked-admission`. Puramente observacional. Rollback: N/A.
+Revocación inmediata: `atlas mcp revoke-third-party --server
+computer-control-mcp --revoked-by <identidad>` — la cuarentena se restaura
+en el siguiente `vet_command()`, sin caché que limpiar (verificado por
+test). No se tocó el paquete instalado ni sus dependencias; revocar no
+requiere desinstalar nada, solo borra la autoridad que el receipt
+concedía.
 
 ## Evidencia
 

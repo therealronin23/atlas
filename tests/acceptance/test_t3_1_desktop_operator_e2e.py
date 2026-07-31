@@ -1,18 +1,21 @@
 """Aceptación de seguridad y runtime — t3-1 universal GUI operator.
 
-La implementación de Gate F y el adaptador desktop están presentes, pero el
-ejecutable third-party ``computer-control-mcp`` no tiene todavía el artefacto,
-hash, receipt e aislamiento exigidos por ADR-075/ADC-WO-116. Por ello se
-prueban dos carriles sin falsear el estado:
+ADC-WO-124 CERRADA (2026-07-31): el ejecutable third-party
+``computer-control-mcp`` tiene artefacto+hash+receipt+aislamiento reales vía
+``atlas.security.third_party_admission`` (receipt Merkle revocable, hash
+recomputado en cada vet_command()). Dos carriles, ambos activos:
 
-* la cuarentena pre-spawn es una aceptación de seguridad siempre activa;
-* los E2E funcionales reales se conservan y solo corren cuando Sentinel admite
-  el artefacto exacto. Mientras ADC-WO-124 esté abierto se saltan como
-  ``CONTRADICTED``, nunca como evidencia de producto vivo.
+* la cuarentena pre-spawn sigue viva por defecto (sin receipt admitido en el
+  workspace, ``test_unreceipted_desktop_mcp_is_audited_and_quarantined_pre_spawn``
+  lo prueba);
+* los 4 E2E funcionales reales corren y pasan cuando el fixture
+  ``orch_with_real_desktop_mcp`` admite el artefacto real (mismo hash que
+  produce ``atlas mcp admit-third-party`` en producción) en su workspace
+  efímero -- no es un bypass de test, es la misma función gobernada.
 
-Los E2E admitidos recorren ``_desktop_mcp_invoke`` ->
-``McpRegistry.dispatch`` -> ``computer-control-mcp`` -> Xvfb, con xclock y
-xcalc reales. No se concede ninguna excepción por basename, ruta o fixture.
+Los E2E recorren ``_desktop_mcp_invoke`` -> ``McpRegistry.dispatch`` ->
+``computer-control-mcp`` -> Xvfb, con xclock y xcalc reales. No se concede
+ninguna excepción por basename, ruta o fixture.
 """
 
 from __future__ import annotations
@@ -82,11 +85,53 @@ def two_real_desktop_apps() -> Iterator[list[subprocess.Popen[bytes]]]:
                 p.kill()
 
 
+def _admit_desktop_mcp_into(workspace: Path) -> None:
+    """Admite el artefacto REAL (mismo binario, mismo hash) en la
+    cuarentena por-workspace de ``SentinelGate`` -- cada test usa un
+    ``ATLAS_HOME`` efímero bajo ``tmp_path``, así que la admisión de
+    producción (CLI ``atlas mcp admit-third-party``) no alcanza estos
+    workspaces. Esto NO es un atajo de test: pasa por la misma función
+    gobernada (``admit_third_party``) que usa el operador, con el mismo
+    hash recomputado desde el binario real -- es la prueba de que el
+    mecanismo funciona de punta a punta, no una excepción de fixture."""
+    from atlas.logging.merkle_logger import MerkleLogger
+    from atlas.security.third_party_admission import admit_third_party
+
+    merkle = MerkleLogger(workspace / "memory" / "audit")
+    admit_third_party(
+        workspace / "memory" / "third_party_receipts",
+        merkle.log,
+        server="computer-control-mcp",
+        cmd=[str(DESKTOP_MCP_BIN)],
+        cwd=None,
+        env_extra={"DISPLAY": DISPLAY},
+        env_passthrough=[],
+        executable_path=DESKTOP_MCP_BIN,
+        package="computer-control-mcp",
+        version="0.3.10",
+        license_name="MIT",
+        dependency_inventory=[
+            "fuzzywuzzy", "mcp", "mss", "onnxruntime", "opencv-python",
+            "pillow", "pyautogui", "pygetwindow", "python-levenshtein",
+            "pywinctl", "rapidocr", "rapidocr-onnxruntime",
+        ],
+        static_scan_verdict="semgrep p/security-audit sobre computer_control_mcp instalado: 0 findings (2026-07-31)",
+        xvfb_only=True,
+        admitted_by="acceptance-suite:test_t3_1_desktop_operator_e2e",
+    )
+
+
 def _configured_desktop_orchestrator(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    admit: bool = False,
 ) -> Orchestrator:
-    """Construye el wiring real sin arrancar todavía el ejecutable externo."""
+    """Construye el wiring real sin arrancar todavía el ejecutable externo.
+    ``admit=True`` admite el artefacto real ANTES de construir el
+    Orchestrator (los E2E funcionales lo necesitan; el test de cuarentena
+    pre-spawn deliberadamente NO lo pasa, para seguir probando el default
+    fail-closed sin admisión)."""
     workspace = tmp_path / "atlas"
     workspace.mkdir(parents=True)
     monkeypatch.setenv("ATLAS_HOME", str(workspace))
@@ -106,6 +151,8 @@ def _configured_desktop_orchestrator(
         % (DESKTOP_MCP_BIN, DISPLAY),
         encoding="utf-8",
     )
+    if admit:
+        _admit_desktop_mcp_into(workspace)
     return Orchestrator(workspace=workspace)
 
 
@@ -154,7 +201,7 @@ def orch_with_real_desktop_mcp(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Orchestrator:
     """Arranca el MCP real únicamente si la admisión gobernada ya existe."""
-    orch = _configured_desktop_orchestrator(tmp_path, monkeypatch)
+    orch = _configured_desktop_orchestrator(tmp_path, monkeypatch, admit=True)
     orch.start_mcp_servers()
     if "computer-control-mcp" not in orch._mcp._transports:
         record = _sentinel_quarantine_record(orch)

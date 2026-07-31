@@ -151,6 +151,145 @@ def test_unmeasured_third_party_runtime_is_quarantined_pre_spawn(
     assert "third-party" in result.server_reason.lower()
 
 
+# ===========================================================================
+# ADC-WO-124 — admisión gobernada de terceros vía receipt Merkle revocable.
+# SentinelGate solo LEE receipts (atlas.security.third_party_admission los
+# crea/revoca); "no basename, path, TOFU, environment or fixture bypass
+# grants authority" (acceptance del WO) se prueba abajo caso a caso.
+# ===========================================================================
+
+
+def _admit_fake_third_party(
+    tmp_path: Path, *, receipts_dir: Path, executable: Path,
+    env_extra: dict[str, str] | None = None,
+) -> None:
+    from atlas.security.third_party_admission import admit_third_party
+
+    admit_third_party(
+        receipts_dir, lambda **kw: type("R", (), {"id": "rec-1"})(),
+        server="fake-desktop-mcp", cmd=[str(executable)], cwd=None,
+        env_extra=env_extra if env_extra is not None else {"DISPLAY": ":99"},
+        env_passthrough=[], executable_path=executable,
+        package="fake-desktop-mcp", version="0.0.1", license_name="MIT",
+        dependency_inventory=["mcp"],
+        static_scan_verdict="semgrep p/security-audit: 0 findings",
+        xvfb_only=True, admitted_by="operator:tomas",
+    )
+
+
+def test_admitted_third_party_receipt_with_matching_hash_passes_vet_command(
+    tmp_path: Path,
+) -> None:
+    executable = tmp_path / "fake-desktop-mcp"
+    executable.write_bytes(b"#!/bin/sh\necho hi\n")
+    executable.chmod(0o755)
+    receipts_dir = tmp_path / "receipts"
+    _admit_fake_third_party(tmp_path, receipts_dir=receipts_dir, executable=executable)
+
+    gate = SentinelGate(tmp_path, receipts_dir=receipts_dir)
+    cfg = McpServerConfig(
+        name="fake-desktop-mcp", cmd=[str(executable)], cwd=None,
+        env_extra={"DISPLAY": ":99"}, env_passthrough=[],
+    )
+    assert gate.vet_command(cfg) is None
+
+
+def test_third_party_receipt_hash_mismatch_still_vetoes(tmp_path: Path) -> None:
+    """Simula sustitución del artefacto después de admitido: el hash ya no
+    coincide, así que el veto debe seguir en pie pese a haber receipt."""
+    executable = tmp_path / "fake-desktop-mcp"
+    executable.write_bytes(b"#!/bin/sh\necho hi\n")
+    executable.chmod(0o755)
+    receipts_dir = tmp_path / "receipts"
+    _admit_fake_third_party(tmp_path, receipts_dir=receipts_dir, executable=executable)
+
+    executable.write_bytes(b"#!/bin/sh\necho PWNED\n")  # drift tras la admisión
+
+    gate = SentinelGate(tmp_path, receipts_dir=receipts_dir)
+    cfg = McpServerConfig(
+        name="fake-desktop-mcp", cmd=[str(executable)], cwd=None,
+        env_extra={"DISPLAY": ":99"}, env_passthrough=[],
+    )
+    reason = gate.vet_command(cfg)
+    assert reason is not None
+    assert "hash" in reason.lower()
+
+
+def test_revoked_third_party_receipt_restores_quarantine_immediately(
+    tmp_path: Path,
+) -> None:
+    from atlas.security.third_party_admission import revoke_third_party
+
+    executable = tmp_path / "fake-desktop-mcp"
+    executable.write_bytes(b"#!/bin/sh\necho hi\n")
+    executable.chmod(0o755)
+    receipts_dir = tmp_path / "receipts"
+    _admit_fake_third_party(tmp_path, receipts_dir=receipts_dir, executable=executable)
+
+    gate = SentinelGate(tmp_path, receipts_dir=receipts_dir)
+    cfg = McpServerConfig(
+        name="fake-desktop-mcp", cmd=[str(executable)], cwd=None,
+        env_extra={"DISPLAY": ":99"}, env_passthrough=[],
+    )
+    assert gate.vet_command(cfg) is None  # admitido antes de revocar
+
+    revoke_third_party(
+        receipts_dir, lambda **kw: type("R", (), {"id": "rec-2"})(),
+        server="fake-desktop-mcp", revoked_by="operator:tomas",
+    )
+    reason = gate.vet_command(cfg)  # MISMA instancia de gate, sin caché que limpiar
+    assert reason is not None
+    assert "revoc" in reason.lower()
+
+
+def test_third_party_receipt_real_display_is_never_admitted(tmp_path: Path) -> None:
+    """Acceptance explícito del WO: 'no authority is granted for DISPLAY=:0'."""
+    executable = tmp_path / "fake-desktop-mcp"
+    executable.write_bytes(b"#!/bin/sh\necho hi\n")
+    executable.chmod(0o755)
+    receipts_dir = tmp_path / "receipts"
+    _admit_fake_third_party(tmp_path, receipts_dir=receipts_dir, executable=executable)
+
+    gate = SentinelGate(tmp_path, receipts_dir=receipts_dir)
+    real_display_cfg = McpServerConfig(
+        name="fake-desktop-mcp", cmd=[str(executable)], cwd=None,
+        env_extra={"DISPLAY": ":0"}, env_passthrough=[],
+    )
+    assert gate.vet_command(real_display_cfg) is not None
+
+
+def test_third_party_receipt_env_passthrough_injection_is_vetoed(tmp_path: Path) -> None:
+    """Ninguna variable de entorno adicional (posible inyección de secretos a
+    un ejecutable de terceros) puede colarse aunque cmd/env_extra coincidan."""
+    executable = tmp_path / "fake-desktop-mcp"
+    executable.write_bytes(b"#!/bin/sh\necho hi\n")
+    executable.chmod(0o755)
+    receipts_dir = tmp_path / "receipts"
+    _admit_fake_third_party(tmp_path, receipts_dir=receipts_dir, executable=executable)
+
+    gate = SentinelGate(tmp_path, receipts_dir=receipts_dir)
+    cfg = McpServerConfig(
+        name="fake-desktop-mcp", cmd=[str(executable)], cwd=None,
+        env_extra={"DISPLAY": ":99"}, env_passthrough=["SOME_SECRET"],
+    )
+    assert gate.vet_command(cfg) is not None
+
+
+def test_third_party_receipt_cmd_drift_is_vetoed(tmp_path: Path) -> None:
+    executable = tmp_path / "fake-desktop-mcp"
+    executable.write_bytes(b"#!/bin/sh\necho hi\n")
+    executable.chmod(0o755)
+    receipts_dir = tmp_path / "receipts"
+    _admit_fake_third_party(tmp_path, receipts_dir=receipts_dir, executable=executable)
+
+    gate = SentinelGate(tmp_path, receipts_dir=receipts_dir)
+    cfg = McpServerConfig(
+        name="fake-desktop-mcp", cmd=[str(executable), "--extra-flag"], cwd=None,
+        env_extra={"DISPLAY": ":99"}, env_passthrough=[],
+    )
+    assert gate.vet_command(cfg) is not None
+
+
 def test_ambiguous_server_name_is_rejected(tmp_path: Path) -> None:
     result = SentinelGate(tmp_path).vet(_cfg(name="a/b"), [_tool("x")])
 

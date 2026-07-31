@@ -1759,6 +1759,81 @@ def mcp_install(catalog_path: Path | None, as_json: bool) -> None:
         console.print(f"  - {m}")
 
 
+@mcp_group.command("admit-third-party")
+@click.option("--server", required=True, help="Nombre del server MCP (mcp_servers.json).")
+@click.option("--executable", required=True, type=click.Path(exists=True, path_type=Path),
+              help="Ruta al binario/entrypoint exacto a pinar por hash.")
+@click.option("--package", required=True, help="Nombre del paquete (pip/npm/...).")
+@click.option("--version", "pkg_version", required=True, help="Versión exacta instalada.")
+@click.option("--license", "license_name", required=True, help="Licencia declarada del paquete.")
+@click.option("--dependency", "dependencies", multiple=True,
+              help="Dependencia declarada (repetible: --dependency mcp --dependency pyautogui).")
+@click.option("--static-scan-verdict", required=True,
+              help="Resumen del escaneo estático (p.ej. 'semgrep p/security-audit: 0 findings').")
+@click.option("--display", default=None,
+              help="DISPLAY exacto a pinar en env_extra (p.ej. ':99'). Con --xvfb-only lo exige.")
+@click.option("--xvfb-only/--not-xvfb-only", default=True,
+              help="Si el receipt solo autoriza un DISPLAY aislado (por defecto: sí).")
+@click.option("--admitted-by", required=True, help="Identidad del humano que autoriza.")
+@click.option("--yes", is_flag=True, help="Omite la confirmación interactiva.")
+def mcp_admit_third_party(
+    server: str, executable: Path, package: str, pkg_version: str,
+    license_name: str, dependencies: tuple[str, ...], static_scan_verdict: str,
+    display: str | None, xvfb_only: bool, admitted_by: str, yes: bool,
+) -> None:
+    """ADC-WO-124: admite un ejecutable de terceros pinando su hash REAL
+    ahora mismo. SentinelGate solo levanta su veto por defecto si el cmd
+    exacto que intenta arrancar coincide byte a byte con lo admitido aquí
+    -- este comando no activa nada por sí mismo, solo registra la
+    autorización que SentinelGate consultará en cada intento de spawn."""
+    from atlas.security.third_party_admission import admit_third_party  # noqa: PLC0415
+
+    if xvfb_only and not display:
+        console.print("[red]--xvfb-only exige --display (p.ej. --display :99)[/red]")
+        raise SystemExit(1)
+    env_extra = {"DISPLAY": display} if display else {}
+    cmd = [str(executable.resolve())]
+
+    console.print(f"[bold]Admitir[/bold] {server} ({package}=={pkg_version})")
+    console.print(f"  ejecutable: {executable.resolve()}")
+    console.print(f"  env_extra: {env_extra}  xvfb_only: {xvfb_only}")
+    console.print(f"  scan: {static_scan_verdict}")
+    if not yes and not click.confirm("¿Confirmas la admisión con estos datos?"):
+        console.print("[yellow]Cancelado.[/yellow]")
+        raise SystemExit(1)
+
+    orch = get_orchestrator()
+    receipt = admit_third_party(
+        orch._sentinel.receipts_dir, orch._merkle.log,
+        server=server, cmd=cmd, cwd=None, env_extra=env_extra,
+        env_passthrough=[], executable_path=executable,
+        package=package, version=pkg_version, license_name=license_name,
+        dependency_inventory=list(dependencies),
+        static_scan_verdict=static_scan_verdict, xvfb_only=xvfb_only,
+        admitted_by=admitted_by,
+    )
+    console.print(f"[green]Admitido.[/green] hash={receipt.executable_sha256[:16]}… "
+                  f"merkle_receipt_id={receipt.merkle_receipt_id}")
+
+
+@mcp_group.command("revoke-third-party")
+@click.option("--server", required=True, help="Nombre del server MCP a revocar.")
+@click.option("--revoked-by", required=True, help="Identidad del humano que revoca.")
+def mcp_revoke_third_party(server: str, revoked_by: str) -> None:
+    """Revoca un receipt ADC-WO-124 -- la cuarentena se restaura de
+    inmediato, sin caché que limpiar (SentinelGate relee el fichero en
+    cada intento de spawn)."""
+    from atlas.security.third_party_admission import revoke_third_party  # noqa: PLC0415
+
+    orch = get_orchestrator()
+    receipt = revoke_third_party(
+        orch._sentinel.receipts_dir, orch._merkle.log,
+        server=server, revoked_by=revoked_by,
+    )
+    console.print(f"[yellow]Revocado.[/yellow] {server} — cuarentena restaurada "
+                  f"(revoked_at={receipt.revoked_at})")
+
+
 @cli.group("business")
 def business_group() -> None:
     """Adaptive Question Engine / Business Core (Fase 15) — todo draft-first."""

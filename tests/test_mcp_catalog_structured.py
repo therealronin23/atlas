@@ -548,12 +548,14 @@ def test_blocked_admission_ranks_strictly_worse_than_candidato() -> None:
     assert _MATURITY["blocked-admission"] > _MATURITY["candidato"]
 
 
-def test_real_catalog_computer_control_is_quarantined_not_verified() -> None:
-    """ADC-WO-124: el ejecutable sigue en cuarentena; el catálogo no debe
-    reclamar `verificado` mientras Sentinel lo bloquee pre-spawn."""
+def test_real_catalog_computer_control_is_admitted_and_verified() -> None:
+    """ADC-WO-124 CERRADA 2026-07-31: el artefacto exacto tiene un receipt
+    Merkle revocable admitido (src/atlas/security/third_party_admission.py)
+    -- Sentinel ya no lo bloquea pre-spawn, así que el catálogo puede
+    reclamar `verificado` sin mentir sobre el estado real."""
     from atlas.mcp.catalog import installable, load_catalog
 
     entries = load_catalog(_CATALOG)
     entry = next(e for e in entries if e.name == "computer-control-mcp")
-    assert entry.status == "blocked-admission"
-    assert entry.name not in {e.name for e in installable(entries)}
+    assert entry.status == "verificado"
+    assert entry.name in {e.name for e in installable(entries)}

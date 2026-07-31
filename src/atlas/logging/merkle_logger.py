@@ -109,6 +109,8 @@ AUDIT_ACTIONS = {
     "engineering.reproduction.started", "engineering.reproduction.completed",
     "chain.rotated", "chain.repaired",
     "business_core.activated", "business_core.activation.rejected",
+    "sentinel.receipt_admitted", "sentinel.receipt_revoked",
+    "sentinel.server_admitted",
 }
 
 

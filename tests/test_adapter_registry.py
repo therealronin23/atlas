@@ -108,26 +108,49 @@ def test_registry_rejects_unknown_extra_field() -> None:
 
 
 def test_computer_control_mcp_adapter_matches_real_catalog_entry() -> None:
-    """El catálogo real (docs/design/mcp_catalog.yaml) sigue teniendo la
-    entrada computer-control-mcp, pero ADC-WO-116/124 la dejan en cuarentena
-    pre-spawn: su estado es `blocked-admission`, no `verificado`. Este test es
-    la trampa que obliga a revisar el wiring de t3-3 si el estado se mueve, en
+    """ADC-WO-124 CERRADA 2026-07-31: el catálogo real
+    (docs/design/mcp_catalog.yaml) ya no está en cuarentena -- el artefacto
+    exacto tiene un receipt Merkle revocable admitido en $ATLAS_HOME, los 4
+    E2E funcionales reales corren y pasan. Este test es la trampa que
+    obliga a revisar el wiring de t3-3 si el estado se mueve otra vez, en
     vez de servir un adapter obsoleto en silencio."""
     from atlas.mcp.catalog import load_catalog
 
     entries = load_catalog(CATALOG_PATH)
     entry = next((e for e in entries if e.name == "computer-control-mcp"), None)
     assert entry is not None
-    assert entry.status == "blocked-admission"
+    assert entry.status == "verificado"
     assert entry.kind == "mcp"
 
 
-def test_computer_control_mcp_adapter_refuses_while_quarantined() -> None:
-    """Mientras la entrada esté bloqueada, construir el adapter debe fallar
-    ruidosamente. Servirlo sería confiar en una integración que Sentinel
-    bloquea pre-spawn."""
+def test_computer_control_mcp_adapter_builds_now_that_the_real_catalog_is_admitted() -> None:
+    """Contraparte positiva del test anterior: con la entrada real ya
+    `verificado`, el adapter que t3-3 construye contra el catálogo REAL
+    (no uno sintético) debe funcionar -- es la prueba de que el wiring
+    existente ya estaba listo para este momento, no dormido."""
+    adapter = computer_control_mcp_adapter(CATALOG_PATH)
+    assert adapter.id == "adapter_mcp_computer_control"
+    assert adapter.sandbox_required is True
+
+
+def test_computer_control_mcp_adapter_refuses_while_quarantined(tmp_path: Path) -> None:
+    """Invariante permanente, ahora sobre un catálogo SINTÉTICO en cuarentena
+    (el real ya no lo está): mientras una entrada esté `blocked-admission`,
+    construir el adapter debe fallar ruidosamente. Servirlo sería confiar
+    en una integración que Sentinel bloquea pre-spawn."""
+    quarantined = tmp_path / "mcp_catalog.yaml"
+    quarantined.write_text(
+        "sectors:\n"
+        "  infraestructura:\n"
+        "    label: Infraestructura\n"
+        "    entries:\n"
+        "      - {name: computer-control-mcp, kind: mcp, subsector: escritorio,"
+        " install: \"env DISPLAY=:99 computer-control-mcp\", transport: stdio,"
+        " trust: quarantined, purpose: \"GUI contra Xvfb :99\", status: blocked-admission}\n",
+        encoding="utf-8",
+    )
     with pytest.raises(ValueError, match="blocked-admission"):
-        computer_control_mcp_adapter(CATALOG_PATH)
+        computer_control_mcp_adapter(quarantined)
 
 
 def test_computer_control_mcp_adapter_validates_via_registry(tmp_path: Path) -> None:

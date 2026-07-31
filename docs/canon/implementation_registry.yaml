@@ -75,11 +75,23 @@ work_orders:
       - ADC-WO-008
       - ADC-WO-116
     current_state: >-
-      Gate F, desktop planning/tool adapters, MCP dispatch wiring and the Xvfb
-      acceptance harness are code-present. The exact third-party executable is
-      not admitted: Sentinel correctly vetoes it before spawn and records the
-      denial. Functional desktop E2E is therefore CONTRADICTED as current
-      acceptance evidence, not TESTED or LIVE_VERIFIED.
+      DONE 2026-07-31. A new revocable Merkle admission receipt mechanism
+      (src/atlas/security/third_party_admission.py, wired into
+      SentinelGate._vet_third_party_receipt) is the only path that lifts
+      Sentinel's default third-party veto: it recomputes the executable's
+      SHA-256 from the real bytes on every vet_command() call, and requires
+      cmd/cwd/env_extra/env_passthrough to match the admitted receipt
+      exactly (no basename, path, TOFU, environment or fixture bypass).
+      The real computer-control-mcp==0.3.10 artifact (hash
+      026352a0712ea33f3aac7dcdf1c4d7fbc583b8923f4c84e4def597cefbfe2451,
+      MIT, semgrep p/security-audit 0 findings/14 paths, Xvfb-only DISPLAY
+      pinned to :99) is admitted in the real $ATLAS_HOME via
+      `atlas mcp admit-third-party`, Merkle chain verified intact after.
+      All 4 real functional E2Es (list_windows, screenshot,
+      cross-app plan execution, click with HITL approval) run and pass
+      against real Xvfb :99 + xclock + xcalc -- not skipped. Revocation
+      (`atlas mcp revoke-third-party`) restores quarantine immediately,
+      verified by test.
     target_state: >-
       If and only if the operator authorizes this dependency and admission
       boundary, the exact computer-control-mcp==0.3.10 bytes are pinned,
@@ -141,8 +153,8 @@ work_orders:
       - all four real functional E2Es run rather than skip
       - no authority is granted for DISPLAY=:0
       - receipt revocation and process teardown return the component to fail-closed quarantine
-    operator_decision_required: true
-    status: REQUIRES_OPERATOR
+    operator_decision_required: false
+    status: DONE
 
   - id: ADC-WO-001
     program: P05

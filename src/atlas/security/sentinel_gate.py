@@ -173,9 +173,17 @@ class SentinelGate:
         ioc_commands: frozenset[str] = frozenset(),
         governed_repo_root: Path | None = None,
         allow_test_fixture: bool = False,
+        receipts_dir: Path | None = None,
     ) -> None:
         self._snapshot_dir = Path(snapshot_dir)
         self._merkle_log = merkle_log
+        # ADC-WO-124: receipts de admisión de terceros (atlas.security.
+        # third_party_admission). Sentinel solo los LEE aquí -- crearlos o
+        # revocarlos es una acción humana aparte, nunca de este gate.
+        self._receipts_dir = (
+            Path(receipts_dir) if receipts_dir is not None
+            else self._snapshot_dir.parent / "third_party_receipts"
+        )
         # La raíz no se toma de una variable de entorno o del JSON MCP: se
         # deriva del módulo Sentinel ya cargado. El argumento opcional es una
         # aserción de consistencia, no una autoridad que un caller pueda mover.
@@ -202,6 +210,14 @@ class SentinelGate:
 
     # ------------------------------------------------------------------ API
 
+    @property
+    def receipts_dir(self) -> Path:
+        """Dónde vive el store de receipts ADC-WO-124 que este gate lee.
+        Público para que CLI/operador (`atlas mcp admit-third-party`) pueda
+        admitir/revocar apuntando al mismo directorio, sin adivinar la
+        convención de derivación desde fuera de la clase."""
+        return self._receipts_dir
+
     def vet_command(self, cfg: McpServerConfig) -> str | None:
         """Capa 2, **pre-spawn**: el ``cmd`` es argv (nunca shell, ADR-035).
         Metacaracteres de shell o un comando en la IOC blocklist vetan el server
@@ -213,13 +229,76 @@ class SentinelGate:
                 "dígitos, '_' o '-' y nunca '__'"
             )
         if reason is None and not self._is_governed_native_command(cfg):
-            reason = (
-                "third-party executable sin artefacto materializado, hash, "
-                "receipt e aislamiento; ejecución en cuarentena"
-            )
+            reason = self._vet_third_party_receipt(cfg)
         if reason is not None:
             self._audit("sentinel.server_vetoed", cfg.name, reason, "blocked")
         return reason
+
+    def _vet_third_party_receipt(self, cfg: McpServerConfig) -> str | None:
+        """ADC-WO-124: única vía por la que un ejecutable de terceros puede
+        levantar el veto por defecto. `third_party_admission.load_receipt`
+        es la ÚNICA fuente de verdad -- este método nunca crea ni confía en
+        nada que no esté en ese receipt, y recomputa el hash del ejecutable
+        REAL en cada llamada (nunca cachea "ya lo comprobé antes"). Fail
+        cerrado ante CUALQUIER discrepancia: cmd, cwd, env_extra o
+        env_passthrough deben coincidir byte a byte con lo admitido -- una
+        variable de entorno extra (posible inyección de secretos) o un
+        argv distinto (drift) vetan igual que no tener receipt."""
+        from atlas.security.third_party_admission import (  # noqa: PLC0415
+            ReceiptIntegrityError,
+            load_receipt,
+        )
+
+        default_reason = (
+            "third-party executable sin artefacto materializado, hash, "
+            "receipt e aislamiento; ejecución en cuarentena"
+        )
+        try:
+            receipt = load_receipt(self._receipts_dir, cfg.name)
+        except ReceiptIntegrityError:
+            _log.warning(
+                "SentinelGate: receipt corrupto para %r -- cuarentena "
+                "fail-closed (protección de integridad, no TOFU)", cfg.name,
+            )
+            return default_reason
+        if receipt is None:
+            return default_reason
+        if receipt.revoked:
+            return (
+                f"receipt revocado el {receipt.revoked_at} por "
+                f"{receipt.revoked_by}; cuarentena restaurada"
+            )
+        if tuple(cfg.cmd) != receipt.cmd:
+            return "cmd del server no coincide byte a byte con el receipt admitido"
+        if cfg.cwd != receipt.cwd:
+            return "cwd del server no coincide con el receipt admitido"
+        if dict(cfg.env_extra) != receipt.env_extra:
+            return (
+                "env_extra del server no coincide con el receipt admitido "
+                "(incluye DISPLAY -- ninguna autoridad se concede para un "
+                "display distinto al aislado admitido)"
+            )
+        if tuple(cfg.env_passthrough) != receipt.env_passthrough:
+            return (
+                "env_passthrough del server no coincide con el receipt "
+                "admitido -- ninguna variable de entorno extra se concede "
+                "a un ejecutable de terceros"
+            )
+        executable = Path(cfg.cmd[0]) if cfg.cmd else None
+        if executable is None or executable.is_symlink() or not executable.is_file():
+            return "ejecutable admitido ya no existe en disco o es symlink"
+        actual_hash = hashlib.sha256(executable.read_bytes()).hexdigest()
+        if actual_hash != receipt.executable_sha256:
+            return (
+                "hash del ejecutable no coincide con el receipt admitido -- "
+                "posible drift o sustitución del artefacto tras la admisión"
+            )
+        self._audit(
+            "sentinel.server_admitted", cfg.name,
+            f"receipt {receipt.merkle_receipt_id} verificado, hash coincide",
+            "success",
+        )
+        return None
 
     def inspect_command_argv(self, cmd: list[str]) -> str | None:
         """Inspecciona sintaxis e IOC sin conceder autoridad de ejecución.
