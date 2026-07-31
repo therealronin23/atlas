@@ -81,5 +81,57 @@ respuesta hostil cortada a media frase, sin contenido aprovechable. Un
 reintento se colgó ~10min sin responder (killed). No re-litigiar este
 intento fallido sin repetirlo con `nvidia_glm` confirmado vivo primero.
 
+## Estado 2026-07-31: Cónclave preliminar con QUÓRUM REAL — veredicto FAIL
+
+Los dos bloqueos que impidieron el quórum el día anterior quedaron
+arreglados con evidencia medida, no supuesta:
+
+1. **Tope de tiempo por-intento → presupuesto total** (`ac0243c`): un
+   proveedor colgado ya no cuesta 120s×3 reintentos, cuesta 120s una vez.
+2. **Fallback de linaje inalcanzable por nivel** (`5b912d6`): el reviewer
+   ahora recorre los niveles del linaje en orden hasta que uno conteste,
+   en vez de fijar el nivel del primario.
+3. **Linaje CN invertido** (`7936cad`): `nvidia_glm` se cuelga siempre
+   (medido tres veces distintas); `groq_qwen3` (mismo linaje CN — Qwen es
+   Alibaba, GLM es Zhipu) pasa a primario. Medido: el asiento CN pasó de
+   123.0s/`reachable=False` a **9.2s/`reachable=True`**.
+
+Con eso, el Cónclave real dio **quórum 3/3** por primera vez —
+`gemini_free`, `groq_qwen3`, `nvidia_mistral_large` respondieron los tres.
+
+**Veredicto: `FAIL`.** Las tres voces, independientemente, señalan la
+misma objeción de fondo: el benchmark de referencia (una pantalla, glow +
+24 partículas) es demasiado estrecho para extrapolar a ~20 pantallas
+complejas, y la ventaja numérica de Qt (build/arranque/RAM/fps) podría no
+sobrevivir a esa escala. Puntos convergentes entre las tres voces:
+
+- **MultiEffect roto la premisa original.** `nvidia_mistral_large` lo
+  dice explícito: "la comparación de fps se vuelve irrelevante — Qt ya no
+  tiene una capa de abstracción superior para efectos visuales" sin él.
+  Coincide con el hallazgo ya documentado en el informe de Qt.
+- **Escalabilidad de shaders/memoria GPU sin medir**: la GTX 960M tiene
+  solo 2GB VRAM; ningún micro-PoC probó 5-10 shaders complejos
+  simultáneos, ni qué pasa con 20 pantallas cargadas a la vez.
+- **Toolchain de Qt como riesgo de despliegue**: `groq_qwen3` señala que
+  el split real de paquetes Debian (`qt6-declarative-dev` vs
+  `qml6-module-*`, medido hoy mismo — 3 rondas de apt) rompe builds
+  reproducibles/CI si no se gestiona con cuidado.
+- **Benchmark de sucesión estadísticamente insignificante**: n=1 en los
+  tres candidatos, ninguna voz lo acepta como prueba suficiente.
+- **`gemini_free` no aportó objeciones nuevas** más allá de calificar la
+  síntesis previa de "autoengaño" — descartable como señal, pero no
+  invalida el veredicto: las otras dos voces sí dieron objeciones
+  concretas y verificables.
+
+**Lo que este veredicto NO dice**: no descalifica a Qt como candidato ni
+corona a Flutter/Compose — dice que el benchmark de referencia (una
+pantalla) es insuficiente para decidir con confianza a la escala real del
+producto (~20 pantallas). Es exactamente el tipo de punto ciego que el
+Cónclave existe para encontrar antes de invertir semanas construyendo
+sobre una base no probada.
+
 El ADR de stack GANADOR sigue sin cerrarse — paso 4 (Android + elección
-del operador) pendiente, a pedir explícitamente.
+del operador) pendiente, a pedir explícitamente. Este veredicto añade una
+recomendación nueva y concreta para cuando se retome: antes de comprometerse
+a un stack, medir un prototipo con MÁS de una pantalla y más carga de
+shaders simultánea, no solo el micro-PoC de referencia.
