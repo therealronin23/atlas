@@ -115,7 +115,10 @@ def test_build_trio_has_three_distinct_providers() -> None:
     trio = build_trio_reviewers()
     assert len(trio) == 3
     provs = {r.provider for r in trio}
-    assert provs == {"gemini_free", "nvidia_glm", "nvidia_mistral_large"}
+    # 2026-07-31: CN reordenado -- groq_qwen3 es ahora el primario del linaje
+    # (nvidia_glm se cuelga siempre, medido dos veces; ver comentario junto a
+    # _TRIO_LINEAGE_FALLBACKS).
+    assert provs == {"gemini_free", "groq_qwen3", "nvidia_mistral_large"}
 
 
 # ---------------------------------------------------------------------------
@@ -282,7 +285,8 @@ def test_build_trio_prefers_primary_over_fallback_when_both_available():
 
     trio = build_trio_reviewers()  # pool completo por defecto
     provs = {r.provider for r in trio}
-    assert provs == {"gemini_free", "nvidia_glm", "nvidia_mistral_large"}
+    # 2026-07-31: CN reordenado, ver _TRIO_LINEAGE_FALLBACKS.
+    assert provs == {"gemini_free", "groq_qwen3", "nvidia_mistral_large"}
 
 
 def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
@@ -292,14 +296,18 @@ def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
     (resp.success=False). Antes solo caía a fallback si faltaba la key en el pool,
     dejando el slot muerto ante un proveedor keyed-pero-caído (Mistral EU 410,
     NVIDIA rate-limit). La etiqueta `.provider` sigue siendo el primario (la
-    diversidad del trío se mide por linaje, no por vendor de hosting)."""
+    diversidad del trío se mide por linaje, no por vendor de hosting).
+
+    2026-07-31: el linaje CN se invirtió (groq_qwen3 ahora primario,
+    nvidia_glm fallback -- nvidia_glm se cuelga siempre, medido). La etiqueta
+    del asiento CN cambia con él; el mecanismo que este test verifica no."""
     from atlas.core.deliberation_council import build_trio_reviewers
 
     trio = build_trio_reviewers()  # pool completo
     us = next(r for r in trio if r.provider == "gemini_free")
-    cn = next(r for r in trio if r.provider == "nvidia_glm")
+    cn = next(r for r in trio if r.provider == "groq_qwen3")
     assert [p.name for p in us._hub._providers] == ["gemini_free", "groq_llama_70b"]
-    assert [p.name for p in cn._hub._providers] == ["nvidia_glm", "groq_qwen3"]
+    assert [p.name for p in cn._hub._providers] == ["groq_qwen3", "nvidia_glm"]
 
 
 def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
@@ -310,7 +318,7 @@ def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
     `InferenceHub._walk_chain` filtra candidatos con `p.level == request.level`
     (filtro DURO; la única escapatoria entre niveles es L1->L0). Y
     `build_trio_reviewers` pasa `primary.level` como nivel de la petición. Con
-    los niveles reales del catálogo:
+    los niveles reales del catálogo (estado 2026-07-30, antes del reorden CN):
 
         US  gemini_free           L0  ->  groq_llama_70b            L1   INALCANZABLE
         CN  nvidia_glm            L2  ->  groq_qwen3                L0   INALCANZABLE
@@ -319,15 +327,20 @@ def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
     Medido en vivo el mismo día: el asiento CN tardó 123.0s y devolvió
     `reachable=False` — `nvidia_glm` se cuelga y `groq_qwen3` NUNCA se intentó.
     Es la causa de que el Cónclave no alcanzara quórum (2/3) pese a tener el
-    fallback "configurado". El asiento EU sí respondió, porque es el único con
-    ambos proveedores en el mismo nivel.
+    fallback "configurado".
+
+    2026-07-31: el linaje CN se invirtió (ver `_TRIO_LINEAGE_FALLBACKS`), así
+    que en producción ya no ejerce este camino -- groq_qwen3 (ahora primario)
+    responde directo. El asiento US SÍ sigue siendo asimétrico
+    (gemini_free L0 -> groq_llama_70b L1) y es el que este test usa ahora
+    para seguir probando el mecanismo general, no un caso ya resuelto.
     """
     import litellm  # type: ignore
 
     from atlas.core.deliberation_council import build_trio_reviewers
 
-    monkeypatch.setenv("NVIDIA_API_KEY", "test-nvidia")
     monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini")
     # build_trio_reviewers construye hubs en modo "auto", que dentro de pytest
     # resuelve a stub: sin esto no se llamaría a NINGÚN proveedor y el test
     # verificaría el stub, no el enrutado real por nivel que es lo que falla.
@@ -338,7 +351,7 @@ def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
     def fake_completion(**kwargs):
         model = kwargs.get("model", "")
         seen.append(model)
-        if "glm" in model:  # el primario CN se cae
+        if "gemini" in model:  # el primario US se cae
             raise RuntimeError("boom: primario del linaje caído")
         msg = type("M", (), {"content": "MINOR\nel fallback del linaje contestó"})()
         choice = type("C", (), {"message": msg})()
@@ -346,17 +359,17 @@ def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
 
     monkeypatch.setattr(litellm, "completion", fake_completion)
 
-    cn = next(r for r in build_trio_reviewers() if r.provider == "nvidia_glm")
-    obj = cn.review("¿decisión de prueba?", "")
+    us = next(r for r in build_trio_reviewers() if r.provider == "gemini_free")
+    obj = us.review("¿decisión de prueba?", "")
 
-    assert any("qwen" in m for m in seen), (
+    assert any("llama" in m for m in seen), (
         f"el fallback del MISMO linaje debe intentarse aunque su nivel difiera "
         f"del primario; modelos realmente llamados: {seen}"
     )
     assert obj.reachable is True, (
         "un asiento cuyo fallback de linaje contesta NO es un asiento muerto"
     )
-    assert obj.provider == "nvidia_glm", (
+    assert obj.provider == "gemini_free", (
         "la etiqueta sigue siendo el primario: la diversidad se mide por linaje"
     )
 

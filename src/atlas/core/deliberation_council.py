@@ -126,9 +126,19 @@ _TRIO_NAMES = ("gemini_free", "nvidia_glm", "nvidia_mistral_large")
 #         prove-it en vivo real 2026-07-24 contra OpenRouter: mistralai/
 #         mistral-large-2512, provider real "Mistral" directo -- cierra el
 #         hueco EU que quedó documentado en ADR-074/075).
+# 2026-07-31: orden CN invertido -- groq_qwen3 (primary) -> nvidia_glm
+# (fallback). No es solo velocidad: nvidia_glm no devuelve error, SE CUELGA
+# (medido dos veces el mismo día: 123.0s con el tope duro ya arreglado a
+# presupuesto total, ac0243c). "El primario debe ser la mejor opción" es la
+# intención de diseño de este mapa (ver test_build_trio_prefers_primary_
+# over_fallback_when_both_available) -- con esa evidencia, nvidia_glm ya no
+# lo es. groq_qwen3 responde en segundos y es el mismo linaje (Qwen es
+# Alibaba, GLM es Zhipu -- ambos CN, la diversidad geográfica del trío no
+# cambia). Si nvidia_glm se recupera algún día, esto se puede revertir con
+# la misma evidencia que lo justificó: prove-it en vivo, no opinión.
 _TRIO_LINEAGE_FALLBACKS: dict[str, tuple[str, ...]] = {
     "gemini_free": ("gemini_free", "groq_llama_70b"),
-    "nvidia_glm": ("nvidia_glm", "groq_qwen3"),
+    "nvidia_glm": ("groq_qwen3", "nvidia_glm"),
     "nvidia_mistral_large": ("nvidia_mistral_large", "openrouter_mistral_large"),
 }
 
