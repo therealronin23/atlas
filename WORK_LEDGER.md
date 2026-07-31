@@ -8,6 +8,49 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (Cónclave ADR-069) — FAIL UNÁNIME de 3 linajes. Y lo que
+  demolieron fue MI propuesta, no las del dossier. `correction.py` APARCADO.**
+  **Pregunta**: ¿se permite que un LLM planifique un cambio de código que
+  entra en la ruta gobernada de ColdUpdate, cruzando la línea que ADR-069
+  trazó a propósito (*"sin LLM: la petición se parsea determinista"*)?
+  **Diversidad cumplida y verificada ANTES de gastar**: 3 linajes vivos
+  (gemini_free 🇺🇸, groq_qwen3 🇨🇳, nvidia_mistral_large 🇪🇺 vía fallback
+  OpenRouter). Los 3 `passed=False` y los 3 ALCANZABLES — objeciones
+  sustantivas, no fallos disfrazados de veto (el campo `reachable` existe por
+  un incidente previo del 30-jul justamente con eso).
+  **Veredicto: FAIL. Convergencia total, cero divergencia que mostrar.**
+  Yo había propuesto una "tercera vía" (finding → petición en texto libre →
+  ruta dorada, dejando que el vocabulario determinista acepte o rechace). Los
+  tres la destrozaron, y con razón:
+  - **Mistral**: *"archivar `correction.py` … es la única opción que respeta
+    plenamente el ADR-069. Las otras dos vías (incluida la tercera) requieren
+    algún grado de violación, ya sea explícita (b) o **encubierta** (tercera
+    vía)"*. Más el bucle de realimentación: un cambio genera un finding nuevo
+    que genera otro cambio.
+  - **Qwen**, usando MI PROPIA evidencia contra mí: *"si el monitor falla, el
+    gate humano es una ilusión"* — citando las 23 h de caída sin detección que
+    yo mismo había puesto en el dossier. Y: *"`correction.py` podría estar
+    dormido precisamente porque alguien reconoció el riesgo"*.
+  - **Gemini**: BLOCKING.
+  **Lección**: propuse algo que PARECÍA respetar la restricción mientras la
+  erosionaba sin ADR ni revisión de seguridad. Es la versión sofisticada del
+  error del día — algo que pasa el grep y no hace lo que dice.
+  **Decisión del operador: APARCAR** (no archivar todavía, no construir).
+  `correction.py` (104 loc) sigue dormido y **documentado como bloqueado en
+  una decisión de arquitectura pendiente**, sin fingir que es producto. Las
+  dos salidas honestas que señala el Cónclave, para cuando se decida en frío:
+  archivarlo, o revisar ADR-069 EXPLÍCITAMENTE — nunca por la puerta de atrás.
+  **ADC-WO-108 sigue READY** a propósito: su acceptance exige caller
+  demostrado en TODAS las piezas.
+  **Correcciones mías en este tramo, todas del mismo tipo (asumir la forma de
+  algo en vez de mirarla)**: el enum `Difficulty` (no existe `EXPERT`), el
+  campo de objeciones (`Evidence.checks`, no `.objections` — el primer intento
+  dio "FAIL con 0 objeciones", que no presenté por no ser evidencia), y una
+  falsa alarma sobre el grafo: **SÍ se reconstruyó** (de `1bd772d` del 30-jul
+  a `4fe3598` de hoy); está 1 commit por detrás, no 31. El daemon funciona.
+  **Memoria del daemon medida en vivo**: pico 3.074 MiB en la reconstrucción,
+  consistente con el histórico. Recomendación: no tocar earlyoom.
+
 - **2026-07-31 (Hermes) — el "bug del worker" NO era nuestro: era un bug de
   terceros YA ARREGLADO upstream. Actualizado `f64e4f4` → `v2026.7.30`.**
   **Lo que cambió el encuadre**: `~/.hermes/hermes-agent` es un clon de
