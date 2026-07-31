@@ -34,74 +34,53 @@ _SKIP_DIRS = {".git", ".venv", ".venv-redteam", "__pycache__", "node_modules", "
 ROOT = Path(__file__).resolve().parent.parent
 GRACE_DAYS = 30  # una cuarentena sobrevive >=1 ciclo; pasado el grace, candidata a git rm
 
-# Entrypoints: 0 importadores estáticos es ESPERADO (se invocan por CLI/ASGI/etc.).
-_ENTRYPOINT_HINTS = ("cli", "__main__", "__init__", "conftest", "app", "server", "asgi", "run")
-
+# Módulos SIN caller de producción pero con dueño/estado explícito.
+#
+# 2026-07-31 (F0.2): esta tabla ADELGAZÓ de 17 a 9 entradas. Ocho existían sólo
+# para tapar puntos ciegos del escáner viejo, y el resolutor AST las resuelve
+# solo — verificadas una a una por grep antes de retirarlas:
+#   - live_loop, benchmark_gate, evolution_gate, panorama_scout, topic_expander,
+#     incremental, gmail: imports DIFERIDOS dentro de funciones
+#     (`maintenance_facade`, `orchestrator.py:1563`, `fabric/testing.py:50`).
+#     `ast.walk` los ve; el escáner "a nivel de módulo" no.
+#   - impacted_tests: caller real `python -m atlas.engineering.impacted_tests`
+#     en `.githooks/pre-commit:79`, ahora detectado por el pase de comandos.
+# Una entrada aquí ya NO debería compensar al detector: si hace falta, es señal
+# de que el detector tiene un hueco que hay que arreglar en `dormant_modules`.
 _CLASSIFIED_ZERO_IMPORTERS = {
     "src/atlas/tools/_crawl4ai_worker.py": "KEEP subprocess entrypoint used by CrawlerTool in isolated venv",
     "src/atlas/core/lesson_runner.py": "PARK tested lesson workflow; no runtime owner in current slice",
     "src/atlas/core/incremental_coder.py": "PARK tested coding workflow; no runtime owner in current slice",
     "src/atlas/core/history_compactor.py": "PARK standalone context utility; caller-owned",
     "src/atlas/core/token_budget.py": "PARK standalone context utility; caller-owned",
-    # 2026-07-24 (ADR-074): GatedLessonRecorder + build_judge_verifier SÍ se
-    # importan y construyen en producción dentro de Orchestrator.enable_gate_d_pipeline()
-    # (import DIFERIDO dentro de la función -- por eso el escáner estático de
-    # imports a nivel de módulo no lo ve; esta tabla es justo el mecanismo para
-    # corregir ese punto ciego). Dueño real en hot-path cuando ATLAS_PIPELINE_GATE_D=1.
-    "src/atlas/immunity/live_loop.py": "KEEP GatedLessonRecorder/build_judge_verifier wired in enable_gate_d_pipeline (ADR-074, deferred import)",
-    # 2026-07-08: preflight_gate, batch_premortem, root_cause_classifier y
-    # failure_lesson_sink dejaron de ser 0-importer — cableados en producción
-    # (orchestrator.cold_update / maintenance_facade). Ver WORK_LEDGER.md.
-    "src/atlas/core/self_maintenance/benchmark_gate.py": "KEEP injectable component used by ColdUpdateBatcher when configured",
-    "src/atlas/core/self_maintenance/topic_expander.py": "PARK discovery helper; service-runner wiring not enabled",
     "src/atlas/core/self_maintenance/sota_snapshot.py": "PARK benchmark context recorder; no scheduler owner enabled",
-    "src/atlas/core/self_maintenance/panorama_scout.py": "PARK discovery scout; no scheduler owner enabled",
-    "src/atlas/core/self_maintenance/evolution_gate.py": "KEEP optional component used by SelfBuildRunner evolution path when configured",
-    # 2026-07-23 (2ª pasada de auditoría, sanitation_audit corrido directo):
-    # 3 módulos genuinamente sin clasificar, encontrados por el propio scanner.
     "src/atlas/business/legacy.py": "PARK Business Core Fase 15 (LegacyLinkLayer); draft-first, sin flujo real que lo consuma todavia",
     "src/atlas/events/core_bridge.py": "PARK ADR-058 (CoreEventBridge proyecta EventBus->OsEvent canon); nada vivo lo suscribe hoy, Mission Layer/Radar leen el bus real directamente",
-    "src/atlas/fabric/connectors/gmail.py": "PARK ADR-065 (GmailReadOnlyConnector stdlib); posible candidato a retirar -- el MCP externo google-workspace (45 tools, conectado) puede haberlo hecho redundante, decision del operador pendiente",
     "src/atlas/security/node_identity.py": "KEEP by design (backlog t6-node-identity-module, done): standalone crypto module, sin segundo nodo real (Hermes VPS de baja) que lo consuma todavia -- documentado explicitamente como standalone en el propio item",
-    # 2026-07-29, encontrados por el propio scanner en la revalidación:
-    "src/atlas/engineering/impacted_tests.py": "KEEP: caller real es .githooks/pre-commit ('python -m atlas.engineering.impacted_tests'), invisible al escaneo estatico de imports Python -- mismo punto ciego documentado arriba para live_loop.py, aqui via subproceso en vez de import diferido",
-    "src/atlas/engineering/incremental.py": "PARK Cut 1 / ADC-WO-108 (ver PLAN.md): preparador incremental tested (ancestry Git, dedupe_key vs snapshot aceptado), pero el wiring a runtime/Orchestrator y la proyeccion gobernada siguen ausentes -- gap conocido, no descubrimiento",
 }
 
 
-def _modules() -> list[Path]:
-    return [p for p in (ROOT / "src" / "atlas").rglob("*.py") if "__pycache__" not in p.parts]
-
-
-def _py_corpus() -> dict[Path, str]:
-    """Lee una sola vez todos los .py de src/ y scripts/ (no tests)."""
-    corpus: dict[Path, str] = {}
-    for base in (ROOT / "src", ROOT / "scripts"):
-        for g in base.rglob("*.py"):
-            if set(g.parts) & _SKIP_DIRS:
-                continue
-            try:
-                corpus[g] = g.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-    return corpus
-
-
 def vapor_audit() -> list[str]:
-    out: list[str] = []
-    corpus = _py_corpus()
-    for f in _modules():
-        mod = f.stem
-        if mod in _ENTRYPOINT_HINTS:
-            continue
-        rel = str(f.relative_to(ROOT))
-        if rel in _CLASSIFIED_ZERO_IMPORTERS:
-            continue
-        pat = rf"import .*\b{re.escape(mod)}\b|from .*\b{re.escape(mod)}\b import|\.{re.escape(mod)}\b"
-        rx = re.compile(pat)
-        if not any(g != f and rx.search(text) for g, text in corpus.items()):
-            out.append(rel)
-    return out
+    """Módulos sin un solo caller de producción. Resolución REAL de imports
+    (AST), delegada a `atlas.core.self_maintenance.dormant_modules` — como
+    `ecosystem_drift` y `component_wiring_drift`, la lógica vive en `src/`
+    con TDD real y aquí sólo se envuelve fail-open.
+
+    2026-07-31 (F0.2): antes esto era la heurística de texto
+    `import .*\\bmod\\b|from .*\\bmod\\b import|\\.mod\\b`. Su tercera rama
+    convertía cualquier mención textual del stem —un `self.reproduction`, una
+    cadena `"diagnostics"`, un comentario— en un "importador". Falso
+    NEGATIVO, el sentido peligroso: el radar callaba. Medido: no veía
+    `engineering/reproduction.py` (489 loc) ni `engineering/diagnostics.py`
+    (391 loc), los dos módulos dormidos más grandes del repo, porque esas
+    palabras aparecen como texto en `logging/merkle_logger.py:109` y
+    `core/doctor.py`. Reportaba 2 dormidos donde había 16."""
+    try:
+        from atlas.core.self_maintenance.dormant_modules import dormant_modules
+
+        return dormant_modules(ROOT, classified=_CLASSIFIED_ZERO_IMPORTERS)
+    except Exception as exc:  # noqa: BLE001 — radar opcional, nunca bloquea
+        return [f"dormant_modules no pudo ejecutarse: {exc}"]
 
 
 def classified_zero_importers() -> list[str]:

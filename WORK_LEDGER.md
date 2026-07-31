@@ -8,6 +8,50 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (F0.2) — el radar de código dormido pasa de regex a AST: veía
+  2 dormidos donde había 16.**
+  Reproducido primero el fallo con medida, no de memoria: `vapor_audit()`
+  buscaba importadores con `import .*\bmod\b|from .*\bmod\b import|\.mod\b`.
+  La tercera rama convierte cualquier mención TEXTUAL del stem —un
+  `self.reproduction`, la cadena `"diagnostics"`, un comentario— en un
+  "importador". Es un falso NEGATIVO: el radar calla en vez de gritar. Medido
+  en este repo: no veía `engineering/reproduction.py` (489 loc) ni
+  `engineering/diagnostics.py` (391 loc), **los dos módulos dormidos más
+  grandes**, porque esas palabras aparecen como texto en
+  `logging/merkle_logger.py:109` y `core/doctor.py`.
+  **Arreglo**: `src/atlas/core/self_maintenance/dormant_modules.py` (nuevo,
+  TDD real: 20 tests, RED verificado antes de producción) con resolución de
+  imports por `ast`; `scripts/sanitation_audit.py` sólo envuelve fail-open,
+  igual que `ecosystem_drift` y `component_wiring_drift`. Tres reglas que
+  ahora viven en el detector y no en la memoria de nadie: **los tests NO son
+  callers de producción** (regla dura de ADC-WO-108, ahora ejecutable), los
+  imports DIFERIDOS dentro de funciones SÍ cuentan, y
+  `python -m atlas.x.y` desde un hook/shell SÍ cuenta.
+  **La tabla de excepciones a mano bajó de 17 a 9 entradas.** Las 8 retiradas
+  existían sólo para tapar puntos ciegos del escáner y el AST las resuelve
+  solo; verificadas UNA A UNA por grep antes de retirarlas (`live_loop`,
+  `benchmark_gate`, `evolution_gate`, `panorama_scout`, `topic_expander`,
+  `incremental`, `gmail` = imports diferidos reales; `impacted_tests` =
+  `.githooks/pre-commit:79`). Corregí un error mío a mitad: mi primer grep de
+  verificación dio vacío y creí que el detector mentía — el grep estaba mal
+  (`import.*\bmod\b` no casa `from ...benchmark_gate import X`).
+  **Falso positivo propio, corregido**: el detector marcaba los 3 servidores
+  MCP como dormidos. No lo están — se lanzan con `[exe, "-m", root.module]`
+  desde `mcp/trunk_server.py:86`. Añadida resolución de despacho dinámico por
+  ruta punteada COMPLETA, que es lo que conserva la precisión:
+  `"atlas.engineering.reproduction"` cuenta como caller, `"reproduction"`
+  suelto no.
+  **Dos hallazgos nuevos, deliberadamente SIN clasificar**:
+  `business/extract.py` y `mcp/adapter_registry.py` (sólo importados desde
+  tests). Clasificarlos yo sería repetir el pecado de dar por resuelto lo
+  que no he decidido.
+  **Estado**: suite 4874 passed / 6 skipped · mypy 338 ficheros limpio ·
+  `check_canon.py` PASS (2105). Grafo Kuzu `STALE` (daemon sin tick): por eso
+  el detector usa AST propio y no el grafo — un radar que depende de un
+  daemon dormido no es un radar.
+  **Próxima acción**: F1, con un hallazgo que REORDENA la fase — ver entrada
+  siguiente antes de cablear nada.
+
 - **2026-07-31 (F0 del plan nuevo) — 4 decisiones del operador ejecutadas;
   docs raíz reconciliados; credencial root borrada.**
   Plan vivo aprobado: `~/.claude/plans/stateless-prancing-pebble.md`.
