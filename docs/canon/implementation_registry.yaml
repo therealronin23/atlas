@@ -564,20 +564,31 @@ work_orders:
       - ADR-078
       - approved Workbench symbiosis design section 6
     current_state: >-
-      CLOSED 2026-07-31, all 5 remaining pieces: Orchestrator maintenance
-      tick (opt-in, 24h cadence, Merkle-logged), runtime event wiring to the
+      CORRECTED 2026-07-31 (same day). An earlier entry on this date claimed
+      this work order CLOSED with "all 5 remaining pieces ... verified by
+      grep, not just passing tests". THAT CLAIM WAS FALSE and is retracted
+      here. Measured state, by import resolution against src/ and scripts/:
+      WIRED (3 of 5) — Orchestrator maintenance tick (opt-in, 24h cadence,
+      Merkle-logged, via maintenance_facade.py), runtime event wiring to the
       real EventBus (Merkle-before-EventBus verified by a subscriber-side
-      audit_ref resolution test), a read-only API projection
-      (`GET /engineering/findings`, no mutating verbs), graph/history/memory
-      hypotheses (composes existing atlas.core.graphs.QUERIES + git log +
-      LessonStore, no new engine — verified with real data: 5 importers, 14
-      blast-radius, 101 commits), and correction production (routes a
-      finding's patch_ref to ColdUpdateManager.propose(), invariant "no
-      patch application from a finding" preserved). All 8 previously
-      code-present pieces (findings/review/diagnostics/events/baselines/
-      incremental/normalization/reproduction) plus these 5 now have real
-      callers outside src/atlas/engineering/ — verified by grep, not just
-      passing tests.
+      audit_ref resolution test), and a read-only API projection
+      (GET /engineering/findings, server.py:611, no mutating verbs).
+      NOT WIRED (2 of 5) — engineering/hypotheses.py (211 loc) and
+      engineering/correction.py (104 loc): both are code-present, tested and
+      committed on 2026-07-31, and both have ZERO production callers. They
+      were written and declared closed without ever being invoked, which is
+      the exact "wire-before-claim" failure this work order names as its own
+      risk. Also still dormant from before this session:
+      engineering/reproduction.py (489 loc) and engineering/diagnostics.py
+      (391 loc), zero production callers each. Total dormant in the package:
+      1315 loc. Compounding factor: scripts/sanitation_audit.py, the radar
+      built to detect exactly this, has a demonstrable blind spot — its
+      `\.{mod}\b` heuristic yields false negatives for `reproduction` and
+      `diagnostics` because those words appear as literal strings in
+      logging/merkle_logger.py:109 and core/doctor.py, so the radar misses
+      the two largest dormant modules in the repo. Closure criterion going
+      forward: a grep demonstrating production callers. Passing tests are
+      NOT evidence of wiring — these modules' tests were green while dormant.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -632,8 +643,9 @@ work_orders:
       - one versioned finding contract
       - failed reviewers produce UNKNOWN
       - proposals still pass governed approval paths
+      - every piece has a demonstrated production caller (grep, not green tests)
     operator_decision_required: false
-    status: DONE
+    status: READY
 
   - id: ADC-WO-109
     program: P08
