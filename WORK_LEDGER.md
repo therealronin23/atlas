@@ -8,6 +8,51 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (reality) — el OPERADOR destapó que `atlas reality` mide
+  CONFIGURACIÓN, no realidad. Bug de proveedores arreglado; el rediseño de
+  fondo queda ABIERTO como el hallazgo más valioso de la sesión.**
+  **Cómo salió**: preguntó *"¿no está NVIDIA?"*. Estaba — dos claves
+  (`NVIDIA_API_KEY`, `NVIDIA_API_KEY_2`) y funcionando de verdad: el Cónclave
+  de esa misma tarde usó `nvidia_mistral_large` como una de sus tres voces.
+  Lo que fallaba era el REPORTE.
+  **Bug 1 (arreglado, TDD, 7 tests)**: `_llm_state()` tenía una lista ESCRITA
+  A MANO de cuatro proveedores contra un catálogo (`DEFAULT_PROVIDERS`) de 14
+  entradas, cinco de ellas NVIDIA. **Bug 2, en la misma función**: comprobaba
+  `TOGETHER_API_KEY` cuando el catálogo declara `TOGETHERAI_API_KEY`, así que
+  Together tampoco podía dar positivo NUNCA. Arreglado DERIVANDO del catálogo
+  (con soporte de `account_pool`: `OPENROUTER_API_KEY_2` sí se usa en 4
+  proveedores; `NVIDIA_API_KEY_2` no lo usa nadie — huérfana, señalada al
+  operador, no tocada). Medido: `configured_providers` pasa de
+  `[groq, openrouter, gemini]` a `[gemini, groq, nvidia, openrouter]`.
+  **HALLAZGO DE FONDO, del operador**: *"creo que atlas reality verdaderamente
+  no hace nada; debería estar vinculado al grafo, a Hermes, a la seguridad, a
+  todo, y actualizarse habitualmente"*. **Verificado y es peor de lo que
+  dijo**: de 19 sondas `_*_state`, **11 leen ficheros escritos por ejecuciones
+  PASADAS**, 1 sólo mira env, y sólo grafo y Merkle comprueban un hecho
+  presente. Y el modo "caro" `--run-checks` **sólo ejecuta pytest y mypy** —
+  no lanza `inference_smoke`, ni delegación Hermes, ni MCP, ni seguridad:
+  justo las tres cosas que sus propios campos `reason` te dicen que corras
+  para tener "live evidence".
+  **Esto explica el dato más duro del proyecto**: `0 LIVE_VERIFIED` y
+  `0 PRODUCT_ACCEPTED` de 142 filas. No existe ruta automática de
+  "configurado" a "verificado vivo"; depende de que un humano se acuerde de
+  lanzar smokes, y hay meses de evidencia de que nadie se acuerda.
+  **Patrón de los 3 hallazgos del día, todos del operador PREGUNTANDO y todos
+  invisibles a 4.919 tests**: `.env` sin cargar · lista de proveedores
+  congelada · reality midiendo lo que no es. Causa común: **los tests
+  verifican que una función devuelve lo que esa función calcula, no que lo
+  que calcula sea CIERTO** — igual que `reproduction.py` pasaba los suyos
+  estando roto.
+  **NO rediseñado a propósito**: toca el instrumento con el que el proyecto
+  entero se mide. Tras el FAIL del Cónclave por una arquitectura mía apresurada
+  ese mismo día, se hace en frío. Semilla ya construida: el watchdog
+  (sondas vivas en cadencia, estado persistido, distingue "no sé" de "roto").
+  **Condición innegociable para la v1**: que no afirme `LIVE_VERIFIED` de nada
+  sin sonda real que lo demuestre — un instrumento que sobreafirma es mucho
+  peor que uno que subreporta.
+  **Estado**: suite 4919 passed / 6 skipped · mypy limpio · grafo `FRESH` ·
+  daemon activo 0 reinicios · vigilante `success` · Hermes `v2026.7.30`.
+
 - **2026-07-31 (Cónclave ADR-069) — FAIL UNÁNIME de 3 linajes. Y lo que
   demolieron fue MI propuesta, no las del dossier. `correction.py` APARCADO.**
   **Pregunta**: ¿se permite que un LLM planifique un cambio de código que

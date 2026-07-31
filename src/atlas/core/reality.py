@@ -283,14 +283,46 @@ def _hermes_state() -> dict[str, Any]:
     }
 
 
-def _llm_state() -> dict[str, Any]:
-    keys = {
-        "groq": bool(os.environ.get("GROQ_API_KEY")),
-        "openrouter": bool(os.environ.get("OPENROUTER_API_KEY")),
-        "gemini": bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")),
-        "together": bool(os.environ.get("TOGETHER_API_KEY")),
-    }
-    configured = [name for name, present in keys.items() if present]
+def _llm_state(providers: list[Any] | None = None) -> dict[str, Any]:
+    """Familias de proveedor con credencial presente, DERIVADAS del catálogo.
+
+    2026-07-31: esto era una lista escrita a mano de cuatro nombres (groq,
+    openrouter, gemini, together) mientras `DEFAULT_PROVIDERS` tenía 14
+    entradas. Consecuencia medida: **NVIDIA no se reportaba nunca** pese a
+    tener clave y funcionar de verdad (el Cónclave de ese mismo día usó
+    `nvidia_mistral_large` como una de sus tres voces). Además la entrada de
+    Together miraba `TOGETHER_API_KEY` cuando el catálogo declara
+    `TOGETHERAI_API_KEY`, así que tampoco podía dar positivo nunca.
+
+    Lo destapó el operador preguntando "¿no está NVIDIA?" — no un test. Misma
+    clase de fallo que el `.env` sin cargar: el comando que AGENTS.md manda
+    usar para afirmar estado, subreportaba. Se deriva del catálogo para que
+    añadir un proveedor no exija acordarse de tocar este fichero.
+    """
+    if providers is None:
+        from atlas.core.inference_hub import DEFAULT_PROVIDERS
+
+        providers = list(DEFAULT_PROVIDERS)
+
+    families: dict[str, bool] = {}
+    for provider in providers:
+        env_name = getattr(provider, "api_key_env", None)
+        if not env_name:
+            continue  # Ollama y locales: no es una credencial ausente.
+        # `account_pool` permite varias cuentas del mismo proveedor
+        # (OPENROUTER_API_KEY / _2). Cualquiera presente lo hace usable.
+        candidates = list(getattr(provider, "account_pool", None) or [env_name])
+        family = str(getattr(provider, "name", "")).split("_", 1)[0]
+        if not family:
+            continue
+        present = any(os.environ.get(c) for c in candidates)
+        families[family] = families.get(family, False) or present
+
+    # Gemini acepta la variable de Google como alias histórico.
+    if "gemini" in families and os.environ.get("GOOGLE_API_KEY"):
+        families["gemini"] = True
+
+    configured = sorted(name for name, present in families.items() if present)
     return {
         "mode_env": os.environ.get("ATLAS_INFERENCE_MODE", "auto"),
         "configured_providers": configured,
