@@ -327,6 +327,58 @@ def _self_build_summary(limit: int = 50) -> dict[str, Any]:
     }
 
 
+def _engineering_findings_summary(limit: int = 50) -> dict[str, Any]:
+    """Lectura READ-ONLY del journal de hallazgos de ingeniería (ADC-WO-108).
+
+    Mismo patrón que `_self_build_summary`: instanciar
+    `EngineeringFindingStore` es seguro (su `__init__` solo guarda la ruta y
+    crea el directorio padre si falta, jamás muta ni ejecuta nada — a
+    diferencia de `ColdUpdateManager`), pero aun así se hace aquí, no en
+    `atlas.core.orchestrator_parts` (OS-R1, el bridge nunca importa nada de
+    ese árbol)."""
+    from atlas.engineering.findings import EngineeringFindingStore
+
+    path = _REPO_ROOT / "workspace" / "engineering" / "findings.jsonl"
+    if not path.parent.exists():
+        return {"real": False, "status": "BLOCKED_BY_MISSING_DEPENDENCY",
+                "detail": f"no existe {path.parent} — el tick de ingeniería "
+                          "nunca corrió (ATLAS_ENGINEERING_REVIEW=1)"}
+    try:
+        store = EngineeringFindingStore(path)
+        findings = store.list()
+    except (OSError, ValueError) as exc:
+        return {"real": False, "status": "UNVERIFIED", "detail": str(exc)}
+
+    by_status: dict[str, int] = {}
+    by_severity: dict[str, int] = {}
+    for f in findings:
+        by_status[f.status.value] = by_status.get(f.status.value, 0) + 1
+        by_severity[f.severity.value] = by_severity.get(f.severity.value, 0) + 1
+
+    recent = sorted(findings, key=lambda f: f.created_at, reverse=True)[:limit]
+    recent_slim = [
+        {
+            "id": f.id,
+            "run_id": f.run_id,
+            "repository": f.repository,
+            "candidate_revision": f.candidate_revision,
+            "category": f.category,
+            "severity": f.severity.value,
+            "status": f.status.value,
+            "summary": f.summary,
+            "created_at": f.created_at,
+        }
+        for f in recent
+    ]
+    return {
+        "real": True,
+        "total": len(findings),
+        "by_status": by_status,
+        "by_severity": by_severity,
+        "recent": recent_slim,
+    }
+
+
 _NEXT_ACTION_BY_STATUS: dict[str, str] = {
     "proposed": "atlas update validate {id}",
     "validated": "atlas update approve {id}",
@@ -546,6 +598,17 @@ def create_app(
     @app.get("/self-build/proposal/{proposal_id}")
     def self_build_proposal(proposal_id: str) -> dict[str, Any]:
         return _self_build_proposal_detail(proposal_id)
+
+    # -- Engineering findings (ADC-WO-108, pieza 3/5) ----------------------
+    # Proyección read-only del journal de hallazgos de ingeniería. Mismo
+    # patrón que /self-build/*: leer el journal ya escrito por el tick,
+    # jamás instanciar nada bajo core/orchestrator_parts (OS-R1). Sin
+    # verbos mutantes -- ADC-WO-107 (frontera de mutación del bridge) sigue
+    # REQUIRES_OPERATOR, esto no la prejuzga.
+
+    @app.get("/engineering/findings")
+    def engineering_findings(limit: int = 50) -> dict[str, Any]:
+        return _engineering_findings_summary(limit=limit)
 
     # -- Mission Layer v0 (Foundry, ADR-069) -------------------------------
     # Proyección read-only del ledger de ColdUpdate como misiones. Mismo

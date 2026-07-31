@@ -362,6 +362,42 @@ def test_self_build_proposal_detail_shape(client: TestClient) -> None:
     assert "evidence" in body
 
 
+def test_engineering_findings_shape(client: TestClient) -> None:
+    """ADC-WO-108 3/5 -- mismo patrón tolerante que test_self_build_summary_
+    shape: `real` puede ser True (el tick ya corrió en este repo, journal
+    real en disco) o False (BLOCKED_BY_MISSING_DEPENDENCY, tick nunca
+    corrido) según el estado del checkout donde se ejecute el test -- ambos
+    son formas válidas de fail-honesto, no un fallo del endpoint."""
+    body = client.get("/engineering/findings").json()
+    assert "real" in body
+    if body["real"]:
+        assert body["total"] >= 0
+        assert isinstance(body["by_status"], dict)
+        assert isinstance(body["by_severity"], dict)
+        assert isinstance(body["recent"], list)
+        if body["recent"]:
+            first = body["recent"][0]
+            assert {"id", "run_id", "repository", "severity", "status", "summary"} <= first.keys()
+    else:
+        assert body["status"] in {"BLOCKED_BY_MISSING_DEPENDENCY", "UNVERIFIED"}
+
+
+def test_engineering_findings_respects_limit(client: TestClient) -> None:
+    body = client.get("/engineering/findings?limit=1").json()
+    if body["real"]:
+        assert len(body["recent"]) <= 1
+
+
+def test_engineering_findings_never_imports_orchestrator(client: TestClient) -> None:
+    """Invariante OS-R1: el bridge nunca instancia nada bajo
+    core/orchestrator_parts. El guard estático (`test_orchestrator_never_
+    imported`, mismo fichero) ya cubre que ningún .py de atlas/api importe
+    `orchestrator` -- este test solo confirma que la ruta nueva responde de
+    verdad, sin depender de ese import para funcionar."""
+    resp = client.get("/engineering/findings")
+    assert resp.status_code == 200
+
+
 def test_self_build_proposal_detail_not_found(client: TestClient) -> None:
     body = client.get("/self-build/proposal/does-not-exist-id").json()
     assert body["real"] is False
