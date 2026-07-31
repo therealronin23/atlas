@@ -8,6 +8,56 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (F1.3+F1.1) — 602 de los 1.315 loc dormidos, DESPIERTOS. Y la
+  fase estaba ordenada al revés: lo descubrí midiendo, no leyendo.**
+  **El hallazgo que reordena F1.** Los 1.315 loc no eran cinco piezas
+  sueltas: son UNA tubería cuyo eslabón roto estaba en la cabeza.
+  `diagnostics.py:320` es el **único** productor del repo que rellena
+  `locations` en un `EngineeringFinding` — `review.py:141` y la normalización
+  de `findings.py` emiten `locations=()`. Y `compose_hypotheses()` exige
+  justamente un `FindingLocation`. **Cablear `hypotheses.py` primero, como
+  pedía F1.1, habría dado un caller que itera siempre sobre una tupla vacía**:
+  cableado hueco, la misma trampa de ADC-WO-108 con otro disfraz. Orden real:
+  F1.3 → F1.1.
+  **F1.3 — `diagnostics.py` (391 loc) CABLEADO.** El seam ya estaba medio
+  hecho y nadie lo había visto: `cold_update_manager.py:459-468` YA
+  clasificaba la causa raíz de cada validación fallida y guardaba el veredicto
+  en `proposal.forensics["root_cause"]` como dict crudo. Ahí moría.
+  `src/atlas/engineering/cold_update_bridge.py` (nuevo, TDD real) lo proyecta
+  al journal versionado; se inyecta en `ColdUpdateManager` con el MISMO patrón
+  que `root_cause_classifier` (opcional, `None` por defecto, lo construye el
+  Orchestrator en `orchestrator.py:796`). Dos invariantes: **coste** (reusa el
+  veredicto ya calculado vía `PrecomputedRootCause` — reclasificar pagaría dos
+  veces el camino LLM) y **señal, nunca puerta** (un fallo aquí jamás tumba
+  una validación gobernada).
+  Verificado que el camino GRATIS produce localizaciones: la ruta determinista
+  de `root_cause_classifier.py:78` emite `classification="ambiental"` con
+  `evidence_paths` y `used_llm=False` — cero coste de proveedor. Y que los dos
+  módulos hablan el mismo idioma (`ambiental`/`causado_por_diff`/`unknown` ∈
+  `_CLASSIFICATIONS`); **fijado por test**, porque si divergieran, los
+  findings perderían `locations` en silencio y nada saldría en rojo.
+  **F1.1 — `hypotheses.py` (211 loc) CABLEADO.** `compose_for_findings()` +
+  `write_hypotheses()` sobre el journal, llamados desde
+  `maintenance_engineering_review_tick` (`maintenance_facade.py:1439`). Los
+  findings sin `locations` se saltan solos — no es error, es el caso de todo
+  finding de `review.py`.
+  **Evidencia, no palabra**: el grep está corrido, y **el radar arreglado en
+  F0.2 lo confirma solo**: la lista de dormidos baja 16→13 y
+  `diagnostics`/`hypotheses` salen de ella. La herramienta que arreglé por la
+  mañana verifica el trabajo de la tarde.
+  **Decisión del operador (2026-07-31)**: `correction.py` NO se archiva —
+  autoriza **construir el productor de parches** que hoy no existe. Medido
+  antes de preguntar: `patch_ref` es no-`None` ÚNICAMENTE en tests; los tres
+  sitios de construcción de producción lo fijan a `None` a mano. Es capacidad
+  nueva con el invariante "no patch application from a finding" en juego —
+  pendiente, y merece Cónclave antes de escribir código.
+  **Pendiente de F1**: `correction.py` (104) y `reproduction.py` (489).
+  **Decisión del operador sobre Hermes**: las 3 tareas `blocked`
+  "monitoriza servidor A/B/C" son **intención real suya**; F2.2 **para antes
+  del smoke** y le lleva qué haría falta para que funcionen de verdad.
+  **Próxima acción**: Cónclave del productor de parches (F1.2 ampliado), y
+  decidir `reproduction.py` (F1.3 restante).
+
 - **2026-07-31 (F0.2) — el radar de código dormido pasa de regex a AST: veía
   2 dormidos donde había 16.**
   Reproducido primero el fallo con medida, no de memoria: `vapor_audit()`

@@ -22,9 +22,12 @@ being reported.
 
 from __future__ import annotations
 
+import json
 import subprocess
-from dataclasses import dataclass
+from collections.abc import Iterable, Sequence
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Protocol
 
 from atlas.core.git_env import clean_git_env
 from atlas.core.graphs import QUERIES
@@ -34,6 +37,19 @@ from atlas.memory.kuzu_runtime import open_kuzu_database
 from atlas.mcp.graph_server import _rows as _kuzu_rows
 
 _GIT_TIMEOUT_S = 30
+
+
+class _FindingLike(Protocol):
+    """Sólo lo que el pase necesita de un finding -- no se acopla al modelo
+    pydantic entero. Como propiedades de solo lectura a propósito: un
+    Protocol con atributos mutables es invariante y `EngineeringFinding` no
+    encajaría."""
+
+    @property
+    def status(self) -> object: ...
+
+    @property
+    def locations(self) -> tuple[FindingLocation, ...]: ...
 
 
 def module_name_for_path(path: str) -> str | None:
@@ -185,6 +201,75 @@ def memory_hypothesis(store: LessonStore, tag: str) -> MemoryHypothesis:
         lesson_count=len(lessons),
         lesson_ids=tuple(lesson.id for lesson in lessons),
     )
+
+
+def compose_for_findings(
+    findings: Iterable["_FindingLike"],
+    *,
+    repo_root: Path,
+    graph_db_path: Path,
+    lesson_store: LessonStore,
+) -> list[EngineeringHypothesisSet]:
+    """Pase de hipótesis sobre un journal de findings (F1.1, 2026-07-31).
+
+    Sólo findings ACCIONABLES (no RESOLVED/DISMISSED) y sólo los que traen
+    `locations`: sin localización no hay nada que hipotetizar, y eso NO es un
+    error -- es el caso de todo finding de `review.py`, que emite
+    `locations=()`.
+
+    Este pase estuvo imposible hasta F1.3. `compose_hypotheses()` exige un
+    `FindingLocation` y, hasta que el puente ColdUpdate empezó a proyectar
+    diagnósticos, ningún productor de producción rellenaba `locations`:
+    cablearlo antes habría dado un caller iterando siempre sobre una tupla
+    vacía -- cableado hueco, la trampa de ADC-WO-108.
+
+    Un finding que falle no aborta el pase: se pierde ese, no los demás.
+    """
+    inert = {"RESOLVED", "DISMISSED"}
+    out: list[EngineeringHypothesisSet] = []
+    for finding in findings:
+        status = getattr(finding.status, "value", str(finding.status))
+        if status in inert:
+            continue
+        for location in finding.locations:
+            try:
+                out.append(
+                    compose_hypotheses(
+                        location,
+                        repo_root=repo_root,
+                        graph_db_path=graph_db_path,
+                        lesson_store=lesson_store,
+                    )
+                )
+            except Exception:  # noqa: BLE001 — un finding roto no cancela el pase
+                continue
+    return out
+
+
+def write_hypotheses(sets: Sequence[EngineeringHypothesisSet], path: Path) -> int:
+    """Persiste el pase como JSONL append-only. Devuelve cuántas líneas
+    escribió; nunca lanza (el pase es señal, no puerta)."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            for item in sets:
+                handle.write(json.dumps(_set_as_json(item), sort_keys=True) + "\n")
+        return len(sets)
+    except (OSError, TypeError, ValueError):
+        return 0
+
+
+def _set_as_json(item: EngineeringHypothesisSet) -> dict[str, object]:
+    """`location` es un modelo pydantic y las tres hipótesis son dataclasses:
+    `asdict()` sobre el conjunto entero falla por esa mezcla."""
+    dump = getattr(item.location, "model_dump", None)
+    location = dump() if callable(dump) else {"path": getattr(item.location, "path", "")}
+    return {
+        "location": location,
+        "graph": asdict(item.graph),
+        "history": asdict(item.history),
+        "memory": asdict(item.memory),
+    }
 
 
 def compose_hypotheses(

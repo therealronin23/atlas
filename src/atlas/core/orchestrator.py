@@ -787,11 +787,22 @@ class Orchestrator:
             # el chequeo determinista contra git corre gratis en cada fallo de
             # validación; el camino LLM usa el hub del orquestador vía
             # _DeferredHub y degrada a "unknown" si no hay proveedor.
+            # F1.3 (2026-07-31): el veredicto del clasificador moría en
+            # `proposal.forensics` como dict crudo. El sink lo proyecta al
+            # MISMO journal que usa maintenance_engineering_review_tick
+            # (root/workspace/engineering/findings.jsonl) -- un solo journal,
+            # o los findings se parten en dos. Es el único productor del repo
+            # que rellena `locations`, que es lo que `hypotheses` consume.
+            from atlas.engineering.cold_update_bridge import build_sink
+
             self._cold_update_manager = ColdUpdateManager(
                 root,
                 self._merkle,
                 root_cause_classifier=RootCauseClassifier(
                     hub=_DeferredHub(self), repo_root=root, merkle=self._merkle,
+                ),
+                diagnostic_sink=build_sink(
+                    root / "workspace" / "engineering" / "findings.jsonl", str(root)
                 ),
             )
         return self._cold_update_manager

@@ -1428,10 +1428,37 @@ class MaintenanceFacade:
             reviewed, verdict, finding_count = False, None, 0
             reason = f"{type(exc).__name__}: {exc}"
 
+        # ADC-WO-108 4/5 (F1.1, 2026-07-31): pase de hipótesis sobre el journal.
+        # Trabaja sobre los findings CON `locations` que el puente ColdUpdate
+        # (F1.3) proyecta -- los de `review.py` emiten `locations=()` y se
+        # saltan solos. Componer desde el grafo Kuzu, `git log` y LessonStore,
+        # las tres fuentes que YA existen. Señal, nunca puerta.
+        hypotheses_written = 0
+        try:
+            from atlas.core.lesson_store import LessonStore
+            from atlas.engineering.hypotheses import (
+                compose_for_findings,
+                write_hypotheses,
+            )
+            from atlas.memory.project_graph import DEFAULT_GRAPH_DB
+
+            hypotheses_written = write_hypotheses(
+                compose_for_findings(
+                    findings.list(),
+                    repo_root=root,
+                    graph_db_path=DEFAULT_GRAPH_DB,
+                    lesson_store=LessonStore(root / "workspace" / "lessons"),
+                ),
+                engineering_dir / "hypotheses.jsonl",
+            )
+        except Exception:  # noqa: BLE001 — señal, jamás rompe el tick
+            hypotheses_written = 0
+
         result: dict[str, Any] = {
             "reviewed": reviewed,
             "verdict": verdict,
             "findings": finding_count,
+            "hypotheses_written": hypotheses_written,
             "events_published": published,
             "journal_total": findings.count(),
             "base_revision": parent,

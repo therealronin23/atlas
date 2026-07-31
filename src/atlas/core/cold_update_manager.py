@@ -265,6 +265,7 @@ class ColdUpdateManager:
         runner_factory: Callable[[Path], ValidationRunner] | None = None,
         decider: "Decider | None" = None,
         root_cause_classifier: Any | None = None,
+        diagnostic_sink: Any | None = None,
     ) -> None:
         self._root = project_root.resolve()
         self._merkle = merkle
@@ -277,6 +278,11 @@ class ColdUpdateManager:
         # Opcional (paso 3 del roadmap "juicio real"): RootCauseClassifier.
         # Sin inyectar, validate() se comporta exactamente igual que antes.
         self._root_cause_classifier = root_cause_classifier
+        # Opcional (F1.3): proyecta la validación fallida al journal de
+        # EngineeringFinding. Sin inyectar, validate() se comporta igual que
+        # antes; con él, el veredicto deja de morir en `forensics` como dict
+        # crudo. Señal, nunca puerta -- ver el bloque en validate().
+        self._diagnostic_sink = diagnostic_sink
         self._load()
         # Barrido al arrancar: worktrees de estados terminales que sobrevivieron
         # (fugas de procesos muertos a mitad) + huérfanos más viejos que el TTL.
@@ -464,6 +470,14 @@ class ColdUpdateManager:
                         base_ref=proposal.base_ref,
                     )
                     proposal.forensics["root_cause"] = verdict.to_dict()
+                    # F1.3: el veredicto ya calculado se PROYECTA al journal
+                    # versionado de findings en vez de morir aquí como dict
+                    # crudo. Reutiliza este mismo veredicto -- reclasificar
+                    # pagaría dos veces el camino LLM del clasificador.
+                    if self._diagnostic_sink is not None:
+                        self._diagnostic_sink.record(
+                            proposal=proposal, report=report, verdict=verdict
+                        )
                 except Exception:  # noqa: BLE001 — señal, no gate; nunca bloquea validate()
                     pass
 
