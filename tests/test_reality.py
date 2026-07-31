@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -836,3 +837,53 @@ def test_cold_update_capability_is_measured_not_hardcoded(tmp_path: Path) -> Non
     assert caps[0]["status"] == "degraded"
     assert "pytest_exit=1" in caps[0]["evidence"]
     assert report["cold_update"]["last_validation_passed"] is False
+
+
+def test_reality_loads_dotenv_like_inference_hub_does() -> None:
+    """`atlas reality` es el comando que AGENTS.md manda correr ANTES de
+    afirmar cualquier estado -- pero `reality.py` leía `os.environ` sin
+    cargar `.env` nunca. Medido 2026-07-31: eso hacía que reportara
+    `hermes: mock/configured=false`, `llm: sin proveedores` y
+    `decider: human` mientras el sistema real tenía Hermes kanban VIVO
+    (reachable=True, 8 tareas en cola), 3 proveedores LLM configurados y
+    `ATLAS_DECIDER=autonomous`. Mismo bug de clase que la regresión de
+    `inference_hub.py` (perdió su `load_dotenv()` en 5da5f5f).
+
+    Subproceso limpio a propósito: dentro de pytest, `conftest.py` limpia
+    HERMES_*/GROQ_API_KEY/ATLAS_DECIDER para aislar los tests, así que
+    este bug es INVISIBLE desde la suite. Solo se ve como lo ve el
+    operador: un intérprete nuevo, en el repo, sin entorno preparado.
+    """
+    repo = Path(__file__).resolve().parent.parent
+    if not (repo / ".env").is_file():
+        import pytest
+        pytest.skip("sin .env local: este test verifica el cableado real del operador")
+
+    script = (
+        "import sys, json, os\n"
+        f"sys.path.insert(0, {str(repo / 'src')!r})\n"
+        # Se borra TODO el entorno heredado relevante para probar que el
+        # valor viene de .env (cargado por reality.py), no de la shell que
+        # lanzó pytest ni de una variable que sobrevivió al scrubbing.
+        "for k in ('HERMES_KANBAN_TRANSPORT', 'HERMES_BASE_URL',\n"
+        "          'HERMES_API_KEY', 'HERMES_SSH_HOST', 'ATLAS_HERMES_LOCAL',\n"
+        "          'ATLAS_DECIDER'):\n"
+        "    os.environ.pop(k, None)\n"
+        "from atlas.core.reality import _hermes_state, _autonomy_state\n"
+        "print(json.dumps({'hermes': _hermes_state()['mode'],\n"
+        "                  'decider': _autonomy_state()['decider']}))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True, text=True, timeout=60, check=False, cwd=repo,
+    )
+    assert result.returncode == 0, result.stderr
+    state = json.loads(result.stdout.strip().splitlines()[-1])
+
+    assert state["hermes"] == "kanban_local", (
+        "reality.py no está leyendo .env: reporta Hermes como "
+        f"{state['hermes']!r} cuando HERMES_KANBAN_TRANSPORT=local está en .env"
+    )
+    assert state["decider"] == "autonomous", (
+        f"reality.py reporta decider={state['decider']!r} ignorando ATLAS_DECIDER del .env"
+    )

@@ -20,6 +20,28 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
+# `atlas reality` es el comando que AGENTS.md manda correr ANTES de afirmar
+# cualquier estado -- pero este módulo leía `os.environ` sin cargar nunca el
+# `.env` del operador. Medido 2026-07-31: reportaba `hermes: mock`,
+# `llm: sin proveedores` y `decider: human` mientras el sistema real tenía
+# Hermes kanban VIVO (reachable=True, 8 tareas en cola), 3 proveedores LLM
+# configurados y ATLAS_DECIDER=autonomous. La herramienta de verdad mentía
+# sobre la mitad del sistema, y esa salida es la que alimentó afirmaciones
+# de canon (p.ej. ADC-WO-100 "Hermes solo existe como mock").
+#
+# Mismo bug de clase que la regresión de `inference_hub.py` (perdió su
+# `load_dotenv()` en 5da5f5f) y se arregla igual: carga en tiempo de IMPORT,
+# nunca dentro de collect_reality(). El scrubbing por-test de
+# `tests/conftest.py` corre como fixture DESPUÉS del import, así que sigue
+# ganando y el aislamiento de la suite no se rompe. Ver
+# tests/test_reality.py::test_reality_loads_dotenv_like_inference_hub_does.
+try:
+    from dotenv import load_dotenv as _load_dotenv
+
+    _load_dotenv()
+except ImportError:  # pragma: no cover
+    pass
+
 
 @dataclass(frozen=True)
 class CommandEvidence:
