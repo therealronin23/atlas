@@ -34,6 +34,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, BinaryIO, Callable, Sequence, cast
 
+# Este módulo lee `HERMES_KANBAN_TRANSPORT`, `HERMES_SSH_HOST` y compañía de
+# `os.environ`, pero nunca cargaba el `.env` del operador: dependía de que el
+# llamador lo hubiera hecho antes. Medido 2026-08-01: `KanbanBridge()` desde un
+# proceso limpio resuelve transporte `ssh` y revienta con
+# "HERMES_SSH_HOST is required", cuando la configuración real dice `local`.
+#
+# TERCERA vez de este bug de clase en el repo (`inference_hub.py` lo perdió en
+# 5da5f5f; `reality.py` nunca lo tuvo y mentía sobre medio sistema). Se arregla
+# igual: en tiempo de IMPORT, nunca dentro de una función. El scrubbing por-test
+# de `tests/conftest.py` corre como fixture DESPUÉS del import y sigue ganando,
+# así que el aislamiento de la suite no se rompe.
+try:
+    from dotenv import load_dotenv as _load_dotenv
+
+    _load_dotenv()
+except ImportError:  # pragma: no cover
+    pass
+
 # Type of a transport runner: (argv, timeout_s) -> (returncode, stdout, stderr)
 Runner = Callable[[Sequence[str], float], "tuple[int, str, str]"]
 

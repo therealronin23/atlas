@@ -760,3 +760,31 @@ aislamiento de entorno ya existente en `tests/conftest.py` (mismo patrón que
 
 **Pendiente, decisión del usuario**: reiniciar `atlas serve` (PID 5117) para que el pipeline Gate
 D tome el nuevo embedder — no se hizo sin confirmación explícita.
+
+## LangGraph — CERRADO como no-goal razonado (2026-08-01)
+
+Última fila de la *Project Absorption Matrix* con cero código. El entregable
+previsto era un *"Orchestrator StateGraph design sketch"*. Al medir contra el
+código real, el sketch no hace falta: **las tres técnicas ya están, nativas.**
+
+| Lo que aporta LangGraph | Dónde está ya en Atlas |
+|---|---|
+| Ejecución en forma de grafo | `VALID_TRANSITIONS` (`src/atlas/core/contracts.py:49`) — grafo dirigido explícito de `TaskStatus`, **con aristas guardadas**: `Task.transition()` (línea 112) lanza `ValueError` ante una transición no declarada. Los estados terminales (`DONE`/`FAILED`/`BLOCKED`) tienen conjunto vacío. |
+| Aristas condicionales | La ramificación vive en los ejecutores: `approvals.py:166-215` enruta a `EXECUTING`/`FAILED`/`CANCELLED` según la decisión; `agentic_executor.py:452` suspende a `AWAITING_APPROVAL` (ADR-032). |
+| Patrones de checkpoint | `GitCheckpointManager` (`src/atlas/core/git_checkpoint.py:80`), **ya absorbido de Cline** en julio. |
+
+**Diferencia deliberada, no hueco**: LangGraph permite construir el grafo de
+forma dinámica. Nuestra tabla es ESTÁTICA a propósito — un ciclo de vida de
+tarea con aristas mutables en caliente no podría sostener el invariante que hoy
+hace fallar en voz alta una transición inválida. Ganar dinamismo aquí sería
+perder la garantía.
+
+**Veredicto**: no se adopta el paquete. Hacerlo traería el footprint de
+LangChain contra el no-goal declarado arriba (*"ninguna dependencia de framework
+grande sin ADR que lo justifique empíricamente"*) a cambio de primitivos que ya
+existen y están cableados. Coherente con la manía de **extraer técnicas, no
+absorber paquetes**.
+
+**Con esto la matriz de absorción queda CERRADA**: los otros seis proyectos
+(Hermes, Letta, Open Interpreter, KERI/ACDC, BentoML/OpenLLM, Aider) tienen
+código con callers de producción verificados por el radar AST.

@@ -213,3 +213,24 @@ class TestTheWatchdogNoticesHermes:
         assert hermes_probe.__name__ in names or any(
             "hermes" in n for n in names
         ), "la sonda existe pero el watchdog no la corre"
+
+
+class TestTheBridgeLoadsDotenvLikeItsSiblings:
+    """Tercera vez de este bug de clase: `inference_hub` lo perdió en 5da5f5f,
+    `reality` nunca lo tuvo, y `kanban_bridge` dependía del llamador.
+
+    Medido 2026-08-01: desde un proceso limpio `KanbanBridge()` resolvía
+    transporte `ssh` y lanzaba "HERMES_SSH_HOST is required", cuando la
+    configuración real del operador dice `local`.
+    """
+
+    def test_it_loads_dotenv_at_import_time(self) -> None:
+        import atlas.hermes.kanban_bridge as kb
+
+        src = __import__("inspect").getsource(kb)
+        head = src.split("Runner = Callable")[0]
+
+        assert "load_dotenv" in head, (
+            "el puente no carga .env en tiempo de import: vuelve a depender "
+            "de que el llamador lo haya hecho"
+        )
