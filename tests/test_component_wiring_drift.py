@@ -229,3 +229,66 @@ class TestDefaultImportersUsesTheRealGraph:
 
         assert any("REAL1" in f for f in findings)
         assert not any("REAL2" in f for f in findings)
+
+    def test_default_path_opens_the_kuzu_database_once_not_per_module(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Deuda de rendimiento real (2026-07-30, ver WORK_LEDGER.md): la
+        suite pasó de ~370s a 467-564s porque `_default_importers_of` abría
+        una BD Kuzu nueva por CADA módulo consultado -- `build_graph_server`
+        reabre la BD en cada llamada a `_query` a propósito para su propio
+        caso de uso de servidor MCP de larga vida (otro proceso regenera el
+        grafo mientras el server sigue vivo). Ese motivo no aplica aquí: un
+        pase de `component_wiring_drift` es una lectura acotada de un solo
+        proceso, así que reabrir por módulo es puro coste sin beneficio.
+
+        El arreglo es BATCHEAR (una conexión, muchas queries), no mockear:
+        mockear escondería el cableado real contra el grafo que este mismo
+        test (`test_real_graph_end_to_end`) existe para probar."""
+        import subprocess
+
+        import pytest
+        pytest.importorskip("kuzu")
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "t@t.t"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+        atlas_dir = repo / "src" / "atlas"
+        atlas_dir.mkdir(parents=True)
+        (atlas_dir / "__init__.py").write_text("", encoding="utf-8")
+        (atlas_dir / "a.py").write_text("X = 1\n", encoding="utf-8")
+        (atlas_dir / "b.py").write_text("Y = 2\n", encoding="utf-8")
+        (atlas_dir / "c.py").write_text("Z = 3\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "c1"], cwd=repo, check=True)
+
+        from atlas.memory.project_graph import build_project_graph
+
+        db_path = tmp_path / "graph.kuzu"
+        build_project_graph(repo, db_path, commits=1)
+
+        # Tres módulos distintos en la misma fila -> tres llamadas a
+        # importers_of() si no se batchea.
+        _write_matrix(repo, [
+            _row("REAL3", "Tres módulos", ["src/atlas/a.py", "src/atlas/b.py", "src/atlas/c.py"], []),
+        ])
+
+        import atlas.core.self_maintenance.component_wiring_drift as cwd_module
+
+        calls = {"n": 0}
+        real_open = cwd_module.open_kuzu_database
+
+        def _counting_open(*args, **kwargs):
+            calls["n"] += 1
+            return real_open(*args, **kwargs)
+
+        monkeypatch.setattr(cwd_module, "open_kuzu_database", _counting_open)
+
+        component_wiring_drift(repo, db_path=db_path)
+
+        assert calls["n"] == 1, (
+            f"la BD se abrió {calls['n']} veces para 3 módulos de la misma fila -- "
+            "debe abrirse una sola vez y reutilizar la conexión"
+        )

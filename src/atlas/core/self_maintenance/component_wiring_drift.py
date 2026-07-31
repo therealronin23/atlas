@@ -31,6 +31,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from atlas.core.graphs import QUERIES
+from atlas.mcp.graph_server import _rows as _kuzu_rows
+from atlas.memory.kuzu_runtime import open_kuzu_database
+
 
 def _module_name(rel_path: str) -> str | None:
     """``src/atlas/fabric/policy.py`` -> ``atlas.fabric.policy``. ``None``
@@ -43,25 +47,44 @@ def _module_name(rel_path: str) -> str | None:
 
 
 def _default_importers_of(repo_root: Path, db_path: Path | None) -> Callable[[str], list[str]]:
-    """Consulta el grafo real vía ``build_graph_server`` a su PROPIA última
-    SHA ingerida (``graph_freshness``, que nunca lanza), no contra HEAD: el
-    daemon poll cada 3600s, así que exigir FRESH dejaría este detector mudo
-    la mayor parte del tiempo. El coste es mirar el árbol tal como estaba en
-    esa SHA, no el actual — aceptable para un radar, no para una puerta."""
-    from atlas.mcp.graph_server import build_graph_server
+    """Consulta el grafo real a su PROPIA última SHA ingerida
+    (``graph_freshness``, que nunca lanza), no contra HEAD: el daemon poll
+    cada 3600s, así que exigir FRESH dejaría este detector mudo la mayor
+    parte del tiempo. El coste es mirar el árbol tal como estaba en esa SHA,
+    no el actual — aceptable para un radar, no para una puerta.
+
+    2026-07-31: UNA conexión Kuzu para TODO el pase, no una por módulo.
+    ``build_graph_server._query`` reabre la BD en cada llamada A PROPÓSITO
+    (otro proceso regenera el grafo mientras el server MCP sigue vivo,
+    ``build_graph_server.__doc__``) -- ese motivo no aplica a
+    ``component_wiring_drift``: es un pase de lectura acotado de un solo
+    proceso, así que reabrir por módulo era puro coste (medido: la suite
+    completa pasó de ~370s a 467-564s por esto). El closure devuelto lleva
+    un método ``close()`` que ``component_wiring_drift`` llama al terminar
+    el pase; los ``importers_of`` inyectados en tests no lo tienen, y
+    ``component_wiring_drift`` lo comprueba con ``hasattr`` antes de usarlo."""
     from atlas.memory.project_graph import DEFAULT_GRAPH_DB, graph_freshness
 
     path = db_path or DEFAULT_GRAPH_DB
     state = graph_freshness(path, repo_root=repo_root)
     sha = state.get("graph_commit_sha") or ""
-    server = build_graph_server(path, repo_root=repo_root)
-    tools = {t.name: t for t in server._tool_manager.list_tools()}  # noqa: SLF001
-    graph_importers = tools["graph_importers"]
+
+    import kuzu
+
+    db = open_kuzu_database(path, read_only=True)
+    conn = kuzu.Connection(db)
 
     def _query(module: str) -> list[str]:
-        result: Any = graph_importers.fn(module=module, commit_sha=sha)
-        return list(result)
+        result: Any = conn.execute(
+            QUERIES["direct_importers"], parameters={"path": module, "sha": sha}
+        )
+        return [row[0] for row in _kuzu_rows(result)]
 
+    def _close() -> None:
+        conn.close()
+        db.close()
+
+    _query.close = _close  # type: ignore[attr-defined]
     return _query
 
 
@@ -84,6 +107,19 @@ def component_wiring_drift(
 
     query = importers_of or _default_importers_of(repo_root, db_path)
 
+    try:
+        findings = _scan_matrix(path, query)
+    finally:
+        # Solo el closure del path por-defecto lleva `.close` (ver
+        # `_default_importers_of`); un `importers_of` inyectado por un test
+        # no gestiona ninguna conexión y no lo necesita.
+        close = getattr(query, "close", None)
+        if close is not None:
+            close()
+    return findings
+
+
+def _scan_matrix(path: Path, query: Callable[[str], list[str]]) -> list[str]:
     findings: list[str] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
