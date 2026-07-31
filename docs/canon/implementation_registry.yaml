@@ -958,7 +958,21 @@ work_orders:
       - ADR-058
       - ADR-063
       - ADR-071
-    current_state: Code is present, tested, wired, and contradicted by its accepted bridge boundary; no later ADR authorizes the expansion.
+    current_state: >-
+      RESOLVED 2026-07-31 (ADR-080, scoped exception, operator decision).
+      The Fase 15 product mutation surface (Fabric, onboarding, Business
+      Core, Gate Engine) is an accepted, deliberate exception to the core
+      bridge's read-only boundary, not an unauthorized expansion. The one
+      concrete gap ADC-WO-107 found — business/core/activate and reject
+      approving a governed decision in-process without the audit tier
+      permissions/approve has via Orchestrator subprocess separation — is
+      closed: both routes now write a verifiable Merkle receipt
+      (business_core.activated, business_core.activation.rejected) on the
+      same chain as the rest of Atlas, on top of BusinessCoreEngine's
+      existing Gate Engine audit. The other 19 mutating routes were left
+      untouched — they create/update product state under real
+      authentication, not governed approvals in a human's name, and were
+      not the finding that justified action.
     target_state: An operator-approved ADR either authorizes governed mutation contracts or restores a strictly read-only bridge.
     scope:
       - port 7341 API
@@ -982,8 +996,8 @@ work_orders:
     acceptance:
       - mutating endpoints have explicit authority, authentication, audit, and rollback, or are removed
       - ADR-058 and ADR-071 receive scoped supersession if mutation is accepted
-    operator_decision_required: true
-    status: REQUIRES_OPERATOR
+    operator_decision_required: false
+    status: DONE
 
   - id: ADC-WO-007
     program: P09

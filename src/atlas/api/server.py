@@ -53,6 +53,7 @@ from atlas.core.self_maintenance.ecosystem_drift import ecosystem_map_drift
 from atlas.events.player import EventPlayer
 from atlas.events.schemas import Causality, EventStatus, OsEvent, Risk
 from atlas.events.store import OsEventStore
+from atlas.logging.merkle_logger import MerkleLogger
 from atlas.runtime_paths import atlas_data_root
 from atlas.security.pending_store import unwrap_task_payload
 
@@ -497,6 +498,7 @@ def create_app(
     business_core_path: Path | None = None,
     repo_root: Path | None = None,
     governance_real: bool | None = None,
+    merkle_dir: Path | None = None,
 ) -> FastAPI:
     fixtures = fixtures_dir or _FIXTURES
     mission_repo_root = repo_root or _REPO_ROOT
@@ -1041,7 +1043,19 @@ def create_app(
             event_store.unsubscribe(on_event)
 
     # -- Product OS (Fase 15): Integration Fabric + Business Core --------------
-    register_product_routes(app, event_store, fixtures, business_core_path)
+    # ADC-WO-107 (arreglo acotado, 2026-07-31): business/core/activate|reject
+    # aprueban un Business Core gobernado en el mismo proceso del bridge, sin
+    # la separación de proceso que permissions/approve usa para Orchestrator
+    # (ADR-058) -- BusinessCoreEngine no es Orchestrator, así que ese patrón
+    # exacto no aplica (OS-R1 es específicamente sobre no doblar Orchestrator).
+    # Lo que sí debe igualarse es la altura de auditoría: un receipt Merkle
+    # verificable en la MISMA cadena que el resto de Atlas, no solo el event
+    # store propio de Business Core. Ruta por defecto = la real de Orchestrator
+    # (_workspace_root()/memory/audit); MerkleLogger.append() ya es seguro
+    # entre escritores concurrentes (flock + rehidratación desde disco), así
+    # que un tercer escritor (el bridge) no fork-ea la cadena.
+    merkle = MerkleLogger(merkle_dir or (_workspace_root() / "memory" / "audit"))
+    register_product_routes(app, event_store, fixtures, business_core_path, merkle=merkle)
 
     return app
 

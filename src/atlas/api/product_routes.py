@@ -31,6 +31,7 @@ from atlas.business.questions import (
 from atlas.business.registries import ObjectiveRegistry, SectorRegistry
 from atlas.events.store import OsEventStore
 from atlas.fabric.auth_broker import AuthBroker, SecretRejected
+from atlas.logging.merkle_logger import MerkleLogger
 from atlas.fabric.concierge import ConnectionConcierge
 from atlas.fabric.discovery import ConnectorDiscoveryEngine
 from atlas.fabric.health import HealthMonitor
@@ -169,6 +170,8 @@ def register_product_routes(
     store: OsEventStore,
     fixtures_dir: Path,
     business_core_path: Path | None = None,
+    *,
+    merkle: MerkleLogger,
 ) -> None:
     """`business_core_path` es explícito a propósito: sin él, BusinessCoreEngine
     caería a $ATLAS_HOME real (mismo bug clase que ya se corrigió para `app`
@@ -414,30 +417,55 @@ def register_product_routes(
     def business_core_activate(
         req: CoreActivateRequest, request: Request,
     ) -> dict[str, Any]:
+        identity = _server_identity(request)
         try:
             core = business.approve_activation(
-                req.business_core_id, _server_identity(request),
+                req.business_core_id, identity,
                 decision_note=req.decision_note, evidence=req.evidence,
             )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except (ActivationError, ReviewRequiredError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # ADC-WO-107 (arreglo acotado): receipt Merkle en la misma cadena que
+        # el resto de Atlas -- BusinessCoreEngine ya audita en su propio event
+        # store (Gate Engine), esto añade la altura de auditoría no-repudiable
+        # que permissions/approve tiene vía Orchestrator.
+        merkle.log(
+            action="business_core.activated",
+            agent=identity,
+            result="success",
+            risk_level="high",
+            payload={
+                "business_core_id": req.business_core_id,
+                "gate_ticket_id": core.activation.gate_ticket_id,
+            },
+            task_id=req.business_core_id,
+        )
         return core.model_dump(mode="json")
 
     @app.post("/business/core/reject")
     def business_core_reject(
         req: CoreRejectRequest, request: Request,
     ) -> dict[str, Any]:
+        identity = _server_identity(request)
         try:
             core = business.reject_activation(
-                req.business_core_id, _server_identity(request),
+                req.business_core_id, identity,
                 decision_note=req.decision_note,
             )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ActivationError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        merkle.log(
+            action="business_core.activation.rejected",
+            agent=identity,
+            result="success",
+            risk_level="moderate",
+            payload={"business_core_id": req.business_core_id},
+            task_id=req.business_core_id,
+        )
         return core.model_dump(mode="json")
 
     # -- Gate Engine: cola de decisiones humanas ------------------------------

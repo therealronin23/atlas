@@ -82,6 +82,39 @@ como prohibido dentro del bridge.
 Sin recomendación de este dossier entre las dos: es exactamente la decisión de
 apetito de riesgo que le corresponde al operador, no a mí.
 
+## Decisión del operador — 2026-07-31 (ninguna de las dos alternativas tal cual)
+
+Ni 1 ni 2 puros: una **tercera vía acotada**, registrada en ADR-080
+(`docs/decisions/adr/adr_080_product_os_mutation_scoped_exception.md`).
+
+Al preparar la alternativa 2 (restaurar read-only) para ejecutarla, la
+lectura completa de `product_routes.py` mostró que las 13 rutas mutantes
+NO son un añadido marginal: son la superficie completa del Product OS
+(Fase 15) — retirarlas habría sido una regresión de producto real, no una
+corrección de seguridad acotada. Ese hallazgo se corrigió en vivo con el
+operador antes de tocar código (ver WORK_LEDGER.md 2026-07-31).
+
+Decisión final: las 19 rutas que crean/actualizan estado de producto bajo
+autenticación real (`authenticate_http`) quedan intactas — no son el
+hallazgo que motivó ADC-WO-107. Se cierra exclusivamente el gap más grave
+identificado arriba: `business/core/activate`/`reject` ejecutando una
+aprobación gobernada sin la separación de proceso que
+`permissions/approve` sí tiene. Como `BusinessCoreEngine` no es
+Orchestrator, replicar el subproceso CLI textualmente no aplicaba (OS-R1
+es específicamente sobre no doblar Orchestrator); en su lugar, ambas
+rutas ahora escriben un receipt Merkle verificable en la misma cadena que
+el resto de Atlas (`business_core.activated`,
+`business_core.activation.rejected`), igualando la altura de auditoría
+sin tocar el patrón de proceso.
+
+Implementación: `src/atlas/api/server.py` (`create_app(merkle_dir=...)`),
+`src/atlas/api/product_routes.py` (`register_product_routes(..., merkle=...)`),
+TDD real (RED confirmado — `TypeError: unexpected keyword argument
+'merkle_dir'` — antes de escribir producción),
+`tests/test_os_product_api.py::test_business_core_activate_writes_merkle_receipt`
+y `::test_business_core_reject_writes_merkle_receipt`, mypy limpio en los
+3 ficheros tocados.
+
 ## Confidence and limits
 
 **Confidence:** alta en el inventario (medido, no inferido — cada fila cita la

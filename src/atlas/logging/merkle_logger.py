@@ -108,6 +108,7 @@ AUDIT_ACTIONS = {
     "engineering.finding.recorded", "engineering.review.completed",
     "engineering.reproduction.started", "engineering.reproduction.completed",
     "chain.rotated", "chain.repaired",
+    "business_core.activated", "business_core.activation.rejected",
 }
 
 

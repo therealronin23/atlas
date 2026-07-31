@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from atlas.api.server import create_app
 from atlas.events.store import OsEventStore
+from atlas.logging.merkle_logger import MerkleLogger
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -22,6 +23,7 @@ def client(tmp_path: Path) -> TestClient:
             store=store,
             fixtures_dir=REPO / "fixtures",
             business_core_path=tmp_path / "business_core.json",
+            merkle_dir=tmp_path / "merkle",
         ),
         base_url="http://127.0.0.1",
         client=("127.0.0.1", 50000),
@@ -256,6 +258,36 @@ def test_business_core_draft_and_gated_activation_via_api(client: TestClient) ->
     assert fetched["business_core_id"] == core_id
 
 
+def test_business_core_activate_writes_merkle_receipt(
+    client: TestClient, tmp_path: Path,
+) -> None:
+    """ADC-WO-107 (arreglo acotado): activate/reject aprueban un Business
+    Core gobernado sin la separación de proceso de permissions/approve
+    (ADR-058) — BusinessCoreEngine no es Orchestrator, así que ese patrón
+    exacto no aplica, pero SÍ debe quedar a la misma altura de auditoría:
+    un receipt Merkle verificable, no solo el event store propio."""
+    draft = client.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+    client.post(
+        "/business/core/request-activation", json={"business_core_id": core_id},
+    )
+    client.post(
+        "/business/core/activate", json={"business_core_id": core_id},
+    )
+
+    merkle = MerkleLogger(tmp_path / "merkle")
+    records = [r for r in merkle.read_all() if r.task_id == core_id]
+    actions = [r.action for r in records]
+    assert "business_core.activated" in actions
+    receipt = next(r for r in records if r.action == "business_core.activated")
+    assert receipt.result == "success"
+    assert receipt.agent == "atlas-loopback:127.0.0.1"
+    assert receipt.verify()
+
+
 def test_activation_identity_is_server_derived_not_client_claimed(
     client: TestClient,
 ) -> None:
@@ -382,6 +414,31 @@ def test_reject_activation_via_api_returns_to_draft(client: TestClient) -> None:
     assert client.get("/gates/open").json()["count"] == 0
     ticket = client.get(f"/gates/{ticket_id}").json()
     assert ticket["resolved_by"] == "atlas-loopback:127.0.0.1"
+
+
+def test_business_core_reject_writes_merkle_receipt(
+    client: TestClient, tmp_path: Path,
+) -> None:
+    draft = client.post("/business/core/draft", json={
+        "sector_id": "restauracion_hosteleria",
+        "created_from_kind": "manual", "created_from_ref": "test",
+    }).json()
+    core_id = draft["business_core_id"]
+    client.post(
+        "/business/core/request-activation", json={"business_core_id": core_id},
+    )
+    client.post("/business/core/reject", json={
+        "business_core_id": core_id, "decision_note": "no",
+    })
+
+    merkle = MerkleLogger(tmp_path / "merkle")
+    records = [r for r in merkle.read_all() if r.task_id == core_id]
+    actions = [r.action for r in records]
+    assert "business_core.activation.rejected" in actions
+    receipt = next(r for r in records if r.action == "business_core.activation.rejected")
+    assert receipt.result == "success"
+    assert receipt.agent == "atlas-loopback:127.0.0.1"
+    assert receipt.verify()
 
 
 def test_gate_unknown_ticket_404(client: TestClient) -> None:
