@@ -8,6 +8,42 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-07-31 (Cónclave) — el panel AHOGABA a los modelos de razonamiento:
+  una de las tres voces llevaba votando con un fragmento.**
+  **Cómo salió**: el operador preguntó *"¿qué le pasa a Gemini que habla de
+  forma agresiva o extraña?"*. No era rareza del modelo: dos defectos
+  superpuestos, ambos medidos en vivo.
+  **1. Presupuesto insuficiente (ARREGLADO)**: `LlmReviewer.review()` no fijaba
+  `max_tokens` y heredaba el default de 1024. `gemini-2.5-flash` es un modelo
+  de RAZONAMIENTO: su presupuesto de salida incluye los tokens de pensamiento.
+  Medido con el mismo prompt — `1024 → 153 chars` (una frase cortada) vs
+  `4096 → 510 chars` (tres objeciones completas). **El fallo era traicionero
+  porque el insulto va PRIMERO y el análisis después**: la truncación se comía
+  la sustancia y dejaba intacta la agresividad, así que parecía que el modelo
+  sólo sabía insultar. **En el Cónclave real de hoy, el voto BLOCKING de
+  Gemini se emitió sobre un fragmento y el panel lo contó como voz completa.**
+  **2. Cadena de pensamiento sin filtrar (ARREGLADO)**: Qwen emite
+  `<think>...</think>` antes de responder. Como la severidad se ancla a la
+  PRIMERA línea, esa línea era `<think>` y el parseo caía al fail-closed
+  `MAJOR`, **descartando la severidad real** que el modelo había emitido
+  (`BLOCKING` en su propio texto). No es cosmética: el panel registraba una
+  severidad DISTINTA de la que la voz dio. Se filtran bloques cerrados; uno
+  sin cerrar se conserva (mejor ruido que perder la única señal emitida).
+  **Correcciones mías durante la investigación**: creí que `max_tokens` había
+  truncado a Gemini en el Cónclave real — falso, ese recorte lo causó **mi
+  propio `tail -80`** al volcar la salida (fichero de exactamente 80 líneas
+  empezando a media frase). Y la respuesta larga y educada que obtuve tras el
+  arreglo **no era de Gemini sino del fallback `groq_llama_70b`**; aislado,
+  Gemini sigue siendo agresivo con presupuesto de sobra.
+  **HALLAZGO ABIERTO, no arreglado**: con el prompt actual (*"Eres un revisor
+  hostil. Ataca esta decisión"*) **Gemini calificó `BLOCKING` un cambio de
+  timeout de 30s a 60s**. Eso sugiere que el prompt empuja a objetar SIEMPRE,
+  y **rebaja la confianza en el FAIL unánime de ADR-069 de hoy**: parte de esa
+  unanimidad puede ser el prompt, no la decisión. Mistral lee "hostil" como
+  "cinco objeciones estructurales", Gemini como "condena en un párrafo".
+  Cambiar el prompt altera el comportamiento del panel para TODAS las
+  deliberaciones futuras: es decisión de diseño del operador, no mía.
+
 - **2026-07-31 (reality) — el OPERADOR destapó que `atlas reality` mide
   CONFIGURACIÓN, no realidad. Bug de proveedores arreglado; el rediseño de
   fondo queda ABIERTO como el hallazgo más valioso de la sesión.**

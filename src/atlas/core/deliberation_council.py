@@ -13,6 +13,7 @@ vivos → UNKNOWN, no se miente) y gating (lo trivial no quema modelos). El juez
 
 from __future__ import annotations
 
+import re
 from typing import Any, Protocol
 
 from atlas.core.adversarial_panel import (
@@ -39,6 +40,33 @@ _HOSTILE_PROMPT = (
     "DECISIÓN:\n{diff}\n\nCONTEXTO:\n{context}\n"
 )
 _SEVERITIES = {s.name: s for s in Severity}
+
+# 2026-07-31: el default de `InferenceRequest` (1024) AHOGA a los modelos de
+# razonamiento, que gastan presupuesto de salida pensando. Medido en vivo con
+# gemini-2.5-flash y el mismo prompt hostil: 1024 -> 153 chars (una frase
+# cortada); 4096 -> 510 chars (tres objeciones completas). El fallo era
+# traicionero porque el insulto va PRIMERO y el análisis después: la
+# truncación se comía la sustancia y dejaba intacta la agresividad, así que
+# parecía que el modelo sólo sabía insultar. En el Cónclave real de ese día un
+# voto BLOCKING se emitió sobre un fragmento y el panel lo contó como voz
+# completa.
+_REVIEW_MAX_TOKENS = 4096
+
+# Modelos de razonamiento (Qwen, DeepSeek...) emiten su cadena de pensamiento
+# antes de responder. Como la severidad se ancla a la PRIMERA línea, esa línea
+# era `<think>` y el parseo caía al fail-closed MAJOR, DESCARTANDO la severidad
+# real del modelo. No es cosmética: el panel registraba una severidad distinta
+# de la que la voz había dado.
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def _strip_thinking(text: str) -> str:
+    """Quita bloques `<think>...</think>` cerrados.
+
+    Un bloque SIN cerrar (el modelo se quedó sin presupuesto a mitad) se
+    conserva tal cual: preferible un detalle ruidoso a devolver vacío y perder
+    la única señal que esa voz llegó a emitir."""
+    return _THINK_BLOCK.sub("", text).strip()
 
 
 class LlmReviewer:
@@ -85,7 +113,11 @@ class LlmReviewer:
         prompt = _HOSTILE_PROMPT.format(diff=diff, context=context)
         resp = None
         for level in self._levels:
-            resp = self._hub.infer(InferenceRequest(prompt=prompt, level=level))
+            resp = self._hub.infer(
+                InferenceRequest(
+                    prompt=prompt, level=level, max_tokens=_REVIEW_MAX_TOKENS
+                )
+            )
             if resp.success and resp.text.strip():
                 break
         if resp is None or not resp.success or not resp.text.strip():
@@ -94,7 +126,8 @@ class LlmReviewer:
                 "revisión no disponible (fail-closed)",
                 reachable=False,
             )
-        lines = resp.text.strip().splitlines()
+        cleaned = _strip_thinking(resp.text)
+        lines = cleaned.splitlines()
         first_norm = lines[0].strip().strip("[](){}*#:.- ").upper() if lines else ""
         if first_norm in _SEVERITIES:
             sev = _SEVERITIES[first_norm]
