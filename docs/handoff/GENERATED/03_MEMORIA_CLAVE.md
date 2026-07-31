@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-07-31T00:12:53.280453+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-31T01:25:00.683989+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 - adopt-real-not-shell — Al adoptar un repo externo, ENVOLVER el código real (descargar→aislar→diseccionar→usar con mínimo código nuevo); nunca reimplementar — o queda un cascarón bonito pero vacío (pasó con Sentinel, Hermes agent).
 - atlas-coder-slice1 — AtlasCoder Slice 1 — bucle agéntico infer→edit→test con Groq via InferenceHub. Núcleo del asistente de código libre.

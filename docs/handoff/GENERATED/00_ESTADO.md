@@ -1,62 +1,69 @@
-<!-- GENERADO por atlas handoff 2026-07-31T00:12:53.280453+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-31T01:25:00.683989+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
-- **2026-07-30/31 — T2.1 los 3 candidatos medidos, dos causas raíz del
-  Cónclave arregladas, ADC-WO-108 despertado (1/5).**
-  **T2.1 REANUDADA Y CERRADA en su tramo Linux**: el operador arregló el
-  driver NVIDIA (paquetes 535 fuera) y, con permiso explícito, cambió a
-  `prime-select nvidia` + reinicio. Los tres candidatos medidos en la GTX
-  960M REAL: Qt 3.68s build/~1.2s arranque/60-61fps/134MB; Flutter
-  31.58s/~1.5s/53-61/186MB; Compose 89.8s/~8.1s/53-61/282MB. Los tres PASA.
-  **Corrección medida**: el informe de Flutter de 2026-07-23 (58-61fps) había
-  medido la iGPU Intel, no la dGPU. Hallazgo permanente: forzar la dGPU vía
-  PRIME offload en modo `on-demand` **revienta GTK3 con segfault real**
-  (`systemd-coredump`); solo `prime-select nvidia` fijo funciona. Matiz
-  honesto de Qt: `MultiEffect` (su ventaja estética citada) exige Qt 6.5+ y
-  los repos de esta máquina solo dan 6.4.2 — NO verificable aquí.
-  `UI_QUALITY_GATE` pasó de fixture-demo de 2 líneas a esquema real (8
-  preguntas + checklist de rechazo) aplicado a los tres; los tres dan
-  `passed:false` POR DISEÑO (bancos de prueba de una pantalla, no producto).
-  **Cónclave: DOS causas raíz, ambas medidas.** (1) `nvidia_glm` no devuelve
-  error, SE CUELGA (probe aislado, exit 124 a los 150s) — y
-  `INFER_REQUEST_TIMEOUT_S` era tope POR INTENTO, no presupuesto total, así
-  que un colgado costaba 120s×3=360s; con el panel recorriendo reviewers EN
-  SERIE, hasta 18min. Arreglado con presupuesto total: **360s → 123.0s
-  medido**. (2) El fallback de linaje estaba CONSTRUIDO pero INALCANZABLE en
-  2 de 3 asientos: `_walk_chain` filtra por nivel de forma dura y
-  `build_trio_reviewers` pedía siempre `primary.level` (US L0→L1, CN L2→L0;
-  solo EU coincidía). Los 4 tests previos verificaban qué proveedores lleva
-  el hub, ninguno que se llegara a ellos al LLAMAR — wire-before-claim.
-  **Medido: el asiento CN pasó de `reachable=False` a `reachable=True`.**
-  **Regresión real cazada de paso**: `inference_hub.py` perdió su
-  `load_dotenv()` en `5da5f5f` (2026-07-16) como efecto colateral no
-  mencionado de un refactor a import perezoso de litellm; ~2 semanas sin que
-  nada lo notara. Restaurarlo destapó dos fugas de aislamiento en tests (un
-  test "aislado" hacía una llamada REAL a Gemini) y los 3 flags de tick de
-  esta sesión sin scrubbear en `conftest.py`.
-  **ADC-WO-108 (único WO `READY` del canon) 1/5**: `src/atlas/engineering/`
-  eran 2209 líneas de producción + 1868 de tests con CERO callers — completo,
-  testeado y dormido. Cableado el tick de Orchestrator componiendo lo que ya
-  existía (baselines+preparer+coordinator+store, verificador
-  `UnifiedDiffVerifier`), no otro verificador. Corrida real sobre el delta
-  del repo: `verdict: pass`. Proyectado en `atlas reality`.
-  **Corrección a trabajo mío del mismo día**: mi enforcer de cifras escaneaba
-  `docs/handoff/GENERATED/00_ESTADO.md`, que es la proyección LITERAL del
-  bloque `## WHERE` de este ledger — incoherente con excluir el ledger. Ya
-  solo mira `STATUS.md`.
-  **Estado medido ahora**: suite completa **4807 passed, 6 skipped, 27
-  deselected** (exit 0, 475s); mypy **334 ficheros** limpio; Merkle íntegra.
-  `cold_update` sigue `degraded` y NO es estado rancio: sus 20 fallos son la
-  firma exacta de la regresión `e93734c` (sandbox anidado + tests que
-  necesitan red, dentro de un BwrapJail sin red) — seguirá así hasta que eso
-  tenga solución arquitectónica.
-  **Próxima acción**: ADC-WO-108 2/5 (eventos runtime al EventBus, Merkle
-  ANTES que bus), luego 3/5 proyección read-only en API (estrictamente sin
-  verbos mutantes: ADC-WO-107 es REQUIRES_OPERATOR), 4/5 hipótesis
-  graph/history/memory, 5/5 producción de correcciones (jamás aplica un
-  parche desde un finding; sale por ColdUpdate/GoldenRoute).
-  **Pendiente del operador**: 3 diffs propuestos en scratchpad (STATUS.md
-  cifras, `backlog.yaml`, decisión nº10 ADC-WO-124 que falta en
-  `OPERATOR_DECISIONS_REQUIRED.md`). Android sigue EXCLUIDO por orden
-  expresa.
+- **2026-07-31 — auditoría de mis propios diffs (encontró fallos reales),
+  Cónclave con quórum real (FAIL), ADC-WO-108 CERRADO (5/5), 2 dossiers de
+  decisión nuevos + 1 hallazgo de seguridad, higiene de worktrees.**
+  **Auditoría de mis 3 diffs propuestos**: los tres eran pseudo-diffs
+  ilustrativos que `git apply --check` rechazaba — ninguno era el "listo
+  para aprobar" que afirmé. Regenerados como parches reales (verificados
+  aplicables): STATUS.md (4807 passed medido hoy, no 4794), backlog.yaml
+  (t4-workbench-compliance-review-tick → done), decisión nº10 en
+  OPERATOR_DECISIONS_REQUIRED.md (ADC-WO-124, colocada al final, no entre
+  el 4 y el 5 como en mi primer borrador). Hallazgo colateral contra mí:
+  `WORK_LEDGER.md` llevaba parado desde `117b788`, así que el pack de
+  sucesión regenerado en la Fase 1 NO había quedado fresco de verdad
+  (`handoff.estado_body()` copia literal el bloque `## WHERE`) — corregido.
+  **Cónclave: quórum 3/3 real por primera vez, veredicto FAIL.** Dos
+  causas raíz arregladas con evidencia medida: tope de tiempo por-intento
+  → presupuesto total (`ac0243c`, 360s→123s), fallback de linaje
+  inalcanzable por nivel → recorrido de niveles (`5b912d6`), linaje CN
+  invertido porque `nvidia_glm` se cuelga siempre (`7936cad`, medido 3
+  veces distintas: 123s→9.2s). Con las tres voces respondiendo, el
+  veredicto real sobre el stack T2.1 es **FAIL**: el benchmark de
+  referencia (una pantalla) es demasiado estrecho para extrapolar a ~20
+  pantallas — no descalifica a Qt, exige medir con más carga antes de
+  comprometerse.
+  **ADC-WO-108 CERRADO, las 5 piezas** (único WO `READY` del canon):
+  tick de Orchestrator (opt-in, cadencia 24h, Merkle), eventos runtime al
+  EventBus real (Merkle SIEMPRE antes que el bus, verificado por un test
+  que resuelve el audit_ref desde dentro del propio suscriptor), proyección
+  read-only en la API (`GET /engineering/findings`, sin verbos mutantes),
+  hipótesis graph/history/memory (compone QUERIES+git log+LessonStore, sin
+  motor nuevo — verificado con datos reales: 5 importadores, 14 en radio
+  de impacto, 101 commits), producción de correcciones (invariante no
+  negociable "no patch application from a finding" — solo enruta el
+  patch_ref que el finding YA carga a `ColdUpdateManager.propose()`, nunca
+  aplica ni aprueba). `src/atlas/engineering/` pasó de 2209 líneas
+  dormidas a con callers reales.
+  **2 dossiers de decisión nuevos** (ADC-WO-107, ADC-WO-124) con evidencia
+  medida, no opinión. ADC-WO-107: 13 de 21 rutas POST del bridge 7341
+  mutan estado real; hallazgo nuevo — `business/core/activate`/`reject`
+  ejecutan aprobación completa SIN separación de proceso, más grave que el
+  caso ya conocido (`permissions/approve`, que sí usa un subprocess CLI).
+  **Hallazgo de seguridad ADC-WO-124**: `computer-control-mcp==0.3.10`
+  saltó por completo el pipeline de vetting de ADR-075 (0 apariciones en
+  ambos informes de catálogo, `pip install` directo ya ejecutó código de
+  build) — registrado con hash del árbol/licencia/deps/semgrep reales (14
+  rutas, 0 hallazgos), NO se tocó la instalación ni el catálogo.
+  **Higiene de worktrees**: de 11 a 5. Verificado ANTES de tocar nada
+  (commits sin mergear + ficheros sucios) que 6 eran seguros (0/0) y 5 NO
+  lo eran — dos `atlas-doc0-rc2-*` con **639-640 commits sin mergear cada
+  uno** (mi plan original los daba por restos pequeños, estaba mal
+  informado), `atlas-definitive-convergence` con 4 commits reales, y el
+  worktree de cold-updates que es un proposal `proposed` EN VIVO (jamás
+  tocar). 1 cuarentena vencida confirmada por el tool real
+  (`sanitation_audit.py`, no por la nota vieja del ledger que decía 2) —
+  documentada, NO borrada (acción de `git rm` queda a decisión del
+  operador). `component_wiring_drift` batcheado (una conexión Kuzu, no
+  una por módulo): medido 10.01s→5.43s contra el matrix real de 142 filas.
+  **Estado medido**: full suite 4829 passed/0 fallos (494.57s, checkpoint
+  DESPUÉS de cerrar ADC-WO-108, ANTES del fix de rendimiento).
+  **Pendiente real, grande, sin empezar**: dossiers completos de
+  ADC-WO-102 (falsifier = bench de recuperación sobre TaskPersistence,
+  nunca ejecutado) y ADC-WO-103 (falsifier = LongMemEval n=500 completo,
+  herramientas ya existen: `scripts/fetch_longmemeval.py` +
+  `scripts/eval_longmemeval.py`, solo falta correrlas a escala completa).
+  El resto de las 6 decisiones REQUIRES_OPERATOR (100/102/103/105/107/124)
+  siguen sin resolver — son del operador, no mías.
