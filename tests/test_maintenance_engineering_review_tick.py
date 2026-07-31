@@ -123,6 +123,74 @@ class TestEngineeringReviewTickCadence:
         assert second == {"status": "already_ran_today"}
 
 
+class TestEngineeringReviewTickPublishesEvents:
+    """ADC-WO-108 2/5 -- cableado de eventos en runtime.
+
+    `EngineeringEventPublisher` (events.py) existía completo: publica solo
+    metadatos seguros y SIEMPRE deja el receipt Merkle ANTES de tocar el bus.
+    Pero nadie lo construía con el bus real, así que ningún evento de
+    ingeniería llegaba a suscriptores. El invariante duro del WO es el orden
+    (Merkle antes que EventBus) y que el evento no lleve prosa de reviewer ni
+    referencias a parches.
+    """
+
+    def test_review_completed_event_reaches_the_real_bus(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from atlas.core.contracts import EventType
+
+        monkeypatch.setenv("ATLAS_ENGINEERING_REVIEW", "1")
+        seen: list[object] = []
+        orch._bus.subscribe(EventType.ENGINEERING_REVIEW_COMPLETED, seen.append)
+
+        orch.maintenance_engineering_review_tick()
+
+        assert len(seen) == 1, "el tick debe publicar el resultado de la review"
+        event = seen[0]
+        assert event.payload.get("audit_ref"), (
+            "el evento debe llevar el hash del receipt Merkle que lo precedió"
+        )
+
+    def test_event_carries_no_reviewer_prose_or_patch(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Invariante del WO: 'no reviewer prose or patch references'."""
+        from atlas.core.contracts import EventType
+
+        monkeypatch.setenv("ATLAS_ENGINEERING_REVIEW", "1")
+        seen: list[object] = []
+        orch._bus.subscribe(EventType.ENGINEERING_REVIEW_COMPLETED, seen.append)
+
+        orch.maintenance_engineering_review_tick()
+
+        payload = seen[0].payload
+        assert "diff" not in payload
+        assert "patch" not in payload
+
+    def test_merkle_receipt_precedes_the_bus_event(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """El receipt de auditoría debe existir ANTES de publicar: si el
+        suscriptor ya puede ver el evento, su `audit_ref` tiene que resolver
+        contra un registro Merkle real, no contra una promesa."""
+        from atlas.core.contracts import EventType
+
+        monkeypatch.setenv("ATLAS_ENGINEERING_REVIEW", "1")
+        refs_at_publish: list[str] = []
+
+        def _capture(evt: object) -> None:
+            hashes = {r.hash_self for r in orch._merkle.read_all()}
+            assert evt.payload["audit_ref"] in hashes, (
+                "el evento llegó al bus antes de que su receipt Merkle existiera"
+            )
+            refs_at_publish.append(evt.payload["audit_ref"])
+
+        orch._bus.subscribe(EventType.ENGINEERING_REVIEW_COMPLETED, _capture)
+        orch.maintenance_engineering_review_tick()
+
+        assert len(refs_at_publish) == 1
+
+
 class TestEngineeringReviewTickMerkle:
     def test_merkle_action_logged_with_summary(
         self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch

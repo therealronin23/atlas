@@ -1342,6 +1342,7 @@ class MaintenanceFacade:
             EngineeringIncrementalReviewRunner,
             IncrementalReviewPreparationError,
         )
+        from atlas.engineering.events import EngineeringEventPublisher
         from atlas.engineering.review import (
             EngineeringReviewCoordinator,
             EngineeringReviewRequest,
@@ -1402,13 +1403,27 @@ class MaintenanceFacade:
             at=datetime.now(timezone.utc).isoformat(),
         )
 
+        # ADC-WO-108 2/5: el publisher ya existía pero nadie lo construía con
+        # el bus REAL, así que ningún evento de ingeniería llegaba a un
+        # suscriptor. El orden es invariante duro del WO -- receipt Merkle
+        # ANTES del bus -- y lo garantiza el propio publisher; aquí solo se le
+        # dan las dependencias vivas.
+        publisher = EngineeringEventPublisher(bus=self._orch._bus, merkle=self._orch._merkle)
+
         # Fail-honesto: un tick NUNCA propaga una excepción al scheduler.
+        published = 0
         try:
             execution = runner.run(request)
             reviewed = execution.report is not None
             verdict = execution.report.verdict.value if execution.report else None
             finding_count = len(execution.report.findings) if execution.report else 0
             reason = "" if reviewed else "sin delta que revisar"
+            if execution.report is not None:
+                for finding in execution.report.findings:
+                    publisher.publish_finding(finding)
+                    published += 1
+                publisher.publish_review_completed(execution.report)
+                published += 1
         except (IncrementalReviewPreparationError, OSError, ValueError) as exc:
             reviewed, verdict, finding_count = False, None, 0
             reason = f"{type(exc).__name__}: {exc}"
@@ -1417,6 +1432,7 @@ class MaintenanceFacade:
             "reviewed": reviewed,
             "verdict": verdict,
             "findings": finding_count,
+            "events_published": published,
             "journal_total": findings.count(),
             "base_revision": parent,
             "candidate_revision": head,
