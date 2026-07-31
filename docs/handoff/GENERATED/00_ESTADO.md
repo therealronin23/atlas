@@ -1,41 +1,40 @@
-<!-- GENERADO por atlas handoff 2026-07-31T23:26:00.750432+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-07-31T23:57:03.593637+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
-- **2026-08-01 — Hermes ya se diagnostica y Atlas por fin le escucha. Y el
-  lifecycle de lecciones NO se cableó, a propósito: el cimiento está roto.**
-  **Hermes (HECHO, `55b13a2`)**: el operador pidió *"haz que Hermes corrija y
-  se autocorrija"*. Al medirlo, el hallazgo fue que **Hermes ya traía las dos
-  mitades y Atlas nunca las llamaba** — `diagnostics --json` (detecta tareas
-  varadas/atascadas/con fallos repetidos, con acciones sugeridas) y `repair
-  --json` (`PRAGMA integrity_check`, auto-repara SÓLO índices tras cuarentena,
-  fail-closed de fábrica). Ninguna estaba en `ALLOWED_KANBAN_ACTIONS`.
-  **Lo que el tablero real llevaba 23 días diciendo sin que nadie escuchara**:
-  1 `critical` (`stranded_in_ready`, 564 h sin worker), 2 `error`
-  (`repeated_failures`, crash ×2 — uno es *monitoriza servidor C*), 2 `warning`
-  (`stuck_in_blocked`, 198 h — servidores A y B). **Eso CONTESTA el F2.2**: las
-  tres tareas de servidor del operador no estaban "en cola", dos llevan 198 h
-  atascadas y la tercera ha petado dos veces.
-  También: `list_tasks()` no pasaba `--json`, así que `parsed` quedaba `None` y
-  quien quisiera RAZONAR sobre tareas recibía None en silencio; y `_run_local`
-  llamaba a `_default_runner` en vez de `self._runner`, ignorando el runner
-  inyectado (un test "aislado" acababa invocando el Hermes REAL). Aviso vía la
-  sonda `hermes_probe` del watchdog —NO un tick nuevo: ya corre cada 15 min,
-  ya tiene Telegram verificado y anti-repetición de 12 h— y sólo para
-  `critical`/`error`: los dos `warning` de 198 h no despiertan a nadie.
-  Las acciones que MUTAN (`unblock`/`edit`/`reassign`) quedan FUERA: entran por
-  ADR con el decider delante (decisión del operador, pendiente de escribir).
-  **Lecciones (PARADO CON RAZÓN)**: iba a cablear
-  `apply_lifecycle_transitions()` y la medición lo desaconsejó. Las 17 lecciones
-  reales tienen `recall_count = 0` y ninguna `last_recalled_at`. **Corrijo una
-  afirmación mía de esta misma sesión**: dije que "Atlas lleva semanas contando
-  el uso de cada lección" — falso, no ha contado ni uno.
-  **La causa está aguas arriba**: `orchestrator.py:1612` construye
-  `LessonStore(~/atlas/memory/lessons)` → **0 ficheros**, mientras
-  `atlas_coder`/`tool_coder`/`maintenance_facade`/`trunk_server` usan
-  `<repo>/workspace/lessons` → **17 lecciones**. El `LessonRecaller` del daemon
-  lee un almacén VACÍO, así que no puede recordar nada nunca. Cablear el
-  envejecido encima habría **archivado las 17 por "nunca usadas"**, que es
-  falso: nunca han tenido oportunidad. Primero se unifica la ruta.
-  (La memoria `memory-lessons-disconnection-2026-07-03` daba esto por "arreglado
-  en su mayoría" — no lo estaba.)
+- **2026-08-01 (tarde) — LangGraph CERRADO, matriz de absorción completa, y DOS
+  autocorrecciones mías sobre diagnósticos que había dado por buenos.**
+  **LangGraph (`23f3699`)**: última fila con cero código. Al medir contra el
+  código real, el "StateGraph sketch" no hacía falta — `VALID_TRANSITIONS`
+  (`contracts.py:49`) **ya es** un grafo dirigido de `TaskStatus` con aristas
+  guardadas (`transition()` lanza ante una no declarada); la ramificación
+  condicional vive en los ejecutores; y los checkpoints se absorbieron de Cline
+  en julio. Nuestra tabla es ESTÁTICA a propósito: aristas mutables en caliente
+  no sostendrían el invariante. Cerrado como **no-goal razonado**, sin adoptar
+  el paquete. **La matriz de absorción queda CERRADA.**
+  **Bug de clase, TERCERA vez**: `kanban_bridge` leía `HERMES_*` de `os.environ`
+  sin cargar nunca el `.env`. Desde un proceso limpio resolvía transporte `ssh`
+  y reventaba, con la config real diciendo `local`. Arreglado en import + test.
+  **Autocorrección 1 — Hermes A/B/C**: la tarea `critical` de 564 h NO es un
+  fallo del sistema. Su cuerpo dice *"la descripción actual es un placeholder
+  ('title' y 'body'), indica el objetivo específico"*: **es Hermes preguntando
+  al operador**, y sale `skipped_nonspawnable` porque espera una respuesta
+  humana, no un worker. Y las tres de servidor **no se pueden completar como
+  están escritas**: el cuerpo es literalmente `"cuando yo no este, monitoriza
+  servidor C"`, sin definir qué servidor, y el único que hubo (el VPS) está de
+  baja. La causa del crash de C está en su log: *"worker exited cleanly (rc=0)
+  without calling kanban_complete or kanban_block — protocol violation"* — corrió
+  y salió bien, pero nunca cerró el bucle. **Decidir qué son A/B/C es del
+  operador**; no se tocan.
+  **Autocorrección 2 — lecciones**: dije que había que "unificar la ruta del
+  LessonStore". **Habría sido el arreglo equivocado.** Las 21 lecciones de
+  `<repo>/workspace/lessons` están **trackeadas por git**: el split es
+  DELIBERADO — curadas y versionadas frente a runtime del daemon. Unificar haría
+  que cada lección aprendida en caliente ensuciara el árbol, que es el incidente
+  "9 YAML regenerados" que ya cita `self_build_runner`. El problema medido sigue
+  en pie, mejor enunciado: **el daemon no VE ninguna de las 21 curadas** porque
+  su recaller sólo lee el almacén de runtime (vacío). El arreglo es **lectura de
+  ambos**, escritura sólo en runtime. Sigue bloqueando el envejecido.
+  **Política de esta tanda** (orden del operador): economizar tokens, delegar en
+  Atlas para medir su eficacia, y actuar de mentor. Delegar arreglos de 4 líneas
+  cuesta más que hacerlos; la delegación real se reserva para el Cónclave.
