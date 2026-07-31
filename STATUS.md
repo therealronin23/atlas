@@ -62,8 +62,8 @@ sobre `739ca8f`+.
 
 | Comprobación | Exit | Resultado |
 |---|---|---|
-| `pytest tests/ -q` | 0 | 4833 passed, 6 skipped, 27 deselected (medido 2026-07-31) |
-| `mypy src/atlas/` | 0 | 336 ficheros (medido 2026-07-31) |
+| `pytest tests/ -q` | 0 | 4853 passed, 6 skipped, 27 deselected (medido 2026-07-31, tras cerrar ADC-WO-102/103/107/124) |
+| `mypy src/atlas/` | 0 | 337 ficheros (medido 2026-07-31) |
 | `atlas audit --verify` | 0 | cadena Merkle íntegra |
 | `atlas reality --run-checks --include-browser` | — | `status=ok`, `strict_failures=[]`; browser 27 passed |
 | `uv lock --check` | 0 | 301 paquetes |
