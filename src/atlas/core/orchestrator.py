@@ -1033,6 +1033,10 @@ class Orchestrator:
         """Consume los hallazgos de mesa de trabajo no consultada. Delegado al facade."""
         return self._maintenance_facade.maintenance_workbench_compliance_review_tick()
 
+    def maintenance_lesson_lifecycle_tick(self) -> dict[str, Any]:
+        """Envejece lecciones por inactividad real (recall_count). Delegado al facade."""
+        return self._maintenance_facade.maintenance_lesson_lifecycle_tick()
+
     def maintenance_engineering_review_tick(self) -> dict[str, Any]:
         """Revisión de ingeniería incremental sobre el delta de HEAD (ADC-WO-108). Delegado al facade."""
         return self._maintenance_facade.maintenance_engineering_review_tick()

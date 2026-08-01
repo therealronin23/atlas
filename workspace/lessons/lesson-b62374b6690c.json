@@ -26,5 +26,10 @@
     "atlas_coder:g0.7_experiment"
   ],
   "tags": [],
-  "created_at": "2026-06-27T07:31:17.645430+00:00"
+  "created_at": "2026-06-27T07:31:17.645430+00:00",
+  "occurrence_count": 1,
+  "last_seen_at": "",
+  "recall_count": 0,
+  "last_recalled_at": "",
+  "state": "stale"
 }

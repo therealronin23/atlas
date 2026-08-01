@@ -400,6 +400,12 @@ class MaintenanceFacade:
                 # cada ciclo retoma lo pendiente sin cursor aparte.
                 _isolated_cycle("mcp_vetting", self.maintenance_mcp_vetting_tick)
 
+            def _lesson_lifecycle_cycle() -> None:
+                # Envejecido de lecciones por inactividad real: ver
+                # maintenance_lesson_lifecycle_tick. Aislado igual que los
+                # demás ciclos -- un fallo aquí no bloquea self_build/dep/batch.
+                _isolated_cycle("lesson_lifecycle", self.maintenance_lesson_lifecycle_tick)
+
             def _batch_cycle() -> None:
                 # Lote de self_audit probado en worktree efímero (ColdUpdateBatcher).
                 # Se enruta por self._orch por el mismo motivo que _dep_cycle:
@@ -451,7 +457,7 @@ class MaintenanceFacade:
                     _mcp_vetting_cycle, _mcp_trial_cycle, _sentinel_revet_cycle,
                     _provider_smoke_cycle, _provider_discovery_cycle, _provider_status_cycle,
                     _workbench_compliance_review_cycle, _engineering_review_cycle,
-                    _mcp_reseed_cycle,
+                    _mcp_reseed_cycle, _lesson_lifecycle_cycle,
                     _dep_cycle, _self_build_cycle,
                     _batch_cycle,
                 ),
@@ -1292,6 +1298,59 @@ class MaintenanceFacade:
             payload=result,
         )
         return {"status": "ran", **result}
+
+    def maintenance_lesson_lifecycle_tick(self) -> dict[str, Any]:
+        """`LessonStore.apply_lifecycle_transitions()` (patrón absorbido de
+        Hermes-Agent `curator.py`, 2026-07-18) tenía CERO callers de
+        producción: se dejó parado a propósito el mismo día que se descubrió
+        que el `LessonRecaller` del daemon leía un almacén de runtime VACÍO
+        (bug de rutas divergentes, arreglado el mismo día con lectura dual
+        curado+runtime). Con `recall_count` ya real sobre las lecciones
+        curadas, cablear el envejecido por fin tiene sentido: sin esto, el
+        uso real nunca se traduce en `stale`/`archived` y el almacén crece
+        sin que nada distinga lo vivo de lo obsoleto.
+
+        Opt-in explícito: requiere ``ATLAS_LESSON_LIFECYCLE=1``. Cadencia
+        propia de 24h -- espejo exacto de
+        ``maintenance_workbench_compliance_review_tick``. NUNCA borra
+        ficheros: `archived` es sólo una etiqueta, recuperable."""
+        # Guardia anti-recursión -- ver maintenance_self_build_tick.
+        if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
+            return {"status": "nested_run_guard"}
+        if os.environ.get("ATLAS_LESSON_LIFECYCLE", "").strip() != "1":
+            return {"status": "disabled"}
+
+        import json
+        from datetime import datetime, timezone
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        state_path = self._project_root() / "workspace" / "self_build" / "lesson_lifecycle_state.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+        except (OSError, ValueError):
+            state = {}
+        if state.get("last_run_date") == today:
+            return {"status": "already_ran_today"}
+
+        from atlas.core.lesson_store import LessonStore
+
+        orch = self._orch
+        store = LessonStore(self._project_root() / "workspace" / "lessons")
+        counts = store.apply_lifecycle_transitions()
+
+        state["last_run_date"] = today
+        state["last_result"] = counts
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+        orch._merkle.log(
+            action="self_maintenance.lesson_lifecycle_tick",
+            agent="maintenance_facade",
+            result="ran",
+            risk_level="safe",
+            payload=counts,
+        )
+        return {"status": "ran", **counts}
 
     def maintenance_engineering_review_tick(self) -> dict[str, Any]:
         """Despierta el plano de hallazgos de ingeniería (ADC-WO-108).

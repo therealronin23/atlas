@@ -26,5 +26,10 @@
     "atlas_coder:lesson_store_stats_2026-06-27"
   ],
   "tags": [],
-  "created_at": "2026-07-02T05:43:55.036537+00:00"
+  "created_at": "2026-07-02T05:43:55.036537+00:00",
+  "occurrence_count": 1,
+  "last_seen_at": "",
+  "recall_count": 0,
+  "last_recalled_at": "",
+  "state": "stale"
 }

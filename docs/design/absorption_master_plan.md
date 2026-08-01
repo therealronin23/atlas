@@ -296,9 +296,24 @@ anything from Atlas's side. Study → assimilate → wrap, never fork wholesale.
 - MCP client/server — Atlas already closed its own MCP work (WORK_LEDGER: "MCP
   CERRADO: 6 primitivos + Tasks", `atlas-trunk` catalog). Hermes's `mcp_serve.py`/
   `mcp_tool.py` would be a second, competing MCP surface — do not absorb as-is.
-- Cron/scheduled jobs — needs a direct comparison against `maintenance_worker`'s
-  polling loop before concluding either way (not confirmed redundant, not confirmed
-  novel — flagged honestly as unverified, do not assume).
+- Cron/scheduled jobs — **comparado 2026-08-01, NO es redundante, es genuinamente
+  nuevo y grande.** Hermes: `cron/` es un paquete de **8287 líneas** — jobs
+  creables por usuario/agente (sintaxis cron o lenguaje natural), pools de
+  ejecución paralela/secuencial, recuperación de tareas interrumpidas
+  (`mark_running_jobs_interrupted`), restricción de toolset por-job,
+  `lifecycle_guard` (bloquea comandos de ciclo de vida del gateway al disparar
+  por cron), entrega/espejo a chat, y un catálogo de sugerencias/blueprints
+  para autogenerar jobs. Atlas: no tiene equivalente. `MaintenanceScheduler`
+  (`self_maintenance/scheduler.py`) es sólo la cadencia del descubrimiento MCP;
+  `AtlasServiceRunner.run_forever` (`service_runner.py`) es un bucle FIJO que
+  llama a una lista hardcodeada de `maintenance_*_tick()` internos, cada uno
+  autogatado por su propio fichero de estado — nada que un usuario o agente
+  pueda crear dinámicamente ("avísame en 2 horas", "cada martes a las 15h").
+  **Veredicto: extraer la TÉCNICA (un primitivo ligero de tarea programada
+  genérica), no el paquete de 8287 líneas** — mismo principio que el resto de
+  esta auditoría (`feedback-scope-adoption-as-extraction`). No implementado
+  todavía: es una pieza de tamaño real (diseño + TDD propios), no cabe como
+  añadido al final de una tanda ya larga.
 
 ### Governance gap — do NOT lower Atlas's bar when wrapping anything from here
 

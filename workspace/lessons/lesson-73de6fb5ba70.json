@@ -26,5 +26,10 @@
     "atlas_coder:sandbox_experiment_2026-06-27"
   ],
   "tags": [],
-  "created_at": "2026-07-02T01:18:12.583386+00:00"
+  "created_at": "2026-07-02T01:18:12.583386+00:00",
+  "occurrence_count": 1,
+  "last_seen_at": "",
+  "recall_count": 0,
+  "last_recalled_at": "",
+  "state": "stale"
 }
