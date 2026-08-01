@@ -3786,3 +3786,8 @@ entries:
   status: propuesto
   verified: null
   notes: 'triage: regla determinista (^research[_-])'
+- path: docs/knowledge/research_2026-08-01.md
+  type: conocimiento
+  status: propuesto
+  verified: null
+  notes: 'triage: regla determinista (^research[_-])'

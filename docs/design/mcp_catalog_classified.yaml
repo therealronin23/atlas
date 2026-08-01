@@ -108,6 +108,23 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-31T16:46:04.815313+00:00'
+    - name: SiWarlock/AI-System-Of-Work-Assistant-Agent
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/SiWarlock/AI-System-Of-Work-Assistant-Agent
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:2
+      - informe:3
+      - informe:4
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-01T01:14:20.056934+00:00'
   datos:
     label: Datos
     entries:
@@ -173,13 +190,49 @@ sectors:
         fetched_at: '2026-07-27T01:21:12.605086+00:00'
   infraestructura:
     label: Infraestructura
-    entries: []
+    entries:
+    - name: jordanhall1996/apisonic-speedrum-windows
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/jordanhall1996/apisonic-speedrum-windows
+      install: ''
+      status: candidato
+      tags:
+      - infraestructura
+      evidence:
+      - tema:version control
+      - tema:version control systems
+      - informe:13
+      - informe:14
+      - informe:16
+      - informe:8
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-01T01:14:20.056934+00:00'
   investigacion:
     label: Investigación
     entries: []
   productividad:
     label: Productividad
-    entries: []
+    entries:
+    - name: keshave1999/-AI-Agent-Workflow-with-n8n
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/keshave1999/-AI-Agent-Workflow-with-n8n
+      install: ''
+      status: candidato
+      tags:
+      - productividad
+      evidence:
+      - tema:time aware reasoning
+      - informe:4
+      - informe:5
+      - informe:6
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-01T01:14:20.056934+00:00'
   programacion:
     label: Programación
     entries:
@@ -201,6 +254,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-27T01:21:12.605086+00:00'
+    - name: klondikemarlen/omp-repository-boundary-guard
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/klondikemarlen/omp-repository-boundary-guard
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-01T01:14:20.056934+00:00'
   uncategorized:
     label: uncategorized
     entries: []
