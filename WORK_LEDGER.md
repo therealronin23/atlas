@@ -8,6 +8,75 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-01 (autobuild extendido) — Cut 2 medido, y el hallazgo cambia el
+  tamaño del trabajo: el desfase real no son 3 versiones, son ~33.**
+  **C1 (medición, sin tocar código de producto)**: el plan asumía medir
+  `HOST_BASELINE` (`1.129.1`) vs CodeOSS actual — y ESE desfase sí es
+  pequeño (`1.132.0`, 3 versiones, 13 días). Pero las 648 líneas nuestras
+  (`atlas-ide`, `atlas-ide-forward-port`) están escritas sobre **Void**, y
+  Void tiene su propio `package.json`: **`1.99.3`**. El desfase que Cut 2
+  tiene que cerrar de verdad es Void → CodeOSS actual, **~33 versiones
+  menores**, no 3. Nadie lo había medido hasta hoy.
+  **Cómo se destapó**: un intento real de merge de 3 vías
+  (`git merge-file`) sobre el único fichero compartido con vscode crudo
+  (`app.ts`; los otros 7 ficheros modificados viven enteramente en
+  `contrib/void/`, sin equivalente upstream) no encontró merge-base común
+  entre el `app.ts` de Void (1505 líneas) y el de vscode — confirma que
+  "portar" no es reaplicar un parche, es la tarea completa de
+  fork-maintenance.
+  **Verificado en vivo, no sólo citado**: `voideditor/void` rama `main`
+  sigue en `1.99.3`, último commit `2026-06-02` — **la MISMA versión que
+  nuestros checkouts**. El canon ya decía "Void congelado"; ahora hay
+  evidencia en vivo. La brecha no la cierra Void solo: si Cut 2 avanza, el
+  rebase lo hace este proyecto.
+  **Informe completo**: `docs/design/cut2_codeoss_drift_measurement_2026-08-01.md`.
+  Registro de linaje (`product_lineage_registry.jsonl`) anotado con la
+  evidencia medida, SIN cambiar disposición — no se ha empezado el port.
+  **Deliberadamente NO se intentó C2** (portar) esta tanda: con el alcance
+  real medido, empezarlo habría producido trabajo a medias sin decirlo,
+  justo lo que el operador pidió evitar. Punto de partida honesto para una
+  tanda dedicada.
+
+- **2026-08-01 (autobuild extendido) — Hermes con escrituras correctivas
+  gobernadas (ADR-081), Cónclave rediseñado a 5 roles × 5 linajes con panel
+  paralelo y rondas por peligrosidad, lecciones cableadas por fin, LangGraph
+  cerrado — ejecutado en modo autónomo (`no te detengas`), delegando en
+  Atlas donde el tamaño de la tarea lo justificaba.**
+  **Hermes (ADR-081, `7ca67d3`/`5e48fd1`)**: `unblock`/`edit`/`reassign`
+  entran en `ALLOWED_KANBAN_ACTIONS`, pero SÓLO alcanzables vía
+  `propose_correction()` — pasa por el `Decider` real (ADR-040), y con
+  `sensitivity="high"` la guardia constitucional convierte CUALQUIER intento
+  de `Allow` en `RequiresHuman` sin que ningún decisor pueda anularlo
+  (verificado con un decisor de prueba que dice "sí" a todo: aun así no
+  ejecuta). P10 ("Hermes propone, Atlas decide") hecho literal.
+  **Lecciones (`cd09f0b`)**: delegado a Atlas de verdad (`SelfBuildRunner`
+  sobre backlog real, coste cero de cuota Claude) — produjo un diff correcto
+  en el primer intento, revisado línea a línea y aplicado a mano (la
+  validación en worktree tuvo 30 fallos de entorno bwrap/timing sin relación
+  con el patch). `LessonRecaller` ahora lee de dos almacenes (curado +
+  runtime); verificado en vivo que un recall real incrementa `recall_count`
+  de una lección curada real (0→1, y revertido el fichero tocado por la
+  propia verificación para no falsear el historial).
+  **Cónclave (`8194146`)**: los dos repos que trajo el operador revelaron
+  que sus "5 voces" son 5 ROLES de pensamiento, no 5 modelos — eje
+  ORTOGONAL al nuestro (linaje). `_HOSTILE_PROMPT` ES el Contrarian; se
+  corría ese único papel en los tres asientos, lo que explica la
+  patología del 31-jul. Panel PARALELIZADO primero (condición previa:
+  5 asientos × 4 rondas en serie recrean el cuelgue de 360s); 5 `COUNCIL_ROLES`
+  (un rol por linaje, corrige de paso que Zhipu/Alibaba compartían asiento);
+  rondas por PELIGROSIDAD reutilizando el umbral que ya existía
+  (`AdversarialPanel.block_at`) — bajo el umbral para en 1 ronda (ahorro
+  real), sobre el umbral ronda de revisión ANÓNIMA entre pares, tope 4
+  (decisión del operador) → escala al humano. **Verificado en vivo con los
+  5 proveedores reales**: una ronda con 5 asientos tarda 41.1s (no la suma
+  serial ~160s) y las 5 voces dan contenido genuinamente diferenciado por
+  rol sobre la misma decisión.
+  **LangGraph (`23f3699`)**: cerrado como no-goal razonado — `VALID_TRANSITIONS`
+  (`contracts.py:49`) ya es un grafo dirigido de estados con aristas
+  guardadas; la matriz de absorción queda completa.
+  **Estado al cierre de esta tanda**: suite 5009 passed · 6 skipped ·
+  check_canon PASS (2106) · mypy limpio en todos los ficheros tocados.
+
 - **2026-08-01 (tarde) — LangGraph CERRADO, matriz de absorción completa, y DOS
   autocorrecciones mías sobre diagnósticos que había dado por buenos.**
   **LangGraph (`23f3699`)**: última fila con cero código. Al medir contra el
