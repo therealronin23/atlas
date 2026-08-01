@@ -23,6 +23,17 @@ API pública:
       .index() -> None
       .recall(attack_text) -> RecallResult | None
       .recall_all(attack_text, k=5) -> list[RecallResult]
+
+El constructor acepta un ``store`` de escritura (primer argumento posicional,
+retrocompatible) y opcionalmente ``read_stores`` adicionales de sólo-lectura.
+El índice embebe lecciones de TODOS los stores (escritura + lectura), y
+``record_recall`` (telemetría de uso) escribe en el store que CONTIENE la
+lección matched. La escritura de NUEVAS lecciones (add/record_recurring)
+sigue siendo sólo en el store de escritura — eso lo hace TeacherDebate, no
+este recaller. Esto permite que el daemon recupere lecciones curadas
+(versionadas en git bajo <repo>/workspace/lessons) sin ensuciar el árbol con
+lecciones aprendidas en caliente (incidente '9 YAML regenerados', ver
+self_build_runner.py).
 """
 
 from __future__ import annotations
@@ -34,6 +45,7 @@ from atlas.memory.embeddings import Embedder, StubEmbedder, default_embedder
 from atlas.memory.vector_store import cosine_similarity as _cosine_similarity_raw
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from atlas.core.lesson_store import Lesson, LessonStore
 
 
@@ -106,6 +118,17 @@ class LessonRecaller:
     Si se añaden lecciones al store después de index(), hay que llamar a
     index() de nuevo para que aparezcan en el índice (el índice no es
     incremental en esta versión).
+
+    Multi-store (lectura curada + escritura runtime):
+        El split curado/runtime es deliberado — las lecciones curadas viven
+        en ``<repo>/workspace/lessons`` (trackeadas por git) y las de runtime
+        en ``~/atlas/memory/lessons`` (aprendidas en caliente). Unificar rutas
+        ensuciaría el árbol git (incidente '9 YAML regenerados'). El recaller
+        acepta ``read_stores`` adicionales de sólo-lectura: el índice embebe
+        lecciones de TODOS los stores, y ``record_recall`` escribe en el store
+        que contiene la lección matched (telemetría de uso). La escritura de
+        NUEVAS lecciones (add/record_recurring) sigue siendo sólo en el store
+        de escritura — eso lo hace TeacherDebate, no este recaller.
     """
 
     def __init__(
@@ -114,8 +137,14 @@ class LessonRecaller:
         *,
         embedder: Embedder | None = None,
         threshold: float = 0.8,
+        read_stores: Iterable[LessonStore] | None = None,
     ) -> None:
         self._store = store
+        # Stores de sólo-lectura adicionales (curado). El índice los embebe,
+        # y record_recall escribe en el store que contiene la lección matched
+        # (que puede ser uno de éstos). La escritura de NUEVAS lecciones
+        # (add/record_recurring) es sólo en self._store (lo hace TeacherDebate).
+        self._read_stores: list[LessonStore] = list(read_stores) if read_stores is not None else []
         # Sin embedder explícito, respeta ATLAS_EMBEDDER (default_embedder()):
         # sin la env var, StubEmbedder(dim=64) idéntico a antes — cero cambio
         # de comportamiento. Con ATLAS_EMBEDDER=fastembed, semántico real —
@@ -125,6 +154,9 @@ class LessonRecaller:
         self._threshold = threshold
         # lesson_id -> vector normalizado
         self._index: dict[str, list[float]] = {}
+        # lesson_id -> LessonStore que lo contiene (para saber dónde escribir
+        # record_recall: el store que contiene la lección matched).
+        self._lesson_store_map: dict[str, LessonStore] = {}
 
     # ------------------------------------------------------------------
     # Construcción del texto representativo de una lección
@@ -145,20 +177,41 @@ class LessonRecaller:
     # ------------------------------------------------------------------
 
     def index(self) -> None:
-        """(Re)construye el índice embebiendo todas las lecciones del store.
+        """(Re)construye el índice embebiendo todas las lecciones de TODOS los stores.
 
         Idempotente: llamar varias veces reconstruye el índice desde cero.
         Lecciones añadidas al store tras esta llamada NO aparecen hasta que
         se vuelva a llamar index().
+
+        El índice embebe lecciones del store de escritura Y de los read_stores
+        (sólo-lectura). El mapeo lesson_id→store se conserva para que
+        record_recall sepa en qué store escribir (el que contiene la lección).
         """
-        lessons: list[Lesson] = self._store.all()
-        if not lessons:
+        # Recoger lecciones de todos los stores (escritura primero, luego reads).
+        all_lessons: list[Lesson] = []
+        store_map: dict[str, LessonStore] = {}
+
+        for lesson in self._store.all():
+            all_lessons.append(lesson)
+            store_map[lesson.id] = self._store
+
+        for read_store in self._read_stores:
+            for lesson in read_store.all():
+                # El store de escritura tiene prioridad: si un lesson_id existe
+                # en ambos, gana el de escritura (es el que se puede mutar).
+                if lesson.id not in store_map:
+                    all_lessons.append(lesson)
+                    store_map[lesson.id] = read_store
+
+        if not all_lessons:
             self._index = {}
+            self._lesson_store_map = {}
             return
 
-        texts = [self._lesson_text(l) for l in lessons]
+        texts = [self._lesson_text(l) for l in all_lessons]
         vectors = self._embedder.embed_batch(texts)
-        self._index = {l.id: v for l, v in zip(lessons, vectors)}
+        self._index = {l.id: v for l, v in zip(all_lessons, vectors)}
+        self._lesson_store_map = store_map
 
     # ------------------------------------------------------------------
     # Recall
@@ -193,7 +246,16 @@ class LessonRecaller:
             # Telemetría de USO real (no de cada consulta) — alimenta
             # LessonStore.apply_lifecycle_transitions (patrón absorbido de
             # Hermes-Agent curator.py, 2026-07-18).
-            self._store.record_recall(best_id)
+            #
+            # record_recall escribe en el store que CONTIENE la lección (sea
+            # el de escritura/runtime o un read_store/curado). Esto incrementa
+            # recall_count en el fichero de la lección matched. La "escritura"
+            # de NUEVAS lecciones (add/record_recurring) sigue siendo sólo en
+            # el store de runtime — eso lo hace TeacherDebate vía store.add(),
+            # no este recaller. Modificar recall_count de una lección curada
+            # es telemetría de uso, no una lección nueva.
+            owning_store = self._lesson_store_map.get(best_id, self._store)
+            owning_store.record_recall(best_id)
         return RecallResult(
             lesson_id=best_id,
             score=best_score,

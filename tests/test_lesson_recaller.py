@@ -323,6 +323,170 @@ class TestPostIndexBehavior:
 
 
 # ---------------------------------------------------------------------------
+# Multi-store: lectura curada + escritura runtime
+# ---------------------------------------------------------------------------
+
+
+class TestMultiStoreRecall:
+    """El recaller lee de múltiples LessonStore (curado + runtime) pero
+    record_recall escribe en el store que contiene la lección matched.
+
+    El split curado/runtime es deliberado (ver WORK_LEDGER / self_build_runner):
+    las lecciones curadas viven en <repo>/workspace/lessons (trackeadas por
+    git); las de runtime en ~/atlas/memory/lessons (aprendidas en caliente).
+    Unificar rutas ensuciaría el árbol git (incidente '9 YAML regenerados').
+    """
+
+    def test_recall_finds_lesson_from_curated_store(self, tmp_path: Path) -> None:
+        """Una lección que SÓLO está en el read_store (curado) se recupera."""
+        runtime_store = _store(tmp_path / "runtime")
+        curated_store = LessonStore(tmp_path / "curated")
+        curated_store.add(_lesson("curated-1",
+            avoid_pattern="eval injection user input",
+            detection_heuristic="detect eval"))
+
+        recaller = LessonRecaller(
+            runtime_store,
+            embedder=StubEmbedder(dim=64),
+            threshold=0.8,
+            read_stores=[curated_store],
+        )
+        recaller.index()
+
+        result = recaller.recall("eval injection user input")
+        assert result is not None
+        assert result.lesson_id == "curated-1"
+        assert result.matched is True
+
+    def test_recall_all_includes_curated_lessons(self, tmp_path: Path) -> None:
+        """recall_all devuelve lecciones de ambos stores."""
+        runtime_store = _store(tmp_path / "runtime")
+        runtime_store.add(_lesson("runtime-1",
+            avoid_pattern="sql injection drop table",
+            detection_heuristic="detect sql"))
+
+        curated_store = LessonStore(tmp_path / "curated")
+        curated_store.add(_lesson("curated-1",
+            avoid_pattern="eval injection user input",
+            detection_heuristic="detect eval"))
+
+        recaller = LessonRecaller(
+            runtime_store,
+            embedder=StubEmbedder(dim=64),
+            threshold=0.8,
+            read_stores=[curated_store],
+        )
+        recaller.index()
+
+        results = recaller.recall_all("anything", k=10)
+        ids = {r.lesson_id for r in results}
+        assert "runtime-1" in ids
+        assert "curated-1" in ids
+
+    def test_recall_count_increments_for_curated_lesson(self, tmp_path: Path) -> None:
+        """record_recall incrementa recall_count de la lección curada matched."""
+        runtime_store = _store(tmp_path / "runtime")
+        curated_store = LessonStore(tmp_path / "curated")
+        curated_store.add(_lesson("curated-1",
+            avoid_pattern="eval injection user input",
+            detection_heuristic="detect eval"))
+
+        recaller = LessonRecaller(
+            runtime_store,
+            embedder=StubEmbedder(dim=64),
+            threshold=0.8,
+            read_stores=[curated_store],
+        )
+        recaller.index()
+
+        # Antes del recall, recall_count == 0
+        lesson_before = curated_store.get("curated-1")
+        assert lesson_before is not None
+        assert lesson_before.recall_count == 0
+
+        # Recall con texto que matchea la lección curada
+        result = recaller.recall("eval injection user input")
+        assert result is not None
+        assert result.lesson_id == "curated-1"
+        assert result.matched is True
+
+        # Después del recall, recall_count == 1
+        lesson_after = curated_store.get("curated-1")
+        assert lesson_after is not None
+        assert lesson_after.recall_count == 1
+
+    def test_runtime_store_not_polluted_by_curated_lessons(self, tmp_path: Path) -> None:
+        """Las lecciones curadas NO se copian al store de runtime."""
+        runtime_store = _store(tmp_path / "runtime")
+        curated_store = LessonStore(tmp_path / "curated")
+        curated_store.add(_lesson("curated-1",
+            avoid_pattern="eval injection",
+            detection_heuristic="detect eval"))
+
+        recaller = LessonRecaller(
+            runtime_store,
+            embedder=StubEmbedder(dim=64),
+            threshold=0.8,
+            read_stores=[curated_store],
+        )
+        recaller.index()
+        recaller.recall("eval injection")
+
+        # El store de runtime sigue vacío: no se ha copiado nada
+        assert runtime_store.all() == []
+        # El store curado tiene la lección original (no se borró ni movió)
+        assert len(curated_store.all()) == 1
+        assert curated_store.get("curated-1") is not None
+
+    def test_no_read_stores_backward_compatible(self, tmp_path: Path) -> None:
+        """Sin read_stores, el comportamiento es idéntico al anterior."""
+        store = _store(tmp_path)
+        store.add(_lesson("l1", avoid_pattern="eval injection",
+                           detection_heuristic="detect eval"))
+        recaller = LessonRecaller(store, embedder=StubEmbedder(dim=64), threshold=0.8)
+        recaller.index()
+
+        result = recaller.recall("eval injection")
+        assert result is not None
+        assert result.lesson_id == "l1"
+        assert result.matched is True
+
+    def test_write_store_priority_on_id_collision(self, tmp_path: Path) -> None:
+        """Si un lesson_id existe en ambos stores, gana el de escritura."""
+        runtime_store = _store(tmp_path / "runtime")
+        runtime_store.add(_lesson("shared-id",
+            avoid_pattern="runtime pattern",
+            detection_heuristic="runtime heuristic"))
+
+        curated_store = LessonStore(tmp_path / "curated")
+        curated_store.add(_lesson("shared-id",
+            avoid_pattern="curated pattern",
+            detection_heuristic="curated heuristic"))
+
+        recaller = LessonRecaller(
+            runtime_store,
+            embedder=StubEmbedder(dim=64),
+            threshold=0.8,
+            read_stores=[curated_store],
+        )
+        recaller.index()
+
+        # El índice tiene una sola entrada para "shared-id" (la de runtime)
+        assert len(recaller._index) == 1
+        result = recaller.recall("runtime pattern runtime heuristic")
+        assert result is not None
+        assert result.lesson_id == "shared-id"
+        # record_recall debe ir al store de escritura (runtime)
+        lesson_rt = runtime_store.get("shared-id")
+        assert lesson_rt is not None
+        assert lesson_rt.recall_count == 1
+        # El store curado no se modifica
+        lesson_cur = curated_store.get("shared-id")
+        assert lesson_cur is not None
+        assert lesson_cur.recall_count == 0
+
+
+# ---------------------------------------------------------------------------
 # RecallResult es frozen dataclass
 # ---------------------------------------------------------------------------
 

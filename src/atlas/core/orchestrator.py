@@ -1610,7 +1610,20 @@ class Orchestrator:
             # rechaza queda en pending_review.jsonl para la próxima
             # auditoría completa, nunca desaparece en silencio.
             _lesson_store = LessonStore(self._workspace / "memory" / "lessons", merkle=self._merkle)
-            _lesson_recaller = LessonRecaller(_lesson_store, embedder=emb, threshold=0.55)
+            # Split curado/runtime (deliberado, ver WORK_LEDGER / self_build_runner):
+            # las 21 lecciones curadas viven en <repo>/workspace/lessons (trackeadas
+            # por git); las de runtime en ~/atlas/memory/lessons (aprendidas en
+            # caliente). El recaller lee de AMBOS pero sólo escribe nuevas
+            # lecciones en el store de runtime (no ensucia el árbol git).
+            _curated_lessons_dir = self._project_root() / "workspace" / "lessons"
+            _curated_lesson_store: LessonStore | None = None
+            if _curated_lessons_dir.is_dir():
+                _curated_lesson_store = LessonStore(_curated_lessons_dir)
+            _read_stores = [_curated_lesson_store] if _curated_lesson_store is not None else None
+            _lesson_recaller = LessonRecaller(
+                _lesson_store, embedder=emb, threshold=0.55,
+                read_stores=_read_stores,
+            )
             _teacher_debate = TeacherDebate(
                 _lesson_store, _lesson_recaller, sim_threshold=0.55,
                 verifier=build_judge_verifier(_internal_hub),
