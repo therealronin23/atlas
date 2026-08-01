@@ -125,3 +125,38 @@ consumidor no-test + integración.
 - **La silla traga el desacuerdo** → mitigación dura: paso 4 muestra el desacuerdo crudo ANTES.
 - **Autoactivación no dispara** → mitigación: invocación manual fiable + puntero opcional en AGENTS.md.
 - **Sucesión se vuelve humo** → mitigación: en v1 es solo registro; la máquina espera validación.
+
+## Procedencia (llenado 2026-08-01: no estaba escrita en ningún sitio del canon)
+
+El operador trajo dos repos el mismo día que pidió ampliar el panel:
+
+- **`aiwithremy/claude-skills-llm-council`** — la fuente del rediseño real. Su
+  Cónclave no diversifica por modelo: usa **5 ROLES de pensamiento** fijos
+  (Contrarian, First Principles Thinker, Expansionist, Outsider, Executor)
+  sobre un mismo modelo base, con una ronda de **revisión anónima entre
+  pares** (cada asesor lee las 5 respuestas sin firma y señala la más fuerte,
+  el mayor punto ciego, y qué se le escapa a todos) y un presidente que
+  sintetiza sin votar.
+- **`gcpdev/llm-council-skill`** — un diseño más simple, 3 modelos fijos
+  (Claude/ChatGPT/Gemini) sin anonimización ni roles; Claude sintetiza con
+  atribución por modelo. Aportó poco nuevo frente al primero: se registra por
+  completitud, no porque se haya tomado nada de él.
+
+**Lo que es nuestro**: diversificar por **linaje de preentrenamiento**
+(Google/Mistral/Zhipu/Meta/Alibaba) en vez de por modelo fijo, y el prompt
+hostil (`_HOSTILE_PROMPT`) que ya existía y llevaba meses en producción.
+
+**La síntesis, no una copia de ninguno de los dos**: los dos ejes —rol y
+linaje— son ortogonales, así que `COUNCIL_ROLES`
+(`src/atlas/core/deliberation_council.py`) les da un asiento por CADA
+combinación: un rol por linaje distinto, cubriendo ambos ejes a la vez. Ni
+`aiwithremy` (5 roles, 1 modelo) ni `gcpdev` (3 modelos, sin roles) hacían
+esto — es lo que explica la patología medida el 31-jul: `_HOSTILE_PROMPT` ES
+el Contrarian, y corríamos ese único papel en los tres asientos.
+
+De `aiwithremy` sí se adoptó, casi literal, la revisión anónima entre pares
+(`_anonymize_for_peer_review`) — pero condicionada a la peligrosidad medida
+(`Evidence.verdict == FAIL`, el umbral `AdversarialPanel.block_at` que ya
+existía), no como paso fijo de 2 rondas siempre: eso es decisión propia
+("economiza tokens", pedido explícito del operador), no un rasgo del repo
+donante.

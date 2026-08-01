@@ -21,6 +21,7 @@ Los revisores se inyectan (Protocol); en tests, fakes — sin LLM real.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Protocol
@@ -103,12 +104,37 @@ class AdversarialPanel:
                 ),
             )
 
+        # 2026-08-01: recorrer a los revisores EN SERIE era el mismo cuelgue
+        # que ya se cerró el 30-jul, sólo que multiplicado por asiento — con
+        # 5 asientos y hasta 4 rondas (rondas por peligrosidad) 20 llamadas en
+        # serie recrean exactamente ese problema. Cada `review()` ya tiene su
+        # propio presupuesto TOTAL (InferenceHub, INFER_REQUEST_TIMEOUT_S), así
+        # que paralelizar acota el tiempo del panel al del asiento MÁS LENTO,
+        # no a la suma. Un reviewer que LANZA no tumba a los demás: se atrapa
+        # por asiento y se trata como inalcanzable (mismo fail-closed que ya
+        # aplica `LlmReviewer` para una llamada fallida).
+        slots: list[Objection | None] = [None] * len(self._reviewers)
+        with ThreadPoolExecutor(max_workers=max(len(self._reviewers), 1)) as pool:
+            futures = {
+                pool.submit(reviewer.review, diff, context): i
+                for i, reviewer in enumerate(self._reviewers)
+            }
+            for future in futures:
+                i = futures[future]
+                reviewer = self._reviewers[i]
+                try:
+                    slots[i] = future.result()
+                except Exception as exc:  # noqa: BLE001 — un asiento no tumba al panel
+                    slots[i] = Objection(
+                        reviewer.reviewer_id, reviewer.provider, Severity.MAJOR,
+                        f"excepción en reviewer (fail-closed): {type(exc).__name__}",
+                        reachable=False,
+                    )
+        objections: list[Objection] = [o for o in slots if o is not None]
+
         checks: list[Check] = []
         blocking: list[Objection] = []
-        objections: list[Objection] = []
-        for reviewer in self._reviewers:
-            objection = reviewer.review(diff, context)
-            objections.append(objection)
+        for reviewer, objection in zip(self._reviewers, objections):
             # Un reviewer inalcanzable no opinó nada: no cuenta como objeción
             # sustantiva propia, aunque LlmReviewer lo marque MAJOR fail-closed
             # (severidad conservada para el detalle/registro, no para bloquear).

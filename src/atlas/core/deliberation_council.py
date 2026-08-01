@@ -14,6 +14,7 @@ vivos → UNKNOWN, no se miente) y gating (lo trivial no quema modelos). El juez
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from atlas.core.adversarial_panel import (
@@ -39,6 +40,52 @@ _HOSTILE_PROMPT = (
     "NONE MINOR MAJOR BLOCKING. En las siguientes líneas, la objeción concreta.\n\n"
     "DECISIÓN:\n{diff}\n\nCONTEXTO:\n{context}\n"
 )
+
+# 2026-08-01: el operador trajo dos repos (aiwithremy/claude-skills-llm-council,
+# gcpdev/llm-council-skill). El primero reveló el hallazgo que reordena este
+# módulo: sus "5 voces" no son 5 modelos, son 5 ROLES de pensamiento con una
+# ronda de revisión anónima entre pares. `_HOSTILE_PROMPT` de arriba ES el
+# Contrarian -- y corríamos ese único papel en los tres asientos. Explica la
+# patología medida el 31-jul: Gemini calificó BLOCKING un cambio de timeout de
+# 30s a 60s porque el panel entero sólo sabía "buscar el fallo fatal", nunca
+# "¿qué oportunidad se pierde?" ni "¿esto es viable de implementar?".
+#
+# El prompt hostil NO se ablanda -- el operador fue explícito: "el Cónclave
+# estuvo bien hasta ahora". Se le añaden los otros cuatro roles.
+_FIRST_PRINCIPLES_PROMPT = (
+    "Eres un pensador de primeros principios. Cuestiona las asunciones de esta "
+    "decisión: ¿qué se da por sentado que podría ser falso? ¿Qué cambia si el "
+    "problema se replantea desde cero, ignorando cómo se ha hecho hasta ahora? "
+    "Responde en la PRIMERA línea SOLO con una de: NONE MINOR MAJOR BLOCKING. "
+    "En las siguientes líneas, la asunción cuestionada y por qué importa.\n\n"
+    "DECISIÓN:\n{diff}\n\nCONTEXTO:\n{context}\n"
+)
+_EXPANSIONIST_PROMPT = (
+    "Eres un expansionista. Busca la oportunidad adyacente que esta decisión "
+    "ignora, y si ignorarla es en sí un riesgo real -- dejar pasar algo que "
+    "evitaría un problema mayor más adelante. No inventes upside donde no lo "
+    "hay: NONE es una respuesta válida y honesta. Responde en la PRIMERA "
+    "línea SOLO con una de: NONE MINOR MAJOR BLOCKING. En las siguientes "
+    "líneas, la oportunidad perdida concreta.\n\n"
+    "DECISIÓN:\n{diff}\n\nCONTEXTO:\n{context}\n"
+)
+_OUTSIDER_PROMPT = (
+    "Eres alguien de fuera de este dominio, sin experiencia previa en él. "
+    "Mira esta decisión con ojos nuevos, sin dar nada por sabido: ¿qué "
+    "resultaría extraño, sobrecomplicado o innecesario para quien no conoce "
+    "el contexto? Responde en la PRIMERA línea SOLO con una de: NONE MINOR "
+    "MAJOR BLOCKING. En las siguientes líneas, la objeción concreta.\n\n"
+    "DECISIÓN:\n{diff}\n\nCONTEXTO:\n{context}\n"
+)
+_EXECUTOR_PROMPT = (
+    "Eres el ejecutor. Sólo te importa la viabilidad práctica: ¿se puede "
+    "implementar tal cual está descrita? ¿Qué primer paso concreto falta, es "
+    "ambiguo, o depende de algo que no está garantizado? Responde en la "
+    "PRIMERA línea SOLO con una de: NONE MINOR MAJOR BLOCKING. En las "
+    "siguientes líneas, el obstáculo de implementación concreto.\n\n"
+    "DECISIÓN:\n{diff}\n\nCONTEXTO:\n{context}\n"
+)
+
 _SEVERITIES = {s.name: s for s in Severity}
 
 # 2026-07-31: el default de `InferenceRequest` (1024) AHOGA a los modelos de
@@ -85,11 +132,13 @@ class LlmReviewer:
         hub: InferenceHub,
         level: InferenceLevel,
         levels: tuple[InferenceLevel, ...] | None = None,
+        prompt: str = _HOSTILE_PROMPT,
     ) -> None:
         self._id = reviewer_id
         self._provider = provider
         self._hub = hub
         self._level = level
+        self._prompt = prompt
         # 2026-07-30: `InferenceHub._walk_chain` filtra candidatos con
         # `p.level == request.level` (filtro DURO; la única escapatoria entre
         # niveles es L1->L0). Pedir siempre `primary.level` dejaba INALCANZABLE
@@ -110,7 +159,7 @@ class LlmReviewer:
         return self._provider
 
     def review(self, diff: str, context: str = "") -> Objection:
-        prompt = _HOSTILE_PROMPT.format(diff=diff, context=context)
+        prompt = self._prompt.format(diff=diff, context=context)
         resp = None
         for level in self._levels:
             resp = self._hub.infer(
@@ -142,64 +191,75 @@ class LlmReviewer:
         return Objection(self._id, self._provider, sev, detail)
 
 
-# El trío: tres linajes ortogonales (🇺🇸 Gemini · 🇨🇳 GLM · 🇪🇺 Mistral).
-# La distancia entre linajes maximiza la señal de desacuerdo útil.
-# 2026-07-10: asiento CN re-mapeado nvidia_kimi → nvidia_glm (kimi-k2.6 404
-# por-cuenta en todo el pool dos días seguidos; glm-5.2 prove-it en vivo).
-_TRIO_NAMES = ("gemini_free", "nvidia_glm", "nvidia_mistral_large")
+@dataclass(frozen=True)
+class CouncilSeat:
+    """Un asiento = un ROL de pensamiento sobre un LINAJE de preentrenamiento.
 
-# v2.0.5 — fallback por-linaje: cada slot acepta una lista ORDENADA de
-# proveedores del MISMO linaje (mapa investigado en vivo, no re-verificar
-# aquí). Si el primario no está en el pool (ej. sin su API key), se usa el
-# primer fallback de esa MISMA lista que sí esté disponible — nunca se cruza
-# de linaje (cruzar linajes rompe la ortogonalidad que hace útil el desacuerdo).
-# 🇺🇸 US: gemini_free (primary) -> groq_llama_70b (fallback, confirmado vivo).
-# 🇨🇳 CN: nvidia_glm (primary) -> groq_qwen3 (fallback, confirmado vivo).
-# 🇪🇺 EU: nvidia_mistral_large (NIM) -> openrouter_mistral_large (fallback,
-#         prove-it en vivo real 2026-07-24 contra OpenRouter: mistralai/
-#         mistral-large-2512, provider real "Mistral" directo -- cierra el
-#         hueco EU que quedó documentado en ADR-074/075).
-# 2026-07-31: orden CN invertido -- groq_qwen3 (primary) -> nvidia_glm
-# (fallback). No es solo velocidad: nvidia_glm no devuelve error, SE CUELGA
-# (medido dos veces el mismo día: 123.0s con el tope duro ya arreglado a
-# presupuesto total, ac0243c). "El primario debe ser la mejor opción" es la
-# intención de diseño de este mapa (ver test_build_trio_prefers_primary_
-# over_fallback_when_both_available) -- con esa evidencia, nvidia_glm ya no
-# lo es. groq_qwen3 responde en segundos y es el mismo linaje (Qwen es
-# Alibaba, GLM es Zhipu -- ambos CN, la diversidad geográfica del trío no
-# cambia). Si nvidia_glm se recupera algún día, esto se puede revertir con
-# la misma evidencia que lo justificó: prove-it en vivo, no opinión.
-_TRIO_LINEAGE_FALLBACKS: dict[str, tuple[str, ...]] = {
-    "gemini_free": ("gemini_free", "groq_llama_70b"),
-    "nvidia_glm": ("groq_qwen3", "nvidia_glm"),
-    "nvidia_mistral_large": ("nvidia_mistral_large", "openrouter_mistral_large"),
-}
+    Los dos ejes son ortogonales (hallazgo 2026-08-01, ver comentario de los
+    prompts arriba): el rol decide QUÉ pregunta se hace, el linaje decide
+    QUIÉN diverge de verdad. `lineage` es la lista ORDENADA de proveedores del
+    MISMO linaje (primario primero) — mismo contrato que el viejo
+    `_TRIO_LINEAGE_FALLBACKS`, nunca se cruza a otro linaje.
+    """
+
+    role: str
+    prompt: str
+    lineage: tuple[str, ...]
 
 
-def build_trio_reviewers(providers: list[Provider] | None = None) -> list[Reviewer]:
-    """Ensambla el trío de revisores, uno por linaje distinto.
+# Cinco roles (aiwithremy/claude-skills-llm-council) × cinco linajes
+# (nuestro eje histórico), un rol por linaje distinto -- cubre AMBOS ejes a
+# la vez, que es más que cualquiera de los dos diseños por separado.
+#
+# Defecto corregido al separar: el viejo `_TRIO_LINEAGE_FALLBACKS["nvidia_glm"]
+# = ("groq_qwen3", "nvidia_glm")` ponía a Qwen (Alibaba) de PRIMARIO del
+# asiento "CN" y a GLM (Zhipu) de fallback -- dos laboratorios distintos
+# cruzados dentro de un único slot, justo lo que "nunca cruzar de linaje"
+# prohibía. Con 5 roles cada uno tiene su propio asiento: Zhipu y Alibaba ya
+# no comparten slot.
+#
+# nvidia_glm (Expansionist) sigue siendo la única opción de linaje Zhipu en el
+# catálogo, y sigue sin fallback: se cuelga a veces (medido dos veces,
+# 2026-07-30). Con el panel PARALELIZADO (ver adversarial_panel.py) un cuelgue
+# de este asiento ya no suma tiempo al de los demás -- acota la ronda a
+# INFER_REQUEST_TIMEOUT_S, no la multiplica por asiento. Riesgo conocido y
+# aceptado, no arreglado aquí (fuera de alcance de este rediseño).
+COUNCIL_ROLES: tuple[CouncilSeat, ...] = (
+    CouncilSeat("contrarian", _HOSTILE_PROMPT, ("gemini_free", "groq_llama_70b")),
+    CouncilSeat(
+        "first_principles", _FIRST_PRINCIPLES_PROMPT,
+        ("nvidia_mistral_large", "openrouter_mistral_large"),
+    ),
+    CouncilSeat("expansionist", _EXPANSIONIST_PROMPT, ("nvidia_glm",)),
+    CouncilSeat("outsider", _OUTSIDER_PROMPT, ("nvidia_llama_large", "groq_llama_70b")),
+    CouncilSeat("executor", _EXECUTOR_PROMPT, ("groq_qwen3", "ollama_local")),
+)
 
-    Cada reviewer recibe un `InferenceHub` de UN solo proveedor (así `infer`
-    llama solo a ese, sin fallback cruzado). Por cada slot del trío se prueba
-    primero el proveedor primario del linaje; si no está en el pool, se usa el
-    primer fallback DEL MISMO linaje que sí esté disponible (v2.0.5). Si
-    ninguno de la lista está disponible, el slot queda vacío — el panel
-    detectará la falta de diversidad y emitirá UNKNOWN aguas abajo (no se
-    finge un trío incompleto).
+
+def build_council_reviewers(providers: list[Provider] | None = None) -> list[Reviewer]:
+    """Ensambla el Cónclave: 5 asientos, un rol por linaje distinto.
+
+    Por cada asiento se prueba primero el proveedor primario de su linaje; si
+    no está en el pool, el primer fallback DEL MISMO linaje que sí esté
+    disponible (mismo contrato v2.0.5 que el viejo trío). Si ninguno de la
+    lista está disponible, el asiento queda vacío — el panel detecta la falta
+    de diversidad y emite UNKNOWN aguas abajo (no se finge un panel completo).
+
+    `reviewer_id` lleva el ROL, no sólo el proveedor (`"{role}:{provider}"`):
+    con 5 papeles distintos, logs y síntesis necesitan saber QUÉ pregunta
+    hizo cada objeción, no sólo quién la respondió.
     """
     pool = {p.name: p for p in (providers or DEFAULT_PROVIDERS)}
     out: list[Reviewer] = []
-    for name in _TRIO_NAMES:
-        lineage = _TRIO_LINEAGE_FALLBACKS.get(name, (name,))
+    for seat in COUNCIL_ROLES:
         # Toda la lista de linaje disponible, EN ORDEN (primario primero). El hub
         # multi-proveedor de InferenceHub casca en caliente: si el primario tiene
         # key pero su llamada falla (resp.success=False -- Mistral EU 410, NVIDIA
-        # rate-limit), pasa al siguiente DEL MISMO linaje. Antes se pasaba solo
-        # [primario], así que un proveedor keyed-pero-caído mataba el slot sin
-        # recuperación. Nunca cruza de linaje (romper la ortogonalidad anula la
-        # señal de desacuerdo). La etiqueta es el primario: la diversidad se mide
-        # por linaje, no por vendor de hosting.
-        available = [pool[c] for c in lineage if c in pool]
+        # rate-limit), pasa al siguiente DEL MISMO linaje. Nunca cruza de linaje
+        # (romper la ortogonalidad anula la señal de desacuerdo). La etiqueta
+        # `.provider` sigue siendo el primario: la diversidad se mide por
+        # linaje, no por vendor de hosting.
+        available = [pool[c] for c in seat.lineage if c in pool]
         if not available:
             continue
         primary = available[0]
@@ -211,14 +271,25 @@ def build_trio_reviewers(providers: list[Provider] | None = None) -> list[Review
         )
         out.append(
             LlmReviewer(
-                primary.name,
+                f"{seat.role}:{primary.name}",
                 primary.name,
                 InferenceHub(providers=available),
                 primary.level,
                 levels=levels,
+                prompt=seat.prompt,
             )
         )
     return out
+
+
+# Alias retrocompatible: orchestrator.py, atlas_coder.py, code_cycle.py y 3
+# scripts (council_smoke, council_adr077_design_review,
+# council_mcp_auto_adopt_adr076) llaman a `build_trio_reviewers()`. Con el
+# alias heredan las 5 voces sin tocar cada call-site uno a uno. El nombre es
+# ya un desajuste (construye 5, no 3); se conserva para no romper 7+ sitios
+# por un rename cosmético -- `build_council_reviewers` es el nombre real
+# para código nuevo.
+build_trio_reviewers = build_council_reviewers
 
 
 def _has_real_disagreement(evidence: Evidence) -> bool:
@@ -246,6 +317,46 @@ def _objections_summary(evidence: Evidence) -> str:
     return f"[ronda-anterior] Objeciones de la ronda previa:\n{joined}"
 
 
+# El umbral de peligrosidad YA EXISTE: `AdversarialPanel.block_at`
+# (Severity.MAJOR por defecto). `Evidence.verdict == FAIL` es EXACTAMENTE "una
+# objeción alcanzable superó ese umbral" (ver `verify()`, `blocking` no
+# vacío) -- no se inventa una escala nueva para las rondas por peligrosidad.
+#
+# Con 5 asientos, "todos deben responder" (min_providers=5) haría el panel
+# frágil ante un único asiento flaky (nvidia_glm se cuelga a veces, medido).
+# El piso se mantiene en 3 -- el mismo mínimo que ya funcionaba con el trío,
+# ahora como degradación honesta sobre 5 en vez de un requisito de 5-de-5.
+MIN_REACHABLE_LINEAGES = 3
+
+# Decisión del operador (2026-08-01): tope duro de 4 rondas. Agotadas sin
+# bajar del umbral de peligrosidad, se para y escala al humano con las
+# objeciones vivas -- fail-closed, "sin acuerdo no se actúa".
+MAX_COUNCIL_ROUNDS = 4
+
+_PEER_REVIEW_HEADER = (
+    "[revisión-anónima] Las siguientes son las respuestas de OTRAS voces del "
+    "panel a esta misma decisión, SIN identificar autor ni proveedor. Para "
+    "cada una: ¿cuál es la más fuerte? ¿cuál tiene el mayor punto ciego? "
+    "¿qué se les escapa a TODAS? Después, en tu propia respuesta, proponed "
+    "la variante MENOS peligrosa de la decisión que conserve el objetivo "
+    "original -- no os limitéis a repetir la objeción de la ronda anterior."
+)
+
+
+def _anonymize_for_peer_review(evidence: Evidence) -> str:
+    """Las 5 respuestas crudas, despojadas de rol y proveedor.
+
+    Reutiliza `evidence.checks[i].detail` (ya trae `[SEVERIDAD] texto`), pero
+    NUNCA `checks[i].name` (que es `f"{role}:{provider}@{provider}"`) — es
+    justo lo que hay que ocultar para que la revisión entre pares sea
+    honesta y no una defensa de la propia respuesta.
+    """
+    lines = [_PEER_REVIEW_HEADER]
+    for i, check in enumerate(evidence.checks, start=1):
+        lines.append(f"Respuesta {i}: {check.detail}")
+    return "\n".join(lines)
+
+
 def convene_for_decision(
     decision: str,
     context: str = "",
@@ -255,19 +366,30 @@ def convene_for_decision(
     irreversible: bool = False,
     reviewers: list[Reviewer] | None = None,
     synthesis_recorder: SynthesisRecorder | None = None,
-    rounds: int = 1,
+    max_rounds: int = MAX_COUNCIL_ROUNDS,
 ) -> Evidence | None:
-    """Convoca el trío sobre una decisión, con gating y diversidad obligatoria.
+    """Convoca el Cónclave (5 asientos) con gating, diversidad y RONDAS POR
+    PELIGROSIDAD (2026-08-01, reemplaza el viejo bucle por desacuerdo bruto).
 
     Devuelve `None` si el gating dice que NO escale (lo trivial-reversible no
-    quema modelos). Si escala, corre el panel exigiendo 3 proveedores distintos;
-    sin esa diversidad el panel devuelve `Verdict.UNKNOWN` (unknown > mentir).
+    quema modelos). Si escala, corre el panel exigiendo `MIN_REACHABLE_LINEAGES`
+    proveedores distintos; sin esa diversidad el panel devuelve
+    `Verdict.UNKNOWN` (unknown > mentir).
 
-    `rounds` (v2.1, opt-in): con `rounds=1` (default) es EXACTAMENTE el
-    comportamiento anterior, una sola pasada. Con `rounds > 1`, si la primera
-    pasada muestra desacuerdo real (`_has_real_disagreement`), se relanza el
-    panel con el contexto original + un resumen de las objeciones previas,
-    hasta agotar `rounds` o hasta que ya no haya objeciones nuevas (converge).
+    El bucle de rondas:
+    - Si NADA supera el umbral de peligrosidad (`verdict != FAIL`) tras la 1ª
+      ronda, se PARA ahí — barato para lo seguro, ni una llamada de más.
+    - Si SÍ lo supera y quedan rondas, se concede una ronda de REVISIÓN
+      ANÓNIMA ENTRE PARES: cada asiento recibe las 5 respuestas sin rol ni
+      proveedor y se le pide la variante MENOS peligrosa que conserve el
+      objetivo — no repetir el ataque.
+    - Converge (para) en cuanto el veredicto deja de ser FAIL, o cuando dos
+      rondas seguidas producen exactamente el mismo resumen (no hay nada
+      nuevo que decir).
+    - Tope duro `max_rounds` (4 por decisión del operador): agotado sin
+      converger, se PARA con el último veredicto — que sigue siendo FAIL, la
+      señal ya establecida de "escala al humano" en este repo. Nunca se
+      relaja a PASS sólo porque se acabó el presupuesto de rondas.
 
     Nunca cuelga: si CUALQUIER reviewer falla/lanza en una ronda intermedia,
     se corta ahí mismo y se sintetiza con la ÚLTIMA evidencia completa
@@ -275,32 +397,33 @@ def convene_for_decision(
     (preocupación señalada por Mistral en una deliberación en vivo sobre este
     mismo diseño).
     """
+    from atlas.core.verify import Verdict
+
     if not should_convene(difficulty, risk, irreversible=irreversible):
         return None
     panel_reviewers = reviewers or build_trio_reviewers()
-    panel = AdversarialPanel(panel_reviewers, min_providers=3)
+    panel = AdversarialPanel(panel_reviewers, min_providers=MIN_REACHABLE_LINEAGES)
 
     evidence = panel.verify(decision, context)
-    round_context = context
-    for _ in range(max(rounds, 1) - 1):
-        if not _has_real_disagreement(evidence):
+    previous_summary = _objections_summary(evidence)
+    for _ in range(max(max_rounds, 1) - 1):
+        if evidence.verdict != Verdict.FAIL:
+            # Bajo el umbral de peligrosidad (o UNKNOWN por diversidad, que
+            # otra ronda no arregla): no hay nada que mitigar. Para aquí.
             break
-        summary = _objections_summary(evidence)
-        if not summary:
-            break
-        round_context = f"{context}\n\n{summary}"
+        round_context = f"{context}\n\n{_anonymize_for_peer_review(evidence)}"
         try:
             next_evidence = panel.verify(decision, round_context)
         except Exception:  # noqa: BLE001 — nunca cuelga: corta y sintetiza con lo que hay
             break
-        if not _has_real_disagreement(next_evidence) or _objections_summary(next_evidence) == summary:
-            # Converge (sin más objeciones nuevas) o ya no hay desacuerdo: esta
-            # última pasada ya refleja el estado final, se conserva.
-            evidence = next_evidence
-            break
+        next_summary = _objections_summary(next_evidence)
         evidence = next_evidence
+        if evidence.verdict != Verdict.FAIL or next_summary == previous_summary:
+            # Ya no es peligroso, o converge (nada nuevo que decir): esta
+            # última pasada ya refleja el estado final.
+            break
+        previous_summary = next_summary
 
-    from atlas.core.verify import Verdict
     if synthesis_recorder is not None and evidence is not None and evidence.verdict != Verdict.UNKNOWN:
         record_synthesis(synthesis_recorder, decision, evidence)
     return evidence

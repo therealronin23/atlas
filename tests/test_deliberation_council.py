@@ -105,20 +105,25 @@ def test_review_failed_inference_is_failclosed_major() -> None:
 
 
 # ---------------------------------------------------------------------------
-# B2 — build_trio_reviewers
+# B2 — build_trio_reviewers (2026-08-01: alias de build_council_reviewers,
+# 5 asientos -- ver tests/test_council_five_roles.py para la cobertura nueva
+# de roles/linajes. Lo que sigue aquí es lo que SIGUE siendo cierto del
+# mecanismo de fallback, ahora sobre 5 asientos en vez de 3.)
 # ---------------------------------------------------------------------------
 
 
-def test_build_trio_has_three_distinct_providers() -> None:
+def test_build_trio_has_five_distinct_providers() -> None:
     from atlas.core.deliberation_council import build_trio_reviewers
 
-    trio = build_trio_reviewers()
-    assert len(trio) == 3
-    provs = {r.provider for r in trio}
-    # 2026-07-31: CN reordenado -- groq_qwen3 es ahora el primario del linaje
-    # (nvidia_glm se cuelga siempre, medido dos veces; ver comentario junto a
-    # _TRIO_LINEAGE_FALLBACKS).
-    assert provs == {"gemini_free", "groq_qwen3", "nvidia_mistral_large"}
+    council = build_trio_reviewers()
+    assert len(council) == 5
+    provs = {r.provider for r in council}
+    # Zhipu (nvidia_glm) y Alibaba (groq_qwen3) ya NO comparten asiento --
+    # cada rol tiene su propio linaje (ver COUNCIL_ROLES).
+    assert provs == {
+        "gemini_free", "nvidia_mistral_large", "nvidia_glm",
+        "nvidia_llama_large", "groq_qwen3",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -226,8 +231,12 @@ def test_synthesis_persists_to_lesson_store(tmp_path):
 
 
 def test_build_trio_uses_lineage_fallback_when_primary_missing():
-    """Si falta gemini_free en el pool mas groq_llama_70b SÍ está, el slot US
-    usa groq_llama_70b (mismo linaje) — nunca cruza a otro linaje."""
+    """Si falta gemini_free en el pool mas groq_llama_70b SÍ está, el asiento
+    Contrarian usa groq_llama_70b (mismo linaje) — nunca cruza a otro linaje.
+
+    Con este pool constreñido, DOS asientos (Contrarian y Outsider) caen al
+    MISMO fallback groq_llama_70b -- degradación honesta, no un error: el
+    panel dedupe por proveedor que de verdad respondió, aguas abajo."""
     from atlas.core.deliberation_council import build_trio_reviewers
     from atlas.core.inference_hub import DEFAULT_PROVIDERS
 
@@ -235,13 +244,16 @@ def test_build_trio_uses_lineage_fallback_when_primary_missing():
         p for p in DEFAULT_PROVIDERS
         if p.name in {"groq_llama_70b", "nvidia_glm", "nvidia_mistral_large"}
     ]
-    trio = build_trio_reviewers(providers=pool)
-    provs = {r.provider for r in trio}
+    council = build_trio_reviewers(providers=pool)
+    provs = {r.provider for r in council}
     assert "groq_llama_70b" in provs
     assert "gemini_free" not in provs
     assert "nvidia_glm" in provs
     assert "nvidia_mistral_large" in provs
-    assert len(trio) == 3
+    # Executor (Alibaba: groq_qwen3/ollama_local) no tiene NADA en este pool
+    # -> asiento vacío. Contrarian y Outsider comparten groq_llama_70b.
+    assert len(council) == 4
+    assert len(provs) == 3
 
 
 def test_build_trio_slot_empty_when_no_fallback_available():
@@ -281,12 +293,14 @@ def test_build_trio_eu_uses_openrouter_mistral_fallback_when_nvidia_missing():
 
 def test_build_trio_prefers_primary_over_fallback_when_both_available():
     from atlas.core.deliberation_council import build_trio_reviewers
-    from atlas.core.inference_hub import DEFAULT_PROVIDERS
 
-    trio = build_trio_reviewers()  # pool completo por defecto
-    provs = {r.provider for r in trio}
-    # 2026-07-31: CN reordenado, ver _TRIO_LINEAGE_FALLBACKS.
-    assert provs == {"gemini_free", "groq_qwen3", "nvidia_mistral_large"}
+    council = build_trio_reviewers()  # pool completo por defecto
+    provs = {r.provider for r in council}
+    # 2026-08-01: 5 asientos, uno por linaje -- ver COUNCIL_ROLES.
+    assert provs == {
+        "gemini_free", "nvidia_mistral_large", "nvidia_glm",
+        "nvidia_llama_large", "groq_qwen3",
+    }
 
 
 def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
@@ -298,16 +312,19 @@ def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
     NVIDIA rate-limit). La etiqueta `.provider` sigue siendo el primario (la
     diversidad del trío se mide por linaje, no por vendor de hosting).
 
-    2026-07-31: el linaje CN se invirtió (groq_qwen3 ahora primario,
-    nvidia_glm fallback -- nvidia_glm se cuelga siempre, medido). La etiqueta
-    del asiento CN cambia con él; el mecanismo que este test verifica no."""
+    2026-08-01: Zhipu (nvidia_glm) y Alibaba (groq_qwen3) ya no comparten
+    asiento -- cada uno tiene su propio rol (Expansionist / Executor). El
+    mecanismo que este test verifica (lista completa de linaje en el hub) no
+    cambia."""
     from atlas.core.deliberation_council import build_trio_reviewers
 
-    trio = build_trio_reviewers()  # pool completo
-    us = next(r for r in trio if r.provider == "gemini_free")
-    cn = next(r for r in trio if r.provider == "groq_qwen3")
+    council = build_trio_reviewers()  # pool completo
+    us = next(r for r in council if r.provider == "gemini_free")
+    zhipu = next(r for r in council if r.provider == "nvidia_glm")
+    alibaba = next(r for r in council if r.provider == "groq_qwen3")
     assert [p.name for p in us._hub._providers] == ["gemini_free", "groq_llama_70b"]
-    assert [p.name for p in cn._hub._providers] == ["groq_qwen3", "nvidia_glm"]
+    assert [p.name for p in zhipu._hub._providers] == ["nvidia_glm"]
+    assert [p.name for p in alibaba._hub._providers] == ["groq_qwen3", "ollama_local"]
 
 
 def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
@@ -374,116 +391,12 @@ def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
     )
 
 
+# v2.1 (rounds>1 por desacuerdo bruto) fue REEMPLAZADO 2026-08-01 por rondas
+# por PELIGROSIDAD (pedido del operador): el parámetro se renombró
+# `rounds` -> `max_rounds`, el disparador pasó de "hay desacuerdo" a "el
+# veredicto es FAIL" (supera `AdversarialPanel.block_at`), y la ronda extra
+# ahora es una revisión ANÓNIMA entre pares, no un resumen con el marcador
+# `[ronda-anterior]`. Cobertura completa en tests/test_council_danger_rounds.py.
 # ---------------------------------------------------------------------------
-# v2.1 — debate por rondas (opt-in, rounds>1)
+# (bloque histórico retirado — ver git log para la versión rounds>1 previa)
 # ---------------------------------------------------------------------------
-
-
-class _RoundAwareRev:
-    """Reviewer falso: severidad depende de si el `context` recibido ya
-    contiene el resumen de objeciones de una ronda previa (heurística: busca
-    un marcador fijo). Simula "converge en la 2a ronda"."""
-
-    MARKER = "[ronda-anterior]"
-
-    def __init__(
-        self, pid: str, prov: str, first_round_sev: Severity, later_round_sev: Severity,
-    ) -> None:
-        self._id, self._prov = pid, prov
-        self._first = first_round_sev
-        self._later = later_round_sev
-        self.calls: list[str] = []
-
-    @property
-    def reviewer_id(self) -> str:
-        return self._id
-
-    @property
-    def provider(self) -> str:
-        return self._prov
-
-    def review(self, diff: str, context: str = "") -> Objection:
-        self.calls.append(context)
-        sev = self._later if self.MARKER in context else self._first
-        return Objection(self._id, self._prov, sev, "obj ronda")
-
-
-def test_convene_with_rounds_runs_second_pass_on_disagreement():
-    from atlas.router.cascade import Difficulty
-    from atlas.core.verify import Verdict
-    from atlas.core.deliberation_council import convene_for_decision
-
-    trio = [
-        _RoundAwareRev("a", "p1", Severity.MAJOR, Severity.NONE),
-        _RoundAwareRev("b", "p2", Severity.NONE, Severity.NONE),
-        _RoundAwareRev("c", "p3", Severity.NONE, Severity.NONE),
-    ]
-    ev = convene_for_decision(
-        "¿migrar a GraphQL?", difficulty=Difficulty.HARD, risk="high",
-        reviewers=trio, rounds=2,  # type: ignore[arg-type]
-    )
-    assert ev is not None and ev.verdict == Verdict.PASS
-    # cada reviewer llamado 2 veces (ronda 1 desacuerdo -> ronda 2 converge)
-    assert all(len(r.calls) == 2 for r in trio)
-    # la 2a llamada incluyó el resumen de objeciones de la 1a ronda
-    assert any(_RoundAwareRev.MARKER in call for r in trio for call in r.calls[1:])
-
-
-def test_convene_rounds_default_is_single_pass_backward_compatible() -> None:
-    from atlas.router.cascade import Difficulty
-    from atlas.core.deliberation_council import convene_for_decision
-
-    trio = [
-        _RoundAwareRev("a", "p1", Severity.MAJOR, Severity.NONE),
-        _RoundAwareRev("b", "p2", Severity.NONE, Severity.NONE),
-        _RoundAwareRev("c", "p3", Severity.NONE, Severity.NONE),
-    ]
-    convene_for_decision(
-        "x", difficulty=Difficulty.HARD, risk="high", reviewers=trio,  # type: ignore[arg-type]
-    )  # rounds=1 (default)
-    assert all(len(r.calls) == 1 for r in trio)
-
-
-class _FailMidRoundRev:
-    """Reviewer que responde bien en la ronda 1 pero lanza excepción en la
-    ronda 2 (simula proveedor caído a mitad de una ronda intermedia)."""
-
-    def __init__(self, pid: str, prov: str, fail_on_round: int) -> None:
-        self._id, self._prov = pid, prov
-        self._fail_on_round = fail_on_round
-        self.calls = 0
-
-    @property
-    def reviewer_id(self) -> str:
-        return self._id
-
-    @property
-    def provider(self) -> str:
-        return self._prov
-
-    def review(self, diff: str, context: str = "") -> Objection:
-        self.calls += 1
-        if self.calls == self._fail_on_round:
-            raise RuntimeError("proveedor caído")
-        return Objection(self._id, self._prov, Severity.MAJOR, "obj")
-
-
-def test_convene_rounds_never_hangs_on_mid_round_failure() -> None:
-    """Si un reviewer falla en una ronda intermedia, corta ahí y sintetiza con
-    lo que hay hasta esa ronda — nunca espera indefinidamente ni relanza."""
-    from atlas.router.cascade import Difficulty
-    from atlas.core.deliberation_council import convene_for_decision
-
-    trio = [
-        _FailMidRoundRev("a", "p1", fail_on_round=2),
-        _RoundAwareRev("b", "p2", Severity.MAJOR, Severity.NONE),
-        _RoundAwareRev("c", "p3", Severity.NONE, Severity.NONE),
-    ]
-    # No debe lanzar ni colgarse; debe devolver evidencia sintetizada con la
-    # última ronda completa disponible (ronda 1, ya que la 2 falló a mitad).
-    ev = convene_for_decision(
-        "x", difficulty=Difficulty.HARD, risk="high", reviewers=trio, rounds=3,  # type: ignore[arg-type]
-    )
-    assert ev is not None
-    # el reviewer que falla se intentó exactamente en la ronda donde falla, no más
-    assert trio[0].calls == 2  # type: ignore[attr-defined]
