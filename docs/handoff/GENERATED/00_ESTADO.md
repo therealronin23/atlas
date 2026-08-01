@@ -1,45 +1,42 @@
-<!-- GENERADO por atlas handoff 2026-08-01T07:03:30.309308+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-08-01T08:01:38.683458+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
-- **2026-08-01 (continuación) — canal twin activado, lifecycle de lecciones
-  por fin cableado en el CALLER real (no donde parecía), cron de Hermes
-  medido, gap D2 de Hermes encontrado y documentado (latente, no arreglado
-  a propósito).**
-  **Canal twin (respuesta a la pregunta del operador "¿está activado el modo
-  twins?")**: estaba a medias. El lado Atlas (`/api/exec/*`, ADR-026/027) ya
-  funcionaba — verificado con `curl` ANTES de tocar nada: `401 invalid
-  timestamp`, no 404. El lado Hermes nunca se instaló para transporte local
-  (sólo se pensó para el VPS, de baja): `~/.hermes/.env` no tenía ni
-  `ATLAS_DASHBOARD_URL` ni `HERMES_API_KEY`. Explica 2 tareas reales del
-  kanban atascadas. Arreglado: skill `atlas-twin` instalada, credenciales
-  copiadas, verificado en vivo (`health`→`ok:true` con datos reales del
-  orquestador; `shell` respeta su propia allowlist; `intent` agota timeout
-  de cliente, esperable).
-  **Lifecycle de lecciones — el hallazgo fue el CALLER, no el tick**:
-  `AtlasServiceRunner.tick()` sólo barre TTLs (ADR-033) — NINGÚN
-  `maintenance_*_tick` corre desde ahí. El caller real de TODOS ellos es
-  `MaintenanceScheduler._extra_cycles`, un hilo daemon propio arrancado por
-  `service_runner.py:108`. Sin trazar hasta ahí, mi tick nuevo habría
-  quedado tan huérfano como `apply_lifecycle_transitions` desde el 18-jul.
-  Añadido a la tupla real, `ATLAS_LESSON_LIFECYCLE=1` activado (mismo
-  patrón que sus hermanos), daemon reiniciado. **Ejecutado una vez en vivo**:
-  5 de 17 lecciones reales marcadas `stale` (30-35 días, nunca usadas), 0
-  archivadas, 0 borradas.
-  **Cron de Hermes medido**: 8287 líneas, capacidad genuina sin equivalente
-  en Atlas (scheduling de usuario/agente vs el interno fijo de Atlas).
-  Cierra el flag "unverified" de la auditoría de julio. Extraer técnica, no
-  el paquete — no implementado, tamaño propio de tanda dedicada.
-  **Gap D2 de Hermes, medido con precisión**: su nivel "hardline" YA bloquea
-  incondicionalmente antes del yolo (mismo principio que D2) — bien
-  diseñado. El hueco real es más estrecho: en el nivel "dangerous", con
-  `approvals.mode: smart`, un LLM auxiliar puede autoaprobar sin humano.
-  **Verificado que NO está activo aquí** (`manual` por defecto, sin
-  overrides). Latente, no explotado. Delegado como tarea acotada — tocar
-  3928 líneas de seguridad de un repo que no mantenemos, al final de una
-  sesión ya enorme, es la prisa que esta sesión entera ha corregido en
-  otros. **Hallazgo de paso importante**: el clon de disección
-  (`atlas-forks/hermes-agent`, 0.18.2) NO es la instalación real
-  (`~/.hermes/hermes-agent`, 0.19.1) — tocar el equivocado no tiene efecto.
-  **Estado**: suite 5019 passed · 6 skipped · check_canon PASS (2106) ·
-  mypy limpio.
+- **2026-08-01 (recalibración) — el operador retó mi confianza ("¿seguro que
+  Atlas absorbió todo de Hermes?") y tenía razón: encontré un drift real de
+  2 MESES en la config de permisos viva del daemon.**
+  **La sobreafirmación que corrijo**: cerré LangGraph diciendo "la matriz de
+  absorción queda completa" apoyándome en una auditoría de julio (2-jul),
+  sin re-verificar en fresco. Hoy mismo, al leer `approval.py` de Hermes de
+  verdad (3928 líneas) resultó mucho más sofisticado que el resumen de esa
+  auditoría — señal de que el resto del resumen probablemente también
+  infravalora lo que hay. No hay base para "todo absorbido".
+  **La comparación real, no la del documento**: el modelo de Hermes es
+  blocklist por patrones en 5 capas (hardline/dangerous/tirith AST/
+  user-deny/sudo-guard) sobre comandos de shell libres — necesario porque
+  actúa sobre el host real sin jail. El de Atlas es allowlist + jail
+  estructural (BwrapJail) — default-deny, más simple, en principio más
+  seguro por diseño, pero **repartido en al menos 3 ficheros pequeños sin
+  relación evidente entre sí** (`router/classifier.py` 37 patrones sobre
+  texto de tarea, `security/generated_code_policy.py` sobre código
+  generado, `governance/permission_profile.py` sobre shell real) — nada
+  parecido a un módulo único, auditado y con 1555 líneas de tests propios
+  como el de Hermes.
+  **El hallazgo real, no hipotético**: verificando la allowlist de shell de
+  Atlas en vivo, `pwd` se rechazó con "no está en la allowlist" pese a estar
+  en `config/permissions.yaml` del repo. Causa: el daemon lee
+  `~/atlas/config/permissions.yaml` (copia de workspace), que
+  `orchestrator.py:2619` sólo copia **si no existe** — nunca resincroniza.
+  Esa copia llevaba congelada desde el **23 de mayo**; el repo se actualizó
+  5 veces desde entonces (última el 16-jul, `5da5f5f`). **El daemon ha
+  corrido DOS MESES con una allowlist de sólo 3 comandos cuando el repo
+  autoriza 20+.** Sincronizado a mano (sin pérdida: el diff confirma que la
+  copia vieja no tenía personalizaciones, sólo faltaba). El MECANISMO que
+  causó el drift sigue intacto — cualquier mejora futura a
+  `permissions.yaml`/`governance.json` volverá a quedarse fuera en silencio
+  hasta que alguien lo note. Delegado como tarea: decidir sincronización
+  real (hash/mtime al arrancar, leer del repo directo, o tick de
+  mantenimiento) — y comprobar si `governance.json` tiene el mismo problema.
+  **Conclusión honesta para el operador**: no, no estoy seguro de que Atlas
+  absorbiera todo de Hermes. Una re-auditoría fresca y completa (no la de
+  julio) es trabajo real, no hecho hoy.

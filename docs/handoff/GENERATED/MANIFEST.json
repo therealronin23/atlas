@@ -1,6 +1,6 @@
 {
   "files": {
-    "00_ESTADO.md": "a316303b264b46304455348a4720d7108c1cb2ce376cb1227c50b75e6ffcdd6a",
+    "00_ESTADO.md": "c82b09e43b50460fca186ec0794ab90c3d2b7da01b2a292aaf008f2bf5a96acc",
     "01_QUIEN_ES_QUIEN.md": "c35c32f06724de8178865219b7c09d23a0f82566ca56f6dfbc6942051b7904c6",
     "02_INVARIANTES.md": "255d413a75740149a6d430506a45871c7b154d4ceb2b9d13ff23238e132817d6",
     "03_MEMORIA_CLAVE.md": "dd04d905d6dba90ebd05a280a2a1ce4cbb26d2ef86373f37b6eeead1956b499f",
@@ -8,11 +8,11 @@
     "05_ECOSISTEMA.md": "07bc69591db135d07516083ea8b2f1afe284f233f83500d81ca10c8a754f141f",
     "06_PRIMEROS_10_MINUTOS.md": "651be28c639c3258314e716d0c482d9c2b9ba3759aac88e9929cc4432d7e0fb4"
   },
-  "generated_at": "2026-08-01T07:03:30.309308+00:00",
-  "head_sha": "4e555ed195d39f886626e88d7ca78bb288d8a8ba",
+  "generated_at": "2026-08-01T08:01:38.683458+00:00",
+  "head_sha": "790cc8bbceb9e6278884b3a6d919e8c39d827f29",
   "sources": {
     "AGENTS.md": "255d413a75740149a6d430506a45871c7b154d4ceb2b9d13ff23238e132817d6",
-    "WORK_LEDGER.md": "390cb70e804f0065b3c7a84cf734d065ec1a1f571737cf093504fe8f1ff24b8b",
+    "WORK_LEDGER.md": "d5c2dc22f52e22f9c847ff1caf51a2ba7d57e46df3c7153081a4db99d88cf6b6",
     "docs/design/actor_roles.md": "c35c32f06724de8178865219b7c09d23a0f82566ca56f6dfbc6942051b7904c6",
     "docs/design/atlas_ecosystem_map.md": "0c6e8bcd146ed82bc09c32f17acbe375cace8fb847dc8ac306bf62f6c0332b2d",
     "docs/design/atlas_master_plan.md": "2f01abc3232030f260555a5924303b1a5c397e84c8e9c7a991d3ddbccc49fab1"
