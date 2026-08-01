@@ -150,7 +150,7 @@ class GitCheckpointManager:
                    payload={"repo_path": str(repo_path), "run_count": run_count, "ref": ref})
         return entry
 
-    def restore(self, repo_path: Path, checkpoint: CheckpointEntry) -> None:
+    def restore(self, repo_path: Path, checkpoint: CheckpointEntry) -> CheckpointEntry:
         """DESTRUCTIVO — borra todo lo no checkpointeado en repo_path.
         Mismo orden de comandos que Cline (`applyCheckpointToWorktree`):
         verificar repo → verificar que el ref existe → reset --hard →
@@ -164,6 +164,10 @@ class GitCheckpointManager:
                        payload={"repo_path": str(repo_path), "ref": checkpoint.ref, "error": str(exc)})
             raise
 
+        pre_rollback = self.checkpoint(repo_path, run_count=0)
+        self._log("git_checkpoint.pre_rollback_snapshot", "ok", risk_level="safe",
+                   payload={"repo_path": str(repo_path), "ref": pre_rollback.ref})
+
         self._run_git(repo_path, "reset", "--hard")
         self._run_git(repo_path, "clean", "-fd")
         if checkpoint.kind == "commit":
@@ -176,6 +180,38 @@ class GitCheckpointManager:
             payload={"repo_path": str(repo_path), "ref": checkpoint.ref,
                      "run_count": checkpoint.run_count, "kind": checkpoint.kind},
         )
+        return pre_rollback
+
+    def restore_file(self, repo_path: Path, checkpoint: CheckpointEntry, path: str) -> None:
+        """NO destructivo — checkout de un solo fichero desde un checkpoint antiguo.
+        Ideal cuando no se quiere machacar todo el worktree."""
+        self._verify_is_git_repo(repo_path)
+        try:
+            self._run_git(repo_path, "cat-file", "-e", f"{checkpoint.ref}^{{commit}}")
+        except GitCheckpointError as exc:
+            self._log("git_checkpoint.restore_file", "failed", risk_level="moderate",
+                       payload={"repo_path": str(repo_path), "ref": checkpoint.ref, "path": path, "error": str(exc)})
+            raise
+
+        self._run_git(repo_path, "checkout", checkpoint.ref, "--", path)
+        self._log("git_checkpoint.restore_file", "ok", risk_level="moderate",
+                  payload={"repo_path": str(repo_path), "ref": checkpoint.ref, "path": path})
+
+    def prune(self, repo_path: Path, max_snapshots: int) -> int:
+        """Descarta checkpoints tipo stash más antiguos cuando exceden la capacidad."""
+        self._verify_is_git_repo(repo_path)
+        output = self._run_git(repo_path, "stash", "list")
+        stashes = output.splitlines() if output else []
+        atlas_stashes = [s for s in stashes if "atlas-checkpoint-run-" in s]
+        
+        dropped = 0
+        while len(atlas_stashes) > max_snapshots:
+            oldest = atlas_stashes.pop()
+            stash_ref = oldest.split(":")[0].strip()
+            self._run_git(repo_path, "stash", "drop", stash_ref)
+            dropped += 1
+            
+        return dropped
 
     def _log(
         self, action: str, result: str, *,
