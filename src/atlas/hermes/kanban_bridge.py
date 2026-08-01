@@ -83,8 +83,17 @@ ALLOWED_KANBAN_ACTIONS = frozenset(
         "archive",
         "diagnostics",
         "repair",
+        "unblock",
+        "edit",
+        "reassign",
     }
 )
+
+# ADR-081: las tres únicas acciones alcanzables SÓLO vía `propose_correction`.
+# `run()` las acepta si alguien las invoca directo (la allowlist no duplica el
+# gate del decisor — ADR-040 dice que el decisor es el ÚNICO seam), pero el
+# camino soportado y auditado es siempre `propose_correction`.
+CORRECTIVE_KANBAN_ACTIONS = frozenset({"unblock", "edit", "reassign"})
 _SSH_DESTINATION_RE = re.compile(
     r"^[a-z_][a-z0-9_-]{0,31}@(?:[A-Za-z0-9][A-Za-z0-9.-]{0,252}|\[[0-9A-Fa-f:]+\])$"
 )
@@ -117,6 +126,16 @@ def ssh_destination_is_allowed(value: str) -> bool:
     except ValueError:
         return False
     return any(address in network for network in _ALLOWED_SSH_NETWORKS)
+
+
+@dataclass
+class CorrectionResult:
+    """Resultado de `propose_correction`: SIEMPRE lleva el veredicto del
+    decisor, ejecutado o no. `result` es `None` cuando no se llegó a invocar
+    Hermes (Deny/RequiresHuman) — ausencia honesta, no un resultado vacío."""
+
+    verdict: Any
+    result: "KanbanResult | None" = None
 
 
 @dataclass
@@ -377,6 +396,69 @@ class KanbanBridge:
         tareas. Sale 0 si la BD está sana o se reparó.
         """
         return self.run("repair", "--json")
+
+    def propose_correction(
+        self,
+        verb: str,
+        task_id: str,
+        *,
+        decider: Any,
+        sanctioned_intent: str,
+        sensitivity: str = "high",
+        extra_args: Sequence[str] = (),
+    ) -> CorrectionResult:
+        """ADR-081: propone una corrección; sólo ejecuta si el decisor da `Allow`.
+
+        `unblock`/`edit`/`reassign` mutan un tablero durable compartido — no
+        son un `edit` de fichero local. Pasan por el mismo `Decider`
+        (ADR-040) que gobierna cualquier otra mutación del sistema, y con
+        `sensitivity="high"` la guardia constitucional
+        (`enforce_constitutional_verdict`) convierte cualquier intento de
+        `Allow` en `RequiresHuman` sin que ninguna implementación de decisor
+        pueda anularlo — ni siquiera un decisor complaciente inyectado por
+        error. Con el decisor humano (default) o autónomo (regla 2: deny
+        explícito a sensibilidad alta), **nunca se ejecuta sola**.
+
+        Toda propuesta, ejecutada o no, deja receipt Merkle.
+        """
+        from atlas.core.decider.decider import (
+            Allow,
+            DecisionAction,
+            enforce_constitutional_verdict,
+        )
+
+        if verb not in CORRECTIVE_KANBAN_ACTIONS:
+            raise ValueError(f"unsupported correction verb: {verb}")
+
+        action = DecisionAction(
+            kind="hermes.kanban.correction",
+            requires_approval=True,
+            sensitivity=sensitivity,
+            mutating=True,
+            reversible=True,  # unblock/edit/reassign son deshacibles — ver ADR-081
+            reason=sanctioned_intent,
+            descriptor=verb,
+        )
+        raw_verdict = decider.decide(action, sanctioned_intent, {"task_id": task_id})
+        verdict = enforce_constitutional_verdict(action, raw_verdict)
+
+        if not isinstance(verdict, Allow):
+            self._log(
+                "propose_correction",
+                "pending" if verdict.__class__.__name__ == "RequiresHuman" else "denied",
+                "moderate",
+                {"verb": verb, "task_id": task_id, "reason": verdict.reason},
+            )
+            return CorrectionResult(verdict=verdict, result=None)
+
+        result = self.run(verb, task_id, *extra_args)
+        self._log(
+            "propose_correction",
+            "applied" if result.ok else "failed",
+            "moderate",
+            {"verb": verb, "task_id": task_id, "reason": verdict.reason},
+        )
+        return CorrectionResult(verdict=verdict, result=result)
 
     def show_task(self, task_id: str) -> KanbanResult:
         return self.run("show", task_id)
