@@ -1331,7 +1331,7 @@ items:
       docs/design/UI_QUALITY_GATE.md (las 8 preguntas respondidas, ninguna señal de
       rechazo de la lista).
     priority: 2
-    status: pending
+    status: done
 
   - id: t2-ui-quality-gate-checklist
     title: "Checklist UI_QUALITY_GATE aplicado y registrado por prototipo/app de T2"
@@ -1355,7 +1355,7 @@ items:
       qué criterio de rechazo falla si aplica. Se aplica al menos una vez sobre un
       prototipo o app real (no el demo) antes de dar T2.1 por cerrada.
     priority: 2
-    status: pending
+    status: done
 
   - id: t2-2-knowledge-view-native
     title: "T2.2 — Knowledge view nativa: grafo Kuzu navegable en la app dedicada"
@@ -1378,7 +1378,7 @@ items:
       lenguaje visual de DIRECCION_ESTETICA.md (el grafo como protagonista, glow para
       actividad viva) en vez de reimplementar un layout genérico desde cero.
     priority: 3
-    status: pending
+    status: done
 
   - id: t2-3-visual-orchestrator-reopen-scope
     title: "T2.3 — Visual Orchestrator: alcance de reapertura de ADR-066 (Cónclave)"
@@ -1402,7 +1402,7 @@ items:
       número, no en silencio) — con el alcance acordado, o con la decisión razonada de
       seguir parkeado y una nueva condición/fecha de revisión.
     priority: 3
-    status: pending
+    status: done
 
   # === T0.5b paso 3 (2026-07-23, sesión maratón) — T3 — Capacidad universal de operación ===
 
@@ -2043,3 +2043,42 @@ items:
     # se reporta), tests/test_os_product_api.py (endpoint HTTP E2E),
     # tests/test_cli_connections_credential.py (CLI E2E). mypy limpio.
     # ADR-065 y atlas_ecosystem_map.md actualizados (fila ahora ACTIVO).
+
+  - id: t3-2-browser-operator-planner
+    title: "Planner autónomo para operaciones de navegador (Playwright)"
+    why: >
+      Para la Fase T3 (operación universal), el orquestador necesita poder planificar acciones
+      complejas en el navegador usando las tools de Playwright, en lugar de solo acciones atómicas.
+    targets:
+      - "src/atlas/tools/browser_use/"
+    acceptance: >
+      El Orchestrator puede resolver un objetivo web complejo dividiéndolo en pasos
+      sin intervención humana constante, usando un planner evaluador.
+    priority: 1
+    status: pending
+
+  - id: t3-3-terminal-operator-planner
+    title: "Planner autónomo para operaciones de terminal seguras"
+    why: >
+      Para ejecutar secuencias de bash complejas en el entorno asilado, se requiere un
+      planner que pueda observar la salida del terminal y encadenar comandos iterativamente.
+    targets:
+      - "src/atlas/core/orchestrator_parts/gate_f_executor.py"
+    acceptance: >
+      El planner puede recibir una tarea de terminal, ejecutar comandos, leer su salida y
+      decidir el próximo comando hasta completar la tarea. Todo dentro de LayeredIsolationSandbox.
+    priority: 2
+    status: pending
+
+  - id: t3-4-cross-tool-orchestrator
+    title: "Orquestación multi-herramienta (Browser + Terminal + Editor)"
+    why: >
+      Las tareas complejas requieren usar el navegador para leer docs, el terminal para probar y el
+      editor para escribir. El Orchestrator debe poder transicionar entre estas tools de forma fluida.
+    targets:
+      - "src/atlas/core/orchestrator.py"
+    acceptance: >
+      Test end-to-end donde el sistema lee una doc de una URL, edita un fichero local basado en esa
+      doc, y lo ejecuta en el terminal para verificar el resultado.
+    priority: 2
+    status: pending
