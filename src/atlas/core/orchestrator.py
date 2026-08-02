@@ -2616,8 +2616,9 @@ class Orchestrator:
         return None
 
     def _copy_defaults(self, config_dir: Path) -> None:
-        """Copia governance.json y permissions.yaml si no existen en el workspace."""
+        """Copia y resincroniza governance.json y permissions.yaml en el workspace para evitar drift."""
         from atlas.runtime_paths import atlas_data_root
+        import shutil
 
         src_dir = atlas_data_root() / "config"
         if not src_dir.exists():
@@ -2627,12 +2628,64 @@ class Orchestrator:
             self._write_default_permissions(config_dir / "permissions.yaml")
             return
 
-        for fname in ("governance.json", "permissions.yaml"):
-            dst = config_dir / fname
-            src = src_dir / fname
-            if not dst.exists() and src.exists():
-                import shutil
-                shutil.copy2(src, dst)
+        config_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1. governance.json: Invariante 3 (inmutable L0). Se sincroniza siempre desde src si difiere.
+        gov_src = src_dir / "governance.json"
+        gov_dst = config_dir / "governance.json"
+        if gov_src.exists():
+            if not gov_dst.exists() or gov_dst.read_bytes() != gov_src.read_bytes():
+                shutil.copy2(gov_src, gov_dst)
+
+        # 2. permissions.yaml: resincroniza allowlists del repositorio preservando personalizaciones del usuario.
+        perm_src = src_dir / "permissions.yaml"
+        perm_dst = config_dir / "permissions.yaml"
+        if perm_src.exists():
+            if not perm_dst.exists():
+                shutil.copy2(perm_src, perm_dst)
+            else:
+                self._sync_permissions_file(perm_src, perm_dst)
+
+    def _sync_permissions_file(self, src: Path, dst: Path) -> None:
+        import yaml
+        try:
+            with src.open(encoding="utf-8") as f:
+                src_data = yaml.safe_load(f) or {}
+            with dst.open(encoding="utf-8") as f:
+                dst_data = yaml.safe_load(f) or {}
+
+            modified = False
+
+            # Sincronizar shell_allowlist: añadir nuevos comandos del repositorio que falten en el workspace
+            if "shell_allowlist" in src_data and isinstance(src_data["shell_allowlist"], list):
+                dst_allowlist = dst_data.setdefault("shell_allowlist", [])
+                if isinstance(dst_allowlist, list):
+                    existing = set(dst_allowlist)
+                    for cmd in src_data["shell_allowlist"]:
+                        if cmd not in existing:
+                            dst_allowlist.append(cmd)
+                            existing.add(cmd)
+                            modified = True
+
+            # Sincronizar system_read_allowed y absolute_blocks
+            for key in ("system_read_allowed", "absolute_blocks"):
+                if key in src_data and isinstance(src_data[key], list):
+                    dst_list = dst_data.setdefault(key, [])
+                    if isinstance(dst_list, list):
+                        existing = set(dst_list)
+                        for item in src_data[key]:
+                            if item not in existing:
+                                dst_list.append(item)
+                                existing.add(item)
+                                modified = True
+
+            if modified:
+                with dst.open("w", encoding="utf-8") as f:
+                    yaml.safe_dump(dst_data, f, sort_keys=False, allow_unicode=True)
+        except Exception as exc:
+            # Si hay un error de parseo en el workspace del usuario, registrar advertencia y no romper el arranque
+            import logging
+            logging.getLogger(__name__).warning("Fallo al sincronizar permissions.yaml en workspace: %s", exc)
 
     def _write_default_governance(self, path: Path) -> None:
         import json as _json

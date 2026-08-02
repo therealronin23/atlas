@@ -80,8 +80,14 @@ class PermissionProfile:
         workspace: Path | None = None,
         git_inspect_root: Path | None = None,
     ) -> None:
-        with config_path.open(encoding="utf-8") as f:
-            self._cfg: dict[str, Any] = yaml.safe_load(f)
+        try:
+            with config_path.open(encoding="utf-8") as f:
+                loaded = yaml.safe_load(f)
+                self._cfg: dict[str, Any] = loaded if isinstance(loaded, dict) else {}
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Fallo al cargar %s, usando perfil vacio de respaldo: %s", config_path, exc)
+            self._cfg = {}
 
         self._workspace: Path = workspace or self._resolve_workspace()
         self._confirmed_this_session: set[str] = set()

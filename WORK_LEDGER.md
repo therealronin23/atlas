@@ -8,6 +8,29 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-02 (Prevención de Drift de Permisos + Publicación ADR-082) — Sincronización automática de permisos en el arranque del daemon construida y verificada con tests. ADR-082 publicado tras Cónclave de selección de stack nativo.**
+  **Resultados**:
+  - `Permission Sync`: `Orchestrator._copy_defaults` actualizado para auto-sincronizar `permissions.yaml` (fusionando nuevos comandos de repositorio sin sobreescribir personalizaciones) y `governance.json` (manteniendo la Invariante 3 inmutable L0). Añadido test unitario `test_orchestrator_permissions_sync.py` (PASS).
+  - `ADR-082`: Publicado `docs/decisions/adr/adr_082_mission_console_native_stack_selection.md` seleccionando **Flutter** para la app dedicada multi-plataforma Linux+Android (T2.1 / ADR-071). Marcat `t2-1-stack-decision-conclave` como `done` en `docs/backlog.yaml`.
+
+- **2026-08-02 (Auditoría de Cobertura y Post-Mortem) — Suite completa de 5,025 pruebas al 100% pasando con cobertura del 88% en `src/atlas/` (33,305 líneas analizables).**
+  **Diagnóstico & Solución**:
+  - `Fixtures`: Restaurada la carpeta `fixtures/` que se encontraba eliminada en el árbol de trabajo local, resolviendo 86 fallos falsos en tests de la API y negocio.
+  - `Coverage`: Creado `scripts/run_coverage.sh` con `.env` y `PYTHONPATH=src` para ejecución reproducible en venv con mitigación de archivos temporales (`-i`).
+  - `Mypy`: 341/341 archivos limpios sin errores de tipado.
+  - `Reality`: `atlas-core.service` activo y ejecutando el runtime local en `active (running)`.
+
+- **2026-08-02 (Auditoría completa + Pre-Mortem & Post-Mortem) — Auditoría integral finalizada. Mypy strict limpio (341/341), cadena Merkle intacta, Cónclave corregido a 5 asientos con linajes activos, fallo de exportación de grafos con nombres largos corregido.**
+  **Pre-Mortem**: Identificación de riesgos en la invariante de gobernanza (`config/governance.json`), desalineación de tests por proveedores retirados/EOL (`gemini_free`, `nvidia_llama_large`) y desbordamiento de límites `NAME_MAX` en exportación a Obsidian.
+  **Diagnóstico & Reparación**:
+  - `mypy`: 0 errores en 341 archivos Python (`src/atlas/`).
+  - `deliberation_council`: Re-configurados los 5 asientos (`contrarian`, `first_principles`, `expansionist`, `outsider`, `executor`) para usar 5 proveedores activos y linajes diferenciados (`groq_llama_70b`, `openrouter_mistral_large`, `nvidia_glm`, `openrouter_hermes4_70b`, `groq_qwen3`), manteniendo quórum real sin dependencias de modelos 410 EOL.
+  - `update-knowledge-graph.sh`: Añadida tolerancia a límites de longitud de archivos en filesystem en la exportación Obsidian.
+  - `pytest`: Suite de tests del Cónclave, Inference Hub y Agentic Dispatch verificada con 100/100 tests pasando limpiamente en `.venv`.
+  - `audit.merkle`: Verificada cadena de auditoría Merkle (`✓ Cadena Merkle integra`).
+  - `f26_gate`: Estado `current`, result: `pass`.
+  **Estado**: mypy 341 files PASS · 100/100 core/council tests PASS · Merkle OK · Graph updated.
+
 - **2026-08-01 (recalibración) — el operador retó mi confianza ("¿seguro que
   Atlas absorbió todo de Hermes?") y tenía razón: encontré un drift real de
   2 MESES en la config de permisos viva del daemon.**

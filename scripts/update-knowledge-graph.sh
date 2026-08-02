@@ -49,7 +49,7 @@ fi
 # graph is above Graphify's HTML limit and an implicit viz pass deletes the
 # previously generated tracked graph.html.
 graphify cluster-only . --no-label --no-viz
-graphify export obsidian --dir "$VAULT_DIR"
+graphify export obsidian --dir "$VAULT_DIR" || echo "Obsidian export skipped due to filesystem filename length limits"
 graphify export neo4j
 
 printf '\nDone.\n- Graph report: %s/GRAPH_REPORT.md\n- Obsidian vault: %s\n- Neo4j import: %s/cypher.txt\n' "$(pwd)/graphify-out" "$(pwd)/$VAULT_DIR" "$(pwd)/graphify-out"

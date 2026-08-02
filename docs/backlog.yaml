@@ -1304,7 +1304,7 @@ items:
       registra un ADR nuevo (siguiente número libre) con el stack ganador, los números
       que lo sustentan, y qué stacks quedaron fuera y por qué.
     priority: 1
-    status: pending
+    status: done  # 2026-08-02: Cónclave cerrado. ADR-082 adopta Flutter como stack nativo definitivo (Linux + Android).
 
   - id: t2-1-mission-console-dedicated-app
     title: "T2.1 — Mission Console real como app dedicada (Linux + Android)"

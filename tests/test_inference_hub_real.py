@@ -36,12 +36,9 @@ def _httpx_response(status_code: int, headers: dict[str, str]) -> httpx.Response
 
 
 def test_default_gemini_provider_uses_stable_model_id() -> None:
-    gemini = next(p for p in DEFAULT_PROVIDERS if p.name == "gemini_free")
-    # gemini-3.5-flash da 503 crónico (free saturado, verificado en vivo 2026-06-24);
-    # 2.5-flash responde estable. Pin, NO alias -latest (también 503).
-    assert gemini.model_id == "gemini-2.5-flash"
-    assert gemini.litellm_model == "gemini/gemini-2.5-flash"
-    assert not gemini.model_id.endswith("-latest")
+    # gemini_free retirado de DEFAULT_PROVIDERS (503 crónico en free tier)
+    gemini = next((p for p in DEFAULT_PROVIDERS if p.name == "gemini_free"), None)
+    assert gemini is None
 
 
 def _ok_completion(text: str = "hola", tokens: int = 7) -> MagicMock:
@@ -588,12 +585,12 @@ class TestOllamaL0:
 class TestNvidiaNimProvider:
 
     def test_nvidia_provider_in_default_providers(self) -> None:
-        """nvidia_llama_large debe estar en DEFAULT_PROVIDERS con campos correctos."""
-        nvidia = next((p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large"), None)
-        assert nvidia is not None, "nvidia_llama_large no encontrado en DEFAULT_PROVIDERS"
+        """nvidia_glm debe estar en DEFAULT_PROVIDERS con campos correctos."""
+        nvidia = next((p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm"), None)
+        assert nvidia is not None, "nvidia_glm no encontrado en DEFAULT_PROVIDERS"
         assert nvidia.level == InferenceLevel.L2
-        assert nvidia.litellm_model == "nvidia_nim/meta/llama-3.3-70b-instruct"
-        assert nvidia.model_id == "meta/llama-3.3-70b-instruct"
+        assert nvidia.litellm_model == "nvidia_nim/z-ai/glm-5.2"
+        assert nvidia.model_id == "z-ai/glm-5.2"
         assert nvidia.base_url == "https://integrate.api.nvidia.com/v1"
         assert nvidia.api_key_env == "NVIDIA_API_KEY"
         assert nvidia.account_pool[:2] == ["NVIDIA_API_KEY", "NVIDIA_API_KEY_2"]
@@ -610,8 +607,8 @@ class TestNvidiaNimProvider:
         """
         expected = {
             "nvidia_glm": "nvidia_nim/z-ai/glm-5.2",
-            "nvidia_mistral_large": (
-                "nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512"
+            "nvidia_mistral_medium": (
+                "nvidia_nim/mistralai/mistral-medium-3.5-128b"
             ),
         }
         for name, litellm_model in expected.items():
@@ -630,7 +627,7 @@ class TestNvidiaNimProvider:
         """Hub considera NVIDIA disponible cuando NVIDIA_API_KEY está en entorno."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         monkeypatch.setenv("NVIDIA_API_KEY", "test-nvidia-key")
-        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         # Clonar para no mutar el singleton
         import copy
         prov = copy.copy(nvidia)
@@ -644,7 +641,7 @@ class TestNvidiaNimProvider:
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
         monkeypatch.setenv("NVIDIA_API_KEY_2", "test-nvidia-key-2")
-        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
         hub = InferenceHub(providers=[prov], mode="auto")
@@ -657,7 +654,7 @@ class TestNvidiaNimProvider:
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
         monkeypatch.delenv("NVIDIA_API_KEY_2", raising=False)
-        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
         hub = InferenceHub(providers=[prov], mode="auto")
@@ -679,7 +676,7 @@ class TestNvidiaNimProvider:
 
         monkeypatch.setattr(litellm, "completion", mock_completion)
 
-        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
         hub = InferenceHub(providers=[prov], mode="auto")
@@ -704,7 +701,7 @@ class TestNvidiaNimProvider:
 
         monkeypatch.setattr(litellm, "completion", mock_completion)
 
-        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_llama_large")
+        nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
         hub = InferenceHub(providers=[prov], mode="auto")
