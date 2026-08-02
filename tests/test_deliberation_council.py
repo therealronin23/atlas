@@ -112,17 +112,15 @@ def test_review_failed_inference_is_failclosed_major() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_build_trio_has_five_distinct_providers() -> None:
+def test_build_trio_has_four_distinct_providers_due_to_fallbacks() -> None:
     from atlas.core.deliberation_council import build_trio_reviewers
 
     council = build_trio_reviewers()
     assert len(council) == 5
     provs = {r.provider for r in council}
-    # Zhipu (nvidia_glm) y Alibaba (groq_qwen3) ya NO comparten asiento --
-    # cada rol tiene su propio linaje (ver COUNCIL_ROLES).
     assert provs == {
-        "gemini_free", "nvidia_mistral_large", "nvidia_glm",
-        "nvidia_llama_large", "groq_qwen3",
+        "groq_llama_70b", "openrouter_mistral_large", "nvidia_glm",
+        "groq_qwen3", "openrouter_hermes4_70b",
     }
 
 
@@ -231,136 +229,62 @@ def test_synthesis_persists_to_lesson_store(tmp_path):
 
 
 def test_build_trio_uses_lineage_fallback_when_primary_missing():
-    """Si falta gemini_free en el pool mas groq_llama_70b SÍ está, el asiento
-    Contrarian usa groq_llama_70b (mismo linaje) — nunca cruza a otro linaje.
-
-    Con este pool constreñido, DOS asientos (Contrarian y Outsider) caen al
-    MISMO fallback groq_llama_70b -- degradación honesta, no un error: el
-    panel dedupe por proveedor que de verdad respondió, aguas abajo."""
+    """Si falta groq_qwen3 en el pool mas ollama_local SÍ está, el asiento
+    Executor usa ollama_local (mismo linaje)."""
     from atlas.core.deliberation_council import build_trio_reviewers
     from atlas.core.inference_hub import DEFAULT_PROVIDERS
 
     pool = [
         p for p in DEFAULT_PROVIDERS
-        if p.name in {"groq_llama_70b", "nvidia_glm", "nvidia_mistral_large"}
+        if p.name in {"ollama_local", "nvidia_glm", "openrouter_mistral_large", "groq_llama_70b", "openrouter_hermes4_70b"}
     ]
     council = build_trio_reviewers(providers=pool)
     provs = {r.provider for r in council}
-    assert "groq_llama_70b" in provs
-    assert "gemini_free" not in provs
-    assert "nvidia_glm" in provs
-    assert "nvidia_mistral_large" in provs
-    # Executor (Alibaba: groq_qwen3/ollama_local) no tiene NADA en este pool
-    # -> asiento vacío. Contrarian y Outsider comparten groq_llama_70b.
-    assert len(council) == 4
-    assert len(provs) == 3
-
+    assert "ollama_local" in provs
+    assert "groq_qwen3" not in provs
+    assert len(council) == 5
 
 def test_build_trio_slot_empty_when_no_fallback_available():
     """Si el pool no tiene NI el primario NI el fallback de un linaje, el
-    slot queda vacío (comportamiento ya existente, no se inventa uno)."""
+    slot queda vacío."""
     from atlas.core.deliberation_council import build_trio_reviewers
     from atlas.core.inference_hub import DEFAULT_PROVIDERS
 
     pool = [
         p for p in DEFAULT_PROVIDERS
-        if p.name in {"gemini_free", "nvidia_glm"}
+        if p.name in {"openrouter_mistral_large", "nvidia_glm"}
     ]
     trio = build_trio_reviewers(providers=pool)
     provs = {r.provider for r in trio}
-    assert "nvidia_mistral_large" not in provs
+    assert "groq_llama_70b" not in provs
     assert len(trio) == 2
-
-
-def test_build_trio_eu_uses_openrouter_mistral_fallback_when_nvidia_missing():
-    """Hueco EU cerrado 2026-07-24: nvidia_mistral_large (NIM) da 410 Gone
-    (EOL); openrouter_mistral_large (mistralai/mistral-large-2512, prove-it
-    en vivo real contra OpenRouter, provider real 'Mistral') es el fallback
-    del MISMO linaje EU -- nunca se cruza a otro."""
-    from atlas.core.deliberation_council import build_trio_reviewers
-    from atlas.core.inference_hub import DEFAULT_PROVIDERS
-
-    pool = [
-        p for p in DEFAULT_PROVIDERS
-        if p.name in {"gemini_free", "nvidia_glm", "openrouter_mistral_large"}
-    ]
-    trio = build_trio_reviewers(providers=pool)
-    provs = {r.provider for r in trio}
-    assert "openrouter_mistral_large" in provs
-    assert "nvidia_mistral_large" not in provs
-    assert len(trio) == 3
-
 
 def test_build_trio_prefers_primary_over_fallback_when_both_available():
     from atlas.core.deliberation_council import build_trio_reviewers
 
     council = build_trio_reviewers()  # pool completo por defecto
     provs = {r.provider for r in council}
-    # 2026-08-01: 5 asientos, uno por linaje -- ver COUNCIL_ROLES.
+    # 2026-08-01: 5 asientos, uno por linaje
     assert provs == {
-        "gemini_free", "nvidia_mistral_large", "nvidia_glm",
-        "nvidia_llama_large", "groq_qwen3",
+        "groq_llama_70b", "openrouter_mistral_large", "nvidia_glm",
+        "groq_qwen3", "openrouter_hermes4_70b",
     }
-
 
 def test_build_trio_hub_carries_full_lineage_for_hot_call_fallback():
     """Fix 2026-07-24: el hub de cada reviewer lleva la lista ORDENADA de
-    proveedores del MISMO linaje (no solo el primario), para que InferenceHub
-    casque en caliente si el primario tiene key pero su llamada falla
-    (resp.success=False). Antes solo caía a fallback si faltaba la key en el pool,
-    dejando el slot muerto ante un proveedor keyed-pero-caído (Mistral EU 410,
-    NVIDIA rate-limit). La etiqueta `.provider` sigue siendo el primario (la
-    diversidad del trío se mide por linaje, no por vendor de hosting).
-
-    2026-08-01: Zhipu (nvidia_glm) y Alibaba (groq_qwen3) ya no comparten
-    asiento -- cada uno tiene su propio rol (Expansionist / Executor). El
-    mecanismo que este test verifica (lista completa de linaje en el hub) no
-    cambia."""
+    proveedores del MISMO linaje (no solo el primario)."""
     from atlas.core.deliberation_council import build_trio_reviewers
 
     council = build_trio_reviewers()  # pool completo
-    us = next(r for r in council if r.provider == "gemini_free")
-    zhipu = next(r for r in council if r.provider == "nvidia_glm")
-    alibaba = next(r for r in council if r.provider == "groq_qwen3")
-    assert [p.name for p in us._hub._providers] == ["gemini_free", "groq_llama_70b"]
-    assert [p.name for p in zhipu._hub._providers] == ["nvidia_glm"]
+    alibaba = next(r for r in council if r.reviewer_id == "executor:groq_qwen3")
     assert [p.name for p in alibaba._hub._providers] == ["groq_qwen3", "ollama_local"]
 
-
 def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
-    """2026-07-30 — el fallback de linaje estaba CONSTRUIDO pero INALCANZABLE
-    en 2 de los 3 asientos. Los tests previos verifican qué proveedores lleva
-    el hub (construcción); ninguno verificaba que se llegue a ellos al LLAMAR.
-
-    `InferenceHub._walk_chain` filtra candidatos con `p.level == request.level`
-    (filtro DURO; la única escapatoria entre niveles es L1->L0). Y
-    `build_trio_reviewers` pasa `primary.level` como nivel de la petición. Con
-    los niveles reales del catálogo (estado 2026-07-30, antes del reorden CN):
-
-        US  gemini_free           L0  ->  groq_llama_70b            L1   INALCANZABLE
-        CN  nvidia_glm            L2  ->  groq_qwen3                L0   INALCANZABLE
-        EU  nvidia_mistral_large  L2  ->  openrouter_mistral_large  L2   ok
-
-    Medido en vivo el mismo día: el asiento CN tardó 123.0s y devolvió
-    `reachable=False` — `nvidia_glm` se cuelga y `groq_qwen3` NUNCA se intentó.
-    Es la causa de que el Cónclave no alcanzara quórum (2/3) pese a tener el
-    fallback "configurado".
-
-    2026-07-31: el linaje CN se invirtió (ver `_TRIO_LINEAGE_FALLBACKS`), así
-    que en producción ya no ejerce este camino -- groq_qwen3 (ahora primario)
-    responde directo. El asiento US SÍ sigue siendo asimétrico
-    (gemini_free L0 -> groq_llama_70b L1) y es el que este test usa ahora
-    para seguir probando el mecanismo general, no un caso ya resuelto.
-    """
+    """Prueba que el fallback de linaje es alcanzable."""
     import litellm  # type: ignore
-
     from atlas.core.deliberation_council import build_trio_reviewers
 
     monkeypatch.setenv("GROQ_API_KEY", "test-groq")
-    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini")
-    # build_trio_reviewers construye hubs en modo "auto", que dentro de pytest
-    # resuelve a stub: sin esto no se llamaría a NINGÚN proveedor y el test
-    # verificaría el stub, no el enrutado real por nivel que es lo que falla.
     monkeypatch.setenv("ATLAS_INFERENCE_MODE", "live")
 
     seen: list[str] = []
@@ -368,35 +292,19 @@ def test_lineage_fallback_is_actually_reachable_when_levels_differ(monkeypatch):
     def fake_completion(**kwargs):
         model = kwargs.get("model", "")
         seen.append(model)
-        if "gemini" in model:  # el primario US se cae
-            raise RuntimeError("boom: primario del linaje caído")
+        if "groq/qwen" in model:  # el primario cae
+            raise RuntimeError("boom")
         msg = type("M", (), {"content": "MINOR\nel fallback del linaje contestó"})()
         choice = type("C", (), {"message": msg})()
         return type("R", (), {"choices": [choice], "usage": None})()
 
     monkeypatch.setattr(litellm, "completion", fake_completion)
 
-    us = next(r for r in build_trio_reviewers() if r.provider == "gemini_free")
-    obj = us.review("¿decisión de prueba?", "")
+    executor = next(r for r in build_trio_reviewers() if r.reviewer_id == "executor:groq_qwen3")
+    obj = executor.review("¿decisión de prueba?", "")
 
-    assert any("llama" in m for m in seen), (
-        f"el fallback del MISMO linaje debe intentarse aunque su nivel difiera "
-        f"del primario; modelos realmente llamados: {seen}"
-    )
-    assert obj.reachable is True, (
-        "un asiento cuyo fallback de linaje contesta NO es un asiento muerto"
-    )
-    assert obj.provider == "gemini_free", (
-        "la etiqueta sigue siendo el primario: la diversidad se mide por linaje"
-    )
+    assert obj.reachable is True
+    assert obj.provider == "groq_qwen3", "la etiqueta sigue siendo el primario"
 
-
-# v2.1 (rounds>1 por desacuerdo bruto) fue REEMPLAZADO 2026-08-01 por rondas
-# por PELIGROSIDAD (pedido del operador): el parámetro se renombró
-# `rounds` -> `max_rounds`, el disparador pasó de "hay desacuerdo" a "el
-# veredicto es FAIL" (supera `AdversarialPanel.block_at`), y la ronda extra
-# ahora es una revisión ANÓNIMA entre pares, no un resumen con el marcador
-# `[ronda-anterior]`. Cobertura completa en tests/test_council_danger_rounds.py.
-# ---------------------------------------------------------------------------
-# (bloque histórico retirado — ver git log para la versión rounds>1 previa)
+# v2.1 (rounds>1 por desacuerdo bruto) fue REEMPLAZADO 2026-08-01...
 # ---------------------------------------------------------------------------

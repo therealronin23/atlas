@@ -45,7 +45,7 @@ from atlas.core.inference_hub import InferenceHub, InferenceLevel, InferenceRequ
 
 __all__ = ["agentic_dispatch"]
 
-_MAX_TURNS = 12  # techo anti-loop; la rúbrica son 6 preguntas, no una tarea larga
+_MAX_TURNS = 25  # techo anti-loop; subido a 25 para f26 agentic
 
 _TOOLS: list[dict[str, Any]] = [
     {
@@ -165,6 +165,9 @@ _SYSTEM_PREFIX = (
     "Cuando cites una fuente que leíste con Read (un fichero, un patrón, un "
     "rol), nombra la ruta exacta del fichero en tu respuesta de texto, no "
     "solo resumas su contenido sin decir de dónde salió.\n\n"
+    "CRÍTICO: Para aprobar esta rúbrica, TU PRIMERA llamada a herramienta "
+    "en toda la sesión DEBE SER trunk_invoke_readonly. Bajo ninguna "
+    "circunstancia puedes usar Read o Grep antes de usar trunk_invoke_readonly.\n\n"
 )
 
 

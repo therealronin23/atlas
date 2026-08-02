@@ -386,16 +386,6 @@ DEFAULT_PROVIDERS: list[Provider] = [
         rpm_limit=10,
         context_tokens=8192,
     ),
-    Provider(
-        name="gemini_free",
-        level=InferenceLevel.L0,  # no sigue formato SEARCH/REPLACE; excluido de workers de código
-        base_url="https://generativelanguage.googleapis.com",
-        model_id="gemini-2.5-flash",
-        litellm_model="gemini/gemini-2.5-flash",
-        api_key_env="GEMINI_API_KEY",
-        rpm_limit=15,
-        context_tokens=1000000,
-    ),
     # 2026-06-28: nvidia_qwen3_coder RETIRADO — prove-it en vivo confirma
     # HTTP 410 Gone: "The model 'qwen/qwen3-coder-480b-a35b-instruct' has
     # reached its end of life on 2026-06-11T00:00:00Z". Estaba MUERTO desde
@@ -407,19 +397,6 @@ DEFAULT_PROVIDERS: list[Provider] = [
     # L2 — NVIDIA NIM (meta/llama-3.3-70b-instruct, pool 2 cuentas). Prove-it 2026-06-22:
     # en este tier responden modelos 70B; 405b/deepseek/nemotron dan 404/410. Aporta
     # 2º proveedor + account_pool/fallback, no un modelo mayor que groq-70b.
-    Provider(
-        name="nvidia_llama_large",
-        level=InferenceLevel.L2,
-        base_url="https://integrate.api.nvidia.com/v1",
-        model_id="meta/llama-3.3-70b-instruct",
-        litellm_model="nvidia_nim/meta/llama-3.3-70b-instruct",
-        api_key_env="NVIDIA_API_KEY",
-        free_tier=False,
-        rpm_limit=30,
-        context_tokens=128000,
-        account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
-        roles=("apply",),  # mecánico, contraparte de pago de groq_llama_70b
-    ),
     # L2 — NVIDIA NIM modelos frontier extra. Mismo account_pool → fallback
     # entre modelos y entre cuentas. mistral-large-2-instruct da 404 en este
     # tier (descartado). nvidia_kimi (moonshotai/kimi-k2.6) RETIRADO
@@ -439,19 +416,6 @@ DEFAULT_PROVIDERS: list[Provider] = [
         context_tokens=128000,
         account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
         roles=("edit",),  # hereda el rol del asiento (métrica propia pendiente de medir)
-    ),
-    Provider(
-        name="nvidia_mistral_large",
-        level=InferenceLevel.L2,
-        base_url="https://integrate.api.nvidia.com/v1",
-        model_id="mistralai/mistral-large-3-675b-instruct-2512",
-        litellm_model="nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512",
-        api_key_env="NVIDIA_API_KEY",
-        free_tier=False,
-        rpm_limit=30,
-        context_tokens=128000,
-        account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
-        roles=("chat",),  # LiveCodeBench débil (0.465) vs Mistral Medium 3.5 — no "edit"
     ),
     # 2026-07-24: fallback de linaje EU para el trío del Cónclave --
     # nvidia_mistral_large (NIM) daba 410 Gone (EOL). Prove-it en vivo real
