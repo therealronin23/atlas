@@ -601,7 +601,8 @@ class InferenceHub:
             return resp.text.encode("utf-8") if resp.success else b""
 
         payload = request.prompt.encode("utf-8")
-        assert self._transparency is not None
+        if self._transparency is None:  # pragma: no cover — caller guarantees gw
+            raise RuntimeError("_transparency no cableado al invocar cosign")
 
         # OSM-042 (Cónclave 2026-07-24): confidence/cause reales desde el
         # drift tripwire cuando hay uno cableado; sin él, 0.0 fijo (idéntico

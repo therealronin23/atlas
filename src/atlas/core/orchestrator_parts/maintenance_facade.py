@@ -1632,7 +1632,8 @@ class MaintenanceFacade:
             import importlib.util
 
             spec = importlib.util.spec_from_file_location("docs_triage", triage_script)
-            assert spec and spec.loader
+            if not spec or not spec.loader:  # pragma: no cover
+                raise RuntimeError(f"No se pudo cargar spec de {triage_script}")
             triage = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(triage)
             plan = [

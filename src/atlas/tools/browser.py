@@ -249,7 +249,8 @@ class BrowserTool:
             self.launch()
 
         start = time.perf_counter()
-        assert self._page is not None
+        if self._page is None:  # pragma: no cover
+            raise RuntimeError("Browser._page es None en navigate")
         try:
             response = self._page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
             status = response.status if response else 0
@@ -289,7 +290,8 @@ class BrowserTool:
         if not self._launched:
             raise RuntimeError("Browser no lanzado. Llama a navigate() primero.")
 
-        assert self._page is not None
+        if self._page is None:  # pragma: no cover
+            raise RuntimeError("Browser._page es None en screenshot")
         ts = int(time.time())
         fname = name or f"screenshot_{ts}"
         path = self._screenshot_dir / f"{fname}.png"
@@ -320,7 +322,8 @@ class BrowserTool:
         if not self._launched:
             raise RuntimeError("Browser no lanzado.")
 
-        assert self._page is not None
+        if self._page is None:  # pragma: no cover
+            raise RuntimeError("Browser._page es None en fill")
         try:
             self._page.fill(selector, value)
             self._log(
@@ -343,7 +346,8 @@ class BrowserTool:
         if not self._launched:
             raise RuntimeError("Browser no lanzado.")
 
-        assert self._page is not None
+        if self._page is None:  # pragma: no cover
+            raise RuntimeError("Browser._page es None en click")
         try:
             self._page.click(selector, timeout=5000)
             self._log("browser.click", "ok", payload={"selector": selector})
@@ -362,7 +366,8 @@ class BrowserTool:
         if not self._launched:
             raise RuntimeError("Browser no lanzado.")
 
-        assert self._page is not None
+        if self._page is None:  # pragma: no cover
+            raise RuntimeError("Browser._page es None en extract")
         text = self._page.inner_text("body") or ""
         title = self._page.title()
         url = self._page.url

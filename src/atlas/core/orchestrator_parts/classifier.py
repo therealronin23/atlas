@@ -61,7 +61,8 @@ class HybridClassifier:
             return rule
 
         slm_classifier = self._slm_getter()
-        assert slm_classifier is not None
+        if slm_classifier is None:  # pragma: no cover — _slm_getter wired at init
+            raise RuntimeError("HybridClassifier: slm_getter devolvió None")
         slm = slm_classifier.classify(intent)
         self._merkle.log(
             action="classify.slm_consulted",

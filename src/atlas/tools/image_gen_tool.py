@@ -91,7 +91,8 @@ class ImageGenTool:
                 success=False, error=error,
             )
 
-        assert out_decision.resolved_path is not None
+        if out_decision.resolved_path is None:  # pragma: no cover
+            raise RuntimeError("image_gen: out_decision.resolved_path es None")
         start = time.perf_counter()
         try:
             image_url, bytes_written = self._call_and_save(

@@ -112,8 +112,10 @@ class StirlingPdfTool:
                 success=False, bytes_written=0, error=error,
             )
 
-        assert in_decision.resolved_path is not None
-        assert out_decision.resolved_path is not None
+        if in_decision.resolved_path is None:  # pragma: no cover
+            raise RuntimeError("stirling_pdf: in_decision.resolved_path es None")
+        if out_decision.resolved_path is None:  # pragma: no cover
+            raise RuntimeError("stirling_pdf: out_decision.resolved_path es None")
         body, boundary = _build_multipart(params, "fileInput", Path(in_decision.resolved_path))
 
         req = urllib.request.Request(

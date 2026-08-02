@@ -126,7 +126,8 @@ class GatedLessonRecorder:
             "avoid_pattern": proposal.avoid_pattern,
             "teacher_id": proposal.teacher_id,
         }
-        assert self._pending_review_path is not None
+        if self._pending_review_path is None:  # pragma: no cover
+            raise RuntimeError("live_loop: _pending_review_path es None")
         self._pending_review_path.parent.mkdir(parents=True, exist_ok=True)
         with self._pending_review_path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")

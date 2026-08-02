@@ -929,7 +929,8 @@ class SqliteMemoryIndex:
             if score > best_score:
                 best_score = score
                 best_id = rid
-        assert best_id is not None
+        if best_id is None:  # pragma: no cover — rows non-empty guarantees a result
+            raise RuntimeError("recall: rows no vacío pero best_id es None")
         result = RecallResult(
             lesson_id=best_id, score=best_score, matched=best_score >= self._threshold
         )

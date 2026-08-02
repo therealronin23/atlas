@@ -221,7 +221,8 @@ class SLMClassifier:
             return SLM_SYSTEM_PROMPT
 
     def _classify_live(self, intent: str) -> SLMClassification:
-        assert self._hub is not None
+        if self._hub is None:  # pragma: no cover — caller wires hub before live classify
+            raise RuntimeError("SLMClassifier._classify_live llamado sin hub cableado")
         request = InferenceRequest(
             prompt=_build_prompt(intent),
             level=InferenceLevel.L1,

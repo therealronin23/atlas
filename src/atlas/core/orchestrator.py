@@ -419,7 +419,8 @@ class Orchestrator:
             if final.status == "clean":
                 return None
 
-            assert final.report is not None
+            if final.report is None:  # pragma: no cover — status != 'clean' implies report
+                raise RuntimeError("Security Council: status no-clean sin report")
             try:
                 record_rejection(council_key, action.kind, gate_artifact[:2000], final.report, registry_path)
             except Exception:  # noqa: BLE001 -- persistir el rechazo no debe tumbar el veredicto

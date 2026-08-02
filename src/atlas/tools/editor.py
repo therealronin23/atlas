@@ -156,7 +156,8 @@ class EditorTool:
     def editor(self) -> EditorInfo:
         if self._editor is None:
             self.detect_editor()
-        assert self._editor is not None
+        if self._editor is None:  # pragma: no cover
+            raise RuntimeError("EditorTool.editor: detect_editor() no encontró editor")
         return self._editor
 
     # ------------------------------------------------------------------

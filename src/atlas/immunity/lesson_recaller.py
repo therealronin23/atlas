@@ -240,7 +240,8 @@ class LessonRecaller:
                 best_score = score
                 best_id = lesson_id
 
-        assert best_id is not None  # _index no vacío → al menos un item
+        if best_id is None:  # pragma: no cover — _index no vacío → al menos un item
+            raise RuntimeError("lesson_recaller: _index no vacío pero best_id es None")
         matched = best_score >= self._threshold
         if matched:
             # Telemetría de USO real (no de cada consulta) — alimenta

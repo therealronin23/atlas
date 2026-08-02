@@ -89,7 +89,8 @@ class VideoGenTool:
                 success=False, error=error,
             )
 
-        assert out_decision.resolved_path is not None
+        if out_decision.resolved_path is None:  # pragma: no cover
+            raise RuntimeError("video_gen: out_decision.resolved_path es None")
         start = time.perf_counter()
         try:
             video_url, bytes_written = self._call_and_save(
