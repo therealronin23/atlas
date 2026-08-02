@@ -64,6 +64,12 @@ def parse_browser_command(action: str, rest: str) -> GateFCommand | None:
                 requires_approval=True,
                 reason="Browser fill mutates page state.",
             )
+    if action == "plan" and rest:
+        return GateFCommand(
+            tool="browser", action="plan", args={"instruction": rest},
+            requires_approval=True,
+            reason="Browser plan proposes and executes web actions autonomously.",
+        )
     return None
 
 
@@ -182,6 +188,16 @@ def parse_vision_command(action: str, rest: str) -> GateFCommand | None:
     return None
 
 
+def parse_terminal_command(action: str, rest: str) -> GateFCommand | None:
+    if action == "plan" and rest:
+        return GateFCommand(
+            tool="terminal", action="plan", args={"instruction": rest},
+            requires_approval=True,
+            reason="Terminal plan executes bash commands autonomously in sandbox.",
+        )
+    return None
+
+
 def parse_gate_f_command(
     intent: str,
     *,
@@ -215,7 +231,7 @@ def parse_gate_f_command(
     if not sep:
         return None
     tool = head.lower()
-    if tool not in {"browser", "editor", "vision", "desktop"}:
+    if tool not in {"browser", "editor", "vision", "desktop", "terminal"}:
         return None
     action, _, rest = tail.strip().partition(" ")
     action = action.lower()
@@ -228,6 +244,8 @@ def parse_gate_f_command(
         )
     if tool == "desktop":
         return parse_desktop_command(action, rest)
+    if tool == "terminal":
+        return parse_terminal_command(action, rest)
     return parse_vision_command(action, rest)
 
 

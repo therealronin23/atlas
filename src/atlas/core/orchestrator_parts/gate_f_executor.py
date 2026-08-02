@@ -76,6 +76,7 @@ class GateFExecutor:
         self._video_gen_tool: Any | None = None
         self._home_assistant_tool: Any | None = None
         self._git_checkpoint_manager: Any | None = None
+        self._terminal_planner: Any | None = None
 
     # ------------------------------------------------------------------ tools
     def attach(
@@ -86,6 +87,7 @@ class GateFExecutor:
         vision_loop: Any | None = None,
         desktop: Any | None = None,
         desktop_planner: Any | None = None,
+        terminal_planner: Any | None = None,
     ) -> None:
         if browser is not None:
             self._browser_tool = browser
@@ -97,6 +99,8 @@ class GateFExecutor:
             self._desktop_tool = desktop
         if desktop_planner is not None:
             self._desktop_planner = desktop_planner
+        if terminal_planner is not None:
+            self._terminal_planner = terminal_planner
 
     def resolve_path(self, value: str) -> Path:
         return _resolve_gate_f_path_fn(self._workspace, value)
@@ -136,6 +140,8 @@ class GateFExecutor:
                 result = self.execute_vision_command(action, args)
             elif tool == "desktop":
                 result = self.execute_desktop_command(action, args, task=task)
+            elif tool == "terminal":
+                result = self.execute_terminal_command(action, args, task=task)
             else:
                 raise RuntimeError(f"Unknown Gate F tool: {tool}")
         except Exception as e:
@@ -312,6 +318,42 @@ class GateFExecutor:
             )
         }
 
+    def execute_terminal_command(
+        self, action: str, args: dict[str, Any], *, task: Task
+    ) -> dict[str, Any]:
+        if action != "plan":
+            raise RuntimeError(f"Unsupported terminal action: {action}")
+            
+        planner = self.get_terminal_planner()
+        inst = str(args.get("instruction", ""))
+        obs = ""
+        history = []
+        for i in range(10):
+            step = planner.plan(inst, obs)
+            if step.kind == "stop":
+                history.append({"kind": "stop", "reason": step.reason})
+                break
+            if step.kind == "run_bash":
+                cmd = step.script or ""
+                self._merkle.log(
+                    action="terminal.plan_step",
+                    agent="terminal_planner",
+                    result="success",
+                    risk_level="high",
+                    payload={"cmd": cmd},
+                    task_id=task.id,
+                )
+                from atlas.security.sandbox import SandboxResult
+                res: SandboxResult = self._executor.execute_exec(cmd, task.id)
+                obs = f"Exit: {res.exit_code}\nOut:\n{res.stdout}\nErr:\n{res.stderr}"
+                history.append({
+                    "kind": "run_bash", 
+                    "script": cmd, 
+                    "reason": step.reason, 
+                    "exit_code": res.exit_code
+                })
+        return {"plan_result": history}
+
     def get_desktop_planner(self) -> Any:
         if self._desktop_planner is None:
             hub = self._inference_hub_get() if self._inference_hub_get is not None else None
@@ -414,6 +456,14 @@ class GateFExecutor:
         if not validation.valid:
             task.error = "; ".join(validation.reasons)
         return result
+
+    def get_terminal_planner(self) -> Any:
+        if self._terminal_planner is None:
+            if self._inference_hub_get is None:
+                raise RuntimeError("TerminalPlanner no configurado.")
+            from atlas.tools.terminal_planner import TerminalPlanner
+            self._terminal_planner = TerminalPlanner(hub=self._inference_hub_get())
+        return self._terminal_planner
 
     # ------------------------------------------------------------------ lazy tools
     def get_browser_tool(self) -> Any:
