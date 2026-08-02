@@ -152,7 +152,12 @@ class VideoGenTool:
             return base64.b64decode(b64)
         req = urllib.request.Request(url, method="GET")
         with urllib.request.urlopen(req, timeout=self._timeout_s) as resp:
-            data: bytes = resp.read()
+            _MAX_VIDEO_BYTES = 500 * 1024 * 1024  # 500 MB cap
+            data: bytes = resp.read(_MAX_VIDEO_BYTES + 1)
+            if len(data) > _MAX_VIDEO_BYTES:
+                raise RuntimeError(
+                    f"video download excede {_MAX_VIDEO_BYTES} bytes, abortado"
+                )
             return data
 
     def _log(

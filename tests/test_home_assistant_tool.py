@@ -22,8 +22,8 @@ class _FakeResponse:
     def __init__(self, payload: object) -> None:
         self._data = json.dumps(payload).encode("utf-8")
 
-    def read(self) -> bytes:
-        return self._data
+    def read(self, size: int | None = None) -> bytes:
+        return self._data if size is None else self._data[:size]
 
     def __enter__(self) -> "_FakeResponse":
         return self

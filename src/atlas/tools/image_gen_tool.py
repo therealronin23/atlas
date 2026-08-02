@@ -160,7 +160,14 @@ class ImageGenTool:
             return base64.b64decode(b64)
         req = urllib.request.Request(url, method="GET")
         with urllib.request.urlopen(req, timeout=self._timeout_s) as resp:
-            data: bytes = resp.read()
+            # Hard cap: 100 MB — protege contra un endpoint que devuelva
+            # una respuesta desmesurada (OOM / DoS).
+            _MAX_DOWNLOAD = 100 * 1024 * 1024
+            data: bytes = resp.read(_MAX_DOWNLOAD + 1)
+            if len(data) > _MAX_DOWNLOAD:
+                raise RuntimeError(
+                    f"image download excede {_MAX_DOWNLOAD} bytes, abortado"
+                )
             return data
 
     def _log(

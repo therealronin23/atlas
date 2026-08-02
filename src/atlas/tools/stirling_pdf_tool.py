@@ -132,7 +132,12 @@ class StirlingPdfTool:
         try:
             with urllib.request.urlopen(req, timeout=self._timeout_s) as resp:
                 status = resp.status
-                data = resp.read()
+                _MAX_PDF_BYTES = 100 * 1024 * 1024  # 100 MB cap
+                data = resp.read(_MAX_PDF_BYTES + 1)
+                if len(data) > _MAX_PDF_BYTES:
+                    raise RuntimeError(
+                        f"respuesta Stirling excede {_MAX_PDF_BYTES} bytes"
+                    )
         except urllib.error.HTTPError as exc:
             error = f"HTTP {exc.code}: {exc.read()[:300].decode('utf-8', 'replace')}"
             self._log(

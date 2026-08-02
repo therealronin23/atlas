@@ -178,7 +178,9 @@ class HomeAssistantTool:
         start = time.perf_counter()
         try:
             with urllib.request.urlopen(req, timeout=self._timeout_s) as resp:
-                raw = json.loads(resp.read().decode("utf-8") or "null")
+                _MAX_HA_BYTES = 10 * 1024 * 1024  # 10 MB cap para API JSON
+                raw_bytes = resp.read(_MAX_HA_BYTES)
+                raw = json.loads(raw_bytes.decode("utf-8") or "null")
         except urllib.error.HTTPError as exc:
             error = f"HTTP {exc.code}: {exc.read()[:300].decode('utf-8', 'replace')}"
             self._log("home_assistant.request", "failed", risk_level="moderate",

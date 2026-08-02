@@ -30,8 +30,8 @@ class _FakeResponse:
         self.status = status
         self._data = data
 
-    def read(self) -> bytes:
-        return self._data
+    def read(self, size: int | None = None) -> bytes:
+        return self._data if size is None else self._data[:size]
 
     def __enter__(self) -> "_FakeResponse":
         return self
