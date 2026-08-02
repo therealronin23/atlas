@@ -34,6 +34,7 @@ __all__ = [
     "build_import_graph_at_commit",
     "build_bitemporal_graph",
     "load_bitemporal_into_kuzu",
+    "open_kuzu_database",
     "QUERIES",
 ]
 
