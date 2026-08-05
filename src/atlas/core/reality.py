@@ -200,9 +200,46 @@ def _repo_state(root: Path) -> dict[str, Any]:
     }
 
 
+#: A partir de cuántas horas sin escribir se considera parado el rastro de
+#: auditoría. MEDIDO, no inventado: sobre las últimas 6000 entradas del log
+#: real (desde 2026-08-02) el hueco mediano entre escrituras es ~0 min, el p99
+#: son 0,4 h y el mayor hueco observado son 1,7 h. 6 h es 3,5x ese peor caso:
+#: no grita en una tarde tranquila y se entera el mismo día de que el escritor
+#: murió.
+MERKLE_STALE_AFTER_HOURS = 6.0
+
+
+def _merkle_last_entry_at(log_path: Path) -> str | None:
+    """Timestamp de la última entrada, leyendo sólo la cola del fichero — el
+    log real pasa de 12 MB y esto corre en cada `atlas reality`."""
+    try:
+        with log_path.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = handle.tell()
+            window = min(size, 8192)
+            handle.seek(size - window)
+            tail = handle.read(window).decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in reversed(tail.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            stamp = json.loads(line).get("timestamp")
+        except json.JSONDecodeError:
+            continue
+        if isinstance(stamp, str):
+            return stamp
+    return None
+
+
 def _workspace_state(workspace: Path) -> dict[str, Any]:
     audit = workspace / "memory" / "audit"
-    merkle: dict[str, Any] = {"status": "unknown", "record_count": None, "reason": "audit dir absent"}
+    merkle: dict[str, Any] = {
+        "status": "unknown", "record_count": None, "reason": "audit dir absent",
+        "last_entry_at": None, "age_hours": None, "stale": None,
+    }
     if audit.exists():
         try:
             from atlas.logging.merkle_logger import MerkleLogger
@@ -213,9 +250,37 @@ def _workspace_state(workspace: Path) -> dict[str, Any]:
                 "status": "ok" if ok else "corrupt",
                 "record_count": logger.record_count,
                 "reason": msg,
+                "last_entry_at": None, "age_hours": None, "stale": None,
             }
+            # `verify_chain` sólo dice que los hashes encadenan. Una cadena
+            # abandonada hace semanas encadena perfectamente y salía "ok" —
+            # la misma ceguera que dejó al daemon muerto 23 h: integridad
+            # medida, presente no.
+            stamp = _merkle_last_entry_at(audit / "merkle.jsonl")
+            if stamp:
+                merkle["last_entry_at"] = stamp
+                try:
+                    last = datetime.fromisoformat(stamp)
+                    if last.tzinfo is None:
+                        last = last.replace(tzinfo=timezone.utc)
+                    age = (datetime.now(timezone.utc) - last).total_seconds() / 3600
+                    merkle["age_hours"] = round(age, 2)
+                    merkle["stale"] = age > MERKLE_STALE_AFTER_HOURS
+                    if merkle["stale"] and merkle["status"] == "ok":
+                        # Una cadena ROTA es peor noticia que una parada: sólo
+                        # se degrada a "stale" lo que por lo demás estaba bien.
+                        merkle["status"] = "stale"
+                        merkle["reason"] = (
+                            f"cadena íntegra pero sin escribir desde hace {age:.1f} h "
+                            f"(umbral {MERKLE_STALE_AFTER_HOURS} h)"
+                        )
+                except ValueError:
+                    pass
         except Exception as exc:  # noqa: BLE001
-            merkle = {"status": "error", "record_count": None, "reason": type(exc).__name__}
+            merkle = {
+                "status": "error", "record_count": None, "reason": type(exc).__name__,
+                "last_entry_at": None, "age_hours": None, "stale": None,
+            }
     return {"path": str(workspace), "exists": workspace.exists(), "merkle": merkle}
 
 
@@ -1130,7 +1195,9 @@ def _overall_status(report: dict[str, Any]) -> str:
     if docs.get("status") == "stale":
         return "degraded"
     merkle = report.get("workspace", {}).get("merkle", {})
-    if merkle.get("status") == "corrupt":
+    if merkle.get("status") in ("corrupt", "stale"):
+        # `stale` es la otra mitad del mismo problema: un rastro de auditoría
+        # que dejó de escribirse no protege nada, aunque sus hashes encadenen.
         return "degraded"
     # Sin esto, medir el daemon no serviría de nada: la cabecera imprime
     # "Atlas reality — OK" en grande, y durante las 23 h de apagón lo habría
