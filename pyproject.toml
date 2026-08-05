@@ -8,15 +8,23 @@ version = "0.12.0"
 description = "Atlas Core — Sovereign local multi-agent operating system"
 requires-python = ">=3.11"
 dependencies = [
-    "click>=8.4.1",
+    "click>=8.4.2",
     "rich>=15.0.0",
     "fastapi>=0.136.3",
     "uvicorn[standard]>=0.49.0",
     "pydantic>=2.13.4",
     "pyyaml>=6.0.3",
-    "cryptography>=49.0.0",
+    # Suelo subido de 49.0.0 el 2026-08-05: PYSEC-2026-3552. Ojo, el suelo
+    # viejo ya PERMITÍA 50.0.0 — el CVE seguía abierto porque nadie subió la
+    # versión instalada, no porque la restricción lo impidiera.
+    "cryptography>=50.0.0",
     "litellm>=1.89.0",
     "kuzu>=0.11.3",
+    # Transitiva vía litellm (que sólo pide >=3.10,<4.0), fijada aquí como
+    # SUELO DE SEGURIDAD: PYSEC-2026-3545/3546/3547. Sin este suelo, una
+    # instalación limpia vuelve a traer la versión vulnerable y el gate
+    # CVE-HITL vuelve a apagar el lazo de autoconstrucción.
+    "aiohttp>=3.14.3",
 ]
 
 [project.optional-dependencies]
