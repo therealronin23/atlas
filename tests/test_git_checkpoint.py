@@ -45,6 +45,11 @@ def manager() -> GitCheckpointManager:
     return GitCheckpointManager()
 
 
+@pytest.fixture
+def manager_capped() -> GitCheckpointManager:
+    return GitCheckpointManager(max_snapshots=3)
+
+
 class TestVerification:
     def test_non_git_directory_raises(self, tmp_path: Path, manager: GitCheckpointManager) -> None:
         not_a_repo = tmp_path / "not_a_repo"
@@ -132,45 +137,69 @@ class TestIsEphemeralWorktree:
 
 
 class TestGpgSignIsolation:
-    """2026-08-01 — absorbido de Hermes tras la auditoría comparativa: su
-    checkpoint_manager fuerza GIT_CONFIG_GLOBAL/SYSTEM=/dev/null y desactiva
-    gpg signing explícitamente, citando que un `commit.gpgsign=true` heredado
-    dispara un prompt de pinentry GUI en cada escritura. Atlas corre como
-    daemon sin terminal: ese prompt no cuelga solo esa llamada, cuelga el
-    proceso entero esperando una GUI que nunca vendrá.
+    """2026-08-05 — absorbido de Hermes tras la auditoría comparativa: su
+    checkpoint_manager desactiva gpg signing explícitamente, citando que un
+    `commit.gpgsign=true` heredado dispara un prompt de pinentry GUI en cada
+    escritura. Atlas corre como daemon sin terminal: ese prompt no cuelga
+    solo esa llamada, cuelga el proceso entero esperando una GUI que nunca
+    vendrá.
 
-    Alcance deliberadamente más estrecho que Hermes: sólo se desactiva GPG
-    signing vía flags de git (`-c commit.gpgsign=false`), no se anula TODO
-    el config global -- las operaciones de checkpoint (stash/commit/reset/
-    clean) no dependen de red ni credenciales, así que no hay necesidad de
-    aislar más que el gatillo real del cuelgue."""
+    HECHO MEDIDO (git 2.43, no asumido de la documentación) que acota el
+    alcance real: `git stash push` **NO** honra `commit.gpgsign` -- con
+    `-c commit.gpgsign=true -c user.signingkey=<inexistente>` el stash
+    devuelve 0 mientras `git commit` falla con "gpg failed to sign the data".
+    Como HOY este módulo sólo crea refs vía stash, la firma no puede colgarlo
+    todavía: el aislamiento es un seguro barato contra el día en que alguien
+    añada un camino que sí commitee (p.ej. kind='commit' escribiendo, no sólo
+    leyendo HEAD). Por eso el test NO puede ser "checkpoint() no se cuelga"
+    -- eso pasa en verde sin ninguna bandera y no prueba nada. Se prueba el
+    MECANISMO: que la bandera llega a git y gana sobre el config heredado.
 
-    def test_a_global_gpgsign_config_does_not_hang_checkpoint(
-        self, real_repo: Path, manager: GitCheckpointManager, tmp_path: Path
+    Alcance deliberadamente más estrecho que Hermes: sólo se desactivan
+    `commit.gpgsign`/`tag.gpgsign` vía flags `-c`, no se anula TODO el config
+    global -- las operaciones de checkpoint (stash/reset/clean/checkout) no
+    dependen de red ni credenciales, así que no hay necesidad de aislar más
+    que el gatillo real del cuelgue."""
+
+    def test_run_git_disables_gpgsign_over_an_inherited_global_config(
+        self, real_repo: Path, manager: GitCheckpointManager,
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # commit.gpgsign=true con un signingkey inexistente falla RÁPIDO en
-        # vez de colgarse (gpg real sin key -> error inmediato) -- suficiente
-        # para probar que el flag de aislamiento gana sobre el config
-        # heredado sin depender de un pinentry real en el entorno de test.
+        fake_global = tmp_path / "fake_gitconfig_global"
+        fake_global.write_text(
+            "[commit]\n\tgpgsign = true\n[tag]\n\tgpgsign = true\n"
+            "[user]\n\tsigningkey = DEADBEEF00000000\n"
+        )
+        monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(fake_global))
+        monkeypatch.setenv("GIT_CONFIG_SYSTEM", "/dev/null")
+
+        # Supuesto de partida REAL: sin aislamiento, git sí ve el global.
+        assert _git(real_repo, "config", "--get", "commit.gpgsign") == "true"
+
+        # El mismo `git config --get`, pero corrido por el manager: la
+        # bandera de aislamiento tiene que ganar.
+        assert manager._run_git(real_repo, "config", "--get", "commit.gpgsign") == "false"
+        assert manager._run_git(real_repo, "config", "--get", "tag.gpgsign") == "false"
+
+    def test_a_global_gpgsign_config_does_not_break_checkpoint(
+        self, real_repo: Path, manager: GitCheckpointManager,
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Extremo a extremo, con el config hostil puesto: el checkpoint sale
+        igual. Hoy pasaría sin banderas (stash no firma); su valor es de
+        REGRESIÓN -- si mañana el camino de checkpoint pasa a commitear de
+        verdad, este test cae junto con el de arriba en vez de en producción."""
         fake_global = tmp_path / "fake_gitconfig_global"
         fake_global.write_text(
             "[commit]\n\tgpgsign = true\n[user]\n\tsigningkey = DEADBEEF00000000\n"
         )
-        import os
-        env = dict(os.environ)
-        env["GIT_CONFIG_GLOBAL"] = str(fake_global)
-        env["GIT_CONFIG_SYSTEM"] = "/dev/null"
+        monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(fake_global))
+        monkeypatch.setenv("GIT_CONFIG_SYSTEM", "/dev/null")
 
         (real_repo / "file.txt").write_text("v2\n")
-        import subprocess as sp
-        result = sp.run(
-            ["python3", "-c",
-             "from pathlib import Path; from atlas.core.git_checkpoint import GitCheckpointManager; "
-             f"GitCheckpointManager().checkpoint(Path({str(real_repo)!r}), run_count=1)"],
-            env={**env, "PYTHONPATH": "src"}, capture_output=True, text=True, timeout=15,
-            cwd=Path(__file__).resolve().parents[1],
-        )
-        assert result.returncode == 0, f"stdout={result.stdout}\nstderr={result.stderr}"
+        entry = manager.checkpoint(real_repo, run_count=1)
+        assert entry.kind == "stash"
+        assert (real_repo / "file.txt").read_text() == "v2\n"
 
 
 class TestPreRollbackSafetySnapshot:
@@ -284,6 +313,51 @@ class TestRetention:
         dropped = manager.prune(real_repo, max_snapshots=20)
 
         assert dropped == 0
+
+
+class TestRetentionIsStructural:
+    """2026-08-05 — `prune()` existía con CERO callers de producción (grep
+    verificado): un cap que nadie invoca no es un cap. En vez de inventar un
+    caller externo que alguien pueda olvidar, el tope se aplica DENTRO de
+    `checkpoint()`: cada checkpoint nuevo hace cumplir el límite. Es la misma
+    disciplina que ADC-WO-108 — tests en verde no son evidencia de cableado."""
+
+    def test_checkpoint_enforces_the_cap_without_an_external_caller(
+        self, real_repo: Path
+    ) -> None:
+        manager = GitCheckpointManager(max_snapshots=3)
+        for i in range(6):
+            (real_repo / "file.txt").write_text(f"turno{i}\n")
+            manager.checkpoint(real_repo, run_count=i)
+
+        remaining = _git(real_repo, "stash", "list")
+        assert remaining.count("atlas-checkpoint-run-") == 3
+
+    def test_the_checkpoint_just_created_is_never_the_one_pruned(
+        self, real_repo: Path, manager_capped: GitCheckpointManager
+    ) -> None:
+        last = None
+        for i in range(6):
+            (real_repo / "file.txt").write_text(f"turno{i}\n")
+            last = manager_capped.checkpoint(real_repo, run_count=i)
+
+        assert last is not None
+        # El ref recién devuelto tiene que seguir resolviendo: devolver una
+        # entrada que el propio checkpoint acaba de descartar sería peor que
+        # no tener cap.
+        assert _git(real_repo, "cat-file", "-t", last.ref) == "commit"
+
+    def test_default_cap_is_generous_enough_not_to_surprise(
+        self, real_repo: Path, manager: GitCheckpointManager
+    ) -> None:
+        # El fixture `manager` no pasa max_snapshots: 5 turnos no deben
+        # perder nada (los tests previos de retención dependen de esto).
+        for i in range(5):
+            (real_repo / "file.txt").write_text(f"turno{i}\n")
+            manager.checkpoint(real_repo, run_count=i)
+
+        remaining = _git(real_repo, "stash", "list")
+        assert remaining.count("atlas-checkpoint-run-") == 5
 
 
 class TestMerkleAudit:

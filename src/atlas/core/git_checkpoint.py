@@ -86,12 +86,34 @@ class GitCheckpointManager:
     resultado final al repo real (ver `_sync_sandbox_back` en tool_coder.py).
     """
 
-    def __init__(self, merkle: MerkleLogger | None = None) -> None:
+    #: Tope de checkpoints tipo stash vivos por worktree. Generoso a
+    #: propósito: una tarea normal no lo roza, y perder un checkpoint que el
+    #: operador todavía quería sería peor que gastar unos stashes de más.
+    DEFAULT_MAX_SNAPSHOTS = 20
+
+    def __init__(
+        self, merkle: MerkleLogger | None = None, *, max_snapshots: int | None = None,
+    ) -> None:
         self._merkle = merkle
+        self._max_snapshots = (
+            self.DEFAULT_MAX_SNAPSHOTS if max_snapshots is None else max_snapshots
+        )
+
+    #: Banderas de aislamiento aplicadas a TODA invocación de git de este
+    #: módulo. Absorbido de Hermes (su checkpoint_manager hace lo mismo, más
+    #: agresivo): un `commit.gpgsign=true` heredado del config global del
+    #: operador dispara un prompt de pinentry GUI, y Atlas corre como daemon
+    #: sin terminal -- ese prompt no cuelga la llamada, cuelga el proceso.
+    #: Medido en git 2.43: `git stash push` NO firma (sólo `git commit` lo
+    #: hace), así que hoy esto es un seguro barato, no un fix de un cuelgue
+    #: en curso. Deliberadamente más estrecho que Hermes (que anula
+    #: GIT_CONFIG_GLOBAL/SYSTEM enteros): stash/reset/clean/checkout no usan
+    #: red ni credenciales, no hay más gatillo que aislar.
+    _ISOLATION_FLAGS = ("-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false")
 
     def _run_git(self, repo_path: Path, *args: str) -> str:
         result = subprocess.run(
-            ["git", "-C", str(repo_path), *args],
+            ["git", *self._ISOLATION_FLAGS, "-C", str(repo_path), *args],
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
@@ -148,7 +170,28 @@ class GitCheckpointManager:
         )
         self._log("git_checkpoint.checkpoint", "ok", risk_level="safe",
                    payload={"repo_path": str(repo_path), "run_count": run_count, "ref": ref})
+        # El tope se aplica AQUÍ, no en un caller externo: un cap que alguien
+        # tiene que acordarse de invocar no es un cap (`prune()` vivió con
+        # cero callers hasta 2026-08-05). Se descartan los MÁS ANTIGUOS, así
+        # que la entrada que acabamos de devolver nunca es la sacrificada.
+        self._enforce_retention(repo_path)
         return entry
+
+    def _enforce_retention(self, repo_path: Path) -> None:
+        if self._max_snapshots <= 0:
+            return
+        try:
+            dropped = self.prune(repo_path, self._max_snapshots)
+        except GitCheckpointError as exc:
+            # La retención es higiene, no la operación pedida: que falle no
+            # puede invalidar un checkpoint ya grabado con éxito.
+            self._log("git_checkpoint.prune", "failed", risk_level="safe",
+                       payload={"repo_path": str(repo_path), "error": str(exc)})
+            return
+        if dropped:
+            self._log("git_checkpoint.prune", "ok", risk_level="safe",
+                       payload={"repo_path": str(repo_path), "dropped": dropped,
+                                "max_snapshots": self._max_snapshots})
 
     def restore(self, repo_path: Path, checkpoint: CheckpointEntry) -> CheckpointEntry:
         """DESTRUCTIVO — borra todo lo no checkpointeado en repo_path.
@@ -203,14 +246,14 @@ class GitCheckpointManager:
         output = self._run_git(repo_path, "stash", "list")
         stashes = output.splitlines() if output else []
         atlas_stashes = [s for s in stashes if "atlas-checkpoint-run-" in s]
-        
+
         dropped = 0
         while len(atlas_stashes) > max_snapshots:
             oldest = atlas_stashes.pop()
             stash_ref = oldest.split(":")[0].strip()
             self._run_git(repo_path, "stash", "drop", stash_ref)
             dropped += 1
-            
+
         return dropped
 
     def _log(
