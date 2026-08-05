@@ -227,6 +227,132 @@ def test_never_auto_approved_even_if_added_to_allowlist(
 # ===========================================================================
 
 
+def _restore_file_call(repo_path: Path, ref: str, run_count: int, kind: str, path: str) -> dict:
+    return {
+        "id": "m2",
+        "name": "git_checkpoint_restore_file",
+        "arguments": json.dumps({
+            "repo_path": str(repo_path), "ref": ref,
+            "run_count": run_count, "kind": kind, "path": path,
+        }),
+    }
+
+
+# ===========================================================================
+# restore_file — la alternativa NO destructiva, con la asimetría deliberada
+# ===========================================================================
+
+
+class TestRestoreFileWiring:
+    """2026-08-05 — `restore_file()` se añadió (absorción de Hermes) con CERO
+    callers de producción. Se cablea con el MISMO patrón que `restore()` pero
+    con una asimetría deliberada, que es justo lo que se prueba aquí:
+
+      - `restore()` es `critical` y queda EXCLUIDA incondicionalmente de la
+        auto-aprobación: borra todo lo no checkpointeado.
+      - `restore_file()` es `moderate`: toca UN fichero pedido y no borra
+        nada más. Sigue siendo `mutate` (suspende por defecto), pero SÍ puede
+        auto-aprobarse si el operador la mete en la allowlist de ADR-033.
+
+    Copiar la exclusión incondicional a las dos habría sido más "seguro" en
+    apariencia y más pobre en realidad: el operador pierde la herramienta
+    quirúrgica y se queda sólo con la destructiva. La guarda estructural de
+    worktree efímero sí se mantiene idéntica en ambas."""
+
+    def test_restore_file_recovers_one_file_and_leaves_the_rest(
+        self, orch: Orchestrator, worktree: Path,
+    ) -> None:
+        manager = GitCheckpointManager()
+        (worktree / "file.txt").write_text("v2 -- el bueno\n")
+        cp = manager.checkpoint(worktree, run_count=1)
+
+        (worktree / "file.txt").write_text("v3 -- el que se deshace\n")
+        (worktree / "otro.py").write_text("esto NO se debe perder\n")
+
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _restore_file_call(worktree, cp.ref, cp.run_count, cp.kind, "file.txt"),
+            ]),
+            _resp(text="Recuperado solo file.txt."),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("recupera solo file.txt del checkpoint anterior")
+
+        assert task.status == TaskStatus.AWAITING_APPROVAL
+        orch.approve_pending(task.id, True)
+
+        assert (worktree / "file.txt").read_text() == "v2 -- el bueno\n"
+        assert (worktree / "otro.py").exists(), "restore_file no debe barrer el worktree"
+
+        entries = [
+            r for r in orch._merkle.tail(60)
+            if r.action == "git_checkpoint.restore_file" and r.result == "ok"
+        ]
+        assert entries, "no se encontró git_checkpoint.restore_file en Merkle"
+        assert entries[0].risk_level == "moderate"
+
+    def test_restore_file_is_mutate_so_it_suspends_by_default(
+        self, orch: Orchestrator, worktree: Path,
+    ) -> None:
+        from atlas.core.orchestrator_parts.agentic_helpers import (
+            AGENTIC_MUTATING_TOOLS,
+            tool_kind,
+        )
+
+        assert "git_checkpoint_restore_file" in AGENTIC_MUTATING_TOOLS
+        assert tool_kind("git_checkpoint_restore_file") == "mutate"
+
+    def test_restore_file_CAN_be_auto_approved_unlike_restore(
+        self, orch: Orchestrator, worktree: Path,
+    ) -> None:
+        manager = GitCheckpointManager()
+        (worktree / "file.txt").write_text("v2\n")
+        cp = manager.checkpoint(worktree, run_count=1)
+        (worktree / "file.txt").write_text("v3\n")
+
+        orch.set_agentic_auto_approve({"git_checkpoint_restore_file"})
+
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _restore_file_call(worktree, cp.ref, cp.run_count, cp.kind, "file.txt"),
+            ]),
+            _resp(text="Hecho inline."),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("recupera file.txt")
+
+        # A diferencia de restore(): corre inline, sin suspender.
+        assert task.status == TaskStatus.DONE
+        assert (worktree / "file.txt").read_text() == "v2\n"
+
+    def test_restore_file_rejected_on_main_checkout_not_a_worktree(
+        self, orch: Orchestrator, main_repo: Path,
+    ) -> None:
+        manager = GitCheckpointManager()
+        (main_repo / "file.txt").write_text("v2 en el repo real\n")
+        cp = manager.checkpoint(main_repo, run_count=1)
+        (main_repo / "file.txt").write_text("v3 en el repo real\n")
+
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _restore_file_call(main_repo, cp.ref, cp.run_count, cp.kind, "file.txt"),
+            ]),
+            _resp(text="No se pudo: no es un worktree efimero."),
+        ])
+        orch.enable_gate_d_pipeline(inference_hub=hub)
+        task = orch.handle_intent("recupera file.txt")
+        assert task.status == TaskStatus.AWAITING_APPROVAL
+
+        orch.approve_pending(task.id, True)  # el humano aprueba; la guarda manda
+
+        assert (main_repo / "file.txt").read_text() == "v3 en el repo real\n"
+        assert not any(
+            r.action == "git_checkpoint.restore_file" for r in orch._merkle.tail(60)
+        )
+        tool_msgs = [m for m in hub.calls[1].messages if m["role"] == "tool"]
+        assert any("no es un worktree efimero" in m["content"] for m in tool_msgs)
+
+
 def test_restore_rejected_on_main_checkout_not_a_worktree(
     orch: Orchestrator, main_repo: Path,
 ) -> None:

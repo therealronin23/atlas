@@ -664,6 +664,55 @@ class GateFExecutor:
             return {"repo_path": repo_path, "ref": ref, "success": False, "error": str(exc)}
         return {"repo_path": repo_path, "ref": ref, "run_count": run_count, "success": True, "error": None}
 
+    def run_git_checkpoint_restore_file(
+        self, repo_path: str, ref: str, run_count: int, kind: str, path: str,
+    ) -> dict[str, Any]:
+        """2026-08-05 — variante NO destructiva de la anterior: recupera un
+        solo fichero (`git checkout <ref> -- <path>`) sin barrer el worktree.
+        La guarda estructural es IDÉNTICA a la de `restore()` (nunca sobre el
+        checkout git real) porque escribir en el repo principal sigue siendo
+        inaceptable aunque el alcance sea un fichero; lo que cambia respecto
+        a `restore()` es el riesgo auditado ("moderate") y que sí admite
+        auto-aprobación por la allowlist de ADR-033."""
+        from atlas.core.git_checkpoint import (  # noqa: PLC0415
+            CheckpointEntry,
+            GitCheckpointError,
+            is_ephemeral_worktree,
+        )
+
+        target = Path(repo_path)
+        base = {"repo_path": repo_path, "ref": ref, "path": path}
+        if not is_ephemeral_worktree(target):
+            return {
+                **base, "success": False,
+                "error": (
+                    f"{repo_path} no es un worktree efimero (.git no es un "
+                    "fichero) - restore_file() nunca opera sobre el checkout git real."
+                ),
+            }
+        if kind not in ("commit", "stash"):
+            return {
+                **base, "success": False,
+                "error": f"kind invalido {kind!r}: debe ser 'commit' o 'stash'",
+            }
+        if not path or Path(path).is_absolute() or ".." in Path(path).parts:
+            return {
+                **base, "success": False,
+                "error": (
+                    f"path invalido {path!r}: debe ser relativo a la raiz del "
+                    "worktree y sin '..' (no puede escribir fuera del worktree)."
+                ),
+            }
+        checkpoint = CheckpointEntry(
+            ref=ref, run_count=run_count, kind=kind,  # type: ignore[arg-type]
+            created_at="",
+        )
+        try:
+            self.get_git_checkpoint_manager().restore_file(target, checkpoint, path)
+        except GitCheckpointError as exc:
+            return {**base, "success": False, "error": str(exc)}
+        return {**base, "run_count": run_count, "success": True, "error": None}
+
     def run_read_external_file(self, path: str) -> dict[str, Any]:
         decision = self.get_fs_bridge_tool().check(path)
         if not decision.allowed:

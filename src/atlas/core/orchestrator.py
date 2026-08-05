@@ -2004,6 +2004,13 @@ class Orchestrator:
     ) -> dict[str, Any]:
         return self._gate_f_exec.run_git_checkpoint_restore(repo_path, ref, run_count, kind)
 
+    def _run_git_checkpoint_restore_file(
+        self, repo_path: str, ref: str, run_count: int, kind: str, path: str,
+    ) -> dict[str, Any]:
+        return self._gate_f_exec.run_git_checkpoint_restore_file(
+            repo_path, ref, run_count, kind, path,
+        )
+
     def _get_editor_tool(self) -> Any:
         return self._gate_f_exec.get_editor_tool()
 
