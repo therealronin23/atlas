@@ -8,6 +8,52 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-05 (¿es el código de Atlas incompleto o vago?) — medido con la
+  misma vara que Hermes: NO lo es, pero el desfase de 10,4x es real y el
+  riesgo está en otro sitio.**
+  **La pregunta del operador**: Atlas tiene mucho menos código que Hermes
+  siendo más pretencioso; ¿es el suyo incompleto, poco funcional o vago, en
+  todo el proyecto y no en una zona concreta?
+  **La vara**: medido por AST, no por `wc -l`. Densidad código/líneas 40% en
+  Atlas y 42% en Hermes — casi idéntica, así que la hipótesis de que Atlas
+  estaba inflado de docstrings era FALSA y el desfase de sentencias reales
+  (32.476 vs 336.563) es genuino.
+  **La respuesta, medida**: stubs 0,6% (20) vs 0,2% (47); TODO/FIXME 7 vs 11;
+  mediana de sentencias por función 3 en AMBOS; p90 8 vs 11; función más
+  grande 73 vs 314; fichero más grande 2.764 líneas vs 25.811. El radar
+  propio da 3 módulos sin dueño de 349, y los tres son de trabajo sin
+  commitear. Y el dato que más pesa: **2,88 líneas de test por línea de
+  producción en Atlas frente a 0,78 en Hermes** — 3,7x más verificado por
+  unidad. El desfase es de ALCANCE, no de calidad.
+  **La ineficiencia que sí hay**: 31% de las funciones de Atlas son de una
+  sentencia y 10% (354) son delegadores puros, frente a 21%/4% en Hermes. Es
+  el peaje del refactor del god-object. No es podredumbre, pero es 1 de cada
+  10 funciones que no hace trabajo.
+  **Dónde está el riesgo de verdad, y por qué el recuento de líneas no lo
+  ve**: los tres defectos encontrados hoy —test en verde que no probaba nada,
+  dos métodos con 0 callers, gate que mataba la inferencia L1/L2— no eran
+  código fino. Los tres estaban en FRONTERAS. Inventario por AST: 83 puntos
+  de spawn en 39 ficheros, 44 sin `timeout=`; ninguna operación git de red
+  (los 55 sitios de git son locales, acotados por `index.lock`). Cuatro
+  cuelgan de verdad y quedan cerrados (`80c6e7e`): el gate de presupuesto en
+  cada inferencia, los endpoints HTTP que retenían un worker de FastAPI, el
+  lazo de evolución corriendo `test_cmd` sin tope, y `patch(1)` sin stdin
+  cerrado —cuelgue REPRODUCIDO, no supuesto, y encima en el camino de
+  reversión—. 44/83 → 37/81.
+  **LSP cerrado como extracción, no absorción** (`f90fe22`): el de Hermes usa
+  sólo diagnósticos, así que se extrajo su valor (`fast_precheck`, ~120 loc
+  frente a 4.704) y se cableó donde el desperdicio era mayor: un candidato
+  que no parsea costaba hasta 562 s de suite para acabar en 0.0; ahora ~0 ms.
+  La otra mitad —diagnósticos no-Python— NO se construye: no hay a qué
+  apuntarla todavía (1 fichero no-Python en el repo).
+  **Cónclave PARADO por el operador** ("se está convirtiendo en un
+  bloqueante"). Diagnóstico final: el problema no es el tope sino el plantel
+  — con el tope subido de 120 s a 420 s, `mistral_large` y `qwen3` siguen sin
+  terminar sobre un dossier real de 4.782 chars, y los dos NVIDIA se cuelgan
+  sin dar error nunca. Sólo 2 de 5 asientos contestan. Tres salidas anotadas;
+  la decisión es del operador y hasta entonces el Cónclave no se usa para
+  desbloquear nada.
+
 - **2026-08-05 (apagón silencioso) — el gate de presupuesto T5.3 mataba TODA
   la inferencia L1/L2, y el único síntoma era un Cónclave que opinaba con un
   asiento.**
