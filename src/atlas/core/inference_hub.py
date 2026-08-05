@@ -28,6 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
@@ -271,6 +272,34 @@ class InferenceResponse:
     error_kind: str | None = None
     retry_after_s: float | None = None
     retryable: bool = False
+
+
+def budget_family(provider_name: str) -> str:
+    """Familia de vendor a la que se le imputa el gasto de un proveedor.
+
+    `scripts/token-tracker.sh` presupuesta por VENDOR (`groq`, `openrouter`,
+    `nvidia`...), no por entrada del catálogo (`groq_llama_70b`,
+    `groq_qwen3`...) — que es lo correcto: la cuota la impone el vendor, no
+    el modelo. El call site pasaba el nombre de entrada, el tracker
+    contestaba `unknown provider` (exit 64) y el hub lo trataba como error de
+    verificación → fail-closed. Resultado medido el 2026-08-05: los 7
+    proveedores L1/L2 del catálogo muertos, y sólo sobrevivían los 3 de L0
+    porque se saltan el gate por diseño.
+
+    Convención del catálogo: `<vendor>_<modelo>`. Un nombre sin `_` ya es la
+    familia. Familias que el tracker no conozca siguen fallando cerrado a
+    propósito: dar de alta un vendor nuevo debe ser un acto deliberado, no un
+    pase implícito."""
+    return provider_name.split("_", 1)[0]
+
+
+def token_tracker_path() -> Path:
+    """Ruta ABSOLUTA del tracker. Antes se invocaba como
+    `scripts/token-tracker.sh`, relativa al cwd: funciona porque el
+    `WorkingDirectory` de `atlas-core.service` es la raíz del repo, pero
+    cualquier caller desde otro directorio caía en el `except Exception` y
+    también fallaba cerrado, con un mensaje que ni menciona el cwd."""
+    return Path(__file__).resolve().parents[3] / "scripts" / "token-tracker.sh"
 
 
 DEFAULT_PROVIDERS: list[Provider] = [
@@ -834,6 +863,36 @@ class InferenceHub:
         # ADR-031: si el caller provee `messages` (continuación multi-turno del
         # loop agéntico) se usan tal cual; si no, se construyen desde prompt/context.
         messages = _effective_messages(request)
+
+        # T5.3 Presupuestos por proveedor con corte fail-closed
+        if provider.level != InferenceLevel.L0 and provider.level != InferenceLevel.L_DET:
+            import subprocess
+            try:
+                res = subprocess.run(
+                    [str(token_tracker_path()), "check", budget_family(provider.name)],
+                    capture_output=True, text=True, check=False,
+                )
+                if res.returncode == 2: # CRITICAL threshold
+                    return InferenceResponse(
+                        text="", provider=provider.name, model=provider.model_id,
+                        level=provider.level, latency_ms=0, success=False,
+                        error=f"fail-closed: presupuesto excedido ({res.stdout.strip()})",
+                        mode="live",
+                    )
+                elif res.returncode not in (0, 1):
+                    return InferenceResponse(
+                        text="", provider=provider.name, model=provider.model_id,
+                        level=provider.level, latency_ms=0, success=False,
+                        error=f"fail-closed: error verificando presupuesto (exit {res.returncode}): {res.stderr.strip()}",
+                        mode="live",
+                    )
+            except Exception as e:
+                return InferenceResponse(
+                    text="", provider=provider.name, model=provider.model_id,
+                    level=provider.level, latency_ms=0, success=False,
+                    error=f"fail-closed: no se pudo verificar presupuesto ({type(e).__name__})",
+                    mode="live",
+                )
 
         llm = _litellm_module()
         extra_kwargs: dict[str, Any] = {}

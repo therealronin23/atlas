@@ -8,6 +8,119 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-05 (apagón silencioso) — el gate de presupuesto T5.3 mataba TODA
+  la inferencia L1/L2, y el único síntoma era un Cónclave que opinaba con un
+  asiento.**
+  **Alcance temporal, acotado y no inflado**: el gate NO está en HEAD — es
+  trabajo sin commitear del árbol (lo verifiqué: `git show HEAD:...` no lo
+  contiene). El daemon corre con instalación editable sobre este árbol y su
+  proceso arrancó el 2026-08-04 14:47, así que **no he establecido si el
+  proceso vivo llegó a importar el gate roto**; lo que sí está medido es que
+  el gate, tal y como está escrito, falla cerrado para los 7 proveedores
+  L1/L2 en cuanto se ejecuta.
+  **Cómo apareció**: convoqué el Cónclave para decidir lo de MCP remoto (ver
+  entrada siguiente) y devolvió `UNKNOWN: diversidad insuficiente, 1
+  proveedor alcanzable de 3`. Las dos hipótesis que parecían obvias —
+  credenciales caducadas, modelos retirados— eran las dos que YA habían sido
+  causa real en julio, y las dos eran falsas aquí.
+  **Causa real**: `inference_hub._call_provider_real` llamaba a
+  `scripts/token-tracker.sh check <provider.name>` con el nombre de ENTRADA
+  del catálogo (`groq_llama_70b`), pero el tracker presupuesta por FAMILIA DE
+  VENDOR (`groq`). Contestaba `unknown provider` → exit 64 → el hub lo leía
+  como error de verificación → **fail-closed**. Los 7 proveedores L1/L2 del
+  catálogo, muertos; los 3 que funcionaban eran L0, que se saltan el gate por
+  diseño. Otra lectura del mismo hecho: el gate no puede hacer cumplir ningún
+  presupuesto aunque se arregle, porque **nadie llama a `log`** — el ledger de
+  consumo no lo escribe nadie, así que el porcentaje siempre es 0%. Lo dejo
+  dicho, no lo arreglo: decidir si Atlas registra su propio consumo es diseño,
+  no un fix.
+  **Por qué nadie lo cazó**: `test_token_tracker.py` prueba el script (y es
+  correcto) y los tests del hub mockean litellm POR DEBAJO del gate. Nadie
+  probaba la FRONTERA entre los dos. Ahora hay
+  `tests/test_inference_budget_gate.py`, y a propósito contra el script REAL:
+  un test que se copie aquí la lista de familias volvería a mentir en cuanto
+  alguien edite el script. `together_free` estaba en el catálogo del hub y no
+  en el tracker: dado de alta con presupuesto -1 (sin cuota local fiable),
+  que es la verdad medida.
+  **Resultado en vivo**: de 0 a 5 proveedores L1/L2 respondiendo. Los que
+  siguen sin responder lo hacen por causas distintas y bien reportadas:
+  `together_free` sin `TOGETHERAI_API_KEY`, y los dos NVIDIA colgándose 120 s
+  sin dar error (comportamiento ya documentado el 30-jul, sigue vigente).
+  **Lo que NO envié**: había anclado además la ruta del script en absoluto
+  (hoy funciona sólo porque el `WorkingDirectory` del servicio es la raíz del
+  repo; desde otro cwd da FileNotFoundError → también fail-closed, con un
+  mensaje que ni menciona el cwd). El anclaje SÍ va, pero invocarlo como
+  `["bash", ruta]` tumbaba dos tests de `TestInferForRole` de forma
+  reproducible y **no establecí el mecanismo**, así que quité el prefijo en
+  vez de enviar un cambio que no sé explicar. Con `[ruta]` a secas: 56/56.
+  **Segundo hallazgo, medido y NO arreglado**: aun con el gate arreglado el
+  Cónclave sigue sin quórum. Causa distinta, medida por asiento sobre un
+  dossier real de 4.782 chars: `openrouter_mistral_large` y `groq_qwen3`
+  agotan el tope duro de 120 s, mientras `groq_llama_70b` (7,1 s) y
+  `openrouter_hermes4_70b` (1,8 s) contestan. Es la misma familia que el
+  hallazgo del 30-jul pero en otro parámetro: el tope por intento ahoga a los
+  modelos de razonamiento cuando el contexto es real y no un caso de prueba.
+  Queda ABIERTO — dimensionar el tope contra dossieres reales, no inventarlo.
+
+- **2026-08-05 (nivel 0 de la absorción Hermes, puntos 1 y 3) — dos piezas
+  cerradas CON callers de producción probados por grep, y un test propio
+  desmontado por falso.**
+  **Lo que estaba mal y no se veía**: `TestGpgSignIsolation` llevaba desde
+  el 1-ago en verde afirmando que Atlas aislaba el firmado GPG como hace
+  Hermes. No aislaba nada: `_run_git` no tenía ninguna bandera. El test
+  pasaba **en vacío** porque el único camino que ejercita es `git stash
+  push`, y `git stash` **NO honra `commit.gpgsign`** — medido en git 2.43
+  con `-c commit.gpgsign=true -c user.signingkey=<inexistente>`: el stash
+  devuelve 0 mientras `git commit` falla con "gpg failed to sign the data".
+  Reescrito para probar el MECANISMO (que la bandera llega a git y gana
+  sobre el config global heredado), no la ausencia de síntoma. El
+  aislamiento (`-c commit.gpgsign=false -c tag.gpgsign=false`) se añadió de
+  verdad, con el alcance honesto declarado: hoy es un seguro, no un fix de
+  un cuelgue en curso.
+  **`restore_file()` y `prune()` tenían CERO callers** (grep verificado, no
+  supuesto — la regla dura de ADC-WO-108). Ya no:
+  - `restore_file` se expone como tool agéntica `git_checkpoint_restore_file`
+    con una **asimetría deliberada** frente a `restore`: misma guarda
+    estructural de worktree efímero, pero riesgo `moderate` en vez de
+    `critical` y **sí** admite auto-aprobación por la allowlist de ADR-033.
+    Copiar la exclusión incondicional a las dos habría sido más "seguro" en
+    apariencia y más pobre en realidad: el operador se quedaría sólo con la
+    herramienta que barre el worktree entero.
+  - `prune` se aplica DENTRO de `checkpoint()` (`_enforce_retention`, tope
+    20). Un cap que alguien tiene que acordarse de invocar no es un cap.
+  **Escáner de contenido no confiable** (`security/content_threats.py`),
+  cableado en `wrap_untrusted()` — el punto ÚNICO por el que entra todo
+  contenido externo al contexto del modelo (`web_crawl`,
+  `read_external_file`, todo `mcp__*`). Cuatro clases: caracteres
+  invisibles (Trojan Source), escapes de terminal, descarga canalizada a
+  intérprete, y hostnames con alfabetos mezclados. **No veta** — vetar es lo
+  que hace `static_content.scan_static_content` para skills/plugins, y ahí
+  es correcto; en la ruta de lectura mataría la navegación normal. Lo que
+  hace es **igualar dos vistas**: neutraliza el peligro de renderizado,
+  hace visible lo invisible y anuncia lo encontrado, para que el operador
+  que aprueba vea lo mismo que ve el modelo — la premisa sobre la que
+  descansan el taint-gate y el HITL, que hasta hoy nadie comprobaba.
+  Coste medido: 42 ms sobre 166 KB de markdown real, detrás de un fetch de
+  red. Los 4 detectores validados **por mutación** (neutralizar cada uno
+  tumba exactamente sus tests, 3/2/4/1, y ninguno más) porque el verde
+  inicial se obtuvo sin ver el RED y no probaba nada por sí solo.
+  **Lo que NO se construyó, y por qué**: el punto 2 del nivel 0 era "OAuth
+  MCP". Medido antes de escribir código: `src/atlas/mcp/` tiene cero
+  oauth/bearer/Authorization, el SDK `mcp` ya trae cliente OAuth completo
+  (envolver, no reimplementar) — pero **`McpServerConfig` no tiene campo
+  `url`**: es `cmd: list[str]`, stdio puro, y `HttpMcpTransport` sólo lo usa
+  el probe de vetting de ADR-075, que por invariante documentado nunca llama
+  `tools/call`. OAuth encima de eso sería otro módulo con 0 callers
+  alcanzables. El prerrequisito real (transporte remoto en el registry de
+  producción) cruza ese invariante a propósito y deja
+  `SentinelGate.vet_command` —que vetea un argv— sin equivalente para una
+  URL: un gate de seguridad saltado en silencio. Elevado al Cónclave, no
+  construido a ciegas.
+  **Verificación**: suite completa 5043 passed / 6 skipped · mypy limpio en
+  los ficheros tocados · `check_canon.py` PASS (2110 registros) ·
+  `atlas reality` 7 live / 6 config / 8 history, daemon activo, Hermes
+  `live_verified`.
+
 - **2026-08-02 (Prevención de Drift de Permisos + Publicación ADR-082) — Sincronización automática de permisos en el arranque del daemon construida y verificada con tests. ADR-082 publicado tras Cónclave de selección de stack nativo.**
   **Resultados**:
   - `Permission Sync`: `Orchestrator._copy_defaults` actualizado para auto-sincronizar `permissions.yaml` (fusionando nuevos comandos de repositorio sin sobreescribir personalizaciones) y `governance.json` (manteniendo la Invariante 3 inmutable L0). Añadido test unitario `test_orchestrator_permissions_sync.py` (PASS).

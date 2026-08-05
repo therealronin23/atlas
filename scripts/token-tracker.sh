@@ -21,8 +21,12 @@ declare -A BUDGETS=(
     ["nvidia"]=-1
     ["openai"]=-1
     ["ollama"]=0
+    # 2026-08-05: `together_free` estaba en el catálogo del hub y no aquí, así
+    # que el gate lo mataba con `unknown provider`. -1 = sin presupuesto local
+    # fiable, que es la verdad: no se ha medido su cuota real.
+    ["together"]=-1
 )
-PROVIDERS=(groq openrouter anthropic gemini nvidia openai ollama)
+PROVIDERS=(groq openrouter anthropic gemini nvidia openai ollama together)
 
 ALERT_THRESHOLD=80
 CRITICAL_THRESHOLD=95
