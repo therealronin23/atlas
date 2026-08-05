@@ -250,6 +250,14 @@ class ColdUpdateProposal:
         return asdict(self)
 
 
+#: Tope duro para `git apply` / `patch(1)`. Aplicar un parche a ficheros
+#: locales son milisegundos; esto existe sólo para que un cuelgue tenga final.
+#: La defensa real contra el cuelgue de `patch` es `stdin=DEVNULL` (ver los
+#: call sites): el timeout cubre el día en que se invoque otra herramienta que
+#: ignore el EOF.
+PATCH_TIMEOUT_S = 120.0
+
+
 class ColdUpdateManager:
     """MVP: accept patch, worktree, validate, await approval, apply with rollback guard."""
 
@@ -793,6 +801,15 @@ class ColdUpdateManager:
                 capture_output=True,
                 text=True,
                 check=False,
+                # REPRODUCIDO (GNU patch): con stdin en un pipe abierto que no
+                # envía nada, `patch` se cuelga para siempre preguntando por
+                # el fichero a parchear — tanto si el destino no existe como
+                # si el contexto no casa. Y aquí `patch` es el FALLBACK de
+                # `git apply`: sólo corre cuando el parche ya dio problemas,
+                # que es exactamente cuando pregunta. DEVNULL le da EOF y
+                # aborta al instante; el timeout es el cinturón.
+                stdin=subprocess.DEVNULL,
+                timeout=PATCH_TIMEOUT_S,
             )
             if result.returncode == 0:
                 return touched_paths
@@ -815,6 +832,10 @@ class ColdUpdateManager:
             capture_output=True,
             text=True,
             check=False,
+            # Mismo cuelgue que en `_apply_patch`, y peor consecuencia: esto
+            # es la REVERSIÓN, el camino que se toma cuando algo ya salió mal.
+            stdin=subprocess.DEVNULL,
+            timeout=PATCH_TIMEOUT_S,
         )
 
     def _tests_diff_empty(self, worktree: Path, base_ref: str) -> bool:

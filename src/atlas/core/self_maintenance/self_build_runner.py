@@ -182,6 +182,14 @@ def _write_worktree_evaluator_file(
     return path
 
 
+#: Tope duro para el `test_cmd` de un candidato en el lazo de evolución.
+#: Generoso a propósito: la suite completa de este repo tarda ~7 min, y un tope
+#: corto convertiría suites legítimas en candidatos descartados — el lazo
+#: aprendería que todo falla, que es peor que no tener tope. Sirve para que un
+#: cuelgue tenga final, no para recortar tiempo.
+CANDIDATE_TEST_TIMEOUT_S = 1800.0
+
+
 class SelfBuildRunner:
     """Conecta backlog -> ToolCoder -> ColdUpdateManager (self_audit, siempre HITL)."""
 
@@ -194,6 +202,7 @@ class SelfBuildRunner:
         *,
         tool_coder_factory: Callable[..., ToolCoder] = ToolCoder,
         provider_preflight: Callable[..., PreflightVerdict] = _default_provider_preflight,
+        candidate_test_timeout_s: float = CANDIDATE_TEST_TIMEOUT_S,
     ) -> None:
         self._repo_root = repo_root
         self._hub = hub
@@ -201,6 +210,7 @@ class SelfBuildRunner:
         self._backlog_path = backlog_path
         self._tool_coder_factory = tool_coder_factory
         self._provider_preflight = provider_preflight
+        self._candidate_test_timeout_s = float(candidate_test_timeout_s)
 
     # ------------------------------------------------------------------
     # derive_test_cmd
@@ -541,6 +551,15 @@ class SelfBuildRunner:
                     capture_output=True,
                     text=True,
                     check=False,
+                    # Este es el lazo de EVOLUCIÓN, que corre desatendido, y
+                    # `test_cmd` viene del backlog: un item mal escrito, o un
+                    # candidato generado con un bucle infinito (justo lo que
+                    # se está evaluando), colgaba la autoconstrucción para
+                    # siempre. `TimeoutExpired` hereda de `SubprocessError`,
+                    # así que el `except` de abajo ya lo puntúa 0.0
+                    # fail-closed: sólo faltaba que el cuelgue pudiera
+                    # convertirse en error alguna vez.
+                    timeout=self._candidate_test_timeout_s,
                 )
                 if test_result.returncode == 0:
                     return {"score": 1.0}

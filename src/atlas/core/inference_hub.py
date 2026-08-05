@@ -293,6 +293,12 @@ def budget_family(provider_name: str) -> str:
     return provider_name.split("_", 1)[0]
 
 
+#: Tope duro para la consulta de presupuesto. Ver el comentario del call site:
+#: el script real tarda 12 ms; esto existe para que un cuelgue tenga final, no
+#: para recortar tiempo.
+TOKEN_TRACKER_TIMEOUT_S = 10.0
+
+
 def token_tracker_path() -> Path:
     """Ruta ABSOLUTA del tracker. Antes se invocaba como
     `scripts/token-tracker.sh`, relativa al cwd: funciona porque el
@@ -871,6 +877,13 @@ class InferenceHub:
                 res = subprocess.run(
                     [str(token_tracker_path()), "check", budget_family(provider.name)],
                     capture_output=True, text=True, check=False,
+                    # Sin tope, un tracker colgado (lock de fichero, disco
+                    # parado) no falla: cuelga a Atlas entero y en silencio,
+                    # porque este gate está en el camino de CADA inferencia
+                    # L1/L2 y es fail-closed. Margen absurdo a propósito: el
+                    # script tarda 12 ms de mediana (13 ms el peor de 10), así
+                    # que 10 s no recorta nada — sólo garantiza que hay final.
+                    timeout=TOKEN_TRACKER_TIMEOUT_S,
                 )
                 if res.returncode == 2: # CRITICAL threshold
                     return InferenceResponse(

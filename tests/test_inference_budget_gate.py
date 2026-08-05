@@ -79,6 +79,88 @@ class TestBudgetFamily:
         assert budget_family("") == ""
 
 
+class TestTheGateCannotHangForever:
+    """2026-08-05, auditoría de fronteras — el gate corre en el camino
+    caliente de CADA inferencia L1/L2 y es fail-closed. Sin `timeout=`, un
+    tracker colgado (lock de fichero, disco parado, un `read` que nunca
+    vuelve) no falla: cuelga a Atlas entero, en silencio y para siempre.
+    Es el mismo patrón que ya mordió dos veces hoy — NVIDIA colgándose 120 s
+    sin dar error, y el Cónclave agotando 10 minutos.
+
+    El tope se fija con margen absurdo a propósito: el script real tarda
+    12 ms de mediana y 13 ms el peor de 10 ejecuciones. 10 s es ~770x eso.
+    No está para recortar nada, está para que exista un final."""
+
+    def test_a_hanging_tracker_fails_closed_instead_of_hanging(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import subprocess as sp
+
+        from atlas.core.inference_hub import (
+            InferenceHub,
+            InferenceRequest,
+            Provider,
+        )
+
+        monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+        seen: dict[str, object] = {}
+
+        def fake_run(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+            seen.update(kwargs)
+            raise sp.TimeoutExpired(cmd="token-tracker.sh", timeout=10)
+
+        monkeypatch.setattr(sp, "run", fake_run)
+
+        provider = Provider(
+            name="groq_llama_70b", level=InferenceLevel.L1,
+            base_url="https://api.groq.com", model_id="m",
+            litellm_model="groq/m", api_key_env="GROQ_API_KEY",
+        )
+        hub = InferenceHub(providers=[provider], mode="live")
+        response = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+
+        assert response.success is False
+        assert "presupuesto" in (response.error or "")
+
+    def test_the_gate_actually_passes_a_timeout(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Sin este, el test de arriba pasaría en vacío: `TimeoutExpired` sólo
+        puede ocurrir si alguien pidió un timeout. Es la lección del test de
+        gpgsign — comprobar el mecanismo, no la ausencia de síntoma."""
+        import subprocess as sp
+
+        from atlas.core.inference_hub import (
+            InferenceHub,
+            InferenceRequest,
+            Provider,
+        )
+
+        monkeypatch.setenv("GROQ_API_KEY", "test-groq")
+        captured: dict[str, object] = {}
+        real_run = sp.run
+
+        def spy_run(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+            if args and isinstance(args[0], list) and "token-tracker.sh" in str(args[0]):
+                captured.update(kwargs)
+            return real_run(*args, **kwargs)
+
+        monkeypatch.setattr(sp, "run", spy_run)
+
+        provider = Provider(
+            name="groq_llama_70b", level=InferenceLevel.L1,
+            base_url="https://api.groq.com", model_id="m",
+            litellm_model="groq/m", api_key_env="GROQ_API_KEY",
+        )
+        InferenceHub(providers=[provider], mode="live").infer(
+            InferenceRequest(prompt="hola", level=InferenceLevel.L1)
+        )
+
+        assert "timeout" in captured, "el gate llama al tracker sin timeout: un cuelgue es eterno"
+        assert isinstance(captured["timeout"], (int, float))
+        assert captured["timeout"] > 0
+
+
 class TestTrackerPathIsNotCwdDependent:
     """El call site usaba la ruta relativa `scripts/token-tracker.sh`. Hoy
     funciona porque el WorkingDirectory del servicio ES la raíz del repo —

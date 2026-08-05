@@ -29,6 +29,13 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+
+#: Tope duro para el CLI de misiones lanzado desde HTTP. Generoso a propósito:
+#: `update apply` valida un ColdUpdate dentro de un worktree aislado, lo que
+#: incluye correr la suite — minutos, no segundos. Un tope corto abortaría
+#: trabajo legítimo y empujaría a quitarlo; éste sólo garantiza que el worker
+#: de FastAPI se libera algún día.
+MISSION_CLI_TIMEOUT_S = 900.0
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse, Response
 
@@ -658,6 +665,51 @@ def create_app(
             "receipt": mission_receipt(proposal, files_touched=files),
         }
 
+    def _run_mission_cli(mission_id: str, *cli_args: str) -> "subprocess.CompletedProcess[str]":
+        """Lanza el CLI de misiones con tope duro.
+
+        Sin `timeout=`, un `update apply` atascado (suite colgada, `git`
+        esperando `index.lock`, un jail que no vuelve) retenía el worker de
+        FastAPI para siempre y el operador sólo veía el navegador girando.
+        Al agotarse se responde 504, que dice la verdad —"no sé si terminó"—
+        y es distinto de un 500, que afirmaría que falló.
+        """
+        args = [sys.executable, "-m", "atlas.interfaces.cli", *cli_args]
+        try:
+            return subprocess.run(
+                args, capture_output=True, text=True, timeout=MISSION_CLI_TIMEOUT_S,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise HTTPException(
+                status_code=504,
+                detail=(
+                    f"el CLI no respondió en {MISSION_CLI_TIMEOUT_S:.0f}s para "
+                    f"{mission_id}: la misión puede haber quedado a medias, "
+                    "revisar con `atlas update list` antes de reintentar"
+                ),
+            ) from exc
+
+    @app.post("/missions/{mission_id}/approve")
+    def missions_approve(mission_id: str) -> dict[str, Any]:
+        """Aplica o aprueba la misión delegando en el CLI."""
+        proc = _run_mission_cli(mission_id, "update", "approve", mission_id)
+        if proc.returncode != 0:
+            proc = _run_mission_cli(mission_id, "update", "apply", mission_id)
+            if proc.returncode != 0:
+                raise HTTPException(status_code=500, detail=f"Fallo al aprobar/aplicar: {proc.stderr}")
+        return {"status": "ok", "mission_id": mission_id}
+
+    @app.post("/missions/{mission_id}/reject")
+    def missions_reject(mission_id: str) -> dict[str, Any]:
+        """Rechaza la misión delegando en el CLI."""
+        proc = _run_mission_cli(
+            mission_id, "update", "reject", mission_id,
+            "--reason", "Rejected from Mission Console",
+        )
+        if proc.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"Fallo al rechazar: {proc.stderr}")
+        return {"status": "ok", "mission_id": mission_id}
+
     @app.get("/missions")
     def missions_list(limit: int = 50) -> dict[str, Any]:
         proposals = _load_proposals()
@@ -732,6 +784,69 @@ def create_app(
             raise HTTPException(status_code=404, detail="grafo inicial ausente")
         data = json.loads(path.read_text(encoding="utf-8"))
         return {"simulated": True, "source": "fixture", **data}
+
+    @app.get("/graph/communities")
+    def graph_communities() -> dict[str, Any]:
+        from atlas.mcp.graph_server import _rows
+        from atlas.memory.project_graph import DEFAULT_GRAPH_DB
+        from atlas.core.graphs import open_kuzu_database
+        import kuzu
+
+        db = open_kuzu_database(DEFAULT_GRAPH_DB, read_only=True)
+        conn = kuzu.Connection(db)
+        try:
+            res = conn.execute(
+                "MATCH (c:ObsidianNote) WHERE c.note_type = 'community' "
+                "OPTIONAL MATCH (c)-[:LINKS_TO]->(m:ObsidianNote) "
+                "RETURN c.path, c.title, c.cohesion, count(m) AS members "
+                "ORDER BY c.cohesion DESC LIMIT 50"
+            )
+            rows = _rows(res)
+            return {
+                "communities": [
+                    {"path": r[0], "title": r[1], "cohesion": r[2], "members": r[3]}
+                    for r in rows
+                ]
+            }
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"communities": [], "error": "vault no ingerido aún"}
+            raise
+        finally:
+            conn.close()
+            db.close()
+
+    @app.get("/graph/semantic_neighbors/{note_stem}")
+    def graph_semantic_neighbors(note_stem: str) -> dict[str, Any]:
+        from atlas.mcp.graph_server import _rows
+        from atlas.memory.project_graph import DEFAULT_GRAPH_DB
+        from atlas.core.graphs import open_kuzu_database
+        import kuzu
+
+        db = open_kuzu_database(DEFAULT_GRAPH_DB, read_only=True)
+        conn = kuzu.Connection(db)
+        try:
+            res = conn.execute(
+                "MATCH (c:ObsidianNote)-[:LINKS_TO]->(n:ObsidianNote) "
+                "WHERE c.note_type = 'community' AND n.path ENDS WITH $f "
+                "MATCH (c)-[:LINKS_TO]->(other:ObsidianNote) "
+                "WHERE other.path <> n.path "
+                "RETURN DISTINCT other.path, other.title, c.title LIMIT 25",
+                parameters={"f": f"{note_stem}.md"}
+            )
+            rows = _rows(res)
+            return {
+                "neighbors": [
+                    {"path": r[0], "title": r[1], "community": r[2]} for r in rows
+                ]
+            }
+        except RuntimeError as exc:
+            if "does not exist" in str(exc):
+                return {"neighbors": [], "error": "vault no ingerido aún"}
+            raise
+        finally:
+            conn.close()
+            db.close()
 
     # -- Intent / simulación -------------------------------------------------
 
