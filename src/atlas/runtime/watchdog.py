@@ -45,6 +45,10 @@ REALERT_SECONDS = 12 * 3600.0
 # en este repo (el /tmp tmpfs de 4G lleno tiró el escritorio).
 DISK_CRITICAL_PCT = 95.0
 MEM_CRITICAL_AVAILABLE_PCT = 5.0
+# Reinicios acumulados que dejan de ser mantenimiento y pasan a ser crash-loop.
+# 5 coincide con el `StartLimitBurst` del drop-in de la unidad: si systemd está
+# dispuesto a rendirse a los 5, el vigilante debe avisar a los 5.
+FLAPPING_RESTARTS = 5
 
 
 @dataclass(frozen=True)
@@ -159,6 +163,41 @@ def service_probe(unit: str = "atlas-core.service") -> Check:
     return Check(unit, False, f"NO activo (estado={state or 'desconocido'})")
 
 
+def flapping_probe(
+    unit: str = "atlas-core.service", threshold: int = FLAPPING_RESTARTS,
+) -> Check:
+    """El punto ciego de `service_probe`: "vivo e inútil".
+
+    `is-active` responde `active` durante casi todo el ciclo de un crash-loop,
+    así que el 2026-08-02 el daemon se reinició 4.872 veces en 23 h y esa sonda
+    habría dicho "activo" en cada pasada. systemd ya publica el contador que lo
+    delata; aquí sólo se lee.
+
+    Un reinicio suelto (un `restart` a mano, un despliegue) NO alarma: la regla
+    del operador es "sólo lo grave". `systemctl --user reset-failed` pone el
+    contador a cero tras atender un incidente.
+    """
+    name = f"reinicios {unit}"
+    try:
+        out = subprocess.run(
+            ["systemctl", "--user", "show", unit, "-p", "NRestarts"],
+            capture_output=True, text=True, timeout=15, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return Check(name, None, "systemctl no disponible")
+    raw = out.stdout.strip().partition("=")[2].strip()
+    if not raw.isdigit():
+        return Check(name, None, f"NRestarts no legible ({out.stdout.strip()[:60]!r})")
+    restarts = int(raw)
+    if restarts >= threshold:
+        return Check(
+            name, False,
+            f"{restarts} reinicios acumulados (umbral {threshold}) — la unidad "
+            "está VIVA pero reiniciándose; 'is-active' no lo distingue",
+        )
+    return Check(name, True, f"{restarts} reinicios")
+
+
 def disk_probe(path: str = "/", threshold_pct: float = DISK_CRITICAL_PCT) -> Check:
     name = f"disco {path}"
     try:
@@ -246,6 +285,9 @@ def _default_hermes_diagnose() -> list[dict[str, Any]]:
 def default_probes() -> list[Callable[[], Check]]:
     return [
         service_probe,
+        # `service_probe` ve "muerto"; ésta ve "vivo e inútil". Sin las dos, el
+        # crash-loop de 23 h del 2026-08-02 vuelve a pasar desapercibido.
+        flapping_probe,
         lambda: disk_probe("/"),
         lambda: disk_probe("/tmp"),
         memory_probe,
