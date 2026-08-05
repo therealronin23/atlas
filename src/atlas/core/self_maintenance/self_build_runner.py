@@ -31,6 +31,7 @@ from atlas.core.cold_update_manager import ColdUpdateManager, ColdUpdateProposal
 from atlas.core.git_env import clean_git_env
 from atlas.core.inference_hub import InferenceHub, InferenceLevel
 from atlas.core.provider_preflight import PreflightVerdict
+from atlas.engineering.fast_precheck import precheck_files
 from atlas.core.provider_preflight import provider_preflight as _real_provider_preflight
 from atlas.core.self_maintenance.backlog import BacklogItem
 from atlas.core.tool_coder import ToolCoder
@@ -543,6 +544,17 @@ class SelfBuildRunner:
                 candidate_target = worktree_path / target_rel
                 candidate_target.parent.mkdir(parents=True, exist_ok=True)
                 candidate_target.write_text(candidate_code, encoding="utf-8")
+
+                # Corte barato antes del caro: un candidato que ni parsea no
+                # puede pasar los tests, y correrlos cuesta hasta 562 s
+                # (medido) para llegar al mismo 0.0. `ast.parse` son ~0 ms.
+                # Sólo la SINTAXIS rechaza; los errores de tipo no vetan (ver
+                # engineering/fast_precheck).
+                precheck = precheck_files(
+                    [candidate_target], repo_root=worktree_path, run_types=False,
+                )
+                if not precheck.ok:
+                    return {"score": 0.0}
 
                 test_result = subprocess.run(
                     test_cmd,
