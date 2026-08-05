@@ -26,7 +26,20 @@ from atlas.core.inference_hub import (
 )
 from atlas.core.provider_errors import classify_provider_error
 from atlas.logging.merkle_logger import MerkleLogger
+import subprocess
 
+@pytest.fixture(autouse=True)
+def mock_token_tracker(monkeypatch: pytest.MonkeyPatch) -> None:
+    original_run = subprocess.run
+    def fake_run(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and len(cmd) > 0 and "token-tracker.sh" in cmd[0]:
+            mock_res = MagicMock()
+            mock_res.returncode = 0
+            mock_res.stdout = "OK"
+            mock_res.stderr = ""
+            return mock_res
+        return original_run(cmd, *args, **kwargs)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
 def _httpx_response(status_code: int, headers: dict[str, str]) -> httpx.Response:
     return httpx.Response(
@@ -644,6 +657,11 @@ class TestNvidiaNimProvider:
         nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
+        # `nvidia_glm` está DOWN en el catálogo desde el 2026-08-05 y el hub
+        # salta los DOWN. Aquí se prueba la ROTACIÓN DE CLAVES, que es
+        # ortogonal a si el proveedor está vivo hoy: se fuerza OK en la COPIA
+        # para no atar un test de mecanismo al estado del servicio.
+        prov.status = ProviderStatus.OK
         hub = InferenceHub(providers=[prov], mode="auto")
         assert hub._resolve_live_for(prov) is True
 
@@ -657,6 +675,11 @@ class TestNvidiaNimProvider:
         nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
+        # `nvidia_glm` está DOWN en el catálogo desde el 2026-08-05 y el hub
+        # salta los DOWN. Aquí se prueba la ROTACIÓN DE CLAVES, que es
+        # ortogonal a si el proveedor está vivo hoy: se fuerza OK en la COPIA
+        # para no atar un test de mecanismo al estado del servicio.
+        prov.status = ProviderStatus.OK
         hub = InferenceHub(providers=[prov], mode="auto")
         assert hub._resolve_live_for(prov) is False
 
@@ -679,6 +702,11 @@ class TestNvidiaNimProvider:
         nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
+        # `nvidia_glm` está DOWN en el catálogo desde el 2026-08-05 y el hub
+        # salta los DOWN. Aquí se prueba la ROTACIÓN DE CLAVES, que es
+        # ortogonal a si el proveedor está vivo hoy: se fuerza OK en la COPIA
+        # para no atar un test de mecanismo al estado del servicio.
+        prov.status = ProviderStatus.OK
         hub = InferenceHub(providers=[prov], mode="auto")
         resp = hub.infer(InferenceRequest(prompt="hello", level=InferenceLevel.L2))
 
@@ -704,6 +732,11 @@ class TestNvidiaNimProvider:
         nvidia = next(p for p in DEFAULT_PROVIDERS if p.name == "nvidia_glm")
         import copy
         prov = copy.copy(nvidia)
+        # `nvidia_glm` está DOWN en el catálogo desde el 2026-08-05 y el hub
+        # salta los DOWN. Aquí se prueba la ROTACIÓN DE CLAVES, que es
+        # ortogonal a si el proveedor está vivo hoy: se fuerza OK en la COPIA
+        # para no atar un test de mecanismo al estado del servicio.
+        prov.status = ProviderStatus.OK
         hub = InferenceHub(providers=[prov], mode="auto")
         resp = hub.infer(InferenceRequest(prompt="hello", level=InferenceLevel.L2))
 

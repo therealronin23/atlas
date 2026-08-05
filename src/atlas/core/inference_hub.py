@@ -451,6 +451,14 @@ DEFAULT_PROVIDERS: list[Provider] = [
         context_tokens=128000,
         account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
         roles=("edit",),  # hereda el rol del asiento (métrica propia pendiente de medir)
+        # DEGRADADO 2026-08-05 por el criterio que fijó `provider_smoke.py` el
+        # 23-jul ("dead varios días seguidos, no un run suelto"). Contado sobre
+        # el log Merkle: última vez vivo el 2026-08-02, muerto el 03, 04 y 05.
+        # El fallo NO es 404: el discovery lo ve LISTADO y el smoke lo mata con
+        # `TimeoutError tras 30s` — el patrón NIM de "listado pero no servido
+        # para este tier". Se DEGRADA y no se borra porque parpadea (funcionó
+        # del 27-jul al 2-ago) y volverlo debe costar una palabra.
+        status=ProviderStatus.DOWN,
     ),
     # 2026-07-24: fallback de linaje EU para el trío del Cónclave --
     # nvidia_mistral_large (NIM) daba 410 Gone (EOL). Prove-it en vivo real
@@ -494,6 +502,10 @@ DEFAULT_PROVIDERS: list[Provider] = [
         context_tokens=128000,
         account_pool=[f"NVIDIA_API_KEY_{i}" if i > 1 else "NVIDIA_API_KEY" for i in range(1, 9)],
         roles=("edit", "chat"),  # 77.6% SWE-bench Verified — mejor que Large 3 pese a ser más chico
+        # DEGRADADO 2026-08-05, mismo criterio y mismo síntoma que `nvidia_glm`:
+        # última vez vivo el 2026-08-01, muerto el 02, 03, 04 y 05. Éste ya
+        # retuvo una pasada del smoke 18 minutos en julio (latency_ms=1087936).
+        status=ProviderStatus.DOWN,
     ),
     Provider(
         name="ollama_local",

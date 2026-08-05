@@ -30,6 +30,7 @@ from atlas.core.inference_hub import (
     InferenceLevel,
     InferenceRequest,
     Provider,
+    ProviderStatus,
 )
 from atlas.core.verify import Evidence
 from atlas.router.cascade import Difficulty
@@ -259,7 +260,17 @@ def build_council_reviewers(providers: list[Provider] | None = None) -> list[Rev
         # (romper la ortogonalidad anula la señal de desacuerdo). La etiqueta
         # `.provider` sigue siendo el primario: la diversidad se mide por
         # linaje, no por vendor de hosting.
-        available = [pool[c] for c in seat.lineage if c in pool]
+        # Se excluyen los proveedores marcados DOWN. Sin esto, un asiento
+        # sentado sobre un proveedor caído no daba UNKNOWN rápido: colgaba la
+        # deliberación 30-120s por ronda para acabar devolviendo
+        # `reachable=False` — medido el 2026-08-05, y era la causa de que el
+        # Cónclave tardara minutos en no decir nada. Un asiento que no existe
+        # es MEJOR que uno que no contesta: el panel ya sabe emitir UNKNOWN por
+        # falta de linajes, y lo hace en segundos.
+        available = [
+            pool[c] for c in seat.lineage
+            if c in pool and pool[c].status is not ProviderStatus.DOWN
+        ]
         if not available:
             continue
         primary = available[0]

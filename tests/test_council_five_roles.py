@@ -54,14 +54,33 @@ class TestFiveDistinctRoles:
 
 
 class TestBuildCouncilReviewers:
-    def test_builds_five_reviewers_with_full_pool(self) -> None:
-        reviewers = build_council_reviewers()
-        assert len(reviewers) == 5
+    def test_builds_one_reviewer_per_seat_whose_lineage_is_alive(self) -> None:
+        """Antes era `== 5` a secas. Eso ataba el test al estado de los
+        proveedores en vez de al contrato: en cuanto `nvidia_glm` se degradó
+        (2026-08-05, DOWN tras días de smoke muerto) el test fallaba sin que
+        nada del Cónclave estuviera roto. Lo que se prueba ahora es la regla —
+        se monta un asiento por cada papel cuyo linaje tenga algún proveedor
+        NO caído, ni uno más."""
+        from atlas.core.inference_hub import DEFAULT_PROVIDERS, ProviderStatus
 
-    def test_covers_five_distinct_lineage_labels(self) -> None:
+        alive = {p.name for p in DEFAULT_PROVIDERS if p.status is not ProviderStatus.DOWN}
+        expected = sum(1 for seat in COUNCIL_ROLES if set(seat.lineage) & alive)
+
+        reviewers = build_council_reviewers()
+
+        assert len(reviewers) == expected
+        assert 0 < expected <= len(COUNCIL_ROLES)
+
+    def test_covers_one_distinct_lineage_per_built_seat(self) -> None:
+        """El diseño DECLARA 5 asientos, uno por linaje. Cuántos se
+        CONSTRUYEN depende de qué proveedores estén vivos: desde el
+        2026-08-05 `nvidia_glm` (único Zhipu) está DOWN tras días de smoke
+        muerto, así que salen 4. Lo que no puede romperse es la ortogonalidad
+        — un proveedor por asiento, sin repetir linaje."""
         reviewers = build_council_reviewers()
         provs = {r.provider for r in reviewers}
-        assert len(provs) == 5
+        assert len(provs) == len(reviewers), "dos asientos comparten proveedor"
+        assert len(COUNCIL_ROLES) == 5, "el diseño sigue declarando 5 papeles"
 
     def test_reviewer_id_carries_the_role_not_just_the_provider(self) -> None:
         """Antes `reviewer_id` era sólo el nombre del proveedor -- con 5
@@ -78,20 +97,27 @@ class TestBuildCouncilReviewers:
         un único slot, justo lo que la regla de "nunca cruzar de linaje" en
         el comentario contiguo prohibía. Con 5 roles cada uno tiene su
         propio asiento."""
-        reviewers = build_council_reviewers()
-        provs = {r.provider for r in reviewers}
-        assert "nvidia_glm" in provs  # Zhipu, su propio asiento
-        assert "groq_qwen3" in provs  # Alibaba, su propio asiento
+        zhipu = next(s for s in COUNCIL_ROLES if s.role == "expansionist")
+        alibaba = next(s for s in COUNCIL_ROLES if s.role == "executor")
+        # Se comprueba sobre la TABLA de asientos, no sobre los construidos:
+        # `nvidia_glm` está DOWN desde el 2026-08-05 y su asiento no se monta,
+        # pero la separación de linajes que este test defiende es del DISEÑO y
+        # sigue viva — mirar los construidos haría que el test dejara de
+        # probar su propia tesis en cuanto un proveedor se cae.
+        assert "nvidia_glm" in zhipu.lineage
+        assert "groq_qwen3" in alibaba.lineage
+        assert not set(zhipu.lineage) & set(alibaba.lineage)
 
     def test_a_missing_lineage_leaves_that_seat_empty_not_fabricated(self) -> None:
         """Mismo contrato que build_trio_reviewers: sin proveedor del linaje
         en el pool, el asiento queda vacío -- nunca se inventa un sustituto
         de otro linaje (rompería la ortogonalidad rol×linaje)."""
-        pool = [p for p in DEFAULT_PROVIDERS if p.name not in {"nvidia_glm"}]
+        pool = [p for p in DEFAULT_PROVIDERS if p.name not in {"groq_qwen3", "ollama_local"}]
         reviewers = build_council_reviewers(providers=pool)
         provs = {r.provider for r in reviewers}
-        assert "nvidia_glm" not in provs
-        assert len(reviewers) == 4
+        assert "groq_qwen3" not in provs      # el asiento Alibaba desaparece
+        assert "groq_llama_70b" in provs      # los demás no se tocan
+        assert not any(r.reviewer_id.startswith("executor:") for r in reviewers)
 
 
 class TestBackwardCompatibleAlias:

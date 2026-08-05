@@ -116,10 +116,13 @@ def test_build_trio_has_four_distinct_providers_due_to_fallbacks() -> None:
     from atlas.core.deliberation_council import build_trio_reviewers
 
     council = build_trio_reviewers()
-    assert len(council) == 5
+    assert len(council) == 4  # 5 papeles declarados, 4 con linaje vivo
     provs = {r.provider for r in council}
+    # 2026-08-05: `nvidia_glm` (único Zhipu) quedó DOWN tras días de smoke
+    # muerto, así que su asiento no se monta. El conjunto es el de los linajes
+    # VIVOS, no una lista congelada.
     assert provs == {
-        "groq_llama_70b", "openrouter_mistral_large", "nvidia_glm",
+        "groq_llama_70b", "openrouter_mistral_large",
         "groq_qwen3", "openrouter_hermes4_70b",
     }
 
@@ -242,7 +245,7 @@ def test_build_trio_uses_lineage_fallback_when_primary_missing():
     provs = {r.provider for r in council}
     assert "ollama_local" in provs
     assert "groq_qwen3" not in provs
-    assert len(council) == 5
+    assert len(council) == 4  # nvidia_glm sigue DOWN, su asiento no se monta
 
 def test_build_trio_slot_empty_when_no_fallback_available():
     """Si el pool no tiene NI el primario NI el fallback de un linaje, el
@@ -257,7 +260,8 @@ def test_build_trio_slot_empty_when_no_fallback_available():
     trio = build_trio_reviewers(providers=pool)
     provs = {r.provider for r in trio}
     assert "groq_llama_70b" not in provs
-    assert len(trio) == 2
+    # openrouter_mistral_large monta su asiento; nvidia_glm está DOWN.
+    assert len(trio) == 1
 
 def test_build_trio_prefers_primary_over_fallback_when_both_available():
     from atlas.core.deliberation_council import build_trio_reviewers
@@ -265,8 +269,11 @@ def test_build_trio_prefers_primary_over_fallback_when_both_available():
     council = build_trio_reviewers()  # pool completo por defecto
     provs = {r.provider for r in council}
     # 2026-08-01: 5 asientos, uno por linaje
+    # 2026-08-05: `nvidia_glm` (único Zhipu) quedó DOWN tras días de smoke
+    # muerto, así que su asiento no se monta. El conjunto es el de los linajes
+    # VIVOS, no una lista congelada.
     assert provs == {
-        "groq_llama_70b", "openrouter_mistral_large", "nvidia_glm",
+        "groq_llama_70b", "openrouter_mistral_large",
         "groq_qwen3", "openrouter_hermes4_70b",
     }
 

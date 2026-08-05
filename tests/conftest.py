@@ -160,6 +160,18 @@ def _isolate_external_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ATLAS_EMBEDDER", "stub")
 
 
+def _capture_declared_provider_status() -> dict[str, object]:
+    """Estado DECLARADO de cada proveedor, leído una sola vez antes de que
+    ningún test pueda mutarlo. Es la única forma de distinguir "el hub lo
+    degradó al fallar" de "el catálogo lo declara caído"."""
+    from atlas.core.inference_hub import DEFAULT_PROVIDERS
+
+    return {p.name: p.status for p in DEFAULT_PROVIDERS}
+
+
+_DECLARED_PROVIDER_STATUS = _capture_declared_provider_status()
+
+
 @pytest.fixture(autouse=True)
 def _reset_default_providers_state() -> None:
     """`DEFAULT_PROVIDERS` es una lista de `Provider` mutables a nivel de
@@ -173,11 +185,17 @@ def _reset_default_providers_state() -> None:
     ~2 semanas enmascarando esto sin querer): 5 tests de
     `test_maintenance_provider_discovery_tick.py`/`test_self_improvement_wiring.py`
     fallaban SOLO en combinación con otros tests, nunca en aislamiento.
+
+    2026-08-05: reponía `status=OK` a TODOS, lo que borraba un `DOWN`
+    DECLARADO en el catálogo (`nvidia_glm`/`nvidia_mistral_medium`, degradados
+    tras días de smoke muerto). Confundía dos cosas distintas: el estado de
+    RUNTIME que el hub muta, y la declaración del catálogo. Ahora se restaura
+    cada proveedor a SU estado declarado, capturado una vez al importar.
     """
-    from atlas.core.inference_hub import DEFAULT_PROVIDERS, ProviderStatus
+    from atlas.core.inference_hub import DEFAULT_PROVIDERS
 
     for provider in DEFAULT_PROVIDERS:
-        provider.status = ProviderStatus.OK
+        provider.status = _DECLARED_PROVIDER_STATUS[provider.name]
         provider.last_used = None
         provider.error_count = 0
 
