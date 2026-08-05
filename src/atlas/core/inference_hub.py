@@ -359,7 +359,12 @@ DEFAULT_PROVIDERS: list[Provider] = [
         model_id="nvidia/nemotron-nano-12b-v2-vl:free",
         litellm_model="openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        # 2026-08-05: la cuenta 1 se quedó sin crédito (402 en el lazo:
+        # "requested 4096 tokens, can only afford 3767"). El pool coge la
+        # PRIMERA variable que exista, sin reintentar con la siguiente si
+        # falla, así que invertir el orden es lo que cambia de cuenta. La 1
+        # se conserva detrás: si la 2 no está en el entorno, sigue sirviendo.
+        account_pool=["OPENROUTER_API_KEY_2", "OPENROUTER_API_KEY"],
         rpm_limit=20,
         context_tokens=128000,
         roles=("chat",),
@@ -380,7 +385,12 @@ DEFAULT_PROVIDERS: list[Provider] = [
         model_id="nvidia/nemotron-3-ultra-550b-a55b:free",
         litellm_model="openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
         api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        # 2026-08-05: la cuenta 1 se quedó sin crédito (402 en el lazo:
+        # "requested 4096 tokens, can only afford 3767"). El pool coge la
+        # PRIMERA variable que exista, sin reintentar con la siguiente si
+        # falla, así que invertir el orden es lo que cambia de cuenta. La 1
+        # se conserva detrás: si la 2 no está en el entorno, sigue sirviendo.
+        account_pool=["OPENROUTER_API_KEY_2", "OPENROUTER_API_KEY"],
         rpm_limit=20,
         context_tokens=128000,
         roles=("chat",),
@@ -406,7 +416,12 @@ DEFAULT_PROVIDERS: list[Provider] = [
         model_id="nousresearch/hermes-4-70b",
         litellm_model="openrouter/nousresearch/hermes-4-70b",
         api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        # 2026-08-05: la cuenta 1 se quedó sin crédito (402 en el lazo:
+        # "requested 4096 tokens, can only afford 3767"). El pool coge la
+        # PRIMERA variable que exista, sin reintentar con la siguiente si
+        # falla, así que invertir el orden es lo que cambia de cuenta. La 1
+        # se conserva detrás: si la 2 no está en el entorno, sigue sirviendo.
+        account_pool=["OPENROUTER_API_KEY_2", "OPENROUTER_API_KEY"],
         rpm_limit=20,
         context_tokens=131072,
         roles=("chat", "edit"),
@@ -473,7 +488,12 @@ DEFAULT_PROVIDERS: list[Provider] = [
         model_id="mistralai/mistral-large-2512",
         litellm_model="openrouter/mistralai/mistral-large-2512",
         api_key_env="OPENROUTER_API_KEY",
-        account_pool=["OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"],
+        # 2026-08-05: la cuenta 1 se quedó sin crédito (402 en el lazo:
+        # "requested 4096 tokens, can only afford 3767"). El pool coge la
+        # PRIMERA variable que exista, sin reintentar con la siguiente si
+        # falla, así que invertir el orden es lo que cambia de cuenta. La 1
+        # se conserva detrás: si la 2 no está en el entorno, sigue sirviendo.
+        account_pool=["OPENROUTER_API_KEY_2", "OPENROUTER_API_KEY"],
         free_tier=False,
         rpm_limit=20,
         context_tokens=262144,

@@ -29,6 +29,12 @@ _EXTERNAL_API_KEYS = (
     # Added 2026-05-27 with Hermes-Agent twin (ADR-026)
     "NVIDIA_API_KEY",
     "HF_TOKEN",
+    # 2026-08-05: las claves NUMERADAS del `account_pool` se escapaban del
+    # scrubbing. Un test que llegara al camino del pool podía coger una clave
+    # REAL del .env del operador y hacer una llamada REAL — justo lo que esta
+    # lista existe para impedir. NVIDIA declara hasta la 8, OpenRouter la 2.
+    "OPENROUTER_API_KEY_2",
+    *[f"NVIDIA_API_KEY_{i}" for i in range(2, 9)],
 )
 
 # Hermes REST: tests usan mock in-memory salvo tests explicitos de integracion.
