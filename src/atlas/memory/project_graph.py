@@ -126,6 +126,30 @@ def _source_tree_dirty(repo_root: Path | None) -> bool | None:
     return bool(result.stdout.strip())
 
 
+def _table_names(conn: Any) -> list[str]:
+    """Tablas del catálogo, o lista vacía si ni eso se puede preguntar.
+
+    Sirve para distinguir "BD nueva" de "catálogo roto": las dos hacen fallar
+    la misma consulta y sólo esto las separa.
+    """
+    try:
+        result = conn.execute("CALL show_tables() RETURN *")
+    except Exception:  # noqa: BLE001 — no medible; el llamador degrada a EMPTY
+        return []
+    names: list[str] = []
+    try:
+        while result.has_next():
+            row = result.get_next()
+            # show_tables() devuelve (id, name, type, database, comment).
+            for cell in row:
+                if isinstance(cell, str) and cell:
+                    names.append(cell)
+                    break
+    except Exception:  # noqa: BLE001 — lo leído hasta aquí ya es suficiente señal
+        pass
+    return sorted(set(names))
+
+
 def graph_freshness(
     db_path: Path = DEFAULT_GRAPH_DB,
     *,
@@ -166,7 +190,28 @@ def graph_freshness(
                 )
                 if result.has_next():
                     graph_sha = str(result.get_next()[0])
-            except Exception:  # noqa: BLE001 — tabla ausente = nada ingerido aún
+            except Exception as query_exc:  # noqa: BLE001
+                # Antes: cualquier excepción se leía como "tabla ausente = nada
+                # ingerido aún" y salía EMPTY. Pero una BD recién creada y una
+                # con el catálogo roto lanzan EXACTAMENTE lo mismo, y son
+                # estados opuestos: una se arregla ingiriendo, la otra exige
+                # reconstruir. Incidente 2026-08-08 (dos ticks concurrentes
+                # dejaron Symbol/CALLS y se llevaron FileVersion/Module).
+                #
+                # La excepción sola no discrimina; la presencia de OTRAS tablas
+                # sí: si hay tablas y no está la nuestra, esto se ingirió alguna
+                # vez y perdió su capa.
+                present = _table_names(conn)
+                if present:
+                    return {
+                        **state,
+                        "status": "UNAVAILABLE",
+                        "reason": (
+                            f"catálogo parcial: falta FileVersion pero la BD tiene "
+                            f"{', '.join(present)} — el grafo necesita reconstrucción "
+                            f"({type(query_exc).__name__}: {str(query_exc)[:120]})"
+                        ),
+                    }
                 graph_sha = ""
             finally:
                 conn.close()

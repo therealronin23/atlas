@@ -371,3 +371,112 @@ def test_graph_freshness_empty_db(tiny_repo: Path, tmp_path: Path) -> None:
 
     state = graph_freshness(db_path, repo_root=tiny_repo)
     assert state["status"] == "EMPTY"
+
+
+# ---------------------------------------------------------------------------
+# Catálogo parcial: "vacío" y "roto" son estados OPUESTOS y se reportaban igual.
+#
+# Incidente 2026-08-08: dos ticks del grafo concurrentes (Kuzu no es seguro
+# multi-proceso para escritura) dejaron la BD con las tablas del callgraph
+# (Symbol/CALLS/CONTAINS) y SIN las bitemporales (FileVersion/Module/IMPORTS).
+# `graph_freshness` envolvía la consulta en un `except` comentado como "tabla
+# ausente = nada ingerido aún" y devolvió EMPTY. La excepción real, que la
+# sonda tenía en la mano, era `Binder exception: Table FileVersion does not
+# exist`. EMPTY (benigno, se arregla ingiriendo) frente a catálogo corrupto
+# (hay que reconstruir) llevó el diagnóstico por el camino equivocado.
+#
+# La excepción SOLA no discrimina: una BD recién creada lanza exactamente lo
+# mismo. Lo que discrimina es si hay OTRAS tablas — una BD con Symbol pero sin
+# FileVersion se ingirió alguna vez y perdió su capa.
+# ---------------------------------------------------------------------------
+
+
+def _db_con_tablas(db_path: Path, *ddl: str) -> None:
+    db = open_kuzu_database(db_path)
+    conn = kuzu.Connection(db)
+    try:
+        for statement in ddl:
+            conn.execute(statement)
+    finally:
+        conn.close()
+        del db
+
+
+def test_catalogo_parcial_no_se_reporta_como_vacio(
+    tiny_repo: Path, tmp_path: Path
+) -> None:
+    """El caso exacto del incidente: quedan tablas del callgraph, falta la
+    bitemporal. Eso NO es "nada ingerido"."""
+    from atlas.memory.project_graph import graph_freshness
+
+    db_path = tmp_path / "parcial.kuzu"
+    _db_con_tablas(
+        db_path,
+        "CREATE NODE TABLE IF NOT EXISTS Symbol(id STRING, PRIMARY KEY(id))",
+    )
+
+    state = graph_freshness(db_path, repo_root=tiny_repo)
+
+    assert state["status"] != "EMPTY"
+    assert state["status"] == "UNAVAILABLE"
+
+
+def test_el_motivo_nombra_la_tabla_que_falta(tiny_repo: Path, tmp_path: Path) -> None:
+    """El diagnóstico tiene que estar en el `reason`, no obligar a cuatro pasos
+    de investigación para recuperar una excepción que la sonda ya vio."""
+    from atlas.memory.project_graph import graph_freshness
+
+    db_path = tmp_path / "parcial2.kuzu"
+    _db_con_tablas(
+        db_path,
+        "CREATE NODE TABLE IF NOT EXISTS Symbol(id STRING, PRIMARY KEY(id))",
+    )
+
+    reason = graph_freshness(db_path, repo_root=tiny_repo)["reason"]
+
+    assert "FileVersion" in reason
+    assert "Symbol" in reason
+
+
+def test_bd_recien_creada_sigue_siendo_empty(tiny_repo: Path, tmp_path: Path) -> None:
+    """Sin NINGUNA tabla no hay corrupción que reportar: es una BD nueva, y
+    convertir eso en alarma sería el falso positivo contrario."""
+    from atlas.memory.project_graph import graph_freshness
+
+    db_path = tmp_path / "nueva.kuzu"
+    db = open_kuzu_database(db_path)
+    kuzu.Connection(db).close()
+    del db
+
+    assert graph_freshness(db_path, repo_root=tiny_repo)["status"] == "EMPTY"
+
+
+def test_tabla_presente_y_sin_filas_es_empty(tiny_repo: Path, tmp_path: Path) -> None:
+    """FileVersion existe pero está vacía -> EMPTY de verdad."""
+    from atlas.memory.project_graph import graph_freshness
+
+    db_path = tmp_path / "sinfilas.kuzu"
+    _db_con_tablas(
+        db_path,
+        "CREATE NODE TABLE IF NOT EXISTS FileVersion("
+        "id STRING, commit_sha STRING, ingested_at TIMESTAMP, PRIMARY KEY(id))",
+    )
+
+    state = graph_freshness(db_path, repo_root=tiny_repo)
+
+    assert state["status"] == "EMPTY"
+    assert state["graph_commit_sha"] == ""
+
+
+def test_la_sonda_sigue_sin_lanzar_nunca(tiny_repo: Path, tmp_path: Path) -> None:
+    """Distinguir estados no puede costar la garantía de que nunca lanza: la
+    consumen `atlas reality` y el graph_server MCP."""
+    from atlas.memory.project_graph import graph_freshness
+
+    db_path = tmp_path / "basura.kuzu"
+    db_path.write_bytes(b"esto no es una base de datos kuzu")
+
+    state = graph_freshness(db_path, repo_root=tiny_repo)
+
+    assert state["status"] in {"UNAVAILABLE", "NO_DB", "EMPTY"}
+    assert state["reason"]
