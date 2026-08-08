@@ -21,6 +21,7 @@ from atlas.core.contracts import EventType
 from atlas.core.provider_discovery import discover_available_models
 from atlas.core.provider_status import check_provider_status
 from atlas.mcp.workbench_compliance import summarize_compliance_findings
+from atlas.security.writer_lock import ProjectGraphWriterLock, WriterLockHeld
 
 _log = logging.getLogger(__name__)
 
@@ -1557,12 +1558,46 @@ class MaintenanceFacade:
         except Exception:  # noqa: BLE001 — señal, jamás rompe el tick
             reproduction_status = None
 
+        # F1.2 (2026-08-03): Cablear correction.py (Canario de rechazos)
+        # Según el veredicto del Cónclave (BLOCKING para usar LLM), se mantiene 
+        # estrictamente determinista (ADR-069) y se registra lo rechazado.
+        corrections_proposed = 0
+        corrections_rejected = 0
+        try:
+            from atlas.engineering.correction import propose_correction
+            from atlas.core.cold_update_manager import ColdUpdateManager
+            manager = ColdUpdateManager(project_root=root, merkle=self._orch._merkle)
+            
+            rejections_path = engineering_dir / "correction_rejections.jsonl"
+            
+            with rejections_path.open("a", encoding="utf-8") as rej_file:
+                for finding in findings.list():
+                    status = getattr(finding.status, "value", str(finding.status))
+                    if status in {"RESOLVED", "DISMISSED"}:
+                        continue
+                        
+                    outcome = propose_correction(finding, manager=manager, base_ref=head or "HEAD")
+                    if outcome.proposed:
+                        corrections_proposed += 1
+                    else:
+                        corrections_rejected += 1
+                        rej_file.write(json.dumps({
+                            "finding_id": finding.id,
+                            "reason": outcome.reason,
+                            "summary": finding.summary,
+                            "at": datetime.now(timezone.utc).isoformat()
+                        }) + "\n")
+        except Exception:  # noqa: BLE001
+            pass
+
         result: dict[str, Any] = {
             "reviewed": reviewed,
             "verdict": verdict,
             "findings": finding_count,
             "hypotheses_written": hypotheses_written,
             "reproduction": reproduction_status,
+            "corrections_proposed": corrections_proposed,
+            "corrections_rejected": corrections_rejected,
             "events_published": published,
             "journal_total": findings.count(),
             "base_revision": parent,
@@ -1808,95 +1843,114 @@ class MaintenanceFacade:
         wal = db.with_name(db.name + ".wal")
         rebuild = db.with_name(db.name + ".rebuild")
         rebuild_wal = rebuild.with_name(rebuild.name + ".wal")
-        rebuild.unlink(missing_ok=True)
-        rebuild_wal.unlink(missing_ok=True)
-        if db.exists():
-            # Copia = el histórico bitemporal se conserva (MERGE incremental);
-            # el write-lock cae sobre la copia, no sobre la BD servida.
-            db.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(db, rebuild)
-            if wal.exists():
-                shutil.copy2(wal, rebuild_wal)
-
-        # Vault-wiring (F3.2, 2026-07-16): sin vault_root las tablas
-        # ObsidianNote/LINKS_TO jamás llegaban a la BD servida (hallazgo C2).
-        # Default = <repo>/graphify-vault (donde graphify deja el vault);
-        # override env ATLAS_OBSIDIAN_VAULT (mismo patrón que
-        # ATLAS_PROJECT_GRAPH_DB). build_project_graph ya ignora un vault
-        # inexistente (guard is_dir), así que esto nunca rompe la regen.
-        vault_env = os.environ.get("ATLAS_OBSIDIAN_VAULT", "").strip()
-        vault_root = Path(vault_env).expanduser() if vault_env else root / "graphify-vault"
-
-        metrics = build_project_graph(
-            root,
-            rebuild,
-            vault_root=vault_root,
-            embedder=resolve_graph_embedder(),
-        )
-
-        # Call-graph de Graphify (D3, 2026-07-10): se ingiere al MISMO rebuild
-        # antes del swap. El cache oficial vive en <repo>/graphify-out (no en
-        # src/graphify-out, que era un residuo antiguo) y se limita al corpus
-        # de producción src/atlas. Un cache ausente/roto o Symbol==0 invalida
-        # TODA la regeneración: no se sirve una BD que finja tener call-graph.
-        callgraph_cache = root / "graphify-out" / "cache" / "ast"
+        # Escritor único (2026-08-08). El tick ya construía sobre una copia
+        # `.rebuild` para no bloquear la BD servida, pero DOS ticks comparten
+        # esa misma ruta: el segundo hace `rebuild.unlink()` sobre el fichero
+        # que el primero está escribiendo. Así se quedó el catálogo a medias
+        # (sobrevivieron Symbol/CALLS/CONTAINS, desaparecieron
+        # FileVersion/Module/IMPORTS). `graph-rebuild-single-writer` llevaba
+        # desde siempre en AGENTS.md y en ningún sitio más; ahora es código.
+        #
+        # Solaparse NO es un error del scheduler: el segundo tick cede el turno
+        # y el siguiente ciclo lo recoge. Por eso `locked` es un estado, no una
+        # excepción.
+        graph_lock = ProjectGraphWriterLock(db)
         try:
-            if not callgraph_cache.is_dir():
-                raise RuntimeError(
-                    f"Graphify AST cache unavailable: {callgraph_cache}"
-                )
-
-            from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
-
-            callgraph_metrics = load_callgraph_into_kuzu(
-                callgraph_cache,
-                rebuild,
-                source_prefix="src/atlas",
-                replace=True,
-                strict=True,
-            )
-            if int(callgraph_metrics.get("symbols", 0)) <= 0:
-                raise RuntimeError(
-                    "Graphify call-graph produced zero symbols for corpus src/atlas"
-                )
-            if int(callgraph_metrics.get("files", 0)) <= 0:
-                raise RuntimeError(
-                    "Graphify call-graph matched zero files for corpus src/atlas"
-                )
-            metrics["callgraph"] = callgraph_metrics
-        except Exception:
-            # El rebuild nunca se publica si Graphify falla; se elimina para
-            # que tampoco parezca un artefacto listo en una inspección manual.
+            graph_lock.acquire()
+        except WriterLockHeld as exc:
+            return {"status": "locked", "reason": str(exc)}
+        try:
             rebuild.unlink(missing_ok=True)
             rebuild_wal.unlink(missing_ok=True)
-            raise
+            if db.exists():
+                # Copia = el histórico bitemporal se conserva (MERGE incremental);
+                # el write-lock cae sobre la copia, no sobre la BD servida.
+                db.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(db, rebuild)
+                if wal.exists():
+                    shutil.copy2(wal, rebuild_wal)
 
-        # Swap: primero el fichero principal, luego el wal (el close de la
-        # ingesta hace checkpoint, así que el wal del rebuild suele estar
-        # vacío/ausente). Ventana de inconsistencia: microsegundos.
-        os.replace(rebuild, db)
-        if rebuild_wal.exists():
-            os.replace(rebuild_wal, wal)
-        else:
-            wal.unlink(missing_ok=True)
+            # Vault-wiring (F3.2, 2026-07-16): sin vault_root las tablas
+            # ObsidianNote/LINKS_TO jamás llegaban a la BD servida (hallazgo C2).
+            # Default = <repo>/graphify-vault (donde graphify deja el vault);
+            # override env ATLAS_OBSIDIAN_VAULT (mismo patrón que
+            # ATLAS_PROJECT_GRAPH_DB). build_project_graph ya ignora un vault
+            # inexistente (guard is_dir), así que esto nunca rompe la regen.
+            vault_env = os.environ.get("ATLAS_OBSIDIAN_VAULT", "").strip()
+            vault_root = Path(vault_env).expanduser() if vault_env else root / "graphify-vault"
 
-        state["last_head"] = head
-        state["last_run"] = datetime.now(timezone.utc).isoformat()
-        state_path.parent.mkdir(parents=True, exist_ok=True)
-        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+            metrics = build_project_graph(
+                root,
+                rebuild,
+                vault_root=vault_root,
+                embedder=resolve_graph_embedder(),
+            )
 
-        self._orch._merkle.log(
-            action="self_maintenance.project_graph_tick",
-            agent="maintenance_facade",
-            result="ran",
-            risk_level="safe",
-            payload={
-                "head": head,
-                "commits": len(metrics.get("commits", [])),
-                "callgraph": metrics["callgraph"],
-            },
-        )
-        return {"status": "ran", "head": head, "metrics": metrics}
+            # Call-graph de Graphify (D3, 2026-07-10): se ingiere al MISMO rebuild
+            # antes del swap. El cache oficial vive en <repo>/graphify-out (no en
+            # src/graphify-out, que era un residuo antiguo) y se limita al corpus
+            # de producción src/atlas. Un cache ausente/roto o Symbol==0 invalida
+            # TODA la regeneración: no se sirve una BD que finja tener call-graph.
+            callgraph_cache = root / "graphify-out" / "cache" / "ast"
+            try:
+                if not callgraph_cache.is_dir():
+                    raise RuntimeError(
+                        f"Graphify AST cache unavailable: {callgraph_cache}"
+                    )
+
+                from atlas.memory.callgraph_to_kuzu import load_callgraph_into_kuzu
+
+                callgraph_metrics = load_callgraph_into_kuzu(
+                    callgraph_cache,
+                    rebuild,
+                    source_prefix="src/atlas",
+                    replace=True,
+                    strict=True,
+                )
+                if int(callgraph_metrics.get("symbols", 0)) <= 0:
+                    raise RuntimeError(
+                        "Graphify call-graph produced zero symbols for corpus src/atlas"
+                    )
+                if int(callgraph_metrics.get("files", 0)) <= 0:
+                    raise RuntimeError(
+                        "Graphify call-graph matched zero files for corpus src/atlas"
+                    )
+                metrics["callgraph"] = callgraph_metrics
+            except Exception:
+                # El rebuild nunca se publica si Graphify falla; se elimina para
+                # que tampoco parezca un artefacto listo en una inspección manual.
+                rebuild.unlink(missing_ok=True)
+                rebuild_wal.unlink(missing_ok=True)
+                raise
+
+            # Swap: primero el fichero principal, luego el wal (el close de la
+            # ingesta hace checkpoint, así que el wal del rebuild suele estar
+            # vacío/ausente). Ventana de inconsistencia: microsegundos.
+            os.replace(rebuild, db)
+            if rebuild_wal.exists():
+                os.replace(rebuild_wal, wal)
+            else:
+                wal.unlink(missing_ok=True)
+
+            state["last_head"] = head
+            state["last_run"] = datetime.now(timezone.utc).isoformat()
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+            self._orch._merkle.log(
+                action="self_maintenance.project_graph_tick",
+                agent="maintenance_facade",
+                result="ran",
+                risk_level="safe",
+                payload={
+                    "head": head,
+                    "commits": len(metrics.get("commits", [])),
+                    "callgraph": metrics["callgraph"],
+                },
+            )
+            return {"status": "ran", "head": head, "metrics": metrics}
+        finally:
+            graph_lock.release()
 
     def maintenance_self_build_runner(self) -> Any:
         """Autoconstrucción — pega backlog → ToolCoder → ColdUpdate (self_audit).

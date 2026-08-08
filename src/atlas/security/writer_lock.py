@@ -27,19 +27,38 @@ from pathlib import Path
 from typing import IO
 
 
+__all__ = [
+    "ExclusiveWriterLock",
+    "MerkleWriterLock",
+    "ProjectGraphWriterLock",
+    "WriterLockHeld",
+]
+
+
 class WriterLockHeld(RuntimeError):
-    """Otro proceso ya es el escritor de esta cadena Merkle."""
+    """Otro proceso ya es el escritor de este recurso."""
 
 
-class MerkleWriterLock:
-    """Lock exclusivo de escritor sobre el audit dir de un workspace.
+class ExclusiveWriterLock:
+    """Lock de escritor único sobre un recurso, por ``flock``.
 
-    Uso como context manager o con ``acquire()`` explícito para procesos que
-    lo retienen hasta morir (el caso normal: serve, self-audit).
+    Extraído de ``MerkleWriterLock`` el 2026-08-08 sin cambiarle el
+    comportamiento: el mismo guard hacía falta para la reconstrucción del grafo
+    y duplicarlo habría sido peor que compartirlo.
+
+    El motivo de la extracción es un incidente real. ``graph-rebuild-single-writer``
+    llevaba desde siempre declarada como manía en ``AGENTS.md`` y en ningún
+    sitio más; dos ticks del grafo concurrentes dejaron la BD Kuzu con las
+    tablas del callgraph y sin las bitemporales. Aplica literalmente el docstring
+    de este módulo: convertirlo en imposible en vez de en disciplina. Una regla
+    que sólo vive en un documento es una regla que se rompe.
+
+    Uso como context manager o con ``acquire()`` explícito para procesos que lo
+    retienen hasta morir (serve, self-audit).
     """
 
-    def __init__(self, workspace: Path) -> None:
-        self._lock_path = workspace.expanduser().resolve() / "memory" / "audit" / ".writer.lock"
+    def __init__(self, lock_path: Path) -> None:
+        self._lock_path = lock_path
         self._fh: IO[str] | None = None
 
     @property
@@ -59,7 +78,7 @@ class MerkleWriterLock:
             fh.close()
             raise WriterLockHeld(
                 f"otro escritor activo sobre {self._lock_path.parent}: {holder}. "
-                "Detén ese proceso o usa un ATLAS_HOME aislado."
+                f"{self._hint}"
             ) from None
         fh.seek(0)
         fh.truncate()
@@ -79,12 +98,15 @@ class MerkleWriterLock:
         self._fh.close()
         self._fh = None
 
-    def __enter__(self) -> MerkleWriterLock:
+    def __enter__(self) -> ExclusiveWriterLock:
         self.acquire()
         return self
 
     def __exit__(self, *exc: object) -> None:
         self.release()
+
+    #: Qué hacer al chocar. Cada recurso tiene su salida distinta.
+    _hint = "Detén ese proceso."
 
     @staticmethod
     def _read_holder(fh: IO[str]) -> str:
@@ -94,3 +116,35 @@ class MerkleWriterLock:
             return f"PID {data.get('pid', '?')} desde {data.get('since', '?')}"
         except (json.JSONDecodeError, OSError):
             return "desconocido"
+
+
+class MerkleWriterLock(ExclusiveWriterLock):
+    """El lock de siempre sobre el audit dir de un workspace."""
+
+    _hint = "Detén ese proceso o usa un ATLAS_HOME aislado."
+
+    def __init__(self, workspace: Path) -> None:
+        super().__init__(
+            workspace.expanduser().resolve() / "memory" / "audit" / ".writer.lock"
+        )
+
+
+class ProjectGraphWriterLock(ExclusiveWriterLock):
+    """Escritor único de la BD Kuzu del grafo del proyecto.
+
+    Kuzu no es seguro multi-proceso para escritura: el 2026-08-08 dos ticks
+    solapados dejaron el catálogo a medias (sobrevivieron Symbol/CALLS/CONTAINS,
+    desaparecieron FileVersion/Module/IMPORTS). No hubo pérdida real porque el
+    grafo es derivado y se reconstruye de git+AST, pero el diagnóstico costó
+    caro y el fallo era evitable.
+
+    El lock va junto a la BD, no bajo el workspace: ``db_path`` es inyectable
+    (``ATLAS_GRAPH_DB``), así que dos BDs distintas son dos escritores legítimos
+    y bloquearlos entre sí sería un falso positivo.
+    """
+
+    _hint = "Espera a que termine esa reconstrucción; el grafo admite un solo escritor."
+
+    def __init__(self, db_path: Path) -> None:
+        resolved = Path(db_path).expanduser()
+        super().__init__(resolved.parent / f".{resolved.name}.writer.lock")
