@@ -49,7 +49,15 @@ if [ "${ATLAS_PRECOMMIT_FULL:-0}" = "1" ]; then
     exit 0
 fi
 
-staged_files="$(git diff --cached --name-only --diff-filter=ACM)"
+# 2026-08-06: `R` (renombrados) faltaba. Dos consecuencias, ambas medidas al
+# archivar los micro-PoC de ADR-085:
+#   1. Un módulo .py renombrado no mapeaba a ningún test — hueco de cobertura
+#      del gate, justo lo que el bloque de abajo dice querer evitar.
+#   2. En un commit de SÓLO renombrados la lista quedaba vacía, `grep -v '^$'`
+#      no encontraba líneas y devolvía 1, y con `set -o pipefail` el hook lo
+#      leía como "el mapeo falló" y cancelaba el commit. Fail-closed sobre un
+#      falso positivo: no había fallo, había nada que mapear.
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
 
 staged_src_py="$(printf '%s\n' "$staged_files" | grep -E '^src/.*\.py$' || true)"
 
@@ -74,8 +82,15 @@ fi
 # rompía los 37 tests del tronco MCP. Los ficheros de datos no mapeaban a nada
 # y el glob alcanzaba 1 de los 16 tests del módulo. Ahora se mapea por
 # REFERENCIA y entra TODO lo staged, no sólo los .py.
-if ! mapped_tests="$(printf '%s\n' "$staged_files" \
-        | grep -v '^$' \
+#
+# "Nada que mapear" y "el mapeo falló" son cosas distintas y antes se
+# confundían: la lista vacía hacía que `grep` devolviera 1 y el hook cancelaba
+# el commit. Se separan los dos casos para que fail-closed siga cubriendo el
+# fallo REAL (el módulo de mapeo revienta) sin bloquear el caso trivial.
+staged_list="$(printf '%s\n' "$staged_files" | grep -v '^$' || true)"
+if [ -z "$staged_list" ]; then
+    mapped_tests=""
+elif ! mapped_tests="$(printf '%s\n' "$staged_list" \
         | xargs -r python -m atlas.engineering.impacted_tests)"; then
     echo ""
     echo "✗ El mapeo de tests impactados falló. Commit cancelado (fail-closed)."
