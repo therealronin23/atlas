@@ -36,7 +36,7 @@ import hashlib
 import json
 import re
 import subprocess
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -45,11 +45,16 @@ from atlas.core.git_env import clean_git_env
 
 __all__ = [
     "FrozenDefect",
+    "VerificationOutcome",
     "build_candidate",
     "candidate_commits",
     "split_test_patch",
+    "verify_defect",
     "write_defects",
 ]
+
+#: Ejecutor de tests inyectable: (worktree, targets) -> exit code.
+TestRunner = Callable[[Path, tuple[str, ...]], int]
 
 _GIT_TIMEOUT_S = 60
 #: `fix(scope): asunto` — el scope da el subsistema, para no cosechar veinte
@@ -69,6 +74,10 @@ class FrozenDefect:
     subsystem: str
     test_files: tuple[str, ...] = ()
     test_patch: str = field(default="", repr=False)
+    #: True sólo tras comprobar EJECUTANDO que falla en base y pasa con el
+    #: arreglo. Un candidato sin verificar no cuenta para el score: inflaría el
+    #: denominador con defectos que no miden nada.
+    verified: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -79,6 +88,7 @@ class FrozenDefect:
             "subsystem": self.subsystem,
             "test_files": list(self.test_files),
             "test_patch": self.test_patch,
+            "verified": self.verified,
         }
 
     @classmethod
@@ -91,6 +101,7 @@ class FrozenDefect:
             subsystem=str(data.get("subsystem", "")),
             test_files=tuple(data.get("test_files", ())),
             test_patch=str(data.get("test_patch", "")),
+            verified=bool(data.get("verified", False)),
         )
 
 
@@ -195,6 +206,97 @@ def write_defects(defects: Iterable[FrozenDefect], path: Path) -> int:
         for defect in rows:
             handle.write(json.dumps(defect.to_dict(), sort_keys=True) + "\n")
     return len(rows)
+
+
+@dataclass(frozen=True)
+class VerificationOutcome:
+    """Un candidato sólo es defecto si falla en base y pasa con el arreglo."""
+
+    defect_id: str
+    verified: bool
+    fails_at_base: bool | None = None
+    passes_at_fix: bool | None = None
+    reason: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "defect_id": self.defect_id,
+            "verified": self.verified,
+            "fails_at_base": self.fails_at_base,
+            "passes_at_fix": self.passes_at_fix,
+            "reason": self.reason,
+        }
+
+
+def verify_defect(
+    repo_root: Path,
+    defect: FrozenDefect,
+    *,
+    run_tests: TestRunner,
+) -> VerificationOutcome:
+    """¿Es este candidato un defecto reproducible?
+
+    Dos ejecuciones, y el orden importa: si el test ya pasa en `base_sha` no hay
+    defecto y la segunda no se paga.
+
+    El montaje del caso base es lo delicado: worktree en `base_sha` (código
+    viejo) y `git checkout <fix_sha> -- <test_files>` (test nuevo). Esa
+    combinación es la que mide capacidad. Se hace con git a propósito, no
+    aplicando el diff guardado: `checkout` sólo puede traer ficheros de un
+    commit inmutable del mismo repositorio, así que es estrictamente más seguro
+    que aplicar un parche arbitrario.
+
+    `EngineeringReproductionRunner` no sirve aquí pese a ser el ejecutor natural:
+    por diseño nunca aplica un parche, y esa frontera no se toca para medir.
+
+    Nunca lanza: verificar veinte defectos no puede caerse entero por uno malo.
+    """
+    from atlas.core.swarm_backend import WorktreeManager
+
+    manager = WorktreeManager(Path(repo_root))
+    targets = tuple(defect.test_files)
+    if not targets:
+        return VerificationOutcome(defect.id, False, reason="el defecto no trae tests")
+
+    def _run_at(base_ref: str, *, with_fix_tests: bool) -> int:
+        with manager.session(f"fitness-{defect.id}", base_ref=base_ref) as worktree:
+            if with_fix_tests:
+                # Código en base + test del arreglo: el caso que mide.
+                subprocess.run(
+                    ["git", "checkout", defect.fix_sha, "--", *targets],
+                    cwd=worktree,
+                    env=clean_git_env(),
+                    capture_output=True,
+                    check=True,
+                    timeout=_GIT_TIMEOUT_S,
+                )
+            return run_tests(worktree, targets)
+
+    try:
+        base_exit = _run_at(defect.base_sha, with_fix_tests=True)
+    except Exception as exc:  # noqa: BLE001 — un defecto malo no cancela el pase
+        return VerificationOutcome(
+            defect.id, False, reason=f"base: {type(exc).__name__}: {exc}"[:300]
+        )
+    if base_exit == 0:
+        return VerificationOutcome(
+            defect.id, False, fails_at_base=False,
+            reason="el test ya pasa en base: el commit tocó tests por otra razón",
+        )
+
+    try:
+        fix_exit = _run_at(defect.fix_sha, with_fix_tests=False)
+    except Exception as exc:  # noqa: BLE001
+        return VerificationOutcome(
+            defect.id, False, fails_at_base=True,
+            reason=f"fix: {type(exc).__name__}: {exc}"[:300],
+        )
+    if fix_exit != 0:
+        return VerificationOutcome(
+            defect.id, False, fails_at_base=True, passes_at_fix=False,
+            reason="tampoco pasa con el arreglo: mide el entorno, no el defecto",
+        )
+    return VerificationOutcome(defect.id, True, True, True)
 
 
 def harvest(
