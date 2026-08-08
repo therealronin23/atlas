@@ -9,6 +9,7 @@ import os
 import signal
 import threading
 import time
+from collections.abc import Callable
 from typing import Any  # noqa: TC003 — runtime prometheus handle
 
 from atlas.core.contracts import Event, EventType
@@ -39,6 +40,8 @@ class AtlasServiceRunner:
         # valor de `_running` en el instante exacto en que se le llama (ver
         # test_stop_cleans_up_even_if_running_flag_was_cleared_before_stop_call).
         self._started = False
+        # Subsistema -> motivo, para los que no arrancaron. Ver `_start_stage`.
+        self._degraded: dict[str, str] = {}
         self._dashboard_thread: threading.Thread | None = None
         self._self_audit_thread: threading.Thread | None = None
         self._swarm_thread: threading.Thread | None = None
@@ -326,32 +329,81 @@ class AtlasServiceRunner:
         self._dashboard_thread.start()
         _log.info("Dashboard en http://%s:%s", host, port)
 
+    @property
+    def degraded_subsystems(self) -> dict[str, str]:
+        """Subsistemas que NO arrancaron, con su motivo. Vacío = arranque limpio.
+
+        Se consulta desde `atlas reality`: un daemon vivo con la mitad de sus
+        subsistemas muertos no es un daemon sano, y hasta ahora no había forma
+        de distinguirlos.
+        """
+        return dict(self._degraded)
+
+    def _start_stage(self, name: str, start: Callable[[], None]) -> None:
+        """Arranca un subsistema opcional sin que su fallo mate a los demás.
+
+        `stop()` lleva desde siempre este idioma; `start()` no lo tenía y por
+        eso un `OSError` de bind en el exportador Prometheus — el séptimo de
+        nueve arranques — se llevaba por delante el scheduler de mantenimiento,
+        que va justo detrás y ES el lazo de autoconstrucción.
+
+        Degradar en silencio sería sustituir un fallo ruidoso por uno invisible,
+        que es el modo de fallo caro de este proyecto. Por eso cada degradación
+        va al ledger Y a `degraded_subsystems`.
+        """
+        try:
+            start()
+        except Exception as exc:  # noqa: BLE001 — un accesorio no tumba el runtime
+            reason = f"{type(exc).__name__}: {exc}"
+            self._degraded[name] = reason
+            _log.exception("subsistema '%s' no arrancó; el runtime sigue degradado", name)
+            try:
+                self._orch._merkle.log(
+                    action="service.subsystem_degraded",
+                    agent="service_runner",
+                    result="degraded",
+                    risk_level="moderate",
+                    payload={"subsystem": name, "reason": reason},
+                )
+            except Exception:  # noqa: BLE001 — el ledger tampoco puede tumbar el arranque
+                _log.exception("no se pudo registrar la degradación de '%s'", name)
+
     def start(self) -> None:
-        self._wire_operational_alerts()
-        self._orch.start_offline_monitor(
-            poll_interval_seconds=int(os.environ.get("ATLAS_OFFLINE_POLL_S", "60")),
+        self._degraded.clear()
+        self._start_stage("operational_alerts", self._wire_operational_alerts)
+        self._start_stage(
+            "offline_monitor",
+            lambda: self._orch.start_offline_monitor(
+                poll_interval_seconds=int(os.environ.get("ATLAS_OFFLINE_POLL_S", "60")),
+            ),
         )
+        self._start_stage("telegram", self._start_telegram)
+        self._start_stage("thermal", self._start_thermal_if_enabled)
+        self._start_stage("dashboard", self._start_dashboard_if_enabled)
+        self._start_stage("prometheus", self._start_prometheus_if_enabled)
+        self._start_stage("maintenance", self._start_maintenance_scheduler_if_enabled)
+        self._running = True
+        self._start_stage("self_audit", self._start_self_audit_scheduler_if_enabled)
+        self._start_stage("swarm", self._start_swarm_scheduler_if_enabled)
+        self._start_stage("audit_sample", self._start_audit_sample_scheduler_if_enabled)
+        self._start_stage("knowledge", self._start_knowledge_scheduler_if_enabled)
+        degraded = sorted(self._degraded)
+        self._orch._merkle.log(
+            action="service.started",
+            agent="service_runner",
+            # `success` con subsistemas caídos era la mentira que dejaba pasar
+            # 24 días de lazo apagado sin que el ledger lo dijera.
+            result="degraded" if degraded else "success",
+            risk_level="moderate" if degraded else "safe",
+            payload={"version": self._orch.VERSION, "degraded": degraded},
+        )
+        self._started = True
+
+    def _start_telegram(self) -> None:
         if self._orch.start_telegram_bot():
             _log.info("Telegram bot iniciado")
         else:
             _log.info("Telegram bot no iniciado (sin token)")
-        self._start_thermal_if_enabled()
-        self._start_dashboard_if_enabled()
-        self._start_prometheus_if_enabled()
-        self._start_maintenance_scheduler_if_enabled()
-        self._running = True
-        self._start_self_audit_scheduler_if_enabled()
-        self._start_swarm_scheduler_if_enabled()
-        self._start_audit_sample_scheduler_if_enabled()
-        self._start_knowledge_scheduler_if_enabled()
-        self._orch._merkle.log(
-            action="service.started",
-            agent="service_runner",
-            result="success",
-            risk_level="safe",
-            payload={"version": self._orch.VERSION},
-        )
-        self._started = True
 
     def stop(self) -> None:
         if not self._started:

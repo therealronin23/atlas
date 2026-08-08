@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from atlas.engineering.impacted_tests import impacted_tests
 from atlas.security.bwrap_jail import BwrapJail
 
 
@@ -92,6 +93,11 @@ class ValidationReport:
     mypy_summary: str = ""
     duration_s: float = 0.0
     errors: list[str] = field(default_factory=list)
+    #: Etapa en la que terminó: "types" | "impacted" | "full". El ledger sólo
+    #: registraba `pytest_exit`, así que 80 fallos de validación no decían en
+    #: qué punto ni por qué se cayeron. Por defecto "full" para no romper los
+    #: informes que se construyen a mano.
+    stage: str = "full"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -102,6 +108,7 @@ class ValidationReport:
             "mypy_summary": self.mypy_summary,
             "duration_s": self.duration_s,
             "errors": list(self.errors),
+            "stage": self.stage,
         }
 
 
@@ -124,12 +131,27 @@ class ValidationRunner:
         skip_browser: bool = True,
         extra_env: dict[str, str] | None = None,
         jail_factory: Callable[[], _CommandJailLike] | None = None,
+        changed_files: Sequence[str] | None = None,
     ) -> None:
         self._root = project_root.resolve()
         self._python = python or sys.executable
         self._skip_browser = skip_browser
         self._extra_env = dict(extra_env or {})
         self._jail_factory = jail_factory or BwrapJail
+        # Rutas repo-relativas del candidato. Con ellas se puede correr antes
+        # el subconjunto impactado; sin ellas se va directo a la suite entera.
+        self._changed_files = tuple(changed_files or ())
+
+    def set_changed_files(self, paths: Sequence[str]) -> None:
+        """Declara qué tocó el candidato, para poder correr antes su
+        subconjunto impactado.
+
+        Existe como setter y no sólo como parámetro del constructor porque los
+        llamadores inyectan runners ya construidos (`_runner_factory` recibe
+        únicamente el worktree); cambiar esa firma rompería los dobles de test
+        de una decena de módulos para no ganar nada.
+        """
+        self._changed_files = tuple(paths)
 
     def run(self, timeout_s: int = 600) -> ValidationReport:
         import time
@@ -163,43 +185,55 @@ class ValidationRunner:
         # inherited host limit or a caller-controlled allocation.
         jail.RAM_LIMIT_BYTES = _MAX_CANDIDATE_RAM_BYTES
 
-        pytest_cmd = [
-            self._python,
-            "-m",
-            "pytest",
-            "tests/",
-            "-q",
-            "--tb=line",
-            # The candidate worktree is read-only.  Disabling pytest's cache
-            # avoids a hidden write attempt to .pytest_cache.
-            "-p",
-            "no:cacheprovider",
-        ]
-        if self._skip_browser:
-            pytest_cmd.extend(["-m", "not computer_use"])
+        def _run(cmd: list[str]) -> Any:
+            return jail.run_command(
+                cmd,
+                working_dir=self._root,
+                working_dir_writable=False,
+                read_only_paths=runtime_paths,
+                timeout_s=timeout_s,
+                extra_env=env,
+            )
 
-        py_result = jail.run_command(
-            pytest_cmd,
-            working_dir=self._root,
-            working_dir_writable=False,
-            read_only_paths=runtime_paths,
-            timeout_s=timeout_s,
-            extra_env=env,
-        )
-        mypy_cmd = [
-            self._python,
-            "-m",
-            "mypy",
-            "src/atlas/",
-        ]
-        my_result = jail.run_command(
-            mypy_cmd,
-            working_dir=self._root,
-            working_dir_writable=False,
-            read_only_paths=runtime_paths,
-            timeout_s=timeout_s,
-            extra_env=env,
-        )
+        def _tail(result: Any) -> str:
+            return ((result.stdout or "") + (result.stderr or "")).strip()[-2000:]
+
+        # --- Etapa 1: tipos. Medido en esta máquina: mypy 1,24 s frente a los
+        # 396 s de la suite completa (320x). Iba SEGUNDO y se ejecutaba siempre,
+        # incluso con pytest ya fallado: los 14 fallos mypy-solo del ledger
+        # pagaron la suite entera para llegar a un veredicto de un segundo.
+        my_result = _run([self._python, "-m", "mypy", "src/atlas/"])
+        if my_result.returncode != 0:
+            return ValidationReport(
+                passed=False,
+                pytest_exit=0,
+                mypy_exit=my_result.returncode,
+                mypy_summary=_tail(my_result),
+                duration_s=round(time.monotonic() - start, 2),
+                errors=["mypy failed"],
+                stage="types",
+            )
+
+        # --- Etapa 2: tests impactados, si el candidato dice qué tocó. Sólo
+        # puede RECHAZAR: son un subconjunto de la suite, así que un fallo aquí
+        # es un fallo allí, pero un verde aquí no concluye nada.
+        impacted = self._impacted_targets()
+        if impacted:
+            imp_result = _run(self._pytest_cmd(impacted))
+            if imp_result.returncode != 0:
+                return ValidationReport(
+                    passed=False,
+                    pytest_exit=imp_result.returncode,
+                    mypy_exit=my_result.returncode,
+                    pytest_summary=_tail(imp_result),
+                    mypy_summary=_tail(my_result),
+                    duration_s=round(time.monotonic() - start, 2),
+                    errors=["pytest failed"],
+                    stage="impacted",
+                )
+
+        # --- Etapa 3: la suite completa. ÚNICA etapa que puede aceptar.
+        py_result = _run(self._pytest_cmd(["tests/"]))
         duration = time.monotonic() - start
         passed = py_result.returncode == 0 and my_result.returncode == 0
         errors: list[str] = []
@@ -207,17 +241,39 @@ class ValidationRunner:
             errors.append("pytest failed")
         if my_result.returncode != 0:
             errors.append("mypy failed")
-        tail_py = (py_result.stdout or "") + (py_result.stderr or "")
-        tail_my = (my_result.stdout or "") + (my_result.stderr or "")
         return ValidationReport(
             passed=passed,
             pytest_exit=py_result.returncode,
             mypy_exit=my_result.returncode,
-            pytest_summary=tail_py.strip()[-2000:],
-            mypy_summary=tail_my.strip()[-2000:],
+            pytest_summary=_tail(py_result),
+            mypy_summary=_tail(my_result),
             duration_s=round(duration, 2),
             errors=errors,
+            stage="full",
         )
+
+    def _pytest_cmd(self, targets: Sequence[str]) -> list[str]:
+        cmd = [self._python, "-m", "pytest", *targets, "-q", "--tb=line",
+               # The candidate worktree is read-only.  Disabling pytest's cache
+               # avoids a hidden write attempt to .pytest_cache.
+               "-p", "no:cacheprovider"]
+        if self._skip_browser:
+            cmd.extend(["-m", "not computer_use"])
+        return cmd
+
+    def _impacted_targets(self) -> list[str]:
+        """Tests alcanzados por el diff, o lista vacía si no se puede saber.
+
+        Vacío significa NO MEDIBLE, nunca "todo verde": saltarse la suite
+        completa por un mapeo vacío sería aceptar sin evidencia. Y el mapeo es
+        señal, no puerta — si revienta, se cae con elegancia a la suite entera.
+        """
+        if not self._changed_files:
+            return []
+        try:
+            return list(impacted_tests(list(self._changed_files), root=self._root))
+        except Exception:  # noqa: BLE001 — una heurística rota no cancela la validación
+            return []
 
     def _runtime_read_only_paths(self) -> tuple[Path, ...]:
         """Return only the current interpreter runtime outside ``/usr``.

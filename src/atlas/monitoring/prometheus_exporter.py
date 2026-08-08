@@ -4,6 +4,7 @@ ADR-024 — Minimal Prometheus text exposition from TelemetryBus snapshot.
 
 from __future__ import annotations
 
+import logging
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import TYPE_CHECKING
@@ -11,9 +12,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from atlas.logging.telemetry_bus import TelemetryBus
 
+_log = logging.getLogger(__name__)
+
 
 class PrometheusExporter:
-    """Serves /metrics on localhost only."""
+    """Serves /metrics on localhost only.
+
+    Accesorio, no dependencia: si el puerto no se puede tomar, el exportador se
+    queda apagado y lo declara en `running`/`last_error`. NUNCA propaga el fallo
+    de bind. Propagarlo costó el incidente del 2026-08-02 — 4.872 reinicios en
+    23 h y 9.744 registros basura en el ledger Merkle, porque un `OSError`
+    [Errno 98] subía hasta el CLI y mataba el orquestador entero, y systemd lo
+    relanzaba contra el mismo puerto ocupado sin límite de reintentos.
+    """
 
     def __init__(self, telemetry: TelemetryBus, host: str = "127.0.0.1", port: int = 9091) -> None:
         self._telemetry = telemetry
@@ -21,6 +32,17 @@ class PrometheusExporter:
         self._port = port
         self._thread: threading.Thread | None = None
         self._httpd: HTTPServer | None = None
+        self._last_error: str | None = None
+
+    @property
+    def running(self) -> bool:
+        """True sólo si el servidor tomó el puerto y su hilo está vivo."""
+        return self._httpd is not None and self._thread is not None and self._thread.is_alive()
+
+    @property
+    def last_error(self) -> str | None:
+        """Motivo del último arranque fallido, o None si arrancó bien."""
+        return self._last_error
 
     def render_metrics(self) -> str:
         snap = self._telemetry.snapshot()
@@ -65,7 +87,20 @@ class PrometheusExporter:
             def log_message(self, *_: object) -> None:
                 pass
 
-        self._httpd = HTTPServer((self._host, self._port), Handler)
+        try:
+            self._httpd = HTTPServer((self._host, self._port), Handler)
+        except OSError as exc:
+            # EADDRINUSE, EACCES sobre puerto privilegiado, familia no
+            # disponible: todas son "no hay métricas", ninguna es "no hay Atlas".
+            self._httpd = None
+            self._thread = None
+            self._last_error = f"{type(exc).__name__}: {exc}"
+            _log.warning(
+                "Prometheus deshabilitado en %s:%s — %s. El runtime continúa sin métricas.",
+                self._host, self._port, self._last_error,
+            )
+            return
+        self._last_error = None
         self._thread = threading.Thread(
             target=self._httpd.serve_forever,
             daemon=True,
@@ -74,7 +109,12 @@ class PrometheusExporter:
         self._thread.start()
 
     def stop(self) -> None:
+        # Idempotente y seguro sobre un exportador que nunca llegó a arrancar:
+        # `start()` puede haber degradado y dejado ambos en None.
         if self._httpd:
             self._httpd.shutdown()
+            self._httpd.server_close()
+            self._httpd = None
         if self._thread:
             self._thread.join(timeout=3)
+            self._thread = None

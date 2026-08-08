@@ -82,11 +82,15 @@ def test_default_validation_uses_read_only_jail_without_host_secrets(
 
     assert report.passed is True
     assert len(jail.calls) == 2
-    pytest_call, mypy_call = jail.calls
+    # 2026-08-06: mypy pasó a ir PRIMERO. Medido en la máquina del operador,
+    # mypy tarda 1,24 s y la suite completa 396 s (320x); con el orden anterior
+    # los 14 fallos mypy-solo del ledger pagaban la suite entera para llegar a
+    # un veredicto de un segundo. Ver test_validation_runner_staged.py.
+    mypy_call, pytest_call = jail.calls
+    assert mypy_call.command == [runner._python, "-m", "mypy", "src/atlas/"]
     assert pytest_call.command[:4] == [runner._python, "-m", "pytest", "tests/"]
     assert "-p" in pytest_call.command
     assert "no:cacheprovider" in pytest_call.command
-    assert mypy_call.command == [runner._python, "-m", "mypy", "src/atlas/"]
     for call in jail.calls:
         assert call.working_dir == tmp_path.resolve()
         assert call.working_dir_writable is False

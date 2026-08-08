@@ -425,6 +425,10 @@ class ColdUpdateManager:
         self._require_intact_patch(proposal)
         worktree = Path(proposal.worktree_path)
         runner = self._runner_factory(worktree)
+        # Etapa impactada: el runner corre antes el subconjunto de tests que
+        # toca el diff (medido: mypy 1,24 s / suite completa 396 s). Duck-typed
+        # a propósito — los dobles de test inyectan runners que no lo tienen.
+        self._declare_changed_files(runner, worktree, proposal.base_ref)
         report = runner.run()
 
         if not report.passed:
@@ -503,6 +507,9 @@ class ColdUpdateManager:
                 "passed": report.passed,
                 "pytest_exit": report.pytest_exit,
                 "mypy_exit": report.mypy_exit,
+                # Sin esto, los 80 fallos del ledger sólo decían `pytest_exit=1`
+                # y era imposible saber en qué punto ni a qué coste murieron.
+                "stage": getattr(report, "stage", "full"),
             },
         )
         # 'failed' es terminal (approve exige 'validated'; nadie lo revisita) y
@@ -837,6 +844,44 @@ class ColdUpdateManager:
             stdin=subprocess.DEVNULL,
             timeout=PATCH_TIMEOUT_S,
         )
+
+    def _declare_changed_files(self, runner: Any, worktree: Path, base_ref: str) -> None:
+        """Pasa al runner las rutas que tocó el candidato, si sabe recibirlas.
+
+        Señal, no puerta: si el runner no lo soporta o git no responde, la
+        validación sigue exactamente como antes contra la suite completa.
+        """
+        setter = getattr(runner, "set_changed_files", None)
+        if not callable(setter):
+            return
+        changed = self._changed_paths(worktree, base_ref)
+        if changed:
+            setter(changed)
+
+    def _changed_paths(self, worktree: Path, base_ref: str) -> list[str]:
+        """Rutas modificadas respecto a `base_ref`, incluidas las nuevas sin
+        rastrear. Mismo idioma que `_tests_diff_empty`; lista vacía ante
+        cualquier fallo, que el runner interpreta como "no medible"."""
+        if not worktree.exists():
+            return []
+        try:
+            env = clean_git_env()
+            tracked = subprocess.run(
+                ["git", "diff", "--name-only", base_ref],
+                cwd=worktree, env=env, capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+            untracked = subprocess.run(
+                ["git", "ls-files", "--others", "--exclude-standard"],
+                cwd=worktree, env=env, capture_output=True, text=True,
+                check=False, timeout=30,
+            )
+        except Exception:  # noqa: BLE001 — nunca bloquea la validación
+            return []
+        if tracked.returncode != 0 or untracked.returncode != 0:
+            return []
+        paths = tracked.stdout.split() + untracked.stdout.split()
+        return sorted({p for p in paths if p})
 
     def _tests_diff_empty(self, worktree: Path, base_ref: str) -> bool:
         """True si ningún path bajo tests/ fue modificado/añadido respecto a base_ref.
