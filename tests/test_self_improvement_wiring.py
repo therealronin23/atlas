@@ -601,6 +601,17 @@ class TestProjectGraphTick:
         assert not db.with_name(db.name + ".rebuild").exists()
 
         # Mismo HEAD → ni toca Kuzu.
+        #
+        # 2026-08-08: el corte "al día" dejó de mirar sólo el fichero de estado
+        # y comprueba además que la BD esté SANA (una corrupción que no mueva el
+        # HEAD se volvía permanente, ver `graph_needs_rebuild`). La BD de este
+        # test es un fichero de texto con "kuzu-fake", que `graph_freshness`
+        # clasifica —correctamente— como ilegible. Se declara sana para poder
+        # seguir midiendo lo que este test mide: el corte barato.
+        monkeypatch.setattr(
+            "atlas.memory.project_graph.graph_freshness",
+            lambda *_, **__: {"status": "FRESH", "reason": "fixture"},
+        )
         second = orch.maintenance_project_graph_tick()
         assert second["status"] == "up_to_date"
         assert len(builds) == 1

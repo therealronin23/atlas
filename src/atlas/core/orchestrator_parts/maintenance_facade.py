@@ -23,6 +23,31 @@ from atlas.core.provider_status import check_provider_status
 from atlas.mcp.workbench_compliance import summarize_compliance_findings
 from atlas.security.writer_lock import ProjectGraphWriterLock, WriterLockHeld
 
+#: Estados de `graph_freshness` que significan "esta BD no sirve", pase lo que
+#: pase con el fichero de estado del tick.
+_GRAPH_UNUSABLE = frozenset({"EMPTY", "UNAVAILABLE", "NO_DB"})
+
+
+def graph_needs_rebuild(
+    state: dict[str, Any], head: str, db_path: Path, repo_root: Path
+) -> bool:
+    """¿Hay que regenerar el grafo?
+
+    Dos motivos independientes, y el segundo faltaba: que el HEAD haya avanzado,
+    o que la BD no esté sana AUNQUE el HEAD coincida.
+
+    El fichero de estado dice lo que pasó la última vez; la BD dice lo que hay
+    ahora. Confiar sólo en el primero convierte una corrupción en permanente:
+    el 2026-08-08 el catálogo perdió FileVersion/Module/IMPORTS sin que el head
+    cambiara, así que el tick habría contestado "al día" indefinidamente.
+    """
+    if state.get("last_head") != head:
+        return True
+    from atlas.memory.project_graph import graph_freshness
+
+    status = str(graph_freshness(db_path, repo_root=repo_root).get("status", ""))
+    return status in _GRAPH_UNUSABLE
+
 _log = logging.getLogger(__name__)
 
 
@@ -1827,9 +1852,6 @@ class MaintenanceFacade:
             state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
         except (OSError, ValueError):
             state = {}
-        if state.get("last_head") == head:
-            return {"status": "up_to_date", "head": head}
-
         import shutil
 
         from atlas.memory.project_graph import (
@@ -1840,6 +1862,12 @@ class MaintenanceFacade:
 
         db_env = os.environ.get("ATLAS_PROJECT_GRAPH_DB", "").strip()
         db = Path(db_env).expanduser() if db_env else DEFAULT_GRAPH_DB
+        # El corte "al día" miraba SÓLO el fichero de estado. Una BD rota con el
+        # mismo HEAD se declaraba al día y no se curaba nunca — exactamente el
+        # agujero que dejó el incidente del 2026-08-08, donde el catálogo perdió
+        # las tablas bitemporales sin que el head cambiara.
+        if not graph_needs_rebuild(state, head, db, root):
+            return {"status": "up_to_date", "head": head}
         wal = db.with_name(db.name + ".wal")
         rebuild = db.with_name(db.name + ".rebuild")
         rebuild_wal = rebuild.with_name(rebuild.name + ".wal")
