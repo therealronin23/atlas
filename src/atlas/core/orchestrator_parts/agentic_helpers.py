@@ -220,6 +220,12 @@ def tool_specs() -> list[dict[str, Any]]:
             ["url"],
         ),
         fn(
+            "terminal_plan",
+            "Ejecuta una secuencia de comandos de bash interactiva mediante el TerminalPlanner. MUTA el host: requiere aprobación inline.",
+            {"instruction": {"type": "string"}},
+            ["instruction"],
+        ),
+        fn(
             "browser_click",
             "Hace click en un selector. MUTA estado de host: requiere aprobación inline.",
             {"selector": {"type": "string"}},

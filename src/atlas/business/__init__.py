@@ -4,3 +4,9 @@ Draft-first: todo core y toda entidad nacen borrador; activar exige
 aprobación humana vía gate. La canonicidad (external/atlas/hybrid) es
 explícita. Este paquete JAMÁS importa Orchestrator (guard en tests).
 """
+from atlas.business.extract import extract_contacts_from_gmail, extract_from_invoices
+
+__all__ = [
+    "extract_contacts_from_gmail",
+    "extract_from_invoices",
+]

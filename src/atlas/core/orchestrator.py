@@ -1938,6 +1938,11 @@ class Orchestrator:
     def _execute_browser_command(self, action: str, args: dict[str, Any]) -> dict[str, Any]:
         return self._gate_f_exec.execute_browser_command(action, args)
 
+    def _execute_terminal_command(self, action: str, args: dict[str, Any], *, task: Task | None = None) -> dict[str, Any]:
+        if task is None:
+            raise ValueError("Task is required for terminal commands")
+        return self._gate_f_exec.execute_terminal_command(action, args, task=task)
+
     def _execute_editor_command(
         self,
         action: str,

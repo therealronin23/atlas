@@ -25,7 +25,7 @@ def test_native_roots_are_the_four_built() -> None:
     from atlas.mcp.trunk_manifest import native_roots
 
     names = {r.name for r in native_roots()}
-    assert names == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
+    assert names == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph", "atlas-engineering"}
 
 
 def test_client_config_lists_every_native_root_with_a_launch_command() -> None:
@@ -37,7 +37,7 @@ def test_client_config_lists_every_native_root_with_a_launch_command() -> None:
         knowledge_base=Path("/save/kb"),
     )
     servers = cfg["mcpServers"]
-    assert set(servers) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
+    assert set(servers) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph", "atlas-engineering"}
     mem = servers["atlas-memory"]
     assert mem["command"]  # un ejecutable
     assert "atlas.mcp.memory_server" in mem["args"]
@@ -57,7 +57,7 @@ def test_tool_overhead_is_small_anti_kitchen_sink() -> None:
     # que olvidó subir este umbral — quedó roto en silencio 6 días hasta que
     # F2.6 corrió la suite completa (2026-07-22). Cada tool nueva real debe
     # subir este número A PROPÓSITO, en el mismo commit que la añade.
-    assert tool_overhead() <= 25
+    assert tool_overhead() <= 30
 
 
 # ---------------------------------------------------------------------------

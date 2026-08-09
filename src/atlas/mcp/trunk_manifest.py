@@ -80,6 +80,16 @@ def native_roots() -> list[RootSpec]:
                 "graph_callees",
             ),
         ),
+        RootSpec(
+            "atlas-engineering",
+            "atlas.mcp.engineering_server",
+            "repo",
+            tools=(
+                "engineering_read_findings",
+                "engineering_generate_hypotheses",
+                "engineering_impacted_tests",
+            ),
+        ),
     ]
 
 

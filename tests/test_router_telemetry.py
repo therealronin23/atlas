@@ -17,6 +17,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 import pytest
@@ -220,7 +221,7 @@ def _run_hook(repo_root: Path, prompt: str) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         text=True,
         timeout=60,
-        env={"PYTHONPATH": str(_REPO_ROOT / "src"), "PATH": "", "HOME": str(home)},
+        env={"PYTHONPATH": str(_REPO_ROOT / "src"), "PATH": os.environ.get("PATH", ""), "HOME": str(home)},
     )
 
 

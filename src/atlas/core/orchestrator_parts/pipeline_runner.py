@@ -407,7 +407,16 @@ class PipelineRunner:
             # responder via inferencia real con MemoryDistiller + PIISurrogate.
             # Si no, fallback al passthrough informativo de v0.1.
             if self._orch._gate_d_enabled and self._orch._inference_hub is not None:
-                self._orch._agentic_executor.execute_local_safe(task)
+                # T6.2: Reparto de carga laptop <-> VPS con privacidad
+                if task.sensitivity in ("low", "normal"):
+                    try:
+                        self._orch._delegate_to_hermes(task)
+                        return # Terminamos aquí porque delegamos asíncronamente
+                    except Exception as e:
+                        # Fallback a local si Hermes está caído (Elasticidad)
+                        self._orch._agentic_executor.execute_local_safe(task)
+                else:
+                    self._orch._agentic_executor.execute_local_safe(task)
             else:
                 task.tool_name = "local_safe.passthrough"
                 task.result = {

@@ -557,6 +557,8 @@ class AgenticExecutor:
                 result = host._execute_editor_command(action, args, task=task)
             elif tool == "browser":
                 result = host._execute_browser_command(action, args)
+            elif tool == "terminal":
+                result = host._execute_terminal_command(action, args, task=task)
             else:
                 return f"error: mutación desconocida '{name}'"
             return host._stringify_tool_result(result)

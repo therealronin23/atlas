@@ -69,7 +69,11 @@ def test_emergency_governance_degrades(tmp_path):
 
 
 def test_missing_env_is_advisory_only(tmp_path, monkeypatch):
-    for k in ("HERMES_API_KEY", "GROQ_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
+    for k in (
+        "HERMES_KANBAN_TRANSPORT", "HERMES_SSH_HOST", "HERMES_API_KEY", "HERMES_BASE_URL",
+        "HERMES_MODEL_PROVIDER", "GROQ_API_KEY", "OPENROUTER_API_KEY", "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_ALLOWED_USERS", "TELEGRAM_CHAT_ID", "ATLAS_DASHBOARD_URL"
+    ):
         monkeypatch.delenv(k, raising=False)
     orch = FakeOrch(tmp_path)
     report = run_diagnostics(orch, kanban=FakeKanban())
@@ -111,10 +115,9 @@ def test_environment_reports_presence_without_claiming_every_key_is_required(
     tmp_path, monkeypatch
 ):
     for key in (
-        "HERMES_API_KEY",
-        "GROQ_API_KEY",
-        "TELEGRAM_BOT_TOKEN",
-        "TELEGRAM_CHAT_ID",
+        "HERMES_KANBAN_TRANSPORT", "HERMES_SSH_HOST", "HERMES_API_KEY", "HERMES_BASE_URL",
+        "HERMES_MODEL_PROVIDER", "GROQ_API_KEY", "OPENROUTER_API_KEY", "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_ALLOWED_USERS", "TELEGRAM_CHAT_ID", "ATLAS_DASHBOARD_URL"
     ):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("OPENROUTER_API_KEY", "synthetic-present-value")

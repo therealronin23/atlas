@@ -11,11 +11,14 @@ Postura de seguridad (ADR-036/037):
   - Secretos por server desde config NO commiteada; nunca al Merkle/contexto.
 """
 
+from atlas.mcp.adapter_registry import AdapterRegistry, AtlasAdapter
 from atlas.mcp.config import McpServerConfig, load_servers
 from atlas.mcp.registry import McpRegistry
 from atlas.mcp.transport import McpProtocolError, McpTransport, StdioTransport
 
 __all__ = [
+    "AdapterRegistry",
+    "AtlasAdapter",
     "McpProtocolError",
     "McpRegistry",
     "McpServerConfig",

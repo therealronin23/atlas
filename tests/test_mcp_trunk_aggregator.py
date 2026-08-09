@@ -185,7 +185,7 @@ def test_root_configs_map_each_root_to_its_launch_command(
     cfgs = {c.name: c for c in root_configs(
         save_dir=Path("save"), repo_root=repo_root, python=sys.executable
     )}
-    assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph"}
+    assert set(cfgs) == {"atlas-memory", "atlas-operating", "atlas-knowledge", "atlas-graph", "atlas-engineering"}
 
     mem = cfgs["atlas-memory"]
     assert mem.cmd[0] == sys.executable

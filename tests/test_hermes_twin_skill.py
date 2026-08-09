@@ -196,8 +196,10 @@ def test_response_size_is_bounded(
 
 
 def test_env_file_is_parsed_as_data_and_requires_private_permissions(
-    twin_client_module: ModuleType, tmp_path: Path,
+    twin_client_module: ModuleType, tmp_path: Path, monkeypatch
 ) -> None:
+    monkeypatch.delenv("ATLAS_DASHBOARD_URL", raising=False)
+    monkeypatch.delenv("HERMES_API_KEY", raising=False)
     env_file = tmp_path / ".env"
     env_file.write_text(
         'ATLAS_DASHBOARD_URL="http://100.85.236.58:7331"\n'

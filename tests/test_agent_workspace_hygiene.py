@@ -20,6 +20,10 @@ def _active_patterns(path: Path) -> set[str]:
 
 
 def test_codex_capability_hook_resolves_git_root_from_subdirectory() -> None:
+    # 1. Ejecutar hook desde un subdirectorio real (ej: UI web)
+    sub_dir = Path(__file__).resolve().parents[1] / "prototypes" / "atlas_ui" / "mission_console"
+    assert sub_dir.exists(), "El subdirectorio de test debe existir en el repo."
+
     env = os.environ.copy()
     env.pop("CLAUDE_PROJECT_DIR", None)
     env.pop("CURSOR_PROJECT_DIR", None)
@@ -29,7 +33,7 @@ def test_codex_capability_hook_resolves_git_root_from_subdirectory() -> None:
 
     result = subprocess.run(
         command,
-        cwd=REPO_ROOT / "ui" / "atlas-shell",
+        cwd=sub_dir,
         env=env,
         input="",
         text=True,
