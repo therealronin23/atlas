@@ -24,11 +24,45 @@ from pathlib import Path
 from typing import Any
 
 __all__ = [
+    "PAUSED_LLM_TICKS",
     "is_paused",
+    "llm_spend_paused",
     "pause",
     "pause_status",
     "resume",
 ]
+
+#: Ticks de mantenimiento que GASTAN INFERENCIA y por tanto se detienen con la
+#: pausa. El criterio es "consume LLM", no el nombre: un tick sin inferencia es
+#: gratis y da observabilidad justo cuando el lazo está parado, así que sigue.
+#:
+#: Medido el 2026-08-09: con el lazo pausado desde el día 6, el daemon seguía
+#: haciendo 128 `analyst_analyze` y 72 `panorama_scout_discover` en dos días —
+#: deliberación cuyo consumidor no existía. `is_paused()` se consultaba en
+#: EXACTAMENTE un sitio, el tick de self_build.
+#:
+#: Esta lista es documentación; quien la impide envejecer es
+#: `tests/test_pause_stops_llm_spend.py`, que recorre los ticks reales y falla
+#: si aparece uno con inferencia y sin guardia.
+PAUSED_LLM_TICKS: tuple[str, ...] = (
+    "maintenance_self_build_tick",
+    "maintenance_scheduler",
+    "maintenance_research_tick",
+    "maintenance_knowledge_ingest_tick",
+    "maintenance_cold_update_batcher",
+)
+
+
+def llm_spend_paused(repo_root: Path) -> bool:
+    """¿Debe un tick que gasta inferencia abstenerse ahora mismo?
+
+    Alias semántico de `is_paused` con nombre propio a propósito: el sitio de
+    llamada dice POR QUÉ se detiene (gasta LLM y el lazo está parado), no sólo
+    QUÉ bandera mira. La distinción importó al implementarlo — pausar el grafo
+    o el watchdog habría sido un error, porque son gratis y son justo lo que se
+    quiere ver mientras el lazo no corre.
+    """
+    return is_paused(repo_root)
 
 _STATE_REL_PATH = Path("workspace") / "self_build" / "pause_state.json"
 

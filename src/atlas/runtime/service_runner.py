@@ -108,6 +108,19 @@ class AtlasServiceRunner:
             "yes",
         ):
             return
+        # El scheduler gasta inferencia por su `MaintenanceAnalyst`: con el lazo
+        # pausado no arranca (2026-08-09). Con el lazo parado desde el 06-ago el
+        # daemon seguía haciendo 128 `analyst_analyze` en dos días —
+        # deliberación cuyo consumidor no existía.
+        #
+        # El freno va AQUÍ y no en `maintenance_scheduler()`, que es un accesor:
+        # gatearlo devolvía None y rompía a todo el que esperaba el objeto. Un
+        # constructor no gasta; gasta el ciclo que se arranca después.
+        from atlas.core.self_maintenance.self_build_pause import llm_spend_paused
+
+        if llm_spend_paused(self._orch._project_root()):
+            _log.info("scheduler de mantenimiento no arranca: self-build pausado")
+            return
         scheduler = self._orch.maintenance_scheduler()
         poll = os.environ.get("ATLAS_MAINTENANCE_POLL_S")
         if poll:

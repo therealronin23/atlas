@@ -974,6 +974,15 @@ class MaintenanceFacade:
         ``ATLAS_RESEARCH=1``. Cadencia propia de 24h vía fichero de estado
         (independiente del poll del scheduler) — no tiene sentido pagar el
         ciclo completo de descubrimiento más de una vez al día."""
+        # Gasta inferencia: con el lazo pausado se abstiene (2026-08-09).
+        # Con el lazo parado desde el 06-ago, el daemon seguía haciendo 128
+        # `analyst_analyze` y 72 barridos en dos días — deliberación sin
+        # consumidor. `is_paused()` se consultaba en un solo sitio.
+        from atlas.core.self_maintenance.self_build_pause import llm_spend_paused
+
+        if llm_spend_paused(self._project_root()):
+            return {"status": "paused_llm_spend"}
+
         # Guardia anti-recursión — ver maintenance_self_build_tick.
         if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
             return {"status": "nested_run_guard"}
@@ -1176,6 +1185,15 @@ class MaintenanceFacade:
         Opt-in explícito: requiere ``ATLAS_PROVIDER_DISCOVERY=1``. Cadencia
         propia de 24h (fichero de estado, independiente del poll del
         scheduler) -- espejo exacto de ``maintenance_provider_smoke_tick``."""
+        # Gasta inferencia: con el lazo pausado se abstiene (2026-08-09).
+        # Con el lazo parado desde el 06-ago, el daemon seguía haciendo 128
+        # `analyst_analyze` y 72 barridos en dos días — deliberación sin
+        # consumidor. `is_paused()` se consultaba en un solo sitio.
+        from atlas.core.self_maintenance.self_build_pause import llm_spend_paused
+
+        if llm_spend_paused(self._project_root()):
+            return {"status": "paused_llm_spend"}
+
         # Guardia anti-recursión -- ver maintenance_self_build_tick.
         if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
             return {"status": "nested_run_guard"}
@@ -1697,6 +1715,15 @@ class MaintenanceFacade:
         ``ATLAS_MEMORY_DB`` — mismo sustrato que sirve ``recall`` a cualquier
         agente conectado. Opt-in: ``ATLAS_KNOWLEDGE_INGEST=1``. Cadencia
         propia de 24h (fichero de estado, independiente del poll)."""
+        # Gasta inferencia: con el lazo pausado se abstiene (2026-08-09).
+        # Con el lazo parado desde el 06-ago, el daemon seguía haciendo 128
+        # `analyst_analyze` y 72 barridos en dos días — deliberación sin
+        # consumidor. `is_paused()` se consultaba en un solo sitio.
+        from atlas.core.self_maintenance.self_build_pause import llm_spend_paused
+
+        if llm_spend_paused(self._project_root()):
+            return {"status": "paused_llm_spend"}
+
         # Guardia anti-recursión — ver maintenance_self_build_tick.
         if os.environ.get("ATLAS_NESTED_TEST_RUN", "").strip() == "1":
             return {"status": "nested_run_guard"}
