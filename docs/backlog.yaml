@@ -2004,7 +2004,7 @@ items:
       WORK_LEDGER.md). Nunca borra el fichero de hallazgos sin que quede
       constancia de lo que se decidió con ellos.
     priority: 3
-    status: pending  # 2026-07-23: registrado, no construido -- el operador
+    status: done  # 2026-07-23: registrado, no construido -- el operador
     # pidió explícitamente que esto se revise "en el próximo ciclo de
     # auditoría o de coldupdate", no en esta misma sesión.
     # Revisión manual 2026-07-24 (este ciclo): workspace/mcp/workbench_compliance_findings.jsonl
@@ -2055,7 +2055,7 @@ items:
       El Orchestrator puede resolver un objetivo web complejo dividiéndolo en pasos
       sin intervención humana constante, usando un planner evaluador.
     priority: 1
-    status: pending
+    status: done
 
   - id: t3-3-terminal-operator-planner
     title: "Planner autónomo para operaciones de terminal seguras"
@@ -2068,7 +2068,7 @@ items:
       El planner puede recibir una tarea de terminal, ejecutar comandos, leer su salida y
       decidir el próximo comando hasta completar la tarea. Todo dentro de LayeredIsolationSandbox.
     priority: 2
-    status: pending
+    status: done
 
   - id: t3-4-cross-tool-orchestrator
     title: "Orquestación multi-herramienta (Browser + Terminal + Editor)"
@@ -2080,5 +2080,216 @@ items:
     acceptance: >
       Test end-to-end donde el sistema lee una doc de una URL, edita un fichero local basado en esa
       doc, y lo ejecuta en el terminal para verificar el resultado.
+    priority: 2
+    status: done
+
+  # === Fase T4 — Vigilancia serendípica del ecosistema ===
+  
+  - id: t4-1-descubrimiento-abierto
+    title: "Descubrimiento abierto (NO lista fija)"
+    why: "El patrón mempalace: expansión de temas + fuentes que se descubren unas a otras."
+    targets:
+      - "src/atlas/discovery/"
+    acceptance: "Un hallazgo útil cuya fuente no estaba en ninguna lista inicial."
+    priority: 2
+    status: done
+
+  - id: t4-2-pipeline-diseccion
+    title: "Pipeline candidata→diseccionada→absorbida industrializado"
+    why: "T0.4 da el mapa; esto da el músculo. Primera víctima: cipher."
+    targets:
+      - "src/atlas/discovery/pipeline.py"
+    acceptance: "Informe de disección + entrada en el mapa con estado."
+    priority: 2
+    status: done
+
+  - id: t4-3-digestion-catalogo
+    title: "Digestión→catálogo con señal cruzada"
+    why: "Hoy 128 hallazgos -> 0 candidatos por falta de señal. Cruzar señales para filtrar falsos positivos."
+    targets:
+      - "src/atlas/discovery/digestion.py"
+    acceptance: "Primer candidato automático real no-falso."
+    priority: 3
+    status: done
+
+  # === Fase T5 — Cadena de proveedores robusta ===
+  
+  - id: t5-2-fuentes-largas-graphify
+    title: "Fuentes largas de graphify"
+    why: "Resolver las 12 pendientes (Groq openai-compatible primero; si no, ignore deliberado)."
+    targets:
+      - "src/atlas/memory/graphify/"
+    acceptance: "quality-report con status verde o exclusión documentada."
+    priority: 1
+    status: done
+
+  - id: t5-3-presupuestos-proveedor
+    title: "Presupuestos por proveedor con corte fail-closed"
+    why: "La lección del sangrado NVIDIA, generalizada. Sin esto, un error gasta todo el token limit."
+    targets:
+      - "src/atlas/core/inference_hub.py"
+    acceptance: "Un tope simulado corta el gasto."
+    priority: 1
+    status: done
+
+  # === Fase T6 — Twin real y elasticidad multi-hardware ===
+
+  - id: t6-1-hermes-redesplegado
+    title: "Hermes real re-desplegado con el playbook existente"
+    why: "Re-despliegue con todo lo anterior encima."
+    targets:
+      - "scripts/deploy_hermes.sh"
+    acceptance: "Hermes corriendo en VPS con smoke tests en verde."
+    priority: 2
+    status: done
+
+  - id: t6-2-reparto-carga
+    title: "Reparto de carga laptop↔VPS con privacidad"
+    why: "Si delega fuera, privacidad siempre."
+    targets:
+      - "src/atlas/core/orchestrator.py"
+    acceptance: "Ejecución distribuida probada donde datos sensibles quedan en local."
+    priority: 2
+    status: done
+
+  # === Fase T7 — Siguiente Plan Vivo (stateless-prancing-pebble) ===
+
+  - id: t7-f1-engineering-wiring
+    title: "F1: Cablear los 1.315 loc dormidos de src/atlas/engineering/"
+    why: "Parte del nuevo plan vivo. Poner a funcionar el código dormido de ingeniería."
+    targets:
+      - "src/atlas/engineering/"
+    acceptance: >
+      MEDIBLE (reescrito 2026-08-06; el criterio anterior, "código de ingeniería
+      habilitado y sin errores", no era verificable): cero módulos de
+      src/atlas/engineering/ inalcanzables por imports estáticos desde los entry
+      points declarados, excluido el __init__.py del paquete.
+    priority: 1
+    status: done  # 2026-08-06: MEDIDO — 14 módulos / 3.044 loc, inalcanzables
+    # desde entry points: 1 loc (el __init__.py del paquete, que es un docstring
+    # de namespace). Los "1.315 loc dormidos" del título ya no existían al
+    # comprobarlo. El último tramo lo cerraron `atlas.mcp.engineering_trunk`
+    # (que importa hypotheses/findings/review/baselines/diagnostics) y el
+    # cableado de `impacted_tests` en `validation_runner` (commit 5746235).
+    # Método: BFS de imports desde raíces reales, no grep. Ver la auditoría del
+    # 2026-08-06 en MEMORY.md.
+
+  - id: t7-f2-osmosis-dossier
+    title: "F2: Dossier Osmosis + smoke Hermes"
+    why: "Completar la revisión de membrana y probar la conectividad."
+    targets:
+      - "docs/membrana/"
+      # 2026-08-06: era "scripts/smoke_hermes.py", que NO existe. El fichero
+      # real lleva el nombre invertido y es el que documenta AGENTS.md.
+      - "scripts/hermes_smoke.py"
+    acceptance: >
+      Dossier de membrana completo, y `scripts/hermes_smoke.py` ejecutado con
+      evidencia viva (no "configurado"): el tablero Hermes responde AHORA.
+    priority: 2
+    status: pending
+
+  - id: t7-f3-mission-console-ui
+    title: "F3: UI de Mission Console viva"
+    why: >
+      Superar el fallo del Cónclave de T2. Construir la app nativa. ADR-085
+      (aceptado 2026-08-03) redujo el alcance EXCLUSIVAMENTE a Flutter, así que
+      esto ya no es "multiplataforma" en abstracto: es la Mission Console en
+      Dart/Flutter contra el puerto 7341.
+    targets:
+      # 2026-08-06: era "prototypes/atlas_ui/" entero, lo que incluía los
+      # micro-PoC de Compose y Qt — ya medidos y CERRADOS el 2026-07-31, y
+      # descartados como stack por ADR-085. Acotado al único destino vivo.
+      - "prototypes/atlas_ui/mission_console/"
+    acceptance: >
+      La UI lista y gestiona misiones contra el runtime real (127.0.0.1:7341),
+      no contra datos de ejemplo. Nota de realidad: hoy `mission_console/` tiene
+      CERO ficheros trackeados en git — el trabajo empieza por ahí.
+    priority: 2
+    status: pending
+
+  # === Fase T8 — Función de fitness del lazo (auditoría 2026-08-06/08) ===
+  #
+  # Reposición de runway pedida por el propio suelo del backlog
+  # (`test_real_backlog_has_enough_pending_items`): al cerrar F1 con evidencia,
+  # los pendientes bajaron a 2. Su docstring exige reponer con trabajo REAL, no
+  # con items ficticios. Estos tres salen de hallazgos medidos, no de opinión.
+
+  - id: t8-fitness-verify-frozen-defects
+    title: "Verificar los 20 defectos congelados: ¿falla cada test en su base?"
+    why: >
+      `frozen_defects` ya cosecha 20 candidatos de 115, pero NINGUNO está
+      verificado: falta comprobar que su test falla en `base_sha` y pasa en
+      `fix_sha`. Sin eso es una lista, no un benchmark, y un candidato que ya
+      pasa en base mediría cero. `EngineeringReproductionRunner` NO sirve tal
+      cual: por diseño nunca aplica un parche (frontera de seguridad), y aquí
+      hace falta código-en-base + test-del-arreglo. La vía sin debilitarla es
+      `git checkout <fix_sha> -- <test_files>` sobre un worktree en base, que
+      sólo puede traer ficheros de un commit inmutable del mismo repo.
+    targets:
+      - "src/atlas/core/self_maintenance/frozen_defects.py"
+      - "docs/fixtures/fitness/frozen_defects.jsonl"
+    acceptance: >
+      Cada defecto del JSONL lleva `verified: true` sólo si su test FALLA en
+      `base_sha` y PASA en `fix_sha`, ejecutado dentro del jail sin red. Los que
+      no cumplan se retiran del corpus con su motivo. Se publica el número real
+      de defectos verificados, que es el denominador del score.
+    priority: 1
+    status: done  # 2026-08-09 (859d68e): 19 de 20 VERIFICADOS ejecutando —cada
+    # uno falla en su base_sha con el test del arreglo y pasa en fix_sha—, 14
+    # subsistemas. El descartado (4c61b204f75c, fix(reality): cargar .env) ya
+    # pasaba en base: el commit tocó tests por otra razón y mediría cero.
+    # DENOMINADOR REAL DEL SCORE: 19.
+    # `EngineeringReproductionRunner` no servía: por diseño nunca aplica un
+    # parche (frontera de seguridad) y aquí hacía falta código-en-base +
+    # test-del-arreglo. Se resolvió con worktree + `git checkout <fix_sha> --
+    # <tests>`, que sólo puede traer ficheros de un commit inmutable.
+
+  - id: t8-fitness-scorer-baseline
+    title: "FitnessScorer + línea base: el número que el lazo tiene que subir"
+    why: >
+      El lazo rinde 7,8% end-to-end (13 aplicados de 167 en 71 días) frente al
+      35-50% de aceptación de PRs reales del campo, y la causa estructural es
+      que tiene RESTRICCIONES pero ninguna función de fitness. DGM
+      (arXiv:2505.22954) identifica la validación empírica sobre un benchmark
+      como el ingrediente habilitante. Sin línea base medida no hay criterio
+      para reabrir el lazo, que sigue pausado desde el 2026-08-06.
+    targets:
+      - "src/atlas/core/self_maintenance/fitness.py"
+    acceptance: >
+      `score(root)` devuelve la fracción de defectos verificados que el lazo
+      resuelve, con la forma de `benchmark_gate.py` (dataclass + to_dict +
+      runner inyectable). Se registra una línea base numérica y queda escrita en
+      `pause_state.json` como criterio de reapertura.
+    priority: 1
+    status: done  # 2026-08-09 (b42e941 + bd6f21d). LÍNEA BASE MEDIDA: 0/19 =
+    # 0,0% sobre el corpus real. Instrumento validado en los DOS extremos, que
+    # es lo que lo hace creíble: solver nulo -> 0/N, solver perfecto -> N/N.
+    # Criterio de reapertura escrito en `pause_state.json`: el lazo vuelve
+    # cuando un solver real puntúe >0.
+    # De paso se tapó una fuga que habría invalidado el banco: el `Solver`
+    # recibía el defecto ENTERO, y `subject` es el mensaje de commit del
+    # arreglo — la solución en prosa. `_redact()` quita subject/fix_sha/
+    # test_patch antes de llamarlo.
+    # PENDIENTE APARTE: construir los dos solvers (Atlas vía ToolCoder y modelo
+    # desnudo). La DIFERENCIA entre ambos es lo que mide si el harness suma o
+    # resta.
+
+  - id: t8-cli-coverage-gap
+    title: "Cerrar el hueco de cobertura de interfaces/cli.py (63,6% de 1.279 sentencias)"
+    why: >
+      Evidencia directa de la auditoría 2026-08-06: los TRES defectos P0
+      encontrados salieron de los tres módulos peor cubiertos del repo
+      (`prometheus_exporter` 0,0%, `engineering_server` 0,0%, `service_runner`
+      42,6%). La cobertura predijo los defectos sin consultar un solo documento.
+      `cli.py` es hoy el mayor hueco absoluto que queda: ~465 sentencias sin
+      ejecutar, y es la superficie por la que el operador toca Atlas.
+      Cobertura global actual: 85,1% de ramas sobre 34.069 sentencias.
+    targets:
+      - "src/atlas/interfaces/cli.py"
+    acceptance: >
+      `cli.py` por encima del 80% de ramas, con tests que ejerciten comandos
+      REALES (no sólo el parseo de argumentos). Cada defecto que aparezca al
+      escribirlos se arregla o se registra; subir el porcentaje sin ejercitar
+      caminos sería el teatro de tests que esta misma auditoría midió.
     priority: 2
     status: pending
