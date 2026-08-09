@@ -186,11 +186,61 @@ def history_hypothesis(repo_root: Path, path: str) -> HistoryHypothesis:
     )
 
 
+#: Segmentos demasiado genéricos para usarlos como fallback: `atlas` y `core`
+#: son parte de casi todo módulo, así que devolverían el corpus entero para
+#: cualquier consulta — ruido con formato de señal.
+_SEGMENTOS_GENERICOS = frozenset({"atlas", "core", "src", "__init__", "py"})
+
+
+def _tags_de_respaldo(tag: str) -> list[str]:
+    """Vocabulario alternativo para un tag `module:...`.
+
+    Medido el 2026-08-09 y ésta es la razón de existir de la función: de las 17
+    lecciones en disco, 16 estaban `stale` y 15 con `recall_count: 0`. La causa
+    no era que el recall fallase — es que no podía acertar. `memory_hypothesis`
+    es el ÚNICO llamador de producción de `search_by_tag` y consulta
+    `module:<nombre>`; los 23 tags que existen son semánticos (`conclave`,
+    `merkle`, `memory`, `discovery`...) y **ninguno** empieza por `module:`.
+    Los dos vocabularios no se cruzaban.
+
+    De `module:atlas.memory.memory_index` se prueban `memory` y `memory_index`,
+    con y sin guiones (el corpus usa `self-audit`, el código `self_audit`).
+
+    Alcance honesto: sobre el corpus real esto pasa de 0 tags alcanzables a 4.
+    No más, porque el resto son conceptos (`conclave`, `hitl`, `juicio-real`)
+    que ningún nombre de módulo contiene — y fingir que un fallback los alcanza
+    sería peor que no tenerlo.
+    """
+    if not tag.startswith("module:"):
+        return []
+    segmentos = tag.removeprefix("module:").split(".")
+    candidatos: list[str] = []
+    for segmento in segmentos:
+        if not segmento or segmento in _SEGMENTOS_GENERICOS:
+            continue
+        for variante in (segmento, segmento.replace("_", "-")):
+            if variante not in candidatos:
+                candidatos.append(variante)
+    return candidatos
+
+
 def memory_hypothesis(store: LessonStore, tag: str) -> MemoryHypothesis:
     """Lessons already tagged with `tag` -- no new recall algorithm, the
-    exact-tag index `LessonStore.search_by_tag` already provides this."""
+    exact-tag index `LessonStore.search_by_tag` already provides this.
+
+    Si el tag exacto no da nada y es un `module:...`, se prueba el vocabulario
+    de respaldo (ver `_tags_de_respaldo`): el tag exacto SIEMPRE tiene
+    prioridad, el respaldo sólo actúa cuando no habría habido respuesta.
+    """
     try:
         lessons = store.search_by_tag(tag)
+        if not lessons:
+            vistos: set[str] = set()
+            for alterno in _tags_de_respaldo(tag):
+                for leccion in store.search_by_tag(alterno):
+                    if leccion.id not in vistos:
+                        vistos.add(leccion.id)
+                        lessons.append(leccion)
     except OSError as exc:
         return MemoryHypothesis(
             available=False, tag=tag,
