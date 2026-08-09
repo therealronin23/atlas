@@ -111,5 +111,28 @@ else
     echo "→ pytest: sin tests mapeados desde lo staged, se salta (NO se corre la suite completa)."
 fi
 
+# --- (c) acreción: SÓLO AVISA, jamás cancela ---
+# Causa nº2 del postmortem 2026-08-06: +79.162 / -3.259 en 30 días = 24,3:1, y
+# acelerando desde el 14,7:1 de dos meses antes. Nada se retira nunca.
+#
+# No bloquea A PROPÓSITO. Este mismo hook tuvo el 2026-08-08 un fail-closed
+# sobre un falso positivo (cancelaba cualquier commit de sólo renombrados); una
+# puerta se gana el derecho a bloquear con datos, no de nacimiento. La regla
+# dura, si llega, irá en el gate de ColdUpdate, no aquí.
+#
+# `|| true` en todo el bloque: ni un fallo de esta métrica puede impedir un commit.
+accretion="$(python -c "
+from pathlib import Path
+from atlas.core.accretion import accretion_ratio
+r = accretion_ratio(Path.cwd())
+print(f'{r.status}|{r.reason}')
+" 2>/dev/null || true)"
+case "${accretion%%|*}" in
+    warn|unbounded)
+        echo "⚠ acreción: ${accretion#*|}"
+        echo "  (aviso, no bloquea — nada entra sin que algo salga)"
+        ;;
+esac
+
 echo "✓ Gate rápido OK. Procediendo con el commit."
 echo "  (suite completa: ColdUpdateBatcher/CI, o a mano con ATLAS_PRECOMMIT_FULL=1)"

@@ -83,6 +83,7 @@ _EVIDENCE_CLASS: dict[str, str] = {
     "workspace": EVIDENCE_LIVE,  # verifica la cadena Merkle de verdad
     "runtime": EVIDENCE_LIVE,  # recuenta ficheros y lee la versión del intérprete
     "graph": EVIDENCE_LIVE,  # compara el sha del grafo contra el HEAD de ahora
+    "accretion": EVIDENCE_LIVE,  # cuenta líneas de git log ahora mismo
     "daemon": EVIDENCE_LIVE,  # el agujero de las 23 h
     "security": EVIDENCE_LIVE,  # stat + git ls-files sobre el fichero de secretos
     # --- prueban que algo está declarado, no que funcione ---
@@ -156,6 +157,7 @@ def collect_reality(
         "workbench_compliance_review": _workbench_compliance_review_state(root),
         "engineering_review": _engineering_review_state(root),
         "graph": _graph_state(root),
+        "accretion": _accretion_state(root),
         "f26_gate": _f26_gate_state(root),
         "self_build_pause": _self_build_pause_state(root),
         "daemon": daemon_state(),
@@ -530,6 +532,21 @@ def _graph_state(root: Path) -> dict[str, Any]:
         return graph_freshness(db_path, repo_root=root)
     except Exception as exc:  # noqa: BLE001
         return {**base, "db_path": str(db_path), "reason": type(exc).__name__}
+
+
+def _accretion_state(root: Path) -> dict[str, Any]:
+    """Cuánto código entra por cada línea que sale (causa nº2 del postmortem
+    2026-08-06). Mismo principio fail-honesto que el resto: nunca lanza, y
+    ``unknown`` no se disfraza de ``ok``."""
+    try:
+        from atlas.core.accretion import accretion_ratio
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "unknown", "ratio": None,
+                "reason": f"accretion import failed: {type(exc).__name__}"}
+    try:
+        return accretion_ratio(root).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "unknown", "ratio": None, "reason": type(exc).__name__}
 
 
 def _f26_gate_state(root: Path) -> dict[str, Any]:
