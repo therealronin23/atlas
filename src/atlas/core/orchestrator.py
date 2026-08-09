@@ -1808,8 +1808,21 @@ class Orchestrator:
         self._thermal_watchdog = watchdog
 
     def thermal_alert_callback(self) -> Any:
-        """Devuelve un callback para pasar a ThermalWatchdog(alert_callback=...)."""
+        """Devuelve un callback para pasar a ThermalWatchdog(alert_callback=...).
+
+        Además de publicar en el bus, avisa al ESCRITORIO. Hasta 2026-08-09 el
+        único suscriptor de `THERMAL_ALERT` se registraba dentro de
+        `_wire_bus_to_bot`, que sólo corre si el bot de Telegram arrancó — y
+        Telegram está desactivado por la arquitectura twin. El evento se
+        publicaba a un bus vacío: 25 transiciones de modo y picos de 81-83 °C
+        que no llegaron a nadie, con un operador que avisó de que a veces se le
+        olvida conectar el ventilador de apoyo.
+
+        El aviso local va aquí y no en `_wire_bus_to_bot` a propósito: apagar
+        Telegram no puede volver a llevarse por delante la alerta de hardware.
+        """
         def _cb(state: Any) -> None:
+            self._notify_desktop_thermal(state)
             self._bus.publish_type(EventType.THERMAL_ALERT, {
                 "mode": state.operational_mode.value,
                 "temperature_c": state.temperature_celsius,
@@ -1818,6 +1831,17 @@ class Orchestrator:
                 "emergency": state.emergency,
             })
         return _cb
+
+    def _notify_desktop_thermal(self, state: Any) -> None:
+        """Aviso al escritorio, mejor esfuerzo. Un canal de notificación que
+        falla no puede propagarse al termostato, que es lo único que protege el
+        hardware."""
+        try:
+            from atlas.thermal.desktop_alert import DesktopNotifier
+
+            DesktopNotifier().notify(state)
+        except Exception:  # noqa: BLE001 — sin escritorio no hay aviso, y ya
+            _log.debug("aviso térmico de escritorio no disponible", exc_info=True)
 
     def _wire_bus_to_bot(self, bot: Any) -> None:
         self._bus.subscribe(EventType.APPROVAL_REQUIRED, bot.on_approval_required)

@@ -7,11 +7,29 @@ Modos del chat de Gemini:
   NORMAL tier: Docker efimero sin red, 512MB RAM, bajo riesgo, velocidad.
   OMEGA (10% del tiempo): VM Proxmox + Snapshot + HITL via Telegram, alto riesgo.
   
-Politica de respuesta escalonada:
-  < 70C   → NORMAL: sin restricciones
-  70-79C  → DEGRADED: LLMs pesados pausados (pausa LLM pesado, mensaje Telegram)
-  80-89°C → OMEGA forzado (solo L-det + delegacion Hermes)
-  >= 90°C → emergencia (parar todo, notificar)
+Politica de respuesta escalonada (reconciliada 2026-08-09):
+  < 74C    → NORMAL: sin restricciones
+  74-79C   → NORMAL + AVISO: no cambia el modo, sólo notifica
+  >= 80C   → DEGRADED: LLMs pesados pausados
+  vuelve a NORMAL sólo por debajo de 74C  ← histéresis
+  >= 90C   → OMEGA: sólo L-det + delegacion Hermes, emergencia
+
+DOS ARREGLOS DE 2026-08-09, ambos medidos:
+
+1. El docstring decía `70-79C → DEGRADED` mientras la constante era 80.0 y el
+   código comprobaba `>= 80`. Llevaban contradiciéndose desde el primer commit.
+   Manda el código: bajar a 70 dejaría el portátil permanentemente degradado
+   (en trabajo normal ronda 72-79).
+
+2. Sin histéresis, el termostato conmutaba 25 veces en dos días (50
+   `service.alert` en el ledger): subía a 81-83 y degradaba, bajaba a 72-79 y
+   volvía. Cada conmutación enciende y apaga la invariante 5 (sin LLMs pesados
+   en DEGRADED). Ahora se sube en 80 y no se vuelve hasta por debajo de 74.
+
+La BANDA DE AVISO existe por un motivo concreto del operador: en verano a veces
+se le olvida conectar el ventilador de apoyo, así que hace falta avisar ANTES de
+tener que restringir. El aviso sale por `thermal/desktop_alert.py`, que no
+depende de Telegram.
 """
 
 from __future__ import annotations
@@ -32,11 +50,13 @@ from atlas.core.contracts import OperationalMode
 # Thresholds
 # ---------------------------------------------------------------------------
 
-TEMP_NORMAL_THRESHOLD   = 70.0   # < 70C  → NORMAL: sin restricciones
-TEMP_DEGRADED_THRESHOLD = 80.0   # 70-79C → DEGRADED: sin LLMs pesados
-TEMP_OMEGA_THRESHOLD    = 90.0   # >= 80C → OMEGA: solo L-det + Hermes
-                                  # Note: DEGRADED and OMEGA share 80C boundary;
-                                  # OMEGA is also triggered by combined temp+RAM pressure.
+TEMP_NORMAL_THRESHOLD   = 70.0   # histórico; conservado por compatibilidad
+TEMP_ADVISORY_THRESHOLD = 74.0   # >= 74C → avisa SIN cambiar de modo
+TEMP_DEGRADED_THRESHOLD = 80.0   # >= 80C → DEGRADED: sin LLMs pesados
+TEMP_RECOVER_THRESHOLD  = 74.0   # sólo se vuelve a NORMAL por debajo de esto
+                                  # (histéresis: sin ella, 25 conmutaciones en
+                                  # dos días medidas el 2026-08-09)
+TEMP_OMEGA_THRESHOLD    = 90.0   # >= 90C → OMEGA: solo L-det + Hermes
 
 RAM_DEGRADED_THRESHOLD_MB = 1024  # < 1GB libre → al menos DEGRADED
 
@@ -50,6 +70,10 @@ class ThermalState:
     should_pause_local_llm: bool
     should_delegate_all: bool
     emergency: bool
+    #: Banda de aviso: hay tensión térmica pero NO se cambia de modo. Existe por
+    #: el ventilador de apoyo que a veces se queda sin conectar — avisar antes
+    #: de tener que restringir.
+    advisory: bool = False
     sampled_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -127,15 +151,25 @@ class ThermalWatchdog:
         while self._running:
             state = self._compute_state()
             prev_mode = None
+            prev_advisory = False
             with self._lock:
                 if self._current_state:
                     prev_mode = self._current_state.operational_mode
+                    prev_advisory = self._current_state.advisory
                 self._current_state = state
 
-            # Notificar si cambia el modo o hay emergencia
+            # Notificar si cambia el modo, hay emergencia, o se ENTRA en la
+            # banda de aviso.
+            #
+            # Lo tercero no es un extra: la banda de aviso no cambia el modo a
+            # propósito, así que sin esta condición no dispararía nunca y toda
+            # su razón de ser —avisar del ventilador olvidado ANTES de degradar—
+            # quedaría anulada. Sólo en la TRANSICIÓN a advisory, no en cada
+            # pasada, o serían decenas de notificaciones por hora.
             if self._alert_callback and (
                 state.emergency
                 or (prev_mode is not None and prev_mode != state.operational_mode)
+                or (state.advisory and not prev_advisory)
             ):
                 try:
                     self._alert_callback(state)
@@ -163,8 +197,24 @@ class ThermalWatchdog:
                 emergency=True,
             )
 
-        # Tier 2 — DEGRADED: tension termica o RAM baja, funciones criticas OK
-        if temp >= TEMP_DEGRADED_THRESHOLD or ram_free < RAM_DEGRADED_THRESHOLD_MB:
+        # Tier 2 — DEGRADED: tension termica o RAM baja, funciones criticas OK.
+        #
+        # HISTÉRESIS: si YA estábamos en DEGRADED, no se vuelve a NORMAL hasta
+        # bajar de TEMP_RECOVER_THRESHOLD. Sin esto, oscilar alrededor de 80
+        # producía 25 conmutaciones de modo en dos días, encendiendo y apagando
+        # la invariante 5 (sin LLMs pesados en DEGRADED) doce veces al día.
+        # La emergencia (Tier 3) se evalúa ANTES, así que esto no atrapa nunca
+        # una escalada a OMEGA.
+        venia_degradado = (
+            self._current_state is not None
+            and self._current_state.operational_mode is OperationalMode.DEGRADED
+        )
+        sigue_caliente = venia_degradado and temp >= TEMP_RECOVER_THRESHOLD
+        if (
+            temp >= TEMP_DEGRADED_THRESHOLD
+            or ram_free < RAM_DEGRADED_THRESHOLD_MB
+            or sigue_caliente
+        ):
             return ThermalState(
                 temperature_celsius=temp,
                 ram_free_mb=ram_free,
@@ -178,15 +228,27 @@ class ThermalWatchdog:
                 emergency=False,
             )
 
-        # Tier 1 — NORMAL: operacion completa sin restricciones
+        # Tier 1 — NORMAL, con o sin aviso. La banda 74-79 NO cambia el modo:
+        # sólo enciende `advisory` para que el aviso de escritorio salga ANTES
+        # de que haya que restringir nada. Existe por el ventilador de apoyo que
+        # a veces se queda sin conectar en verano.
+        advisory = temp >= TEMP_ADVISORY_THRESHOLD
+        politica = (
+            f"NORMAL (aviso): {temp:.1f}C / {ram_free}MB RAM libre. "
+            f"Tensión térmica por encima de {TEMP_ADVISORY_THRESHOLD:.0f}C; "
+            "sin restricciones todavía. ¿Ventilador de apoyo conectado?"
+            if advisory
+            else f"NORMAL: {temp:.1f}C / {ram_free}MB RAM libre. Sin restricciones."
+        )
         return ThermalState(
             temperature_celsius=temp,
             ram_free_mb=ram_free,
             operational_mode=OperationalMode.NORMAL,
-            policy=f"NORMAL: {temp:.1f}C / {ram_free}MB RAM libre. Sin restricciones.",
+            policy=politica,
             should_pause_local_llm=False,
             should_delegate_all=False,
             emergency=False,
+            advisory=advisory,
         )
 
     # ------------------------------------------------------------------
