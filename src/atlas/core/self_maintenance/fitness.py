@@ -42,7 +42,29 @@ from atlas.core.self_maintenance.frozen_defects import FrozenDefect, TestRunner
 __all__ = ["FitnessScore", "FitnessScorer", "Solver"]
 
 #: Intento de resolución sobre un worktree preparado. Puede no hacer nada.
+#: El `FrozenDefect` que recibe viene REDACTADO — ver `_redact`.
 Solver = Callable[[Path, FrozenDefect], None]
+
+
+def _redact(defect: FrozenDefect) -> FrozenDefect:
+    """Quita del defecto todo lo que revelaría la solución.
+
+    `subject` es el mensaje de commit del arreglo — "fix(watchdog): sabía ver
+    «muerto», no sabía ver «vivo e inútil»" no es una pista, es la solución en
+    prosa. `fix_sha` es peor: da acceso directo al diff con un `git show`. Y
+    `test_patch` no hace falta, porque el test ya está materializado en el
+    worktree; entregarlo sólo añade superficie por la que se filtre contexto
+    del commit del arreglo.
+
+    Un solver que lea eso mide comprensión lectora, no capacidad de ingeniería
+    — el mismo vicio que hace falso el 19,78% de los "resueltos" de SWE-bench.
+
+    Lo que SÍ conserva es lo que hace falta para trabajar: qué tests hay que
+    poner en verde, y el id para poder correlacionar el resultado.
+    """
+    from dataclasses import replace
+
+    return replace(defect, subject="", fix_sha="", test_patch="")
 
 
 @dataclass(frozen=True)
@@ -114,9 +136,11 @@ class FitnessScorer:
                 with manager.session(
                     f"fitness-score-{defect.id}", base_ref=defect.base_sha
                 ) as worktree:
+                    # El montaje necesita `fix_sha`; el solver NO puede verlo.
+                    # De ahí que la redacción vaya justo entre las dos cosas.
                     self._materialize_tests(worktree, defect)
                     if solve is not None:
-                        solve(worktree, defect)
+                        solve(worktree, _redact(defect))
                     exit_code = self._run_tests(worktree, tuple(defect.test_files))
                     outcome["solved"] = exit_code == 0
             except Exception as exc:  # noqa: BLE001 — un defecto malo no cancela el pase
