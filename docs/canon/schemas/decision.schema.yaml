@@ -1,0 +1,122 @@
+# decision.schema.yaml — RECONSTRUIDO, no recuperado.
+#
+# El original vivía en `evidence/legacy_exclusive/.../agent_context/schemas/` y
+# se perdió: la auditoría 2026-08-09 encontró 124 filas de
+# `source_registry.jsonl` que afirmaban `PHYSICALLY_PRESERVED` sobre ficheros
+# que no existen y que nunca estuvieron en git.
+#
+# Esto NO es ese fichero. Está derivado de la estructura REAL de
+# `docs/canon/decision_registry.jsonl` (222 filas) — es decir, describe lo que
+# el canon efectivamente usa hoy, no lo que el original decía. Los enumerados
+# son los valores observados, con su frecuencia, no una lista inventada.
+#
+# Si aparece un valor nuevo en el registro, este schema está desactualizado, no
+# el registro: el registro es la fuente.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "atlas://canon/decision.schema.yaml"
+title: Registro de decisión del canon Atlas
+description: >
+  Una decisión registrada por el compilador de canon. Reconstruido 2026-08-09
+  desde decision_registry.jsonl; provenance: DERIVED_FROM_LIVE_REGISTRY.
+type: object
+
+required: [id, title, type, authority]
+
+properties:
+  id:
+    type: string
+    description: "Identificador estable. Observado: prefijo ATR-DECISION-."
+    pattern: "^[A-Z][A-Z0-9-]+$"
+  title:
+    type: string
+    minLength: 1
+  type:
+    type: string
+    enum: [decision, repository_adr_disposition, atomic_decision]
+  authority:
+    type: string
+    description: >
+      De dónde saca la fuerza la decisión. Distingue lo histórico de lo vigente,
+      que es la distinción que el canon necesita para no tratar un registro
+      antiguo como norma actual.
+    enum:
+      - HISTORICAL_DECISION_RECORD
+      - CURRENT_CODE_AND_REPOSITORY_ADR
+      - CURRENT_OPERATOR_DECISION_AND_REPOSITORY_ADR
+      - CURRENT_OPERATOR_DIRECTIVE
+      - CURRENT_REPOSITORY_ADR
+      - CURRENT_REPOSITORY_ADR_AND_COUNCIL
+      - CURRENT_REPOSITORY_ADR_PLUS_FRESH_PROCESS_CONFIGURATION
+      - CURRENT_REPOSITORY_AGENTS
+      - GITHUB_PR_STATE_AND_PACKAGE_LINEAGE
+  status:
+    type: string
+    description: >
+      Observado en el registro vivo. `ACCEPTED_CLAIM_REQUIRES_SOURCE_REVALIDATION`
+      es hoy el valor más frecuente y su nombre es literal: la fuente que lo
+      sostenía necesita revalidarse. Tras la pérdida de evidencia de 2026-08-09
+      esa revalidación ya no es posible contra el original.
+    enum:
+      - ACCEPTED
+      - ACCEPTED_A1_NO_RUNTIME_CONSUMER
+      - ACCEPTED_CLAIM_REQUIRES_SOURCE_REVALIDATION
+      - ACCEPTED_CODE_WIRED_RUNTIME_REQUIRES_FRESH_CHECK
+      - ACCEPTED_IMPLEMENTED_OPT_IN
+      - ACCEPTED_IMPLEMENTED_OPT_IN_RUNTIME_REQUIRES_FRESH_CHECK
+      - ACCEPTED_LOCAL_DECLARATIVE_PATH_CLOSED
+      - ACCEPTED_PARKED
+      - ACCEPTED_SPLIT_IMPLEMENTATION
+      - ACCEPTED_WITH_STAGED_IMPLEMENTATION
+      - CURRENT_REPOSITORY_ACCEPTED
+      - OBSERVED_OR_UNKNOWN
+      - OPERATOR_EXPLICIT_FOR_COMPILER_RUN
+      - PARKED
+      - PARTIALLY_SUPERSEDED
+      - PARTIAL_SPLIT_DECISION
+      - PROPOSED
+      - REJECTED_BLOCKING_COUNCIL_NOT_IMPLEMENTED
+      - SOURCE_DISPOSITION_NOT_CANON
+  epistemic_confidence:
+    type: string
+    enum: [HIGH, MEDIUM, LOW]
+  adr:
+    type: [string, "null"]
+    description: ADR del repositorio que la respalda, o null si no lo hay.
+  date: {type: [string, "null"]}
+  conflicts: {type: array}
+  consequences: {type: array}
+  constraints: {type: array}
+  sources:
+    type: array
+    description: >
+      Procedencia. NO son cadenas: cada entrada localiza la fuente dentro de un
+      archivo del corpus. Tras 2026-08-09 muchos de esos `archive` están en
+      LOST_NOT_PRESERVED — conservan hash, no contenido.
+    items:
+      type: object
+      properties:
+        # `archive` es null en las 222 filas: la procedencia de este registro
+        # vive en `member`/`locator`, no en un ZIP concreto.
+        archive: {type: [string, "null"]}
+        member: {type: [string, "null"]}
+        locator: {type: [string, "null"]}
+      additionalProperties: true
+  original_ids: {type: array}
+  original_statuses:
+    # MAPA estado -> recuento ({'accepted': 15}), no lista: registra con qué
+    # estados llegó el mismo hecho desde distintas fuentes.
+    type: [object, "null"]
+  duplicate_occurrence_count: {type: integer, minimum: 0}
+  supersession: {type: [array, object, string, "null"]}
+  disposition: {type: [string, "null"]}
+  activation: {type: [string, object, "null"]}
+  rationale:
+    # LISTA o null, nunca cadena. Observado: 151 arrays y 71 null. Varias de
+    # esas listas dicen literalmente "Primary rationale is not preserved in
+    # this recovered record" — el registro ya sabía que había perdido cosas.
+    type: [array, "null"]
+  program_primary: {type: [string, "null"]}
+  programs_related: {type: array}
+
+additionalProperties: true

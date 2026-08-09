@@ -1,0 +1,77 @@
+# claim.schema.yaml — RECONSTRUIDO, no recuperado.
+#
+# El original se perdió (auditoría 2026-08-09: 124 filas de
+# `source_registry.jsonl` afirmaban preservación física sobre ficheros que no
+# existen y nunca estuvieron en git).
+#
+# Derivado de la estructura REAL de `docs/canon/evidence_registry.jsonl`
+# (19 filas, todos sus campos presentes en todas), que es el registro donde el
+# canon materializa hoy la noción de "afirmación respaldada por evidencia".
+# provenance: DERIVED_FROM_LIVE_REGISTRY.
+#
+# Nota que da sentido al fichero: `locator` es lo que hace falsable una
+# afirmación. La lección de 2026-08-09 es que un locator que no resuelve
+# convierte el registro entero en incomprobable, así que aquí es obligatorio y
+# el schema distingue explícitamente locators locales de externos.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "atlas://canon/claim.schema.yaml"
+title: Afirmación respaldada por evidencia
+description: >
+  Una pieza de evidencia que sostiene una afirmación del canon. Reconstruido
+  2026-08-09 desde evidence_registry.jsonl.
+type: object
+
+required:
+  [id, claim_scope, kind, locator, source_tier, strength, status,
+   independence_key, program, retrieved_at]
+
+properties:
+  id:
+    type: string
+    description: "Observado: prefijo EVD-."
+    pattern: "^EVD-[A-Z0-9-]+$"
+  claim_scope:
+    type: string
+    minLength: 1
+    description: Qué afirma exactamente esta evidencia. No el título del documento.
+  kind:
+    type: string
+    enum: [LOCAL_CHECKOUT, OFFICIAL_DOCUMENTATION, PRIMARY_STANDARD, RESEARCH_PAPER]
+  locator:
+    type: string
+    minLength: 1
+    description: >
+      Ruta repo-relativa (kind=LOCAL_CHECKOUT) o URL (el resto). Es lo que hace
+      FALSABLE la afirmación: sin locator que resuelva, el registro no se puede
+      comprobar. Los locators locales deben existir en el checkout.
+  source_tier:
+    type: integer
+    minimum: 1
+    maximum: 4
+    description: >
+      1 = el propio código/ADR del repo (lo más fuerte, porque se puede leer
+      ahora). 4 = lo más indirecto. Observado: mayoría 3 (documentación
+      oficial externa) y 1 (checkout local).
+  strength:
+    type: string
+    enum: [HIGH, MEDIUM, LOW]
+  status:
+    type: string
+    enum: [ACTIVE, SUPERSEDED, RETRACTED]
+    description: "Observado en vivo: sólo ACTIVE. Los otros dos son el vocabulario
+      necesario para retirar evidencia sin borrarla."
+  independence_key:
+    type: string
+    description: >
+      Dos evidencias con la misma clave NO son independientes. Es lo que impide
+      contar tres citas del mismo origen como corroboración cruzada — el mismo
+      error conceptual que tenía `EcosystemDigestion` antes de 2026-08-06.
+  program: {type: string, pattern: "^P[0-9]{2}$"}
+  retrieved_at:
+    type: string
+    format: date
+    description: Cuándo se comprobó. Una evidencia vieja no es una evidencia falsa,
+      pero tampoco es una comprobación de hoy.
+
+additionalProperties: true

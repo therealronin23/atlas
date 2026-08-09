@@ -1,0 +1,77 @@
+# mission.schema.yaml — RECONSTRUIDO, no recuperado.
+#
+# El original (`.../agent_context/missions/DOC-0C.yaml` y su schema) se perdió
+# en la misma pérdida de evidencia de 2026-08-09.
+#
+# Derivado de dos fuentes VIVAS, no de memoria:
+#   - `docs/canon/capability_registry.jsonl` (61 filas), que es donde el canon
+#     registra hoy las capacidades que una misión persigue;
+#   - `src/atlas/missions/`, la implementación real del concepto de misión.
+# provenance: DERIVED_FROM_LIVE_REGISTRY_AND_CODE.
+#
+# Se reconstruye la ESTRUCTURA que el canon usa, no la que el documento
+# original pudiera haber definido. Si difieren, manda el registro vivo.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "atlas://canon/mission.schema.yaml"
+title: Misión / capacidad perseguida
+description: >
+  Unidad de trabajo con un objetivo declarado y un estado comprobable.
+  Reconstruido 2026-08-09 desde capability_registry.jsonl.
+type: object
+
+required: [id, title, type, status, authority, program_primary]
+
+properties:
+  id:
+    type: string
+    description: "Observado: prefijo ATR-CAPABILITY-."
+    pattern: "^[A-Z][A-Z0-9-]+$"
+  title: {type: string, minLength: 1}
+  type:
+    type: string
+    enum: [capability, mission]
+  status:
+    type: string
+    description: >
+      `OBSERVED_OR_UNKNOWN` es el valor mayoritario (57 de 61) y su nombre es
+      honesto: se registró que la capacidad se menciona, no que exista. No
+      confundirlo con `ACCEPTED_DESIGN`, que sí es una decisión tomada.
+    enum:
+      - OBSERVED_OR_UNKNOWN
+      - ACCEPTED_DESIGN
+      - ACCEPTED_DESIGN_PARTIALLY_IMPLEMENTED
+      - IMPLEMENTED
+      - RETIRED
+  authority: {type: string}
+  epistemic_confidence: {type: string, enum: [HIGH, MEDIUM, LOW]}
+  program_primary: {type: string, pattern: "^P[0-9]{2}$"}
+  programs_related: {type: array}
+  rationale:
+    # LISTA, no cadena: el compilador acumula varias razones por capacidad
+    # (observado: los 61 registros la traen como array, mayoría vacío).
+    type: array
+  proposed_disposition: {type: [string, "null"]}
+  supersession: {type: [array, object, string, "null"]}
+  conflicts: {type: array}
+  consequences: {type: array}
+  sources:
+    type: array
+    description: >
+      Procedencia. NO son cadenas: cada entrada localiza la fuente dentro de un
+      archivo del corpus. AVISO — tras 2026-08-09, 124 de esas fuentes están en
+      LOST_NOT_PRESERVED: conservan hash y procedencia, pero su contenido ya no
+      se puede releer.
+    items:
+      type: object
+      properties:
+        archive: {type: string}
+        member: {type: string}
+        locator: {type: string}
+      additionalProperties: true
+  source_independence: {type: [string, object, array, "null"]}
+  source_occurrence_count: {type: integer, minimum: 0}
+  unique_content_hash_count: {type: integer, minimum: 0}
+  date: {type: [string, "null"]}
+
+additionalProperties: true
