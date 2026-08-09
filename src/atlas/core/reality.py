@@ -84,6 +84,10 @@ _EVIDENCE_CLASS: dict[str, str] = {
     "runtime": EVIDENCE_LIVE,  # recuenta ficheros y lee la versión del intérprete
     "graph": EVIDENCE_LIVE,  # compara el sha del grafo contra el HEAD de ahora
     "accretion": EVIDENCE_LIVE,  # cuenta líneas de git log ahora mismo
+    # HISTORIA por construcción: el ledger registra lo que Atlas imputó, no lo
+    # que el proveedor factura. Llamarlo `live` sería justo la clase de mentira
+    # que este fichero existe para evitar.
+    "llm_spend": EVIDENCE_HISTORY,
     "daemon": EVIDENCE_LIVE,  # el agujero de las 23 h
     "security": EVIDENCE_LIVE,  # stat + git ls-files sobre el fichero de secretos
     # --- prueban que algo está declarado, no que funcione ---
@@ -158,6 +162,7 @@ def collect_reality(
         "engineering_review": _engineering_review_state(root),
         "graph": _graph_state(root),
         "accretion": _accretion_state(root),
+        "llm_spend": _llm_spend_state(root),
         "f26_gate": _f26_gate_state(root),
         "self_build_pause": _self_build_pause_state(root),
         "daemon": daemon_state(),
@@ -532,6 +537,59 @@ def _graph_state(root: Path) -> dict[str, Any]:
         return graph_freshness(db_path, repo_root=root)
     except Exception as exc:  # noqa: BLE001
         return {**base, "db_path": str(db_path), "reason": type(exc).__name__}
+
+
+def _llm_spend_state(root: Path) -> dict[str, Any]:
+    """Consumo de LLM imputado al ledger local.
+
+    Hasta 2026-08-09 esto no se podía medir: el hub consultaba el presupuesto y
+    nunca escribía el gasto, así que el ledger marcaba 0 con ~200 inferencias
+    en dos días. Es la causa nº1 del postmortem —que el lazo no se paga— y sin
+    esta sección la pregunta "cuánto cuesta Atlas" no tiene respuesta.
+
+    NO es facturación del proveedor: es lo que Atlas imputó. La distinción va en
+    `reason` para que nadie la confunda.
+    """
+    # Mismo almacén que escribe `scripts/token-tracker.sh`:
+    # logs/token-tracking/<proveedor>-<AAAAMM>.log, líneas `ts | modelo | tokens`.
+    ledger_dir = root / "logs" / "token-tracking"
+    if not ledger_dir.is_dir():
+        return {
+            "status": "unknown", "providers": {}, "total_tokens": 0,
+            "reason": "ledger de tokens ausente; el gasto no es medible",
+        }
+    mes = datetime.now(timezone.utc).strftime("%Y%m")
+    por_proveedor: dict[str, int] = {}
+    try:
+        for archivo in ledger_dir.glob(f"*-{mes}.log"):
+            proveedor = archivo.name.rsplit("-", 1)[0]
+            total = 0
+            for linea in archivo.read_text(encoding="utf-8").splitlines():
+                partes = linea.rsplit("|", 1)
+                if len(partes) != 2:
+                    continue
+                bruto = partes[1].strip()
+                if bruto.isdigit():
+                    total += int(bruto)
+            if total:
+                por_proveedor[proveedor] = total
+    except OSError as exc:
+        return {"status": "unknown", "providers": {}, "total_tokens": 0,
+                "reason": f"ledger ilegible: {type(exc).__name__}"}
+    registrado = sum(por_proveedor.values())
+    return {
+        "status": "ran" if registrado else "empty",
+        "providers": por_proveedor,
+        "total_tokens": registrado,
+        "month": mes,
+        "reason": (
+            f"{registrado} tokens imputados por Atlas este mes. NO es facturación "
+            "del proveedor: sólo cuenta lo que pasa por InferenceHub."
+            if registrado
+            else "cero tokens imputados este mes: o no se ha inferido, o hay un "
+                 "caller sin cablear (el hueco que se cerró el 2026-08-09)"
+        ),
+    }
 
 
 def _accretion_state(root: Path) -> dict[str, Any]:

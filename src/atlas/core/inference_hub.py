@@ -274,6 +274,60 @@ class InferenceResponse:
     retryable: bool = False
 
 
+def record_token_usage(
+    provider_name: str,
+    tokens: int,
+    model: str,
+    *,
+    runner: Any = None,
+) -> None:
+    """Imputa el consumo REAL de una llamada al ledger local de tokens.
+
+    El hueco que cierra, medido el 2026-08-09: el hub **consultaba** el
+    presupuesto antes de cada llamada L1/L2 (`token-tracker.sh check`, con corte
+    fail-closed) y **nunca escribía** el consumo después. Leía un contador que
+    nadie incrementaba, así que el ledger marcaba 0 en todos los proveedores
+    —con ~200 inferencias en dos días— y el gate de presupuesto no podía
+    dispararse jamás.
+
+    `AGENTS.md` documenta presupuestos y una regla ("si >80%, usar Ollama")
+    sobre un número que siempre valía 0, y admite el hueco en una frase que
+    llevaba ahí sin ejecutarse: "Prefer wiring actual response usage at each
+    caller".
+
+    Se imputa por FAMILIA, no por entrada de catálogo: la cuota la impone el
+    vendor. Confundirlo ya costó el apagón silencioso del Cónclave del
+    2026-08-05 (ver `budget_family`).
+
+    Nunca lanza: está en el camino de CADA inferencia, y registrar el gasto no
+    puede impedir trabajar.
+    """
+    if tokens <= 0:
+        # Un fallo de proveedor devuelve 0; registrarlo ensuciaría el ledger.
+        return
+    import subprocess
+
+    run = runner or subprocess.run
+    try:
+        run(
+            [
+                str(token_tracker_path()),
+                "log",
+                budget_family(provider_name),
+                str(int(tokens)),
+                model or "?",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=TOKEN_TRACKER_TIMEOUT_S,
+        )
+    except Exception:  # noqa: BLE001 — contabilidad, no puerta
+        _logging.getLogger(__name__).debug(
+            "no se pudo registrar el consumo de tokens", exc_info=True
+        )
+
+
 def budget_family(provider_name: str) -> str:
     """Familia de vendor a la que se le imputa el gasto de un proveedor.
 
@@ -1078,6 +1132,10 @@ class InferenceHub:
             "success": True,
             "mode": "live",
         })
+        # Cierra la simetría con el `check` de arriba: hasta 2026-08-09 el hub
+        # leía el presupuesto y nunca imputaba el gasto, así que el ledger
+        # marcaba 0 para siempre y el corte fail-closed era inalcanzable.
+        record_token_usage(provider.name, tokens, provider.model_id)
         return InferenceResponse(
             text=text, provider=provider.name, model=provider.model_id,
             level=provider.level, latency_ms=duration_ms, success=True,
