@@ -630,6 +630,39 @@ class MaintenanceFacade:
         if os.environ.get("ATLAS_MCP_TRIAL", "").strip() != "1":
             return {"status": "disabled"}
 
+        # Higiene de la cuarentena (2026-08-09). 583 MB de código de terceros
+        # descargado por el vetting, 207 candidatos, sin dueño en el código ni
+        # política de retención — el `quarantine` de `mcp/registry.py` es un set
+        # en memoria con nombres, no el directorio de disco.
+        #
+        # Cuelga de ESTE tick y no del de vetting, que sería su sitio natural,
+        # por una razón práctica: el de vetting es opt-in y hoy está apagado
+        # (`ATLAS_MCP_VETTING` no está en el drop-in del daemon), así que ahí no
+        # correría nunca. La higiene no puede depender de que esté encendido lo
+        # que ensucia.
+        #
+        # Mejor esfuerzo, igual que `sweep_stale_worktrees` en el runner: si el
+        # barrido falla, el tick sigue — no es su función.
+        try:
+            from atlas.mcp.quarantine_sweep import sweep_quarantine
+
+            swept = sweep_quarantine(
+                self._orch._workspace / "mcp" / "quarantine"
+            )
+            if swept.removed:
+                self._orch._merkle.log(
+                    action="mcp.quarantine_swept",
+                    agent="maintenance_facade",
+                    result="success",
+                    risk_level="safe",
+                    payload={
+                        "removed": len(swept.removed),
+                        "freed_mb": round(swept.freed_bytes / 1024 / 1024),
+                    },
+                )
+        except Exception:  # noqa: BLE001 — la higiene nunca tumba el tick
+            _log.exception("barrido de cuarentena MCP falló")
+
         import yaml
 
         from atlas.mcp.catalog import load_catalog
