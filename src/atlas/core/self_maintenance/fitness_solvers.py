@@ -40,6 +40,30 @@ _BLOQUE = re.compile(
     r"```(?:[a-zA-Z]*):(?P<path>[^\n`]+)\n(?P<body>.*?)```", re.DOTALL
 )
 
+#: Mismo problema, misma solución que en `deliberation_council` y `atlas_coder`:
+#: los modelos de razonamiento gastan el presupuesto en `<think>` y lo que
+#: llega truncado es la SUSTANCIA, no el preámbulo.
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+#: 2048 ahogaba a los modelos de razonamiento. Medido en la primera tirada real
+#: (2026-08-09): `groq_qwen3` devolvió 6.929 caracteres, TODOS dentro de un
+#: `<think>` sin cerrar, y cero bloques de código — el presupuesto se agotó a
+#: mitad del razonamiento. El resultado fue `modelo_desnudo 0/3`, que no medía
+#: al modelo sino a este fichero. Es exactamente el bug que el Cónclave ya
+#: había pagado y documentado (`_REVIEW_MAX_TOKENS = 4096`), reintroducido aquí
+#: por no mirar el prior art. Se sube y se deja env para poder subirlo más.
+DEFAULT_MAX_TOKENS = 4096
+
+
+def _strip_thinking(text: str) -> str:
+    """Quita bloques `<think>` cerrados; conserva uno sin cerrar.
+
+    Un bloque abierto significa que el modelo se quedó sin presupuesto: mejor
+    devolver el texto ruidoso que vaciarlo y perder la única señal que llegó.
+    Mismo criterio que `deliberation_council._strip_thinking`.
+    """
+    return _THINK_BLOCK.sub("", text).strip()
+
 _INSTRUCCION = (
     "Un test de este repositorio falla. Haz que pase modificando SÓLO el código "
     "fuente. No toques ficheros bajo tests/: el test define el comportamiento "
@@ -103,10 +127,15 @@ class DirectModelSolver:
         self,
         *,
         hub: Any | None = None,
-        max_tokens: int = 2048,
+        max_tokens: int | None = None,
         level: Any | None = None,
     ) -> None:
+        import os
+
         self._hub = hub
+        if max_tokens is None:
+            raw = os.environ.get("ATLAS_FITNESS_MAX_TOKENS", "").strip()
+            max_tokens = int(raw) if raw.isdigit() else DEFAULT_MAX_TOKENS
         self._max_tokens = max_tokens
         self._level = level
 
@@ -129,7 +158,7 @@ class DirectModelSolver:
                     defect.id, getattr(response, "error", ""),
                 )
                 return
-            self._apply(worktree, str(getattr(response, "text", "") or ""))
+            self._apply(worktree, _strip_thinking(str(getattr(response, "text", "") or "")))
         except Exception as exc:  # noqa: BLE001
             logger.warning("DirectModelSolver falló en %s: %s", defect.id, exc)
 

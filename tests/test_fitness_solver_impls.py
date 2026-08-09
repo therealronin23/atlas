@@ -183,6 +183,43 @@ def test_directo_acota_el_gasto(tmp_path: Path) -> None:
     assert hub.requests[0].max_tokens == 333
 
 
+def test_el_presupuesto_no_ahoga_a_un_modelo_de_razonamiento(tmp_path: Path) -> None:
+    """Medido el 2026-08-09: con 2048, `groq_qwen3` devolvió 6.929 caracteres
+    TODOS dentro de un `<think>` sin cerrar y cero bloques de código. El
+    resultado `0/3` no medía al modelo, medía este fichero. Es el mismo bug que
+    el Cónclave ya había pagado (`_REVIEW_MAX_TOKENS = 4096`)."""
+    from atlas.core.self_maintenance.fitness_solvers import DEFAULT_MAX_TOKENS
+
+    hub = _FakeHub("")
+    DirectModelSolver(hub=hub)(tmp_path, _defect())
+
+    assert DEFAULT_MAX_TOKENS >= 4096
+    assert hub.requests[0].max_tokens >= 4096
+
+
+def test_el_razonamiento_no_tapa_el_codigo(tmp_path: Path) -> None:
+    """Un modelo que piensa en voz alta y LUEGO responde debe funcionar: el
+    bloque va detrás del `<think>`."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "w.py").write_text("viejo\n")
+    respuesta = (
+        "<think>Veamos, el test espera 2 y devuelve 1, hay que cambiarlo.</think>\n"
+        "```python:src/w.py\nnuevo\n```\n"
+    )
+
+    DirectModelSolver(hub=_FakeHub(respuesta))(tmp_path, _defect())
+
+    assert (tmp_path / "src" / "w.py").read_text() == "nuevo\n"
+
+
+def test_un_think_sin_cerrar_no_vacia_la_respuesta(tmp_path: Path) -> None:
+    """Si el modelo se quedó sin presupuesto a mitad, mejor texto ruidoso que
+    nada — mismo criterio que `deliberation_council._strip_thinking`."""
+    from atlas.core.self_maintenance.fitness_solvers import _strip_thinking
+
+    assert _strip_thinking("<think>me quedé a mitad").startswith("<think>")
+
+
 def test_directo_recibe_el_test_que_debe_pasar(tmp_path: Path) -> None:
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_watchdog.py").write_text("def test_x():\n    assert 0\n")
