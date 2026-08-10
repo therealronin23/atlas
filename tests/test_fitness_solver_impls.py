@@ -123,6 +123,82 @@ def test_atlas_no_lanza_si_el_coder_revienta(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------
+# Un cero tiene que venir con su causa
+# --------------------------------------------------------------------------
+
+
+def test_atlas_guarda_por_que_no_lo_consiguio(tmp_path: Path) -> None:
+    """Medido el 2026-08-10: `atlas_toolcoder` sacó 0/5 tres veces seguidas y el
+    banco no sabía decir por qué — `coder.code()` devuelve un `CoderResult` con
+    el error, las iteraciones y los ficheros tocados, y el solver lo tiraba. Un
+    cero sin causa no es accionable, y la causa estaba ahí."""
+
+    class _Falla:
+        def code(self, *a: Any, **k: Any) -> Any:
+            class _R:
+                success = False
+                error = "test_cmd no encontrado: python"
+                iterations = 3
+                files_changed = ["src/w.py"]
+            return _R()
+
+    solver = AtlasSolver(coder_factory=lambda _: _Falla())
+    solver(tmp_path, _defect())
+
+    intento = solver.attempts[0]
+    assert intento.defect_id == "abc123"
+    assert not intento.ok
+    assert "test_cmd no encontrado" in intento.detail
+    assert intento.iterations == 3
+    assert intento.files_changed == ("src/w.py",)
+
+
+def test_atlas_registra_tambien_la_excepcion(tmp_path: Path) -> None:
+    class _Roto:
+        def code(self, *a: Any, **k: Any) -> Any:
+            raise RuntimeError("proveedor sin crédito")
+
+    solver = AtlasSolver(coder_factory=lambda _: _Roto())
+    solver(tmp_path, _defect())
+
+    assert solver.attempts[0].detail.startswith("RuntimeError")
+
+
+def test_directo_guarda_el_timeout_del_proveedor(tmp_path: Path) -> None:
+    """3 de 5 defectos agotaron los 300 s. Sin registrarlo, ese cero se lee como
+    "el modelo no supo" cuando es "el modelo no llegó a contestar"."""
+    solver = DirectModelSolver(hub=_FakeHub("", success=False))
+    solver(tmp_path, _defect())
+
+    intento = solver.attempts[0]
+    assert not intento.ok
+    assert "proveedor caído" in intento.detail
+
+
+def test_directo_guarda_los_ficheros_que_escribio(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "w.py").write_text("viejo\n")
+    solver = DirectModelSolver(hub=_FakeHub("```python:src/w.py\nnuevo\n```\n"))
+
+    solver(tmp_path, _defect())
+
+    assert solver.attempts[0].files_changed == ("src/w.py",)
+    assert solver.attempts[0].ok
+
+
+def test_directo_distingue_no_saber_de_no_contestar(tmp_path: Path) -> None:
+    """Una respuesta sin bloques de código es el modelo rindiéndose; un fallo
+    de proveedor es otra cosa. Contarlas juntas mezcla capacidad con
+    infraestructura."""
+    solver = DirectModelSolver(hub=_FakeHub("No sé cómo arreglarlo."))
+
+    solver(tmp_path, _defect())
+
+    assert solver.attempts[0].files_changed == ()
+    assert "sin bloques" in solver.attempts[0].detail
+
+
+# --------------------------------------------------------------------------
 # DirectModelSolver — el modelo desnudo
 # --------------------------------------------------------------------------
 

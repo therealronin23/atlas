@@ -24,13 +24,15 @@ from __future__ import annotations
 import logging
 import re
 import subprocess
+import sys
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from atlas.core.self_maintenance.frozen_defects import FrozenDefect
 
-__all__ = ["AtlasSolver", "DirectModelSolver", "OracleSolver"]
+__all__ = ["AtlasSolver", "DirectModelSolver", "OracleSolver", "SolverAttempt"]
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +70,19 @@ DEFAULT_MAX_TOKENS = 4096
 #: la cadena de fallback. El daemon interactivo no cambia.
 DEFAULT_TIMEOUT_S = 300.0
 
+#: El MISMO intérprete que puntúa, no el que salga en PATH.
+#:
+#: `AtlasSolver` le pasaba a ToolCoder `test_cmd=["python", ...]`. Comprobado el
+#: 2026-08-10: el banco se lanza con `.venv/bin/python` pero `.venv/bin` NO está
+#: en PATH, así que ese `python` era `/usr/bin/python` — otro intérprete, con
+#: otro pytest (9.1.0) y otras versiones de dependencias. ToolCoder iteraba
+#: contra un entorno y `FitnessScorer` puntuaba contra otro: la señal que guía
+#: al modelo y la que decide el resultado podían discrepar sin que nada lo
+#: dijera. Si mañana el sistema no trae pytest, además, el fallo sería
+#: `test_cmd no encontrado` en los 19 defectos y el número saldría 0 sin que
+#: nadie hubiera medido nada.
+_PYTHON = sys.executable or "python"
+
 
 def _strip_thinking(text: str) -> str:
     """Quita bloques `<think>` cerrados; conserva uno sin cerrar.
@@ -77,6 +92,34 @@ def _strip_thinking(text: str) -> str:
     Mismo criterio que `deliberation_council._strip_thinking`.
     """
     return _THINK_BLOCK.sub("", text).strip()
+
+@dataclass(frozen=True)
+class SolverAttempt:
+    """Qué hizo el solver, al margen de si el defecto quedó resuelto.
+
+    Medido el 2026-08-10: `atlas_toolcoder` sacó 0/5 en tres tiradas y el banco
+    no sabía decir por qué. `coder.code()` devuelve un `CoderResult` con el
+    error, las iteraciones y los ficheros tocados, y el solver lo descartaba.
+    Un cero sin causa no distingue "el modelo no supo" de "el proveedor no
+    contestó" ni de "el comando de test no existía" — tres diagnósticos con
+    tres arreglos distintos, y la información estaba delante.
+
+    `ok` significa "el solver hizo su trabajo", NO "resolvió el defecto": quien
+    decide lo segundo es pytest, en `FitnessScorer`.
+    """
+
+    defect_id: str
+    ok: bool
+    detail: str = ""
+    files_changed: tuple[str, ...] = ()
+    iterations: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "defect_id": self.defect_id, "ok": self.ok, "detail": self.detail,
+            "files_changed": list(self.files_changed), "iterations": self.iterations,
+        }
+
 
 _INSTRUCCION = (
     "Un test de este repositorio falla. Haz que pase modificando SÓLO el código "
@@ -112,18 +155,38 @@ class AtlasSolver:
     ) -> None:
         self._factory = coder_factory
         self._max_iterations = max_iterations
+        self.attempts: list[SolverAttempt] = []
 
     def __call__(self, worktree: Path, defect: FrozenDefect) -> None:
         try:
             coder = (self._factory or self._default_coder)(worktree)
-            coder.code(
+            resultado = coder.code(
                 task=_INSTRUCCION.format(targets=", ".join(defect.test_files)),
                 context_files=list(defect.test_files),
-                test_cmd=["python", "-m", "pytest", *defect.test_files, "-q"],
+                test_cmd=[_PYTHON, "-m", "pytest", *defect.test_files, "-q"],
                 max_iterations=self._max_iterations,
             )
         except Exception as exc:  # noqa: BLE001 — un defecto malo no cancela el pase
             logger.warning("AtlasSolver falló en %s: %s", defect.id, exc)
+            self.attempts.append(
+                SolverAttempt(defect.id, False, f"{type(exc).__name__}: {exc}"[:300])
+            )
+            return
+        ok = bool(getattr(resultado, "success", False))
+        self.attempts.append(
+            SolverAttempt(
+                defect_id=defect.id,
+                ok=ok,
+                detail=str(getattr(resultado, "error", "") or "")[:300],
+                files_changed=tuple(getattr(resultado, "files_changed", ()) or ()),
+                iterations=int(getattr(resultado, "iterations", 0) or 0),
+            )
+        )
+        if not ok:
+            logger.info(
+                "AtlasSolver no cerró %s en %s iteraciones: %s",
+                defect.id, self.attempts[-1].iterations, self.attempts[-1].detail,
+            )
 
     @staticmethod
     def _default_coder(worktree: Path) -> Any:
@@ -230,6 +293,7 @@ class DirectModelSolver:
         self._max_tokens = max_tokens
         self._timeout_s = timeout_s if timeout_s is not None else DEFAULT_TIMEOUT_S
         self._level = level
+        self.attempts: list[SolverAttempt] = []
 
     def __call__(self, worktree: Path, defect: FrozenDefect) -> None:
         try:
@@ -246,14 +310,32 @@ class DirectModelSolver:
                 )
             )
             if not getattr(response, "success", False):
+                error = str(getattr(response, "error", "") or "")
                 logger.warning(
-                    "DirectModelSolver sin respuesta en %s: %s",
-                    defect.id, getattr(response, "error", ""),
+                    "DirectModelSolver sin respuesta en %s: %s", defect.id, error,
                 )
+                # "No contestó" no es "no supo". Medido el 2026-08-10: 3 de 5
+                # defectos agotaron los 300 s, y contarlos como fallos de
+                # capacidad confundiría infraestructura con inteligencia.
+                self.attempts.append(SolverAttempt(defect.id, False, error[:300]))
                 return
-            self._apply(worktree, _strip_thinking(str(getattr(response, "text", "") or "")))
+            escritos = self._apply(
+                worktree, _strip_thinking(str(getattr(response, "text", "") or ""))
+            )
+            self.attempts.append(
+                SolverAttempt(
+                    defect_id=defect.id,
+                    ok=bool(escritos),
+                    detail="" if escritos else "respuesta sin bloques de código",
+                    files_changed=tuple(escritos),
+                    iterations=1,
+                )
+            )
         except Exception as exc:  # noqa: BLE001
             logger.warning("DirectModelSolver falló en %s: %s", defect.id, exc)
+            self.attempts.append(
+                SolverAttempt(defect.id, False, f"{type(exc).__name__}: {exc}"[:300])
+            )
 
     @staticmethod
     def _default_hub() -> Any:
@@ -262,14 +344,15 @@ class DirectModelSolver:
         return InferenceHub(mode="auto")
 
     @staticmethod
-    def _apply(worktree: Path, text: str) -> None:
-        """Escribe los bloques devueltos, con dos cerrojos.
+    def _apply(worktree: Path, text: str) -> list[str]:
+        """Escribe los bloques devueltos y devuelve qué escribió, con dos cerrojos.
 
         1. Nada fuera del worktree: un `../` en la ruta que devuelve el modelo
            no puede salir del jaulón.
         2. Nada bajo `tests/`: resolver el defecto reescribiendo el examen es
            la forma más barata de hackear el banco.
         """
+        escritos: list[str] = []
         root = worktree.resolve()
         for match in _BLOQUE.finditer(text):
             rel = match.group("path").strip()
@@ -285,5 +368,7 @@ class DirectModelSolver:
             try:
                 destino.parent.mkdir(parents=True, exist_ok=True)
                 destino.write_text(match.group("body"), encoding="utf-8")
+                escritos.append(str(destino.relative_to(root)))
             except OSError as exc:
                 logger.warning("no se pudo escribir %s: %s", rel, exc)
+        return escritos

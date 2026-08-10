@@ -141,11 +141,14 @@ def main() -> int:
     ):
         tiradas: list[float] = []
         resueltos: list[int] = []
+        intentos: list[dict[str, object]] = []
         t0 = time.monotonic()
         for i in range(args.repeats):
-            score = scorer.score(solve=hacer_solver())
+            solver = hacer_solver()
+            score = scorer.score(solve=solver)
             tiradas.append(score.ratio)
             resueltos.append(score.solved)
+            intentos.extend(a.to_dict() for a in getattr(solver, "attempts", []))
             if args.repeats > 1:
                 print(f"    {nombre:20s} tirada {i + 1}/{args.repeats}: "
                       f"{score.solved}/{score.total}", flush=True)
@@ -155,7 +158,19 @@ def main() -> int:
             "ratios": tiradas, "solved": resueltos, "mean": round(media, 4),
             "min": min(tiradas), "max": max(tiradas),
             "repeats": args.repeats, "seconds": round(dt, 1),
+            "attempts": intentos,
         }
+        # Un cero sin causa no es accionable. Se agrupan las razones para
+        # separar "no supo" de "no llegó a contestar" o "el comando no existía":
+        # tres diagnósticos con tres arreglos distintos.
+        causas: dict[str, int] = {}
+        for intento in intentos:
+            if not intento["ok"]:
+                causas[str(intento["detail"])[:60] or "(sin detalle)"] = (
+                    causas.get(str(intento["detail"])[:60] or "(sin detalle)", 0) + 1
+                )
+        for causa, veces in sorted(causas.items(), key=lambda kv: -kv[1])[:4]:
+            print(f"      x{veces}  {causa}", flush=True)
         dispersion = (
             f"  [min {min(tiradas):.0%} · max {max(tiradas):.0%}]"
             if args.repeats > 1 else ""
