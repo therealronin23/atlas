@@ -272,6 +272,44 @@ class InferenceResponse:
     error_kind: str | None = None
     retry_after_s: float | None = None
     retryable: bool = False
+    #: Qué dijo CADA proveedor cuando la cadena entera falló, en orden de
+    #: intento: ``(("groq_qwen3", "RateLimitError: ... TPD"), ("nvidia_x",
+    #: "hard timeout ..."))``. Vacío si hubo éxito.
+    #:
+    #: Existe por un diagnóstico que costó horas el 2026-08-10: el banco
+    #: registró quince veces "hard timeout tras 300.0s (litellm no devolvió a
+    #: tiempo)" cuando el PRIMER proveedor había contestado en 0,1 s con
+    #: "Rate limit reached ... on tokens per day (TPD)". `all_failed` propagaba
+    #: sólo el error del último, así que la causa accionable —hoy no quedan
+    #: tokens de ese modelo— quedaba tapada por una inaccionable que además
+    #: culpaba a la librería que sí había respondido.
+    chain_failures: tuple[tuple[str, str], ...] = ()
+
+
+#: Cuántos proveedores y cuánto de cada error caben en el resumen agregado. Con
+#: catorce proveedores en el catálogo, volcarlos todos con su traza haría el
+#: error ilegible y engordaría cada registro del ledger.
+_RESUMEN_MAX_PROVEEDORES = 4
+_RESUMEN_MAX_CHARS = 110
+
+
+def _resumen_de_cadena(fallos: list[tuple[str, str]]) -> str:
+    """Una línea que nombra a los primeros proveedores y lo que dijo cada uno.
+
+    Los PRIMEROS, no los últimos: el orden de la cadena pone delante a los
+    preferidos, y el diagnóstico del 2026-08-10 estaba justo ahí —el primero
+    contestó "tokens per day agotados" en 0,1 s y el último, que se colgó, era
+    el único que llegaba al caller.
+    """
+    if not fallos:
+        return ""
+    partes = [
+        f"{nombre}: {' '.join(str(error).split())[:_RESUMEN_MAX_CHARS]}"
+        for nombre, error in fallos[:_RESUMEN_MAX_PROVEEDORES]
+    ]
+    resto = len(fallos) - len(partes)
+    cola = f" (+{resto} más)" if resto > 0 else ""
+    return f"Todos los proveedores fallaron ({len(fallos)}) — " + " | ".join(partes) + cola
 
 
 def record_token_usage(
@@ -831,12 +869,14 @@ class InferenceHub:
 
         last_error: str | None = None
         last_resp: InferenceResponse | None = None
+        fallos: list[tuple[str, str]] = []
         for provider in candidates:
             result = self._call_provider(provider, request)
             last_resp = result
             if result.success:
                 return result
             last_error = result.error
+            fallos.append((provider.name, str(result.error or "sin detalle")))
             self._mark_if_tools_unsupported(provider, result.error)
             if provider.status != ProviderStatus.RATELIMITED:
                 provider.error_count += 1
@@ -862,6 +902,7 @@ class InferenceHub:
                     if result.success:
                         return result
                     last_error = result.error
+                    fallos.append((provider.name, str(result.error or "sin detalle")))
                     self._mark_if_tools_unsupported(provider, result.error)
                     if provider.status != ProviderStatus.RATELIMITED:
                         provider.error_count += 1
@@ -872,8 +913,10 @@ class InferenceHub:
         return InferenceResponse(
             text="", provider="all_failed", model="none", level=request.level,
             latency_ms=0, success=False,
-            error=last_error or "Todos los proveedores fallaron. Considera delegar a Hermes.",
+            error=_resumen_de_cadena(fallos) or last_error
+            or "Todos los proveedores fallaron. Considera delegar a Hermes.",
             mode=final_mode,
+            chain_failures=tuple(fallos),
             # T5.2/T5.3 T2 (2026-07-23): propaga la clasificación estructurada
             # del último fallo real (no la resetea a defaults) — el caller
             # sigue viendo por qué murió la cadena, no solo el string plano.
