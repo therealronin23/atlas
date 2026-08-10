@@ -253,13 +253,20 @@ def verify_defect(
     """
     from atlas.core.swarm_backend import WorktreeManager
 
+    from uuid import uuid4
+
     manager = WorktreeManager(Path(repo_root))
     targets = tuple(defect.test_files)
     if not targets:
         return VerificationOutcome(defect.id, False, reason="el defecto no trae tests")
 
+    # Sufijo único por verificación: un nombre derivado sólo del id colisiona
+    # con un pase simultáneo (o con un resto de uno que murió), `git worktree
+    # add` falla, y el defecto se anota como no reproducible sin serlo.
+    pase = uuid4().hex[:8]
+
     def _run_at(base_ref: str, *, with_fix_tests: bool) -> int:
-        with manager.session(f"fitness-{defect.id}", base_ref=base_ref) as worktree:
+        with manager.session(f"fitness-{defect.id}-{pase}", base_ref=base_ref) as worktree:
             if with_fix_tests:
                 # Código en base + test del arreglo: el caso que mide.
                 subprocess.run(

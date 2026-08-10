@@ -24,6 +24,7 @@ from atlas.core.self_maintenance.fitness import FitnessScorer  # noqa: E402
 from atlas.core.self_maintenance.fitness_solvers import (  # noqa: E402
     AtlasSolver,
     DirectModelSolver,
+    OracleSolver,
 )
 
 
@@ -70,6 +71,21 @@ def main() -> int:
 
     total = len(scorer.defects())
     print(f"banco: {total} defectos verificados", flush=True)
+
+    # CONTROL, antes de cualquier solver. Medido el 2026-08-10: baseline y
+    # atlas sacaron ambos 0/5, y un cero admite dos lecturas incompatibles —
+    # "los solvers no pueden" o "el banco es imposible". El oráculo aplica el
+    # arreglo real y elige entre las dos. Cuesta segundos y no gasta un token:
+    # no hay razón para dejarlo detrás de un flag que nadie recordaría poner.
+    techo = scorer.score(solve=OracleSolver(root, scorer.defects()))
+    print(f"  {'CONTROL (arreglo real)':22s} {techo.solved}/{techo.total} "
+          f"= techo del banco", flush=True)
+    if techo.solved < techo.total:
+        fallidos = [o["defect_id"] for o in techo.outcomes if not o["solved"]]
+        print(f"  AVISO: {len(fallidos)} defecto(s) NO los resuelve ni su propio "
+              f"arreglo: {', '.join(map(str, fallidos))}")
+        print("  El banco está roto en esa parte; lee los números de abajo "
+              f"contra {techo.solved}, no contra {techo.total}.")
 
     # UNA TIRADA NO ES UNA MEDICIÓN. Medido el 2026-08-09: el mismo banco, con
     # `AtlasSolver` sin tocar entre ejecuciones, dio 2/3 y luego 0/3. El solver

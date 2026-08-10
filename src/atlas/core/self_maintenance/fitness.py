@@ -26,7 +26,15 @@ realidad hackean el harness.
 
 VALIDACIÓN DEL INSTRUMENTO. Un banco cuyo extremo perfecto no da 1.0 es
 imposible de superar, y uno cuyo extremo nulo no da 0.0 mide otra cosa. Ambos
-extremos están fijados con test.
+extremos están fijados con test — sobre un repositorio sintético, que es lo que
+un test puede permitirse.
+
+Eso NO basta para leer un resultado real, y hubo que aprenderlo: el 2026-08-10
+los dos solvers sacaron 0/5 sobre defectos de verdad, y un cero no distingue
+"los solvers no pueden" de "el banco es imposible". `OracleSolver` (en
+`fitness_solvers`) aplica el arreglo real sobre el CORPUS REAL y `fitness_run`
+lo ejecuta como control en cada pase: es la cota superior contra la que se lee
+todo lo demás.
 """
 
 from __future__ import annotations
@@ -36,6 +44,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from atlas.core.self_maintenance.frozen_defects import FrozenDefect, TestRunner
 
@@ -101,6 +110,13 @@ class FitnessScorer:
         self._root = Path(repo_root)
         self._corpus = Path(corpus_path)
         self._run_tests = run_tests
+        # Un nombre de worktree derivado sólo del id del defecto colisiona
+        # entre pases simultáneos, y `git worktree add` falla sobre un path que
+        # ya existe. `score()` captura ese fallo y lo anota como defecto NO
+        # resuelto: un cero que no mide al solver sino al vecino. Es la misma
+        # familia que el resto de esta auditoría —un error disfrazado de estado
+        # normal— y aquí falsearía justo el número que el banco existe para dar.
+        self._pass_id = uuid4().hex[:8]
 
     def defects(self) -> list[FrozenDefect]:
         """Sólo los VERIFICADOS. Un candidato sin verificar infla el
@@ -134,7 +150,8 @@ class FitnessScorer:
             outcome: dict[str, Any] = {"defect_id": defect.id, "solved": False}
             try:
                 with manager.session(
-                    f"fitness-score-{defect.id}", base_ref=defect.base_sha
+                    f"fitness-score-{defect.id}-{self._pass_id}",
+                    base_ref=defect.base_sha,
                 ) as worktree:
                     # El montaje necesita `fix_sha`; el solver NO puede verlo.
                     # De ahí que la redacción vaya justo entre las dos cosas.

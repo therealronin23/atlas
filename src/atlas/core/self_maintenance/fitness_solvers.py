@@ -23,13 +23,14 @@ from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Callable
+import subprocess
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
 from atlas.core.self_maintenance.frozen_defects import FrozenDefect
 
-__all__ = ["AtlasSolver", "DirectModelSolver"]
+__all__ = ["AtlasSolver", "DirectModelSolver", "OracleSolver"]
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,82 @@ class AtlasSolver:
 
         # repo_root = el WORKTREE, nunca el checkout vivo del operador.
         return ToolCoder(InferenceHub(mode="auto"), repo_root=worktree)
+
+
+class OracleSolver:
+    """El **control** del instrumento: aplica el arreglo real. Cota superior.
+
+    No compite. Hace trampa a propósito, y por eso su número no va en la tabla
+    de comparación — enfrentar un solver honesto a uno que ve la solución sólo
+    produciría un "aporte del harness" negativo y sin sentido.
+
+    Existe por una razón concreta y medida. El 2026-08-10, sobre 5 defectos
+    reales y 3 tiradas, `baseline` y `atlas_toolcoder` sacaron ambos 0/5. Un
+    cero admite dos lecturas incompatibles:
+
+        (a) los solvers no son capaces todavía  -> el número es real
+        (b) el banco es imposible de superar    -> el número no mide nada
+
+    Sin el oráculo no hay forma de elegir, y publicar un 0 sin saber cuál de las
+    dos es sería peor que no medir. Los extremos del scorer estaban validados,
+    pero sobre un repositorio de juguete de un defecto sintético: el docstring
+    prometía "el arreglo real -> 19/19" y esa ejecución nunca había ocurrido.
+
+    Trae del commit del arreglo todo lo que NO esté bajo `tests/`: el montaje ya
+    puso el examen, y volver a traerlo abriría la puerta a que un arreglo que
+    relajó su propio test se contase como resuelto.
+    """
+
+    def __init__(self, repo_root: Path, defects: Sequence[FrozenDefect]) -> None:
+        self._root = Path(repo_root)
+        self._fix_sha = {d.id: d.fix_sha for d in defects if d.fix_sha}
+        if not self._fix_sha:
+            # Un oráculo vacío puntuaría 0/N y se leería como "el banco es
+            # imposible": exactamente el diagnóstico invertido que evita.
+            raise ValueError(
+                "OracleSolver necesita el corpus SIN redactar; "
+                f"recibió {len(defects)} defectos sin fix_sha"
+            )
+
+    def __call__(self, worktree: Path, defect: FrozenDefect) -> None:
+        fix = self._fix_sha.get(defect.id)
+        if not fix:
+            raise KeyError(f"el oráculo no conoce el defecto {defect.id}")
+        rutas = self._non_test_paths(fix)
+        if not rutas:
+            raise RuntimeError(f"el arreglo {fix[:12]} no toca código fuera de tests/")
+        self._git(["checkout", fix, "--", *rutas], cwd=worktree)
+
+    def _non_test_paths(self, fix: str) -> list[str]:
+        """Ficheros del commit que no son tests, sin los borrados.
+
+        `git show` en vez de `<sha>^..<sha>` para que un commit raíz no rompa.
+        Un borrado no se puede `checkout` y haría fallar la orden entera.
+        """
+        salida = self._git(["show", "--name-status", "--format=", "-m", fix])
+        rutas: list[str] = []
+        for linea in salida.splitlines():
+            campos = linea.split("\t")
+            if len(campos) < 2 or campos[0].startswith("D"):
+                continue
+            # Un rename llega como `R100 <viejo> <nuevo>`: interesa el destino.
+            ruta = campos[-1].strip()
+            if ruta and not ruta.startswith("tests/"):
+                rutas.append(ruta)
+        return sorted(set(rutas))
+
+    def _git(self, args: list[str], *, cwd: Path | None = None) -> str:
+        from atlas.core.git_env import clean_git_env
+
+        return subprocess.run(
+            ["git", *args],
+            cwd=cwd or self._root,
+            env=clean_git_env(),
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=120,
+        ).stdout
 
 
 class DirectModelSolver:

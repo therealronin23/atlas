@@ -173,3 +173,9 @@ sample_payload.json
 # Subconjuntos derivados del banco de fitness (`fitness_run.py --limit N`):
 # el corpus verificado SÍ se versiona, sus recortes no.
 docs/fixtures/fitness/.subset-*.jsonl
+# Worktrees desechables de `WorktreeManager` (swarm_backend, banco de fitness):
+# checkouts detached de decenas de MB que viven mientras corre un pase. El
+# teardown los quita, pero si uno sobrevive a un crash `git status` lo enseña
+# como "sin trackear" e invita a un `git add .` que metería el checkout entero.
+# El leak de worktrees del 2026-07-09 empezó exactamente así.
+.atlas-worktrees/

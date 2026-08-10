@@ -14,10 +14,15 @@ RESTRICCIÓN más, como pytest. `FitnessScorer` responde "¿cuánto resuelvo?", 
 es lo único que puede subir.
 
 VALIDACIÓN DEL PROPIO INSTRUMENTO, que es lo que lo hace creíble:
-  - un solver que no hace nada     -> 0/19
-  - un solver que aplica el arreglo real -> 19/19
+  - un solver que no hace nada           -> 0.0
+  - un solver que aplica el arreglo real -> 1.0
 Si esas dos no se cumplen, la métrica no mide nada y cualquier número
 intermedio sería ruido.
+
+Aquí se fijan sobre un repositorio SINTÉTICO de un defecto, que es lo que un
+test unitario puede permitirse. La versión sobre el corpus real vive en
+`test_fitness_oracle.py` y la ejecuta `fitness_run.py` en cada pase: este
+fichero decía "-> 19/19" y esa ejecución nunca había ocurrido.
 """
 
 from __future__ import annotations
