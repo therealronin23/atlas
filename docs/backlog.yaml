@@ -2309,3 +2309,38 @@ items:
       grueso de las 411 sentencias que siguen sin ejecutar.
     priority: 2
     status: pending
+
+  - id: t9-inference-outcomes-sin-ledger
+    title: "El ledger no registra ningún resultado de inferencia (0 acciones `inference.*` en 26.239 registros)"
+    why: >
+      Medido el 2026-08-10 sobre el ledger real de `/home/ronin/atlas`: 26.239
+      registros y NINGUNA acción `inference.*`. Un lazo que agota su cadena de
+      proveedores no deja rastro auditable — las 7 señales que aparecen al
+      grepear están incrustadas de rebote en payloads de otros eventos.
+
+      No es teórico. Ese día el banco de fitness gastó 84 minutos produciendo
+      quince "hard timeout tras 300.0s" que en realidad eran la cuota diaria
+      agotada, y hicieron falta horas y cinco sondas manuales para saberlo. El
+      hub ya avisa por log (`3fa2727`), pero un log no es evidencia: no está
+      encadenado en Merkle, no se puede correlacionar con `cold_update` ni con
+      las propuestas caídas, y se pierde al rotar.
+
+      La consecuencia de fondo: **la afirmación "el lazo rinde 7,8%" no puede
+      descomponerse hoy en "no supo" contra "no pudo hablar"**, y esas dos
+      pidan arreglos opuestos. Mientras no se registre, cualquier explicación
+      del 7,8% es especulación.
+    targets:
+      - "src/atlas/core/inference_hub.py"
+      - "src/atlas/logging/observability.py"
+    acceptance: >
+      Una acción auditada por cadena agotada (al menos `task_id`, proveedores
+      intentados y la causa de cada uno, sin prompts ni secretos), con test que
+      falle si deja de emitirse. Volumen acotado: sólo `all_failed`, nunca por
+      fallo suelto de proveedor — un evento por llamada convertiría el ledger en
+      un log y haría inútil el Merkle.
+
+      La verificación es con evidencia, no con mock: forzar una cadena agotada
+      real (cuota agotada o claves retiradas) y comprobar que el evento aparece
+      encadenado.
+    priority: 2
+    status: pending
