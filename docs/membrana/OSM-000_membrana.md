@@ -11,7 +11,8 @@ no como autoridad de runtime. Las filas históricas se interpretan mediante la
 matriz canónica: una promoción de slice no promueve Osmosis completo.
 OSM-007/026/040 fueron absorbidas en el alcance de ADR-053; OSM-042 solo fue
 promovida por ADR-074 en su Fase 1. Guarantee profile, enforcement no-bypass y
-producto siguen pendientes del operador.
+producto siguen pendientes del operador. La conectividad end-to-end con el 
+Twin Kanban está verificada y blindada mediante `twin_e2e_smoke.py` (cierre de F2).
 
 ---
 

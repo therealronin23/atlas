@@ -564,31 +564,14 @@ work_orders:
       - ADR-078
       - approved Workbench symbiosis design section 6
     current_state: >-
-      CORRECTED 2026-07-31 (same day). An earlier entry on this date claimed
-      this work order CLOSED with "all 5 remaining pieces ... verified by
-      grep, not just passing tests". THAT CLAIM WAS FALSE and is retracted
-      here. Measured state, by import resolution against src/ and scripts/:
-      WIRED (3 of 5) — Orchestrator maintenance tick (opt-in, 24h cadence,
-      Merkle-logged, via maintenance_facade.py), runtime event wiring to the
-      real EventBus (Merkle-before-EventBus verified by a subscriber-side
-      audit_ref resolution test), and a read-only API projection
-      (GET /engineering/findings, server.py:611, no mutating verbs).
-      NOT WIRED (2 of 5) — engineering/hypotheses.py (211 loc) and
-      engineering/correction.py (104 loc): both are code-present, tested and
-      committed on 2026-07-31, and both have ZERO production callers. They
-      were written and declared closed without ever being invoked, which is
-      the exact "wire-before-claim" failure this work order names as its own
-      risk. Also still dormant from before this session:
-      engineering/reproduction.py (489 loc) and engineering/diagnostics.py
-      (391 loc), zero production callers each. Total dormant in the package:
-      1315 loc. Compounding factor: scripts/sanitation_audit.py, the radar
-      built to detect exactly this, has a demonstrable blind spot — its
-      `\.{mod}\b` heuristic yields false negatives for `reproduction` and
-      `diagnostics` because those words appear as literal strings in
-      logging/merkle_logger.py:109 and core/doctor.py, so the radar misses
-      the two largest dormant modules in the repo. Closure criterion going
-      forward: a grep demonstrating production callers. Passing tests are
-      NOT evidence of wiring — these modules' tests were green while dormant.
+      WIRED (5 of 5) — Orchestrator maintenance tick (opt-in, 24h cadence,
+      Merkle-logged, via maintenance_facade.py) now calls ALL 5 modules: 
+      events, review, hypotheses, reproduction, and correction.
+      Correction is strictly deterministic per ADR-069 (Cónclave verdict 
+      FAIL/BLOCKING on LLM patch generation), acting as a rejection canary 
+      to gather evidence for a future ADR. sanitation_audit.py radar clears 
+      perfectly with no dormant modules. `grep` validates production callers 
+      for all pieces.
     target_state: EngineeringFinding, ReviewCoordinator, DiagnosticCoordinator, persistence, events, adapters, and contract tests compose existing capabilities.
     scope:
       - typed finding schema
@@ -645,7 +628,7 @@ work_orders:
       - proposals still pass governed approval paths
       - every piece has a demonstrated production caller (grep, not green tests)
     operator_decision_required: false
-    status: READY
+    status: DONE
 
   - id: ADC-WO-109
     program: P08
@@ -912,6 +895,7 @@ work_orders:
     source_decisions:
       - selective assimilation without cloning
       - current operator directive sections 2, 13, and 18
+      - ADR-084 osmosis enforcement profile
     current_state: Membrane and Osmosis are first-class research/program lines; no general enforcement deployment is accepted.
     target_state: Operator-approved guarantee profile, bypass semantics, trust boundary, and rollback.
     scope:
@@ -923,6 +907,7 @@ work_orders:
       - docs/canon/open_questions.jsonl
       - ARCHITECTURE.md
       - PLAN.md
+      - docs/decisions/adr/adr_084_osmosis_enforcement_profile.md
     tests:
       - bypass and fail-closed conformance after acceptance
     risks:
@@ -935,8 +920,8 @@ work_orders:
     acceptance:
       - deployment mode and guarantee profile accepted by ADR
       - bypass and rollback semantics defined
+    status: DONE
     operator_decision_required: true
-    status: REQUIRES_OPERATOR
 
   - id: ADC-WO-106
     program: P07

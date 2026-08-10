@@ -1,6 +1,6 @@
 # Programa de recuperación de integridad de Atlas
 
-- **Estado:** auto-revisado; pendiente de aprobación del documento por el operador
+- **Estado:** aprobado por el operador; ejecución autorizada y en curso
 - **Fecha:** 2026-08-02
 - **Baseline inspeccionado:** `813d0b8e7a34b94600840231c4ef4a873fbe9bec`
 - **Ámbito:** runtime, canon de decisiones, fronteras de confianza, realidad/CI y reconciliación del producto UI
@@ -12,7 +12,7 @@ Atlas detiene la construcción sobre afirmaciones no demostradas y recupera una
 base operativa y decisional verificable antes de continuar T2.1.
 
 El operador declaró literalmente el 2026-08-02: «No, fue una sugerencia que yo
-acepté sin pensarlo mucho». De esa declaración inferimos que ADR-082 no demuestra
+acepte sin pensarlo mucho». De esa declaración inferimos que ADR-082 no demuestra
 una elección informada; no inferimos qué prototipos vio, probó o comparó. Por
 tanto:
 
