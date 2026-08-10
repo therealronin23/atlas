@@ -723,6 +723,9 @@ work_orders:
     evidence:
       - ADR-071 platform boundary
       - ADR-078 desktop scope
+      - "2026-08-11 feasibility measured, not assumed. ALREADY PRESENT: Tailscale mesh is up with the Android device online (redmi-note-13, 100.113.135.34) alongside this host (100.85.236.58) -- the network-posture problem that looked hardest is already solved without any LAN exposure; Android toolchain is green (flutter doctor, Android SDK 35.0.0); and mission_console/lib/api/bridge_client.dart already sends the Origin header and supports a Bearer token, which is exactly what off-loopback requires (it was written for the CSWSH fix and happens to be Android-ready)."
+      - "2026-08-11 what is actually missing, in cost order: (1) authenticated PAIRING -- there is no mechanism at all (grep for pair/qr/device_token in src/atlas/api/server.py returns nothing); today a token would be set via env on the host and typed by hand on the phone. (2) mission_console has only a linux/ target; android/ must be generated. (3) a decision to bind the bridge to the tailnet address. The bridge already fails closed here: _validate_bind_security refuses to listen off-loopback without a strong token, and off-loopback WS requires Origin to match the host exactly."
+      - "Consequence for scope: the ficha's 'dedicated Android product tree' and 'shared Surface API' are larger than what the measurement supports. The remaining engineering is pairing plus Flutter scaffolding, not a second product."
     source_decisions:
       - ADR-071
       - ADR-078
