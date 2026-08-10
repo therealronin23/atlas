@@ -149,6 +149,8 @@ def test_una_ruta_inexistente_no_tumba_la_tool(engineering: Any) -> None:
 
 kuzu = pytest.importorskip("kuzu", reason="el shell del grafo necesita kuzu")
 
+from atlas.memory.kuzu_runtime import open_kuzu_database  # noqa: E402
+
 
 def _head(repo: Path) -> str:
     return subprocess.run(
@@ -164,7 +166,13 @@ def _construir_grafo(repo: Path, db_path: Path, *, poblado: bool) -> None:
     from atlas.memory.callgraph_to_kuzu import _SCHEMA as ESQUEMA_SIMBOLOS
     from atlas.memory.obsidian_to_kuzu import _SCHEMA as ESQUEMA_NOTAS
 
-    db = kuzu.Database(str(db_path))
+    # Siempre por `open_kuzu_database`: el constructor crudo de Kuzu pide el
+    # mmap de 8 TiB por defecto, y `test_kuzu_database_construction_is_centralized`
+    # lo prohíbe en todo el árbol. Me pilló al primer intento, y luego otra vez
+    # por nombrarlo literalmente en este comentario —el guard escanea el fichero
+    # entero, por eso él mismo parte la cadena—. La regla existe porque esta
+    # máquina ya se cayó una vez por agotamiento de memoria.
+    db = open_kuzu_database(db_path)
     conn = kuzu.Connection(db)
     for ddl in (*ESQUEMA_FICHEROS, *ESQUEMA_SIMBOLOS, *ESQUEMA_NOTAS):
         conn.execute(ddl)
