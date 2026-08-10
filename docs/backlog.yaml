@@ -2291,5 +2291,21 @@ items:
       REALES (no sólo el parseo de argumentos). Cada defecto que aparezca al
       escribirlos se arregla o se registra; subir el porcentaje sin ejercitar
       caminos sería el teatro de tests que esta misma auditoría midió.
+    progress: >
+      2026-08-10 — avance parcial, NO cerrado. `tests/test_cli_operator_surface.py`
+      lleva cli.py del 58% al 68% ejercitando comandos reales: los 81 hojas
+      resuelven su `--help` y los 26 de sólo lectura se invocan de verdad contra
+      un ATLAS_HOME aislado. Cero crashes en la superficie de operador, que era
+      la duda de fondo.
+
+      Encontró un defecto al primer intento: `atlas health` moría con
+      "GovernanceL0 no inicializado" si `atlas status` había corrido antes en el
+      mismo proceso — `cli._orch` y el singleton son dos globales acopladas y
+      `conftest` limpiaba sólo una. Arreglado.
+
+      Lo que falta para el 80% son los comandos CON efectos (update apply,
+      plugin activate, mcp install, gate-h, selfbuild pause/resume): necesitan
+      dobles o un workspace desechable, no caben en un smoke test, y ahí está el
+      grueso de las 411 sentencias que siguen sin ejecutar.
     priority: 2
     status: pending
