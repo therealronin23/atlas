@@ -46,6 +46,56 @@ def run_tests(worktree: Path, targets: tuple[str, ...]) -> int:
         return 124
 
 
+def cuota_agotada() -> str:
+    """Motivo por el que hoy no se puede medir, o cadena vacía si se puede.
+
+    Una petición mínima antes de gastar horas. El 2026-08-10 el banco corrió
+    84 minutos para producir quince `hard timeout tras 300.0s` que en realidad
+    eran `Rate limit reached ... on tokens per day (TPD)` — la cuota agotada
+    por las propias tiradas de esa mañana. **Un banco que consume el recurso
+    que mide tiene que comprobarlo antes de empezar**, o acaba publicando
+    ceros que no miden nada.
+
+    La sonda PESA lo que pesa el trabajo, y esto no es un detalle: un "ping" de
+    ocho tokens pasaba la cuota alegremente mientras el turno real —23.000
+    caracteres, tras un solo `read_file`— moría. Se sondea con el tamaño que el
+    bucle necesita de verdad; si ese tamaño no entra hoy, el banco no puede
+    medir hoy, y eso es justo lo que se quiere saber.
+
+    Nunca bloquea por un fallo del propio sondeo: si la sonda no puede
+    ejecutarse, se corre el banco igual y que hablen los datos.
+    """
+    try:
+        from atlas.core.inference_hub import (
+            InferenceHub,
+            InferenceLevel,
+            InferenceRequest,
+        )
+
+        # Medido el 2026-08-10: 12k caracteres pasaban en 7,2 s y 23k reventaban
+        # la cadena entera. El turno que importa es el segundo, no el primero.
+        relleno = ("# comprobación de capacidad del banco de fitness\n" * 460)[:24000]
+        respuesta = InferenceHub(mode="auto").infer(
+            InferenceRequest(
+                prompt="Responde solo OK.\n" + relleno,
+                level=InferenceLevel.L1, task_id="fitness_sonda",
+                max_tokens=8, temperature=0.0, timeout_s=60.0,
+            )
+        )
+    except Exception as exc:  # noqa: BLE001 — una sonda rota no cancela el pase
+        print(f"  (sonda de cuota no pudo ejecutarse: {exc}; se continúa)")
+        return ""
+    if getattr(respuesta, "success", False):
+        return ""
+    fallos = getattr(respuesta, "chain_failures", ()) or ()
+    limitados = [n for n, e in fallos if "RateLimit" in e or "rate limit" in e.lower()]
+    if limitados:
+        return f"{len(limitados)} de {len(fallos)} proveedores rate-limitados: " + ", ".join(
+            limitados[:4]
+        )
+    return str(getattr(respuesta, "error", "") or "la cadena no responde")[:300]
+
+
 def muestra_uniforme(lineas: list[str], n: int) -> list[str]:
     """N defectos repartidos por todo el corpus, conservando el orden.
 
@@ -76,6 +126,12 @@ def main() -> int:
         "--repeats", type=int, default=3,
         help="tiradas por solver. Una sola NO es una medición: el solver es "
              "estocástico y el mismo banco dio 2/3 y 0/3 en dos ejecuciones.",
+    )
+    parser.add_argument(
+        "--sin-sonda", dest="sin_sonda", action="store_true",
+        help="salta la comprobación de cuota previa (por defecto se hace: el "
+             "banco gasta el mismo recurso que mide y agotarlo produce ceros "
+             "que parecen resultados).",
     )
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
@@ -114,6 +170,19 @@ def main() -> int:
               f"arreglo: {', '.join(map(str, fallidos))}")
         print("  El banco está roto en esa parte; lee los números de abajo "
               f"contra {techo.solved}, no contra {techo.total}.")
+
+    if not args.sin_sonda:
+        motivo = cuota_agotada()
+        if motivo:
+            print()
+            print("ABORTA: los proveedores no pueden atender el banco ahora mismo.")
+            print(f"  {motivo}")
+            print("  Correr igualmente produciría 0/N en cada solver y ese cero")
+            print("  NO mediría a Atlas. Pasó el 2026-08-10: 84 minutos y quince")
+            print('  "hard timeout tras 300.0s" que en realidad eran la cuota')
+            print("  diaria agotada por las tiradas de esa misma mañana.")
+            print("  Reintenta cuando la cuota se renueve, o `--sin-sonda` para forzar.")
+            return 2
 
     # UNA TIRADA NO ES UNA MEDICIÓN. Medido el 2026-08-09: el mismo banco, con
     # `AtlasSolver` sin tocar entre ejecuciones, dio 2/3 y luego 0/3. El solver

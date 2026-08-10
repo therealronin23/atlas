@@ -283,3 +283,91 @@ def test_el_oraculo_no_es_un_competidor() -> None:
     doc = inspect.getdoc(fitness_solvers.OracleSolver) or ""
     assert "control" in doc.lower()
     assert "cota superior" in doc.lower()
+
+
+# --------------------------------------------------------------------------
+# El banco consume el mismo recurso que mide
+# --------------------------------------------------------------------------
+
+
+def _fitness_run():
+    import importlib.util
+
+    ruta = Path(__file__).resolve().parent.parent / "scripts" / "fitness_run.py"
+    spec = importlib.util.spec_from_file_location("fitness_run_mod", ruta)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_la_sonda_detecta_la_cuota_agotada(monkeypatch: pytest.MonkeyPatch) -> None:
+    """El 2026-08-10 el banco corrió 84 minutos para producir quince
+    `hard timeout tras 300.0s` que eran la cuota diaria agotada por las tiradas
+    de esa misma mañana. Un banco que consume el recurso que mide tiene que
+    comprobarlo ANTES de empezar."""
+    mod = _fitness_run()
+
+    class _Resp:
+        success = False
+        error = "Todos los proveedores fallaron (7)"
+        chain_failures = (
+            ("groq_qwen3", "RateLimitError: tokens per day (TPD)"),
+            ("nvidia_x", "TimeoutError: hard timeout"),
+        )
+
+    monkeypatch.setattr(
+        "atlas.core.inference_hub.InferenceHub.infer", lambda self, req: _Resp()
+    )
+
+    motivo = mod.cuota_agotada()
+
+    assert "rate-limitados" in motivo
+    assert "groq_qwen3" in motivo
+
+
+def test_la_sonda_calla_cuando_se_puede_medir(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = _fitness_run()
+
+    class _Ok:
+        success = True
+
+    monkeypatch.setattr(
+        "atlas.core.inference_hub.InferenceHub.infer", lambda self, req: _Ok()
+    )
+
+    assert mod.cuota_agotada() == ""
+
+
+def test_una_sonda_rota_no_cancela_el_pase(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail-open a propósito: la sonda es una cortesía, no una puerta. Si ella
+    misma se rompe, que corra el banco y hablen los datos."""
+    mod = _fitness_run()
+
+    def _revienta(self, req):
+        raise RuntimeError("hub sin configurar")
+
+    monkeypatch.setattr("atlas.core.inference_hub.InferenceHub.infer", _revienta)
+
+    assert mod.cuota_agotada() == ""
+
+
+def test_la_sonda_pesa_lo_que_pesa_el_trabajo(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Un "ping" de ocho tokens pasaba la cuota mientras el turno real de 23.000
+    caracteres moría — medido en vivo el 2026-08-10, con la sonda dando luz
+    verde a una tirada que no podía funcionar."""
+    mod = _fitness_run()
+    visto: list[int] = []
+
+    class _Ok:
+        success = True
+
+    def _capta(self, req):
+        visto.append(len(req.prompt or ""))
+        return _Ok()
+
+    monkeypatch.setattr("atlas.core.inference_hub.InferenceHub.infer", _capta)
+
+    mod.cuota_agotada()
+
+    assert visto and visto[0] >= 20000, f"sonda demasiado pequeña: {visto}"
