@@ -624,7 +624,18 @@ DEFAULT_PROVIDERS: list[Provider] = [
         level=InferenceLevel.L0,
         # 2026-07-09: fix permanente aplicado (sudo systemctl edit ollama →
         # [Service] Environment="CUDA_VISIBLE_DEVICES=" → restart). GTX 960M
-        # ahora corre sin CUDA. Último recurso: inagotable cuando gratis limitados.
+        # ahora corre sin CUDA.
+        #
+        # "Último recurso inagotable" con una letra pequeña que hay que medir,
+        # no suponer: 2026-08-10, en vivo, **2,8 tokens/s** (57 tokens en 20,7 s
+        # sobre CPU). Sirve de sobra para clasificar, decidir o responder corto
+        # —que es para lo que está—, y NO sirve para trabajo agéntico: un turno
+        # de ToolCoder son hasta 4.096 tokens, o sea ~24 minutos. Se comprobó
+        # queriendo correr el banco de fitness aquí para esquivar la cuota
+        # diaria agotada de Groq; con estos números habrían sido días.
+        #
+        # `context_tokens=8192` es el otro techo: el segundo turno del bucle de
+        # ToolCoder ya iba por ~6.000 tokens y el tercero por ~25.000.
         base_url="http://127.0.0.1:11434",
         # qwen2.5-coder:7b probado en vivo por Atlas; tools OK en Ollama.
         model_id="qwen2.5-coder:7b",
