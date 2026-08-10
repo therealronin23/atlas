@@ -54,6 +54,7 @@ class PreflightGate:
     ) -> None:
         self._python = python_executable or sys.executable
         self._root = Path(repo_root) if repo_root is not None else _REPO_ROOT
+        self._cache_lanzados: frozenset[str] | None = None
 
     def check(self) -> PreflightResult:
         cve_found, cve_findings, cve_advisories = self._scan_cves()
@@ -101,20 +102,39 @@ class PreflightGate:
         dentro de la misma vecindad textual, que es lo que separa lanzarlo de
         nombrarlo. El criterio se actualiza solo el día que alguien cablee uno.
         """
+        return venv.name in self._lanzados()
+
+    def _lanzados(self) -> frozenset[str]:
+        """Nombres de venv que `src/` lanza. Una sola pasada, cacheada.
+
+        Preguntarlo venv a venv releía los 359 ficheros de `src/` por cada uno
+        —y `check()` se llama en cada preflight—: mismo resultado, tres veces el
+        trabajo. Se recorre una vez y se responde a todos.
+        """
+        if self._cache_lanzados is not None:
+            return self._cache_lanzados
+        nombres = [p.name for p in self._isolated_venvs()]
+        encontrados: set[str] = set()
         src = self._root / "src"
-        if not src.is_dir():
-            return False
-        for py in src.rglob("*.py"):
-            try:
-                texto = py.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-            desde = 0
-            while (i := texto.find(venv.name, desde)) != -1:
-                desde = i + 1
-                if "bin" in texto[i : i + len(venv.name) + _VENTANA_LANZAMIENTO]:
-                    return True
-        return False
+        if src.is_dir() and nombres:
+            for py in src.rglob("*.py"):
+                if len(encontrados) == len(nombres):
+                    break
+                try:
+                    texto = py.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+                for nombre in nombres:
+                    if nombre in encontrados:
+                        continue
+                    desde = 0
+                    while (i := texto.find(nombre, desde)) != -1:
+                        desde = i + 1
+                        if "bin" in texto[i : i + len(nombre) + _VENTANA_LANZAMIENTO]:
+                            encontrados.add(nombre)
+                            break
+        self._cache_lanzados = frozenset(encontrados)
+        return self._cache_lanzados
 
     def _scan_cves(self) -> tuple[bool, list[str], list[str]]:
         """CVEs del venv principal + de cada venv aislado del repo.
