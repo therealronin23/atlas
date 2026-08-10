@@ -2307,6 +2307,24 @@ items:
       plugin activate, mcp install, gate-h, selfbuild pause/resume): necesitan
       dobles o un workspace desechable, no caben en un smoke test, y ahí está el
       grueso de las 411 sentencias que siguen sin ejecutar.
+
+      2026-08-10 (segunda vuelta) — 68% -> 71%, y aquí se para a propósito.
+      Midiendo por función en vez de suponer, apareció que varios comandos "ya
+      cubiertos" sólo ejercitaban su rama VACÍA: se invocaban contra un sistema
+      recién creado y salían por el `if not items: return`, dejando a oscuras
+      toda la construcción de tablas. Cubiertas ya con datos reales:
+      `blocks list` (tabla y JSON), `search` (con y sin resultados),
+      `connections plan` (receta real y desconocida), `gate-h validate`,
+      `security-audit` (hallazgos y JSON) y el renderizado de `reality`.
+
+      **Lo que queda NO se va a cerrar con tests**: `cycle` (33 sentencias),
+      `audit` (27), `code` (13 de 63), `f26 run`, `voice`, `update batch-approve`
+      y `mcp admit-third-party` son comandos caros o con efectos cuyo único
+      camino a cobertura es sustituir por dobles todo lo que hacen. Eso subiría
+      el porcentaje sin ejercitar un solo camino real, que es literalmente el
+      teatro de tests que la aceptación de esta tarea prohíbe. El 80% de esta
+      entrada se fijó antes de saber esto; alcanzarlo hoy exigiría faltar a su
+      propio criterio.
     priority: 2
     status: pending
 

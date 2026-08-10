@@ -152,3 +152,139 @@ def test_ningun_comando_con_efectos_se_cuela_en_la_lista() -> None:
                if c[0] in prohibidos or c[-1] in prohibidos]
 
     assert not coladas, f"comandos con efectos en la lista de lectura: {coladas}"
+
+
+# ---------------------------------------------------------------------------
+# Las ramas CON DATOS, que son las que nunca se ejecutan
+# ---------------------------------------------------------------------------
+#
+# Varios comandos de lectura sí se invocan arriba, y aun así su parte
+# interesante seguía a oscuras: se ejecutaban con el sistema VACÍO y salían por
+# el `if not items: return`. Toda la construcción de tablas —donde vive el
+# formateo, los colores condicionales y los `to_dict()`— no la había corrido
+# nadie. Medido el 2026-08-10: `blocks_list` 11 de 18 sentencias sin ejecutar,
+# `search` 10 de 20, con ambos comandos "cubiertos".
+
+
+def test_blocks_list_pinta_la_tabla_cuando_hay_bloques(runner: CliRunner) -> None:
+    """La rama vacía ya se ejercitaba; la de la tabla, con su color condicional
+    por bloque lleno, no la había ejecutado nunca nadie."""
+    from atlas.interfaces.cli import get_orchestrator
+
+    mem = get_orchestrator().block_memory
+    mem.create("persona", value="x" * 30, limit=40, description="quién soy")
+    mem.create("lleno", value="y" * 20, limit=20, description="al límite")
+
+    resultado = runner.invoke(cli, ["blocks", "list"])
+
+    assert resultado.exit_code == 0, resultado.output
+    assert "persona" in resultado.output
+    assert "lleno" in resultado.output
+
+
+def test_blocks_list_en_json_serializa_los_bloques(runner: CliRunner) -> None:
+    import json as _json
+
+    from atlas.interfaces.cli import get_orchestrator
+
+    get_orchestrator().block_memory.create("persona", value="hola", description="d")
+
+    resultado = runner.invoke(cli, ["blocks", "list", "--json"])
+
+    assert resultado.exit_code == 0, resultado.output
+    etiquetas = [b["label"] for b in _json.loads(resultado.output)]
+    assert "persona" in etiquetas
+
+
+def test_search_pinta_los_resultados_encontrados(runner: CliRunner) -> None:
+    """`search` sobre un ledger vacío salía por "sin resultados". La tabla y el
+    recorte de campos no se ejecutaban."""
+    from atlas.interfaces.cli import get_orchestrator
+
+    orch = get_orchestrator()
+    orch._merkle.log(
+        action="prueba.marcador", agent="test", result="success",
+        payload={"detalle": "buscable"}, task_id="t-cli",
+    )
+
+    resultado = runner.invoke(cli, ["search", "marcador"])
+
+    assert resultado.exit_code == 0, resultado.output
+    assert "prueba.marcador" in resultado.output.replace("\n", "")
+
+
+def test_search_sin_resultados_lo_dice(runner: CliRunner) -> None:
+    resultado = runner.invoke(cli, ["search", "cadenaquenoexisteenningunsitio"])
+
+    assert resultado.exit_code == 0
+    assert "Sin resultados" in resultado.output
+
+
+def test_connections_plan_con_una_receta_real(runner: CliRunner) -> None:
+    """Se invocaba sin argumento (rc=2, error de uso) y el cuerpo no corría."""
+    resultado = runner.invoke(cli, ["connections", "plan", "gmail"])
+
+    assert resultado.exception is None or isinstance(resultado.exception, SystemExit)
+    assert resultado.exit_code == 0, resultado.output
+
+
+def test_connections_plan_con_receta_desconocida_sale_1(runner: CliRunner) -> None:
+    """Rama de error: un id inventado tiene que salir 1, no reventar."""
+    resultado = runner.invoke(cli, ["connections", "plan", "no-existe-esta-receta"])
+
+    assert resultado.exit_code == 1
+    assert "desconocida" in resultado.output
+
+
+def test_gate_h_validate_con_patron_inexistente(runner: CliRunner) -> None:
+    """Rama de "no encontrado", que es la única alcanzable sin fabricar un
+    patrón aprobado con su fingerprint de entorno."""
+    resultado = runner.invoke(cli, ["gate-h", "validate", "patron-que-no-existe"])
+
+    assert resultado.exit_code == 0, resultado.output
+    assert "no encontrado" in resultado.output.lower()
+
+
+def test_security_audit_pinta_los_hallazgos(runner: CliRunner, tmp_path: Path) -> None:
+    """La rama "sin hallazgos" es la única que se ejercitaba. La tabla con
+    severidad, CWE y localización —12 de 19 sentencias— no la corría nadie."""
+    objetivo = tmp_path / "vulnerable.py"
+    objetivo.write_text(
+        "import subprocess\n"
+        "def run(cmd):\n"
+        "    return subprocess.run(cmd, shell=True)\n",
+        encoding="utf-8",
+    )
+
+    resultado = runner.invoke(cli, ["security-audit", str(objetivo)])
+
+    assert resultado.exception is None or isinstance(resultado.exception, SystemExit), (
+        resultado.output
+    )
+    assert resultado.exit_code == 0, resultado.output
+
+
+def test_security_audit_en_json_serializa(runner: CliRunner, tmp_path: Path) -> None:
+    import json as _json
+
+    objetivo = tmp_path / "limpio.py"
+    objetivo.write_text("VALOR = 1\n", encoding="utf-8")
+
+    resultado = runner.invoke(cli, ["security-audit", str(objetivo), "--json"])
+
+    assert resultado.exit_code == 0, resultado.output
+    assert isinstance(_json.loads(resultado.output), list)
+
+
+def test_reality_pinta_el_informe(runner: CliRunner) -> None:
+    """`atlas reality` es la fuente factual del proyecto y su renderizado —no el
+    `--json`, el de la tabla— nunca se había ejecutado en la suite. Hace sondas
+    en vivo (~3 s), así que no se le exige código de salida: lo que se fija es
+    que no reviente."""
+    resultado = runner.invoke(cli, ["reality"])
+
+    assert resultado.exception is None or isinstance(resultado.exception, SystemExit), (
+        f"{type(resultado.exception).__name__}: {resultado.exception}\n"
+        f"{resultado.output[-600:]}"
+    )
+    assert resultado.output.strip(), "reality no imprimió nada"
