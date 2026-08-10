@@ -26,5 +26,10 @@
     "atlas_coder:swarm_experiment_2026-06-28"
   ],
   "tags": [],
-  "created_at": "2026-07-02T11:32:55.646621+00:00"
+  "created_at": "2026-07-02T11:32:55.646621+00:00",
+  "occurrence_count": 1,
+  "last_seen_at": "",
+  "recall_count": 0,
+  "last_recalled_at": "",
+  "state": "stale"
 }
