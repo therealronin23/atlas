@@ -501,3 +501,65 @@ def test_jail_flag_ignored_without_sandbox(tmp_path: Path, monkeypatch):
 
     assert result.success is True
     assert ctor_calls == []
+
+
+# ---------------------------------------------------------------------------
+# Presupuesto de inferencia: el turno no puede morir esperando su propio turno
+# ---------------------------------------------------------------------------
+
+
+def test_por_defecto_el_turno_hereda_el_tope_global(tmp_path: Path):
+    """Interactivo: `timeout_s=None` deja mandar a `INFER_REQUEST_TIMEOUT_S`
+    (120 s), y esa razón sigue viva — un proveedor colgado no puede bloquear al
+    daemon."""
+    hub = _ScriptedHub([None])
+
+    ToolCoder(hub, repo_root=tmp_path).code(
+        task="nada", context_files=[], test_cmd=["true"]
+    )
+
+    assert hub.requests[0].timeout_s is None
+
+
+def test_el_lazo_largo_puede_subir_el_presupuesto(tmp_path: Path):
+    """Medido el 2026-08-10 sobre el banco congelado: `atlas_toolcoder` sacó 0/3
+    y la causa fue `hard timeout tras 120.0s` en los TRES defectos. El
+    `InferenceRequest` del bucle no llevaba `timeout_s`, así que caía al tope
+    global — el cero medía el reloj, no a Atlas.
+
+    No es sólo del banco: éste es el camino del lazo de autoconstrucción, y el
+    turno pide `wait_for_ratelimit=True`. Esperar un cooldown consume el mismo
+    presupuesto que generar, así que un turno podía morir esperando permiso
+    para hablar."""
+    hub = _ScriptedHub([None])
+
+    ToolCoder(hub, repo_root=tmp_path, infer_timeout_s=300.0).code(
+        task="nada", context_files=[], test_cmd=["true"]
+    )
+
+    assert hub.requests[0].timeout_s == 300.0
+    assert hub.requests[0].wait_for_ratelimit is True
+
+
+def test_el_presupuesto_se_puede_poner_por_entorno(tmp_path: Path, monkeypatch):
+    """Mismo patrón que `ATLAS_TOOL_TEST_TIMEOUT_S`, que ya existía para el
+    test_cmd por la misma razón (2026-07-09)."""
+    monkeypatch.setenv("ATLAS_TOOL_INFER_TIMEOUT_S", "240")
+    hub = _ScriptedHub([None])
+
+    ToolCoder(hub, repo_root=tmp_path).code(
+        task="nada", context_files=[], test_cmd=["true"]
+    )
+
+    assert hub.requests[0].timeout_s == 240.0
+
+
+def test_un_valor_de_entorno_invalido_no_rompe(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("ATLAS_TOOL_INFER_TIMEOUT_S", "un rato")
+    hub = _ScriptedHub([None])
+
+    ToolCoder(hub, repo_root=tmp_path).code(
+        task="nada", context_files=[], test_cmd=["true"]
+    )
+
+    assert hub.requests[0].timeout_s is None

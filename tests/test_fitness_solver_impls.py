@@ -335,3 +335,19 @@ def test_ambos_cumplen_el_tipo_Solver() -> None:
     """Deben ser intercambiables en `FitnessScorer.score(solve=...)`."""
     for solver in (AtlasSolver(), DirectModelSolver(hub=_FakeHub())):
         assert callable(solver)
+
+
+def test_el_banco_no_ata_al_harness_la_mano_que_soltó_al_desnudo(tmp_path: Path) -> None:
+    """El 2026-08-09 se subió el presupuesto SÓLO al solver desnudo, y el
+    2026-08-10 `atlas_toolcoder` sacó 0/3 con `hard timeout tras 120.0s` en los
+    tres defectos: la comparación quedó al revés —desnudo con 300 s, harness con
+    120— y ese cero se habría publicado como capacidad de Atlas."""
+    import inspect
+
+    from atlas.core.self_maintenance.fitness_solvers import DEFAULT_TIMEOUT_S
+
+    fuente = inspect.getsource(AtlasSolver._default_coder)
+
+    assert "infer_timeout_s" in fuente, "ToolCoder del banco sin presupuesto propio"
+    assert "DEFAULT_TIMEOUT_S" in fuente, "el banco usa dos presupuestos distintos"
+    assert DEFAULT_TIMEOUT_S > 120.0

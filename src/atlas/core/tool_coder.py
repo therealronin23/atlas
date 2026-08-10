@@ -170,6 +170,7 @@ class ToolCoder:
         *,
         repo_root: Path | None = None,
         timeout_s: int | None = None,
+        infer_timeout_s: float | None = None,
         lesson_store: Any = None,
         lesson_recaller: Any = None,
         institutional_context_files: list[str] | None = None,
@@ -187,6 +188,27 @@ class ToolCoder:
             except ValueError:
                 timeout_s = 120
         self._timeout_s = timeout_s
+        # El de ARRIBA acota el test_cmd. Éste acota la INFERENCIA, y le
+        # faltaba: `InferenceRequest` no llevaba `timeout_s`, así que cada turno
+        # caía al tope global de 120 s de `InferenceHub`.
+        #
+        # Medido el 2026-08-10 sobre el banco congelado: `atlas_toolcoder` sacó
+        # 0/3 con la causa `hard timeout tras 120.0s` en los TRES defectos. Ese
+        # cero no medía a Atlas, medía el reloj — el mismo sesgo que ya se había
+        # corregido para el solver desnudo y que aquí quedó sin corregir.
+        #
+        # No es sólo del banco. Este es el camino del lazo de autoconstrucción,
+        # y el turno pide `wait_for_ratelimit=True`: esperar un cooldown de
+        # rate-limit consume el mismo presupuesto de 120 s que la generación, así
+        # que el turno puede morir esperando su propio permiso para hablar.
+        # `None` conserva el global (interactivo); el lazo largo lo sube.
+        if infer_timeout_s is None:
+            crudo = os.environ.get("ATLAS_TOOL_INFER_TIMEOUT_S", "").strip()
+            try:
+                infer_timeout_s = float(crudo) if crudo else None
+            except ValueError:
+                infer_timeout_s = None
+        self._infer_timeout_s = infer_timeout_s
         self._lesson_store = lesson_store
         self._lesson_recaller = lesson_recaller
         self._institutional_files = institutional_context_files
@@ -353,7 +375,7 @@ class ToolCoder:
                 "chat",
                 InferenceRequest(
                     prompt=prompt, level=level, task_id="tool_coder_plan",
-                    max_tokens=600,
+                    max_tokens=600, timeout_s=self._infer_timeout_s,
                 ),
             )
             if response.success and response.text.strip():
@@ -619,6 +641,7 @@ class ToolCoder:
                     # re-caminatas del hub) antes que perder toda la tarea —
                     # 5 delegaciones muertas por all_failed el 2026-07-08.
                     wait_for_ratelimit=True,
+                    timeout_s=self._infer_timeout_s,
                 )
                 response = self._hub.infer_for_role("edit", request)
                 if not response.success:

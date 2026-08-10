@@ -194,7 +194,18 @@ class AtlasSolver:
         from atlas.core.tool_coder import ToolCoder
 
         # repo_root = el WORKTREE, nunca el checkout vivo del operador.
-        return ToolCoder(InferenceHub(mode="auto"), repo_root=worktree)
+        #
+        # `infer_timeout_s` con el mismo presupuesto que el solver desnudo: sin
+        # él, ToolCoder caía al tope global de 120 s y el 2026-08-10 sacó 0/3
+        # con `hard timeout tras 120.0s` en los tres defectos. El banco habría
+        # publicado ese cero como capacidad de Atlas cuando medía el reloj, y
+        # además con la comparación al revés: el desnudo con 300 s y el harness
+        # con 120.
+        return ToolCoder(
+            InferenceHub(mode="auto"),
+            repo_root=worktree,
+            infer_timeout_s=DEFAULT_TIMEOUT_S,
+        )
 
 
 class OracleSolver:
