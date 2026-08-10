@@ -2181,12 +2181,42 @@ items:
       - "docs/membrana/"
       # 2026-08-06: era "scripts/smoke_hermes.py", que NO existe. El fichero
       # real lleva el nombre invertido y es el que documenta AGENTS.md.
-      - "scripts/hermes_smoke.py"
+      # 2026-08-10: y ese fichero está RETIRADO (ADR-070). El script vivo del
+      # canal canónico es `scripts/twin_e2e_smoke.py`.
+      - "scripts/twin_e2e_smoke.py"
     acceptance: >
-      Dossier de membrana completo, y `scripts/hermes_smoke.py` ejecutado con
-      evidencia viva (no "configurado"): el tablero Hermes responde AHORA.
+      Dossier de membrana completo, y el canal Hermes probado con evidencia
+      viva (no "configurado"): el tablero responde AHORA.
+
+      CORREGIDO el 2026-08-10. La aceptación exigía ejecutar
+      `scripts/hermes_smoke.py`, **que ADR-070 retiró**: hoy imprime un error y
+      sale con 1. Era un criterio imposible de cumplir, y llevaba así desde que
+      el ADR jubiló el canal REST sin que el backlog se enterase. El canal
+      canónico es el Kanban bridge (ADR-028) y su prueba viva es
+      `twin_e2e_smoke.py`.
+    progress: >
+      2026-08-10 — CERRADO con evidencia ejecutada, no con una afirmación.
+
+      Conectividad, tres sondas independientes el mismo día:
+
+        atlas doctor    hermes_twin | OK | kanban board reachable
+        atlas reality   "live_verified": true, "evidence": "live",
+                        "reason": "tablero Hermes local responde AHORA (sonda viva)"
+        twin_e2e_smoke  4/4 pasos OK, cadena Merkle verificada con
+                        `exec.intent.via_hermes` presente, grounding sin
+                        alucinación (la respuesta trae los commits reales)
+
+      Dossier de membrana: ya existía y nadie lo había mirado. `OSM-000` lleva
+      desde el 2026-07-27 con su sección de disposición —qué sigue vigente, qué
+      absorbió ADR-053, qué promovió ADR-074 Fase 1, qué queda pendiente del
+      operador— y **declara literalmente el "cierre de F2"** citando
+      `twin_e2e_smoke.py`. El ítem seguía abierto porque su criterio nombraba un
+      script retirado, no porque faltara trabajo.
+
+      Límite honesto que el propio smoke imprime y que conviene no perder:
+      "contrato twin verificado en aislamiento; VPS/Telegram no verificados".
     priority: 2
-    status: pending
+    status: done
 
   - id: t7-f3-mission-console-ui
     title: "F3: UI de Mission Console viva"
@@ -2391,3 +2421,90 @@ items:
       el volumen: una cadena mala escribe hasta 7 eventos por llamada.
     priority: 2
     status: done
+
+  - id: t10-fitness-medicion-real
+    title: "El banco de fitness sigue SIN un número: bloqueado por la cuota diaria, no por el instrumento"
+    why: >
+      El instrumento está sano y verificado el 2026-08-10: control con el arreglo
+      real 5/5 sobre el corpus (el banco ES superable), causa registrada por
+      solver y proveedor, muestra por zancada uniforme en vez de la cabeza
+      sesgada, y sonda de cuota previa. Lo que falta es la medición.
+
+      Dos intentos ese día dieron `atlas 0.0% / desnudo 0.0%` en 84 y 41 minutos,
+      y NINGUNO medía capacidad: la causa real, perseguida hasta el proveedor,
+      era `Rate limit reached ... on tokens per day (TPD)` devuelto en 0,1 s y
+      reportado por el hub como "hard timeout tras 300s". La cuota la agotaron
+      las propias tiradas de la mañana.
+
+      Sin este número, la afirmación que abre toda la auditoría —"el lazo rinde
+      7,8% frente al 35-50% del campo"— no se puede descomponer en "no supo"
+      contra "no pudo hablar", y esas dos piden arreglos opuestos.
+    targets:
+      - "scripts/fitness_run.py"
+      - "docs/fixtures/fitness/frozen_defects.jsonl"
+    acceptance: >
+      Tres tiradas por solver sobre una muestra por zancada, con el control en
+      5/5 en el mismo pase y **sin timeouts de cuota en las causas**. Publicar
+      media y dispersión, nunca un número suelto, y la muestra junto al
+      resultado. Si los rangos se solapan, decir que no concluye — el script ya
+      lo avisa solo.
+
+      Correr con la cuota fresca (la sonda aborta en un minuto si no lo está) y
+      contar con horas: una tirada de Atlas sobre 5 defectos tardó 31-84 min.
+    priority: 1
+    status: pending
+
+  - id: t11-redteam-venvs-rehacer
+    title: "Las cifras del Apéndice B no son reproducibles: no queda ningún venv de red-team"
+    why: >
+      `.venv-redteam` se borró el 2026-08-10 por decisión del operador, junto con
+      `.venv-desktop` (2,7 GB y 88 avisos de CVE entre los dos). Antes de eso ya
+      estaba roto de una forma peor que ausente: contenía garak y pyrit JUNTOS
+      —la separación que ADR-056 exige por rangos incompatibles de `datasets`— y
+      violaba en silencio el rango de garak (`requires datasets<4.0, have
+      5.0.0`). Los imports aguantaban; una campaña que cargase un dataset habría
+      roto a mitad de corrida.
+
+      Consecuencia concreta: `scripts/redteam/README.md` respalda el Apéndice B
+      del paper con cifras medidas bajo la separación intacta, y **hoy no se
+      pueden reproducir ni citar**.
+    targets:
+      - "scripts/redteam/README.md"
+      - "docs/decisions/adr/adr_056*.md"
+    acceptance: >
+      Los dos venvs recreados como manda ADR-056 (`.venv-redteam-garak` y
+      `.venv-redteam-pyrit`), con `pip check` LIMPIO en ambos — eso es lo que
+      faltó la vez anterior y lo que convirtió una separación rota en invisible.
+      Después, volver a medir las cuatro demos y sustituir la tabla del README
+      con las cifras nuevas, o marcarlas como históricas con su fecha.
+    priority: 3
+    status: pending
+
+  - id: t12-mcp-shells-restantes
+    title: "Los otros tres shells MCP: knowledge 65%, operating 67%, trunk 68%"
+    why: >
+      El 2026-08-10 se midió que `engineering_server` estaba al 0% y
+      `graph_server` al 9% —los shells que traducen trunk → MCP— y que el smoke
+      del tronco sólo hacía `tools/list` sin invocar nada. Invocarlos de verdad
+      los subió a 72% y 84%, y de paso dejó fijada una virtud del diseño que
+      nadie había ejercitado (las tools de dependencias se NIEGAN a contestar con
+      el grafo vacío en vez de devolver una lista vacía mentirosa).
+
+      Quedan tres shells con el mismo patrón sin cerrar. `trunk_server` es el más
+      cargado (273 sentencias, 87 sin ejecutar) y es la fachada por la que entra
+      todo lo demás.
+    targets:
+      - "src/atlas/mcp/trunk_server.py"
+      - "src/atlas/mcp/knowledge_server.py"
+      - "src/atlas/mcp/operating_server.py"
+    acceptance: >
+      Cada tool de lectura invocada por `server.call_tool()` —el camino real del
+      runtime MCP, que valida argumentos contra el esquema de la firma—, no
+      llamando a la función Python de dentro: por dentro se cubre el trunk otra
+      vez, no la frontera, que es donde vivió el defecto real.
+
+      Lo que se fija es ausencia de traceback, no que devuelvan datos: un store
+      vacío contesta vacío y eso es correcto. Cobertura medida antes y después,
+      con el número en el commit.
+    priority: 2
+    status: pending
