@@ -1,0 +1,47 @@
+{
+  "session_id": "obs_gestoria_demo",
+  "sector_id": "gestoria_fiscal_contable",
+  "pack_id": "qp_gestoria_fiscal_contable",
+  "status": "preview",
+  "answers": [
+    {
+      "question_id": "clients_type",
+      "value": ["autonomos", "companies"],
+      "uncertain": false,
+      "interpreted": "Autónomos, Empresas",
+      "confirmed": true
+    },
+    {
+      "question_id": "client_files_location",
+      "value": "drive_onedrive",
+      "uncertain": false,
+      "interpreted": "Drive/OneDrive",
+      "confirmed": true
+    },
+    {
+      "question_id": "accounting_software",
+      "value": "odoo",
+      "uncertain": false,
+      "interpreted": "Odoo",
+      "confirmed": true
+    },
+    {
+      "question_id": "uses_digital_certificate",
+      "value": null,
+      "uncertain": true,
+      "interpreted": "El usuario no lo sabe todavía; Atlas continuará sin este dato.",
+      "confirmed": true
+    }
+  ],
+  "pending_questions": [],
+  "understanding_summary": "clients_type → Autónomos, Empresas; client_files_location → Drive/OneDrive; accounting_software → Odoo; uses_digital_certificate → El usuario no lo sabe todavía; Atlas continuará sin este dato.",
+  "proposed": {
+    "entities": ["case_file", "customer", "document", "invoice", "receipt"],
+    "capabilities": ["erp.customers.read", "erp.invoices.read", "files.read"],
+    "workbenches": ["document_review_workbench", "tax_filing_workbench"],
+    "connector_pack": "gestoria_pack"
+  },
+  "created_at": "2026-07-10T00:00:00+00:00",
+  "updated_at": "2026-07-10T00:05:00+00:00",
+  "demo": true
+}

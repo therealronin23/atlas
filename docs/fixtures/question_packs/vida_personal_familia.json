@@ -1,0 +1,63 @@
+{
+  "pack_id": "qp_vida_personal_familia",
+  "sector_id": "vida_personal_familia",
+  "display_name": "Onboarding — Vida personal/familia",
+  "questions": [
+    {
+      "question_id": "main_goal",
+      "label": "¿Qué quieres que Atlas te ayude a organizar primero?",
+      "why_this_is_needed": "Define qué workbench personal montar primero en vez de ofrecer todo a la vez",
+      "what_atlas_will_do_with_it": "Activa el workbench elegido (finanzas/calendario/memoria/salud) como punto de partida",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "organize_finances", "label": "Finanzas personales"},
+        {"option_id": "family_calendar", "label": "Calendario familiar"},
+        {"option_id": "personal_memory", "label": "Memoria personal"},
+        {"option_id": "health_tracking", "label": "Seguimiento de salud"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["note"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "shares_data_with_family",
+      "label": "¿Vas a compartir esta información con más personas de tu familia?",
+      "why_this_is_needed": "Determina si Atlas debe modelar más de un usuario/perfil desde el principio",
+      "what_atlas_will_do_with_it": "Decide si prepara el Business Core para uno o varios perfiles (sin activar multiusuario todavía)",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "yes", "label": "Sí"},
+        {"option_id": "no", "label": "No, solo yo"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": true,
+      "resulting_entities": [],
+      "resulting_capabilities": [],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "import_existing_notes",
+      "label": "¿Quieres importar notas o documentos que ya tengas?",
+      "why_this_is_needed": "Sin esto Atlas no sabe si debe proponer una fuente de importación de pensamiento externo",
+      "what_atlas_will_do_with_it": "Si es sí, propone conectar una carpeta local como origen de lectura",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "yes", "label": "Sí"},
+        {"option_id": "no", "label": "No"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": true,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["document"],
+      "resulting_capabilities": ["files.read"],
+      "resulting_workbenches": []
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "objective_id": "obj_gestoria_filing",
+  "sector_id": "gestoria_fiscal_contable",
+  "label": "Preparar y presentar una declaración fiscal de cliente",
+  "required_entities": [
+    "case_file",
+    "document",
+    "invoice"
+  ],
+  "required_capabilities": [
+    "erp.invoices.read",
+    "files.read",
+    "official.submit"
+  ],
+  "workbenches": [
+    "tax_filing_workbench",
+    "submission_ceremony_workbench"
+  ],
+  "gates": [
+    "gate_accounting"
+  ],
+  "outputs": [
+    "modelo_presentado",
+    "acuse_recibo"
+  ]
+}

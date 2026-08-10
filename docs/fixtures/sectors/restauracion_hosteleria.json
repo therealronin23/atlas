@@ -1,0 +1,14 @@
+{
+  "sector_id": "restauracion_hosteleria",
+  "display_name": "Restauración/Hostelería",
+  "description": "Restaurantes, bares y negocios de hostelería — pedidos de local, delivery y eventos, gestión de menú y proveedores.",
+  "default_workbenches": [
+    "order_workbench"
+  ],
+  "default_capabilities": [
+    "erp.customers.read",
+    "files.read"
+  ],
+  "question_pack_id": "qp_restauracion_hosteleria",
+  "connector_pack_id": "restaurante_pack"
+}

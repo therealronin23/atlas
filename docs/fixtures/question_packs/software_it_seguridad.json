@@ -1,0 +1,67 @@
+{
+  "pack_id": "qp_software_it_seguridad",
+  "sector_id": "software_it_seguridad",
+  "display_name": "Onboarding — Software/IT/Seguridad",
+  "questions": [
+    {
+      "question_id": "main_activity",
+      "label": "¿A qué te dedicas principalmente?",
+      "why_this_is_needed": "Determina qué workbenches técnicos activar primero",
+      "what_atlas_will_do_with_it": "Activa el workbench correspondiente (producto SaaS/consultoría/seguridad/herramientas internas)",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "saas_product", "label": "Producto SaaS propio"},
+        {"option_id": "consulting", "label": "Consultoría"},
+        {"option_id": "security_research", "label": "Investigación de seguridad"},
+        {"option_id": "internal_tools", "label": "Herramientas internas"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["project"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": ["code_review_workbench"]
+    },
+    {
+      "question_id": "repo_hosting",
+      "label": "¿Dónde alojas tu código?",
+      "why_this_is_needed": "Define qué conector de repositorio tiene sentido proponer",
+      "what_atlas_will_do_with_it": "Sugiere la receta de conexión al hosting elegido (Fase 16 si aún no existe)",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "github", "label": "GitHub"},
+        {"option_id": "gitlab", "label": "GitLab"},
+        {"option_id": "self_hosted", "label": "Self-hosted"},
+        {"option_id": "none", "label": "Ninguno"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": true,
+      "uncertainty_allowed": true,
+      "resulting_entities": [],
+      "resulting_capabilities": [],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "uses_ai_providers",
+      "label": "¿Qué proveedores de IA usas o quieres registrar?",
+      "why_this_is_needed": "Define qué recetas de proveedor de IA preparar y con qué política cloud/local",
+      "what_atlas_will_do_with_it": "Registra los proveedores elegidos en el catálogo con la receta ai_provider_registry",
+      "input_type": "multi_choice",
+      "options": [
+        {"option_id": "openai", "label": "OpenAI"},
+        {"option_id": "anthropic", "label": "Anthropic/Claude"},
+        {"option_id": "local_models", "label": "Modelos locales (Ollama/LM Studio)"},
+        {"option_id": "none", "label": "Ninguno todavía"}
+      ],
+      "validation": {"min_selected": 1},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": [],
+      "resulting_capabilities": ["model.cloud_call"],
+      "resulting_workbenches": []
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "connector_id": "conn_gmail",
+  "display_name": "Gmail",
+  "provider": "google",
+  "auth_mode": "oauth2",
+  "credential_reference": "env:GMAIL_OAUTH_TOKEN_REF",
+  "read_capabilities": [
+    "mail.read",
+    "mail.search",
+    "labels.read",
+    "contacts.read"
+  ],
+  "write_capabilities": [
+    "draft.create",
+    "labels.apply",
+    "mail.send"
+  ],
+  "risk_level": "high",
+  "permission_scope": [
+    "gmail.readonly"
+  ],
+  "sync_status": "never",
+  "last_sync": null,
+  "health": "unknown",
+  "memory_policy": "summaries_only",
+  "automation_policy": "gated",
+  "audit_policy": "full",
+  "mode": "mock",
+  "revocation": "borrar credencial + revocar en proveedor",
+  "fallback": null,
+  "legal_notes": "mail.send SIEMPRE tras gate_outbound + aprobación humana explícita"
+}

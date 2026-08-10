@@ -1,0 +1,85 @@
+{
+  "pack_id": "qp_restauracion_hosteleria",
+  "sector_id": "restauracion_hosteleria",
+  "display_name": "Onboarding — Restauración/Hostelería",
+  "questions": [
+    {
+      "question_id": "sales_channels",
+      "label": "¿Cómo vendes?",
+      "why_this_is_needed": "Determina qué workbenches y conectores de pedidos tienen sentido",
+      "what_atlas_will_do_with_it": "Activa los workbenches de pedido correspondientes (local/delivery/eventos)",
+      "input_type": "multi_choice",
+      "options": [
+        {"option_id": "local", "label": "Sala/local"},
+        {"option_id": "delivery", "label": "Delivery"},
+        {"option_id": "pickup", "label": "Recogida"},
+        {"option_id": "events", "label": "Eventos/catering"}
+      ],
+      "validation": {"min_selected": 1},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["order"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": ["order_workbench"]
+    },
+    {
+      "question_id": "has_menu",
+      "label": "¿Tienes carta/menú?",
+      "why_this_is_needed": "Sin saber el formato del menú, Atlas no puede proponer productos como entidades",
+      "what_atlas_will_do_with_it": "Importa el menú como candidatos de producto (revisables) o propone crearlo desde cero",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "pdf_image", "label": "PDF o imagen"},
+        {"option_id": "excel", "label": "Excel"},
+        {"option_id": "website", "label": "En la web"},
+        {"option_id": "no", "label": "No, hay que crearlo"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": false,
+      "resulting_entities": ["product"],
+      "resulting_capabilities": ["files.read"],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "stock_control",
+      "label": "¿Controlas el stock de ingredientes?",
+      "why_this_is_needed": "Define si Atlas debe generar entidades de inventario o proponer control desde cero",
+      "what_atlas_will_do_with_it": "Prepara el módulo de stock del Business Core en borrador",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "software", "label": "Sí, con software"},
+        {"option_id": "excel", "label": "Sí, con Excel"},
+        {"option_id": "more_or_less", "label": "Más o menos"},
+        {"option_id": "no", "label": "No"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": false,
+      "uncertainty_allowed": true,
+      "resulting_entities": ["stock_item", "supplier"],
+      "resulting_capabilities": [],
+      "resulting_workbenches": []
+    },
+    {
+      "question_id": "uses_pos",
+      "label": "¿Usas TPV (punto de venta)?",
+      "why_this_is_needed": "Determina si conviene una receta de conexión a TPV o partir de ventas manuales",
+      "what_atlas_will_do_with_it": "Sugiere el pack de conectores de TPV correspondiente si existe",
+      "input_type": "single_choice",
+      "options": [
+        {"option_id": "yes", "label": "Sí"},
+        {"option_id": "no", "label": "No"}
+      ],
+      "validation": {},
+      "followup_rules": [],
+      "skip_allowed": true,
+      "uncertainty_allowed": true,
+      "resulting_entities": [],
+      "resulting_capabilities": [],
+      "resulting_workbenches": []
+    }
+  ]
+}

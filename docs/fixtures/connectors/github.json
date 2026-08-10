@@ -1,0 +1,31 @@
+{
+  "connector_id": "conn_github",
+  "display_name": "GitHub",
+  "provider": "github",
+  "auth_mode": "api_key",
+  "credential_reference": "env:GITHUB_TOKEN_REF",
+  "read_capabilities": [
+    "repos.read",
+    "issues.read",
+    "prs.read",
+    "commits.read"
+  ],
+  "write_capabilities": [
+    "issues.create",
+    "prs.comment"
+  ],
+  "risk_level": "medium",
+  "permission_scope": [
+    "repo:read"
+  ],
+  "sync_status": "never",
+  "last_sync": null,
+  "health": "unknown",
+  "memory_policy": "full_with_provenance",
+  "automation_policy": "gated",
+  "audit_policy": "full",
+  "mode": "mock",
+  "revocation": "borrar credencial + revocar en proveedor",
+  "fallback": null,
+  "legal_notes": null
+}

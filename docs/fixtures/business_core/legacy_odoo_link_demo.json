@@ -1,0 +1,6 @@
+{
+  "system": "odoo",
+  "mode": "read_only_mirror",
+  "sync_enabled": false,
+  "note": "Demo: el sistema legacy sigue siendo canónico; Atlas solo espeja en lectura hasta que un humano apruebe sync parcial."
+}

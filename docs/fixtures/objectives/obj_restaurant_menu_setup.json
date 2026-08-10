@@ -1,0 +1,20 @@
+{
+  "objective_id": "obj_restaurant_menu_setup",
+  "sector_id": "restauracion_hosteleria",
+  "label": "Dar de alta el menú y los canales de pedido de un restaurante",
+  "required_entities": [
+    "product",
+    "supplier"
+  ],
+  "required_capabilities": [
+    "erp.customers.read",
+    "files.write"
+  ],
+  "workbenches": [
+    "order_workbench"
+  ],
+  "gates": [],
+  "outputs": [
+    "menu_publicado"
+  ]
+}

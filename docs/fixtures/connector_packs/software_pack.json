@@ -1,0 +1,10 @@
+{
+  "pack_id": "software_pack",
+  "sector_id": "software_it_seguridad",
+  "display_name": "Pack Software/IT/Seguridad",
+  "connectors": ["ai_provider_registry", "local_csv_folder"],
+  "setup_order": ["ai_provider_registry", "local_csv_folder"],
+  "optional_connectors": ["gmail"],
+  "rationale": "Registro de proveedores de IA y ficheros locales cubren el flujo técnico base; el conector de repos/CI queda para Fase 16 (aún no existe receta).",
+  "demo": true
+}

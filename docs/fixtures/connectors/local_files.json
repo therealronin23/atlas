@@ -1,0 +1,28 @@
+{
+  "connector_id": "conn_local_files",
+  "display_name": "Ficheros locales",
+  "provider": "local",
+  "auth_mode": "local",
+  "credential_reference": null,
+  "read_capabilities": [
+    "files.read",
+    "files.search",
+    "pdf.read",
+    "markdown.read"
+  ],
+  "write_capabilities": [],
+  "risk_level": "low",
+  "permission_scope": [
+    "fs:read"
+  ],
+  "sync_status": "never",
+  "last_sync": null,
+  "health": "unknown",
+  "memory_policy": "full_with_provenance",
+  "automation_policy": "rules_allowed",
+  "audit_policy": "full",
+  "mode": "mock",
+  "revocation": "borrar credencial + revocar en proveedor",
+  "fallback": null,
+  "legal_notes": null
+}

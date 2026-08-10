@@ -1,0 +1,23 @@
+{
+  "connector_id": "conn_whatsapp",
+  "display_name": "WhatsApp (policy-only)",
+  "provider": "whatsapp",
+  "auth_mode": "none",
+  "credential_reference": null,
+  "read_capabilities": [
+    "export.import"
+  ],
+  "write_capabilities": [],
+  "risk_level": "critical",
+  "permission_scope": [],
+  "sync_status": "never",
+  "last_sync": null,
+  "health": "unknown",
+  "memory_policy": "summaries_only",
+  "automation_policy": "manual_only",
+  "audit_policy": "full",
+  "mode": "mock",
+  "revocation": "borrar credencial + revocar en proveedor",
+  "fallback": null,
+  "legal_notes": "NO API personal: riesgo ToS. Solo importación de exports manuales. Envío personal automatizado PROHIBIDO (prompt §11)."
+}

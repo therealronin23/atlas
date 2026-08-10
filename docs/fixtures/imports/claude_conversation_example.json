@@ -1,0 +1,31 @@
+{
+  "provider": "claude",
+  "title": "Diseño del módulo de sincronización",
+  "exported_at": "2026-07-09T18:00:00Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Necesito sincronizar el estado entre el móvil y el escritorio. ¿SQLite con CRDT o un servidor central?"
+    },
+    {
+      "role": "assistant",
+      "content": "Comparemos: un servidor central simplifica la consistencia pero te ata a infra. CRDTs locales permiten offline-first. Para tu caso (un solo usuario, dos dispositivos) los CRDTs son overkill salvo que el offline sea crítico."
+    },
+    {
+      "role": "user",
+      "content": "El offline es crítico, trabajo en el tren. Decisión: usamos CRDT sobre SQLite con sync perezoso. Nada de servidor central."
+    },
+    {
+      "role": "assistant",
+      "content": "Buena decisión para offline-first. Automerge o Yjs sobre un log en SQLite; el sync perezoso puede ir por Syncthing. Error común a evitar: mezclar el log CRDT con el estado materializado en la misma tabla."
+    },
+    {
+      "role": "user",
+      "content": "Probé Yjs y falló la persistencia: error 'document too large' al serializar 40MB. Lección: hay que compactar snapshots periódicamente."
+    },
+    {
+      "role": "assistant",
+      "content": "Correcto, ese fallo es conocido. Patrón recomendado: snapshot cada N updates + garbage collection del log. ¿Lo cableamos?"
+    }
+  ]
+}

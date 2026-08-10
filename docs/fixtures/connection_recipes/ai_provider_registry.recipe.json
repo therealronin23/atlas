@@ -1,0 +1,47 @@
+{
+  "connector_id": "ai_provider_registry",
+  "human_name": "Registro de proveedores de IA (OpenAI/Gemini/Ollama/LM Studio/compatible)",
+  "category": "ai_provider",
+  "recommended_route": "native_api",
+  "fallback_routes": ["openapi_rest", "human_manual"],
+  "difficulty": "guided",
+  "default_mode": "full_gated",
+  "safe_defaults": {
+    "cloud_call": true
+  },
+  "capabilities": ["model.cloud_call"],
+  "gated_capabilities": {},
+  "forbidden_capabilities": [],
+  "setup_steps": [
+    {
+      "step_id": "1",
+      "kind": "user_action",
+      "description": "Elegir el proveedor (cloud o local) a registrar en el catálogo de Atlas"
+    },
+    {
+      "step_id": "2",
+      "kind": "manual_secret",
+      "description": "Si es cloud: exportar la API key como variable de entorno con el nombre sugerido"
+    },
+    {
+      "step_id": "3",
+      "kind": "automatic",
+      "description": "Atlas registra el proveedor con su referencia de credencial (o ninguna, si es local)"
+    }
+  ],
+  "permissions_explainer": {
+    "will": [
+      "Enrutar llamadas al proveedor que tú elijas por tarea",
+      "Mostrar coste/latencia estimados por proveedor"
+    ],
+    "will_not": [
+      "Enviar datos sensibles a un proveedor cloud sin tu aprobación explícita"
+    ]
+  },
+  "credential": {
+    "auth_mode": "api_key",
+    "storage": "credential_reference_only"
+  },
+  "legal_notes": null,
+  "demo": true
+}

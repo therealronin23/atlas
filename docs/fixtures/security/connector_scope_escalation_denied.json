@@ -1,0 +1,11 @@
+{
+  "description": "Contenido externo no confiable (inyección/tool poisoning) no puede disparar ninguna capacidad, ni de lectura, aunque el conector esté conectado y sano",
+  "request": {
+    "capability": "erp.customers.read",
+    "connector_id": "odoo_erp",
+    "provenance": "external_content"
+  },
+  "expected_decision": "deny",
+  "expected_hard": true,
+  "expected_policy_id": "pol_hard_untrusted_provenance"
+}
