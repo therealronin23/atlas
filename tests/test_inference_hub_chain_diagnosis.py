@@ -143,3 +143,45 @@ def test_la_clasificacion_del_ultimo_sigue_intacta(monkeypatch: pytest.MonkeyPat
     assert respuesta.error_kind == "rate_limit"
     assert respuesta.retry_after_s == 42.0
     assert respuesta.retryable is True
+
+
+def test_la_cadena_agotada_deja_rastro_en_el_log(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Este fichero tenía UNA línea de log en 1.200, un `debug` sobre el ledger
+    de tokens. Que la cadena entera caiga es raro y grave, y el 2026-08-10 no
+    dejó rastro ni con el logging en DEBUG — el ledger Merkle tampoco lo
+    registra (no existe ninguna acción `inference.*`). Un lazo que se queda sin
+    proveedores era invisible en la evidencia."""
+    hub = _hub_con_fallos(monkeypatch, {})
+
+    with caplog.at_level("WARNING", logger="atlas.core.inference_hub"):
+        hub._walk_chain(_peticion())
+
+    mensajes = [r.getMessage() for r in caplog.records]
+
+    assert any("cadena de inferencia agotada" in m for m in mensajes), mensajes
+    assert any("Todos los proveedores fallaron" in m for m in mensajes), (
+        "el aviso suena pero no dice quién falló"
+    )
+
+
+def test_un_exito_no_ensucia_el_log(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """El aviso es para lo raro. Si sonara en cada llamada sería ruido y nadie
+    lo miraría — que es como se pierden los avisos que importan."""
+    hub = InferenceHub(mode="stub")
+
+    def _ok(provider: Any, request: Any) -> InferenceResponse:
+        return InferenceResponse(
+            text="ok", provider=provider.name, model=provider.model_id,
+            level=request.level, latency_ms=1, success=True,
+        )
+
+    monkeypatch.setattr(hub, "_call_provider", _ok)
+
+    with caplog.at_level("WARNING", logger="atlas.core.inference_hub"):
+        hub._walk_chain(_peticion())
+
+    assert not caplog.records

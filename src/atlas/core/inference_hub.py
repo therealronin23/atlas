@@ -910,6 +910,19 @@ class InferenceHub:
                             provider.status = ProviderStatus.DEGRADED
 
         final_mode = last_resp.mode if last_resp is not None else self._mode
+        if fallos:
+            # El ÚNICO aviso que emite el hub, y faltaba. Este fichero tenía una
+            # sola línea de log en 1.200: un `debug` sobre el ledger de tokens.
+            # Que la cadena entera caiga es raro y grave, y el 2026-08-10 costó
+            # horas de diagnóstico precisamente porque no dejaba rastro — ni con
+            # el logging en DEBUG salía nada. El ledger Merkle tampoco lo
+            # registra: no hay ninguna acción `inference.*`, así que un lazo que
+            # se queda sin proveedores es hoy invisible en la evidencia.
+            _logging.getLogger(__name__).warning(
+                "cadena de inferencia agotada (%s): %s",
+                request.task_id or "sin task_id",
+                _resumen_de_cadena(fallos),
+            )
         return InferenceResponse(
             text="", provider="all_failed", model="none", level=request.level,
             latency_ms=0, success=False,
