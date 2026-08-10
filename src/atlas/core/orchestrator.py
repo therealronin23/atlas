@@ -390,7 +390,7 @@ class Orchestrator:
             else:
                 scan_fn = default_scan_fn
 
-            hub = self._inference_hub or InferenceHub(mode="auto")
+            hub = self.inference_hub()
             try:
                 first_pass = run_security_council_gate(
                     gate_artifact, scan_fn=scan_fn, audit_fn=build_llm_audit_fn(hub)
@@ -970,6 +970,27 @@ class Orchestrator:
         """ADR-039 slice 3 — wire propuesta → ``adopt_mcp_server``. Delegado al facade."""
         return self._maintenance_facade.maintenance_adopter()
 
+    def inference_hub(self) -> Any:
+        """El hub del orquestador, o uno nuevo YA CABLEADO al Merkle.
+
+        Sustituye al idioma `orch._inference_hub or InferenceHub(mode="auto")`,
+        que estaba copiado en ocho sitios y en todos creaba un hub SIN auditoría.
+
+        Medido el 2026-08-10 sobre el ledger real: `InferenceHub` trae desde
+        siempre su propia auditoría por llamada (`_log_model_call` -> acción
+        `model.called`) y **ningún sitio del repositorio le pasaba `merkle=`**.
+        Cero eventos `model.called` en 26.239 registros: observabilidad
+        construida y jamás cableada. Las rutas ciegas eran justo las que
+        importan —lazo de automantenimiento, Cónclave, ToolCoder—; los 36
+        eventos `inference.*` que sí hay los escribe `agentic_executor`, que es
+        la ruta interactiva y no es donde se juega el 7,8%.
+        """
+        if self._inference_hub is not None:
+            return self._inference_hub
+        from atlas.core.inference_hub import InferenceHub as _Hub
+
+        return _Hub(mode="auto", merkle=self._merkle)
+
     def maintenance_registry_scout(self) -> Any:
         """ADR-039 slice 1 (literal) — Scout externo autoritativo. Delegado al facade."""
         return self._maintenance_facade.maintenance_registry_scout()
@@ -1470,10 +1491,11 @@ class Orchestrator:
     def pii_surrogate(self) -> PIISurrogate:
         return self._pii_surrogate  # type: ignore[no-any-return]
 
-    @property
-    def inference_hub(self) -> Any:
-        """InferenceHub asociado al pipeline Gate D (None si no fue inyectado)."""
-        return self._inference_hub
+    # `inference_hub` era aquí una PROPIEDAD que devolvía `None` si nadie
+    # inyectaba nada, y arriba hay ahora un método del mismo nombre que
+    # siempre devuelve un hub cableado. Tener las dos formas sería peor que el
+    # problema que resuelven: se eliminó la propiedad (un solo consumidor real)
+    # en vez de añadir un segundo nombre casi idéntico.
 
     @property
     def vector_store(self) -> KuzuVectorStore | None:
@@ -1596,7 +1618,7 @@ class Orchestrator:
             # del sombra y el juez de lecciones usan un hub PLANO propio (sin
             # transparency) para no recursar sobre el mismo gateway que los
             # invoca.
-            _internal_hub = _InferenceHub(mode="auto")
+            _internal_hub = _InferenceHub(mode="auto", merkle=self._merkle)
 
             def _shadow_backend(system: str, user_message: str) -> bytes:
                 resp = _internal_hub.infer(_InferenceRequest(
@@ -1643,7 +1665,7 @@ class Orchestrator:
                 shadow_router=_shadow_router, shadow_model=_shadow_model,
             )
             hub = _InferenceHub(
-                mode="auto", transparency=_gw,
+                mode="auto", transparency=_gw, merkle=self._merkle,
                 drift=_drift, on_escalation=_lesson_recorder.as_hook(),
             )
         self._inference_hub = hub

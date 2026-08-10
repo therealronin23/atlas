@@ -360,8 +360,17 @@ class TestHybridClassify:
 
     def test_enable_gate_d_auto_creates_inference_hub(self, orch: Orchestrator) -> None:
         orch.enable_gate_d_pipeline()
-        assert orch.inference_hub is not None
-        assert orch.pii_surrogate._hub is orch.inference_hub
+        assert orch.inference_hub() is not None
+        assert orch.pii_surrogate._hub is orch.inference_hub()
+
+    def test_el_hub_del_lazo_audita_en_merkle(self, orch: Orchestrator) -> None:
+        """El idioma `orch._inference_hub or InferenceHub(mode="auto")` estaba
+        copiado en ocho sitios y en todos creaba un hub SIN auditoría. Medido el
+        2026-08-10: cero eventos `model.called` en 26.239 registros del ledger
+        real, teniendo el hub esa auditoría construida desde siempre."""
+        hub = orch.inference_hub()
+
+        assert hub._merkle is not None, "hub del lazo sin Merkle: no audita nada"
 
     def test_local_safe_uses_hub_when_gate_d_enabled(self, orch: Orchestrator) -> None:
         orch.enable_gate_d_pipeline()

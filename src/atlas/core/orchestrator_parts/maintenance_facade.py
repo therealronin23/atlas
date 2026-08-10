@@ -314,7 +314,7 @@ class MaintenanceFacade:
             )
 
             orch = self._orch
-            hub = orch._inference_hub or InferenceHub(mode="auto")
+            hub = orch.inference_hub()
             analyst = MaintenanceAnalyst(merkle=orch._merkle, hub=hub)
 
             def _notify(proposals: list[McpProposal]) -> None:
@@ -1017,7 +1017,7 @@ class MaintenanceFacade:
         from atlas.core.self_maintenance.topic_expander import TopicExpander
 
         orch = self._orch
-        hub = orch._inference_hub or InferenceHub(mode="auto")
+        hub = orch.inference_hub()
 
         def _safe_egress_fetch(url: str) -> str:
             # Recheck at the transport boundary so the pinned IP and the socket
@@ -1144,7 +1144,7 @@ class MaintenanceFacade:
         from atlas.core.self_maintenance.provider_smoke import ProviderChainSmoke
 
         orch = self._orch
-        hub = orch._inference_hub or InferenceHub(mode="auto")
+        hub = orch.inference_hub()
         smoke = ProviderChainSmoke(hub=hub)
         results = smoke.run()
 
@@ -1833,7 +1833,7 @@ class MaintenanceFacade:
                         summarize_catalog_capabilities,
                     )
 
-                    gate_hub = self._orch._inference_hub or InferenceHub(mode="auto")
+                    gate_hub = self._orch.inference_hub()
                     suggestions = run_quality_gate(
                         suggestions,
                         capability_summary=summarize_catalog_capabilities(catalog),
@@ -2051,7 +2051,7 @@ class MaintenanceFacade:
             from atlas.core.self_maintenance.self_build_runner import SelfBuildRunner
 
             orch = self._orch
-            hub = orch._inference_hub or InferenceHub(mode="auto")
+            hub = orch.inference_hub()
             self._maintenance_self_build_runner = SelfBuildRunner(
                 self._project_root(),
                 hub,
@@ -2091,7 +2091,7 @@ class MaintenanceFacade:
             )
 
             orch = self._orch
-            hub = orch._inference_hub or InferenceHub(mode="auto")
+            hub = orch.inference_hub()
             premortem = BatchPremortemGate(hub=hub, merkle=orch._merkle)
 
             # Mismo patrón defensivo que el LessonStore del codegen proposer:
@@ -2212,7 +2212,7 @@ class MaintenanceFacade:
             from atlas.router.cascade import CascadeRouter, Difficulty, InferenceProducer, TaskSpec
 
             orch = self._orch
-            hub = orch._inference_hub or InferenceHub(mode="auto")
+            hub = orch.inference_hub()
             # Capa 2 (ADR-042): L0 local primero, escalada a L1 si el diff no
             # verifica. FRONTIER queda preparado: cuando exista un provider L2
             # es añadir un rung aquí. El path conversacional (CLAIM) NO se

@@ -2311,12 +2311,25 @@ items:
     status: pending
 
   - id: t9-inference-outcomes-sin-ledger
-    title: "El ledger no registra ningún resultado de inferencia (0 acciones `inference.*` en 26.239 registros)"
+    title: "El hub audita cada llamada… y nadie le pasa el Merkle: 0 eventos `model.called` en 26.239 registros"
     why: >
-      Medido el 2026-08-10 sobre el ledger real de `/home/ronin/atlas`: 26.239
-      registros y NINGUNA acción `inference.*`. Un lazo que agota su cadena de
-      proveedores no deja rastro auditable — las 7 señales que aparecen al
-      grepear están incrustadas de rebote en payloads de otros eventos.
+      CORRECCIÓN de la primera versión de esta entrada, que afirmaba "ninguna
+      acción `inference.*`". Es falso y conviene que quede escrito: hay 31
+      `inference.completed` y 5 `inference.failed`. Lo que las escribe es
+      `agentic_executor`, o sea **sólo la ruta agéntica interactiva**.
+
+      El dato real es otro y es peor. `InferenceHub` ya trae su propia
+      auditoría por llamada (`_log_model_call` -> acción `model.called`, con
+      proveedor, modelo, nivel, task_id y éxito/error), y **ningún sitio del
+      repositorio le pasa `merkle=`**: cero call-sites en `src/` y `scripts/`.
+      Resultado medido en el ledger real: **0 eventos `model.called`**. Es
+      observabilidad construida y jamás cableada — el patrón que esta auditoría
+      lleva encontrando toda la semana.
+
+      Y las rutas ciegas son justo las que importan para la tesis: el lazo de
+      automantenimiento, el Cónclave y ToolCoder construyen
+      `InferenceHub(mode="auto")` a pelo. Los 36 eventos que hay cubren la ruta
+      interactiva, que no es donde se juega el 7,8%.
 
       No es teórico. Ese día el banco de fitness gastó 84 minutos produciendo
       quince "hard timeout tras 300.0s" que en realidad eran la cuota diaria
@@ -2342,5 +2355,21 @@ items:
       La verificación es con evidencia, no con mock: forzar una cadena agotada
       real (cuota agotada o claves retiradas) y comprobar que el evento aparece
       encadenado.
+    progress: >
+      2026-08-10 — HECHO. `Orchestrator.inference_hub()` sustituye al idioma
+      copiado en ocho sitios y devuelve el hub YA cableado al Merkle. Se eliminó
+      la propiedad homónima que devolvía `None` en vez de añadir un segundo
+      nombre casi idéntico.
+
+      Verificado ejecutando, no con mock: con `ATLAS_HOME` aislado y la cuota
+      real medio agotada, una sola llamada dejó 5 eventos `model.called` — cuatro
+      `failed` nombrando a groq_llama_70b, openrouter_nemotron,
+      openrouter_nemotron_ultra y groq_compound con su `RateLimitError`, y uno
+      `success` en groq_qwen3.
+
+      Granularidad: un evento por INTENTO de proveedor, no uno agregado por
+      cadena. Es más ruidoso de lo que pedía la aceptación y también más útil —
+      la causa de cada proveedor queda encadenada por separado. Conviene vigilar
+      el volumen: una cadena mala escribe hasta 7 eventos por llamada.
     priority: 2
-    status: pending
+    status: done
