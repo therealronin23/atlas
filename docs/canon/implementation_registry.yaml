@@ -681,9 +681,11 @@ work_orders:
     evidence:
       - Zed baseline and ACP surface
       - ADR-078 donor disposition
+      - "2026-08-10 licence inventory, measured on local checkouts: Zed crates/acp_thread and crates/acp_tools declare GPL-3.0-or-later; the official Python SDK Atlas depends on (agent-client-protocol 0.11.0, pyproject) is Apache-2.0; zero GPL markers and zero Zed-derived source in src/atlas."
+      - "2026-08-10 protocol conformance EXECUTED for the first time: python -m atlas.acp.server answers initialize and session/new over real stdio with correct camelCase schema serialisation. tests/test_acp_stdio_conformance.py (5 tests) pins it; the pre-existing tests/test_acp_server.py builds the agent in-process and its own docstring excludes the real transport."
     source_decisions:
       - ADR-078
-    current_state: Zed is a pinned pattern donor and interoperability target, not Atlas implementation.
+    current_state: "Zed is a pinned pattern donor and interoperability target, not Atlas implementation. src/atlas/acp/server.py (156 lines, absorbed from Hermes-Agent 2026-07-18) is a thin adapter over the Apache-2.0 SDK and now has executed protocol conformance."
     target_state: Relevant behavior is represented by ACP interoperability, requirements, contract tests, or separately licensed components.
     scope:
       - ACP interoperability
@@ -708,7 +710,8 @@ work_orders:
       - every selected pattern has measured value and lawful disposition
       - no unreviewed source transplant
     operator_decision_required: false
-    status: BLOCKED
+    status: READY
+    status_note: "Unblocked 2026-08-10. It was never gated on the Cut 2 scope decision (that is ADC-WO-109); its two real dependencies are now met — licence review done and protocol conformance executed. Residual, stated rather than glossed: conformance was proven against the protocol over real stdio, NOT from inside a running Zed (that needs a full Rust build of the 13 GB checkout, 12 GB of which is regenerable target/). Remaining scope is the Workbench contract tests, which depend on ADC-WO-109's host decision."
 
   - id: ADC-WO-111
     program: P08
