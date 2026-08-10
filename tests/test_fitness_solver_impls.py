@@ -197,6 +197,31 @@ def test_el_presupuesto_no_ahoga_a_un_modelo_de_razonamiento(tmp_path: Path) -> 
     assert hub.requests[0].max_tokens >= 4096
 
 
+def test_el_banco_no_compite_contra_el_timeout_interactivo(tmp_path: Path) -> None:
+    """Medido el 2026-08-09: con 4096 tokens los modelos de razonamiento
+    chocaban con el tope global de 120 s (`hard timeout tras 120.0s`) y el banco
+    quedaba sesgado a favor de Atlas — el desnudo competía con una mano atada.
+
+    Se sube SÓLO por petición: `InferenceRequest.timeout_s` ya existía y nadie
+    lo usaba. El daemon interactivo conserva sus 120 s."""
+    from atlas.core.inference_hub import INFER_REQUEST_TIMEOUT_S
+    from atlas.core.self_maintenance.fitness_solvers import DEFAULT_TIMEOUT_S
+
+    hub = _FakeHub("")
+    DirectModelSolver(hub=hub)(tmp_path, _defect())
+
+    assert hub.requests[0].timeout_s == DEFAULT_TIMEOUT_S
+    assert DEFAULT_TIMEOUT_S > INFER_REQUEST_TIMEOUT_S
+
+
+def test_el_timeout_global_no_se_toca() -> None:
+    """La razón de subirlo por petición y no globalmente: un proveedor colgado
+    no puede bloquear 5 min al daemon."""
+    from atlas.core.inference_hub import INFER_REQUEST_TIMEOUT_S
+
+    assert INFER_REQUEST_TIMEOUT_S == 120.0
+
+
 def test_el_razonamiento_no_tapa_el_codigo(tmp_path: Path) -> None:
     """Un modelo que piensa en voz alta y LUEGO responde debe funcionar: el
     bloque va detrás del `<think>`."""

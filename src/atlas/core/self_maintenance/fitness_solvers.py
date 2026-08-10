@@ -54,6 +54,19 @@ _THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 #: por no mirar el prior art. Se sube y se deja env para poder subirlo más.
 DEFAULT_MAX_TOKENS = 4096
 
+#: El tope duro global de `InferenceHub` son 120 s, pensado para que un
+#: proveedor colgado no bloquee al caller interactivo (Cónclave >20 min,
+#: 2026-07-17). Es correcto ahí y demasiado corto AQUÍ: medido el 2026-08-09,
+#: con 4096 tokens los modelos de razonamiento chocaban con él
+#: (`TimeoutError: hard timeout tras 120.0s`) y el banco quedaba sesgado a
+#: favor de Atlas — el solver desnudo competía con una mano atada.
+#:
+#: Se sube SÓLO para el banco, por petición: `InferenceRequest.timeout_s` ya
+#: existía como campo y nadie lo usaba. Desde 2026-07-30 es un presupuesto
+#: TOTAL de pared, no un tope por intento, así que subirlo no se multiplica por
+#: la cadena de fallback. El daemon interactivo no cambia.
+DEFAULT_TIMEOUT_S = 300.0
+
 
 def _strip_thinking(text: str) -> str:
     """Quita bloques `<think>` cerrados; conserva uno sin cerrar.
@@ -129,6 +142,7 @@ class DirectModelSolver:
         hub: Any | None = None,
         max_tokens: int | None = None,
         level: Any | None = None,
+        timeout_s: float | None = None,
     ) -> None:
         import os
 
@@ -137,6 +151,7 @@ class DirectModelSolver:
             raw = os.environ.get("ATLAS_FITNESS_MAX_TOKENS", "").strip()
             max_tokens = int(raw) if raw.isdigit() else DEFAULT_MAX_TOKENS
         self._max_tokens = max_tokens
+        self._timeout_s = timeout_s if timeout_s is not None else DEFAULT_TIMEOUT_S
         self._level = level
 
     def __call__(self, worktree: Path, defect: FrozenDefect) -> None:
@@ -150,6 +165,7 @@ class DirectModelSolver:
                     level=self._level or InferenceLevel.L1,
                     max_tokens=self._max_tokens,
                     temperature=0.1,
+                    timeout_s=self._timeout_s,
                 )
             )
             if not getattr(response, "success", False):

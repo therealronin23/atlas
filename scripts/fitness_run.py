@@ -48,6 +48,11 @@ def run_tests(worktree: Path, targets: tuple[str, ...]) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=0, help="0 = todos")
+    parser.add_argument(
+        "--repeats", type=int, default=3,
+        help="tiradas por solver. Una sola NO es una medición: el solver es "
+             "estocástico y el mismo banco dio 2/3 y 0/3 en dos ejecuciones.",
+    )
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
@@ -66,26 +71,58 @@ def main() -> int:
     total = len(scorer.defects())
     print(f"banco: {total} defectos verificados", flush=True)
 
-    resultados = {}
-    for nombre, solver in (
-        ("baseline_sin_solver", None),
-        ("atlas_toolcoder", AtlasSolver()),
-        ("modelo_desnudo", DirectModelSolver()),
+    # UNA TIRADA NO ES UNA MEDICIÓN. Medido el 2026-08-09: el mismo banco, con
+    # `AtlasSolver` sin tocar entre ejecuciones, dio 2/3 y luego 0/3. El solver
+    # es estocástico (temperatura, enrutado de proveedor, cadena de fallback),
+    # así que un número suelto no distingue capacidad de suerte.
+    #
+    # Aquí está además la corrección de un razonamiento propio: el 06-ago se
+    # descartó PACE (arXiv:2606.08106) por "varianza que una suite determinista
+    # no tiene". Cierto de la PUERTA (pytest pasa o no pasa), FALSO de la
+    # MÉTRICA. Los tests secuenciales anytime-valid pertenecen aquí.
+    resultados: dict[str, dict[str, object]] = {}
+    for nombre, hacer_solver in (
+        ("baseline_sin_solver", lambda: None),
+        ("atlas_toolcoder", AtlasSolver),
+        ("modelo_desnudo", DirectModelSolver),
     ):
+        tiradas: list[float] = []
+        resueltos: list[int] = []
         t0 = time.monotonic()
-        score = scorer.score(solve=solver)
+        for i in range(args.repeats):
+            score = scorer.score(solve=hacer_solver())
+            tiradas.append(score.ratio)
+            resueltos.append(score.solved)
+            if args.repeats > 1:
+                print(f"    {nombre:20s} tirada {i + 1}/{args.repeats}: "
+                      f"{score.solved}/{score.total}", flush=True)
         dt = time.monotonic() - t0
-        resultados[nombre] = {**score.to_dict(), "seconds": round(dt, 1)}
-        print(
-            f"  {nombre:22s} {score.solved}/{score.total} = {score.ratio:.1%}"
-            f"   ({dt / 60:.1f} min)",
-            flush=True,
+        media = sum(tiradas) / len(tiradas)
+        resultados[nombre] = {
+            "ratios": tiradas, "solved": resueltos, "mean": round(media, 4),
+            "min": min(tiradas), "max": max(tiradas),
+            "repeats": args.repeats, "seconds": round(dt, 1),
+        }
+        dispersion = (
+            f"  [min {min(tiradas):.0%} · max {max(tiradas):.0%}]"
+            if args.repeats > 1 else ""
         )
+        print(f"  {nombre:22s} media {media:.1%}{dispersion}   ({dt / 60:.1f} min)",
+              flush=True)
 
-    a = resultados["atlas_toolcoder"]["ratio"]
-    d = resultados["modelo_desnudo"]["ratio"]
+    a = float(resultados["atlas_toolcoder"]["mean"])  # type: ignore[arg-type]
+    d = float(resultados["modelo_desnudo"]["mean"])  # type: ignore[arg-type]
     print()
     print(f"APORTE DEL HARNESS: {a:.1%} (Atlas) - {d:.1%} (desnudo) = {a - d:+.1%}")
+    if args.repeats < 3:
+        print("  AVISO: con menos de 3 tiradas esta diferencia NO es una medición.")
+    else:
+        solape = (
+            float(resultados["atlas_toolcoder"]["min"])  # type: ignore[arg-type]
+            <= float(resultados["modelo_desnudo"]["max"])  # type: ignore[arg-type]
+        )
+        if solape:
+            print("  AVISO: los rangos SE SOLAPAN — la diferencia no es concluyente.")
     if args.out:
         args.out.write_text(json.dumps(resultados, indent=2), encoding="utf-8")
     return 0
