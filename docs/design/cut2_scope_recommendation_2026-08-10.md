@@ -113,3 +113,68 @@ congelado desde el 2026-06-02 y sin merge-base común entre su `app.ts` (1505
 líneas) y el de vscode (1912) — o sea, trabajo de fork-maintenance completo, no
 un `git apply`. La recomendación de arriba existe precisamente para que esa
 factura se pague sólo si se quiere lo que compra.
+
+---
+
+# Resultado del spike (2026-08-11)
+
+La recomendación de arriba se apoyaba en imports y procedencia de ficheros, y
+declaraba explícitamente que **no se había compilado**. Ya se ha comprobado.
+
+## Qué se hizo
+
+Rama `spike/atlas-bridge-on-codeoss` en `~/proyectos/atlas-codeoss-1.129.1`,
+commit `bfc15ab0`:
+
+```
+contrib/void/electron-main/atlasBackendMainService.ts
+   ->  contrib/atlas/electron-main/atlasBackendMainService.ts
+```
+
+**Ni un import cambia.** Las rutas relativas tienen la misma profundidad desde
+`contrib/atlas/electron-main/` que desde `contrib/void/electron-main/`, y el
+fichero sólo importa stdlib de Node y `platform/instantiation`. El gancho de
+`app.ts` se reancla en puntos genéricos de vscode-core (bloque de imports,
+`services.set` antes de `Promises.settled`, y el `return` de `createChild`);
+los anclajes que usaba en Void citaban servicios propios de Void que aquí no
+existen, pero ninguno de los que el gancho necesita.
+
+## Typecheck, con control
+
+Configuración del propio repo (`tsconfig.base.json` + `src/typings/*.d.ts`),
+con las versiones que fija su `package.json`: TypeScript `6.0.0-dev.20260416`
+y `@types/node` 24.
+
+| | errores |
+|---|---|
+| con el fichero portado | **16** |
+| **CONTROL**, misma config sin él | **16** |
+
+Idénticos, uno a uno. **El port introduce cero errores de tipo.** Los 16 son
+ruido del banco: un typecheck de proyecto único fuerza los tipos de Node sobre
+`base/common`, capa que CodeOSS compila sin ellos (`Timeout` vs
+`TimeoutHandle`). No aparecen en el build real del repo.
+
+El control importa: sin él, "16 errores" se lee como fracaso. Es la misma
+disciplina que el `OracleSolver` del banco de fitness — una medida sin control
+no es una medida.
+
+## Una sospecha mía que resultó falsa
+
+Al leer el gancho pensé que `this._register(service)` no compilaría, porque
+`_register<T extends IDisposable>` exige `IDisposable` y las seis primeras
+líneas de `IInstantiationService` no lo declaran. Probado con un fichero sonda
+que reproduce el gancho exacto: **compila**. El interfaz sí declara `dispose()`
+más abajo (`instantiation.ts:76`) y satisface `IDisposable` estructuralmente.
+Mi grep se quedó corto; el compilador lo zanjó.
+
+## Límite que sigue en pie
+
+**Esto no es un build completo.** El checkout no tiene `node_modules` (VS Code
+pide varios GB y compilación nativa), así que se ha verificado la superficie de
+API por tipos, no que Electron arranque ni que el servicio spawnee el bridge en
+tiempo de ejecución. Eso es el siguiente paso, y es cualitativamente distinto:
+`npm install` + `npm run compile` + arrancar.
+
+De paso: la cabecera del fichero arrastraba `Copyright 2025 Glass Devtools` por
+copia-pega del vecino de Void. Corregida en el port — el fichero es de Atlas.
