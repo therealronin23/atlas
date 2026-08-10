@@ -639,6 +639,8 @@ work_orders:
       - CodeOSS baseline
       - Void forward-port
       - VSCodium build and privacy pipeline research
+      - "2026-08-10 scope measurement (docs/design/cut2_scope_recommendation_2026-08-10.md): of the 443 lines in atlas-ide-forward-port, 354 (80%) are in two files we created; 89 are modifications, 81 of them in Void-only files. atlasBackendMainService.ts imports ZERO Void symbols -- Node stdlib plus platform/instantiation, which exists in the CodeOSS HOST_BASELINE (instantiation.ts:52 IInstantiationService, :109 createDecorator). Corrects the 2026-08-01 reading that called 7 of 8 files additive: they are under contrib/void/ but 6 are M, not A."
+      - "Recommendation on record, decision still the operator's: take CodeOSS as host and port the 354-line bridge directly; do not rebase Void. The 81 Void-coupled lines register Atlas in Void's chat UI, which ADR-085 superseded by choosing Flutter (Mission Console, built and verified 2026-08-10). NOT compiled -- the claim is about imports and provenance, not a green build."
     source_decisions:
       - ADR-071
       - ADR-078
