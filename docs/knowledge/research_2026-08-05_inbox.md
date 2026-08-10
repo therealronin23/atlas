@@ -1,0 +1,33 @@
+# Investigación autónoma — 2026-08-05
+
+status: propuesto
+
+Semillas (3): memoria de agentes de IA, orquestación local de modelos, auditoría verificable de sistemas de IA
+Consultas expandidas (3): memoria de agentes de IA, orquestación local de modelos, auditoría verificable de sistemas de IA
+
+## Hallazgos (4)
+
+### [github] iamasters-academy/iamasters-os
+- tema: memoria de agentes de IA
+- seed: memoria de agentes de IA
+- url: https://github.com/iamasters-academy/iamasters-os
+- extracto: Sistema operativo agéntico para operadores de IA. Sinapsis v4.5 (engine de memoria) + capa OS (brand context, agent context, skills curadas, multi-cliente). En castellano. Por Angel Aparicio · IA Masters Academy.
+
+### [github] SoftMissT/tudo-sobre-vibe-coding
+- tema: memoria de agentes de IA
+- seed: memoria de agentes de IA
+- url: https://github.com/SoftMissT/tudo-sobre-vibe-coding
+- extracto: Hub de conhecimento sobre *vibe coding*: programação guiada por IA, agentes e contexto. Reúne guias, configs e experimentos com Claude, Claude Code, Gemini, Antigravity, Trae AI Plugin, Verdent AI, Codex, ZAI e mais  focado em workflows, memória e orquestração multi-agente.
+
+### [github] FelipeFariasAlfaro/glia
+- tema: memoria de agentes de IA
+- seed: memoria de agentes de IA
+- url: https://github.com/FelipeFariasAlfaro/glia
+- extracto: Sistema de memoria persistente para agentes de IA basado en Memoria Holográfica Distribuida (HDM)
+
+### [github] FerreiraPHS/IsaacNewton-template
+- tema: memoria de agentes de IA
+- seed: memoria de agentes de IA
+- url: https://github.com/FerreiraPHS/IsaacNewton-template
+- extracto: Um protocolo de segundo cérebro em Markdown + Git, projetado para funcionar com humanos e agentes de IA. Inclui estrutura de vault, templates canônicos e o arquivo CLAUDE.md — que instrui qualquer LLM a ler antes de responder e escrever com disciplina, mantendo memória real entre sessões.
+
