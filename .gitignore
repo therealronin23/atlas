@@ -27,6 +27,7 @@ env/
 pytest-of-ronin/
 .coverage
 htmlcov/
+test-results*.xml
 .tox/
 .mypy_cache/
 .ruff_cache/
@@ -157,3 +158,18 @@ backups/neo4j/*.dump
 
 # Temporary isolated worktrees created by Superpowers during implementation.
 .worktrees/
+
+# --- Artefactos de runtime que aparecían como "sin trackear" (2026-08-10) ---
+# Se clasificaron mirándolos, no por el nombre: son estado de ejecución, no
+# fuente, y commitearlos metería un ATLAS_HOME entero en la historia.
+# (Los comentarios van en su propia línea: gitignore NO admite comentario
+# al final de un patrón — se lo traga y el patrón deja de casar.)
+# Clon de ATLAS_HOME: config/memory/projects/skills/wal.
+isolated_run/
+# WAL de observabilidad, se regenera solo.
+memory/observability/
+# {"key": "value"} de una prueba manual del 04-ago.
+sample_payload.json
+# Subconjuntos derivados del banco de fitness (`fitness_run.py --limit N`):
+# el corpus verificado SÍ se versiona, sus recortes no.
+docs/fixtures/fitness/.subset-*.jsonl
