@@ -70,10 +70,14 @@ class PreflightGate:
     def _isolated_venvs(self) -> list[Path]:
         """Los venvs hermanos del repo, DESCUBIERTOS y no listados a mano.
 
-        Una lista de nombres se queda vieja en cuanto alguien añade un venv, y
-        ése es exactamente el fallo que esto arregla: los tres aislados
-        (`.venv-scraping`, `.venv-desktop`, `.venv-redteam`) llevaban desde que
-        existen sin que nadie les pasara pip-audit.
+        Una lista de nombres se queda vieja en cuanto alguien añade o quita un
+        venv, y ése es exactamente el fallo que esto arregla. Historia: cuando
+        se escribió (2026-08-10) había tres aislados —`.venv-scraping`,
+        `.venv-desktop`, `.venv-redteam`— y ninguno había pasado nunca por
+        pip-audit; el primer barrido sacó 11 CVEs en el que crawlea. Los dos
+        dormidos se borraron ese mismo día y hoy queda uno, sin que este código
+        se entere ni tenga que enterarse: eso es la prueba de que descubrirlos
+        era lo correcto.
         """
         # `sys.prefix`, no `Path(sys.executable).resolve()`: en un venv el
         # `bin/python` es un SYMLINK al intérprete del sistema, así que

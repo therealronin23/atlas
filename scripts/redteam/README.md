@@ -22,37 +22,28 @@ python3 -m venv .venv-redteam-pyrit
 Las campañas Garak usan `.venv-redteam-garak`; Crescendo usa
 `.venv-redteam-pyrit`. Las demos sin esas herramientas pueden usar el venv principal.
 
-> **ESTADO REAL DE ESTA MÁQUINA (medido el 2026-08-10) — leer antes de correr nada.**
+> **ESTADO REAL DE ESTA MÁQUINA (2026-08-10) — leer antes de correr nada.**
 >
-> Ninguno de los dos venvs de arriba existe. Lo que hay es **uno solo**,
-> `.venv-redteam`, con **garak 0.15.1 y pyrit 0.14.0 juntos**. Es decir: la
-> separación que este documento exige se deshizo en algún momento y nadie
-> actualizó el texto. Cada orden de ejemplo de más abajo, tal y como está
-> escrita, falla al instante con «no such file or directory».
+> **No hay ningún venv de red-team montado.** El bloque de arriba es la
+> instrucción a seguir, no una descripción de lo que existe: hay que crear los
+> dos desde cero antes de correr una campaña.
 >
-> Y la incompatibilidad que motivó la separación **sigue viva y ahora está
-> violada**, no resuelta:
+> Cómo se llegó aquí, porque explica la trampa: durante un tiempo hubo **uno
+> solo**, `.venv-redteam`, con garak 0.15.1 y pyrit 0.14.0 **juntos** — la
+> separación que este documento exige se había deshecho y nadie actualizó el
+> texto, así que cada orden de ejemplo fallaba al instante mientras el documento
+> parecía correcto. Además la incompatibilidad que motivó separarlos seguía
+> viva y violada en silencio (`garak requires datasets<4.0, but you have
+> 5.0.0`): los imports aguantaban, y una campaña que cargase un dataset de
+> verdad habría roto a mitad de corrida. Ese venv se borró el 2026-08-10 por
+> decisión del operador, junto con `.venv-desktop`, y con él sus 13 avisos de
+> CVE sin atender.
 >
-> ```
-> $ .venv-redteam/bin/python -m pip check
-> garak 0.15.1 has requirement datasets<4.0,>=3.0.0, but you have datasets 5.0.0
-> ```
->
-> Los imports de garak funcionan (`garak.probes.dan`, `garak.resources`,
-> `datasets.load_dataset`), así que no revienta al arrancar. Lo que no está
-> comprobado es una campaña completa que cargue un dataset de verdad: ahí es
-> donde un salto de major de `datasets` suele romper, y sería a mitad de una
-> corrida larga.
->
-> **Antes de publicar una cifra nueva de estas demos**, rehaz los dos venvs como
-> dice el bloque de arriba —es la configuración que respalda las cifras de
-> referencia de la tabla— o mide de nuevo desde cero y sustituye la tabla. Las
-> cifras actuales se obtuvieron con la separación intacta; no son reproducibles
-> con el entorno tal y como está hoy.
->
-> Las CVEs de `.venv-redteam` (pillow, pyasn1, pypdf, setuptools) siguen sin
-> tocar a propósito: es un venv que hoy no invoca ningún camino de runtime, y
-> subirlas sin rehacer la separación mezclaría dos problemas distintos.
+> **Consecuencia para las cifras de la tabla de abajo, y es la que importa:** se
+> midieron con la separación intacta y **no son reproducibles hoy**. Antes de
+> publicar una cifra nueva —o de citar las actuales— hay que rehacer los dos
+> venvs como manda ADR-056 y volver a medir. Un `pip check` limpio en ambos es
+> parte de la comprobación, no un detalle: es lo que faltó la última vez.
 
 ## Demos
 
