@@ -53,3 +53,67 @@ def test_sandbox_restores_repo_root(tmp_path: Path):
     coder = ToolCoder(hub, repo_root=tmp_path)
     coder.code(task="cambia x", context_files=["foo.py"], test_cmd=["true"], sandbox=True)
     assert coder._repo_root == tmp_path
+
+
+# ---------------------------------------------------------------------------
+# El jail de test_cmd tiene que poder EJECUTAR los tests
+# ---------------------------------------------------------------------------
+
+
+def test_el_jail_monta_el_runtime_del_interprete(tmp_path, monkeypatch):
+    """Sin esto el jail sólo ve `/usr`, y el pytest de esta máquina vive en
+    `~/.local` (o en el venv): todo `test_cmd` moría con "No module named
+    pytest" y `code()` lo leía como tests en rojo, no como entorno roto.
+
+    Es el mismo fallo que `reproduction.py` pagó el 2026-07-31 —FAILED en 64 ms
+    reproduciendo un test que pasaba— y que `validation_runner` ya había
+    resuelto. Aquí faltaba, y lo tapaba un flag apagado."""
+    from pathlib import Path
+
+    capturado: dict[str, object] = {}
+
+    class _JailFalso:
+        def run_command(self, cmd, **kw):
+            capturado.update(kw)
+
+            class _R:
+                returncode = 0
+                stdout = ""
+                stderr = ""
+            return _R()
+
+    monkeypatch.setenv("ATLAS_TOOL_CODER_JAIL", "1")
+    monkeypatch.setattr("atlas.core.tool_coder.BwrapJail", lambda: _JailFalso())
+
+    from atlas.core.tool_coder import ToolCoder
+
+    ToolCoder(_ScriptedHubVacio(), repo_root=tmp_path)._run_test_cmd(
+        ["python3", "-m", "pytest"], cwd=tmp_path, env={}, use_jail=True,
+    )
+
+    montadas = [Path(p) for p in capturado["read_only_paths"]]
+    assert montadas, "el jail no monta el runtime: pytest sería inalcanzable"
+    assert all(Path("/usr") not in p.parents for p in montadas), (
+        "monta descendientes de /usr, que el jail ya expone"
+    )
+
+
+def test_el_jail_no_duplica_lo_que_ya_monta(tmp_path):
+    """`/usr` y sus descendientes los aporta el propio jail."""
+    from pathlib import Path
+
+    from atlas.core.tool_coder import _runtime_fuera_de_usr
+
+    fuera = _runtime_fuera_de_usr([
+        Path("/usr"), Path("/usr/lib/python3.12"), Path("/home/x/.venv"),
+    ])
+
+    assert fuera == [Path("/home/x/.venv")]
+
+
+class _ScriptedHubVacio:
+    def infer(self, req):  # pragma: no cover - no se llega a inferir
+        raise AssertionError("no debería inferir")
+
+    def infer_for_role(self, role, req):  # pragma: no cover
+        raise AssertionError("no debería inferir")

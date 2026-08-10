@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
+from collections.abc import Sequence
 from typing import Any
 
 from atlas.core.atlas_coder import (
@@ -66,9 +67,31 @@ def _jail_enabled() -> bool:
     propio repo). Activar con ``ATLAS_TOOL_CODER_JAIL=1`` solo en despliegues
     donde el intérprete/dependencias de test sean alcanzables dentro del
     jail.
+
+    **2026-08-10: ese impedimento técnico ya no existe.** ``_run_test_cmd``
+    monta el runtime del intérprete con ``interpreter_runtime_paths``, igual
+    que hacían ``validation_runner`` y ``reproduction.py`` — que habían
+    resuelto este mismo problema cada uno por su lado, y aquí faltaba. El
+    fallo no era benigno: sin el montaje, TODO ``test_cmd`` moría con "No
+    module named pytest" y ``code()`` lo leía como tests en rojo, no como
+    entorno roto. Verificado ejecutando pytest dentro del jail: rc=0.
+
+    El default se queda en OFF **a propósito**, y esto es criterio, no
+    inercia: quitar el impedimento no equivale a haber validado la ruta
+    enjaulada para todo test_cmd real (red, binarios del sistema, rutas fuera
+    del worktree). Cambiar por defecto cómo se verifica el lazo de
+    autoconstrucción merece su propia tanda de evidencia, no un efecto
+    colateral de arreglar el montaje.
     """
     raw = os.environ.get("ATLAS_TOOL_CODER_JAIL", "").strip().lower()
     return raw in ("1", "true", "yes")
+
+
+def _runtime_fuera_de_usr(rutas: Sequence[Path]) -> list[Path]:
+    """Las rutas del intérprete que hay que montar a mano: `/usr` ya lo monta
+    el jail, y montar un descendiente suyo encima es innecesario."""
+    usr = Path("/usr")
+    return [p for p in rutas if p != usr and usr not in p.parents]
 
 
 def _max_tool_turns() -> int:
@@ -442,10 +465,25 @@ class ToolCoder:
         para que code() los maneje de forma uniforme.
         """
         if use_jail:
+            from atlas.security.bwrap_jail import (  # noqa: PLC0415
+                interpreter_runtime_paths,
+                minimal_mounts,
+            )
+
             jail = BwrapJail()  # BwrapUnavailableError se propaga
             jail_result = jail.run_command(
                 test_cmd, working_dir=cwd, working_dir_writable=True,
                 timeout_s=self._timeout_s,
+                # Sin esto el jail sólo tiene /usr, y el `pytest` de esta
+                # máquina vive en `~/.local` (o en el venv): TODO test_cmd moría
+                # con "No module named pytest" y `code()` lo leía como tests en
+                # rojo, no como entorno roto. Es el mismo fallo que
+                # `reproduction.py` pagó el 2026-07-31 —FAILED en 64 ms
+                # reproduciendo un test que pasaba— y que `validation_runner` ya
+                # había resuelto montando el runtime. Aquí faltaba.
+                read_only_paths=_runtime_fuera_de_usr(
+                    minimal_mounts(interpreter_runtime_paths())
+                ),
                 # Env mínimo, no todo os.environ: el jail ya aporta su propio
                 # PATH/HOME reducidos (ver bwrap_jail.py); solo añadimos lo
                 # que el resultado de los tests depende (árbol correcto +

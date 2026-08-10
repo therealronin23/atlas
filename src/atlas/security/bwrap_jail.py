@@ -26,10 +26,11 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import BinaryIO, Sequence
+from typing import BinaryIO, Iterable, Sequence
 
 _log = logging.getLogger(__name__)
 
@@ -38,6 +39,25 @@ _DEFAULT_CPU_SECONDS = 30
 _DEFAULT_FSIZE_BYTES = 64 * 1024 * 1024
 _DEFAULT_NOFILE = 256
 _DEFAULT_NPROC = 256
+
+#: Tamaño del rootfs efímero y de /tmp DENTRO del jail.
+#:
+#: Medido el 2026-08-10: sin `--size`, bwrap monta ambos como tmpfs sin límite
+#: y el kernel les da la mitad de la RAM — **7,8 GB en esta máquina**. Un script
+#: dentro del jail podía llenarlos, y eso es RAM del host: `RLIMIT_AS` (512 MB)
+#: no cubre tmpfs, que es memoria compartida, y `RLIMIT_FSIZE` sólo acota cada
+#: fichero por separado (64 MB × 125 ficheros = los 7,8 GB, de sobra dentro de
+#: los 30 s de CPU).
+#:
+#: No es hipotético en esta máquina: el 2026-07-09 el escritorio se cayó por un
+#: tmpfs de /tmp lleno, con earlyoom repartiendo SIGTERM. El jail impedía tocar
+#: los ficheros del host y dejaba abierta la vía de tumbarlo por agotamiento.
+#:
+#: El rootfs va corto porque no es donde se trabaja (para eso está el directorio
+#: de salida montado). /tmp va holgado porque ahí escriben pytest y las
+#: herramientas reales del jail de comandos.
+_DEFAULT_ROOTFS_BYTES = 64 * 1024 * 1024
+_DEFAULT_TMPFS_BYTES = 512 * 1024 * 1024
 
 # Los límites se aplican DESPUÉS de que bwrap haya creado namespaces/mounts.
 # Aplicarlos como preexec_fn al propio bwrap impide crear el user namespace en
@@ -74,6 +94,64 @@ if not command:
     raise SystemExit(126)
 os.execvp(command[0], command)
 """.strip()
+
+
+def interpreter_runtime_paths(python: str | os.PathLike[str] | None = None) -> list[Path]:
+    """Dónde vive el intérprete y sus paquetes, fuera de ``/usr``.
+
+    Un jail monta ``/usr`` de sólo lectura y nada más. Un virtualenv o un
+    ``pip install --user`` viven en otro sitio, así que sin montarlos
+    explícitamente **cualquier ``python -m pytest`` dentro del jail muere con
+    "No module named pytest"** — y quien lo llama no lee "no puedo", lee que los
+    tests fallaron.
+
+    Ese fallo ya se pagó una vez: el 2026-07-31, `EngineeringReproductionRunner`
+    daba FAILED en 64 ms reproduciendo un test que pasaba. Se arregló allí y la
+    misma lógica se rehízo en `validation_runner`. Vive aquí para que no haya
+    una tercera copia y para que el siguiente jail nazca sabiéndolo.
+
+    Devuelve candidatos SIN filtrar: cada llamador decide qué descarta (el suyo
+    ya montado, el directorio de trabajo, etc.).
+    """
+    import site
+    import sysconfig
+
+    rutas: list[Path] = [Path(sys.prefix), Path(sys.base_prefix)]
+    try:
+        rutas.append(Path(site.getusersitepackages()))
+        rutas.extend(Path(item) for item in site.getsitepackages())
+    except AttributeError:
+        # Un Python embebido no tiene por qué exponer getsitepackages.
+        pass
+    for clave in ("purelib", "platlib", "stdlib", "platstdlib"):
+        valor = sysconfig.get_paths().get(clave)
+        if valor:
+            rutas.append(Path(valor))
+    ejecutable = Path(python or sys.executable).expanduser()
+    if ejecutable.is_absolute():
+        rutas.append(ejecutable)
+    return rutas
+
+
+def minimal_mounts(candidates: Iterable[Path]) -> tuple[Path, ...]:
+    """Deduplica y colapsa: un padre montado ya expone a sus descendientes.
+
+    Montar `/x` y `/x/y` a la vez en bwrap es innecesario y sensible a la
+    plataforma.
+    """
+    resueltas: list[Path] = []
+    for candidato in candidates:
+        try:
+            ruta = candidato.resolve(strict=True)
+        except OSError:
+            continue
+        if ruta not in resueltas:
+            resueltas.append(ruta)
+    minimas: list[Path] = []
+    for ruta in sorted(resueltas, key=lambda item: (len(item.parts), str(item))):
+        if not any(ya == ruta or ya in ruta.parents for ya in minimas):
+            minimas.append(ruta)
+    return tuple(minimas)
 
 
 def _limited_command(
@@ -213,6 +291,8 @@ def build_bwrap_argv(
     fsize_bytes: int = _DEFAULT_FSIZE_BYTES,
     nofile: int = _DEFAULT_NOFILE,
     nproc: int = _DEFAULT_NPROC,
+    rootfs_bytes: int = _DEFAULT_ROOTFS_BYTES,
+    tmpfs_bytes: int = _DEFAULT_TMPFS_BYTES,
 ) -> list[str]:
     """Construye el argv de bwrap para ejecutar script_path en jail.
 
@@ -237,6 +317,9 @@ def build_bwrap_argv(
         "--cap-drop", "ALL",          # Slice 2: ninguna capability dentro del jail
         "--uid", "65534",
         "--gid", "65534",
+        # Rootfs ACOTADO. Ver `_DEFAULT_ROOTFS_BYTES`: sin esto son 7,8 GB de
+        # RAM del host escribibles desde dentro.
+        "--size", str(rootfs_bytes), "--tmpfs", "/",
         # Rootfs mínimo: solo /usr (contiene bin, lib, lib64, sbin en sistemas mergedusr)
         "--ro-bind", "/usr", "/usr",
         # Symlinks para distros usr-merged (bin → usr/bin, lib → usr/lib, etc.)
@@ -250,8 +333,8 @@ def build_bwrap_argv(
         # /etc/alternatives.  This directory contains system symlinks only;
         # bind it read-only when it exists without exposing broad /etc state.
         "--ro-bind-try", "/etc/alternatives", "/etc/alternatives",
-        # /tmp efímero (vacío — el script se añade a continuación)
-        "--tmpfs", "/tmp",
+        # /tmp efímero y acotado (vacío — el script se añade a continuación)
+        "--size", str(tmpfs_bytes), "--tmpfs", "/tmp",
         # /proc y /dev mínimos (Python los necesita)
         "--proc", "/proc",
         "--dev", "/dev",
@@ -312,6 +395,8 @@ def build_command_bwrap_argv(
     fsize_bytes: int = _DEFAULT_FSIZE_BYTES,
     nofile: int = _DEFAULT_NOFILE,
     nproc: int = _DEFAULT_NPROC,
+    rootfs_bytes: int = _DEFAULT_ROOTFS_BYTES,
+    tmpfs_bytes: int = _DEFAULT_TMPFS_BYTES,
 ) -> list[str]:
     """Construye un jail para un comando estructurado, sin montar el host.
 
@@ -342,6 +427,8 @@ def build_command_bwrap_argv(
         "--cap-drop", "ALL",
         "--uid", "65534",
         "--gid", "65534",
+        # Rootfs y /tmp acotados: ver `_DEFAULT_ROOTFS_BYTES`.
+        "--size", str(rootfs_bytes), "--tmpfs", "/",
         "--ro-bind", "/usr", "/usr",
         "--symlink", "usr/bin", "/bin",
         "--symlink", "usr/lib", "/lib",
@@ -349,7 +436,7 @@ def build_command_bwrap_argv(
         "--symlink", "usr/sbin", "/sbin",
         "--ro-bind", "/etc/ssl", "/etc/ssl",
         "--ro-bind-try", "/etc/alternatives", "/etc/alternatives",
-        "--tmpfs", "/tmp",
+        "--size", str(tmpfs_bytes), "--tmpfs", "/tmp",
         "--proc", "/proc",
         "--dev", "/dev",
         *_mount_parent_argv(destinations),

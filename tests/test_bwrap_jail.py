@@ -99,11 +99,36 @@ def test_bwrap_argv_home_not_mounted():
     assert host_home not in argv, f"$HOME del host ({host_home}) no debe aparecer en el argv del jail"
 
 
+def _tmpfs_montados(argv: list[str]) -> dict[str, int | None]:
+    """Destinos de `--tmpfs` con su `--size` previo, si lo lleva.
+
+    Hay DOS desde 2026-08-10 (`/` y `/tmp`), así que un `argv.index("--tmpfs")`
+    encuentra el primero y mide otra cosa.
+    """
+    montados: dict[str, int | None] = {}
+    for i, arg in enumerate(argv):
+        if arg == "--tmpfs":
+            tam = int(argv[i - 1]) if i >= 2 and argv[i - 2] == "--size" else None
+            montados[argv[i + 1]] = tam
+    return montados
+
+
 def test_bwrap_argv_tmpfs_on_tmp():
     argv = build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out")
-    assert "--tmpfs" in argv
-    idx = argv.index("--tmpfs")
-    assert argv[idx + 1] == "/tmp"
+
+    assert "/tmp" in _tmpfs_montados(argv)
+
+
+def test_bwrap_argv_acota_rootfs_y_tmp():
+    """Sin `--size`, el kernel da a cada tmpfs la mitad de la RAM: 7,8 GB
+    escribibles desde dentro del jail, que es RAM del host. `RLIMIT_AS` no
+    cubre tmpfs y `RLIMIT_FSIZE` sólo acota cada fichero por separado."""
+    montados = _tmpfs_montados(
+        build_bwrap_argv("/usr/bin/bwrap", "/tmp/s.py", "/tmp/out")
+    )
+
+    assert montados.get("/"), "el rootfs efímero sin acotar"
+    assert montados.get("/tmp"), "/tmp sin acotar"
 
 
 def test_bwrap_argv_die_with_parent():

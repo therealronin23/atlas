@@ -284,20 +284,12 @@ class ValidationRunner:
         already the jail working directory and is intentionally omitted.
         """
 
-        candidates: list[Path] = [Path(sys.prefix), Path(sys.base_prefix)]
-        try:
-            candidates.append(Path(site.getusersitepackages()))
-            candidates.extend(Path(item) for item in site.getsitepackages())
-        except AttributeError:
-            # Embedded Python implementations need not expose getsitepackages.
-            pass
-        for key in ("purelib", "platlib", "stdlib", "platstdlib"):
-            value = sysconfig.get_paths().get(key)
-            if value:
-                candidates.append(Path(value))
-        executable = Path(self._python).expanduser()
-        if executable.is_absolute():
-            candidates.append(executable)
+        # Definición ÚNICA en `bwrap_jail.interpreter_runtime_paths`: esta
+        # lógica se escribió dos veces (aquí y en `reproduction.py`) tras el
+        # mismo fallo, y un tercer jail la habría vuelto a escribir.
+        from atlas.security.bwrap_jail import interpreter_runtime_paths
+
+        candidates: list[Path] = interpreter_runtime_paths(self._python)
         candidates.extend(self._linked_worktree_git_paths())
 
         resolved: list[Path] = []
