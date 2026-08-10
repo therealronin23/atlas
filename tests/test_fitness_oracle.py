@@ -221,6 +221,58 @@ def test_un_worktree_huerfano_no_produce_un_cero_falso(
     assert score.solved == 1, [o.get("reason") for o in score.outcomes]
 
 
+# --------------------------------------------------------------------------
+# La muestra no puede ser "los más difíciles"
+# --------------------------------------------------------------------------
+
+
+def _muestra_uniforme(lineas: list[str], n: int) -> list[str]:
+    import importlib.util
+
+    ruta = Path(__file__).resolve().parent.parent / "scripts" / "fitness_run.py"
+    spec = importlib.util.spec_from_file_location("fitness_run", ruta)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return list(mod.muestra_uniforme(lineas, n))
+
+
+def test_la_muestra_cubre_todo_el_corpus() -> None:
+    """El corpus va del arreglo más reciente al más antiguo y los recientes son
+    los más grandes: `[:N]` habría medido "los N más difíciles" y llamado a eso
+    el resultado del banco."""
+    corpus = [f"d{i:02d}" for i in range(19)]
+
+    elegidas = _muestra_uniforme(corpus, 5)
+
+    assert len(elegidas) == 5
+    assert elegidas[0] == "d00" and elegidas[-1] == "d18", "no cubre los extremos"
+    assert elegidas != corpus[:5], "sigue siendo la cabeza"
+
+
+def test_la_muestra_es_reproducible() -> None:
+    """Dos tiradas distintas tienen que ser comparables: sin aleatoriedad."""
+    corpus = [f"d{i:02d}" for i in range(19)]
+
+    assert _muestra_uniforme(corpus, 7) == _muestra_uniforme(corpus, 7)
+
+
+def test_la_muestra_conserva_el_orden_y_no_repite() -> None:
+    corpus = [f"d{i:02d}" for i in range(19)]
+
+    elegidas = _muestra_uniforme(corpus, 8)
+
+    assert len(set(elegidas)) == len(elegidas)
+    assert elegidas == sorted(elegidas)
+
+
+@pytest.mark.parametrize("n", [0, 19, 25, -1])
+def test_pedir_todo_o_de_mas_devuelve_el_corpus(n: int) -> None:
+    corpus = [f"d{i:02d}" for i in range(19)]
+
+    assert _muestra_uniforme(corpus, n) == corpus
+
+
 def test_el_oraculo_no_es_un_competidor() -> None:
     """Salvaguarda de lectura: si alguien lo mete en la tabla de comparación, el
     "aporte del harness" saldría negativo contra un solver que hace trampa."""

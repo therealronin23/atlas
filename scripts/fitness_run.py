@@ -46,6 +46,29 @@ def run_tests(worktree: Path, targets: tuple[str, ...]) -> int:
         return 124
 
 
+def muestra_uniforme(lineas: list[str], n: int) -> list[str]:
+    """N defectos repartidos por todo el corpus, conservando el orden.
+
+    NO la cabeza. El corpus va del arreglo más reciente al más antiguo, y
+    medido el 2026-08-10 los primeros son justo los más grandes: en `--limit 5`
+    caían los dos de mayor parche (18.035 y 10.530 bytes) y el único con cinco
+    ficheros de test. Un `[:N]` no es "un subconjunto", es "los N más
+    difíciles", y publicar su resultado como el del banco subreporta por
+    construcción.
+
+    La zancada conserva lo que hacía falta —determinista, dos tiradas
+    comparables— sin el sesgo. No es estable si el corpus crece, y por eso quien
+    la usa imprime y guarda los ids: un número sin su muestra no se relee.
+    """
+    if n <= 0 or n >= len(lineas):
+        return list(lineas)
+    if n == 1:
+        return [lineas[0]]
+    paso = (len(lineas) - 1) / (n - 1)
+    idx = sorted({round(i * paso) for i in range(n)})
+    return [lineas[i] for i in idx]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=0, help="0 = todos")
@@ -62,15 +85,20 @@ def main() -> int:
     scorer = FitnessScorer(root, corpus, run_tests=run_tests)
 
     if args.limit:
-        # Subconjunto reproducible: los N primeros del corpus, no una muestra
-        # aleatoria — dos tiradas distintas tienen que ser comparables.
-        recorte = root / "docs" / "fixtures" / "fitness" / f".subset-{args.limit}.jsonl"
-        lineas = corpus.read_text(encoding="utf-8").splitlines()[: args.limit]
-        recorte.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+        lineas = [x for x in corpus.read_text(encoding="utf-8").splitlines() if x.strip()]
+        elegidas = muestra_uniforme(lineas, args.limit)
+        recorte = (
+            root / "docs" / "fixtures" / "fitness" / f".subset-{len(elegidas)}.jsonl"
+        )
+        recorte.write_text("\n".join(elegidas) + "\n", encoding="utf-8")
         scorer = FitnessScorer(root, recorte, run_tests=run_tests)
 
-    total = len(scorer.defects())
+    defectos = scorer.defects()
+    total = len(defectos)
+    muestra = [d.id for d in defectos]
     print(f"banco: {total} defectos verificados", flush=True)
+    if args.limit:
+        print(f"  muestra (zancada uniforme): {', '.join(muestra)}", flush=True)
 
     # CONTROL, antes de cualquier solver. Medido el 2026-08-10: baseline y
     # atlas sacaron ambos 0/5, y un cero admite dos lecturas incompatibles —
@@ -96,7 +124,16 @@ def main() -> int:
     # descartó PACE (arXiv:2606.08106) por "varianza que una suite determinista
     # no tiene". Cierto de la PUERTA (pytest pasa o no pasa), FALSO de la
     # MÉTRICA. Los tests secuenciales anytime-valid pertenecen aquí.
-    resultados: dict[str, dict[str, object]] = {}
+    resultados: dict[str, dict[str, object]] = {
+        "_muestra": {
+            "defect_ids": muestra,
+            "total_corpus": len(
+                [x for x in corpus.read_text(encoding="utf-8").splitlines() if x.strip()]
+            ),
+            "seleccion": "zancada uniforme" if args.limit else "corpus completo",
+            "techo_control": {"solved": techo.solved, "total": techo.total},
+        }
+    }
     for nombre, hacer_solver in (
         ("baseline_sin_solver", lambda: None),
         ("atlas_toolcoder", AtlasSolver),
