@@ -13,6 +13,26 @@ SEPARADO (``.venv-scraping``) porque fija ``unclecode-litellm==1.81.13``, un
 fork que se instala bajo el mismo nombre de import que nuestro ``litellm``
 real — instalarlo en el venv principal reemplazaría silenciosamente la
 librería de la que depende ``InferenceHub``. Ver ``_crawl4ai_worker.py``.
+
+Aislado NO es exento de mantenimiento, y esto se aprendió midiendo. El
+2026-08-10, el primer ``pip-audit`` que se le pasó a este venv desde que existe
+sacó **11 vulnerabilidades conocidas en 4 paquetes**: ``aiohttp 3.14.1`` (3),
+``cryptography 49.0.0``, ``h2 4.3.0`` y ``pip 24.0`` (6). El venv principal
+salió limpio en los tres años de su historia porque alguien lo mira; éste no lo
+miraba nadie.
+
+La exposición aquí es peor que en el principal, no menor: **este proceso es el
+que trae contenido remoto no confiable**, así que ``aiohttp`` y ``h2`` están
+literalmente en la ruta de ataque, no en una dependencia de desarrollo. Subidas
+a ``aiohttp 3.14.3`` / ``h2 4.4.1`` / ``cryptography 50.0.0`` /
+``pyOpenSSL 26.4.0`` (esta última hacía falta: la 26.3.0 exigía
+``cryptography<50``) y ``pip 26.2.1``. El pin que justifica el venv
+—``unclecode-litellm==1.81.13``— no se tocó, que era la condición. Reauditado:
+cero. Verificado ejecutando el crawler real contra un servidor local
+(``pytest tests/test_crawler.py -m computer_use``), no sólo importando.
+
+Regla que deja: cada venv aislado del repo entra en el barrido de CVEs. Un venv
+que nadie audita es exactamente igual de explotable que uno que nadie aisló.
 """
 
 from __future__ import annotations

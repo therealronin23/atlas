@@ -22,6 +22,38 @@ python3 -m venv .venv-redteam-pyrit
 Las campañas Garak usan `.venv-redteam-garak`; Crescendo usa
 `.venv-redteam-pyrit`. Las demos sin esas herramientas pueden usar el venv principal.
 
+> **ESTADO REAL DE ESTA MÁQUINA (medido el 2026-08-10) — leer antes de correr nada.**
+>
+> Ninguno de los dos venvs de arriba existe. Lo que hay es **uno solo**,
+> `.venv-redteam`, con **garak 0.15.1 y pyrit 0.14.0 juntos**. Es decir: la
+> separación que este documento exige se deshizo en algún momento y nadie
+> actualizó el texto. Cada orden de ejemplo de más abajo, tal y como está
+> escrita, falla al instante con «no such file or directory».
+>
+> Y la incompatibilidad que motivó la separación **sigue viva y ahora está
+> violada**, no resuelta:
+>
+> ```
+> $ .venv-redteam/bin/python -m pip check
+> garak 0.15.1 has requirement datasets<4.0,>=3.0.0, but you have datasets 5.0.0
+> ```
+>
+> Los imports de garak funcionan (`garak.probes.dan`, `garak.resources`,
+> `datasets.load_dataset`), así que no revienta al arrancar. Lo que no está
+> comprobado es una campaña completa que cargue un dataset de verdad: ahí es
+> donde un salto de major de `datasets` suele romper, y sería a mitad de una
+> corrida larga.
+>
+> **Antes de publicar una cifra nueva de estas demos**, rehaz los dos venvs como
+> dice el bloque de arriba —es la configuración que respalda las cifras de
+> referencia de la tabla— o mide de nuevo desde cero y sustituye la tabla. Las
+> cifras actuales se obtuvieron con la separación intacta; no son reproducibles
+> con el entorno tal y como está hoy.
+>
+> Las CVEs de `.venv-redteam` (pillow, pyasn1, pypdf, setuptools) siguen sin
+> tocar a propósito: es un venv que hoy no invoca ningún camino de runtime, y
+> subirlas sin rehacer la separación mezclaría dos problemas distintos.
+
 ## Demos
 
 | Script | Qué mide | Cifra de la corrida de referencia |
