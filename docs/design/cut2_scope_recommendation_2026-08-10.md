@@ -168,9 +168,9 @@ que reproduce el gancho exacto: **compila**. El interfaz sí declara `dispose()`
 más abajo (`instantiation.ts:76`) y satisface `IDisposable` estructuralmente.
 Mi grep se quedó corto; el compilador lo zanjó.
 
-## Límite que sigue en pie
+## Límite que seguía en pie — cerrado el 2026-08-11
 
-**Esto no es un build completo.** El checkout no tiene `node_modules` (VS Code
+**Esto no era un build completo.** El checkout no tiene `node_modules` (VS Code
 pide varios GB y compilación nativa), así que se ha verificado la superficie de
 API por tipos, no que Electron arranque ni que el servicio spawnee el bridge en
 tiempo de ejecución. Eso es el siguiente paso, y es cualitativamente distinto:
@@ -178,3 +178,76 @@ tiempo de ejecución. Eso es el siguiente paso, y es cualitativamente distinto:
 
 De paso: la cabecera del fichero arrastraba `Copyright 2025 Glass Devtools` por
 copia-pega del vecino de Void. Corregida en el port — el fichero es de Atlas.
+
+---
+
+# Build real (2026-08-11) — y un falso verde mío
+
+## Resultado
+
+`npm install` + `npm run compile` en `~/proyectos/atlas-codeoss-1.129.1`, rama
+`spike/atlas-bridge-on-codeoss`, commits `bfc15ab0` (port) y `49bc7aa2` (fix):
+
+| Paso | Resultado |
+|---|---|
+| `npm install` | **rc=0** — 1563 paquetes en 9 min, 0 errores npm, 2 módulos nativos compilados |
+| `tsgo --project src/tsconfig.json --noEmit` | **rc=0** — 0 errores en TODO el árbol |
+| `node build/checker/layersChecker.ts` | sin violaciones de capa |
+| `tsgo --project build/checker/tsconfig.electron-main.json` | **rc=0** |
+| `npm run compile` | **rc=0** en 4,9 min · 62 tareas con 0 errores · `out/` 380 MB |
+
+Y el puente está en la salida del build, que es la prueba que importa:
+
+```
+out/vs/workbench/contrib/atlas/electron-main/atlasBackendMainService.js  (17 KB)
+out/vs/code/electron-main/app.js  ->  AtlasBackendMainService     x2
+                                      IAtlasBackendService        x2
+                                      resolveAtlasBackendService  x2
+```
+
+**La recomendación de portar sobre CodeOSS queda verificada por compilación**,
+no sólo por lectura de imports.
+
+## Preparación que evitó perder el tiempo
+
+El repo pide Node `24.18.0` (`.nvmrc`) y `build/npm/preinstall.ts` rechaza
+cualquier minor inferior; había 24.15.0. Comprobado ANTES de lanzar el install
+—el gate habría matado la instalación a mitad— e instalado con `nvm`. La 26.1.0
+que ya estaba tampoco vale: el gate exige major 24 exacto. El resto de
+prerequisitos (python3/make/g++/pkg-config, x11, libsecret-1, xkbfile, gio-2.0,
+nss) estaban.
+
+## El falso verde, que es lo más útil de esta tanda
+
+El spike del día anterior concluyó "cero errores introducidos" con un banco
+acotado **y con control**. El árbol completo encontró un error real en nuestro
+propio fichero, de la misma familia que yo había descartado como ruido:
+
+```
+atlasBackendMainService.ts(134,3): error TS2740:
+  Type 'TimeoutHandle' is missing the following properties from type 'Timeout'
+```
+
+CodeOSS declara un handle opaco propio en `src/typings/base-common.d.ts`
+—`interface TimeoutHandle { readonly _: never }`, con el comentario *"a trick
+that seems needed to prevent direct number assignment"*— y su `setTimeout`
+devuelve ese, no `NodeJS.Timeout`. El fichero portado declaraba el de Node.
+
+El control de ayer **era correcto** para los 16 errores de `base/common`: esos
+sí eran artefacto del banco. Pero había un caso genuino de la misma familia
+dentro de nuestro código, y sólo aparece cuando el proyecto entero resuelve el
+`setTimeout` ambiental como lo hace el build.
+
+Moraleja, aplicada a mí mismo: **una aproximación de la puerta no es la puerta,
+ni siquiera con control.** Es la misma clase de defecto que esta auditoría
+lleva persiguiendo toda la semana —el smoke del tronco MCP que hacía
+`tools/list` sin invocar, la CLI probada con `--help`, los tests de ACP que
+excluían el transporte— y esta vez el que la cometió fui yo. Por eso el límite
+"no se ha compilado" estuvo escrito y repetido en cada entrega hasta hoy.
+
+## Lo que sigue sin estar probado
+
+**Compilar no es ejecutar.** No se ha arrancado Electron, así que no está
+verificado que el servicio spawnee `atlas coding-bridge` ni que sobreviva al
+ciclo de vida real de la aplicación. Ese es el siguiente escalón y vuelve a ser
+cualitativamente distinto.
