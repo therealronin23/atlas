@@ -13,11 +13,16 @@ import importlib.util
 import json
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
+
+#: Caracteres tras el nombre del venv en los que buscar `bin` para distinguir
+#: "lo lanza" de "lo nombra". `_REPO_ROOT / ".venv-scraping" / "bin" / "python3"`
+#: deja ~20; se da holgura sin llegar a la línea siguiente.
+_VENTANA_LANZAMIENTO = 60
 
 
 @dataclass
@@ -26,35 +31,123 @@ class PreflightResult:
     cve_found: bool
     cve_findings: list[str]
     sanitation_findings: dict[str, list[str]]
+    #: CVEs de venvs aislados que hoy no invoca ningún camino de runtime.
+    #: Se informan y NO bloquean — ver `PreflightGate._scan_cves`.
+    cve_advisories: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "passed": self.passed,
             "cve_found": self.cve_found,
             "cve_findings": list(self.cve_findings),
+            "cve_advisories": list(self.cve_advisories),
             "sanitation_findings": dict(self.sanitation_findings),
         }
 
 
 class PreflightGate:
-    def __init__(self, *, python_executable: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        python_executable: str | None = None,
+        repo_root: Path | None = None,
+    ) -> None:
         self._python = python_executable or sys.executable
+        self._root = Path(repo_root) if repo_root is not None else _REPO_ROOT
 
     def check(self) -> PreflightResult:
-        cve_found, cve_findings = self._scan_cves()
+        cve_found, cve_findings, cve_advisories = self._scan_cves()
         sanitation_findings = self._run_sanitation()
         return PreflightResult(
             passed=not cve_found,
             cve_found=cve_found,
             cve_findings=cve_findings,
+            cve_advisories=cve_advisories,
             sanitation_findings=sanitation_findings,
         )
 
-    def _scan_cves(self) -> tuple[bool, list[str]]:
+    def _isolated_venvs(self) -> list[Path]:
+        """Los venvs hermanos del repo, DESCUBIERTOS y no listados a mano.
+
+        Una lista de nombres se queda vieja en cuanto alguien añade un venv, y
+        ése es exactamente el fallo que esto arregla: los tres aislados
+        (`.venv-scraping`, `.venv-desktop`, `.venv-redteam`) llevaban desde que
+        existen sin que nadie les pasara pip-audit.
+        """
+        # `sys.prefix`, no `Path(sys.executable).resolve()`: en un venv el
+        # `bin/python` es un SYMLINK al intérprete del sistema, así que
+        # resolverlo devuelve /usr y el propio venv se colaba en su propia
+        # lista de "aislados" (visto al ejecutarlo, no al leerlo).
+        propio = Path(sys.prefix).resolve()
+        return sorted(
+            p for p in self._root.glob(".venv*")
+            if p.is_dir() and (p / "bin" / "python").exists()
+            and p.resolve() != propio
+        )
+
+    def _venv_en_ruta_de_runtime(self, venv: Path) -> bool:
+        """¿Lo LANZA algún módulo de `src/`?
+
+        Criterio comprobable en vez de una lista de opinión, pero el criterio
+        obvio —"aparece su nombre"— da falso positivo en los tres: los venvs se
+        mencionan en listas de exclusión de barrido (`tool_coder`,
+        `dormant_modules`) y en mensajes de error ("pendiente de un entorno con
+        Xvfb :99 + .venv-desktop"), y mencionar no es invocar. Con ese criterio
+        los tres bloqueaban y la puerta se volvía inservible.
+
+        Lo que distingue una invocación real es que el nombre aparezca junto a
+        la construcción del intérprete: `crawler.py` hace
+        `_REPO_ROOT / ".venv-scraping" / "bin" / "python3"`. Se busca `bin`
+        dentro de la misma vecindad textual, que es lo que separa lanzarlo de
+        nombrarlo. El criterio se actualiza solo el día que alguien cablee uno.
+        """
+        src = self._root / "src"
+        if not src.is_dir():
+            return False
+        for py in src.rglob("*.py"):
+            try:
+                texto = py.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            desde = 0
+            while (i := texto.find(venv.name, desde)) != -1:
+                desde = i + 1
+                if "bin" in texto[i : i + len(venv.name) + _VENTANA_LANZAMIENTO]:
+                    return True
+        return False
+
+    def _scan_cves(self) -> tuple[bool, list[str], list[str]]:
+        """CVEs del venv principal + de cada venv aislado del repo.
+
+        Los del principal y los de un venv aislado QUE EL RUNTIME INVOCA
+        bloquean. Los de un venv que hoy no invoca nadie se informan aparte:
+        tumbar el lazo entero por una CVE inalcanzable es el fail-closed sobre
+        falso positivo que ya se pagó esta semana, y callarla es lo contrario.
+        """
+        bloqueantes: list[str] = []
+        avisos: list[str] = []
+        fallo, hallazgos = self._audit_target(None)
+        bloqueantes.extend(hallazgos)
+        for venv in self._isolated_venvs():
+            sub_fallo, sub = self._audit_target(venv)
+            etiquetados = [f"{venv.name} {h}" for h in sub]
+            if self._venv_en_ruta_de_runtime(venv):
+                fallo = fallo or sub_fallo
+                bloqueantes.extend(etiquetados)
+            else:
+                avisos.extend(etiquetados)
+        return fallo, bloqueantes, avisos
+
+    def _audit_target(self, venv: Path | None) -> tuple[bool, list[str]]:
+        cmd = [self._python, "-m", "pip_audit", "--format", "json"]
+        if venv is not None:
+            sitios = sorted(venv.glob("lib/python*/site-packages"))
+            if not sitios:
+                return True, [f"{venv.name}: sin site-packages legible"]
+            cmd += ["--path", str(sitios[-1])]
         try:
             result = subprocess.run(
-                [self._python, "-m", "pip_audit", "--format", "json"],
-                capture_output=True, text=True, timeout=120, check=False,
+                cmd, capture_output=True, text=True, timeout=120, check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return True, [f"pip-audit no pudo ejecutarse: {exc}"]
