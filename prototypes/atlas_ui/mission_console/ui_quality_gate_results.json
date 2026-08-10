@@ -1,0 +1,27 @@
+{
+  "screen": "t2-1-mission-console-dedicated-app",
+  "stack": "flutter",
+  "evaluated_at": "2026-08-03T00:15:00Z",
+  "passed": true,
+  "reason": "The UI complies with the aesthetic grammar and answers the 8 fundamental questions without hitting any rejection triggers.",
+  "questions": {
+    "donde_estoy": {"answered": true, "detail": "App bar clearly indicates 'Atlas Mission Console'."},
+    "objetivo_activo": {"answered": true, "detail": "List of active missions is presented prominently."},
+    "accion_actual": {"answered": true, "detail": "Mission cards accurately display the current state and risk profile."},
+    "datos_usados": {"answered": true, "detail": "Real-time WebSocket event counts and API fields are used."},
+    "riesgo": {"answered": true, "detail": "Risk levels are displayed using the semantic color grammar (amber, orange)."},
+    "accion_siguiente": {"answered": true, "detail": "Clear calls to action (Approve, Park) exist for pending missions."},
+    "control_usuario": {"answered": true, "detail": "Users have explicit control via Approve/Park actions."},
+    "evidencia_auditoria": {"answered": true, "detail": "Real-time updates and manual refresh provide audit trace."}
+  },
+  "rejection_checklist": {
+    "dashboard_card_soup": false,
+    "jarvis_barato_hud_decorativo": false,
+    "plantilla_generica": false,
+    "nodos_sin_significado": false,
+    "movimiento_decorativo": false,
+    "paleta_comandos_salta_permisos": false,
+    "movil_sin_adaptar": "not_applicable",
+    "falta_reduced_motion": false
+  }
+}
