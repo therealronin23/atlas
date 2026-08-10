@@ -125,6 +125,442 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-08-01T01:14:20.056934+00:00'
+    - name: hyperb1iss/sibyl
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/hyperb1iss/sibyl
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:11
+      - informe:12
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-02T23:09:19.283380+00:00'
+    - name: jagoff/memo
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/jagoff/memo
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:11
+      - informe:14
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-02T23:09:19.283380+00:00'
+    - name: Hostileoracle0606/graphloop
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Hostileoracle0606/graphloop
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:time aware reasoning
+      - informe:11
+      - informe:12
+      - informe:13
+      - informe:14
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-03T00:39:34.411521+00:00'
+    - name: IBM/otter-knowledge
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/IBM/otter-knowledge
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:11
+      - informe:12
+      - informe:13
+      - informe:14
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-03T00:39:34.411521+00:00'
+    - name: IssunDB/graph-benchmarks
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/IssunDB/graph-benchmarks
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:4
+      - informe:5
+      - informe:6
+      - informe:7
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-03T00:39:34.411521+00:00'
+    - name: yifanfeng97/Hyper-Extract
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/yifanfeng97/Hyper-Extract
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:10
+      - informe:11
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-03T00:39:34.411521+00:00'
+    - name: Bd-Mutant7/GitNexus
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/Bd-Mutant7/GitNexus
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:11
+      - informe:13
+      - informe:14
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
+    - name: cajasmota/grafel
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/cajasmota/grafel
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:13
+      - informe:15
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
+    - name: ChrisPulman/ReactiveMemory.MCP.Server
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/ChrisPulman/ReactiveMemory.MCP.Server
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:7
+      - informe:8
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-05T02:04:33.841086+00:00'
+    - name: GrafeoDB/graph-bench
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/GrafeoDB/graph-bench
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:11
+      - informe:12
+      - informe:13
+      - informe:14
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-05T02:04:33.841086+00:00'
+    - name: anditaadhi/-Smart-Assistant-RAG-Pipeline-Project
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/anditaadhi/-Smart-Assistant-RAG-Pipeline-Project
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:document indexing
+      - informe:5
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-06T01:32:05.154186+00:00'
+    - name: mycelium-hq/ai-brain-starter
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/mycelium-hq/ai-brain-starter
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:12
+      - informe:22
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-06T01:32:05.154186+00:00'
+    - name: mikevalstar/okq
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/mikevalstar/okq
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - tema:knowledge graph traversal
+      - informe:20
+      - informe:23
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-09T01:02:15.895359+00:00'
+    - name: FalkorDB/benchmark
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/FalkorDB/benchmark
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:11
+      - informe:12
+      - informe:13
+      - informe:14
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      - informe:2
+      - informe:22
+      - informe:23
+      - informe:24
+      - informe:25
+      - informe:3
+      - informe:4
+      - informe:5
+      - informe:6
+      - informe:7
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: LagoVista/CloudStorage
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/LagoVista/CloudStorage
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph persistence
+      - informe:2
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: ProfessionalWiki/NeoWiki
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/ProfessionalWiki/NeoWiki
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:knowledge graph
+      - informe:13
+      - informe:14
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: Quantum-L9/l9-graphiti-memory
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Quantum-L9/l9-graphiti-memory
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:6
+      - informe:8
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: awslabs/unified-kg-rag-on-aws
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/awslabs/unified-kg-rag-on-aws
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:document indexing
+      - informe:12
+      - informe:14
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: cartography-cncf/cartography
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/cartography-cncf/cartography
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph databases
+      - informe:13
+      - informe:16
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: chatvector-ai/chatvector-ai
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/chatvector-ai/chatvector-ai
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:document indexing
+      - informe:2
+      - informe:22
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: dsivov/Context_Graph
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/dsivov/Context_Graph
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:time aware reasoning
+      - informe:2
+      - informe:3
+      - informe:4
+      - informe:5
+      - informe:6
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: eMTAi-Labs/xraygraph-bench
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/eMTAi-Labs/xraygraph-bench
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:graph database benchmark
+      - informe:6
+      - informe:7
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: fisallllll280-code/VAIXLNS
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/fisallllll280-code/VAIXLNS
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:repository mutation
+      - tema:temporal knowledge graph
+      - informe:6
+      - informe:7
+      - informe:8
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: happycastle114/opencode-graphiti
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/happycastle114/opencode-graphiti
+      install: ''
+      status: candidato
+      tags:
+      - conocimiento-memoria
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:10
+      - informe:11
+      - informe:23
+      - informe:24
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
   datos:
     label: Datos
     entries:
@@ -164,6 +600,23 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-31T16:46:04.815313+00:00'
+    - name: ArcadeData/arcadedb
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/ArcadeData/arcadedb
+      install: ''
+      status: candidato
+      tags:
+      - datos
+      evidence:
+      - tema:graph database
+      - tema:graph databases
+      - informe:16
+      - informe:7
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
   diseno:
     label: Diseño
     entries: []
@@ -188,6 +641,121 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-07-27T01:21:12.605086+00:00'
+    - name: SaravananJaichandar/world-model-mcp
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/SaravananJaichandar/world-model-mcp
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:temporal knowledge graph
+      - informe:10
+      - informe:11
+      - informe:12
+      - informe:13
+      - informe:14
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      - informe:3
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
+    - name: decisionintelligence/PATRA
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/decisionintelligence/PATRA
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:time aware reasoning
+      - informe:11
+      - informe:12
+      - informe:13
+      - informe:14
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
+    - name: VectifyAI/PageIndex
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/VectifyAI/PageIndex
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:document indexing
+      - informe:15
+      - informe:16
+      - informe:17
+      - informe:18
+      - informe:23
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-08T17:51:10.311184+00:00'
+    - name: Ker102/PromptTriage
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/Ker102/PromptTriage
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:triage systems
+      - informe:13
+      - informe:16
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: LizeRaes/j1-ai-demo
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/LizeRaes/j1-ai-demo
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:triage systems
+      - informe:13
+      - informe:16
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: TryingtobeingNikhil/Vectorless-RAGs
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/TryingtobeingNikhil/Vectorless-RAGs
+      install: ''
+      status: candidato
+      tags:
+      - ia-agentes
+      evidence:
+      - tema:tree traversal
+      - informe:11
+      - informe:12
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
   infraestructura:
     label: Infraestructura
     entries:
@@ -210,9 +778,59 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-08-01T01:14:20.056934+00:00'
+    - name: cran/mSigPlot
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/cran/mSigPlot
+      install: ''
+      status: candidato
+      tags:
+      - infraestructura
+      evidence:
+      - tema:repository mutation
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
   investigacion:
     label: Investigación
-    entries: []
+    entries:
+    - name: lightmeterminiaturisation293/Langent-MCP_One-Click_Kit
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/lightmeterminiaturisation293/Langent-MCP_One-Click_Kit
+      install: ''
+      status: candidato
+      tags:
+      - investigacion
+      evidence:
+      - tema:document indexing
+      - informe:2
+      - informe:3
+      - informe:4
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-08T17:51:10.311184+00:00'
+    - name: mirkosertic/MCPLuceneServer
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/mirkosertic/MCPLuceneServer
+      install: ''
+      status: candidato
+      tags:
+      - investigacion
+      evidence:
+      - tema:document indexing
+      - informe:17
+      - informe:18
+      - informe:24
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-09T01:02:15.895359+00:00'
   productividad:
     label: Productividad
     entries:
@@ -233,6 +851,22 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-08-01T01:14:20.056934+00:00'
+    - name: goodguy1963/Copilot-Cockpit
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/goodguy1963/Copilot-Cockpit
+      install: ''
+      status: candidato
+      tags:
+      - productividad
+      evidence:
+      - tema:triage systems
+      - informe:13
+      - informe:16
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
   programacion:
     label: Programación
     entries:
@@ -270,6 +904,144 @@ sectors:
       provenance:
         source: research_digest
         fetched_at: '2026-08-01T01:14:20.056934+00:00'
+    - name: csvdatabase/server-typescript
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/csvdatabase/server-typescript
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:7
+      - informe:8
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-03T00:39:34.411521+00:00'
+    - name: runvendo/vendo
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/runvendo/vendo
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:build automation
+      - informe:11
+      - informe:12
+      - informe:17
+      - informe:18
+      - informe:4
+      - informe:8
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
+    - name: MrHackerCharlie/Mutating-Viruses
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/MrHackerCharlie/Mutating-Viruses
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:repository mutation
+      - informe:4
+      - informe:5
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: ThePie88/FO4_Wrld
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/ThePie88/FO4_Wrld
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:graph persistence
+      - informe:17
+      - informe:18
+      - informe:23
+      - informe:24
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: ThisIsQasim/personal-infra
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/ThisIsQasim/personal-infra
+      install: ''
+      status: candidato
+      tags:
+      - programacion
+      evidence:
+      - tema:version control
+      - informe:11
+      - informe:25
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
   uncategorized:
     label: uncategorized
-    entries: []
+    entries:
+    - name: CoreyLeath-code/Real-Time-Emergency-Room-Triage-Optimization-System
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/CoreyLeath-code/Real-Time-Emergency-Room-Triage-Optimization-System
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+      evidence:
+      - tema:triage systems
+      - informe:13
+      - informe:16
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-04T00:31:56.576578+00:00'
+    - name: adrienaunmoving834/manyana
+      kind: tool
+      subsector: ''
+      mode: installed
+      source: https://github.com/adrienaunmoving834/manyana
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+      evidence:
+      - tema:version control systems
+      - informe:3
+      - informe:9
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'
+    - name: bekirdag/docdex
+      kind: mcp
+      subsector: ''
+      mode: connected
+      source: https://github.com/bekirdag/docdex
+      install: ''
+      status: candidato
+      tags:
+      - uncategorized
+      evidence:
+      - tema:document indexing
+      - informe:17
+      - informe:18
+      - informe:23
+      - informe:24
+      - informe:25
+      provenance:
+        source: research_digest
+        fetched_at: '2026-08-10T00:41:19.406110+00:00'

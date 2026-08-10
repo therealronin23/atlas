@@ -1,88 +1,18 @@
-# Graphify ignore — ficheros excluidos del escaneo/extracción semántica.
-#
-# GRAPHIFY_MAX_OUTPUT_TOKENS=4096 trunca cualquier chunk single-file que no
-# quepa en ese presupuesto ("truncated at max_completion_tokens"). Los YAML/
-# JSON de datos >100KB de docs/ no aportan grafo semántico útil (son datos
-# tabulares/catálogos, no prosa) y solo generan ruido de truncados — 56
-# truncados observados contra mcp_catalog_classified.yaml en
-# graphify-out/logs/pipeline.log (2026-07).
-#
-# Candidatos hallados vía:
-#   find docs -type f \( -name "*.yaml" -o -name "*.json" \) -size +100k
-
-# 195KB — catálogo MCP clasificado, dato tabular puro.
+# T5.2: Fuentes largas de graphify - ignore deliberado
+# Ignoramos ficheros masivos de JS y JSON que revientan el parser
+*.min.js
+*-bundle.js
+package-lock.json
+*.map
+Diseño UI Atlas.md
 docs/design/mcp_catalog_classified.yaml
-
-# ~1MB (2026-07-23: RegistrySource paginado de verdad contra el registro
-# oficial MCP, 100 -> 2111 candidatos crudos). Dato tabular puro,
-# máquina-generado, sin prosa.
-docs/design/mcp_catalog_seeded.yaml
-
-# ~100KB (cruzó el umbral 2026-07-23 tras 29 ítems nuevos de T0.5b paso 3).
-# A diferencia de los demás ficheros de esta lista, SÍ tiene prosa real
-# (why/acceptance por ítem) — pero el límite es técnico (truncado a 4096
-# tokens de salida en un solo chunk), no de contenido: un fichero de 71+
-# ítems no cabe entero en un chunk igual, y el ruido de truncados es el
-# mismo problema que en los ficheros tabulares.
-docs/backlog.yaml
-
-# 115KB — snapshot de auditoría, dato tabular puro.
 docs/self_audit_latest.json
-
-# 115KB — índice máquina de docs/, dato tabular puro (ver docs/INDEX.yaml).
 docs/INDEX.yaml
-
-# Inventario del corpus (T0.5b paso 1, ATLAS PRIME Cycle 4, 2026-07-22):
-# lista de ~700 docs con bucket heurístico, dato tabular puro, sin prosa.
+docs/backlog.yaml
+docs/design/mcp_catalog_seeded.yaml
 docs/knowledge/corpus_inventory.json
-
-# T0.5b paso 3 (2026-07-22): digest/auditoría crudos por división, 708
-# registros JSON por doc (verdict/plan_section_cited/etc.), dato tabular
-# puro. La síntesis en prosa vive en
-# docs/design/2026-07-22-t05b-paso3-sintesis.md — eso sí es lo semántico.
 docs/knowledge/t05b_paso3/corpus_digest_consolidated.json
 docs/knowledge/t05b_paso3/digest_D.json
-
-# Raw private ChatGPT export (1.7MB) already distilled into the canonical
-# Foundry note. Ingesting it duplicated stale UI alternatives and signed URLs.
-Diseño UI Atlas.md
-
-# Derivados de publicación del mismo paper. El Markdown contiguo es la fuente
-# semántica humana; el HTML declara generator=pandoc y el PDF es binario,
-# indivisible en Graphify 0.9.11 y devolvía una respuesta hueca aun con 65K de
-# salida. Ingerir los tres duplica conceptos y el PDF no puede recuperarse por
-# bisección adaptativa.
-docs/outreach/paper/paper_subject_enforced_completeness.html
 docs/outreach/paper/paper_subject_enforced_completeness.pdf
-
-# `scripts/graphify_failure_guard.py` solo propone candidaturas cuando un
-# fichero acumula 3+ fallos. Añadir una exclusión exige revisión humana y
-# `--apply-ignore`; la salida de un LLM nunca cambia cobertura por defecto.
-
-# Scratch de sesión SDD (no-tracked, churn por turno): no es conocimiento del
-# repo — su extracción fallaba por longitud y jamás cachearía estable
-# (exclusión deliberada, ola bootstrap 2026-07-17).
-.superpowers/
-
-# Graveyard: contenido declarado muerto en la cuarentena de 2026-06-21;
-# extraerlo re-inyecta ruido histórico al grafo semántico (misma ola).
-docs/archive/_graveyard/
-
-# 500KB (2026-07-24, ADR-075 etapa 1) — reporte JSONL de pre-screen estático
-# sobre los 2111 candidatos sembrados (routing por transporte + severidad de
-# tool-poisoning), regenerado por scripts/mcp_stage1_triage.py. Dato tabular
-# puro, máquina-generado, mismo criterio que mcp_catalog_seeded.yaml.
-docs/design/mcp_catalog_stage1_triage.jsonl
-
-# 308KB (2026-07-24, ADR-075 etapa 2) — reporte JSONL de la corrida real
-# (lookup+descarga+extracción+entrypoint+semgrep para stdio; handshake MCP
-# para http) sobre los 2100 candidatos elegibles, regenerado por
-# scripts/mcp_stage2_batch.py. Dato tabular puro, mismo criterio.
-docs/design/mcp_catalog_stage2_report.jsonl
-
-# Pack de sucesión GENERADO: proyección de fuentes que YA se ingieren por
-# separado (AGENTS.md, master plan, actor_roles, bloque WHERE del ledger).
-# Ingerirlo duplica conceptos en el grafo semántico — mismo criterio que los
-# derivados del paper — y sus copias íntegras topan el límite de salida del
-# LLM. La fuente semántica es el original; el pack es su proyección.
-docs/handoff/GENERATED/
+docs/outreach/paper/paper_subject_enforced_completeness.html
+docs/archive/_graveyard/*
