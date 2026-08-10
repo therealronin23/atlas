@@ -2229,13 +2229,49 @@ items:
       # 2026-08-06: era "prototypes/atlas_ui/" entero, lo que incluía los
       # micro-PoC de Compose y Qt — ya medidos y CERRADOS el 2026-07-31, y
       # descartados como stack por ADR-085. Acotado al único destino vivo.
-      - "prototypes/atlas_ui/mission_console/"
+      # 2026-08-10: el destino real acabó siendo `mission_console/` en la raíz,
+      # no bajo `prototypes/`. No es un prototipo: habla con el runtime.
+      - "mission_console/"
     acceptance: >
       La UI lista y gestiona misiones contra el runtime real (127.0.0.1:7341),
       no contra datos de ejemplo. Nota de realidad: hoy `mission_console/` tiene
       CERO ficheros trackeados en git — el trabajo empieza por ahí.
+    progress: >
+      2026-08-10 — HECHA y verificada EJECUTANDO contra el runtime vivo, con
+      captura de pantalla.
+
+      App Flutter/Dart (ADR-085) contra el Atlas OS Bridge (ADR-058). El
+      contrato se mapeó sondeando el servidor, no leyendo documentación:
+      `GET /missions` con sus agregados, `GET /missions/{id}`, `/missions/radar`,
+      `POST .../approve` y `/reject`, y `WS /events`.
+
+      Medido en la corrida real: 293 misiones, contadores cuadrando con el
+      bridge (6 esperando decisión, 35 plan_proposed, 35 failed, 14 applied,
+      203 rejected), detalle con el bundle de evidencia auténtico (`983 passed`,
+      mypy limpio sobre 105 ficheros, fastapi 0.110 → 0.136.3 desde pypi.org) y
+      23 eventos llegando por el WebSocket.
+
+      Un defecto propio que sólo salió ejecutando, y que resume por qué la
+      aceptación exigía runtime real: el WS necesita cabecera `Origin` o el
+      bridge cierra con 1008 (defensa CSWSH). Los tests pasaban y la lista
+      cargaba perfecta mientras el panel de eventos estaba muerto.
+
+      Herramienta: Flutter 3.44.9 en `~/tools/flutter`, fuera del repo. El
+      toolchain de Linux desktop ya estaba en la máquina; `flutter doctor` sin
+      problemas.
+
+      Lo que NO cubre y conviene no dar por hecho: sólo target Linux desktop
+      (ADR-085 no obliga a más hoy), y `/missions/radar` está mapeado en el
+      cliente pero aún no tiene pantalla propia.
+
+      Y un límite que toca declarar en vez de esconder: **el POST de aprobar no
+      se ha ejecutado**. Está implementado, tipado contra el endpoint real y con
+      su confirmación, y los botones se ven en la captura del detalle — pero
+      pulsarlos escribe una decisión en el runtime del operador sobre una
+      dependencia real, y eso lo decide él, no la verificación de una tarea. Lo
+      probado de punta a punta es todo lo demás.
     priority: 2
-    status: pending
+    status: done
 
   # === Fase T8 — Función de fitness del lazo (auditoría 2026-08-06/08) ===
   #
