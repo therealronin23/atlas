@@ -263,12 +263,33 @@ class LessonRecaller:
             matched=matched,
         )
 
-    def recall_all(self, attack_text: str, k: int = 5) -> list[RecallResult]:
+    def recall_all(
+        self, attack_text: str, k: int = 5, *, record: bool = False
+    ) -> list[RecallResult]:
         """Devuelve los top-k RecallResult ordenados por score descendente.
 
         Útil para trazar la curva de similitud y evaluar la cobertura del corpus.
         Si el store está vacío devuelve lista vacía.
         attack_text vacío → todos con score 0.0 (no lanza).
+
+        ``record=True`` registra el uso REAL de las que hacen match, igual que
+        `recall()`. Es opt-in y no al revés por lo que este método era: una
+        herramienta de ANÁLISIS, y trazar una curva de similitud no debe
+        reactivar lecciones ni retrasar su archivado.
+
+        El agujero que cierra, medido el 2026-08-10: el único consumidor del
+        camino caliente —`_build_avoid_section`, que usan ToolCoder y
+        AtlasCoder para meter los patrones a evitar en el prompt de codegen—
+        llama AQUÍ, y aquí no se registraba nada. Resultado: 17 lecciones
+        curadas con `recall_count` total = 1 mientras 3 de 4 tareas realistas
+        recuperaban patrones. La lectura obvia ("el subsistema está dormido")
+        era falsa; lo roto era la medición.
+
+        Y no era sólo una métrica ciega. `LessonStore.apply_lifecycle_transitions`
+        se ancla en `last_recalled_at` para pasar active→stale a los 30 días y
+        →archived a los 90: sin registrar el uso real, **el sistema marcaba como
+        obsoletas justo las lecciones que estaba usando**. Explica el "16 de 17
+        en stale" que abrió esta auditoría.
         """
         if not self._index:
             return []
@@ -281,13 +302,25 @@ class LessonRecaller:
             return results[:k]
 
         query_vec = self._embedder.embed(attack_text)
-        results = [
-            RecallResult(
-                lesson_id=lid,
-                score=_cosine_similarity(query_vec, vec),
-                matched=_cosine_similarity(query_vec, vec) >= self._threshold,
+        results = []
+        for lid, vec in self._index.items():
+            # Una sola vez: antes se calculaba el coseno dos veces por lección
+            # (una para `score` y otra para `matched`), que sobre un corpus
+            # grande es el doble de trabajo para el mismo número.
+            score = _cosine_similarity(query_vec, vec)
+            results.append(
+                RecallResult(
+                    lesson_id=lid, score=score, matched=score >= self._threshold
+                )
             )
-            for lid, vec in self._index.items()
-        ]
         results.sort(key=lambda r: r.score, reverse=True)
-        return results[:k]
+        top = results[:k]
+        if record:
+            # Sólo las que hacen match, y sólo dentro del top-k: son las que se
+            # sirven de verdad al prompt. Contar el resto inflaría el uso y
+            # mantendría vivas lecciones que nadie aplica.
+            for r in top:
+                if r.matched:
+                    owning = self._lesson_store_map.get(r.lesson_id, self._store)
+                    owning.record_recall(r.lesson_id)
+        return top

@@ -546,3 +546,82 @@ class TestCosineSimilarityWrapper:
             b = [rng.uniform(-1, 1) for _ in range(8)]
             score = _cosine_similarity(a, b)
             assert 0.0 <= score <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# La telemetría del camino caliente: `recall_all` no contaba nada
+# ---------------------------------------------------------------------------
+#
+# Medido el 2026-08-10 y es peor que un contador ciego. `recall()` registra el
+# uso (`record_recall` → `recall_count`, `last_recalled_at`); `recall_all()` NO
+# registraba nada, nunca. Y el único consumidor del camino caliente
+# —`_build_avoid_section`, que usan ToolCoder y AtlasCoder para meter los
+# patrones a evitar en el prompt de codegen— llama a `recall_all`.
+#
+# Consecuencia comprobada: 17 lecciones curadas con `recall_count` total = 1,
+# mientras 3 de 4 tareas realistas SÍ recuperaban patrones. La conclusión obvia
+# ("el subsistema de lecciones está dormido") era falsa; lo que estaba roto era
+# la medición.
+#
+# Y no es sólo una métrica ciega: `apply_lifecycle_transitions` se ancla en
+# `last_recalled_at` para pasar active→stale a los 30 días y →archived a los 90.
+# Sin registrar el uso real, **el sistema marca como obsoletas justo las
+# lecciones que está usando**. Explica el "16 de 17 en stale" de la auditoría.
+#
+# `recall_all` nació como herramienta de ANÁLISIS ("trazar la curva de
+# similitud"), y trazar una curva no debe reactivar lecciones. Por eso el
+# registro es opt-in explícito en la llamada, no un efecto secundario nuevo.
+
+
+class TestTelemetriaDeRecallAll:
+    def _con_leccion(self, tmp_path: Path) -> tuple[LessonRecaller, LessonStore, str]:
+        store = _store(tmp_path)
+        store.add(_lesson("l1", "no uses shell=True", "subprocess con shell=True"))
+        rec = LessonRecaller(store, embedder=StubEmbedder(dim=64), threshold=0.8)
+        rec.index()
+        return rec, store, "subprocess con shell=True"
+
+    def test_por_defecto_analizar_no_deja_rastro(self, tmp_path: Path) -> None:
+        """Trazar la curva de similitud no puede reactivar una lección."""
+        rec, store, consulta = self._con_leccion(tmp_path)
+
+        rec.recall_all(consulta, k=3)
+
+        assert store.get("l1").recall_count == 0
+        assert not store.get("l1").last_recalled_at
+
+    def test_el_camino_caliente_sí_cuenta_el_uso(self, tmp_path: Path) -> None:
+        rec, store, consulta = self._con_leccion(tmp_path)
+
+        resultados = rec.recall_all(consulta, k=3, record=True)
+
+        assert any(r.matched for r in resultados), "el stub no hizo match: test inútil"
+        assert store.get("l1").recall_count == 1
+        assert store.get("l1").last_recalled_at is not None
+
+    def test_solo_cuenta_las_que_realmente_hacen_match(self, tmp_path: Path) -> None:
+        """Los top-k incluyen no-matches por debajo del umbral. Contarlos
+        inflaría el uso y mantendría vivas lecciones que nadie aplica."""
+        store = _store(tmp_path)
+        store.add(_lesson("l1", "no uses shell=True", "subprocess con shell=True"))
+        store.add(_lesson("l2", "otra cosa", "vocabulario totalmente distinto aqui"))
+        rec = LessonRecaller(store, embedder=StubEmbedder(dim=64), threshold=0.8)
+        rec.index()
+
+        rec.recall_all("subprocess con shell=True", k=5, record=True)
+
+        assert store.get("l1").recall_count == 1
+        assert store.get("l2").recall_count == 0
+
+    def test_el_prompt_de_codegen_cuenta_el_uso(self, tmp_path: Path) -> None:
+        """La prueba que cierra el círculo: por el camino REAL de producción."""
+        from atlas.core.orchestrator_parts.maintenance_facade import _build_avoid_section
+
+        rec, store, consulta = self._con_leccion(tmp_path)
+
+        seccion = _build_avoid_section(rec, store, consulta)
+
+        assert "no uses shell=True" in seccion
+        assert store.get("l1").recall_count == 1, (
+            "la lección se sirvió al prompt y el uso no se registró"
+        )

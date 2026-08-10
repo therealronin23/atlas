@@ -119,7 +119,11 @@ def _build_avoid_section(recaller: Any, store: Any, query: str) -> str:
     if recaller is None or store is None:
         return ""
     recaller.index()
-    results = recaller.recall_all(query, k=3)
+    # `record=True`: esto es USO real, no análisis — lo que sale de aquí entra
+    # en el prompt de codegen. Sin registrarlo, el ciclo de vida del store
+    # marcaba stale a los 30 días justo las lecciones que se estaban sirviendo
+    # (medido el 2026-08-10: 17 curadas, `recall_count` total = 1).
+    results = recaller.recall_all(query, k=3, record=True)
     if not results:
         return ""
     patterns = "\n".join(
