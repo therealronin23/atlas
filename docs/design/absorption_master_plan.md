@@ -803,3 +803,63 @@ absorber paquetes**.
 **Con esto la matriz de absorción queda CERRADA**: los otros seis proyectos
 (Hermes, Letta, Open Interpreter, KERI/ACDC, BentoML/OpenLLM, Aider) tienen
 código con callers de producción verificados por el radar AST.
+
+## Codex + Claude Agent SDK diseccionados; los 3 huecos de 2026-07-02, cerrados (2026-08-11)
+
+Revisión del barrido "Codex CLI, Cursor, Claude Agent SDK" de arriba. **Los
+tres huecos concretos que dejó abiertos están cerrados**, y el documento no se
+había enterado:
+
+1. `ToolCoder` sin `institutional_context_files` → **cerrado**.
+   `tool_coder.py:347` tiene `_build_institutional_section` con la técnica #20
+   (descubrimiento jerárquico de `AGENTS.md`), mismo contrato que `AtlasCoder`.
+2. `conditional_rules.py` sin callers → **cerrado**. Cableado en los dos:
+   `tool_coder.py:36` y `atlas_coder.py:31`.
+3. Ensemble/best-of-N para `ParallelCoder` → **cerrado**.
+   `parallel_coder.py:390`, `run_ensemble` con modo `sync_back=False`.
+
+### Codex: el handicap que lo frenaba no existía
+
+La premisa que mantuvo a Codex fuera de `atlas-forks/` era que se distribuye en
+binario y no se puede forkear. **Falso.** Verificado en vivo el 2026-08-11:
+
+```
+git ls-remote --heads https://github.com/openai/codex.git   →   rc=0
+```
+
+Repo público, Rust (`codex-rs`) + CLI (`codex-cli`), **Apache-2.0**. Lo binario
+es el empaquetado de npm, no la fuente. La auditoría a nivel de código del
+2026-07-02 ya se había hecho contra ese repo; lo que faltaba era conservarlo.
+Clonado a `~/proyectos/atlas-forks/codex` (`--depth 1`, 139 MB).
+
+### Claude Agent SDK
+
+`anthropics/claude-agent-sdk-python`, **MIT**, 3,9 MB, en
+`~/proyectos/atlas-forks/claude-agent-sdk`. Lo que se va a buscar ahí está
+nombrado arriba y sigue sin accionar: su **taxonomía de hooks** como puntos de
+extensión con nombre. Los guardarraíles de Atlas (lint gate, protected paths,
+stuck detector) están hardcodeados en línea dentro de `AtlasCoder`/`ToolCoder`.
+Sigue sin ser urgente — ningún caller pide hoy esa flexibilidad — pero ahora la
+fuente está en disco en vez de en una nota.
+
+### Cursor sigue siendo inabsorbible por código, y ya se absorbió por observación
+
+Fuente cerrada, sin repo del editor. No cambia nada desde 2026-07-02. Pero
+conviene dejar dicho que **eso no impidió extraerle valor**: su modo *ensemble*
+y su sistema de reglas por glob son hoy `run_ensemble` y `conditional_rules.py`.
+Para un donante cerrado, observación + reimplementación propia es el método, y
+funcionó.
+
+### Cómo se amplía esta lista a partir de ahora
+
+Dos vías, no una:
+
+- **Curada** (esta tabla): objetivos con nombre, que decide el operador.
+- **Radar** (nuevo el 2026-08-10): `maintenance_research_tick` barre github,
+  hackernews y arXiv a diario — 122 hallazgos el 10-ago — y desde ese día
+  `atlas/discovery/triage.py` los criba por licencia, archivado y abandono, y
+  marca los que avala más de un canal. Es la "serendipia sistematizada" del
+  diseño original: para lo que todavía no tiene nombre.
+
+La regla de `Non-Goals` sigue en pie sin cambios: una disección se gana su sitio
+sólo con un plan de absorción en ejecución, nunca como copia dormida.
