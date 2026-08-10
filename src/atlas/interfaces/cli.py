@@ -38,6 +38,25 @@ def get_orchestrator() -> Orchestrator:
     return _orch
 
 
+def reset_orchestrator() -> None:
+    """Suelta el orquestador cacheado. Para procesos de vida larga y tests.
+
+    `_orch` y `GovernanceL0._instance` son dos globales ACOPLADAS: el
+    constructor del orquestador inicializa el singleton y luego sus métodos lo
+    piden con `get_instance()`. `conftest` limpiaba sólo el segundo en cada
+    test, así que un orquestador cacheado sobrevivía apuntando a un singleton
+    ya borrado y el siguiente comando moría con "GovernanceL0 no inicializado".
+
+    En producción no muerde —cada invocación de la CLI es su propio proceso— y
+    por eso llevaba ahí sin verse: sale en cuanto alguien ejecuta dos comandos
+    en el mismo intérprete, que es justo lo que hace un smoke test de la
+    superficie de operador. Limpiar una de dos globales acopladas deja un
+    estado que no es ni el de antes ni el de después.
+    """
+    global _orch
+    _orch = None
+
+
 def _acquire_writer_lock_or_die(orch: Orchestrator) -> "MerkleWriterLock":
     """Single-writer guard (ROADMAP §7): los entrypoints de larga vida que
     escriben la cadena Merkle (serve, self-audit run) se niegan a arrancar si

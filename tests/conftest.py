@@ -277,9 +277,26 @@ def _reset_governance_singleton() -> "Generator[None, None, None]":
     Por que autouse y no solo en conftest de cada modulo: el singleton es
     global; hay que limpiarlo en TODOS los tests, no solo los que usan
     Orchestrator explicitamente.
+
+    Se limpia CON el orquestador cacheado de la CLI (`cli._orch`), y no puede
+    ser de otro modo: son dos globales acopladas —el constructor del
+    orquestador inicializa el singleton y sus metodos luego lo piden con
+    get_instance()— y limpiar solo una deja un orquestador vivo apuntando a un
+    singleton borrado. Detectado el 2026-08-10 por el smoke test de la
+    superficie de operador: `atlas health` moria con "GovernanceL0 no
+    inicializado" solo si `atlas status` habia corrido antes en el mismo
+    proceso.
     """
     import atlas.governance.governance_l0 as _g
 
-    _g.GovernanceL0._instance = None
+    def _limpiar() -> None:
+        _g.GovernanceL0._instance = None
+        import sys
+
+        cli = sys.modules.get("atlas.interfaces.cli")
+        if cli is not None:
+            cli._orch = None
+
+    _limpiar()
     yield
-    _g.GovernanceL0._instance = None
+    _limpiar()
