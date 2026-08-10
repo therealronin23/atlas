@@ -53,6 +53,22 @@ _ATOM_NS = "{http://www.w3.org/2005/Atom}"
 _EXCERPT_MAX = 300
 
 
+def _spdx(block: Any) -> str | None:
+    """Identificador SPDX del bloque `license` de la API de GitHub.
+
+    Llega de tres formas: ausente, `null` (repo sin licencia declarada) o un
+    objeto con `spdx_id`. GitHub usa ademas el literal ``NOASSERTION`` cuando
+    detecta un LICENSE que no sabe clasificar; eso no es una licencia usable
+    para decidir absorcion, asi que cuenta como ausente.
+    """
+    if not isinstance(block, dict):
+        return None
+    spdx = block.get("spdx_id")
+    if not spdx or str(spdx).upper() in {"NOASSERTION", "NONE"}:
+        return None
+    return str(spdx)
+
+
 @dataclass
 class PanoramaFinding:
     """Un hallazgo generico del ecosistema, originado por TEMA, no por URL."""
@@ -66,6 +82,19 @@ class PanoramaFinding:
     discovered_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+
+    # Metadatos de repositorio. La API de GitHub los devuelve en la MISMA
+    # respuesta que ya pedimos y hasta hoy se tiraban, asi que la criba de
+    # `atlas.discovery` no tenia con que trabajar (2026-08-10).
+    #
+    # `metadata_known` separa "no los tiene" de "no los se": HN y arXiv no
+    # publican licencia, y tratar su ausencia como "sin licencia" convertiria
+    # un dato que falta en un rechazo inventado.
+    metadata_known: bool = False
+    license: str | None = None
+    archived: bool = False
+    pushed_at: str | None = None
+    stars: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -150,6 +179,12 @@ class PanoramaScout:
                 url=item.get("html_url", ""),
                 excerpt=(item.get("description") or "")[:_EXCERPT_MAX],
                 seed=self._topic_seeds.get(topic, ""),
+                # La respuesta ya trae estos campos: no cuesta una peticion mas.
+                metadata_known=True,
+                license=_spdx(item.get("license")),
+                archived=bool(item.get("archived", False)),
+                pushed_at=item.get("pushed_at"),
+                stars=int(item.get("stargazers_count") or 0),
             )
             for item in items[: self._max_results]
             if isinstance(item, dict)

@@ -166,11 +166,38 @@ def _read_egress_text(resp: Any) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
+def _triage_payload(triage: Any) -> dict[str, Any]:
+    """Cifras de la criba para el ledger y para `atlas reality`.
+
+    Va el desglose entero, no sólo "cuántos pasaron": un filtro del que sólo se
+    audita la salida es indistinguible de un filtro roto que descarta todo.
+    ``corroborated_names`` va acotado — el ledger es un registro, no el informe.
+    """
+    return {
+        "triage_sightings": triage.total_entrada,
+        "triage_eligible": len(triage.eligible),
+        "triage_rejected": len(triage.rejected),
+        "triage_sin_metadatos": len(triage.sin_metadatos),
+        "triage_no_repo": len(triage.no_repo),
+        "triage_corroborated": len(triage.corroborated),
+        "corroborated_names": [repo.name for repo in triage.corroborated[:10]],
+    }
+
+
 def _render_research_report(
-    today: str, seeds: list[str], queries: list[str], findings: list[Any]
+    today: str,
+    seeds: list[str],
+    queries: list[str],
+    findings: list[Any],
+    triage: Any | None = None,
 ) -> str:
     """Informe crudo para docs/inbox/ — flujo sancionado: docs_triage.py lo
-    clasifica después (nunca 'vigente' hasta revisión humana)."""
+    clasifica después (nunca 'vigente' hasta revisión humana).
+
+    La sección de criba va ARRIBA desde 2026-08-10: el informe traía 122
+    hallazgos crudos sin filtro alguno, y quien lo abría tenía que leerlos
+    todos para saber si alguno valía. Los hallazgos completos siguen abajo
+    íntegros — cribar es ordenar la lectura, no tirar evidencia."""
     lines = [
         f"# Investigación autónoma — {today}",
         "",
@@ -179,6 +206,12 @@ def _render_research_report(
         f"Semillas ({len(seeds)}): " + ", ".join(seeds),
         f"Consultas expandidas ({len(queries)}): " + ", ".join(queries),
         "",
+    ]
+    if triage is not None:
+        from atlas.discovery.triage import render_triage_section
+
+        lines.extend(render_triage_section(triage))
+    lines += [
         f"## Hallazgos ({len(findings)})",
         "",
     ]
@@ -1079,9 +1112,20 @@ class MaintenanceFacade:
         )
         findings = findings + curated_findings
 
+        # Criba y corroboración (2026-08-10). Hasta hoy los hallazgos entraban
+        # crudos: 122 en la pasada de esta mañana, sin mirar licencia, archivado
+        # ni abandono, y sin nada que dijera cuál lo había visto más de un canal.
+        # `atlas.discovery` tenía ambas piezas escritas y sin un solo caller.
+        from atlas.discovery.triage import triage_findings
+
+        triage = triage_findings(findings)
+
         report_path = self._project_root() / "docs" / "inbox" / f"research_{today}.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(_render_research_report(today, seeds, queries, findings), encoding="utf-8")
+        report_path.write_text(
+            _render_research_report(today, seeds, queries, findings, triage),
+            encoding="utf-8",
+        )
 
         state["last_run_date"] = today
         state["curated_manifest_sha256"] = curated_manifest_sha256
@@ -1099,6 +1143,7 @@ class MaintenanceFacade:
                 "findings_count": len(findings),
                 "curated_sources": [finding.url for finding in curated_findings],
                 "report_path": str(report_path),
+                **_triage_payload(triage),
             },
         )
         return {
@@ -1108,6 +1153,7 @@ class MaintenanceFacade:
             "findings_count": len(findings),
             "curated_findings_count": len(curated_findings),
             "report_path": str(report_path),
+            **_triage_payload(triage),
         }
 
     def maintenance_provider_smoke_tick(self) -> dict[str, Any]:

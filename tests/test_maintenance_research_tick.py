@@ -168,3 +168,110 @@ def test_research_tick_reruns_once_when_curated_manifest_changes(tmp_path: Path,
     manifest.write_text("sources: []\n# changed\n", encoding="utf-8")
     assert orchestrator.maintenance_research_tick()["status"] == "ran"
     assert orchestrator.maintenance_research_tick()["status"] == "already_ran_today"
+
+
+# ---------------------------------------------------------------------------
+# La criba corre DENTRO del tick, no sólo en su módulo
+#
+# El módulo `atlas.discovery` llevaba desde el 2026-08-06 escrito y probado con
+# cero callers: sus tests pasaban mientras nadie lo invocaba. Estos tests fijan
+# la costura — que el tick lo llama de verdad — que es justo lo que un test de
+# módulo no puede ver.
+# ---------------------------------------------------------------------------
+
+
+def _tick_con_hallazgos(tmp_path: Path, monkeypatch, findings: list[PanoramaFinding]):
+    monkeypatch.setenv("ATLAS_RESEARCH", "1")
+    monkeypatch.setenv("ATLAS_CORE_ROOT", str(tmp_path / "core"))
+    (tmp_path / "core").mkdir()
+    (tmp_path / "atlas").mkdir()
+
+    class Expander:
+        def __init__(self, **_kwargs) -> None: pass
+        def expand_detailed(self, _seeds, *, queries_per_seed):
+            return [TopicExpansion(seed="s", queries=["q"])]
+
+    class Scout:
+        def __init__(self, **_kwargs) -> None: pass
+        def discover(self): return list(findings)
+
+    monkeypatch.setattr("atlas.core.self_maintenance.topic_expander.TopicExpander", Expander)
+    monkeypatch.setattr("atlas.core.self_maintenance.panorama_scout.PanoramaScout", Scout)
+    result = Orchestrator(workspace=tmp_path / "atlas").maintenance_research_tick()
+    return result, Path(result["report_path"]).read_text(encoding="utf-8")
+
+
+def _repo(name: str, *, source: str = "github", **kw) -> PanoramaFinding:
+    base = dict(
+        metadata_known=True, license="MIT", archived=False,
+        pushed_at="2026-08-01T00:00:00Z", stars=50,
+    )
+    if source != "github":  # otros canales no publican metadatos de repo
+        base = {}
+    base.update(kw)
+    return PanoramaFinding(
+        topic="q", source=source, title=name,
+        url=f"https://github.com/{name}", excerpt="d", **base,
+    )
+
+
+def test_el_tick_publica_las_cifras_de_la_criba(tmp_path: Path, monkeypatch) -> None:
+    """Sin esto, el filtro corre y nadie puede saber qué descartó."""
+    result, _ = _tick_con_hallazgos(tmp_path, monkeypatch, [_repo("acme/bueno")])
+
+    assert result["triage_sightings"] == 1
+    assert result["triage_eligible"] == 1
+    assert result["triage_rejected"] == 0
+
+
+def test_el_tick_descarta_un_repo_archivado_y_lo_dice_en_el_informe(
+    tmp_path: Path, monkeypatch
+) -> None:
+    result, report = _tick_con_hallazgos(
+        tmp_path, monkeypatch, [_repo("acme/muerto", archived=True)]
+    )
+
+    assert result["triage_eligible"] == 0 and result["triage_rejected"] == 1
+    assert "acme/muerto" in report and "archivado" in report
+
+
+def test_el_tick_corrobora_entre_canales_independientes(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """El caso que justifica todo: GitHub y un Show HN sobre el mismo repo."""
+    result, report = _tick_con_hallazgos(
+        tmp_path, monkeypatch,
+        [_repo("acme/tool"), _repo("acme/tool", source="hackernews")],
+    )
+
+    assert result["triage_corroborated"] == 1
+    assert result["corroborated_names"] == ["acme/tool"]
+    assert "Corroborados" in report
+
+
+def test_un_paper_no_se_descarta_por_no_tener_licencia(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Regresión: pasar un arXiv por la criba de repos lo rechazaría por
+    `sin_licencia`, que es una afirmación falsa sobre un paper."""
+    paper = PanoramaFinding(
+        topic="q", source="arxiv", title="Un paper",
+        url="http://arxiv.org/abs/2508.01234v1", excerpt="resumen",
+    )
+
+    result, _ = _tick_con_hallazgos(tmp_path, monkeypatch, [paper])
+
+    assert result["triage_rejected"] == 0
+    assert result["triage_no_repo"] == 1
+
+
+def test_la_criba_no_tira_hallazgos_del_informe(tmp_path: Path, monkeypatch) -> None:
+    """Cribar ordena la lectura; NO recorta la evidencia. Los 122 hallazgos
+    crudos siguen enteros debajo de la sección de criba."""
+    findings = [_repo("acme/bueno"), _repo("acme/muerto", archived=True)]
+
+    result, report = _tick_con_hallazgos(tmp_path, monkeypatch, findings)
+
+    assert result["findings_count"] == 2
+    assert "## Hallazgos (2)" in report
+    assert report.count("### [github]") == 2
