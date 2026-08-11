@@ -2828,7 +2828,27 @@ items:
       contenido libre. Si se decide que no es testeable, decir por qué en el
       mapa en vez de dejar el hueco sin cerrar ni justificar.
     priority: 2
-    status: pending
+    status: done
+    done_2026_08_11: >
+      Cerrado, y con un invariante MEJOR que el que pedía la ficha — más una
+      corrección de mi propio mapa.
+
+      El mapa decía "el grafo se construye de git+AST". No es exacto:
+      `ObsidianNote` sale del vault, que son notas escritas por personas. Lo
+      que hace segura esa ingesta no es su ORIGEN sino QUÉ COLUMNAS se queda:
+      `path, title, note_type, community, cohesion, tags` — metadatos, no
+      cuerpo. Igual que `Symbol` guarda `content_hash` y no `content`.
+
+      Así que el test no persigue el origen (frágil) sino el esquema: lee las
+      sentencias DDL reales y exige que cada tabla del grafo tenga EXACTAMENTE
+      las columnas declaradas. Lista cerrada y no denylist, porque una columna
+      llamada `meta` o `extra` podría llevar cuerpo igual. El texto libre vive
+      sólo en el vector store, que es otra BD, y hay un caso que comprueba que
+      ningún módulo del grafo lo conoce.
+
+      11 casos en `tests/test_graph_privacy_boundary.py`, con el detector
+      verificado por mutación (columna `content`, huella que no debe
+      confundirse con contenido, y columna nueva de nombre inocente).
 
   - id: t18-dispose-del-puente-sin-verificar
     title: "El apagado limpio del puente CodeOSS sigue sin ejercitarse"

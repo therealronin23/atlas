@@ -125,14 +125,30 @@ Regla común, en el orden en que se aplica:
 Lo privado se destila **antes** de entrar en nada compartible. `PIISurrogate`
 redacta los resultados de herramienta antes de reinyectarlos al loop y antes de
 persistir el estado agéntico — por eso `TaskPersistence` no guarda PII en
-claro. El grafo estructural se construye de **git + AST**: rutas, símbolos e
-imports, nunca contenido de conversación.
+claro.
 
-**Límite honesto**: no hay hoy un test que demuestre "ningún dato privado llega
-al grafo compartible". Lo que hay es que el grafo se construye de fuentes que
-no contienen datos privados, lo cual es más fuerte por construcción y más
-débil como garantía verificable — si mañana alguien ingiere otra fuente, nada
-lo detecta. Queda como el hueco conocido de este mapa.
+**Corrección de lo que decía este párrafo (2026-08-11, misma tarde).** Aquí
+ponía que "el grafo estructural se construye de git + AST". **No es exacto**:
+`ObsidianNote` sale del vault, que son notas escritas por personas. Al ir a
+cerrar el hueco salió una frontera mejor que la que yo había descrito, porque
+lo que hace segura esa ingesta no es su origen sino **qué columnas se queda**:
+
+| Base de datos | Columnas | Texto libre |
+|---|---|---|
+| Grafo del proyecto — `FileVersion` | `id, path, hash, commit_sha, ingested_at, embedding` | **no** |
+| Grafo del proyecto — `Symbol` | `id, name, kind, source_file, source_location, content_hash, ingested_at` | **no** (`content_hash`, no `content`) |
+| Grafo del proyecto — `ObsidianNote` | `path, title, note_type, community, cohesion, tags, ingested_at` | **no** (metadatos, no cuerpo) |
+| Vector store — **otra BD** | `Pattern.text`, `Failure.description/solution`, `Evidence.text` | **sí, y es su trabajo** |
+
+`Symbol` lo resume: guarda la **huella** del contenido, no el contenido. Se
+detecta el cambio sin conservar nada.
+
+**El hueco está cerrado**, y con un invariante mejor que "de dónde viene":
+[`tests/test_graph_privacy_boundary.py`](../../tests/test_graph_privacy_boundary.py)
+lee los esquemas DDL reales y exige que cada tabla del grafo tenga
+**exactamente** las columnas declaradas — lista cerrada, no denylist, porque
+una columna llamada `meta` o `extra` podría llevar cuerpo igual y una denylist
+no la vería. Añadir `content STRING` deja de ser una línea que nadie mira.
 
 ## Lo que este mapa NO afirma
 
