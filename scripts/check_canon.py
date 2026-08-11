@@ -654,8 +654,29 @@ def _validate_operator_question_links(
     questions: list[dict[str, Any]],
     work_orders: dict[str, dict[str, Any]],
     findings: list[Finding],
+    *,
+    registry_loaded: bool = True,
 ) -> None:
     path = "docs/canon/open_questions.jsonl"
+    # `registry_loaded` explícito y no `if not work_orders`: un registro vacío
+    # de verdad y un registro que no se pudo leer son cosas distintas, y
+    # confundirlas es el mismo error que este bloque existe para arreglar.
+    if not registry_loaded:
+        # Sin registro cargado no se puede resolver NINGUNA referencia, y
+        # decir "work order desconocida" once veces describe el sintoma y
+        # entierra la causa. Medido el 2026-08-11: una comilla sin cerrar en
+        # `implementation_registry.yaml` producia 12 findings de este tipo —
+        # todos falsos— junto a un unico `INVALID_YAML` que se perdia entre
+        # ellos. Un error disfrazado de doce estados normales.
+        findings.append(
+            Finding(
+                "WORK_ORDER_REGISTRY_UNAVAILABLE",
+                path,
+                f"{len(questions)} operator questions could not be checked: the "
+                "implementation registry did not load (see INVALID_YAML above)",
+            )
+        )
+        return
     for row in questions:
         record_id = str(row.get("id", "<unknown>"))
         blocking_work_order = row.get("blocking_work_order")
@@ -1283,7 +1304,10 @@ def validate_repo(root: Path) -> tuple[list[Finding], int]:
 
     _validate_critical_decisions(registries.get("decision_registry.jsonl", []), findings)
     _validate_operator_question_links(
-        registries.get("open_questions.jsonl", []), work_orders, findings
+        registries.get("open_questions.jsonl", []),
+        work_orders,
+        findings,
+        registry_loaded=implementation is not None,
     )
     _validate_adr_coverage(
         root, registries.get("decision_registry.jsonl", []), findings

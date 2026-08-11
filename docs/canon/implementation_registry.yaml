@@ -678,7 +678,8 @@ work_orders:
       - exact scope approved in the Cut 2 design
       - no duplicate authority
       - product acceptance suite passes
-    operator_decision_required: true
+    operator_decision_required: false
+    operator_decision_recorded: "2026-08-11: scope approved (CodeOSS as host, Void demoted to PATTERN_DONOR). It was the only acceptance criterion needing the operator; the flag flips to false because the decision exists, not because it stopped mattering."
     status: READY
     status_note: "Scope approved by the operator 2026-08-11, which was the only acceptance criterion still open. Decision: CodeOSS is the host; Void is NOT rebased and moves from PORT_SOURCE to PATTERN_DONOR in the lineage registry, kept intact as a UI/UX and backend mentor. Remaining scope collapses to porting the 354-line self-contained bridge plus the 8-line app.ts hook, choosing the exact CodeOSS pin (local HOST_BASELINE is 1.129.1; upstream was 1.132.0 on 2026-07-31), and the packaging/privacy/Open VSX work. The ~33-version Void rebase is no longer part of it. NOT yet compiled -- that is the first task, not a settled fact."
 
@@ -764,8 +765,8 @@ work_orders:
       - no duplicate Atlas authority
       - dedicated-device acceptance suite
     operator_decision_required: true
-    status: PARKED
-    status_note: "Parked by the operator 2026-08-11, with the feasibility already measured and the pairing question answered. Nothing here is blocked on missing engineering: the tailnet identity work (see evidence above) removed the only genuinely new piece, and what remains is generating the android/ target plus the decision to bind off loopback. Resume from that state; do not re-measure."
+    status: REQUIRES_OPERATOR
+    status_note: "PARKED by the operator 2026-08-11 (the status vocabulary has no PARKED; REQUIRES_OPERATOR is what it actually is -- resuming is the operator's call), with the feasibility already measured and the pairing question answered. Nothing here is blocked on missing engineering: the tailnet identity work (see evidence above) removed the only genuinely new piece, and what remains is generating the android/ target plus the decision to bind off loopback. Resume from that state; do not re-measure."
 
   - id: ADC-WO-102
     program: P03
@@ -879,7 +880,7 @@ work_orders:
       - "defect found and fixed: `graph-rebuild-single-writer` was code since 2026-08-08 -- in maintenance_facade, which is ONE caller. The entrypoint `python -m atlas.memory.project_graph` writes the same Kuzu DB and took no lock, so running it with the daemon alive reproduced the original incident exactly. The lock protected a caller, not the resource. Fixed, and a guard now requires every module calling a graph writer to name ProjectGraphWriterLock."
       - "the graph-lock guard is verified BY MUTATION against the real file: reverting the entrypoint fix makes it fail with ('memory/project_graph.py', ['load_bitemporal_into_kuzu', 'load_vault_into_kuzu'])."
       - "measured: every Kuzu open goes through open_kuzu_database (bounded memory/size); no raw kuzu.Database() anywhere in src."
-    status_note: "The map and its guards are built. What this does NOT claim: no automatic governed promoter exists or is authorized (EDR-ADR-057 accepted the direction, not an activated promoter, and the maintenance/promoter boundary is still unbuilt); and there is no verifiable test that private data cannot reach the shareable graph -- what holds today is that the graph is built from git+AST, which is stronger by construction and weaker as a checkable guarantee. Both gaps are stated in the map.
+    status_note: "The map and its guards are built. What this does NOT claim: no automatic governed promoter exists or is authorized (EDR-ADR-057 accepted the direction, not an activated promoter, and the maintenance/promoter boundary is still unbuilt); and there is no verifiable test that private data cannot reach the shareable graph -- what holds today is that the graph is built from git+AST, which is stronger by construction and weaker as a checkable guarantee. Both gaps are stated in the map."
 
   - id: ADC-WO-104
     program: P11
