@@ -86,19 +86,99 @@ def daemon_state(
             "reason": "systemctl no disponible: estado del daemon DESCONOCIDO",
         }
     state = stdout.strip()
-    if state == "active":
+    if state != "active":
         return {
             "unit": unit,
-            "active": True,
+            "active": False,
+            "code_stale": None,
             "evidence": EVIDENCE_LIVE,
-            "reason": f"{unit} activo",
+            "reason": f"{unit} NO activo (estado={state or 'desconocido'})",
         }
+    stale, motivo = _code_is_stale(unit, runner=runner)
     return {
         "unit": unit,
-        "active": False,
+        "active": True,
+        "code_stale": stale,
         "evidence": EVIDENCE_LIVE,
-        "reason": f"{unit} NO activo (estado={state or 'desconocido'})",
+        "reason": f"{unit} activo" + (f"; {motivo}" if motivo else ""),
     }
+
+
+def _newest_source_mtime(src_root: Path | None = None) -> float | None:
+    """mtime del `.py` más reciente bajo ``src/atlas``. ``None`` si no se puede
+    mirar — el daemon podría estar corriendo desde otro sitio."""
+    root = src_root or (Path(__file__).resolve().parents[2] / "atlas")
+    if not root.is_dir():
+        return None
+    reciente: float | None = None
+    for path in root.rglob("*.py"):
+        if "__pycache__" in path.parts:
+            continue
+        try:
+            m = path.stat().st_mtime
+        except OSError:
+            continue
+        if reciente is None or m > reciente:
+            reciente = m
+    return reciente
+
+
+def _code_is_stale(
+    unit: str, *, runner: _Runner | None = None, src_root: Path | None = None
+) -> tuple[bool | None, str]:
+    """¿El proceso vivo cargó código MÁS VIEJO que el que hay en disco?
+
+    `daemon_state` cerró el agujero de las 23 h respondiendo "¿está vivo?".
+    Queda el de al lado, que este repositorio ha pisado varias veces con otro
+    nombre —"committed is not running"—: un daemon **vivo** que importó el
+    código hace horas no ejecuta lo que se commiteó después. El 2026-08-11 el
+    daemon llevaba 10 h 50 min en pie y los arreglos de esa tarde (incluido el
+    del tick de investigación) no estaban en él; el tick de la madrugada
+    siguiente habría corrido la versión vieja sin que nada lo dijese.
+
+    Compara el arranque del proceso principal con el `.py` más reciente. Como
+    todas las sondas de este módulo es *fail-honest*: lo que no se puede medir
+    devuelve ``None``, nunca ``False``.
+    """
+    stdout = _systemctl(
+        "show", "-p", "ExecMainStartTimestampMonotonic", "--value", unit, runner=runner
+    )
+    arranque = _process_start_epoch(stdout)
+    if arranque is None:
+        return None, "antigüedad del código en ejecución: DESCONOCIDA"
+    fuente = _newest_source_mtime(src_root)
+    if fuente is None:
+        return None, "antigüedad del código en ejecución: DESCONOCIDA"
+    if fuente <= arranque:
+        return False, "y con el código de disco"
+    minutos = int((fuente - arranque) // 60)
+    return True, (
+        f"pero con código VIEJO: hay fuentes {minutos} min más nuevas que el "
+        f"proceso. Reinícialo (`systemctl --user restart {unit}`) o lo "
+        "commiteado no se está ejecutando"
+    )
+
+
+def _process_start_epoch(valor: str | None) -> float | None:
+    """Convierte el arranque monotónico que da systemd a epoch.
+
+    systemd lo da en microsegundos desde el arranque de la máquina; para
+    compararlo con un mtime hay que sumarle el instante en que arrancó la
+    máquina, que es ``time.time() - uptime``.
+    """
+    if not valor or not valor.strip().isdigit():
+        return None
+    monotonico_s = int(valor.strip()) / 1_000_000
+    if monotonico_s <= 0:
+        return None
+    try:
+        with open("/proc/uptime", encoding="utf-8") as fh:
+            uptime = float(fh.read().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+    import time  # noqa: PLC0415 — sólo en esta rama
+
+    return time.time() - uptime + monotonico_s
 
 
 #: Sondear un Hermes remoto exigiría salir a la red. `atlas reality` se invoca
