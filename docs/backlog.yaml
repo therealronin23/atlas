@@ -2459,7 +2459,31 @@ items:
     status: done
 
   - id: t10-fitness-medicion-real
-    title: "El banco de fitness sigue SIN un número: bloqueado por la cuota diaria, no por el instrumento"
+    title: "El banco pide ~171 peticiones y el tier gratuito da decenas al día: nunca ha sido ejecutable"
+    blocker_medido_2026_08_11: >
+      CAUSA ESTRUCTURAL, no transitoria. Medido hoy con dos ejecuciones completas
+      del banco y el truncado del diagnóstico subido a 200 caracteres para poder
+      leer el motivo: los proveedores no dicen "tokens agotados" sino
+      **`requests per day`** (Groq) y **`free-models-per-day`** (OpenRouter).
+
+      Es un eje distinto al de ayer. El banco pide 19 defectos x 3 tiradas x 2
+      solvers = 114 inferencias mínimo, y como ToolCoder hace dos llamadas por
+      defecto (plan + bucle, con varias vueltas), la cota realista son ~171
+      peticiones. Los tiers gratuitos conceden decenas al día. **El banco nunca
+      ha sido ejecutable con esta infraestructura**, y cada 0.0% anterior estaba
+      leyendo ese agotamiento como incapacidad de Atlas.
+
+      Corolario sobre la sonda `cuota_agotada()`: es estructuralmente incapaz de
+      detectarlo. Gasta UNA petición y responde "¿puedo llamar?" cuando la
+      pregunta era "¿puedo llamar 171 veces". Dijo "disponible" y no mentía.
+
+      Salidas, por orden de honestidad: (a) dimensionar el banco al presupuesto
+      —5 defectos x 2 tiradas son ~30 peticiones y sí caben—, declarando el
+      tamaño de muestra junto al resultado; (b) una key de pago para el corpus
+      completo; (c) modelo local, descartado: 2,8 tok/s medidos en esta máquina.
+
+      NO volver a lanzar el corpus completo contra tiers gratuitos esperando un
+      número. No lo va a dar.
     why: >
       El instrumento está sano y verificado el 2026-08-10: control con el arreglo
       real 5/5 sobre el corpus (el banco ES superable), causa registrada por
