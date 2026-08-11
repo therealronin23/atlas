@@ -282,16 +282,33 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     os.environ["ATLAS_GRAPH_EMBEDDER"] = args.embedder
-    print(
-        json.dumps(
-            build_project_graph(
-                args.repo_root,
-                args.db,
-                commits=args.commits,
-                vault_root=args.vault,
-                embedder=resolve_graph_embedder(),
-            ),
-            indent=2,
-            default=str,
+
+    # ADC-WO-103: este entrypoint escribía la BD del grafo SIN tomar el lock.
+    # El daemon sí lo tomaba (`maintenance_facade`), así que la manía
+    # `graph-rebuild-single-writer` estaba protegida para UN llamante y no
+    # para el recurso — que es justo la forma que tenía el incidente del
+    # 2026-08-08 (dos escrituras solapadas dejaron el catálogo a medias).
+    # Correr esto a mano con el daemon vivo lo reproducía tal cual.
+    from atlas.security.writer_lock import ProjectGraphWriterLock, WriterLockHeld
+
+    try:
+        lock = ProjectGraphWriterLock(args.db)
+        lock.acquire()
+    except WriterLockHeld as exc:
+        raise SystemExit(f"grafo ocupado: {exc}") from None
+    try:
+        print(
+            json.dumps(
+                build_project_graph(
+                    args.repo_root,
+                    args.db,
+                    commits=args.commits,
+                    vault_root=args.vault,
+                    embedder=resolve_graph_embedder(),
+                ),
+                indent=2,
+                default=str,
+            )
         )
-    )
+    finally:
+        lock.release()
