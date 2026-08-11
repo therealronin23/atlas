@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-08-05T21:00:39.065124+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-08-11T21:29:24.457259+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # ATLAS CORE — Operating Context For Agents
 
@@ -119,6 +119,22 @@ Atlas ecosystem taxonomy lives in `docs/design/atlas_ecosystem_map.md`.
 When the user states a recurring preference or workflow improvement, add/update
 a `feedback-*.md` memory, add a one-liner in `MEMORY.md`, and add the mania name
 above if it should become a standing rule.
+
+**No todas son mecanizables, y conviene no fingir que lo están.** Auditoría
+2026-08-10: de las manías declaradas, sólo un puñado tenía algo en `src/` o
+`tests/` que las hiciera cumplir. Las que sí se pueden comprobar viven ahora en
+`tests/test_manias_mecanizadas.py` (`no-gui-in-tests`,
+`local-agent-config-is-secret-by-default`, `filesystem-limits-are-runtime-facts`,
+`no-cli-against-live-workspace`) más `graph-rebuild-single-writer`
+(`ProjectGraphWriterLock`) y `cost-ledger-is-not-billing` (sección `llm_spend`
+de `atlas reality`).
+
+El resto son de CONDUCTA —`honesty-over-sycophancy`, `plan-then-execute`,
+`decide-with-facts`, `research-before-deciding`, `internal-prior-art-first`,
+`deep-onboarding-new-sessions`…— y dependen de quien lea esto. La evidencia de
+que eso no basta: en una sola sesión se rompieron dos reglas solo-prosa
+habiendo leído el documento las dos veces. Si una manía puede convertirse en
+test, conviértela; si no, sé consciente de que sólo te respalda tu atención.
 
 ## Naming Rules
 
