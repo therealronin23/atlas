@@ -2912,7 +2912,25 @@ items:
       scripts corren, o los scripts dicen en su nombre/salida que exigen
       instalarlo antes. Comprobado ejecutándolos, no leyéndolos.
     priority: 3
-    status: pending
+    status: done
+    done_2026_08_11: >
+      Cerrado SIN tocar nada: lo arregla upstream, y ya lo teníamos aplicado.
+
+      Entre 1.129.1 y 1.132.0, upstream cambió `tsgo` por `tsc` en
+      `monaco-compile-check` y `vscode-dts-compile-check`. Y `tsc` SÍ existe
+      en `node_modules/.bin` (viene de `@typescript/native`, que es
+      devDependency de verdad). Así que en la rama `spike/pin-1.132.0` los dos
+      scripts son ejecutables sin añadir una sola dependencia.
+
+      Comprobado ejecutándolo y no leyéndolo: `npm run monaco-compile-check`
+      rc=0 sobre el pin nuevo. En la rama vieja el mismo script sigue llamando
+      a `tsgo`, que no está ni en el PATH ni en node_modules/.bin.
+
+      La lección para la decisión del pin: parte de lo que parecía deuda
+      nuestra era deuda de upstream que ya está pagada tres versiones más
+      adelante. Añadir `@typescript/native-preview` a mano —que era el plan—
+      habría creado una divergencia con upstream para arreglar algo que
+      upstream ya había arreglado.
 
   - id: t20-daemon-con-codigo-viejo-nadie-actua
     title: "La sonda ve el daemon desactualizado, pero nadie hace nada con eso"
