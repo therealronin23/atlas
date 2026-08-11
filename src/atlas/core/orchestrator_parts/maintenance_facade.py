@@ -51,6 +51,56 @@ def graph_needs_rebuild(
 _log = logging.getLogger(__name__)
 
 
+class ResearchReportWriter:
+    """Escribe el informe diario de investigación dejando rastro de lo que pisa.
+
+    t15 (2026-08-11). El tick escribía el informe y registraba en Merkle
+    DESPUÉS. El 2026-08-10 apareció un `research_2026-08-10.md` degradado
+    —4 hallazgos frente a los 122 de la pasada registrada— **sin ninguna
+    entrada en el ledger**: una escritura en el repo sin rastro. No se pudo
+    establecer qué proceso lo escribió, y por eso lo que se arregla no es la
+    causa (desconocida) sino la ceguera: pisar un informe deja rastro ANTES
+    de pisarlo, con lo que había antes y desde dónde se escribe.
+
+    `project_root` sale de `ATLAS_CORE_ROOT` **o del cwd**, mientras que el
+    ledger cuelga de `ATLAS_HOME`. Las dos pueden divergir, así que las dos
+    van en el rastro: sin ellas, "¿desde dónde corrió esto?" no tiene
+    respuesta.
+    """
+
+    def __init__(self, project_root: Path, merkle: Any, *, home: Path) -> None:
+        self._root = project_root
+        self._merkle = merkle
+        self._home = home
+
+    def path_for(self, today: str) -> Path:
+        return self._root / "docs" / "inbox" / f"research_{today}.md"
+
+    def write(self, today: str, content: str) -> Path:
+        destino = self.path_for(today)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        if destino.exists():
+            self._merkle.log(
+                action="self_maintenance.research_tick.overwrite",
+                agent="maintenance_facade",
+                result="success",
+                risk_level="high",
+                payload={
+                    "report_path": str(destino),
+                    "previous_bytes": destino.stat().st_size,
+                    "new_bytes": len(content.encode("utf-8")),
+                    "project_root": str(self._root),
+                    "atlas_home": str(self._home),
+                },
+            )
+        self._escribir(destino, content)
+        return destino
+
+    @staticmethod
+    def _escribir(destino: Path, content: str) -> None:
+        destino.write_text(content, encoding="utf-8")
+
+
 def _isolated_cycle(name: str, tick: Callable[[], object]) -> None:
     """Ejecuta un ciclo de mantenimiento aislado: un fallo no tumba el
     scheduler, pero JAMÁS desaparece en silencio — se loguea con traceback.
@@ -1048,6 +1098,36 @@ class MaintenanceFacade:
         ):
             return {"status": "already_ran_today"}
 
+        # t15: el guardia de arriba se LEE aquí y el estado se ESCRIBE al
+        # final, con el ciclo entero (expansión por LLM + fetches) en medio.
+        # Una segunda pasada que entre durante la primera lo cruza sin
+        # enterarse y acaba pisando su informe. Mismo agujero que tuvo el
+        # grafo hasta el 2026-08-08 y mismo remedio. Solaparse no es un
+        # error: el segundo cede el turno.
+        from atlas.security.writer_lock import ResearchWriterLock, WriterLockHeld
+
+        research_lock = ResearchWriterLock(self._project_root())
+        try:
+            research_lock.acquire()
+        except WriterLockHeld as exc:
+            return {"status": "locked", "reason": str(exc)}
+        try:
+            return self._research_tick_locked(
+                today, state, state_path, curated_path, curated_manifest_sha256,
+            )
+        finally:
+            research_lock.release()
+
+    def _research_tick_locked(
+        self,
+        today: str,
+        state: dict[str, Any],
+        state_path: Path,
+        curated_path: Path,
+        curated_manifest_sha256: str,
+    ) -> dict[str, Any]:
+        import json
+
         from atlas.core.inference_hub import InferenceHub
         from atlas.core.lesson_store import LessonStore
         from atlas.core.self_maintenance.panorama_scout import PanoramaScout
@@ -1120,12 +1200,14 @@ class MaintenanceFacade:
 
         triage = triage_findings(findings)
 
-        report_path = self._project_root() / "docs" / "inbox" / f"research_{today}.md"
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(
-            _render_research_report(today, seeds, queries, findings, triage),
-            encoding="utf-8",
-        )
+        # t15: pisar un informe existente deja rastro ANTES de pisarlo. El
+        # registro de abajo va DESPUÉS de escribir, así que cualquier fallo en
+        # medio se llevaba por delante el informe y el rastro a la vez.
+        report_path = ResearchReportWriter(
+            self._project_root(),
+            orch._merkle,
+            home=Path(orch.status().workspace),
+        ).write(today, _render_research_report(today, seeds, queries, findings, triage))
 
         state["last_run_date"] = today
         state["curated_manifest_sha256"] = curated_manifest_sha256

@@ -31,6 +31,7 @@ __all__ = [
     "ExclusiveWriterLock",
     "MerkleWriterLock",
     "ProjectGraphWriterLock",
+    "ResearchWriterLock",
     "WriterLockHeld",
 ]
 
@@ -148,3 +149,31 @@ class ProjectGraphWriterLock(ExclusiveWriterLock):
     def __init__(self, db_path: Path) -> None:
         resolved = Path(db_path).expanduser()
         super().__init__(resolved.parent / f".{resolved.name}.writer.lock")
+
+
+class ResearchWriterLock(ExclusiveWriterLock):
+    """Escritor único del informe diario de investigación (t15).
+
+    El guardia ``already_ran_today`` del tick se LEE al principio y el estado
+    se ESCRIBE al final, con todo el ciclo (expansión por LLM + fetches) en
+    medio. Sin lock, una segunda pasada que entre durante la primera cruza el
+    guardia sin enterarse y acaba pisando el informe de la primera — que es
+    lo que se observó el 2026-08-10, con la agravante de que la segunda no
+    dejó rastro en el ledger.
+
+    Mismo remedio que ``ProjectGraphWriterLock`` y por la misma razón: un
+    invariante que sólo vive en el orden de las líneas se rompe en cuanto hay
+    concurrencia. Solaparse **no es un error**: el segundo cede el turno y el
+    siguiente ciclo lo recoge.
+
+    El lock cuelga del root del proyecto, no del workspace: dos repos son dos
+    escritores legítimos.
+    """
+
+    _hint = "Espera a que termine esa pasada; el informe admite un solo escritor."
+
+    def __init__(self, project_root: Path) -> None:
+        super().__init__(
+            Path(project_root).expanduser().resolve()
+            / "workspace" / "research" / ".writer.lock"
+        )

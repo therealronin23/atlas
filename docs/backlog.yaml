@@ -2649,7 +2649,20 @@ items:
       para eso está `coste_estimado()`. Si se retira, que ningún camino quede
       sin la comprobación de presupuesto.
     priority: 2
-    status: pending
+    status: done
+    done_2026_08_11: >
+      Cerrado con evidencia NUEVA, de correr el banco y no de razonar sobre él:
+      la tirada `--limit 4 --repeats 2 --presupuesto 40` pasó las dos puertas y
+      murió igual con `requests per day` y `free-models-per-day`
+      (docs/audits/reports/fitness_2026-08-11.md). Segunda vez del mismo
+      malentendido.
+
+      Hecho: (1) `cuota_agotada()` -> `cadena_no_responde()`, con el límite
+      escrito en el docstring y probado por test; (2) el presupuesto pasa a ser
+      DIARIO con libro de gasto (`workspace/fitness/gasto.json`), apuntado
+      ANTES de gastar porque una tirada que muere a medias ya consumió lo suyo.
+      Con el libro puesto, la tirada de hoy habría abortado sin gastar nada.
+      Tests en `tests/test_fitness_quota_ledger.py`.
 
   - id: t14-campana-redteam-remedir
     title: "Los venvs ya están, pero las cifras del Apéndice B siguen sin remedir"
@@ -2695,4 +2708,30 @@ items:
       daemon, dicho y documentado. Y que una pasada que sobrescribe un informe
       deje rastro en el ledger pase lo que pase.
     priority: 2
-    status: pending
+    status: done
+    done_2026_08_11: >
+      Cerrado con una parte SIN resolver, y se dice cuál.
+
+      MEDIDO: sólo hay un escritor de `docs/inbox/research_<fecha>.md`
+      (`maintenance_research_tick`); `curated_sources.yaml` no cambia desde el
+      2026-07-25, así que la mitad `sha` del guardia NO pudo diferir entre las
+      dos pasadas; el ledger tiene exactamente una entrada por día (09/10/11 de
+      agosto), las tres con 122 hallazgos, y la segunda del 10 no está; en el
+      informe degradado las "consultas expandidas" son IDÉNTICAS a las semillas
+      y las semillas son las tres de reserva por código — la rama que sólo se
+      toma con el LessonStore VACÍO; y `_project_root()` cae a `Path.cwd()`
+      mientras el ledger cuelga de `ATLAS_HOME`, o sea que las dos rutas pueden
+      divergir.
+
+      NO ESTABLECIDO: qué proceso concreto escribió aquel fichero. No se
+      inventa una causa.
+
+      CERRADO lo que sí se puede cerrar, que es la ceguera: (1) pisar un
+      informe existente registra `research_tick.overwrite` ANTES de pisarlo,
+      con `previous_bytes`, `new_bytes`, `project_root` y `atlas_home` — sin
+      esas dos rutas la pregunta "¿desde dónde corrió esto?" no tenía
+      respuesta; (2) el guardia `already_ran_today` se leía arriba y el estado
+      se escribía abajo, con el ciclo entero en medio y sin lock: ahora hay
+      `ResearchWriterLock` y una segunda pasada cede el turno (`status:
+      locked`), mismo criterio que el tick del grafo. Tests en
+      `tests/test_research_tick_traceability.py`.

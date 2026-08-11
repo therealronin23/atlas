@@ -301,11 +301,18 @@ def _fitness_run():
     return mod
 
 
-def test_la_sonda_detecta_la_cuota_agotada(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_la_sonda_detecta_que_la_cadena_no_atiende(monkeypatch: pytest.MonkeyPatch) -> None:
     """El 2026-08-10 el banco corrió 84 minutos para producir quince
     `hard timeout tras 300.0s` que eran la cuota diaria agotada por las tiradas
     de esa misma mañana. Un banco que consume el recurso que mide tiene que
-    comprobarlo ANTES de empezar."""
+    comprobarlo ANTES de empezar.
+
+    OJO CON LO QUE ESTO PRUEBA (t13, 2026-08-11): que la sonda ve una cadena
+    que NO ATIENDE. No prueba —ni puede— que quede cuota para 40 peticiones:
+    gasta una y responde por una. El 2026-08-11 calló y la tirada murió con
+    `requests per day` de todas formas. Contra un límite por número de
+    peticiones están `coste_estimado()` y el libro de gasto diario
+    (`tests/test_fitness_quota_ledger.py`)."""
     mod = _fitness_run()
 
     class _Resp:
@@ -320,7 +327,7 @@ def test_la_sonda_detecta_la_cuota_agotada(monkeypatch: pytest.MonkeyPatch) -> N
         "atlas.core.inference_hub.InferenceHub.infer", lambda self, req: _Resp()
     )
 
-    motivo = mod.cuota_agotada()
+    motivo = mod.cadena_no_responde()
 
     assert "rate-limitados" in motivo
     assert "groq_qwen3" in motivo
@@ -336,7 +343,7 @@ def test_la_sonda_calla_cuando_se_puede_medir(monkeypatch: pytest.MonkeyPatch) -
         "atlas.core.inference_hub.InferenceHub.infer", lambda self, req: _Ok()
     )
 
-    assert mod.cuota_agotada() == ""
+    assert mod.cadena_no_responde() == ""
 
 
 def test_una_sonda_rota_no_cancela_el_pase(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -349,7 +356,7 @@ def test_una_sonda_rota_no_cancela_el_pase(monkeypatch: pytest.MonkeyPatch) -> N
 
     monkeypatch.setattr("atlas.core.inference_hub.InferenceHub.infer", _revienta)
 
-    assert mod.cuota_agotada() == ""
+    assert mod.cadena_no_responde() == ""
 
 
 def test_la_sonda_pesa_lo_que_pesa_el_trabajo(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -368,6 +375,6 @@ def test_la_sonda_pesa_lo_que_pesa_el_trabajo(monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.setattr("atlas.core.inference_hub.InferenceHub.infer", _capta)
 
-    mod.cuota_agotada()
+    mod.cadena_no_responde()
 
     assert visto and visto[0] >= 20000, f"sonda demasiado pequeña: {visto}"

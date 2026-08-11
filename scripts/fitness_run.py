@@ -69,7 +69,7 @@ PRESUPUESTO_POR_DEFECTO = 40
 def coste_estimado(defectos: int, repeats: int) -> int:
     """Peticiones al proveedor que va a costar esta configuración.
 
-    Existe porque SONDEAR NO SIRVE. `cuota_agotada()` gasta una petición y
+    Existe porque SONDEAR NO SIRVE. `cadena_no_responde()` gasta una petición y
     responde "¿puedo llamar?" cuando la pregunta es "¿puedo llamar 171 veces?".
     El 2026-08-11 dijo "disponible" minutos antes de que la cadena reventara
     con `requests per day`, y no mentía: medía otra cosa.
@@ -78,6 +78,52 @@ def coste_estimado(defectos: int, repeats: int) -> int:
     antes de gastarlas.
     """
     return defectos * repeats * LLAMADAS_POR_DEFECTO
+
+
+def _libro_de_gasto(root: Path) -> Path:
+    return root / "workspace" / "fitness" / "gasto.json"
+
+
+def gasto_de_hoy(root: Path, *, hoy: str | None = None) -> int:
+    """Peticiones que este banco ya gastó HOY, o 0 si el libro es de otro día.
+
+    El presupuesto sabía lo que iba a costar la tirada y no lo que ya se había
+    gastado, así que el 2026-08-11 dos tiradas de 40 pasaron la puerta por
+    separado contra una cuota diaria que no daba para las dos. Contar el coste
+    de una tirada no sirve si la cuota es diaria y el libro no existe.
+    """
+    import json
+    from datetime import datetime, timezone
+
+    hoy = hoy or datetime.now(timezone.utc).date().isoformat()
+    libro = _libro_de_gasto(root)
+    try:
+        datos = json.loads(libro.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+    if not isinstance(datos, dict) or datos.get("fecha") != hoy:
+        return 0
+    try:
+        return max(0, int(datos.get("peticiones", 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
+def registrar_gasto(root: Path, peticiones: int, *, hoy: str | None = None) -> int:
+    """Acumula el gasto del día y devuelve el total. Se llama ANTES de gastar:
+    una tirada que muere a medias ya consumió lo que consumió."""
+    import json
+    from datetime import datetime, timezone
+
+    hoy = hoy or datetime.now(timezone.utc).date().isoformat()
+    total = gasto_de_hoy(root, hoy=hoy) + max(0, peticiones)
+    libro = _libro_de_gasto(root)
+    libro.parent.mkdir(parents=True, exist_ok=True)
+    libro.write_text(
+        json.dumps({"fecha": hoy, "peticiones": total}, indent=2),
+        encoding="utf-8",
+    )
+    return total
 
 
 def dimensionar_al_presupuesto(defectos: int, presupuesto: int) -> tuple[int, int]:
@@ -96,8 +142,20 @@ def dimensionar_al_presupuesto(defectos: int, presupuesto: int) -> tuple[int, in
     return 0, 0
 
 
-def cuota_agotada() -> str:
-    """Motivo por el que hoy no se puede medir, o cadena vacía si se puede.
+def cadena_no_responde() -> str:
+    """Motivo por el que la cadena no atiende AHORA, o cadena vacía si atiende.
+
+    ANTES SE LLAMABA `cuota_agotada()`, y el nombre prometía lo que no puede
+    dar. Es **estructuralmente incapaz** de detectar un límite por número de
+    peticiones: gasta UNA y responde "¿puedo llamar?" cuando la pregunta es
+    "¿puedo llamar 40 veces?". El 2026-08-11 pasó dos veces — dijo
+    "disponible" y la tirada murió con `requests per day` y
+    `free-models-per-day`. No mentía: medía otra cosa.
+
+    Para límites por número de peticiones está `coste_estimado()` + el
+    presupuesto DIARIO con su libro de gasto (`gasto_de_hoy`). Esta función
+    cubre sólo el caso "la cadena no responde en absoluto", que es real y
+    mucho más estrecho de lo que su nombre anterior sugería.
 
     Una petición mínima antes de gastar horas. El 2026-08-10 el banco corrió
     84 minutos para producir quince `hard timeout tras 300.0s` que en realidad
@@ -212,10 +270,19 @@ def main() -> int:
         )
         pedidos = args.limit or en_corpus
         coste = coste_estimado(pedidos, args.repeats)
-        if coste > args.presupuesto:
+        # El presupuesto es DIARIO, no por tirada. Sin descontar lo ya gastado,
+        # dos tiradas de 40 pasan la puerta por separado contra una cuota que
+        # no da para las dos — que es exactamente lo que pasó el 2026-08-11.
+        gastado = gasto_de_hoy(root)
+        disponible = max(0, args.presupuesto - gastado)
+        if gastado:
+            print(f"gasto de hoy: {gastado} peticiones ya consumidas por este "
+                  f"banco; quedan {disponible} de {args.presupuesto}.", flush=True)
+        if coste > disponible:
             cabe_muestra, cabe_repeats = dimensionar_al_presupuesto(
-                en_corpus, args.presupuesto
+                en_corpus, disponible
             )
+            args.presupuesto = disponible
             print(
                 f"presupuesto: {pedidos} defectos x {args.repeats} tiradas "
                 f"= ~{coste} peticiones, y el techo son {args.presupuesto}.",
@@ -236,9 +303,18 @@ def main() -> int:
             if not cabe_muestra:
                 print("  ABORTA: ni con --auto-dimensionar cabe una medición.")
                 return 2
-            args.limit, args.repeats = cabe_muestra, cabe_repeats
+            args.limit, args.repeats = cabe_muestra, cabe_repeats  # noqa: F841 — se reasigna abajo
             print(f"  auto-dimensionado a --limit {args.limit} "
                   f"--repeats {args.repeats}.", flush=True)
+
+    # Se apunta ANTES de gastar: una tirada que muere a medias —como la del
+    # 2026-08-11, que se comió la cuota y publicó nada— ya consumió lo que
+    # consumió, y el libro tiene que reflejarlo para la siguiente.
+    if args.presupuesto:
+        en_corpus = len(
+            [x for x in corpus.read_text(encoding="utf-8").splitlines() if x.strip()]
+        )
+        registrar_gasto(root, coste_estimado(args.limit or en_corpus, args.repeats))
 
     if args.limit:
         lineas = [x for x in corpus.read_text(encoding="utf-8").splitlines() if x.strip()]
@@ -272,7 +348,7 @@ def main() -> int:
               f"contra {techo.solved}, no contra {techo.total}.")
 
     if not args.sin_sonda:
-        motivo = cuota_agotada()
+        motivo = cadena_no_responde()
         if motivo:
             print()
             print("ABORTA: los proveedores no pueden atender el banco ahora mismo.")
