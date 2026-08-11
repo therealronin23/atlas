@@ -68,6 +68,15 @@ HOST = "127.0.0.1"
 PORT = 7341
 AUTH_TOKEN_ENV = "ATLAS_OS_BRIDGE_TOKEN"
 _MIN_AUTH_TOKEN_BYTES = 32
+
+#: Activa la identidad de tailnet como alternativa al token (ADC-WO-111).
+#: Apagado por defecto: encenderlo es decisión del operador.
+TAILNET_IDENTITY_ENV = "ATLAS_OS_BRIDGE_TAILNET_IDENTITY"
+
+#: Dirección REAL a la que se ató el socket, fijada en `serve()`. La cabecera
+#: `Host` no sirve para esto: la controla quien llama, y la validez de la
+#: identidad de tailnet depende de por qué interfaz pueden entrar los paquetes.
+_BIND_HOST: str = HOST
 # T1 (GOVERNANCE_KERNEL.md, "Camino a real" #1): activa el modo de
 # governance real (config/governance/gates.json en vez del fixture) cuando
 # se arranca vía `atlas os-bridge`/uvicorn sin pasar `governance_real=` a
@@ -126,12 +135,41 @@ def _tokens_equal(left: str, right: str) -> bool:
 
 
 def _validate_bind_security(host: str) -> None:
-    """Impide exponer el bridge fuera de loopback sin secreto fuerte."""
-    if not _is_loopback_host(host) and _configured_strong_token() is None:
-        raise RuntimeError(
-            f"{AUTH_TOKEN_ENV} debe contener al menos "
-            f"{_MIN_AUTH_TOKEN_BYTES} bytes para escuchar fuera de loopback"
+    """Impide exponer el bridge fuera de loopback sin autenticación fuerte.
+
+    Dos formas de satisfacerlo, no una:
+
+    - un token de al menos ``_MIN_AUTH_TOKEN_BYTES`` bytes, o
+    - identidad de tailnet activada Y atado a una dirección del tailnet
+      (ADC-WO-111): ahí la autenticación la aporta WireGuard, que ya verificó
+      el dispositivo al unirse a la malla, y `tailscaled` dice quién es.
+
+    Lo segundo NO es un agujero por debajo de lo primero: exige que el socket
+    escuche en la dirección del tailnet, así que los paquetes no pueden llegar
+    por la LAN ni por internet. Atarlo a ``0.0.0.0`` sigue exigiendo token,
+    porque ahí la IP de origen deja de ser prueba de nada.
+    """
+    if _is_loopback_host(host) or _configured_strong_token() is not None:
+        return
+    if os.environ.get(TAILNET_IDENTITY_ENV, "").strip() == "1":
+        from atlas.api.tailnet_identity import (  # noqa: PLC0415
+            bind_permite_identidad_de_tailnet,
+            login_local,
         )
+
+        if bind_permite_identidad_de_tailnet(host):
+            if login_local() is None:
+                raise RuntimeError(
+                    "identidad de tailnet activada pero no se pudo leer la cuenta "
+                    "local de tailscaled; sin con qué comparar no se acepta a nadie"
+                )
+            return
+    raise RuntimeError(
+        f"{AUTH_TOKEN_ENV} debe contener al menos "
+        f"{_MIN_AUTH_TOKEN_BYTES} bytes para escuchar fuera de loopback "
+        f"(o active {TAILNET_IDENTITY_ENV}=1 atando el socket a una dirección "
+        f"del tailnet)"
+    )
 
 
 def _presented_token(headers: Headers) -> str | None:
@@ -160,6 +198,42 @@ def _credential_identity(token: str) -> str:
     return f"atlas-token:{fingerprint}"
 
 
+def _tailnet_identity(client_host: str | None) -> str | None:
+    """Identidad por pertenencia al tailnet, o `None` si no aplica (ADC-WO-111).
+
+    Sustituye al emparejamiento: si el dispositivo está en el tailnet, ya lo
+    autenticó WireGuard al unirse, y `tailscaled` dice quién es en 0,6 ms. No
+    hay secreto que transferir al móvil ni credencial nueva que rotar.
+
+    **Opt-in y por defecto apagado.** Sin `ATLAS_OS_BRIDGE_TAILNET_IDENTITY=1`
+    el comportamiento del bridge es exactamente el de antes.
+
+    Se compara contra `_BIND_HOST`, la dirección REAL a la que se ató el
+    socket, nunca contra la cabecera `Host`: la cabecera la pone quien llama, y
+    todo el argumento de seguridad depende de por qué interfaz pueden entrar
+    los paquetes. Escuchando en `0.0.0.0`, un vecino de la LAN podría asignarse
+    una IP del rango CGNAT y `whois` lo confirmaría como el móvil.
+    """
+    if os.environ.get(TAILNET_IDENTITY_ENV, "").strip() != "1":
+        return None
+    if client_host is None:
+        return None
+    from atlas.api.tailnet_identity import (  # noqa: PLC0415 — sólo si está activado
+        TailnetIdentity,
+        bind_permite_identidad_de_tailnet,
+        login_local,
+    )
+
+    if not bind_permite_identidad_de_tailnet(_BIND_HOST):
+        return None
+    peer = TailnetIdentity(login_propio=login_local()).verificar_peer(client_host)
+    if peer is None:
+        return None
+    # El ID estable identifica al nodo aunque cambie de nombre o de IP; es lo
+    # que debe quedar en el ledger, no la IP del momento.
+    return f"atlas-tailnet:{peer.node_id}"
+
+
 def _authenticate_client(client_host: str | None, headers: Headers) -> str:
     presented = _presented_token(headers)
     if presented is not None:
@@ -169,6 +243,9 @@ def _authenticate_client(client_host: str | None, headers: Headers) -> str:
         return _credential_identity(configured)
     if _is_loopback_host(client_host):
         return f"atlas-loopback:{client_host}"
+    tailnet = _tailnet_identity(client_host)
+    if tailnet is not None:
+        return tailnet
     raise _AuthenticationError
 
 
@@ -1177,6 +1254,8 @@ def create_app(
 
 def serve(host: str = HOST, port: int = PORT) -> None:
     """Arranque bloqueante (usado por `atlas os-bridge`)."""
+    global _BIND_HOST
+    _BIND_HOST = host
     _validate_bind_security(host)
     import uvicorn  # noqa: PLC0415 — import perezoso, solo al servir
 
