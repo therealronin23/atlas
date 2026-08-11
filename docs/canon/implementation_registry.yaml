@@ -812,7 +812,15 @@ work_orders:
       - one authority per mutable state
       - migration and compatibility policy accepted
     operator_decision_required: false
-    status: READY
+    status: DONE
+    evidence_2026_08_11:
+      - docs/design/authority_map_mission_task.md
+      - tests/test_authority_single_writer.py
+      - "measured: Task.status has exactly one writer (Task.transition), plus rehydration in TaskPersistence.deserialize"
+      - "defect found and fixed: ApprovalManager manipulated TaskPersistence's directory paths directly (reserve/release/discard). That is `dual writers` even though only one module wrote the envelope. The mechanics moved into TaskPersistence (reserve_execution/release_execution/release_lock) and ApprovalManager no longer imports os, fcntl or pathlib."
+      - "measured: clearance `task:<id>` has exactly two grantors — human (ApprovalManager) and the ADR-033 auto-approved path (allowlist + untainted + decider Allow, audited as task.auto_approved). Not a bypass; a bounded designed exception."
+      - "each guard verified BY MUTATION against the real files: reintroducing a second writer / a second envelope factory / a third grantor / a second receiver of the directory makes the corresponding test fail."
+    status_note: "The map and its executable guard are built. What this does NOT claim, because it was not measured: Mission recovery across a process boundary, and throughput with concurrent writers. Both were already open in current_state and stay open."
 
   - id: ADC-WO-103
     program: P04

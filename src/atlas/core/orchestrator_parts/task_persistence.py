@@ -264,6 +264,35 @@ class TaskPersistence:
                 payload={"task_id": task_id, "error": str(exc)[:500]},
             )
 
+    # --------------------------------------------------------------- ejecución
+
+    # ADC-WO-102: la reserva de ejecución (`<id>.json` → `<id>.executing.json`)
+    # la hacía `ApprovalManager` entrando a mano en este directorio. Dos
+    # módulos manipulando las mismas rutas es `dual writers` aunque el sobre
+    # lo escriba uno solo, así que la mecánica vive aquí y el flujo de
+    # aprobación pide la operación por su nombre.
+
+    def is_executing(self, task_id: str) -> bool:
+        return (self._dir / f"{task_id}.executing.json").exists()
+
+    def has_pending(self, task_id: str) -> bool:
+        return (self._dir / f"{task_id}.json").exists()
+
+    def reserve_execution(self, task_id: str) -> str | None:
+        """Reserva la ejecución renombrando el pendiente. Devuelve ``None`` si
+        se reservó, o el texto del error si no (el renombrado es la operación
+        atómica que impide que dos procesos ejecuten el mismo task)."""
+        try:
+            (self._dir / f"{task_id}.json").replace(
+                self._dir / f"{task_id}.executing.json"
+            )
+        except OSError as exc:
+            return str(exc)
+        return None
+
+    def release_execution(self, task_id: str) -> None:
+        (self._dir / f"{task_id}.executing.json").unlink(missing_ok=True)
+
     # ------------------------------------------------------------------ lock
 
     def acquire_lock(
@@ -278,6 +307,12 @@ class TaskPersistence:
             os.close(fd)
             return None, None
         return fd, lock_path
+
+    def release_lock(self, fd: int, lock_path: Path | None) -> None:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+        if lock_path is not None:
+            lock_path.unlink(missing_ok=True)
 
     # ------------------------------------------------------------------ codec
 

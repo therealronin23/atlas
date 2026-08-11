@@ -9,6 +9,8 @@ docs/design/mcp_catalog_classified.yaml
 docs/self_audit_latest.json
 docs/INDEX.yaml
 docs/backlog.yaml
+# Cruzó los 100KB el 2026-08-11 al registrarse la evidencia de WO-109/110/111.
+docs/canon/implementation_registry.yaml
 docs/design/mcp_catalog_seeded.yaml
 docs/knowledge/corpus_inventory.json
 docs/knowledge/t05b_paso3/corpus_digest_consolidated.json

@@ -2484,7 +2484,6 @@ class Orchestrator:
         self._tasks = TaskPersistence(self._pending_approval_dir, self._merkle)
         self._agentic_executor = AgenticExecutor(self)
         self._approvals = ApprovalManager(
-            pending_dir=self._pending_approval_dir,
             tasks=self._tasks,
             merkle=self._merkle,
             permissions=self._permissions,

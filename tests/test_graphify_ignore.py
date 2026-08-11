@@ -27,6 +27,10 @@ _KNOWN_OVERSIZED_DOCS = (
     "docs/design/mcp_catalog_classified.yaml",
     "docs/self_audit_latest.json",
     "docs/INDEX.yaml",
+    # Añadido el 2026-08-11: lo cazó el test DERIVADO (`rglob` + tamaño), no
+    # esta lista. Es la prueba de por qué existen los dos: la lista fija sabe
+    # lo que ya sabíamos, el derivado ve lo que acaba de pasar.
+    "docs/canon/implementation_registry.yaml",
 )
 
 

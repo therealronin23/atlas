@@ -9,14 +9,17 @@ esperan aprobación humana (``register``/``snapshot``/``discard``) y ejecutar el
 veredicto humano (``approve``). La ejecución real del task aprobado y la
 reanudación del loop agéntico viven todavía en ``Orchestrator`` y se inyectan
 como callbacks (``on_execute`` / ``on_resume``) para romper el ciclo de import.
+
+ADC-WO-102 (2026-08-11): esta clase NO toca el sistema de ficheros. Antes
+manejaba a mano las rutas del directorio de ``TaskPersistence`` para reservar
+la ejecución; ahora pide las operaciones por su nombre
+(``reserve_execution``/``release_execution``/``delete``) y el directorio tiene
+un solo dueño. `tests/test_authority_single_writer.py` lo vigila.
 """
 
 from __future__ import annotations
 
-import fcntl
-import os
 import threading
-from pathlib import Path
 from typing import Any, Callable
 
 from atlas.core.contracts import Task, TaskStatus
@@ -31,14 +34,12 @@ class ApprovalManager:
     def __init__(
         self,
         *,
-        pending_dir: Path,
         tasks: TaskPersistence,
         merkle: MerkleLogger,
         permissions: PermissionProfile,
         on_execute: Callable[[Task], None],
         on_resume: Callable[[Task], None],
     ) -> None:
-        self._dir = pending_dir
         self._tasks = tasks
         self._merkle = merkle
         self._permissions = permissions
@@ -95,10 +96,7 @@ class ApprovalManager:
                 task_id, approved, abort=abort, approve_only=approve_only,
             )
         finally:
-            fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            os.close(lock_fd)
-            if lock_path is not None:
-                lock_path.unlink(missing_ok=True)
+            self._tasks.release_lock(lock_fd, lock_path)
 
     def _approve_locked(
         self,
@@ -111,21 +109,15 @@ class ApprovalManager:
         with self._lock:
             task = self._pending.pop(task_id, None)
 
-        pending_path = self._dir / f"{task_id}.json"
-        executing_path = self._dir / f"{task_id}.executing.json"
-
-        if executing_path.exists():
+        if self._tasks.is_executing(task_id):
             return {
                 "task_id": task_id,
                 "status": "in_progress",
                 "error": "la tarea ya esta en ejecucion",
             }
 
-        if task is None:
-            if pending_path.exists():
-                task = self._tasks.load(task_id)
-            else:
-                task = None
+        if task is None and self._tasks.has_pending(task_id):
+            task = self._tasks.load(task_id)
 
         if task is None:
             return {
@@ -153,13 +145,12 @@ class ApprovalManager:
                 state = task.metadata["agentic_state"]
                 state["denied"] = True
                 state["deny_reason"] = "human"
-                try:
-                    pending_path.replace(executing_path)
-                except OSError as exc:
+                fallo = self._tasks.reserve_execution(task_id)
+                if fallo is not None:
                     return {
                         "task_id": task_id,
                         "status": "failed",
-                        "error": f"no se pudo reservar ejecucion: {exc}",
+                        "error": f"no se pudo reservar ejecucion: {fallo}",
                     }
                 # No mark_confirmed: las mutaciones denegadas no se ejecutan; se
                 # inyecta una denegación sintética y el modelo re-planifica.
@@ -172,9 +163,9 @@ class ApprovalManager:
                     task.transition(TaskStatus.FAILED)
                     task.error = str(e)
                 finally:
-                    executing_path.unlink(missing_ok=True)
+                    self._tasks.release_execution(task.id)
                     if not resuspended:
-                        pending_path.unlink(missing_ok=True)
+                        self._tasks.delete(task.id)
                 return {
                     "task_id": task.id,
                     "status": task.status.value,
@@ -187,13 +178,12 @@ class ApprovalManager:
             self._tasks.delete(task.id)
             return {"task_id": task.id, "status": task.status.value, "approved": False}
 
-        try:
-            pending_path.replace(executing_path)
-        except OSError as exc:
+        fallo = self._tasks.reserve_execution(task_id)
+        if fallo is not None:
             return {
                 "task_id": task_id,
                 "status": "failed",
-                "error": f"no se pudo reservar ejecucion: {exc}",
+                "error": f"no se pudo reservar ejecucion: {fallo}",
             }
 
         # ADR-033 #3: aprobación parcial. Si el llamante pasa `approve_only`, solo
@@ -215,9 +205,9 @@ class ApprovalManager:
             task.transition(TaskStatus.FAILED)
             task.error = str(e)
         finally:
-            executing_path.unlink(missing_ok=True)
+            self._tasks.release_execution(task.id)
             if not resuspended:
-                pending_path.unlink(missing_ok=True)
+                self._tasks.delete(task.id)
 
         return {
             "task_id": task.id,
