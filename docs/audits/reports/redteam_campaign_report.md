@@ -1,6 +1,6 @@
 # Reporte de campaña red-team — Osmosis
 
-<!-- Generado por scripts/redteam/garak_campaign.py. Reproducible. -->
+<!-- Generado por scripts/redteam/garak_campaign.py (ADR-056). Reproducible. -->
 
 Driver de ataque: **NVIDIA Garak** (corpus DanInTheWild + promptinject), 60
 prompts de ataque reales. Cada petición pasa por un gateway Osmosis aislado
@@ -19,8 +19,8 @@ petición ocurrió. No es bloqueo; es atribución verificable.
 ## Señal del monitor (metodología, NO tasa de detección de producto)
 | Métrica | Valor |
 |---|---|
-| Ataques (en sesión benigna) con drift ≥ τ_passive (0.65) | 59/60 (98.3%) |
-| Ataques con inspección+label (lista cerrada) | 0/60 |
+| Ataques (en sesión benigna) con drift ≥ τ_passive (0.65) | 60/60 (100.0%) |
+| Ataques con inspección+label (lista cerrada) | 3/60 |
 | Falsos positivos benignos (drift ≥ τ) | 0/40 (0.0%) |
 | Control benigno: inclusión verificada | 40/40 |
 

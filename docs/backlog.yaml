@@ -2683,7 +2683,25 @@ items:
       porque ya no aplica. Si algún número no se reproduce, decirlo con esas
       palabras en vez de dejar el viejo.
     priority: 3
-    status: pending
+    status: doing
+    progreso_2026_08_11: >
+      Dos de las cuatro remedidas, y una NO reproduce. Queda `doing` y no
+      `done` a propósito: faltan las dos que necesitan API.
+
+      `garak_campaign.py` reproduce EXACTO: C=60, K=60 → 100% de atribución,
+      FP benignos 0/40, control benigno 40/40.
+
+      `generalization_curve.py` NO reproduce. La cifra vieja decía "semántico
+      sin ruptura en [0,1]"; con `--embedder hf` (all-MiniLM-L6-v2, el que
+      documenta el propio ejemplo del README) rompe en **d=0,6** con recall
+      17%. El FP 0/8 sí reproduce. La cifra antigua se midió con otro embedder
+      y CUÁL ERA no quedó escrito — una cifra sin la configuración que la
+      produjo no es reproducible aunque el script siga ahí. Dicho con esas
+      palabras en el README, no sustituido en silencio.
+
+      `pyrit_crescendo.py` y `frontier_debate.py` siguen sin medir: necesitan
+      atacante/maestro por API y la cuota diaria estaba agotada (ver
+      docs/audits/reports/fitness_2026-08-11.md). Queda eso y sólo eso.
 
   - id: t15-research-tick-doble-pasada
     title: "El tick de investigación corrió DOS veces el 10-ago y la segunda pisó el informe bueno"
@@ -2735,3 +2753,78 @@ items:
       `ResearchWriterLock` y una segunda pasada cede el turno (`status:
       locked`), mismo criterio que el tick del grafo. Tests en
       `tests/test_research_tick_traceability.py`.
+
+  - id: t16-project-root-cae-al-cwd
+    title: "`_project_root()` cae al directorio actual, y el ledger no"
+    why: >
+      Medido el 2026-08-11 investigando t15. `_project_root()` es
+      `ATLAS_CORE_ROOT` **o `Path.cwd()`**, mientras que el ledger Merkle
+      cuelga de `ATLAS_HOME`. Las dos rutas pueden divergir sin que nada avise:
+      un proceso arrancado desde otro directorio escribe informes y estado en
+      un sitio y audita en otro.
+
+      Eso es lo que hace posible una escritura en el repo sin rastro en el
+      ledger del operador — el fenómeno de t15, que se pudo describir pero no
+      atribuir. El arreglo de t15 registra ahora ambas rutas cuando se pisa un
+      informe, así que la próxima vez la pregunta tendrá respuesta; pero el
+      pie de banco sigue ahí para todo lo demás que use `_project_root()`.
+
+      Medir primero cuántos caminos lo usan y qué escriben. Puede que la
+      respuesta correcta sea exigir `ATLAS_CORE_ROOT` explícito en el daemon en
+      vez de adivinar por cwd.
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+    acceptance: >
+      Inventario de qué escribe cada camino que usa `_project_root()`, y o bien
+      el cwd deja de ser un default silencioso, o queda documentado por qué es
+      seguro en cada uno. Test que falle si aparece un escritor nuevo que
+      dependa del cwd.
+    priority: 2
+    status: pending
+
+  - id: t17-frontera-privacidad-sin-test
+    title: "Que ningún dato privado llegue al grafo compartible no tiene test"
+    why: >
+      Hueco declarado en `docs/design/authority_map_memory.md` (2026-08-11), y
+      se declara porque es real. Hoy la garantía es POR CONSTRUCCIÓN: el grafo
+      estructural se construye de git+AST —rutas, símbolos, imports— y ahí no
+      hay contenido de conversación.
+
+      Eso es más fuerte que un test mientras la fuente no cambie, y más débil
+      en cuanto cambie: si mañana alguien ingiere otra fuente al mismo grafo,
+      nada lo detecta. `privacy leakage` es el primer riesgo que nombra
+      ADC-WO-103.
+    targets:
+      - "src/atlas/memory/project_graph.py"
+      - "docs/design/authority_map_memory.md"
+    acceptance: >
+      Un test que falle si el grafo compartible admite una fuente que no sea
+      git+AST, o que compruebe sobre una BD real que no hay nodos con
+      contenido libre. Si se decide que no es testeable, decir por qué en el
+      mapa en vez de dejar el hueco sin cerrar ni justificar.
+    priority: 2
+    status: pending
+
+  - id: t18-dispose-del-puente-sin-verificar
+    title: "El apagado limpio del puente CodeOSS sigue sin ejercitarse"
+    why: >
+      Medido el 2026-08-11 y registrado en ADC-WO-109 con la causa, no con una
+      excusa: Electron ignoró SIGTERM y SIGINT (12 s cada uno) y el cierre de
+      ventana por `wmctrl` no tuvo efecto porque **Xvfb :99 corre SIN gestor de
+      ventanas**, así que no hay a quién entregarle la petición. Bajo SIGKILL
+      `dispose()` no puede correr por diseño, así que el huérfano que se
+      observa ahí es esperado y no un defecto.
+
+      Lo que queda sin probar es que `dispose()` mate al hijo en un apagado
+      ordenado. Tampoco se ha ejercitado la rama de `resolveAtlasCoreRoot()`
+      cuando no encuentra nada, que exige que fallen los tres respaldos.
+    targets:
+      - "~/proyectos/atlas-codeoss-1.129.1 (rama spike/atlas-bridge-on-codeoss)"
+    acceptance: >
+      Apagado ordenado ejercitado con un gestor de ventanas en el display
+      headless o en una sesión de escritorio real, comprobando que el hijo
+      muere. Y la rama de "no se encontró atlas-core" ejercitada con las tres
+      vías cortadas.
+    priority: 3
+    status: pending
+

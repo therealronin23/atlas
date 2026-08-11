@@ -4,7 +4,7 @@
 
 Mide hasta dónde el reconocimiento de reformulaciones generaliza desde un ataque
 visto y **dónde se rompe**. Embedder: **hf**; semillas: 5;
-20 variantes/semilla/distancia; umbral de reconocimiento 0.6.
+20 variantes/semilla/distancia; umbral de reconocimiento 0.7.
 
 ## Curva (distancia de mutación → tasa de reconocimiento)
 | distancia | reconocimiento |
@@ -13,17 +13,17 @@ visto y **dónde se rompe**. Embedder: **hf**; semillas: 5;
 | 0.1 | 100.0% |
 | 0.2 | 100.0% |
 | 0.3 | 100.0% |
-| 0.4 | 100.0% |
+| 0.4 | 98.0% |
 | 0.5 | 100.0% |
-| 0.6 | 99.0% |
-| 0.7 | 98.0% |
-| 0.8 | 94.0% |
-| 0.9 | 94.0% |
-| 1.0 | 93.0% |
+| 0.6 | 17.0% |
+| 0.7 | 9.0% |
+| 0.8 | 12.0% |
+| 0.9 | 7.0% |
+| 1.0 | 0.0% |
 
-**Punto de ruptura (recall < 50%): no alcanzado en [0,1]**
+**Punto de ruptura (recall < 50%): d=0.6**
 
-## Control de falsos positivos (mismo umbral 0.6)
+## Control de falsos positivos (mismo umbral 0.7)
 Texto benigno NO relacionado que matchea: **0/8 (0.0%)**.
 Recall alto **solo vale con FP bajo**: si lo benigno también matcheara, la
 "generalización" sería un umbral flojo, no reconocimiento real. (N pequeño: 8

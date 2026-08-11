@@ -47,17 +47,31 @@ Las campañas Garak usan `.venv-redteam-garak`; Crescendo usa
 > Con la separación restaurada, ese conflicto ya no aparece — de ahí que el
 > `pip check` limpio sea parte de la comprobación y no un detalle.
 >
-> **Las cifras de la tabla de abajo siguen sin reproducirse.** Los venvs vuelven
-> a estar, así que ya *se puede* medir; pero nadie ha vuelto a correr la
-> campaña. No cites esas cifras como actuales hasta que alguien lo haga y las
-> sustituya.
+> **REMEDIDO EL 2026-08-11 (t14): dos de las cuatro reproducen, una NO.**
+>
+> | Demo | ¿Reproduce? | Medido hoy |
+> |---|---|---|
+> | `garak_campaign.py` | **Sí, exacto** | C=60, K=60 → 100% atribución; FP benignos 0/40; control benigno 40/40 |
+> | `generalization_curve.py` | **NO** | rompe en **d=0,6** (recall 17%), no "sin ruptura en [0,1]". FP 0/8 sí reproduce |
+> | `pyrit_crescendo.py` | sin medir | necesita atacante por API y la cuota diaria está agotada (ver `docs/audits/reports/fitness_2026-08-11.md`) |
+> | `frontier_debate.py` | sin medir | mismo motivo: maestro por API |
+>
+> La que no reproduce se dice con esas palabras en vez de dejar la vieja. La
+> cifra antigua ("semántico sin ruptura en [0,1]") se midió con **otro
+> embedder**, y cuál era no quedó escrito — que es precisamente por qué no se
+> puede comparar. Con `--embedder hf` (all-MiniLM-L6-v2, el que documenta el
+> ejemplo de abajo) la curva cae a partir de 0,5. El reporte nuevo está en
+> `docs/audits/reports/immune_generalization_curve.md`.
+>
+> Lección de método, no de resultado: una cifra sin la configuración que la
+> produjo no es reproducible aunque el script siga ahí.
 
 ## Demos
 
 | Script | Qué mide | Cifra de la corrida de referencia |
 |---|---|---|
-| `garak_campaign.py` | Atribución bajo ataque (corpus Garak → gateway aislado) | C=60, K=60 → **100% inclusión verificada**; FP benignos 0/40 |
-| `generalization_curve.py` | Frontera de generalización de la memoria inmune + control de FP | léxico rompe d=0.7; **semántico sin ruptura en [0,1]**, FP 0/8 |
+| `garak_campaign.py` | Atribución bajo ataque (corpus Garak → gateway aislado) | **2026-08-11**: C=60, K=60 → **100% inclusión verificada**; FP benignos 0/40 |
+| `generalization_curve.py` | Frontera de generalización de la memoria inmune + control de FP | **2026-08-11** (`--embedder hf`): ruptura en **d=0.6** (recall 17%), FP 0/8. La cifra anterior "sin ruptura en [0,1]" NO reproduce — ver aviso arriba |
 | `pyrit_crescendo.py` | Multi-turn adaptativo (PyRIT Crescendo, atacante API) → trayectoria del tripwire | gradual evade; salto brusco dispara; **atribución 100%/turno** |
 | `frontier_debate.py` | Maestro propone lecciones → el sistema arbitra (corrobora/contradice/acepta) | contradice al maestro cuando afirma que un ataque conocido es benigno |
 
