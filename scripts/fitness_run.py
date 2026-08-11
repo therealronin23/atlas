@@ -46,6 +46,56 @@ def run_tests(worktree: Path, targets: tuple[str, ...]) -> int:
         return 124
 
 
+#: Peticiones al proveedor por defecto y por tirada, contadas en el código y no
+#: estimadas a ojo (2026-08-11):
+#:
+#:   AtlasSolver     -> ToolCoder: 1 de planificación (tool_coder.py:399) más
+#:                      hasta `max_iterations=3` vueltas del bucle (:680) = 4
+#:   DirectModelSolver -> un `hub.infer` (fitness_solvers.py:314)          = 1
+#:
+#: Es la COTA SUPERIOR: si ToolCoder acierta en la primera vuelta gasta menos.
+#: Para presupuestar hay que usar la cota, no la media — quedarse corto es
+#: exactamente el fallo que este cálculo existe para evitar.
+LLAMADAS_ATLAS = 4
+LLAMADAS_DESNUDO = 1
+LLAMADAS_POR_DEFECTO = LLAMADAS_ATLAS + LLAMADAS_DESNUDO
+
+#: Presupuesto por defecto, en peticiones. Los tiers gratuitos de Groq y
+#: OpenRouter conceden decenas al día (`requests per day`,
+#: `free-models-per-day`), no cientos. 40 es conservador y cabe.
+PRESUPUESTO_POR_DEFECTO = 40
+
+
+def coste_estimado(defectos: int, repeats: int) -> int:
+    """Peticiones al proveedor que va a costar esta configuración.
+
+    Existe porque SONDEAR NO SIRVE. `cuota_agotada()` gasta una petición y
+    responde "¿puedo llamar?" cuando la pregunta es "¿puedo llamar 171 veces?".
+    El 2026-08-11 dijo "disponible" minutos antes de que la cadena reventara
+    con `requests per day`, y no mentía: medía otra cosa.
+
+    Contra un límite POR NÚMERO DE PETICIONES, lo único que sirve es contarlas
+    antes de gastarlas.
+    """
+    return defectos * repeats * LLAMADAS_POR_DEFECTO
+
+
+def dimensionar_al_presupuesto(defectos: int, presupuesto: int) -> tuple[int, int]:
+    """Mayor (muestra, repeticiones) que cabe en `presupuesto` peticiones.
+
+    Prioriza REPETICIONES sobre tamaño de muestra hasta un mínimo de 2: una
+    sola tirada no es una medición (el mismo banco dio 2/3 y 0/3 con el mismo
+    código el 2026-08-09), así que recortar por ahí produce un número que no
+    distingue capacidad de suerte. Recortar la muestra sí es honesto mientras
+    se publique cuántos defectos entraron.
+    """
+    for repeats in (3, 2):
+        cabe = presupuesto // (repeats * LLAMADAS_POR_DEFECTO)
+        if cabe >= 3:
+            return min(cabe, defectos), repeats
+    return 0, 0
+
+
 def cuota_agotada() -> str:
     """Motivo por el que hoy no se puede medir, o cadena vacía si se puede.
 
@@ -133,12 +183,62 @@ def main() -> int:
              "banco gasta el mismo recurso que mide y agotarlo produce ceros "
              "que parecen resultados).",
     )
+    parser.add_argument(
+        "--presupuesto", type=int, default=PRESUPUESTO_POR_DEFECTO,
+        help=f"peticiones al proveedor que puede gastar esta tirada "
+             f"(por defecto {PRESUPUESTO_POR_DEFECTO}). 0 = sin límite.",
+    )
+    parser.add_argument(
+        "--auto-dimensionar", dest="auto", action="store_true",
+        help="recorta muestra y repeticiones para caber en el presupuesto en "
+             "vez de abortar.",
+    )
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parent.parent
     corpus = root / "docs" / "fixtures" / "fitness" / "frozen_defects.jsonl"
     scorer = FitnessScorer(root, corpus, run_tests=run_tests)
+
+    # PRESUPUESTO ANTES DE GASTAR. Medido el 2026-08-11: el corpus completo con
+    # 3 tiradas pide ~171 peticiones y los tiers gratuitos conceden decenas al
+    # día (`requests per day`, `free-models-per-day`). El banco NUNCA había sido
+    # ejecutable así, y cada 0.0% publicado antes estaba midiendo la cuota en
+    # vez de a Atlas. Contarlas antes es lo único que funciona contra un límite
+    # por número de peticiones — sondear gasta una y no dice cuántas quedan.
+    if args.presupuesto:
+        en_corpus = len(
+            [x for x in corpus.read_text(encoding="utf-8").splitlines() if x.strip()]
+        )
+        pedidos = args.limit or en_corpus
+        coste = coste_estimado(pedidos, args.repeats)
+        if coste > args.presupuesto:
+            cabe_muestra, cabe_repeats = dimensionar_al_presupuesto(
+                en_corpus, args.presupuesto
+            )
+            print(
+                f"presupuesto: {pedidos} defectos x {args.repeats} tiradas "
+                f"= ~{coste} peticiones, y el techo son {args.presupuesto}.",
+                flush=True,
+            )
+            if not args.auto:
+                if not cabe_muestra:
+                    print(f"  Con {args.presupuesto} peticiones no cabe ninguna "
+                          "configuración que sea una medición (mínimo 3 defectos "
+                          "x 2 tiradas). Sube --presupuesto o consigue más cuota.")
+                    return 2
+                print(f"  Cabe: --limit {cabe_muestra} --repeats {cabe_repeats} "
+                      f"(~{coste_estimado(cabe_muestra, cabe_repeats)} peticiones).")
+                print("  Relanza con eso, o añade --auto-dimensionar. Correr el "
+                      "corpus entero contra un tier gratuito NO produce una "
+                      "medición: produce ceros de cuota.")
+                return 2
+            if not cabe_muestra:
+                print("  ABORTA: ni con --auto-dimensionar cabe una medición.")
+                return 2
+            args.limit, args.repeats = cabe_muestra, cabe_repeats
+            print(f"  auto-dimensionado a --limit {args.limit} "
+                  f"--repeats {args.repeats}.", flush=True)
 
     if args.limit:
         lineas = [x for x in corpus.read_text(encoding="utf-8").splitlines() if x.strip()]
