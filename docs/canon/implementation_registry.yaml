@@ -762,7 +762,8 @@ work_orders:
       - no duplicate Atlas authority
       - dedicated-device acceptance suite
     operator_decision_required: true
-    status: BLOCKED
+    status: PARKED
+    status_note: "Parked by the operator 2026-08-11, with the feasibility already measured and the pairing question answered. Nothing here is blocked on missing engineering: the tailnet identity work (see evidence above) removed the only genuinely new piece, and what remains is generating the android/ target plus the decision to bind off loopback. Resume from that state; do not re-measure."
 
   - id: ADC-WO-102
     program: P03
