@@ -2871,5 +2871,94 @@ items:
       muere. Y la rama de "no se encontró atlas-core" ejercitada con las tres
       vías cortadas.
     priority: 3
+    status: done
+    done_2026_08_11: >
+      La mitad principal, VERIFICADA. `fluxbox` estaba instalado (no hizo
+      falta instalar nada): arrancado sobre Xvfb :99, el cierre de ventana ya
+      tiene a quién entregarse, y `dispose()` mató al hijo en UN segundo
+      (`wmctrl -i -c` sobre la ventana real, PID 3452433 desaparecido). No se
+      cambió una línea de código: lo que faltaba era el gestor de ventanas,
+      exactamente como decía el diagnóstico. El límite era del banco de
+      pruebas, no del producto.
+
+      La otra mitad sigue sin ejercitar, y ahora con la razón CALCULADA en vez
+      de supuesta: la rama "no se encontró atlas-core" exige que fallen los
+      tres respaldos, y el del hermano resuelve desde
+      out/vs/workbench/contrib/atlas/electron-main a
+      /home/ronin/proyectos/atlas-core, que existe y tiene .venv/bin/atlas. En
+      esta máquina esa rama es inalcanzable sin mover el repo de sitio. Se
+      deja dicho así en vez de como "pendiente".
+
+  - id: t19-tsgo-no-existe-en-el-checkout
+    title: "Dos scripts de comprobación de CodeOSS invocan un binario que no está"
+    why: >
+      Medido el 2026-08-11 al retractar una verificación falsa mía. `tsgo` NO
+      existe en `~/proyectos/atlas-codeoss-1.129.1`: `node_modules/.bin` sólo
+      tiene `tsc` y `tsc6`, y `@typescript/native` declara `bin.tsc`. El
+      paquete que lo trae, `@typescript/native-preview`, no es dependencia —
+      lo instala a demanda el script `update-build-ts-version`.
+
+      Consecuencia: `npm run monaco-compile-check` y `npm run tsec-compile-check`
+      fallan con "no such file" para cualquiera que los invoque, y su fallo se
+      lee como un error del proyecto en vez de como una dependencia ausente.
+
+      No es urgente —`npm run compile` cubre la comprobación de tipos y
+      además emite— pero un script que no puede correr es peor que uno que no
+      existe: parece disponible.
+    targets:
+      - "~/proyectos/atlas-codeoss-1.129.1 (package.json)"
+    acceptance: >
+      O bien `@typescript/native-preview` entra como devDependency y los dos
+      scripts corren, o los scripts dicen en su nombre/salida que exigen
+      instalarlo antes. Comprobado ejecutándolos, no leyéndolos.
+    priority: 3
+    status: pending
+
+  - id: t20-daemon-con-codigo-viejo-nadie-actua
+    title: "La sonda ve el daemon desactualizado, pero nadie hace nada con eso"
+    why: >
+      `daemon_state().code_stale` se añadió el 2026-08-11 y mide bien: contra
+      el daemon real dio `true` con 651 minutos de deriva. Lo que no hay es
+      consecuencia. `atlas reality` lo incluye en su informe y ahí muere.
+
+      El caso que lo motivó no era teórico: los arreglos de esa tarde —entre
+      ellos el lock del tick de investigación— no estaban en el proceso vivo,
+      y el tick de la madrugada iba a correr la versión vieja. Una medición
+      que no dispara nada acaba siendo una línea más en un informe largo.
+
+      Decidir QUÉ debe pasar: ¿sección en rojo en `reality`? ¿aviso del
+      watchdog? ¿reinicio automático (que toca el sistema del operador y
+      probablemente NO)? La respuesta más barata que funcione.
+    targets:
+      - "src/atlas/core/reality.py"
+      - "src/atlas/core/reality_live.py"
+    acceptance: >
+      Un daemon con `code_stale: true` produce una consecuencia visible sin
+      que nadie tenga que leer el JSON entero, y hay un test que falla si esa
+      consecuencia desaparece. Si se decide que sólo informa, dicho por
+      escrito con el motivo.
+    priority: 2
+    status: pending
+
+  - id: t21-banco-y-daemon-comparten-cuota
+    title: "El banco de fitness y el tick de investigación se comen la misma cuota"
+    why: >
+      Medido el 2026-08-11: la tirada del banco murió con `requests per day` y
+      `free-models-per-day` porque el corpus completo de la mañana ya se había
+      llevado la cuota diaria. Ahora el banco lleva libro de su propio gasto
+      (t13), pero **el daemon no apunta nada**: `maintenance_research_tick`,
+      `provider_smoke`, `provider_discovery` y el lazo de autoconstrucción
+      gastan del mismo tier gratuito y ninguno lo registra.
+
+      Así que el libro del banco es honesto sobre lo que gasta el banco y
+      ciego a todo lo demás — que es la mitad del problema, o más.
+    targets:
+      - "scripts/fitness_run.py"
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+    acceptance: >
+      Un solo libro de gasto diario que todos los consumidores del tier
+      gratuito actualicen, o una razón medida de por qué no hace falta. Con el
+      banco leyéndolo antes de decidir si cabe una tirada.
+    priority: 2
     status: pending
 
