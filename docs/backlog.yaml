@@ -2938,7 +2938,26 @@ items:
       consecuencia desaparece. Si se decide que sólo informa, dicho por
       escrito con el motivo.
     priority: 2
-    status: pending
+    status: done
+    done_2026_08_11: >
+      La consecuencia está, y la señal que la dispara NO es la que decía la
+      ficha — a propósito.
+
+      `code_stale` mira mtimes, así que se enciende en cuanto alguien edita un
+      fichero. Como alarma sería pésima: sonaría durante todo el desarrollo y
+      acabaría ignorada, que es justo como se pierde una alarma útil. Se queda
+      como INFORMACIÓN.
+
+      La que degrada es `behind_head`, nueva: compara el arranque del proceso
+      con la marca de tiempo del commit de HEAD, así que sólo se enciende
+      cuando hay código COMMITEADO que el proceso no ejecuta — la familia
+      'committed is not running' exacta. `_overall_status` la trata como el
+      daemon caído: la cabecera deja de decir OK sin que nadie lea el JSON.
+
+      Contra el daemon real: active=True, code_stale=True, behind_head=True,
+      878 min de deriva. Seis casos nuevos, incluido uno que comprueba que
+      editar un fichero NO degrada y otro que `None` tampoco (no saber no es
+      una avería).
 
   - id: t21-banco-y-daemon-comparten-cuota
     title: "El banco de fitness y el tick de investigación se comen la misma cuota"

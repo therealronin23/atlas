@@ -95,13 +95,68 @@ def daemon_state(
             "reason": f"{unit} NO activo (estado={state or 'desconocido'})",
         }
     stale, motivo = _code_is_stale(unit, runner=runner)
+    atrasado, motivo_head = _behind_head(unit, runner=runner)
+    razones = [r for r in (motivo, motivo_head) if r]
     return {
         "unit": unit,
         "active": True,
         "code_stale": stale,
+        "behind_head": atrasado,
         "evidence": EVIDENCE_LIVE,
-        "reason": f"{unit} activo" + (f"; {motivo}" if motivo else ""),
+        "reason": f"{unit} activo" + ("; " + "; ".join(razones) if razones else ""),
     }
+
+
+def _head_commit_epoch(repo_root: Path | None = None) -> float | None:
+    """Marca de tiempo del commit de HEAD, o ``None`` si no se puede leer."""
+    import subprocess  # noqa: PLC0415 — sólo en esta rama
+
+    root = repo_root or Path(__file__).resolve().parents[3]
+    try:
+        salida = subprocess.run(
+            ["git", "-C", str(root), "log", "-1", "--format=%ct"],
+            capture_output=True, text=True, timeout=10, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    texto = (salida.stdout or "").strip()
+    return float(texto) if texto.isdigit() else None
+
+
+def _behind_head(
+    unit: str,
+    *,
+    runner: _Runner | None = None,
+    repo_root: Path | None = None,
+) -> tuple[bool | None, str]:
+    """¿El daemon arrancó ANTES del commit que hay en HEAD?
+
+    Ésta es la que degrada el informe, y `code_stale` no. La diferencia
+    importa: `code_stale` mira mtimes, así que se pone a ``True`` en cuanto
+    alguien edita un fichero — es información útil y sería una alarma
+    pésima, porque sonaría durante todo el desarrollo y acabaría ignorada.
+
+    `behind_head` sólo se enciende cuando hay **código commiteado** que el
+    proceso no está ejecutando, que es exactamente la familia
+    *committed is not running*: lo que se dio por hecho que estaba corriendo y
+    no lo estaba.
+    """
+    stdout = _systemctl(
+        "show", "-p", "ExecMainStartTimestampMonotonic", "--value", unit, runner=runner
+    )
+    arranque = _process_start_epoch(stdout)
+    if arranque is None:
+        return None, ""
+    head = _head_commit_epoch(repo_root)
+    if head is None:
+        return None, ""
+    if head <= arranque:
+        return False, ""
+    minutos = int((head - arranque) // 60)
+    return True, (
+        f"ATRASADO respecto a HEAD: el commit actual es {minutos} min más "
+        "nuevo que el proceso, así que lo commiteado NO se está ejecutando"
+    )
 
 
 def _newest_source_mtime(src_root: Path | None = None) -> float | None:

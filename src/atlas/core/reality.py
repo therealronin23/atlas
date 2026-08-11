@@ -1280,6 +1280,17 @@ def _overall_status(report: dict[str, Any]) -> str:
     # degrada, porque no saber no es una avería.
     if report.get("daemon", {}).get("active") is False:
         return "degraded"
+    # Un daemon VIVO que no ejecuta lo commiteado es el hermano del apagón de
+    # 23 h: el informe dice OK y lo que corre no es lo que se arregló. Medido
+    # el 2026-08-11 — 10 h 50 min de deriva, con el lock del tick nocturno
+    # commiteado y ausente del proceso.
+    #
+    # Degrada `behind_head` y NO `code_stale`: éste mira mtimes y se enciende
+    # en cuanto alguien edita un fichero, así que como alarma sonaría durante
+    # todo el desarrollo y acabaría ignorada. `behind_head` sólo se enciende
+    # con código COMMITEADO que el proceso no corre.
+    if report.get("daemon", {}).get("behind_head") is True:
+        return "degraded"
     if report.get("security", {}).get("status") == "degraded":
         return "degraded"
     return "ok"

@@ -170,3 +170,75 @@ def test_sin_systemctl_sigue_siendo_desconocido_y_no_falso() -> None:
 
     assert estado["active"] is None
     assert "DESCONOCIDO" in estado["reason"]
+
+
+# ---------------------------------------------------------------------------
+# t20: la consecuencia — `behind_head` degrada el informe, `code_stale` no
+# ---------------------------------------------------------------------------
+
+
+def test_behind_head_se_enciende_con_un_commit_mas_nuevo_que_el_proceso(
+    tmp_path: Path,
+) -> None:
+    import subprocess
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    for cmd in (["init"], ["config", "user.email", "t@t"], ["config", "user.name", "t"]):
+        subprocess.run(["git", "-C", str(repo), *cmd], check=True, capture_output=True)
+    (repo / "a.txt").write_text("x", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "commit", "-m", "x"], check=True, capture_output=True
+    )
+
+    atrasado, motivo = reality_live._behind_head(
+        "atlas-core.service",
+        runner=_runner({"show": _monotonico_de(time.time() - 3600)}),
+        repo_root=repo,
+    )
+    assert atrasado is True
+    assert "NO se está ejecutando" in motivo
+
+
+def test_behind_head_es_None_si_no_hay_repo_git(tmp_path: Path) -> None:
+    atrasado, motivo = reality_live._behind_head(
+        "atlas-core.service",
+        runner=_runner({"show": _monotonico_de(time.time() - 60)}),
+        repo_root=tmp_path / "no-es-repo",
+    )
+    assert atrasado is None
+    assert motivo == ""
+
+
+def test_el_informe_se_DEGRADA_con_el_daemon_atrasado() -> None:
+    """La consecuencia que pedía t20: la cabecera deja de decir OK sin que
+    nadie tenga que leer el JSON entero."""
+    from atlas.core.reality import _overall_status
+
+    assert _overall_status({"daemon": {"active": True, "behind_head": True}}) == "degraded"
+
+
+def test_editar_un_fichero_NO_degrada_el_informe() -> None:
+    """`code_stale` es información, no alarma. Si degradase, sonaría durante
+    todo el desarrollo y acabaría ignorada — que es como se pierde una alarma
+    útil."""
+    from atlas.core.reality import _overall_status
+
+    estado = {"daemon": {"active": True, "code_stale": True, "behind_head": False}}
+    assert _overall_status(estado) == "ok"
+
+
+def test_un_daemon_al_dia_no_degrada_nada() -> None:
+    from atlas.core.reality import _overall_status
+
+    estado = {"daemon": {"active": True, "code_stale": False, "behind_head": False}}
+    assert _overall_status(estado) == "ok"
+
+
+def test_no_saber_no_degrada() -> None:
+    """Fail-honest hasta en la consecuencia: `None` no es una avería."""
+    from atlas.core.reality import _overall_status
+
+    estado = {"daemon": {"active": True, "code_stale": None, "behind_head": None}}
+    assert _overall_status(estado) == "ok"
