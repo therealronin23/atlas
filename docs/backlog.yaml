@@ -2341,7 +2341,35 @@ items:
     # resta.
 
   - id: t8-cli-coverage-gap
-    title: "Cerrar el hueco de cobertura de interfaces/cli.py (63,6% de 1.279 sentencias)"
+    title: "Cobertura de interfaces/cli.py: 63,6% -> 81%, objetivo (80%) superado"
+    cerrado_2026_08_11: >
+      El 63,6% del título estaba desactualizado en 15 puntos: los 131 tests de
+      `test_cli_operator_surface.py` (2026-08-09) lo habían subido a 79% y
+      nadie tocó el número. Medido con la suite COMPLETA (5716 tests, 14 min),
+      no con un subconjunto.
+
+      CORRECCIÓN DE UN RAZONAMIENTO MÍO. El 09-ago concluí que lo que faltaba
+      sólo se alcanzaba sustituyendo por dobles todo lo que esos comandos hacen
+      —el teatro de tests que esta misma aceptación prohíbe— y propuse cerrar
+      el ítem sin tocarlo. Era cierto de `cycle` (44 sentencias: Cónclave,
+      workers, inferencia) y FALSO de `audit` (41 sentencias), el segundo
+      bloque mayor: lee un log Merkle y verifica la cadena, y eso se ejercita
+      con un ledger real sin doblar nada. Generalicé de un caso al otro sin
+      mirarlo.
+
+      `tests/test_cli_audit.py` (7 tests) lo cubre: 79% -> 81%, 274 -> 247
+      sentencias sin cubrir.
+
+      Y midiendo salió una garantía MÁS FUERTE de la que se buscaba: al
+      corromper el ledger a mano, la manipulación no la reporta el comando —la
+      caza el ARRANQUE del orquestador, que se niega a levantar (`Merkle chain
+      corrupta al arrancar: Record #2 ... hash_self invalido`). No es que
+      `audit --verify` avise si vas a mirar: es que ningún comando de Atlas
+      funciona con el registro tocado.
+
+      Lo que queda sin cubrir y NO se va a cubrir: `cycle`, `code`, `f26 run` y
+      `voice`, que sólo suben sustituyendo por dobles lo que ejecutan. Eso sí
+      sería teatro, y la aceptación lo prohíbe.
     why: >
       Evidencia directa de la auditoría 2026-08-06: los TRES defectos P0
       encontrados salieron de los tres módulos peor cubiertos del repo
@@ -2392,7 +2420,7 @@ items:
       entrada se fijó antes de saber esto; alcanzarlo hoy exigiría faltar a su
       propio criterio.
     priority: 2
-    status: pending
+    status: done
 
   - id: t9-inference-outcomes-sin-ledger
     title: "El hub audita cada llamada… y nadie le pasa el Merkle: 0 eventos `model.called` en 26.239 registros"
@@ -2592,5 +2620,79 @@ items:
       Lo que se fija es ausencia de traceback, no que devuelvan datos: un store
       vacío contesta vacío y eso es correcto. Cobertura medida antes y después,
       con el número en el commit.
+    priority: 2
+    status: pending
+
+  - id: t13-sonda-cuota-obsoleta
+    title: "`cuota_agotada()` mide la pregunta equivocada y ahora hay algo mejor"
+    why: >
+      Medido el 2026-08-11: la sonda gasta UNA petición y responde "¿puedo
+      llamar?" cuando la pregunta real es "¿puedo llamar 285 veces?". Dijo
+      "disponible" minutos antes de que la cadena reventara con `requests per
+      day`, y no mentía — medía otra cosa. Es estructuralmente incapaz de
+      detectar un límite por número de peticiones.
+
+      Desde el mismo día `coste_estimado()` + `--presupuesto` hacen bien ese
+      trabajo: cuentan antes de gastar. La sonda quedó al lado, cubriendo sólo
+      el caso "la cadena no responde en absoluto", que es real pero mucho más
+      estrecho de lo que su nombre promete, y encima **consume una petición del
+      presupuesto que el banco acaba de calcular**.
+
+      Decidir: reducirla a lo que sí hace (renombrar a algo como
+      `cadena_no_responde()`) o retirarla. No dejarla con un nombre que promete
+      lo que no puede.
+    targets:
+      - "scripts/fitness_run.py"
+    acceptance: >
+      El nombre describe lo que la función comprueba de verdad, y su docstring
+      dice explícitamente que NO detecta límites por número de peticiones y que
+      para eso está `coste_estimado()`. Si se retira, que ningún camino quede
+      sin la comprobación de presupuesto.
+    priority: 2
+    status: pending
+
+  - id: t14-campana-redteam-remedir
+    title: "Los venvs ya están, pero las cifras del Apéndice B siguen sin remedir"
+    why: >
+      t11 rehizo `.venv-redteam-garak` y `.venv-redteam-pyrit` el 2026-08-11 y
+      verificó que EJECUTAN (garak arranca, los 12 símbolos del harness de pyrit
+      resuelven). Lo que no se hizo —y quedó escrito en el README y en la ficha
+      para que nadie lo confunda— es volver a correr la campaña.
+
+      Las cifras del Apéndice B se midieron con la separación intacta, antes de
+      que el venv se fusionara y se borrara. Ya se PUEDEN reproducir; nadie lo
+      ha hecho. Mientras tanto no deben citarse como actuales.
+    targets:
+      - "scripts/redteam/README.md"
+    acceptance: >
+      Campaña corrida con los dos venvs separados, cifras nuevas sustituyendo
+      las del Apéndice B con su fecha, y la advertencia del README retirada
+      porque ya no aplica. Si algún número no se reproduce, decirlo con esas
+      palabras en vez de dejar el viejo.
+    priority: 3
+    status: pending
+
+  - id: t15-research-tick-doble-pasada
+    title: "El tick de investigación corrió DOS veces el 10-ago y la segunda pisó el informe bueno"
+    why: >
+      Observado el 2026-08-11 sin buscarlo. El ledger registra un
+      `research_tick` a las 00:14 con `queries_count: 12` y
+      `findings_count: 122`, y `docs/knowledge/research_2026-08-10.md` tiene los
+      122. Pero `docs/inbox/research_2026-08-10.md` quedó escrito a las **03:18**
+      con **4 hallazgos** y "Consultas expandidas (3)" — una pasada degradada
+      que sobrescribió la buena y **no dejó NINGUNA entrada en el ledger**.
+
+      El guardia `already_ran_today` debería haberlo impedido: cierra por fecha
+      + sha del manifiesto curado. O el sha cambió entre ambas, o la segunda
+      pasada no vino del daemon. No se ha averiguado cuál, y una escritura sin
+      rastro en el ledger es exactamente la clase de cosa que este repositorio
+      no puede permitirse dejar sin explicar.
+    targets:
+      - "src/atlas/core/orchestrator_parts/maintenance_facade.py"
+    acceptance: >
+      Explicado de dónde salió la segunda pasada, con evidencia. Si el guardia
+      tiene un agujero, cerrado con test de regresión; si vino de fuera del
+      daemon, dicho y documentado. Y que una pasada que sobrescribe un informe
+      deje rastro en el ledger pase lo que pase.
     priority: 2
     status: pending
