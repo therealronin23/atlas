@@ -2780,7 +2780,32 @@ items:
       seguro en cada uno. Test que falle si aparece un escritor nuevo que
       dependa del cwd.
     priority: 2
-    status: pending
+    status: done
+    done_2026_08_11: >
+      Inventariado: 47 usos, y de esa raíz cuelga casi todo el estado que
+      escribe el daemon — workspace/self_build/*.json, workspace/research/
+      state.json, workspace/mcp/*, workspace/lessons, docs/design/
+      mcp_catalog_*.yaml y los informes de investigación.
+
+      El hallazgo: la unidad systemd NO define `ATLAS_CORE_ROOT`. Define
+      `WorkingDirectory=/home/ronin/proyectos/atlas-core`, y por eso funciona.
+      En producción la raíz se resuelve por el respaldo del cwd, y lo que la
+      mantiene correcta es una directiva que vive FUERA del repositorio y que
+      nada comprobaba. Borra esa línea y el daemon escribe su estado en $HOME
+      sin un solo error — el mismo perfil que t15.
+
+      Cerrado con `tests/test_project_root_anchored.py`: fija el
+      comportamiento (la variable gana al cwd, el cwd es el respaldo, la ruta
+      se resuelve) y comprueba que la unidad ancla la raíz de alguna de las
+      dos formas, con el `WorkingDirectory` apuntando a un repo Atlas de
+      verdad. El detector está aislado en una función pura y verificado con
+      los tres casos, porque la unidad del operador es configuración de su
+      sistema y no se toca ni para probar. En máquinas sin unidad, skip
+      honesto.
+
+      NO se cambió el comportamiento a propósito: hacer que `_project_root()`
+      lance rompería los tests que usan raíces temporales, que es un uso
+      legítimo.
 
   - id: t17-frontera-privacidad-sin-test
     title: "Que ningún dato privado llegue al grafo compartible no tiene test"
