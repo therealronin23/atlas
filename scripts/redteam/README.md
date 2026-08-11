@@ -22,28 +22,35 @@ python3 -m venv .venv-redteam-pyrit
 Las campañas Garak usan `.venv-redteam-garak`; Crescendo usa
 `.venv-redteam-pyrit`. Las demos sin esas herramientas pueden usar el venv principal.
 
-> **ESTADO REAL DE ESTA MÁQUINA (2026-08-10) — leer antes de correr nada.**
+> **ESTADO REAL DE ESTA MÁQUINA (2026-08-11) — leer antes de correr nada.**
 >
-> **No hay ningún venv de red-team montado.** El bloque de arriba es la
-> instrucción a seguir, no una descripción de lo que existe: hay que crear los
-> dos desde cero antes de correr una campaña.
+> **Los dos venvs existen y funcionan**, rehechos hoy según ADR-056 con los
+> extras de `pyproject.toml`:
 >
-> Cómo se llegó aquí, porque explica la trampa: durante un tiempo hubo **uno
-> solo**, `.venv-redteam`, con garak 0.15.1 y pyrit 0.14.0 **juntos** — la
-> separación que este documento exige se había deshecho y nadie actualizó el
+> | venv | contenido | tamaño | `pip check` | ejecuta |
+> |---|---|---|---|---|
+> | `.venv-redteam-garak` | garak 0.15.1 + torch 2.13.0+cpu | 1,9 GB | limpio | `garak --version` → `v0.15.1`, rc=0 |
+> | `.venv-redteam-pyrit` | pyrit 0.14.0 | 1,0 GB | limpio | los 12 símbolos que importa `pyrit_crescendo.py` resuelven |
+>
+> Comprobado ejecutando, no sólo instalando: un `pip check` limpio dice que las
+> dependencias son consistentes, no que la herramienta arranque. Son cosas
+> distintas y aquí se verifican las dos.
+>
+> **Lo que había antes, porque explica por qué la separación importa:** durante
+> un tiempo hubo **uno solo**, `.venv-redteam`, con garak y pyrit **juntos** —
+> la separación que este documento exige se había deshecho y nadie actualizó el
 > texto, así que cada orden de ejemplo fallaba al instante mientras el documento
-> parecía correcto. Además la incompatibilidad que motivó separarlos seguía
-> viva y violada en silencio (`garak requires datasets<4.0, but you have
-> 5.0.0`): los imports aguantaban, y una campaña que cargase un dataset de
-> verdad habría roto a mitad de corrida. Ese venv se borró el 2026-08-10 por
-> decisión del operador, junto con `.venv-desktop`, y con él sus 13 avisos de
-> CVE sin atender.
+> parecía correcto. Y la incompatibilidad que motivó separarlos seguía viva y
+> violada en silencio (`garak requires datasets<4.0, but you have 5.0.0`): los
+> imports aguantaban, y una campaña que cargase un dataset de verdad habría roto
+> a mitad de corrida. Ese venv se borró el 2026-08-10 por decisión del operador.
+> Con la separación restaurada, ese conflicto ya no aparece — de ahí que el
+> `pip check` limpio sea parte de la comprobación y no un detalle.
 >
-> **Consecuencia para las cifras de la tabla de abajo, y es la que importa:** se
-> midieron con la separación intacta y **no son reproducibles hoy**. Antes de
-> publicar una cifra nueva —o de citar las actuales— hay que rehacer los dos
-> venvs como manda ADR-056 y volver a medir. Un `pip check` limpio en ambos es
-> parte de la comprobación, no un detalle: es lo que faltó la última vez.
+> **Las cifras de la tabla de abajo siguen sin reproducirse.** Los venvs vuelven
+> a estar, así que ya *se puede* medir; pero nadie ha vuelto a correr la
+> campaña. No cites esas cifras como actuales hasta que alguien lo haga y las
+> sustituya.
 
 ## Demos
 

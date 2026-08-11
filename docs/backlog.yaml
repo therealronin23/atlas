@@ -2515,7 +2515,33 @@ items:
     status: pending
 
   - id: t11-redteam-venvs-rehacer
-    title: "Las cifras del Apéndice B no son reproducibles: no queda ningún venv de red-team"
+    title: "Venvs de red-team rehechos y verificados EJECUTANDO (las cifras del Apéndice B siguen sin remedir)"
+    cerrado_2026_08_11: >
+      Los dos venvs vuelven a existir, separados como manda ADR-056 y creados
+      desde los extras de pyproject.toml:
+
+        .venv-redteam-garak   garak 0.15.1 + torch 2.13.0+cpu   1,9 GB
+        .venv-redteam-pyrit   pyrit 0.14.0                      1,0 GB
+
+      `uv pip check` limpio en AMBOS — con la separación restaurada desaparece
+      el conflicto que motivó el ADR (`garak requires datasets<4.0, but you
+      have 5.0.0`), que en el venv fusionado estaba vivo y violado en silencio.
+
+      Verificado ejecutando, no sólo instalando, porque son cosas distintas:
+      `garak --version` arranca (v0.15.1, rc=0) y los 12 símbolos que importa
+      `scripts/redteam/pyrit_crescendo.py` resuelven contra pyrit 0.14.0. Mi
+      primera sonda probó `pyrit.orchestrator` —API vieja que el harness NO
+      usa— y falló; el error era de la sonda, no del venv.
+
+      Efecto en el preflight: recrear 2,9 GB de dependencias trae **1** aviso y
+      NO bloquea (`passed=True, cve_found=False`), frente a los 88 del venv
+      viejo. El único es `.venv-redteam-garak langchain==1.3.2 PYSEC-2026-2192
+      (fix: 1.3.9)`. `tests/test_redteam_docs_match_reality.py` pasa de `skip` a
+      3 pasando.
+
+      LO QUE NO SE HA HECHO: volver a correr la campaña. Las cifras del Apéndice
+      B ya se PUEDEN reproducir, pero nadie las ha remedido — no citarlas como
+      actuales hasta entonces. Eso es otro ítem, no éste.
     why: >
       `.venv-redteam` se borró el 2026-08-10 por decisión del operador, junto con
       `.venv-desktop` (2,7 GB y 88 avisos de CVE entre los dos). Antes de eso ya
@@ -2538,7 +2564,7 @@ items:
       Después, volver a medir las cuatro demos y sustituir la tabla del README
       con las cifras nuevas, o marcarlas como históricas con su fecha.
     priority: 3
-    status: pending
+    status: done
 
   - id: t12-mcp-shells-restantes
     title: "Los otros tres shells MCP: knowledge 65%, operating 67%, trunk 68%"
