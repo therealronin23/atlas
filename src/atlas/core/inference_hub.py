@@ -290,7 +290,12 @@ class InferenceResponse:
 #: catorce proveedores en el catálogo, volcarlos todos con su traza haría el
 #: error ilegible y engordaría cada registro del ledger.
 _RESUMEN_MAX_PROVEEDORES = 4
-_RESUMEN_MAX_CHARS = 110
+#: Subido de 110 a 200 el 2026-08-11. Con 110 el mensaje de Groq se cortaba
+#: JUSTO antes de decir de qué límite hablaba, y "Rate limit reache" no
+#: distingue `tokens per day` (hay que esperar a mañana) de `tokens per minute`
+#: (hay que espaciar las peticiones) — dos incidencias con arreglos opuestos.
+#: Costó una medición del banco de fitness averiguarlo por otra vía.
+_RESUMEN_MAX_CHARS = 200
 
 
 def _resumen_de_cadena(fallos: list[tuple[str, str]]) -> str:

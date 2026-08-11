@@ -563,3 +563,43 @@ def test_un_valor_de_entorno_invalido_no_rompe(tmp_path: Path, monkeypatch):
     )
 
     assert hub.requests[0].timeout_s is None
+
+
+def test_las_dos_llamadas_de_inferencia_esperan_el_cooldown_por_igual() -> None:
+    """Regresión de una asimetría medida el 2026-08-11.
+
+    ToolCoder hace DOS peticiones —planificar y el bucle principal— y sólo la
+    segunda pedía `wait_for_ratelimit`. Con toda la cadena rate-limitada, la
+    planificación se rendía al instante mientras la otra esperaba a que se
+    liberase la ventana. Bajo la ráfaga del banco de fitness eso mató 4 de las
+    primeras ~19 inferencias, y hacía parecer a Atlas peor de lo que es justo
+    en las condiciones que el banco crea.
+
+    Es la misma clase de asimetría que ya se pagó con los timeouts (120s en una
+    llamada, 300s en la otra), en el mismo fichero. El test compara las DOS
+    peticiones entre sí en vez de afirmar un valor suelto: lo que no puede
+    volver a pasar es que diverjan.
+    """
+    import ast
+    from pathlib import Path
+
+    fuente = Path("src/atlas/core/tool_coder.py").read_text(encoding="utf-8")
+    arbol = ast.parse(fuente)
+
+    peticiones = [
+        nodo
+        for nodo in ast.walk(arbol)
+        if isinstance(nodo, ast.Call)
+        and isinstance(nodo.func, ast.Name)
+        and nodo.func.id == "InferenceRequest"
+    ]
+
+    assert len(peticiones) >= 2, "se esperaban al menos dos InferenceRequest"
+
+    for peticion in peticiones:
+        claves = {kw.arg for kw in peticion.keywords}
+        assert "wait_for_ratelimit" in claves, (
+            f"InferenceRequest en la línea {peticion.lineno} no pide "
+            "wait_for_ratelimit; la otra sí. Una cadena rate-limitada mataría "
+            "sólo a ésta."
+        )

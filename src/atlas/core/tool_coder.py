@@ -399,6 +399,18 @@ class ToolCoder:
                 InferenceRequest(
                     prompt=prompt, level=level, task_id="tool_coder_plan",
                     max_tokens=600, timeout_s=self._infer_timeout_s,
+                    # Espera el cooldown igual que el bucle principal (línea
+                    # ~681). Sin esto la planificación se rinde en cuanto TODA
+                    # la cadena está rate-limitada, mientras la llamada
+                    # siguiente sí espera: la misma asimetría dentro del mismo
+                    # fichero que ya se pagó con los timeouts (120s vs 300s).
+                    #
+                    # El incidente del 2026-07-08 —5 delegaciones de ToolCoder
+                    # muertas por all_failed cuando esperar ~60s las habría
+                    # salvado— se arregló en la llamada de abajo y se dejó
+                    # ésta. Medido el 2026-08-11: bajo la ráfaga del banco de
+                    # fitness, 4 de las primeras ~19 inferencias murieron aquí.
+                    wait_for_ratelimit=True,
                 ),
             )
             if response.success and response.text.strip():
