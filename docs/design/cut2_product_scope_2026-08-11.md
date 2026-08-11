@@ -54,6 +54,19 @@ ahora**, mientras la deriva es de tres releases y los anclajes son literalmente
 la misma línea. El coste medido es re-aplicar 8 líneas y recompilar. Esperar
 sólo hace que esa cifra crezca.
 
+> **HECHO Y VERIFICADO el 2026-08-11**, unas horas después de escribir lo de
+> arriba. Rama `spike/pin-1.132.0` en el checkout del fork. Los dos anclajes
+> estaban exactamente en `:1298` y `:1306`; `contrib/atlas/` (4 ficheros)
+> entró **sin tocar una línea**. Verificado en los tres niveles, con el código
+> de salida leído fuera de la tubería: `npm install` rc=0 (hizo falta el Node
+> 24.18.0 de nvm — la puerta de `preinstall.ts` rechaza el 24.15.0 del PATH),
+> `npm run compile` rc=0 con «0 errors» en 3,92 min, y `node --test` 21/21. Y
+> **arrancando** sobre Xvfb :99, que es lo que cierra «compilar no es
+> ejecutar»: el Workbench 1.132.0 spawneó el `atlas coding-bridge` real
+> escuchando en 7342. La rama anterior queda intacta como rollback.
+>
+> Lo que esto convierte en dato: subir el pin ya no es una estimación.
+
 Esto corrige de paso la intuición que traía el proyecto: la conversación
 temía un rebase caro. El rebase caro era el de **Void** (~33 versiones), y ese
 ya se descartó al elegir CodeOSS como host. El del host es de otro orden.

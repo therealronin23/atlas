@@ -694,6 +694,17 @@ work_orders:
       compile-src with 0 errors', 3.82 min, and the .js files present in out/.
       The node --test runs (14/14 and 7/7) also produced real pass counts.
       Those stand; the tsgo ones do not.
+    evidence_pin_bump_executed_2026_08_11: >
+      The 1.132.0 pin bump is no longer an estimate: it was executed and
+      verified. Branch spike/pin-1.132.0 in the fork checkout. Both anchors sat
+      exactly at :1298 and :1306 as measured; contrib/atlas (4 files) ported
+      without touching a single line. Verified at three levels with the exit
+      status read OUTSIDE the pipe: npm install rc=0 (needed Node 24.18.0 from
+      nvm -- preinstall.ts rejects the 24.15.0 on PATH), npm run compile rc=0
+      with '0 errors' in 3.92 min, node --test 21/21. And RUNNING on Xvfb :99,
+      which is what closes 'compiling is not running': the 1.132.0 Workbench
+      spawned the real atlas coding-bridge listening on 7342. Artifacts checked
+      in out/, not inferred. The previous branch stays intact as rollback.
     evidence_product_scope_2026_08_11: >
       docs/design/cut2_product_scope_2026-08-11.md measures the seven product
       items. PIN: upstream is 1.132.0 against a local pin of 1.129.1, three
