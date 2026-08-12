@@ -135,3 +135,18 @@ claude -p --model sonnet "Sesión nueva. Sigue AGENTS.md. Después: \
 plan toasty). Registrar el resultado en WORK_LEDGER + memoria
 succession-proofing (es la métrica (d) del plan maestro — número verde o no
 hay sucesión, doctrina §2.7).
+
+## Auditoría 2026-08-12 — un fallo de tool debe poder registrarse como FAIL
+
+La repetición posterior al hardening no llegó al grader: el servidor de grafo
+embebido se construía sin el checkout y devolvía frescura `UNKNOWN`; dos
+propuestas GoldenRoute fallaron correctamente su validación aislada (36 fallos
+ambientales por Bwrap anidado/recursos locales, mypy verde); después, el guard
+repitió las mismas tools caras hasta superar el límite asequible del proveedor.
+
+El contrato queda separado en dos capas: (a) el harness exige que el modelo
+intente cada llamada exacta y no acepta auto-reporte; (b) el grader sólo concede
+el ítem si el resultado emparejado fue exitoso. Una llamada exacta con error ya
+permite cerrar la sesión y registrar un FAIL verificable; no autoriza reintento
+automático, aprobación ni pase. El trunk recibe además `cwd` como `repo_root`,
+la misma identidad de checkout que usa `atlas reality`.

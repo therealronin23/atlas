@@ -275,6 +275,51 @@ class TestAgenticDispatchProducesGradeableTranscript:
         assert _tool_result_succeeded("\n(exit 1) command failed") is False
         assert len(_missing_f26_evidence(evidence)) == 5
 
+    def test_failed_required_tools_are_not_retried_after_the_model_reports_them(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Una tool requerida puede fallar de verdad (grafo stale, validación
+        ambiental). Eso debe producir una corrida gradeable FAIL, no repetir
+        el efecto caro hasta agotar proveedor y perder incluso el receipt F2.6."""
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        def failed_dispatch(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
+            if name in {"trunk_invoke_readonly", "GoldenRoute"}:
+                return "error: fallo verificable de la tool"
+            if name == "Bash":
+                return "# WORK LEDGER\n2026-08-12"
+            return "fuente leída"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", failed_dispatch)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _tool_call(
+                    "graph", "trunk_invoke_readonly", tool="graph_importers",
+                    module="atlas.core.inference_hub",
+                ),
+                _tool_call("ledger", "Bash", command="sed -n 1,120p WORK_LEDGER.md"),
+                _tool_call(
+                    "golden", "GoldenRoute",
+                    text='añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
+                ),
+                _tool_call("roles", "Read", path="docs/design/actor_roles.md"),
+                _tool_call("handoff", "Read", path="docs/handoff/GENERATED/00_ESTADO.md"),
+            ]),
+            _resp(text=_FINAL_TEXT_ALL_MARKERS),
+        ])
+
+        proc = dispatch_module.agentic_dispatch(
+            _REALISTIC_F26_PROMPT, tmp_path, hub=hub, orch=object(),
+        )
+
+        assert proc.returncode == 0
+        assert len(hub.requests) == 2
+        transcript = tmp_path / "failed-tools.txt"
+        transcript.write_text(proc.stdout, encoding="utf-8")
+        graded = grade_f26_transcript(transcript)
+        assert graded["item_2"] == "fail"
+        assert graded["item_3"] == "fail"
+
     def test_out_of_schema_edit_is_rejected_before_execution(self, tmp_path: Path) -> None:
         from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
 
@@ -387,6 +432,39 @@ class TestDispatchContract:
         assert record["success"] is True
         assert record["overall_result"] in {"pass", "fail"}  # gradeó de verdad
         assert record["recorded"] is True
+
+
+class TestGraphToolUsesTheActiveRepo:
+    def test_passes_cwd_as_repo_root_to_freshness_gate(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from types import SimpleNamespace
+
+        import atlas.mcp.graph_server as graph_server_module
+        import atlas.memory.project_graph as project_graph_module
+        from atlas.core.self_maintenance.f26_agentic_dispatch import (
+            _tool_trunk_invoke_readonly,
+        )
+
+        db = tmp_path / "graph.kuzu"
+        db.touch()
+        seen: dict[str, object] = {}
+
+        def fake_build(path: Path, *, repo_root: Path | None = None) -> object:
+            seen.update(path=path, repo_root=repo_root)
+            tool = SimpleNamespace(name="graph_importers", fn=lambda **_: ["atlas.consumer"])
+            manager = SimpleNamespace(list_tools=lambda: [tool])
+            return SimpleNamespace(_tool_manager=manager)
+
+        monkeypatch.setattr(project_graph_module, "DEFAULT_GRAPH_DB", db)
+        monkeypatch.setattr(graph_server_module, "build_graph_server", fake_build)
+
+        result = _tool_trunk_invoke_readonly(
+            "graph_importers", module="atlas.core.inference_hub", cwd=tmp_path,
+        )
+
+        assert seen == {"path": db, "repo_root": tmp_path}
+        assert json.loads(result) == ["atlas.consumer"]
 
 
 class TestBashToolIsSandboxedReadOnly:

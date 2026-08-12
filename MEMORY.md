@@ -1,5 +1,9 @@
 # MEMORY
 
+- `failed-tool-is-gradeable-evidence`: una llamada exacta que falla no acredita
+  la capacidad, pero sí acredita el intento y debe poder cerrar una evaluación
+  como FAIL. Repetir automáticamente efectos caros hasta agotar el proveedor
+  destruye el diagnóstico y puede duplicar propuestas sin mejorar evidencia.
 - `transcript-events-over-self-report`: que un modelo escriba “leí X” o “usé
   GoldenRoute” no es evidencia de que lo hiciera. Las rúbricas operativas
   validan el evento de tool real y sus argumentos semánticos; el harness puede

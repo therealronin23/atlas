@@ -22,9 +22,18 @@ de escribir: `atlas reality --json`.
   fabricar tool calls; el transcript conserva tool results y la aprobación
   explícita sólo puede aplicar una vez la petición literal F2.6; `Edit` queda
   fuera del harness completo y se rechaza también en runtime (101 tests focales;
-  mypy estricto limpio). **Próxima
-  acción:** repetir la rúbrica ENTERA desde el commit del hardening; 6/6 o el
-  siguiente gap sigue abierto.
+  mypy estricto limpio). La repetición sobre `3653814` encontró dos límites
+  adicionales sin maquillarlos: el wrapper del trunk construía el servidor sin
+  `repo_root` y por eso devolvía `head_sha=<unavailable>` aunque `atlas reality`
+  acreditaba FRESH; GoldenRoute propuso dos veces, pero la validación en Bwrap
+  falló cerrada por 36 fallos ambientales del jail anidado (mypy verde; no se
+  aprobó ni aplicó). El lazo volvió a pedir las tools fallidas hasta que
+  OpenRouter rechazó 6.037 tokens de prompt frente a 5.699 asequibles, de modo
+  que esa corrida no dejó record F2.6. Corregido por TDD: el trunk recibe el
+  checkout activo y una tool exacta fallida permite terminar con transcript
+  gradeable FAIL, sin reejecutar efectos caros. **Próxima acción:** commitear el
+  ajuste, refrescar el grafo y repetir una sola rúbrica completa si queda un
+  proveedor capaz; el 6/6 sigue abierto y no se fuerza.
 
 - **2026-08-06 — CORRECCIÓN DE REGISTRO: dos commits contienen cambios que su
   mensaje no menciona.** `git add <ficheros> && git commit` commitea el ÍNDICE

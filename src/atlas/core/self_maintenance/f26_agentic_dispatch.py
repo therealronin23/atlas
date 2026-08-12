@@ -270,6 +270,48 @@ def _record_f26_evidence(
             evidence.add("golden_route")
 
 
+def _record_f26_attempt(attempts: set[str], *, name: str, arguments: str) -> None:
+    """Registra que el modelo intentó la llamada exacta exigida por F2.6.
+
+    El éxito sigue siendo responsabilidad del grader y de
+    :func:`_record_f26_evidence`. Separar ambos conceptos evita convertir un
+    fallo verificable de infraestructura en un bucle que repite efectos caros
+    (en particular GoldenRoute) hasta agotar el proveedor sin registrar la
+    corrida como FAIL.
+    """
+    try:
+        args = json.loads(arguments) if arguments else {}
+    except json.JSONDecodeError:
+        return
+    if not isinstance(args, dict):
+        return
+
+    if name == "trunk_invoke_readonly":
+        if args.get("tool") in {"graph_importers", "graph_blast_radius"} \
+                and args.get("module") == "atlas.core.inference_hub":
+            attempts.add("graph")
+    elif name == "Read":
+        path = str(args.get("path", ""))
+        if path == "docs/design/actor_roles.md":
+            attempts.add("actor_roles")
+        elif path == "docs/handoff/GENERATED/00_ESTADO.md":
+            attempts.add("handoff")
+    elif name == "Bash":
+        try:
+            argv = shlex.split(str(args.get("command", "")))
+        except ValueError:
+            argv = []
+        if argv == ["sed", "-n", "1,120p", "WORK_LEDGER.md"]:
+            attempts.add("ledger")
+    elif name == "GoldenRoute":
+        request = " ".join(str(args.get("text", "")).split()).casefold()
+        if (
+            "docs/continuation/continuation_state.md" in request
+            and "f2.6 ejecutado" in request
+        ):
+            attempts.add("golden_route")
+
+
 _F26_EVIDENCE_ORDER = (
     ("graph", "trunk_invoke_readonly graph_importers/graph_blast_radius para atlas.core.inference_hub"),
     ("ledger", "Bash sed -n 1,120p WORK_LEDGER.md"),
@@ -341,13 +383,15 @@ def _tool_grep(pattern: str, *, cwd: Path) -> str:
     return proc.stdout[:4000] or "(sin resultados)"
 
 
-def _tool_trunk_invoke_readonly(tool: str, *, module: str = "") -> str:
+def _tool_trunk_invoke_readonly(
+    tool: str, *, module: str = "", cwd: Path | None = None,
+) -> str:
     from atlas.memory.project_graph import DEFAULT_GRAPH_DB
     from atlas.mcp.graph_server import build_graph_server
 
     if not DEFAULT_GRAPH_DB.exists():
         return "error: grafo no disponible (BD Kuzu ausente en este entorno)."
-    server = build_graph_server(DEFAULT_GRAPH_DB)
+    server = build_graph_server(DEFAULT_GRAPH_DB, repo_root=cwd)
     tools = {t.name: t for t in server._tool_manager.list_tools()}  # noqa: SLF001
     fn = tools.get(tool)
     if fn is None:
@@ -485,7 +529,9 @@ def _dispatch_tool(
         if name == "Grep":
             return _tool_grep(args["pattern"], cwd=cwd)
         if name == "trunk_invoke_readonly":
-            return _tool_trunk_invoke_readonly(args["tool"], module=args.get("module", ""))
+            return _tool_trunk_invoke_readonly(
+                args["tool"], module=args.get("module", ""), cwd=cwd,
+            )
         if name == "GoldenRoute":
             return _tool_golden_route(
                 args["text"], orch=orch, approval_permit=golden_route_approval_permit,
@@ -554,6 +600,7 @@ def agentic_dispatch(
     error: str | None = None
     enforce_evidence = _is_full_f26_prompt(prompt)
     evidence: set[str] = set()
+    attempts: set[str] = set()
     approval_permit = (
         _F26ApprovalPermit(
             actor=golden_route_approval_actor,
@@ -594,7 +641,11 @@ def agentic_dispatch(
         ))
 
         if not response.tool_calls:
-            missing = _missing_f26_evidence(evidence) if enforce_evidence else []
+            # Reintentar sólo lo que el modelo nunca intentó. Una llamada
+            # exacta que devolvió error debe quedar en el transcript para que
+            # el grader falle honestamente; repetirla puede duplicar efectos
+            # caros y convertir un FAIL registrable en agotamiento de sesión.
+            missing = _missing_f26_evidence(attempts) if enforce_evidence else []
             if missing:
                 messages.append({"role": "assistant", "content": response.text or ""})
                 messages.append({"role": "user", "content": _evidence_correction(missing)})
@@ -625,6 +676,9 @@ def agentic_dispatch(
                     dispatch_kwargs["golden_route_approval_permit"] = approval_permit
                 result_str = _dispatch_tool(tc["name"], tc["arguments"], **dispatch_kwargs)
             if enforce_evidence:
+                _record_f26_attempt(
+                    attempts, name=tc["name"], arguments=tc["arguments"],
+                )
                 _record_f26_evidence(
                     evidence,
                     name=tc["name"], arguments=tc["arguments"], result=result_str,
