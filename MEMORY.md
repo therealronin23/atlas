@@ -4,6 +4,9 @@
   la capacidad, pero sí acredita el intento y debe poder cerrar una evaluación
   como FAIL. Repetir automáticamente efectos caros hasta agotar el proveedor
   destruye el diagnóstico y puede duplicar propuestas sin mejorar evidencia.
+- `tool-result-over-final-claim`: si la respuesta final contradice el resultado
+  emparejado de una tool, manda el resultado. “Lo añadí” después de una
+  validación GoldenRoute fallida es un fallo auditable, no cumplimiento.
 - `transcript-events-over-self-report`: que un modelo escriba “leí X” o “usé
   GoldenRoute” no es evidencia de que lo hiciera. Las rúbricas operativas
   validan el evento de tool real y sus argumentos semánticos; el harness puede

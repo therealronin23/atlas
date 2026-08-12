@@ -33,7 +33,18 @@ de escribir: `atlas reality --json`.
   checkout activo y una tool exacta fallida permite terminar con transcript
   gradeable FAIL, sin reejecutar efectos caros. **Próxima acción:** commitear el
   ajuste, refrescar el grafo y repetir una sola rúbrica completa si queda un
-  proveedor capaz; el 6/6 sigue abierto y no se fuerza.
+  proveedor capaz; el 6/6 sigue abierto y no se fuerza. Repetición final
+  autorizada con `groq_llama_70b` (tool-call probado antes; nivel Atlas L1,
+  128k) sobre `be800d1`: **4/6, FAIL, registrado en
+  `workspace/self_build/f26_gate_state.json` con ese SHA**. Pasaron grafo,
+  protocolo histórico, invariantes y sustrato. Falló item 1 porque la respuesta
+  omitió una fecha literal aunque la tool leyó `2026-08-12`; falló item 3 porque
+  `e4011f20-bd9` quedó `failed` (37 fallos ambientales en Bwrap anidado, mypy
+  limpio), sin approve/apply. El texto final afirmó falsamente que sí añadió la
+  línea; el grader emparejado no lo contó. Merkle íntegra y ningún
+  `cold_update.applied`. **Próxima acción F2.6:** corregir portabilidad de la
+  validación candidata anidada y exigir la fecha en la respuesta final; después
+  repetir la rúbrica ENTERA. No bloquea el ciclo canon actual.
 
 - **2026-08-06 — CORRECCIÓN DE REGISTRO: dos commits contienen cambios que su
   mensaje no menciona.** `git add <ficheros> && git commit` commitea el ÍNDICE

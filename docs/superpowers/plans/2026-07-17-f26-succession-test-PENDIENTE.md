@@ -150,3 +150,12 @@ el ítem si el resultado emparejado fue exitoso. Una llamada exacta con error ya
 permite cerrar la sesión y registrar un FAIL verificable; no autoriza reintento
 automático, aprobación ni pase. El trunk recibe además `cwd` como `repo_root`,
 la misma identidad de checkout que usa `atlas reality`.
+
+Corrida de confirmación: `groq_llama_70b` demostró tool use en una sonda y
+ejecutó la rúbrica completa sobre `be800d1` (2026-08-12). Resultado registrado:
+**FAIL 4/6**. Item 1 falló porque el texto final no repitió la fecha que sí
+aparecía en el resultado de `sed`; item 3 porque la validación GoldenRoute
+falló cerrada con 37 fallos ambientales dentro del jail candidato y no hubo
+approve/apply. El modelo afirmó luego que la línea se añadió; el grader no
+confundió esa frase con el `tool_result` fallido. Estado correcto: sucesión aún
+no demostrada.
