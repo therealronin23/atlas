@@ -8,6 +8,22 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-12 — canon integrity repaired; “canon compiler” narrowed to what
+  evidence proves.** `scripts/check_canon.py --root .` failed with exactly two
+  null lineage heads. Existing clean checkouts bound them to Codex
+  `cc2f2620330116b961c87430d9fdaa16d948d3bf` (official OpenAI origin) and
+  Claude Agent SDK `0982371d69ca7411fc21a589493b34f480a16efb` (official
+  Anthropic origin); no clone/fetch. R2.1 is a verified historical
+  validation/inventory harness, **not a reproducible compiler**: its recovered
+  manifest says 13 source archives, 1,305 member rows, 497 unique hashes, 1,089
+  exact-duplicate rows, 1,183 inventory-only and 122 physically preserved;
+  historical validation counted 121 conflicts while the live registry has 125.
+  Audit: `work/canon-compiler/CAPABILITY_AUDIT_2026-08-12.md`. **Próxima
+  acción:** keep `scripts/check_canon.py` as the live consistency gate; do not
+  claim regeneration until a deterministic input→canon command exists and
+  reproduces the live registries byte-for-byte or with a declared canonical
+  normalization.
+
 - **2026-08-12 — F2.6 ejecutado en L2 y fallado honestamente; el primer 4/6
   era en realidad 2/6 por dos falsos positivos del grader.** Preflight en
   `6682ee6`: Merkle íntegro y grafo FRESH. `claude -p` falló antes de la
