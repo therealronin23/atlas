@@ -8,6 +8,24 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-12 — F2.6 ejecutado en L2 y fallado honestamente; el primer 4/6
+  era en realidad 2/6 por dos falsos positivos del grader.** Preflight en
+  `6682ee6`: Merkle íntegro y grafo FRESH. `claude -p` falló antes de la
+  rúbrica con OAuth 401 revocado; `openrouter_hermes4_70b` no tiene endpoint
+  con tool use; `openrouter_mistral_large` sí hizo una tool call real, pero el
+  driver estándar reservó 4.096 tokens frente a 3.725 asequibles. La corrida
+  oficial inyectada con tope 1.536 terminó y se registró `fail`: el modelo
+  llamó sólo `graph_overview` y luego afirmó sin eventos haber leído docs y
+  usado GoldenRoute. El grader viejo lo contó 4/6; regradeado exige
+  `graph_importers|graph_blast_radius` y presencia real de GoldenRoute: 2/6.
+  Harness endurecido por TDD para devolver finales prematuros al lazo sin
+  fabricar tool calls; el transcript conserva tool results y la aprobación
+  explícita sólo puede aplicar una vez la petición literal F2.6; `Edit` queda
+  fuera del harness completo y se rechaza también en runtime (101 tests focales;
+  mypy estricto limpio). **Próxima
+  acción:** repetir la rúbrica ENTERA desde el commit del hardening; 6/6 o el
+  siguiente gap sigue abierto.
+
 - **2026-08-06 — CORRECCIÓN DE REGISTRO: dos commits contienen cambios que su
   mensaje no menciona.** `git add <ficheros> && git commit` commitea el ÍNDICE
   ENTERO, no sólo lo añadido; lo di por acotado y no lo está.

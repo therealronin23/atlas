@@ -1,5 +1,37 @@
 # F2.6 — Test de sucesión (PENDIENTE de ejecución; prompt listo)
 
+## Estado 2026-08-12 — corrida L2 real, fallo y hardening del harness
+
+La autorización explícita del operador permitió ejecutar el gate al quedar
+`due` por ADR-083..085. La vía Claude falló antes de empezar (`401 OAuth access
+token has been revoked`). Un probe aislado demostró que
+`openrouter_hermes4_70b` no tiene endpoint con tool use y que
+`openrouter_mistral_large` sí lo tiene (tool call real, 91 tokens). El driver
+estándar volvió a fallar porque reservaba 4.096 tokens cuando la cuenta sólo
+podía costear 3.725; la interfaz inyectable ya prevista permitió repetir con el
+mismo prompt, tools y grader, limitando únicamente la salida a 1.536 tokens.
+
+La corrida terminó, se auto-registró en SHA
+`6682ee6efb9b5b2561e9dc53cd15dbd8d4485e23` y dio `fail`. El modelo llamó
+solamente `trunk_invoke_readonly(graph_overview)` y después afirmó en texto que
+había leído `WORK_LEDGER.md`, consultado blast radius y usado GoldenRoute. El
+grader antiguo otorgó 4/6: dos eran falsos positivos —el nombre wrapper
+`trunk_invoke_readonly` bastaba aunque el subcomando fuera `graph_overview`, y
+el ítem GoldenRoute pasaba por defecto si no había Edit.
+
+El hardening no baja la rúbrica ni inserta eventos. Ahora el ítem 2 inspecciona
+el subcomando (`graph_importers|graph_blast_radius`), el ítem 3 exige una llamada
+GoldenRoute real, y el driver rechaza una respuesta final mientras falten tool
+calls exitosas de grafo, ledger acotado, GoldenRoute, `actor_roles.md` y el pack
+de handoff. El transcript nuevo conserva cada `tool_result` emparejado por ID;
+una propuesta pendiente ya no acredita “aprobación registrada”. El modo de
+aplicar queda desactivado por defecto y sólo una identidad de operador explícita
+puede autorizar validate → approve → apply de la petición literal F2.6; ninguna
+otra ruta o línea hereda esa autoridad. Regradeado con esas reglas, el transcript
+real es **2/6**. TDD: 101 tests focales verdes; mypy estricto limpio. Pendiente
+inmediato: commitear este hardening y repetir la rúbrica ENTERA desde ese SHA;
+sólo 6/6 cierra el gap.
+
 ## Estado 2026-07-22 (MAXIMUS Cycle 12) — mitad barata construida, NO es la
 ## solución definitiva; diseño real para sesión futura, abajo
 

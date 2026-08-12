@@ -1,5 +1,9 @@
 # MEMORY
 
+- `transcript-events-over-self-report`: que un modelo escriba “leí X” o “usé
+  GoldenRoute” no es evidencia de que lo hiciera. Las rúbricas operativas
+  validan el evento de tool real y sus argumentos semánticos; el harness puede
+  rechazar un cierre prematuro, nunca fabricar la acción que falta.
 - `security-hardening-invalidates-old-live-claims`: cuando una frontera
   posterior bloquea correctamente un runtime antes admitido, la evidencia E2E
   antigua pasa a histórica. Conservar código y pruebas, separar el carril de

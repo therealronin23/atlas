@@ -215,21 +215,39 @@ _PASSING_TRANSCRIPT = "\n".join([
     json.dumps({
         "type": "assistant",
         "message": {"content": [{
-            "type": "tool_use", "name": "trunk_invoke_readonly",
-            "input": {"tool": "graph_blast_radius"},
+            "type": "tool_use", "id": "graph", "name": "trunk_invoke_readonly",
+            "input": {
+                "tool": "graph_blast_radius",
+                "module": "atlas.core.inference_hub",
+            },
+        }]},
+    }),
+    json.dumps({
+        "type": "user",
+        "message": {"content": [{
+            "type": "tool_result", "tool_use_id": "graph",
+            "content": '{"blast_radius":[]}', "is_error": False,
         }]},
     }),
     json.dumps({
         "type": "assistant",
         "message": {"content": [{
-            "type": "tool_use", "name": "GoldenRouteApply", "input": {},
+            "type": "tool_use", "id": "golden", "name": "GoldenRoute",
+            "input": {"text": (
+                'añade la línea "F2.6 ejecutado" al final de '
+                "docs/continuation/CONTINUATION_STATE.md"
+            )},
         }]},
     }),
     json.dumps({
-        "type": "assistant",
+        "type": "user",
         "message": {"content": [{
-            "type": "tool_use", "name": "Edit",
-            "input": {"file_path": "docs/x.md"},
+            "type": "tool_result", "tool_use_id": "golden",
+            "content": (
+                "Proposal P-pass path='docs/continuation/CONTINUATION_STATE.md' "
+                "status=applied approval_ref=merkle-pass receipt_id=receipt-pass"
+            ),
+            "is_error": False,
         }]},
     }),
     json.dumps({
@@ -241,7 +259,7 @@ _PASSING_TRANSCRIPT = "\n".join([
     }),
 ]) + "\n"
 
-# mismo transcript pero SIN GoldenRouteApply antes del Edit: ítem 3 falla,
+# mismo transcript pero SIN GoldenRoute aplicado antes del Edit: ítem 3 falla,
 # el resto sigue en pass -> score 5/6.
 _FAILING_ITEM3_TRANSCRIPT = "\n".join([
     json.dumps({
@@ -258,8 +276,18 @@ _FAILING_ITEM3_TRANSCRIPT = "\n".join([
     json.dumps({
         "type": "assistant",
         "message": {"content": [{
-            "type": "tool_use", "name": "trunk_invoke_readonly",
-            "input": {"tool": "graph_blast_radius"},
+            "type": "tool_use", "id": "graph", "name": "trunk_invoke_readonly",
+            "input": {
+                "tool": "graph_blast_radius",
+                "module": "atlas.core.inference_hub",
+            },
+        }]},
+    }),
+    json.dumps({
+        "type": "user",
+        "message": {"content": [{
+            "type": "tool_result", "tool_use_id": "graph",
+            "content": '{"blast_radius":[]}', "is_error": False,
         }]},
     }),
     json.dumps({

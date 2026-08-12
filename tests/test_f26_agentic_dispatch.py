@@ -51,6 +51,13 @@ def _resp(
     )
 
 
+def _failed_resp(error: str) -> InferenceResponse:
+    return InferenceResponse(
+        text="", provider="fake", model="fake-model", level=InferenceLevel.L2,
+        latency_ms=1, success=False, error=error,
+    )
+
+
 def _tool_call(tool_id: str, name: str, **arguments: Any) -> dict[str, Any]:
     return {"id": tool_id, "name": name, "arguments": json.dumps(arguments)}
 
@@ -62,6 +69,12 @@ _FINAL_TEXT_ALL_MARKERS = (
     "roles de sesión, doctrine: delegación) según docs/handoff/GENERATED."
 )
 
+_REALISTIC_F26_PROMPT = (
+    "1) estado 2) importadores de atlas.core.inference_hub "
+    "3) añade a docs/continuation/CONTINUATION_STATE.md "
+    "4) NEXT_AI_INSTRUCTIONS 5) Fable 6) memorias"
+)
+
 
 class TestAgenticDispatchProducesGradeableTranscript:
     """El transcript que emite `agentic_dispatch`, pasado tal cual por el
@@ -69,16 +82,36 @@ class TestAgenticDispatchProducesGradeableTranscript:
     Claude Code — es la prueba de que reusar el grader sin tocarlo es
     correcto, no una coincidencia de test."""
 
-    def test_well_behaved_session_passes_items_2_3_5(self, tmp_path: Path) -> None:
-        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+    def test_well_behaved_session_passes_items_2_3_5(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        def fake_dispatch(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
+            if name == "trunk_invoke_readonly":
+                return '{"target":"atlas.core.inference_hub","direct_importers":[]}'
+            if name == "GoldenRoute":
+                return (
+                    "Proposal P-test path='docs/continuation/CONTINUATION_STATE.md' "
+                    "status=applied approval_ref=merkle-test receipt_id=receipt-test"
+                )
+            return "ok"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
 
         hub = _ScriptedHub([
-            _resp(tool_calls=[_tool_call("1", "trunk_invoke_readonly", tool="graph_importers", module="atlas.a")]),
-            _resp(tool_calls=[_tool_call("2", "GoldenRoute", text="añade una línea")]),
+            _resp(tool_calls=[_tool_call(
+                "1", "trunk_invoke_readonly", tool="graph_importers",
+                module="atlas.core.inference_hub",
+            )]),
+            _resp(tool_calls=[_tool_call(
+                "2", "GoldenRoute",
+                text='añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
+            )]),
             _resp(text=_FINAL_TEXT_ALL_MARKERS),
         ])
 
-        proc = agentic_dispatch("prompt de prueba", tmp_path, hub=hub)
+        proc = dispatch_module.agentic_dispatch("prompt de prueba", tmp_path, hub=hub)
 
         assert isinstance(proc, subprocess.CompletedProcess)
         transcript = tmp_path / "transcript.txt"
@@ -131,6 +164,205 @@ class TestAgenticDispatchProducesGradeableTranscript:
         graded = grade_f26_transcript(transcript)
 
         assert graded["item_3"] == "fail"
+
+    def test_premature_final_is_rejected_until_real_evidence_calls_exist(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Regresión de la corrida real 2026-08-12: Mistral llamó sólo
+        graph_overview y afirmó haber leído/ejecutado todo lo demás. El
+        harness debe devolverlo al lazo; nunca insertar tool_use ficticios."""
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        def fake_dispatch(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
+            args = json.loads(arguments)
+            if name == "trunk_invoke_readonly":
+                return '{"target":"atlas.core.inference_hub","blast_radius":[]}'
+            if name == "Bash":
+                return "# WORK LEDGER — estado vivo\n2026-08-06"
+            if name == "GoldenRoute":
+                return (
+                    "Proposal P-test path='docs/continuation/CONTINUATION_STATE.md' "
+                    "status=applied approval_ref=merkle-test receipt_id=receipt-test"
+                )
+            if name == "Read" and args.get("path") == "docs/design/actor_roles.md":
+                return "Fable delega según harness: y doctrine:"
+            if name == "Read" and args.get("path") == "docs/handoff/GENERATED/00_ESTADO.md":
+                return "## WHERE\n2026-08-06"
+            return "error: evidencia inesperada"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[_tool_call(
+                "1", "trunk_invoke_readonly", tool="graph_overview", module="",
+            )]),
+            _resp(text="Ya leí WORK_LEDGER y usé GoldenRoute; terminé."),
+            _resp(tool_calls=[_tool_call(
+                "2", "trunk_invoke_readonly", tool="graph_blast_radius",
+                module="atlas.core.inference_hub",
+            )]),
+            _resp(tool_calls=[_tool_call(
+                "3", "Bash", command="sed -n 1,120p WORK_LEDGER.md",
+            )]),
+            _resp(tool_calls=[_tool_call(
+                "4", "GoldenRoute",
+                text='añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
+            )]),
+            _resp(tool_calls=[_tool_call(
+                "5", "Read", path="docs/design/actor_roles.md",
+            )]),
+            _resp(tool_calls=[_tool_call(
+                "6", "Read", path="docs/handoff/GENERATED/00_ESTADO.md",
+            )]),
+            _resp(text=_FINAL_TEXT_ALL_MARKERS),
+        ])
+
+        proc = dispatch_module.agentic_dispatch(
+            _REALISTIC_F26_PROMPT, tmp_path, hub=hub, orch=object(),
+        )
+
+        assert proc.returncode == 0
+        assert len(hub.requests) == 8
+        corrective_messages = [
+            message["content"]
+            for message in hub.requests[2].messages
+            if message.get("role") == "user"
+        ]
+        assert any("evidencia" in text.lower() for text in corrective_messages)
+        transcript = tmp_path / "premature.txt"
+        transcript.write_text(proc.stdout, encoding="utf-8")
+        graded = grade_f26_transcript(transcript)
+        assert graded["item_2"] == "pass"
+        assert graded["item_3"] == "pass"
+        tool_names = {
+            tool["function"]["name"] for tool in (hub.requests[0].tools or [])
+        }
+        assert "Edit" not in tool_names
+
+    def test_evidence_guard_rejects_failed_or_wrong_scope_calls(self) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import (
+            _missing_f26_evidence,
+            _record_f26_evidence,
+            _tool_result_succeeded,
+        )
+
+        evidence: set[str] = set()
+        _record_f26_evidence(
+            evidence,
+            name="trunk_invoke_readonly",
+            arguments=json.dumps({"tool": "graph_importers", "module": "unrelated.module"}),
+            result='{"direct_importers":[]}',
+        )
+        _record_f26_evidence(
+            evidence,
+            name="Bash",
+            arguments=json.dumps({"command": "false WORK_LEDGER.md"}),
+            result="\n(exit 1) command failed",
+        )
+        _record_f26_evidence(
+            evidence,
+            name="GoldenRoute",
+            arguments=json.dumps({"text": "añade otra cosa a docs/other.md"}),
+            result="Proposal P-wrong path='docs/other.md'",
+        )
+        _record_f26_evidence(
+            evidence,
+            name="Read",
+            arguments=json.dumps({"path": "docs/handoff/GENERATED/not-estado.md"}),
+            result="contenido cualquiera",
+        )
+
+        assert evidence == set()
+        assert _tool_result_succeeded("\n(exit 1) command failed") is False
+        assert len(_missing_f26_evidence(evidence)) == 5
+
+    def test_out_of_schema_edit_is_rejected_before_execution(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        victim = tmp_path / "victim.txt"
+        victim.write_text("ORIGINAL\n", encoding="utf-8")
+        hub = _ScriptedHub([
+            _resp(tool_calls=[_tool_call(
+                "edit-outside-schema",
+                "Edit",
+                path="victim.txt",
+                old_str="ORIGINAL\n",
+                new_str="MUTATED\n",
+            )]),
+            _failed_resp("stop after denial"),
+        ])
+
+        proc = agentic_dispatch(_REALISTIC_F26_PROMPT, tmp_path, hub=hub)
+
+        assert proc.returncode == 1
+        assert victim.read_text(encoding="utf-8") == "ORIGINAL\n"
+        first_tool_names = {
+            tool["function"]["name"] for tool in (hub.requests[0].tools or [])
+        }
+        assert "Edit" not in first_tool_names
+        assert "fuera de la superficie permitida" in proc.stdout
+
+    def test_explicit_approval_actor_runs_full_golden_route_lifecycle(self) -> None:
+        from types import SimpleNamespace
+
+        from atlas.core.self_maintenance.f26_agentic_dispatch import (
+            _F26ApprovalPermit,
+            _tool_golden_route,
+        )
+
+        calls: list[object] = []
+
+        class FakeSession:
+            proposal_id = "P-authorized"
+            plan = {"path": "docs/continuation/CONTINUATION_STATE.md"}
+
+            def execute(self) -> dict[str, object]:
+                calls.append("execute")
+                return {"passed": True}
+
+            def approve(self, *, actor: str, decision: str) -> None:
+                calls.append(("approve", actor, decision))
+
+            def apply(self) -> object:
+                calls.append("apply")
+                return SimpleNamespace(
+                    status="applied",
+                    audit_ref="merkle-authorized",
+                    receipt={"receipt_id": "receipt-authorized"},
+                )
+
+        class FakeRoute:
+            def request(self, text: str) -> FakeSession:
+                calls.append(("request", text))
+                return FakeSession()
+
+        class FakeOrchestrator:
+            def golden_route(self) -> FakeRoute:
+                return FakeRoute()
+
+        permit = _F26ApprovalPermit(
+            actor="tomas:f26-explicit", full_prompt_bound=True,
+        )
+        result = _tool_golden_route(
+            'añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
+            orch=FakeOrchestrator(),
+            approval_permit=permit,
+        )
+        repeated = _tool_golden_route(
+            'añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
+            orch=FakeOrchestrator(),
+            approval_permit=permit,
+        )
+
+        assert calls[1:] == [
+            "execute",
+            ("approve", "tomas:f26-explicit", "approve"),
+            "apply",
+        ]
+        assert "status=applied" in result
+        assert "approval_ref=merkle-authorized" in result
+        assert permit.consumed is True
+        assert repeated.startswith("error:")
+        assert calls.count("apply") == 1
 
 
 class TestDispatchContract:

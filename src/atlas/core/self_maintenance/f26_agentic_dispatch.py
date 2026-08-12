@@ -35,8 +35,10 @@ no necesita saber quién lo generó.
 from __future__ import annotations
 
 import json
+import re
 import shlex
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -168,7 +170,132 @@ _SYSTEM_PREFIX = (
     "CRÍTICO: Para aprobar esta rúbrica, TU PRIMERA llamada a herramienta "
     "en toda la sesión DEBE SER trunk_invoke_readonly. Bajo ninguna "
     "circunstancia puedes usar Read o Grep antes de usar trunk_invoke_readonly.\n\n"
+    "Una afirmación textual como 'leí X' o 'usé GoldenRoute' NO prueba que lo "
+    "hicieras: sólo cuenta una llamada real visible en el transcript. Antes "
+    "de la respuesta final debes reunir esta evidencia mínima: "
+    "(a) graph_importers o graph_blast_radius para "
+    "atlas.core.inference_hub; (b) el encabezado vigente de WORK_LEDGER.md "
+    "mediante Bash `sed -n 1,120p WORK_LEDGER.md` para no cargar sus 250 KB, "
+    "citando en la respuesta una fecha YYYY-MM-DD que realmente aparezca; "
+    "(c) GoldenRoute con el texto exacto `añade la línea \"F2.6 ejecutado\" "
+    "al final de docs/continuation/CONTINUATION_STATE.md`; (d) Read de "
+    "docs/design/actor_roles.md; y (e) Read de "
+    "docs/handoff/GENERATED/00_ESTADO.md. Si una tool devuelve error, "
+    "repórtalo y vuelve a obtener evidencia válida; nunca inventes su salida.\n\n"
 )
+
+
+def _is_full_f26_prompt(prompt: str) -> bool:
+    """El guard de evidencia sólo aplica a la rúbrica real de seis ítems.
+
+    ``agentic_dispatch`` también se prueba con prompts mínimos inyectados;
+    no deben convertirse mágicamente en la misión F2.6 completa. La ruta del
+    doc, el módulo y las seis etiquetas numeradas forman una firma estable del
+    prompt cuya autoridad sigue siendo el documento fuente.
+    """
+    markers = (
+        "atlas.core.inference_hub",
+        "docs/continuation/CONTINUATION_STATE.md",
+        "1)", "2)", "3)", "4)", "5)", "6)",
+    )
+    return all(marker in prompt for marker in markers)
+
+
+def _tool_result_succeeded(result: str) -> bool:
+    if result.lstrip().lower().startswith("error:"):
+        return False
+    return re.search(r"(?:^|\n)\(exit [1-9]\d*\)", result) is None
+
+
+def _is_applied_f26_result(result: str) -> bool:
+    folded = result.casefold()
+    target = "docs/continuation/continuation_state.md"
+    return (
+        "proposal" in folded
+        and target in folded
+        and re.search(r"(?:^|\s)status=applied(?:\s|$)", folded) is not None
+        and re.search(r"\bapproval_ref=\S+", folded) is not None
+        and re.search(r"\breceipt_id=\S+", folded) is not None
+    )
+
+
+def _record_f26_evidence(
+    evidence: set[str], *, name: str, arguments: str, result: str,
+) -> None:
+    """Registra sólo llamadas reales con resultado no-error.
+
+    No añade eventos al transcript ni ejecuta herramientas: observa lo que el
+    modelo ya pidió y lo que ``_dispatch_tool`` devolvió. Así el guard puede
+    rechazar una finalización prematura sin fabricar cumplimiento.
+    """
+    if not _tool_result_succeeded(result):
+        return
+    try:
+        args = json.loads(arguments) if arguments else {}
+    except json.JSONDecodeError:
+        return
+    if not isinstance(args, dict):
+        return
+
+    if name == "trunk_invoke_readonly":
+        if args.get("tool") in {"graph_importers", "graph_blast_radius"} \
+                and args.get("module") == "atlas.core.inference_hub":
+            evidence.add("graph")
+    elif name == "Read":
+        path = str(args.get("path", ""))
+        if path == "docs/design/actor_roles.md" and "Fable" in result:
+            evidence.add("actor_roles")
+        elif path == "docs/handoff/GENERATED/00_ESTADO.md" and "## WHERE" in result:
+            evidence.add("handoff")
+    elif name == "Bash":
+        try:
+            argv = shlex.split(str(args.get("command", "")))
+        except ValueError:
+            argv = []
+        dates = re.findall(r"202\d-\d{2}-\d{2}", result)
+        if (
+            argv == ["sed", "-n", "1,120p", "WORK_LEDGER.md"]
+            and "# WORK LEDGER" in result
+            and any(date >= "2026-07-17" for date in dates)
+        ):
+            evidence.add("ledger")
+    elif name == "GoldenRoute":
+        request = " ".join(str(args.get("text", "")).split()).casefold()
+        target = "docs/continuation/continuation_state.md"
+        if (
+            target in request
+            and "f2.6 ejecutado" in request
+            and _is_applied_f26_result(result)
+        ):
+            evidence.add("golden_route")
+
+
+_F26_EVIDENCE_ORDER = (
+    ("graph", "trunk_invoke_readonly graph_importers/graph_blast_radius para atlas.core.inference_hub"),
+    ("ledger", "Bash sed -n 1,120p WORK_LEDGER.md"),
+    (
+        "golden_route",
+        "GoldenRoute: añade la línea \"F2.6 ejecutado\" al final de "
+        "docs/continuation/CONTINUATION_STATE.md",
+    ),
+    ("actor_roles", "Read docs/design/actor_roles.md"),
+    ("handoff", "Read docs/handoff/GENERATED/00_ESTADO.md"),
+)
+
+
+def _missing_f26_evidence(evidence: set[str]) -> list[str]:
+    return [description for key, description in _F26_EVIDENCE_ORDER if key not in evidence]
+
+
+def _evidence_correction(missing: list[str]) -> str:
+    checklist = "\n".join(f"- {item}" for item in missing)
+    return (
+        "No puedes finalizar todavía: tus afirmaciones textuales no sustituyen "
+        "tool calls reales. Falta esta evidencia verificable:\n"
+        f"{checklist}\n"
+        "Haz ahora las llamadas pendientes; después responde las seis preguntas "
+        "con datos obtenidos, una fecha literal del ledger y rutas exactas."
+    )
 
 
 def _resolve_in_repo(path: str, *, cwd: Path) -> Path | None:
@@ -242,14 +369,64 @@ def _tool_trunk_invoke_readonly(tool: str, *, module: str = "") -> str:
     return json.dumps(result, ensure_ascii=False, default=str)[:4000]
 
 
-def _tool_golden_route(text: str, *, orch: Any) -> str:
-    from atlas.missions.golden_route import UnsupportedRequestError
+@dataclass
+class _F26ApprovalPermit:
+    """Capability efímera: ligada a la rúbrica completa y consumible una vez."""
+
+    actor: str
+    full_prompt_bound: bool
+    consumed: bool = False
+
+
+def _tool_golden_route(
+    text: str, *, orch: Any, approval_permit: _F26ApprovalPermit | None = None,
+) -> str:
+    from atlas.missions.golden_route import UnsupportedRequestError, plan_from_request
 
     try:
+        if approval_permit is not None:
+            if not approval_permit.full_prompt_bound:
+                return "error: permiso F2.6 no ligado al prompt completo"
+            if approval_permit.consumed:
+                return "error: permiso F2.6 ya consumido"
+            if not approval_permit.actor.strip():
+                return "error: approval_actor vacío; no hay identidad registrable"
+        plan = plan_from_request(text)
+        if approval_permit is not None and plan != {
+            "action": "append_line",
+            "path": "docs/continuation/CONTINUATION_STATE.md",
+            "line": "F2.6 ejecutado",
+        }:
+            return (
+                "error: la aprobación F2.6 sólo autoriza la línea exacta "
+                "en docs/continuation/CONTINUATION_STATE.md"
+            )
         session = orch.golden_route().request(text)
-    except UnsupportedRequestError as exc:
-        return f"error: {exc}"
-    return f"Proposal {session.proposal_id} path={session.plan['path']!r}"
+        if approval_permit is None:
+            return (
+                f"Proposal {session.proposal_id} path={session.plan['path']!r} "
+                "status=proposed"
+            )
+        validation = session.execute()
+        if not bool(validation.get("passed")):
+            return (
+                f"error: Proposal {session.proposal_id} validation failed "
+                f"path={session.plan['path']!r}"
+            )
+        session.approve(actor=approval_permit.actor, decision="approve")
+        # Consumir al registrar la aprobación, antes del efecto. Si apply
+        # termina de forma ambigua no se puede reutilizar la misma autoridad.
+        approval_permit.consumed = True
+        applied = session.apply()
+    except Exception as exc:  # noqa: BLE001 — frontera de tool, fallo estructurado
+        return f"error: {type(exc).__name__}: {exc}"
+
+    receipt = applied.receipt if isinstance(applied.receipt, dict) else {}
+    return (
+        f"Proposal {session.proposal_id} path={session.plan['path']!r} "
+        f"status={applied.status} approval_ref={applied.audit_ref} "
+        f"receipt_id={receipt.get('receipt_id', '')}"
+    )
 
 
 def _tool_bash(command: str, *, cwd: Path) -> str:
@@ -288,7 +465,14 @@ def _tool_edit(path: str, old_str: str, new_str: str, *, cwd: Path) -> str:
     return f"ok: {path} editado."
 
 
-def _dispatch_tool(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
+def _dispatch_tool(
+    name: str,
+    arguments: str,
+    *,
+    cwd: Path,
+    orch: Any,
+    golden_route_approval_permit: _F26ApprovalPermit | None = None,
+) -> str:
     try:
         args = json.loads(arguments) if arguments else {}
     except json.JSONDecodeError:
@@ -303,7 +487,9 @@ def _dispatch_tool(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
         if name == "trunk_invoke_readonly":
             return _tool_trunk_invoke_readonly(args["tool"], module=args.get("module", ""))
         if name == "GoldenRoute":
-            return _tool_golden_route(args["text"], orch=orch)
+            return _tool_golden_route(
+                args["text"], orch=orch, approval_permit=golden_route_approval_permit,
+            )
         if name == "Bash":
             return _tool_bash(args["command"], cwd=cwd)
         if name == "Edit":
@@ -320,6 +506,7 @@ def agentic_dispatch(
     hub: InferenceHub | Any | None = None,
     level: InferenceLevel = InferenceLevel.L2,
     orch: Any = None,
+    golden_route_approval_actor: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Dispatch inyectable en ``run_f26(..., dispatch=...)``. Corre un bucle
     de tool-calling real (InferenceHub, cualquier proveedor con
@@ -338,7 +525,13 @@ def agentic_dispatch(
     ``orch`` es inyectable para tests; en producción se construye un
     ``Orchestrator()`` real (misma resolución que la CLI) para que
     ``GoldenRoute`` comparta el ColdUpdateManager/Merkle reales — nunca el
-    store aislado de ``GoldenRoute.for_repo()``."""
+    store aislado de ``GoldenRoute.for_repo()``.
+
+    ``golden_route_approval_actor`` es ``None`` por defecto: una llamada sólo
+    crea la propuesta y F2.6 no acredita el ítem 3. Cuando el operador autorizó
+    explícitamente ESTA corrida, el caller pasa su identidad; únicamente la
+    petición literal de F2.6 puede entonces ejecutar validate -> approve ->
+    apply. Ningún texto distinto hereda esa autoridad."""
     if hub is None:
         hub = InferenceHub(mode="auto")
 
@@ -359,10 +552,26 @@ def agentic_dispatch(
     transcript_lines: list[str] = []
     final_text = ""
     error: str | None = None
+    enforce_evidence = _is_full_f26_prompt(prompt)
+    evidence: set[str] = set()
+    approval_permit = (
+        _F26ApprovalPermit(
+            actor=golden_route_approval_actor,
+            full_prompt_bound=enforce_evidence,
+        )
+        if golden_route_approval_actor is not None else None
+    )
+    request_tools = (
+        [tool for tool in _TOOLS if tool["function"]["name"] != "Edit"]
+        if enforce_evidence else _TOOLS
+    )
+    allowed_tool_names = {
+        str(tool["function"]["name"]) for tool in request_tools
+    }
 
     for _turn in range(_MAX_TURNS):
         request = InferenceRequest(
-            prompt="", messages=messages, tools=_TOOLS, level=level,
+            prompt="", messages=messages, tools=request_tools, level=level,
             task_id="f26_agentic_dispatch", max_tokens=4096,
         )
         response = hub.infer_for_role("chat", request)
@@ -374,14 +583,22 @@ def agentic_dispatch(
         if response.text:
             content_blocks.append({"type": "text", "text": response.text})
         for tc in response.tool_calls:
-            content_blocks.append(
-                {"type": "tool_use", "name": tc["name"], "input": json.loads(tc["arguments"] or "{}")}
-            )
+            content_blocks.append({
+                "type": "tool_use",
+                "id": tc["id"],
+                "name": tc["name"],
+                "input": json.loads(tc["arguments"] or "{}"),
+            })
         transcript_lines.append(json.dumps(
             {"type": "assistant", "message": {"content": content_blocks}}
         ))
 
         if not response.tool_calls:
+            missing = _missing_f26_evidence(evidence) if enforce_evidence else []
+            if missing:
+                messages.append({"role": "assistant", "content": response.text or ""})
+                messages.append({"role": "user", "content": _evidence_correction(missing)})
+                continue
             final_text = response.text
             break
 
@@ -394,10 +611,36 @@ def agentic_dispatch(
             ],
         })
         for tc in response.tool_calls:
-            result_str = _dispatch_tool(
-                tc["name"], tc["arguments"], cwd=cwd,
-                orch=(_get_orch() if tc["name"] == "GoldenRoute" else None),
-            )
+            if tc["name"] not in allowed_tool_names:
+                result_str = (
+                    f"error: herramienta {tc['name']!r} fuera de la superficie "
+                    "permitida para esta corrida"
+                )
+            else:
+                dispatch_kwargs: dict[str, Any] = {
+                    "cwd": cwd,
+                    "orch": (_get_orch() if tc["name"] == "GoldenRoute" else None),
+                }
+                if tc["name"] == "GoldenRoute" and approval_permit is not None:
+                    dispatch_kwargs["golden_route_approval_permit"] = approval_permit
+                result_str = _dispatch_tool(tc["name"], tc["arguments"], **dispatch_kwargs)
+            if enforce_evidence:
+                _record_f26_evidence(
+                    evidence,
+                    name=tc["name"], arguments=tc["arguments"], result=result_str,
+                )
+            transcript_lines.append(json.dumps({
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [{
+                        "type": "tool_result",
+                        "tool_use_id": tc["id"],
+                        "content": result_str,
+                        "is_error": not _tool_result_succeeded(result_str),
+                    }],
+                },
+            }, ensure_ascii=False))
             messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result_str})
     else:
         error = f"techo de {_MAX_TURNS} turnos alcanzado sin respuesta final"

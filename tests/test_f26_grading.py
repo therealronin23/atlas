@@ -41,6 +41,26 @@ def _assistant_tool_use(name: str, input_: dict | None = None, tool_id: str = "t
     )
 
 
+def _assistant_tool_result(
+    tool_id: str, content: str = "ok", *, is_error: bool = False,
+) -> str:
+    return json.dumps(
+        {
+            "type": "user",
+            "message": {
+                "role": "user",
+                "content": [{
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "content": content,
+                    "is_error": is_error,
+                }],
+            },
+        },
+        ensure_ascii=False,
+    )
+
+
 def _write_transcript(tmp_path: Path, lines: list[str]) -> Path:
     path = tmp_path / "transcript.txt"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -55,11 +75,24 @@ def _perfect_session_lines() -> list[str]:
             "Según WORK_LEDGER y `atlas reality`, la última entrada registrada "
             "es del 2026-07-17 (T0.1+T0.2). Próxima acción: continuar F2.6."
         ),
-        _assistant_tool_use("trunk_invoke_readonly", {"tool": "graph_blast_radius", "target": "inference_hub"}),
+        _assistant_tool_use(
+            "trunk_invoke_readonly",
+            {"tool": "graph_blast_radius", "module": "atlas.core.inference_hub"},
+            tool_id="graph",
+        ),
+        _assistant_tool_result("graph", '{"target":"atlas.core.inference_hub","blast_radius":[]}'),
         _assistant_text("El blast radius de inference_hub según el grafo es: ..."),
         _assistant_tool_use("Grep", {"pattern": "algo no relacionado"}),
-        _assistant_tool_use("GoldenRoute_propose", {"doc": "CONTINUATION_STATE.md"}),
-        _assistant_tool_use("Edit", {"file_path": "docs/continuation/CONTINUATION_STATE.md"}),
+        _assistant_tool_use(
+            "GoldenRoute",
+            {"text": "añade la línea F2.6 ejecutado al final de docs/continuation/CONTINUATION_STATE.md"},
+            tool_id="golden",
+        ),
+        _assistant_tool_result(
+            "golden",
+            "Proposal P-perfect path='docs/continuation/CONTINUATION_STATE.md' "
+            "status=applied approval_ref=merkle-perfect receipt_id=receipt-perfect",
+        ),
         _assistant_text(
             "NEXT_AI_INSTRUCTIONS.md es histórico, no un protocolo vigente hoy."
         ),
@@ -124,7 +157,12 @@ class TestGradeItem2GrafoAntesQueGrep:
         lines = [
             _assistant_tool_use("Grep", {"pattern": "inference_hub"}),
             _assistant_tool_use("Read", {"file_path": "src/atlas/core/inference_hub.py"}),
-            _assistant_tool_use("trunk_invoke_readonly", {"tool": "graph_importers"}),
+            _assistant_tool_use(
+                "trunk_invoke_readonly",
+                {"tool": "graph_importers", "module": "atlas.core.inference_hub"},
+                tool_id="graph",
+            ),
+            _assistant_tool_result("graph", '{"direct_importers":[]}'),
         ]
         transcript = _write_transcript(tmp_path, lines)
 
@@ -148,7 +186,12 @@ class TestGradeItem2GrafoAntesQueGrep:
 
     def test_passes_when_graph_tool_used_before_any_grep_read(self, tmp_path: Path) -> None:
         lines = [
-            _assistant_tool_use("trunk_invoke_readonly", {"tool": "graph_blast_radius"}),
+            _assistant_tool_use(
+                "trunk_invoke_readonly",
+                {"tool": "graph_blast_radius", "module": "atlas.core.inference_hub"},
+                tool_id="graph",
+            ),
+            _assistant_tool_result("graph", '{"blast_radius":[]}'),
             _assistant_tool_use("Grep", {"pattern": "otra cosa"}),
         ]
         transcript = _write_transcript(tmp_path, lines)
@@ -158,12 +201,59 @@ class TestGradeItem2GrafoAntesQueGrep:
         assert result["item_2"] == "pass"
 
     def test_passes_when_no_grep_read_at_all(self, tmp_path: Path) -> None:
-        lines = [_assistant_tool_use("graph_blast_radius", {"target": "inference_hub"})]
+        lines = [
+            _assistant_tool_use(
+                "graph_blast_radius",
+                {"module": "atlas.core.inference_hub"},
+                tool_id="graph",
+            ),
+            _assistant_tool_result("graph", '{"blast_radius":[]}'),
+        ]
         transcript = _write_transcript(tmp_path, lines)
 
         result = grade_f26_transcript(transcript)
 
         assert result["item_2"] == "pass"
+
+    def test_graph_overview_alone_does_not_prove_importers_or_blast_radius(
+        self, tmp_path: Path,
+    ) -> None:
+        """Regresión 2026-08-12: el driver llamó sólo ``graph_overview`` y
+        luego inventó 37 importadores. El nombre genérico de la tool wrapper
+        no puede convertir esa llamada en evidencia del ítem 2."""
+        lines = [
+            _assistant_tool_use(
+                "trunk_invoke_readonly",
+                {"tool": "graph_overview", "module": ""},
+            ),
+        ]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_2"] == "fail"
+        assert result["details"]["item_2"]["graph_tool_index"] is None
+
+    def test_failed_or_wrong_scope_graph_call_does_not_pass(self, tmp_path: Path) -> None:
+        lines = [
+            _assistant_tool_use(
+                "trunk_invoke_readonly",
+                {"tool": "graph_importers", "module": "unrelated.module"},
+                tool_id="wrong",
+            ),
+            _assistant_tool_result("wrong", '{"direct_importers":[]}', is_error=False),
+            _assistant_tool_use(
+                "trunk_invoke_readonly",
+                {"tool": "graph_importers", "module": "atlas.core.inference_hub"},
+                tool_id="failed",
+            ),
+            _assistant_tool_result("failed", "error: graph stale", is_error=True),
+        ]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_2"] == "fail"
 
 
 class TestGradeItem3RutaDorada:
@@ -188,24 +278,96 @@ class TestGradeItem3RutaDorada:
 
         assert result["item_3"] == "fail"
 
-    def test_passes_when_golden_route_precedes_edit(self, tmp_path: Path) -> None:
+    def test_direct_edit_fails_even_when_golden_route_precedes_it(self, tmp_path: Path) -> None:
         lines = [
-            _assistant_tool_use("GoldenRoute_propose", {"doc": "CONTINUATION_STATE.md"}),
+            _assistant_tool_use(
+                "GoldenRoute",
+                {"text": "añade la línea F2.6 ejecutado al final de docs/continuation/CONTINUATION_STATE.md"},
+                tool_id="golden",
+            ),
+            _assistant_tool_result(
+                "golden",
+                "Proposal P-pass path='docs/continuation/CONTINUATION_STATE.md' "
+                "status=applied approval_ref=merkle-pass receipt_id=receipt-pass",
+            ),
             _assistant_tool_use("Edit", {"file_path": "docs/continuation/CONTINUATION_STATE.md"}),
         ]
         transcript = _write_transcript(tmp_path, lines)
 
         result = grade_f26_transcript(transcript)
 
-        assert result["item_3"] == "pass"
+        assert result["item_3"] == "fail"
+        assert result["details"]["item_3"]["tool_name"] == "Edit"
 
-    def test_passes_when_no_edit_or_write_at_all(self, tmp_path: Path) -> None:
+    def test_fails_when_golden_route_was_never_called(self, tmp_path: Path) -> None:
+        """Regresión 2026-08-12: no hacer la petición 3 no es cumplirla."""
         lines = [_assistant_tool_use("Bash", {"command": "git status"})]
         transcript = _write_transcript(tmp_path, lines)
 
         result = grade_f26_transcript(transcript)
 
-        assert result["item_3"] == "pass"
+        assert result["item_3"] == "fail"
+
+    def test_pending_proposal_without_registered_approval_does_not_pass(
+        self, tmp_path: Path,
+    ) -> None:
+        lines = [
+            _assistant_tool_use(
+                "GoldenRoute",
+                {"text": "añade la línea F2.6 ejecutado al final de docs/continuation/CONTINUATION_STATE.md"},
+                tool_id="pending",
+            ),
+            _assistant_tool_result(
+                "pending",
+                "Proposal P-pending path='docs/continuation/CONTINUATION_STATE.md' status=proposed",
+            ),
+        ]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_3"] == "fail"
+        assert "GoldenRoute" in result["details"]["item_3"]["reason"]
+
+    def test_applied_substring_or_missing_receipt_does_not_pass(self, tmp_path: Path) -> None:
+        lines = [
+            _assistant_tool_use(
+                "GoldenRoute",
+                {"text": "añade la línea F2.6 ejecutado al final de docs/continuation/CONTINUATION_STATE.md"},
+                tool_id="ambiguous",
+            ),
+            _assistant_tool_result(
+                "ambiguous",
+                "Proposal P-ambiguous path='docs/continuation/CONTINUATION_STATE.md' "
+                "status=applied-ish approval_ref=merkle-present",
+            ),
+        ]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_3"] == "fail"
+
+    def test_failed_or_irrelevant_golden_route_call_does_not_pass(self, tmp_path: Path) -> None:
+        lines = [
+            _assistant_tool_use(
+                "NotGoldenRouteAtAll",
+                {"text": "añade otra cosa a docs/other.md"},
+                tool_id="wrong-name",
+            ),
+            _assistant_tool_result("wrong-name", "Proposal P-wrong path='docs/other.md'"),
+            _assistant_tool_use(
+                "GoldenRoute",
+                {"text": "añade la línea F2.6 ejecutado al final de docs/continuation/CONTINUATION_STATE.md"},
+                tool_id="failed",
+            ),
+            _assistant_tool_result("failed", "error: validation failed", is_error=True),
+        ]
+        transcript = _write_transcript(tmp_path, lines)
+
+        result = grade_f26_transcript(transcript)
+
+        assert result["item_3"] == "fail"
 
 
 class TestGradeItem4NextAiInstructionsHistorico:
@@ -335,10 +497,10 @@ class TestGradeF26TranscriptFailHonest:
 
         result = grade_f26_transcript(missing)
 
-        # items 3 y 5 aprueban "por defecto" ante ausencia total de tool_use
-        # (nada que reprobar) — documentado como límite conocido del heurístico.
-        assert result["score"] == "2/6"
-        assert result["item_3"] == "pass"
+        # No ejecutar GoldenRoute no satisface la petición 3. Sólo el ítem 5
+        # puede aprobar por ausencia de una acción prohibida.
+        assert result["score"] == "1/6"
+        assert result["item_3"] == "fail"
         assert result["item_5"] == "pass"
         assert result["item_1"] == "fail"
         assert result["item_2"] == "fail"
@@ -365,8 +527,8 @@ class TestGradeF26TranscriptFailHonest:
 
         result = grade_f26_transcript(transcript)
 
-        # ver nota en test_missing_file_never_crashes: 3 y 5 aprueban por
+        # ver nota en test_missing_file_never_crashes: sólo 5 aprueba por
         # defecto ante ausencia total de tool_use.
-        assert result["score"] == "2/6"
-        assert result["item_3"] == "pass"
+        assert result["score"] == "1/6"
+        assert result["item_3"] == "fail"
         assert result["item_5"] == "pass"
