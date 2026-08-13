@@ -33,6 +33,12 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 
+_AGENTS_POINTER = (
+    "# Project Agent Instructions\n\n"
+    "This repository uses `AGENTS.md` as the canonical agent-facing guidance file.\n\n"
+    "For the full knowledge graph, Obsidian, NotebookLM, and GraphRAG workflow, see `AGENTS.md`.\n"
+)
+
 
 # ---------------------------------------------------------------------------
 # no-gui-in-tests
@@ -197,3 +203,11 @@ def test_agents_md_declara_cuales_no_son_mecanizables() -> None:
     agents = (REPO / "AGENTS.md").read_text(encoding="utf-8")
 
     assert "no todas son mecanizables" in agents.lower()
+
+
+def test_lowercase_agents_md_is_the_exact_five_line_pointer() -> None:
+    """El alias no puede adquirir reglas propias y divergir de AGENTS.md."""
+    pointer = (REPO / "agents.md").read_text(encoding="utf-8")
+
+    assert pointer == _AGENTS_POINTER
+    assert len(pointer.splitlines()) == 5

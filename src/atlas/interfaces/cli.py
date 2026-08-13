@@ -288,8 +288,9 @@ def memory(layer: str) -> None:
 def golden_route() -> None:
     """ADR-069 GoldenRoute — petición en texto libre → patch → propuesta,
     sobre el mismo ledger que `atlas update`. v0 solo sabe añadir líneas a
-    docs existentes; aprobar/aplicar sigue exactamente el camino humano de
-    `atlas update validate/approve/apply` (misma propuesta, mismo ledger)."""
+    docs/ o Markdown raíz existentes; aprobar/aplicar sigue exactamente el
+    camino humano de `atlas update validate/approve/apply` (misma propuesta,
+    mismo ledger)."""
 
 
 @golden_route.command("request")
@@ -1212,7 +1213,8 @@ def f26() -> None:
     """F2.6 (spec B+C §4) — gate de sucesión. `status` es determinista y
     gratis (¿hay ADRs nuevos desde el último run?). `run` SÍ dispara la
     sesión LLM real de la rúbrica (deliberado, nunca automático — un humano
-    invoca el comando) y ahora también gradea y auto-registra el resultado."""
+    invoca el comando), gradea el resultado automático y deja un 6/6
+    heurístico pendiente de revisión semántica humana."""
 
 
 @f26.command("status")
@@ -1227,7 +1229,13 @@ def f26_status(as_json: bool) -> None:
     if as_json:
         console.print_json(json.dumps(status.to_dict(), ensure_ascii=False))
         return
-    color = {"due": "yellow", "never_run": "yellow", "unknown": "red", "current": "green"}
+    color = {
+        "due": "yellow",
+        "pending_review": "yellow",
+        "never_run": "yellow",
+        "unknown": "red",
+        "current": "green",
+    }
     console.print(f"[{color.get(status.status, 'white')}]{status.status}[/] — {status.reason}")
     if status.new_adrs_since:
         console.print("  ADRs nuevos:")
@@ -1241,57 +1249,153 @@ def f26_status(as_json: bool) -> None:
     help="Doc fuente de la rúbrica (default: docs/superpowers/plans/2026-07-17-f26-succession-test-PENDIENTE.md).",
 )
 @click.option(
-    "--driver", type=click.Choice(["claude", "agentic"]), default="claude",
+    "--driver", type=click.Choice(["agentic", "claude"]), default="agentic",
     help=(
-        "Mecanismo de dispatch. 'claude' (default): `claude -p --model sonnet`, "
-        "requiere sesión OAuth viva. 'agentic': bucle de tool-calling de "
-        "InferenceHub sobre cualquier proveedor de .env con supports_tools "
-        "(Groq/OpenRouter/Gemini/NVIDIA) — no depende de Claude Code ni de "
-        "su credencial. Mismo grading (grade_f26_transcript) en ambos casos."
+        "Mecanismo de dispatch. 'agentic' (default) usa la frontera de tools "
+        "allowlisted de Atlas sobre InferenceHub (Groq/OpenRouter/Together/NVIDIA). "
+        "'claude' es un driver legacy sin esa frontera preventiva y requiere "
+        "--allow-unsafe-legacy-driver; sus envelopes históricos no son "
+        "compatibles con el grader fail-closed actual."
+    ),
+)
+@click.option(
+    "--level", type=click.Choice(["L1", "L2"]), default="L1", show_default=True,
+    help=(
+        "Nivel de InferenceHub para el driver agentic. L1 prioriza "
+        "groq_llama_70b; el hub aún puede usar su cadena de fallback y cada "
+        "model.called queda registrado."
+    ),
+)
+@click.option(
+    "--provider", default=None,
+    help=(
+        "Fija un provider exacto del catálogo para impedir fallback silencioso "
+        "(para la evidencia actual: groq_llama_70b). Sin esta opción, el nivel "
+        "usa la cadena normal de InferenceHub."
+    ),
+)
+@click.option(
+    "--allow-unsafe-legacy-driver",
+    is_flag=True,
+    help=(
+        "Opt-in explícito para Claude legacy: puede ejecutar efectos antes de "
+        "que Atlas gradee el transcript. No usar para evidencia F2.6 nueva."
+    ),
+)
+@click.option(
+    "--approval-actor", default=None,
+    help=(
+        "Identidad del operador que autoriza, sólo con --driver agentic, la "
+        "ruta validate/approve/apply exacta de F2.6. El permiso es de un solo uso."
     ),
 )
 @click.option("--json", "as_json", is_flag=True, help="Salida JSON completa del resultado.")
-def f26_run(doc_path: str | None, driver: str, as_json: bool) -> None:
+def f26_run(
+    doc_path: str | None,
+    driver: str,
+    level: str,
+    provider: str | None,
+    allow_unsafe_legacy_driver: bool,
+    approval_actor: str | None,
+    as_json: bool,
+) -> None:
     """Dispara F2.6: construye el prompt LEYENDO el doc fuente (nunca copiado
     a mano) y lanza una sesión fría. Guarda el transcript crudo (JSONL) y, si
     el dispatch tuvo éxito, gradea la rúbrica (`grade_f26_transcript`) y se
-    AUTO-REGISTRA vía `record_f26_run` — ya no hace falta un
-    `atlas f26 record-run` manual después. Si el dispatch falló, no hay
+    registra el resultado automático vía `record_f26_run`. Un 6/6 automático
+    NO equivale a PASS: queda `pending_review` hasta una confirmación semántica
+    ligada al mismo transcript. Si el dispatch falló, no hay
     transcript válido: no se gradea ni se registra nada (falsearía un
     resultado que nunca ocurrió)."""
     import os
 
-    from atlas.core.self_maintenance.f26_gate import F26PromptExtractionError, run_f26
+    from atlas.core.self_maintenance.f26_gate import (
+        F26AuditError,
+        F26PromptExtractionError,
+        run_f26,
+    )
 
     root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
     doc = Path(doc_path).expanduser() if doc_path else None
 
+    if approval_actor is not None:
+        if driver != "agentic":
+            raise click.UsageError("--approval-actor sólo es válido con --driver agentic")
+        if not approval_actor.strip():
+            raise click.UsageError("--approval-actor no puede estar vacío")
+    if driver != "agentic" and provider is not None:
+        raise click.UsageError("--provider sólo es válido con --driver agentic")
+    if driver == "claude" and not allow_unsafe_legacy_driver:
+        raise click.UsageError(
+            "--driver claude es legacy inseguro; requiere "
+            "--allow-unsafe-legacy-driver explícito"
+        )
+    if driver == "agentic" and allow_unsafe_legacy_driver:
+        raise click.UsageError(
+            "--allow-unsafe-legacy-driver sólo es válido con --driver claude"
+        )
+
     dispatch = None
     if driver == "agentic":
         from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+        from atlas.core.inference_hub import InferenceLevel
 
         import subprocess
 
-        def dispatch(prompt: str, cwd: Path) -> subprocess.CompletedProcess[str]:  # noqa: A001
-            return agentic_dispatch(prompt, cwd)
+        inference_level = InferenceLevel[level]
+
+        def dispatch(
+            prompt: str, cwd: Path, *, task_id: str,
+        ) -> subprocess.CompletedProcess[str]:  # noqa: A001
+            return agentic_dispatch(
+                prompt, cwd, golden_route_approval_actor=approval_actor,
+                level=inference_level, provider_name=provider, task_id=task_id,
+            )
 
     try:
-        record = run_f26(root, doc_path=doc, dispatch=dispatch)
+        record = run_f26(
+            root,
+            doc_path=doc,
+            dispatch=dispatch,
+            allow_unsafe_legacy_dispatch=allow_unsafe_legacy_driver,
+        )
     except F26PromptExtractionError as exc:
         console.print(f"[red]no se pudo construir el prompt de F2.6[/red]: {exc}")
+        raise SystemExit(1) from exc
+    except F26AuditError as exc:
+        console.print(
+            "[red]F2.6 quedó sin cierre verificable[/red]: "
+            f"{exc}. Pudo haber dispatch, efectos o gasto; revisa metadata y Merkle."
+        )
         raise SystemExit(1) from exc
 
     if as_json:
         console.print_json(json.dumps(record, ensure_ascii=False))
+        if not record.get("success"):
+            raise SystemExit(1)
         return
     if record["success"]:
         console.print(f"[green]F2.6 disparado[/green] — transcript en {record['transcript_path']}")
         grading = record.get("grading")
         overall = record.get("overall_result")
+        automatic = record.get("automatic_result")
         if grading is not None:
-            console.print(f"  score: {grading['score']}")
-            verdict_color = "green" if overall == "pass" else "red"
+            console.print(f"  score automático: {grading['score']}")
+            console.print("  verificación semántica de ítems 1/4/6: no realizada")
+            if automatic is not None:
+                console.print(f"  resultado automático: {automatic}")
+            verdict_colors: dict[str, str] = {
+                "pass": "green", "fail": "red", "pending_review": "yellow",
+            }
+            verdict_color = verdict_colors.get(
+                overall if isinstance(overall, str) else "", "yellow",
+            )
             console.print(f"  veredicto: [{verdict_color}]{overall}[/{verdict_color}]")
+            if overall == "pending_review":
+                console.print(
+                    "[yellow]revisión semántica pendiente[/yellow]: el 6/6 "
+                    "heurístico no acredita PASS/current."
+                )
             failed_items = [k for k in (
                 "item_1", "item_2", "item_3", "item_4", "item_5", "item_6"
             ) if grading[k] == "fail"]
@@ -1299,8 +1403,10 @@ def f26_run(doc_path: str | None, driver: str, as_json: bool) -> None:
                 console.print(f"  ítems fallidos: {', '.join(failed_items)}")
         if record.get("recorded"):
             f26_record = record.get("f26_record") or {}
+            registration_color = "green" if overall in {"pass", "fail"} else "yellow"
             console.print(
-                f"[green]registrado[/green] automáticamente (record_f26_run) — "
+                f"[{registration_color}]registrado[/{registration_color}] "
+                "automáticamente (record_f26_run) — "
                 f"sha={f26_record.get('last_run_sha')} result={overall}"
             )
         else:
@@ -1314,6 +1420,7 @@ def f26_run(doc_path: str | None, driver: str, as_json: bool) -> None:
             "[yellow]no se registró nada[/yellow]: el dispatch falló, no hay "
             "transcript válido para gradear."
         )
+        raise SystemExit(1)
 
 
 @f26.command("record-run")
@@ -1323,14 +1430,75 @@ def f26_run(doc_path: str | None, driver: str, as_json: bool) -> None:
     "--at-sha", default=None,
     help="SHA real donde ocurrió la corrida, si no es HEAD actual (backfill honesto).",
 )
-def f26_record_run(result: str, notes: str, at_sha: str | None) -> None:
+@click.option(
+    "--transcript-sha256", default=None,
+    help="SHA-256 del transcript automático que se revisó semánticamente.",
+)
+@click.option(
+    "--automatic-score", type=click.Choice(["6/6"]), default=None,
+    help="Score del run automático enlazado; PASS sólo admite 6/6.",
+)
+@click.option(
+    "--semantic-review-actor", default=None,
+    help="Identidad del operador que confirma semánticamente el transcript.",
+)
+def f26_record_run(
+    result: str,
+    notes: str,
+    at_sha: str | None,
+    transcript_sha256: str | None,
+    automatic_score: str | None,
+    semantic_review_actor: str | None,
+) -> None:
     import os
 
-    from atlas.core.self_maintenance.f26_gate import record_f26_run
+    from atlas.core.self_maintenance.f26_gate import F26AuditError, record_f26_run
 
     root = Path(os.environ.get("ATLAS_CORE_ROOT", Path.cwd())).expanduser()
-    record = record_f26_run(root, result=result, notes=notes, at_sha=at_sha)
-    console.print(f"[green]registrado[/green] sha={record['last_run_sha']} result={result}")
+    review_fields = (transcript_sha256, automatic_score, semantic_review_actor)
+    if result == "fail" and any(value is not None for value in review_fields):
+        raise click.UsageError(
+            "las opciones de revisión semántica sólo son válidas con --result pass"
+        )
+
+    kwargs: dict[str, Any] = {}
+    if result == "pass":
+        if not all(isinstance(value, str) and value.strip() for value in review_fields):
+            raise click.UsageError(
+                "PASS exige --transcript-sha256, --automatic-score 6/6 y "
+                "--semantic-review-actor"
+            )
+        from atlas.core.self_maintenance.f26_gate import _effective_state_path
+
+        state_path = _effective_state_path(root, None)
+        try:
+            pending = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise click.UsageError(
+                "no se puede leer el estado pending_review actual"
+            ) from exc
+        source_hash = pending.get("state_sha256") if isinstance(pending, dict) else None
+        if not isinstance(source_hash, str):
+            raise click.UsageError(
+                "el estado pending_review actual no tiene state_sha256 enlazable"
+            )
+        kwargs = {
+            "transcript_sha256": transcript_sha256,
+            "automatic_score": automatic_score,
+            "semantic_verification": "operator_confirmed",
+            "semantic_review_actor": semantic_review_actor,
+            "source_state_sha256": source_hash,
+        }
+    try:
+        record = record_f26_run(
+            root, result=result, notes=notes, at_sha=at_sha, **kwargs,
+        )
+    except F26AuditError as exc:
+        console.print(f"[red]F2.6 no se registró[/red]: {exc}")
+        raise SystemExit(1) from exc
+    console.print(
+        f"[green]registrado[/green] sha={record['last_run_sha']} result={result}"
+    )
 
 
 @cli.command("capabilities")

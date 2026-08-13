@@ -8,6 +8,108 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-13 — GoldenRoute admite Markdown raíz sin abrir una autoridad
+  genérica sobre el root.** Request→ColdUpdate permite modificar un fichero
+  `*.md` raíz sólo si ya existe, es regular, no es symlink y ambos lados del
+  patch nombran la misma ruta; creación, borrado, cambio de ruta y
+  `agents.md` fallan cerrados. La aceptación completa modifica `README.md`
+  únicamente tras validate→approve→apply y prueba que el puntero de cinco
+  líneas queda byte-idéntico. No se encontró una petición README raíz previa
+  identificable en las 295 propuestas almacenadas, por lo que no se inventó
+  ni aplicó una. El ensanchamiento de superficie fue cuestionado y quedó
+  documentado en el dossier ADR-069; no cambia la autoridad durable ni el
+  requisito HITL. **Verificado:** suite global `6023 passed, 6 skipped, 27
+  deselected` (exit 0), mypy estricto 361 módulos, canon 2.118 registros,
+  Merkle y diff-check (exit 0). **No cerrado:** `docs_index_audit --strict`
+  sigue en exit 1 por deriva preexistente/amplia; `docs/INDEX.yaml` pertenece
+  a los cambios del operador y no se tocó. **Próxima acción:** commit acotado,
+  grafo/handoff y GoldenRoute separado para la memoria raíz solicitada.
+
+- **2026-08-13 — F2.6 endurecido sin convertir heurística en sucesión.** El
+  driver CLI por defecto es ahora `agentic`; Claude legacy exige opt-in inseguro
+  explícito. `--level` y `--provider` permiten fijar `groq_llama_70b`; el hub
+  queda con un único provider y sin fallback, tras verificar Merkle. Read sólo
+  admite ficheros regulares tracked (no symlinks/config local), Grep trata input
+  como dato, Bash comparte la allowlist del grader, los lotes de tool calls se
+  validan antes de efectos y cada inferencia conserva `task_id`/provider/tokens
+  en `model.called`. El gate bloquea checkout sucio y dispatch legacy implícito,
+  exige la consulta estructural exacta como primera tool, persiste metadata
+  terminal atómicamente y registra un único cierre honesto. El estado queda en
+  staging fsyncado hasta que existe `session.ended` verificado; un lock global
+  evita dos escritores y `ATLAS_F26_STATE_PATH` permite una autoridad compartida
+  entre worktrees. Un inicio huérfano posterior vuelve el gate `unknown`.
+  Un 6/6 automático queda `pending_review/due`; sólo actor + transcript SHA +
+  receipt automático enlazado permiten `pass/current`, y ADRs posteriores
+  obligan a repetir. Hallazgos propios corregidos durante review: salida JSON de
+  dispatch fallido devolvía exit 0, el receipt no comparaba su `result`, y el
+  texto operativo todavía prometía cierre por 6/6. **Verificado:** suite global
+  `6023 passed, 6 skipped, 27 deselected`, mypy estricto de 361 módulos, canon
+  (2.118 registros), Merkle y diff-check, todos exit 0. **No verificado aún:**
+  grafo post-commit y corrida live final. **Próxima acción:** commit acotado sin
+  los cinco paths del usuario, reconstruir grafo/handoff y sólo entonces correr
+  una F2.6 autorizada en checkout limpio con `--provider groq_llama_70b
+  --approval-actor tomas:f26-explicit`; nunca forzar PASS.
+
+- **2026-08-12 — ciclo 6: oversight/transparencia/MCP investigados y visión
+  máxima escrita sin autoaplicar.** Erratum verificable: RFC 9162 define proofs,
+  pero no el gossip/witness protocol y deja la vista inconsistente fuera de
+  alcance; ADR-053 ya no atribuye ese cierre al RFC ni a un witness in-process.
+  El grafo fresco sí encontró supply-chain y un segundo árbol de transparencia,
+  pero en rutas separadas, sin witness/SCITT ni puerta de admisión única
+  demostrada. AI Control/AISI/METR sostienen control adversarial y barrera
+  síncrona para efectos de alto impacto; SCITT/C2SP/Sigstore/in-toto/SLSA
+  delimitan receipts y provenance sin convertir statements en verdad. La tesis
+  “aparato de auditoría con runtime dentro” queda rechazada como claim fuerte;
+  alternativa: runtime no confiable detrás de control/evidencia externamente
+  impuestos. **Próxima acción:** ninguna automática; convertir cada propuesta
+  en ADR + experimento falsable sólo con autorización. Evidencia:
+  `work/research/OVERSIGHT_TRANSPARENCY_MCP_VETTING_2026-08-12.md`; visión no
+  normativa: `work/vision/ATLAS_VISION_MAXIMA.md`.
+
+- **2026-08-12 — ADR-078 revalidado: falsificadores no ejecutados; Theia pasa a
+  challenger medido, no a host elegido.** Code OSS 1.132.1 vs Theia v1.74.1:
+  una medición puntual de árboles oficiales no truncados reportó 17.143 vs
+  4.128 blobs y 147.371.996 vs 22.795.957 bytes TS/TSX (proxies, no TCO;
+  comando/response no preservados, por tanto no reproducibles desde el repo).
+  Theia soporta 2.400/2.655 APIs,
+  24 partial y 231 stubbed hasta VS Code 1.130; tiene composición modular y
+  Workspace Trust, pero gaps declarados, no-backports, dos minors de lag y
+  cero spike Atlas. El spike Code OSS limpio sigue en 6 ficheros `+588/-1`,
+  con sólo `+8/-1` en core. **Próxima acción:** cuando exista autorización para
+  Cut 2, spike Theia isomorfo y comparación de mantenimiento; hoy no abrirlo.
+  Fallo propio registrado: un subagente ejecutó 21 tests Node de tercero sin
+  consentimiento explícito; receipt Merkle retrospectivo
+  `7dc82337-becf-4d38-afab-de2bcc2b116f`, cadena íntegra. Dossier:
+  `docs/canon/decision_dossiers/EDR-ADR-078-workbench-lineage.md`.
+
+- **2026-08-12 — falsificadores ADR-057/058/069 auditados; sin evidencia de
+  cumplimiento porque no se ejecutaron.**
+  ADR-057 no tiene promotor automático que permita A/B (Kuzu vivo: 0/0/0
+  Pattern/Failure/Evidence; 13 tests de autoridad verdes). ADR-058 no tiene el
+  command plane IPC cuyo restart/identity/idempotency falsificaría la tesis
+  (42 tests del HTTP actual verdes). ADR-069 tenía un sobreclaim: sus 3 tests
+  recuperan snapshots `TaskPersistence`, no el journal selectivo inexistente;
+  el EDR quedó corregido y 9 tests focales pasaron. Cónclave `UNKNOWN`, no
+  `BLOCKING`, por diversidad alcanzable 2/3; las dos voces reales pidieron
+  nombrar el experimento siguiente, ahora explícito en
+  `work/decision-audits/PROVISIONAL_ADR_FALSIFIERS_2026-08-12.md`. **Próxima
+  acción:** conservar `PROVISIONAL` hasta ejecutar esos experimentos; no
+  confundir decisión aceptada, mapa de autoridad y capacidad construida.
+
+- **2026-08-12 — ADC-WO-107 reabierto como `CONTRADICTED`; no cerrado ni
+  resuelto por el agente.** ADR-080 sólo autorizó la superficie mutante de
+  `product_routes.py`, pero `80c6e7e` añadió después `missions/{id}/approve`
+  y `reject` al `server.py` del puerto 7341; ambos ejecutan `atlas update`.
+  Evidencia fresca: grafo MCP FRESH en `4fab366`, 23 decoradores POST actuales
+  (9+13+1), listener loopback vivo, `/health` 200 y `Allow: POST` para approve;
+  ningún POST mutante fue invocado y Merkle siguió íntegro. El dossier presenta
+  las dos salidas sin elegir: restaurar el alcance de ADR-080 moviendo las
+  mutaciones del núcleo a un command plane, o aprobar una ADR supersesora con
+  contrato gobernado por ruta. **Próxima acción:** decisión explícita del
+  operador; mientras tanto no ampliar 7341 ni afirmar que su núcleo es
+  read-only. Dossier:
+  `docs/canon/decision_dossiers/EDR-ADC-WO-107-bridge-mutation-boundary.md`.
+
 - **2026-08-12 — canon integrity repaired; “canon compiler” narrowed to what
   evidence proves.** `scripts/check_canon.py --root .` failed with exactly two
   null lineage heads. Existing clean checkouts bound them to Codex
@@ -51,13 +153,18 @@ de escribir: `atlas reality --json`.
   ajuste, refrescar el grafo y repetir una sola rúbrica completa si queda un
   proveedor capaz; el 6/6 sigue abierto y no se fuerza. Repetición final
   autorizada con `groq_llama_70b` (tool-call probado antes; nivel Atlas L1,
-  128k) sobre `be800d1`: **4/6, FAIL, registrado en
-  `workspace/self_build/f26_gate_state.json` con ese SHA**. Pasaron grafo,
-  protocolo histórico, invariantes y sustrato. Falló item 1 porque la respuesta
-  omitió una fecha literal aunque la tool leyó `2026-08-12`; falló item 3 porque
-  `e4011f20-bd9` quedó `failed` (37 fallos ambientales en Bwrap anidado, mypy
-  limpio), sin approve/apply. El texto final afirmó falsamente que sí añadió la
-  línea; el grader emparejado no lo contó. Merkle íntegra y ningún
+  128k) sobre `be800d1`: **score automático reproducible 4/6, FAIL, registrado
+  en `workspace/self_build/f26_gate_state.json` con ese SHA**. No fue una
+  verificación semántica: 1/4/6 son heurística textual; el transcript incluso
+  enumera tres ficheros donde la pregunta pedía tres memorias, así que el pase
+  del ítem 6 no está confirmado. El grader marcó pass en grafo, protocolo
+  histórico, invariantes y sustrato; item 1 falló porque la respuesta omitió
+  una fecha literal aunque la tool leyó `2026-08-12`; item 3 porque
+  `e4011f20-bd9` quedó `failed` (`pytest_exit=1`, `mypy_exit=0`, confirmados por
+  receipt). El conteo “37 fallos ambientales en Bwrap” vino del stdout del
+  runner y queda **reportado-sin-confirmar** por el receipt. El texto final
+  afirmó falsamente que sí añadió la línea; el grader emparejado no lo contó.
+  Merkle íntegra y ningún
   `cold_update.applied`. **Próxima acción F2.6:** corregir portabilidad de la
   validación candidata anidada y exigir la fecha en la respuesta final; después
   repetir la rúbrica ENTERA. No bloquea el ciclo canon actual.

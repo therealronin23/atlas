@@ -49,6 +49,7 @@ _COLD_UPDATE_ALLOWED_PREFIXES = (
 )
 _COLD_UPDATE_ALLOWED_ROOT_FILES = frozenset({"pyproject.toml"})
 _COLD_UPDATE_IMMUTABLE_PATHS = frozenset({"config/governance.json"})
+_COLD_UPDATE_CANONICAL_POINTERS = frozenset({"agents.md"})
 _UNSAFE_GIT_FILE_MODES = frozenset({"120000", "160000"})
 _UNSUPPORTED_EXTENDED_PATH_HEADERS = (
     "rename from ",
@@ -86,11 +87,53 @@ def _parse_patch_path(raw: str, *, expected_prefix: str) -> str | None:
 def _validate_patch_scope(path: str) -> None:
     if path in _COLD_UPDATE_IMMUTABLE_PATHS:
         raise _fail_patch_intake("governance inmutable")
+    if path in _COLD_UPDATE_CANONICAL_POINTERS:
+        raise _fail_patch_intake("canonical pointer inmutable")
     if path in _COLD_UPDATE_ALLOWED_ROOT_FILES:
+        return
+    if "/" not in path and path.endswith(".md"):
         return
     if path.startswith(_COLD_UPDATE_ALLOWED_PREFIXES):
         return
     raise _fail_patch_intake("path fuera de la allowlist de ColdUpdate")
+
+
+def _is_root_markdown(path: str | None) -> bool:
+    return bool(path and "/" not in path and path.endswith(".md"))
+
+
+def _validate_root_markdown_pair(
+    old_path: str | None,
+    new_path: str | None,
+    *,
+    target_root: Path | None,
+) -> None:
+    """Root Markdown is an existing-authority modification, never creation/deletion.
+
+    Directory-prefixed paths retain ColdUpdate's existing create/delete support.
+    The narrower rule exists only for top-level Markdown because those files are
+    agent/operator authorities and a new root instruction document can silently
+    compete with AGENTS.md.
+    """
+    if not (_is_root_markdown(old_path) or _is_root_markdown(new_path)):
+        return
+    if old_path is None:
+        raise _fail_patch_intake(
+            "root Markdown must target an existing root Markdown regular file"
+        )
+    if new_path is None:
+        raise _fail_patch_intake("root Markdown is modify-only; deletion rejected")
+    if old_path != new_path:
+        raise _fail_patch_intake("root Markdown must be a same-path modification")
+    if target_root is None:
+        raise _fail_patch_intake("root Markdown target root is unavailable")
+    target = target_root / old_path
+    if target.is_symlink():
+        raise _fail_patch_intake("root Markdown symlink is not a regular file")
+    if not target.is_file():
+        raise _fail_patch_intake(
+            "root Markdown must target an existing root Markdown regular file"
+        )
 
 
 def _parse_diff_git_header(line: str) -> tuple[str, str]:
@@ -105,7 +148,9 @@ def _parse_diff_git_header(line: str) -> tuple[str, str]:
     return old_path, new_path
 
 
-def _validated_patch_paths(text: str) -> tuple[str, ...]:
+def _validated_patch_paths(
+    text: str, *, target_root: Path | None = None,
+) -> tuple[str, ...]:
     """Return every path a supported unified diff may touch.
 
     We inspect both ``diff --git`` and paired ``---``/``+++`` headers.  Git
@@ -117,13 +162,16 @@ def _validated_patch_paths(text: str) -> tuple[str, ...]:
         raise _fail_patch_intake("patch binario")
 
     paths: list[str] = []
+    path_pairs: list[tuple[str | None, str | None]] = []
     header_pairs = 0
     lines = text.splitlines()
     index = 0
     while index < len(lines):
         line = lines[index]
         if line.startswith("diff --git "):
-            paths.extend(_parse_diff_git_header(line))
+            git_old, git_new = _parse_diff_git_header(line)
+            paths.extend((git_old, git_new))
+            path_pairs.append((git_old, git_new))
         elif line.startswith(_UNSUPPORTED_EXTENDED_PATH_HEADERS):
             raise _fail_patch_intake("rename/copy no soportado")
         elif line.startswith(("GIT binary patch", "Binary files ")):
@@ -146,6 +194,7 @@ def _validated_patch_paths(text: str) -> tuple[str, ...]:
                 paths.append(old_path)
             if new_path is not None:
                 paths.append(new_path)
+            path_pairs.append((old_path, new_path))
             header_pairs += 1
             index += 2
             continue
@@ -159,10 +208,16 @@ def _validated_patch_paths(text: str) -> tuple[str, ...]:
     ordered_paths = tuple(dict.fromkeys(paths))
     for path in ordered_paths:
         _validate_patch_scope(path)
+    for old_path, new_path in path_pairs:
+        _validate_root_markdown_pair(
+            old_path, new_path, target_root=target_root,
+        )
     return ordered_paths
 
 
-def _validate_patch_intake(patch: Path) -> tuple[str, ...]:
+def _validate_patch_intake(
+    patch: Path, *, target_root: Path | None = None,
+) -> tuple[str, ...]:
     """Validate a patch before any worktree or root mutation is attempted."""
     try:
         text = patch.read_text(encoding="utf-8", errors="strict")
@@ -170,7 +225,7 @@ def _validate_patch_intake(patch: Path) -> tuple[str, ...]:
         raise _fail_patch_intake("patch no UTF-8") from exc
     except OSError as exc:
         raise _fail_patch_intake("patch ilegible") from exc
-    return _validated_patch_paths(text)
+    return _validated_patch_paths(text, target_root=target_root)
 
 
 def _patch_sha256(patch: Path) -> str:
@@ -342,7 +397,7 @@ class ColdUpdateManager:
         # Reject before allocating an isolated worktree.  The same check runs
         # again against the stored artifact before every mutation because a
         # proposal file can be modified after it is created.
-        _validate_patch_intake(patch_path)
+        _validate_patch_intake(patch_path, target_root=self._root)
 
         proposal_id = str(uuid.uuid4())[:12]
         wt_dir = self._store_dir / f"worktree-{proposal_id}"
@@ -758,7 +813,7 @@ class ColdUpdateManager:
         patch = Path(proposal.patch_path)
         if not proposal.patch_sha256:
             raise _fail_patch_intake("propuesta sin digest de patch")
-        _validate_patch_intake(patch)
+        _validate_patch_intake(patch, target_root=self._root)
         actual = _patch_sha256(patch)
         if actual != proposal.patch_sha256:
             raise _fail_patch_intake("digest de patch no coincide con la propuesta")
@@ -793,7 +848,7 @@ class ColdUpdateManager:
         expected_sha256: str | None = None,
     ) -> tuple[str, ...]:
         """Apply one intact, scope-checked patch and return its staged paths."""
-        touched_paths = _validate_patch_intake(patch)
+        touched_paths = _validate_patch_intake(patch, target_root=target)
         if expected_sha256 is not None and _patch_sha256(patch) != expected_sha256:
             raise _fail_patch_intake("digest de patch no coincide con la propuesta")
         last_err = ""
@@ -830,7 +885,7 @@ class ColdUpdateManager:
         *,
         expected_sha256: str | None = None,
     ) -> None:
-        _validate_patch_intake(patch)
+        _validate_patch_intake(patch, target_root=target)
         if expected_sha256 is not None and _patch_sha256(patch) != expected_sha256:
             raise _fail_patch_intake("digest de patch no coincide con la propuesta")
         subprocess.run(

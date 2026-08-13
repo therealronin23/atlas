@@ -32,6 +32,11 @@ def _manager(tmp_path: Path) -> tuple[Path, ColdUpdateManager, Path]:
     (root / "pyproject.toml").write_text(
         "[project]\nname = 'before'\n", encoding="utf-8"
     )
+    (root / "README.md").write_text("before\n", encoding="utf-8")
+    (root / "MEMORY.md").write_text("memory before\n", encoding="utf-8")
+    (root / "agents.md").write_text(
+        "# Pointer\n\nRead AGENTS.md.\n", encoding="utf-8"
+    )
 
     env = clean_git_env()
     subprocess.run(
@@ -85,6 +90,95 @@ def test_accepts_explicit_dependency_manifest_root_file(tmp_path: Path) -> None:
     ).read_text(encoding="utf-8")
 
 
+def test_accepts_root_markdown_for_governed_doc_updates(tmp_path: Path) -> None:
+    """GoldenRoute can carry a human-requested root-doc patch through ColdUpdate."""
+    _, manager, _ = _manager(tmp_path)
+    patch = tmp_path / "readme.patch"
+    patch.write_text(
+        "--- a/README.md\n"
+        "+++ b/README.md\n"
+        "@@ -1 +1,2 @@\n"
+        " before\n"
+        "+governed addition\n",
+        encoding="utf-8",
+    )
+
+    proposal = manager.propose("governed root documentation edit", patch)
+
+    assert proposal.status == "proposed"
+    assert (Path(proposal.worktree_path) / "README.md").read_text(
+        encoding="utf-8"
+    ) == "before\ngoverned addition\n"
+
+
+@pytest.mark.parametrize(
+    ("name", "patch_text", "message"),
+    [
+        (
+            "create-root-markdown",
+            "--- /dev/null\n+++ b/NEW_AUTHORITY.md\n"
+            "@@ -0,0 +1 @@\n+new authority\n",
+            "existing root Markdown",
+        ),
+        (
+            "delete-root-markdown",
+            "--- a/README.md\n+++ /dev/null\n"
+            "@@ -1 +0,0 @@\n-before\n",
+            "modify-only",
+        ),
+        (
+            "cross-root-markdown",
+            "--- a/README.md\n+++ b/MEMORY.md\n"
+            "@@ -1 +1 @@\n-before\n+memory after\n",
+            "same-path",
+        ),
+    ],
+)
+def test_root_markdown_intake_is_existing_same_path_modify_only(
+    tmp_path: Path,
+    name: str,
+    patch_text: str,
+    message: str,
+) -> None:
+    _, manager, store = _manager(tmp_path)
+    patch = tmp_path / f"{name}.patch"
+    patch.write_text(patch_text, encoding="utf-8")
+
+    with pytest.raises(PatchIntakeError, match=message):
+        manager.propose("unsafe root documentation edit", patch)
+
+    assert manager.list_proposals() == []
+    assert list(store.glob("worktree-*")) == []
+
+
+def test_root_markdown_symlink_is_rejected_before_worktree(
+    tmp_path: Path,
+) -> None:
+    root, manager, store = _manager(tmp_path)
+    (root / "README.md").unlink()
+    (root / "README.md").symlink_to("MEMORY.md")
+    subprocess.run(
+        ["git", "add", "--", "README.md"],
+        cwd=root, env=clean_git_env(), capture_output=True, check=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "fixture: root markdown symlink"],
+        cwd=root, env=clean_git_env(), capture_output=True, check=True,
+    )
+    patch = tmp_path / "symlink.patch"
+    patch.write_text(
+        "--- a/README.md\n+++ b/README.md\n"
+        "@@ -1 +1 @@\n-memory before\n+changed\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PatchIntakeError, match="regular file|symlink"):
+        manager.propose("unsafe symlink edit", patch)
+
+    assert manager.list_proposals() == []
+    assert list(store.glob("worktree-*")) == []
+
+
 def test_accepts_normal_git_new_file_diff_inside_allowed_scope(tmp_path: Path) -> None:
     """Real ``git diff`` metadata stays within the supported text subset."""
     root, manager, _ = _manager(tmp_path)
@@ -129,9 +223,15 @@ def test_accepts_normal_git_new_file_diff_inside_allowed_scope(tmp_path: Path) -
         ),
         (
             "outside-prefix",
-            "--- a/README.md\n+++ b/README.md\n"
+            "--- a/NOTICE.txt\n+++ b/NOTICE.txt\n"
             "@@ -1 +1 @@\n-before\n+after\n",
             "allowlist",
+        ),
+        (
+            "canonical-pointer",
+            "--- a/agents.md\n+++ b/agents.md\n"
+            "@@ -1 +1 @@\n-# Pointer\n+# Diverged\n",
+            "canonical pointer",
         ),
         (
             "traversal",

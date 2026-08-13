@@ -49,6 +49,13 @@ def fixture_repo(tmp_path: Path) -> Path:
         "# Golden Route Demo\n\nLínea base.\n", encoding="utf-8"
     )
     (repo / "docs" / "demo" / "EMPTY.md").write_text("", encoding="utf-8")
+    (repo / "README.md").write_text("# Fixture\n", encoding="utf-8")
+    (repo / "agents.md").write_text(
+        "# Project Agent Instructions\n\n"
+        "This repository uses `AGENTS.md` as the canonical agent-facing guidance file.\n\n"
+        "For the full knowledge graph, Obsidian, NotebookLM, and GraphRAG workflow, see `AGENTS.md`.\n",
+        encoding="utf-8",
+    )
     (repo / "src" / "demo_pkg").mkdir(parents=True)
     (repo / "src" / "demo_pkg" / "helper.py").write_text(
         "def old_helper() -> int:\n"
@@ -148,6 +155,42 @@ def test_self_build_golden_route_requires_approval_and_receipt(
 
     # receipt verificable + auditoría Merkle
     assert result.receipt["verifiable"] is True
+
+
+def test_root_markdown_uses_same_approval_route_and_preserves_pointer(
+    fixture_repo: Path, tmp_path: Path
+) -> None:
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates-root-doc",
+        audit_dir=tmp_path / "audit-root-doc",
+        runner_factory=_SubprocessRunner,
+    )
+    original_readme = (fixture_repo / "README.md").read_bytes()
+    original_pointer = (fixture_repo / "agents.md").read_bytes()
+    session = route.request(
+        'añade la línea "Entrada gobernada" al final de README.md'
+    )
+
+    session.execute()
+    assert (fixture_repo / "README.md").read_bytes() == original_readme
+    with pytest.raises(PermissionError):
+        session.apply()
+    session.approve(actor="operator", decision="approve")
+    result = session.apply()
+
+    assert (fixture_repo / "README.md").read_text(encoding="utf-8") == (
+        "# Fixture\nEntrada gobernada\n"
+    )
+    assert (fixture_repo / "agents.md").read_bytes() == original_pointer
+    changed = subprocess.run(
+        ["git", "show", "--pretty=", "--name-only", "HEAD"],
+        cwd=fixture_repo, capture_output=True, text=True, check=True,
+    ).stdout.splitlines()
+    assert changed == ["README.md"]
+    assert "README.md" in result.receipt["what_atlas_did"]
     assert result.receipt["decision_needed"].startswith("Ninguna")
     assert result.receipt["mission_id"] == f"msn_{result.proposal_id}"
     assert result.audit_ref  # hash_self del registro Merkle
@@ -178,6 +221,65 @@ def test_golden_route_reject_parks_without_touching_main(
     assert (fixture_repo / "docs" / "demo" / "GOLDEN_ROUTE_DEMO.md").read_text(
         encoding="utf-8"
     ) == "# Golden Route Demo\n\nLínea base.\n"
+
+
+def test_golden_route_rejects_an_empty_approval_actor(
+    fixture_repo: Path, tmp_path: Path,
+) -> None:
+    from atlas.missions.golden_route import GoldenRoute
+
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=tmp_path / "audit",
+        runner_factory=_SubprocessRunner,
+    )
+    session = route.request(
+        'añade la línea "no-anonymous" al final de '
+        "docs/demo/GOLDEN_ROUTE_DEMO.md",
+    )
+    session.execute()
+
+    with pytest.raises(ValueError, match="actor"):
+        session.approve(actor="   ", decision="approve")
+
+
+def test_golden_route_propagates_run_task_id_to_decision_and_apply_receipts(
+    fixture_repo: Path, tmp_path: Path,
+) -> None:
+    from atlas.logging.merkle_logger import MerkleLogger
+    from atlas.missions.golden_route import GoldenRoute
+
+    audit_dir = tmp_path / "audit"
+    route = GoldenRoute.for_repo(
+        fixture_repo,
+        store_dir=tmp_path / "updates",
+        audit_dir=audit_dir,
+        runner_factory=_SubprocessRunner,
+    )
+    session = route.request(
+        'añade la línea "task-bound" al final de '
+        "docs/demo/GOLDEN_ROUTE_DEMO.md",
+        task_id="f26:run-bound",
+    )
+    session.execute()
+    session.approve(actor="operator", decision="approve")
+    session.apply()
+
+    records = [
+        record for record in MerkleLogger(audit_dir).read_all()
+        if record.action in {
+            "golden_route.requested",
+            "golden_route.decision.approve",
+            "golden_route.applied",
+        }
+    ]
+    assert [record.action for record in records] == [
+        "golden_route.requested",
+        "golden_route.decision.approve",
+        "golden_route.applied",
+    ]
+    assert {record.task_id for record in records} == {"f26:run-bound"}
 
 
 def test_golden_route_appends_to_empty_doc_end_to_end(

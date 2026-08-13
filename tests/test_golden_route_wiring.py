@@ -40,6 +40,12 @@ def mini_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (root / "pyproject.toml").write_text('[project]\nname="x"\n')
     (root / "docs").mkdir()
     (root / "docs" / "notes.md").write_text("primera línea\n")
+    (root / "README.md").write_text("readme base\n")
+    (root / "agents.md").write_text(
+        "# Project Agent Instructions\n\n"
+        "This repository uses `AGENTS.md` as the canonical agent-facing guidance file.\n\n"
+        "For the full knowledge graph, Obsidian, NotebookLM, and GraphRAG workflow, see `AGENTS.md`.\n"
+    )
 
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     subprocess.run(["git", "add", "-A"], cwd=root, check=True)
@@ -93,6 +99,35 @@ class TestGoldenRouteCli:
         assert status.exit_code == 0, status.output
         # El proposal de la ruta dorada debe listarse igual que uno manual.
         assert "notes.md" in status.output or "hola" in status.output.lower()
+
+    def test_request_command_creates_root_markdown_proposal(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("atlas.interfaces.cli._orch", orch)
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["golden-route", "request", 'añade la línea "hola" al final de README.md'],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "README.md" in result.output
+        status = runner.invoke(cli, ["update", "status"])
+        assert status.exit_code == 0, status.output
+        assert "README.md" in status.output or "hola" in status.output.lower()
+
+    def test_request_command_rejects_canonical_pointer(
+        self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("atlas.interfaces.cli._orch", orch)
+        result = CliRunner().invoke(
+            cli,
+            ["golden-route", "request", 'añade la línea "diverge" al final de agents.md'],
+        )
+
+        assert result.exit_code != 0
+        assert "puntero" in result.output.casefold()
 
     def test_request_command_rejects_unsupported_path(
         self, orch: Orchestrator, monkeypatch: pytest.MonkeyPatch

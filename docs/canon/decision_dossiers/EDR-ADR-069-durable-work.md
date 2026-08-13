@@ -56,16 +56,32 @@ Mission/Task/Orchestrator/Policy/Evidence interface set described in its
 `target_state` is not yet built). `docs/canon/open_questions.jsonl`
 `OPEN-OPERATOR-MISSION-TASK` marked `RESOLVED`.
 
+## Root-document GoldenRoute boundary (2026-08-13)
+
+GoldenRoute and ColdUpdate now admit a deliberately narrow root-document
+case: an existing, single-component `*.md` path may be modified through the
+same request → validate → approve → apply transaction used for `docs/`.
+Creation, deletion, cross-path patches, symlinks and non-regular files remain
+fail-closed. `agents.md` is additionally immutable because it is the exact
+five-line pointer to `AGENTS.md`; `config/governance.json` remains outside the
+allowed surface. Acceptance coverage exercises a real root `README.md`
+modification and proves that the pointer is unchanged. This widens document
+addressability, not durable-work authority: approval, validation, audit and
+commit semantics are unchanged, and no root-document request was autoapplied.
+
 ## Confidence and limits
 
-**Confidence:** medium-high (raised from `medium` on 2026-07-31 — the
-falsifier ran for the first time; throughput and upgrade behavior are still
-unmeasured, so this stops short of `high`).
+**Confidence:** medium. A TaskPersistence snapshot survives a process
+boundary, but the selective Mission/Task/command/effect history proposed by
+this dossier does not exist yet. The narrower result cannot raise confidence
+in the unimplemented journal's recovery behavior.
 
-**Falsifier — EXECUTED 2026-07-31, did not falsify the claim.**
-`tests/test_task_persistence_recovery.py` (3 tests, permanent regression
-protection, not a one-off script) proves recovery across a REAL process
-boundary, not just "no exception raised":
+**Falsifier status — NOT RUN as written (correction 2026-08-12).** The matrix
+falsifier asks whether a **selective journal** can reconstruct an approved task
+without hidden mutable state. `tests/test_task_persistence_recovery.py` never
+creates that journal: it exercises the existing file-backed `TaskPersistence`
+snapshot in two Python processes. Its 3 tests are valuable supporting evidence,
+not execution of the dossier's falsifier. They prove this narrower contract:
 
 1. A subprocess constructs a `Task`, persists it `AWAITING_APPROVAL`,
    transitions it to `EXECUTING` (simulating human approval), persists
@@ -78,19 +94,19 @@ boundary, not just "no exception raised":
    write survived, not a stale first snapshot), priority, sensitivity,
    metadata, and result.
 
-Manually re-verified outside the test harness with PID logging to rule out
-any doubt about process isolation: writer PID and reader PID were
-confirmed distinct, and the reconstructed task matched byte-for-byte. A
-companion test confirms the Merkle receipt for `approval.persisted` exists
-independently in its own chain (two receipts for two real writes, not one
-reused), and a third confirms `load()` of an unknown id returns `None`
-rather than fabricating a result.
+The 3 tests ran green again on 2026-08-12. The 2026-07-31 dossier reported a
+separate manual PID check, but that manual command was not repeated in the
+current audit. A companion test confirms the Merkle receipt for
+`approval.persisted` exists independently in its own chain (two receipts for
+two real writes, not one reused), and a third confirms `load()` of an unknown
+id returns `None` rather than fabricating a result.
 
-**What this does NOT yet answer** (kept honest, not treated as closed):
-throughput under concurrent writers, behavior across a SQLite/runtime
-version upgrade, and recovery of a Mission (as opposed to a Task) — the
-falsifier only exercised `TaskPersistence`, the piece the EDR already
-identified as the most concrete local evidence.
+**What this does NOT yet answer:** reconstruction of Mission→Task→command→
+approval→effect from one durable history, reconciliation of an ambiguous
+external effect, throughput under concurrent writers, behavior across a
+SQLite/runtime version upgrade, or recovery of a Mission. A valid falsifier
+run first requires a minimal journal implementation and a crash/restart test
+that rebuilds those projections without consulting legacy mutable owners.
 
 **Revisit triggers:** local recovery benchmark results (satisfied for the
 Task-recovery case 2026-07-31), SQLite runtime/version changes, or a

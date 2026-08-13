@@ -141,3 +141,58 @@ Líneas citadas arriba, verificadas por lectura directa el 2026-07-31:
 `src/atlas/api/server.py:611,673,704,720,733,763,897`,
 `src/atlas/api/product_routes.py:252,259,263,311,320,332,342,352,362,374,403,413,428`,
 `src/atlas/api/coding_server.py:81`.
+
+## Reapertura por contradicción — 2026-08-12
+
+La resolución de 2026-07-31 se conserva arriba como historia, pero ya no
+describe el runtime presente. ADR-080 autorizó de forma acotada las mutaciones
+de `product_routes.py` y afirmó que las rutas del núcleo seguían read-only.
+Después, el commit `80c6e7e7d99f488bd5a0171a618c509ffbc3007f`
+(2026-08-05) añadió al propio `server.py`:
+
+- `POST /missions/{mission_id}/approve`, que ejecuta `atlas update approve` y,
+  si ese comando falla, intenta `atlas update apply`;
+- `POST /missions/{mission_id}/reject`, que ejecuta `atlas update reject`.
+
+Ambas rutas pueden cambiar el ledger ColdUpdate fuera de la excepción de
+Producto de ADR-080. El middleware autentica la petición y guarda
+`request.state.auth_identity`, pero estos handlers no reciben `Request` ni
+propagan esa identidad al CLI. Sus pruebas de frontera verifican timeout y
+respuesta 504; no verifican identidad propagada, idempotencia, versión
+esperada, receipt de la decisión HTTP ni recuperación tras resultado ambiguo.
+
+### Evidencia fresca
+
+- Grafo MCP: `graph_commit_sha`, `head_sha` y `server_started_head_sha` =
+  `4fab36687728c487788ed8db00aa2ab204469ca5`, `freshness=FRESH`. El único
+  importador/blast radius de `atlas.api.server` es `atlas.interfaces.cli`.
+- Recuento por fuente de decoradores `@app.post`: 9 en `server.py`, 13 en
+  `product_routes.py` y 1 en `coding_server.py`: **23**, no 21. El inventario
+  de 2026-07-31 queda como medición histórica, no actual.
+- Proceso vivo: `ss` mostró un listener Python en `127.0.0.1:7341`;
+  `GET /health` devolvió HTTP 200; `OPTIONS` sobre la aprobación de misión
+  devolvió 405 con `Allow: POST`. No se invocó ningún POST mutante.
+- `atlas audit --verify` siguió devolviendo exit 0, cadena Merkle íntegra.
+- El propio comentario actual de `server.py` todavía dice que ADC-WO-107
+  `sigue REQUIRES_OPERATOR`, mientras el registro canónico decía `DONE`.
+
+Esto reabre ADC-WO-107 como `REQUIRES_OPERATOR`; no revoca retroactivamente
+ADR-080 ni demuestra un incidente. Demuestra que la frontera aceptada y la
+frontera ejecutable divergieron.
+
+### Las dos salidas que quedan al operador
+
+1. **Restaurar el alcance de ADR-080.** Mantener la excepción mutante de
+   `product_routes.py`, pero sacar del puerto 7341 las mutaciones del núcleo
+   (incluidas misiones, aprobación de permisos e import persistente) hacia un
+   command plane gobernado. El bridge conservaría proyección/consulta y las
+   operaciones de producto ya autorizadas. Requiere migración de clientes y
+   contratos; no es borrar dos decoradores.
+2. **Autorizar un 7341 mutante mediante ADR supersesora.** Definir autoridad
+   por ruta, identidad propagada end-to-end, claves de idempotencia y versión
+   esperada, Policy/HITL antes del efecto, receipt Merkle ligado a la petición,
+   y semántica explícita de timeout, retry, resultado ambiguo y rollback. Se
+   mantiene OS-R1: ningún Orchestrator dentro del proceso del bridge.
+
+No se elige ninguna salida aquí. Hasta decisión explícita: no ampliar la
+superficie, no cerrar ADC-WO-107 y no describir el núcleo 7341 como read-only.

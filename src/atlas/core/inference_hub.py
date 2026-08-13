@@ -233,6 +233,10 @@ class InferenceRequest:
     tools: list[dict[str, Any]] | None = None
     messages: list[dict[str, Any]] | None = None
     tool_choice: str = "auto"
+    # F2.6 is a validation harness: it must see malformed fields exactly as
+    # returned so it can reject the whole batch before effects. Normal callers
+    # retain the legacy normalized contract and never receive ``None`` names.
+    preserve_malformed_tool_calls: bool = False
     # 2026-07-08 (absorción robustez Codex/Claude-harness): si True y TODA la
     # cadena cae rate-limitada, el hub espera al cooldown más próximo (cap
     # 120s) y re-camina la cadena hasta 2 veces más en vez de devolver
@@ -691,6 +695,7 @@ class InferenceHub:
         *,
         success: bool,
         error: str | None = None,
+        tokens_used: int | None = None,
     ) -> None:
         if self._merkle is None:
             return
@@ -704,6 +709,8 @@ class InferenceHub:
         }
         if error is not None:
             payload["error"] = error
+        if tokens_used is not None:
+            payload["tokens_used"] = tokens_used
         self._merkle.log(
             action="model.called",
             agent="atlas.inference_hub",
@@ -1189,14 +1196,19 @@ class InferenceHub:
         duration_ms = int((time.perf_counter() - start) * 1000)
         text = _extract_text(completion)
         tokens = _extract_tokens(completion)
-        tool_calls = _extract_tool_calls(completion)
+        tool_calls = _extract_tool_calls(
+            completion,
+            preserve_malformed=request.preserve_malformed_tool_calls,
+        )
         finish_reason = _extract_finish_reason(completion)
 
         if provider.status in (ProviderStatus.DEGRADED, ProviderStatus.RATELIMITED):
             provider.status = ProviderStatus.OK
             provider.error_count = 0
 
-        self._log_model_call(provider, request, success=True)
+        self._log_model_call(
+            provider, request, success=True, tokens_used=tokens,
+        )
         self._calls.append({
             "provider": provider.name,
             "task_id": request.task_id,
@@ -1277,27 +1289,57 @@ def _extract_tokens(completion: Any) -> int:
         return 0
 
 
-def _extract_tool_calls(completion: Any) -> list[dict[str, Any]]:
-    """Normaliza los tool_calls del completion a {id, name, arguments(str)}.
+def _extract_tool_calls(
+    completion: Any, *, preserve_malformed: bool = False,
+) -> list[dict[str, Any]]:
+    """Normaliza tool calls; opcionalmente conserva input malformado crudo.
 
     LiteLLM expone los tool_calls en el formato OpenAI
-    (choices[0].message.tool_calls[*].function.{name,arguments}). Devuelve []
-    si el modelo no pidió herramientas (respuesta final).
+    (choices[0].message.tool_calls[*].function.{name,arguments}). Los campos
+    ausentes sólo conservan ``None`` cuando un harness de validación lo pide.
+    El contrato por defecto sigue filtrando llamadas sin nombre y rellenando
+    ID/argumentos para no romper consumidores legacy que esperan strings.
     """
     try:
         raw = completion.choices[0].message.tool_calls or []
     except (AttributeError, IndexError, KeyError):
         return []
     out: list[dict[str, Any]] = []
-    for i, tc in enumerate(raw):
-        try:
-            out.append({
-                "id": getattr(tc, "id", None) or f"call_{i}",
-                "name": tc.function.name,
-                "arguments": tc.function.arguments or "{}",
-            })
-        except AttributeError:
+    for index, tc in enumerate(raw):
+        if isinstance(tc, dict):
+            tool_id = tc.get("id")
+            function = tc.get("function")
+        else:
+            tool_id = getattr(tc, "id", None)
+            function = getattr(tc, "function", None)
+
+        if isinstance(function, dict):
+            name = function.get("name")
+            arguments = function.get("arguments")
+        else:
+            name = getattr(function, "name", None)
+            arguments = getattr(function, "arguments", None)
+
+        if preserve_malformed:
+            out.append({"id": tool_id, "name": name, "arguments": arguments})
             continue
+        if not isinstance(name, str) or not name:
+            continue
+        normalized_id = (
+            tool_id
+            if isinstance(tool_id, str) and tool_id
+            else f"call_{index}"
+        )
+        normalized_arguments = (
+            arguments
+            if isinstance(arguments, str) and arguments
+            else "{}"
+        )
+        out.append({
+            "id": normalized_id,
+            "name": name,
+            "arguments": normalized_arguments,
+        })
     return out
 
 

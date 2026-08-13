@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -68,6 +69,17 @@ def _ok_completion(text: str = "hola", tokens: int = 7) -> MagicMock:
     return completion
 
 
+def _tool_completion(tool_calls: list[Any]) -> SimpleNamespace:
+    """Respuesta OpenAI/LiteLLM realista con un turno de herramientas."""
+    return SimpleNamespace(
+        choices=[SimpleNamespace(
+            message=SimpleNamespace(content=None, tool_calls=tool_calls),
+            finish_reason="tool_calls",
+        )],
+        usage=SimpleNamespace(total_tokens=11),
+    )
+
+
 def _providers_with_keys(monkeypatch: pytest.MonkeyPatch) -> list[Provider]:
     """Dos proveedores L1 que sí tienen sus keys en entorno."""
     monkeypatch.setenv("GROQ_API_KEY", "test-groq")
@@ -108,7 +120,9 @@ class TestLiveMode:
 
         monkeypatch.setattr(litellm, "completion", fake_completion)
         hub = InferenceHub(providers=providers, mode="live")
-        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+        resp = hub.infer(InferenceRequest(
+            prompt="hola", level=InferenceLevel.L1, task_id="f26:run-123",
+        ))
 
         assert resp.success is True
         assert resp.text == "respuesta real"
@@ -130,15 +144,21 @@ class TestLiveMode:
         monkeypatch.setattr(litellm, "completion", fake_completion)
         merkle = MerkleLogger(tmp_path / "merkle")
         hub = InferenceHub(providers=providers, mode="live", merkle=merkle)
-        resp = hub.infer(InferenceRequest(prompt="hola", level=InferenceLevel.L1))
+        resp = hub.infer(InferenceRequest(
+            prompt="hola", level=InferenceLevel.L1, task_id="f26:run-123",
+        ))
 
         assert resp.success is True
         records = merkle.read_all()
-        assert any(
-            r.action == "model.called" and r.result == "success"
-            and r.payload["provider"] == "groq_test"
-            for r in records
+        model_record = next(
+            r for r in records
+            if r.action == "model.called" and r.result == "success"
         )
+        assert model_record.payload["provider"] == "groq_test"
+        assert model_record.payload["model"] == "llama-3.3-70b-versatile"
+        assert model_record.payload["tokens_used"] == 7
+        assert model_record.payload["task_id"] == "f26:run-123"
+        assert model_record.task_id == "f26:run-123"
 
     def test_live_mode_logs_failures_to_merkle(
         self,
@@ -1021,6 +1041,187 @@ class TestToolsCapability:
 
         assert resp.success is True
         assert providers[0].supports_tools is False  # aprendido en caliente
+
+
+class TestToolCallExtraction:
+    def test_preserves_valid_and_malformed_calls_in_the_same_batch(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.setenv("ATLAS_INFERENCE_MODE", "live")
+        raw_calls = [
+            SimpleNamespace(
+                id="call_valid",
+                function=SimpleNamespace(
+                    name="Bash",
+                    arguments='{"command":"git status --short"}',
+                ),
+            ),
+            SimpleNamespace(id="call_missing_function"),
+        ]
+        monkeypatch.setattr(
+            litellm, "completion", lambda **_kwargs: _tool_completion(raw_calls),
+        )
+
+        response = InferenceHub(providers=providers, mode="live").infer(
+            InferenceRequest(
+                prompt="usa herramientas",
+                level=InferenceLevel.L1,
+                preserve_malformed_tool_calls=True,
+                tools=[{
+                    "type": "function",
+                    "function": {"name": "Bash", "parameters": {"type": "object"}},
+                }],
+            )
+        )
+
+        assert response.success is True
+        assert response.tool_calls == [
+            {
+                "id": "call_valid",
+                "name": "Bash",
+                "arguments": '{"command":"git status --short"}',
+            },
+            {
+                "id": "call_missing_function",
+                "name": None,
+                "arguments": None,
+            },
+        ]
+
+    @pytest.mark.parametrize(
+        ("raw_call", "expected"),
+        [
+            pytest.param(
+                SimpleNamespace(
+                    function=SimpleNamespace(name="Bash", arguments="{}"),
+                ),
+                {"id": None, "name": "Bash", "arguments": "{}"},
+                id="missing-id",
+            ),
+            pytest.param(
+                SimpleNamespace(id="call_without_function"),
+                {
+                    "id": "call_without_function",
+                    "name": None,
+                    "arguments": None,
+                },
+                id="missing-function",
+            ),
+            pytest.param(
+                SimpleNamespace(
+                    id="call_without_name",
+                    function=SimpleNamespace(arguments="{}"),
+                ),
+                {"id": "call_without_name", "name": None, "arguments": "{}"},
+                id="missing-name",
+            ),
+            pytest.param(
+                SimpleNamespace(
+                    id="call_without_arguments",
+                    function=SimpleNamespace(name="Bash"),
+                ),
+                {
+                    "id": "call_without_arguments",
+                    "name": "Bash",
+                    "arguments": None,
+                },
+                id="missing-arguments",
+            ),
+        ],
+    )
+    def test_preserves_missing_tool_call_fields_for_batch_validation(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        raw_call: SimpleNamespace,
+        expected: dict[str, Any],
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.setenv("ATLAS_INFERENCE_MODE", "live")
+        monkeypatch.setattr(
+            litellm,
+            "completion",
+            lambda **_kwargs: _tool_completion([raw_call]),
+        )
+
+        response = InferenceHub(providers=providers, mode="live").infer(
+            InferenceRequest(
+                prompt="usa herramientas",
+                level=InferenceLevel.L1,
+                preserve_malformed_tool_calls=True,
+                tools=[{
+                    "type": "function",
+                    "function": {"name": "Bash", "parameters": {"type": "object"}},
+                }],
+            )
+        )
+
+        assert response.success is True
+        assert response.tool_calls == [expected]
+
+    def test_default_contract_filters_malformed_calls_for_legacy_consumers(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.setenv("ATLAS_INFERENCE_MODE", "live")
+        raw_calls = [
+            SimpleNamespace(
+                id="call_valid",
+                function=SimpleNamespace(name="Bash", arguments="{}"),
+            ),
+            SimpleNamespace(id="call_missing_function"),
+        ]
+        monkeypatch.setattr(
+            litellm, "completion", lambda **_kwargs: _tool_completion(raw_calls),
+        )
+
+        response = InferenceHub(providers=providers, mode="live").infer(
+            InferenceRequest(
+                prompt="usa herramientas",
+                level=InferenceLevel.L1,
+                tools=[{
+                    "type": "function",
+                    "function": {"name": "Bash", "parameters": {"type": "object"}},
+                }],
+            )
+        )
+
+        assert response.tool_calls == [
+            {"id": "call_valid", "name": "Bash", "arguments": "{}"},
+        ]
+
+    def test_default_contract_normalizes_non_string_id_and_arguments(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        providers = _providers_with_keys(monkeypatch)
+        monkeypatch.setenv("ATLAS_INFERENCE_MODE", "live")
+        raw_calls = [
+            SimpleNamespace(
+                id=17,
+                function=SimpleNamespace(
+                    name="Bash",
+                    arguments={"command": "git status --short"},
+                ),
+            ),
+        ]
+        monkeypatch.setattr(
+            litellm, "completion", lambda **_kwargs: _tool_completion(raw_calls),
+        )
+
+        response = InferenceHub(providers=providers, mode="live").infer(
+            InferenceRequest(
+                prompt="usa herramientas",
+                level=InferenceLevel.L1,
+                tools=[{
+                    "type": "function",
+                    "function": {"name": "Bash", "parameters": {"type": "object"}},
+                }],
+            )
+        )
+
+        assert response.tool_calls == [
+            {"id": "call_0", "name": "Bash", "arguments": "{}"},
+        ]
 
 
 class TestRateLimitWait:

@@ -14,7 +14,8 @@ pública, el plan acotado, la ceremonia de aprobación explícita (PermissionErr
 sin decisión humana) y el receipt verificable.
 
 v0 era DELIBERADAMENTE acotada: solo cambios documentation-only (append de una
-línea a un fichero bajo docs/). Sin LLM: la petición se parsea determinista;
+línea a un fichero bajo docs/ o a un Markdown de autoridad en la raíz). Sin
+LLM: la petición se parsea determinista;
 lo que no entiende se rechaza con honestidad (UnsupportedRequestError), no se
 improvisa.
 
@@ -96,20 +97,29 @@ _RENAME_RE = re.compile(
 # de codegen_proposer._ALLOWED_PREFIXES): el motor ya sabe aplicar/commitear
 # patches de código ahí — el hueco de T1.1 era solo de vocabulario/parsing.
 _CODE_ALLOWED_PREFIXES = ("src", "tests", "scripts", "docs", "config")
+_IMMUTABLE_DOC_POINTERS = frozenset({"agents.md"})
 
 
 def _validate_doc_path(raw: str) -> str:
-    """v0 es documentation-only: solo rutas relativas bajo docs/, sin escapes."""
+    """Acepta docs/ y Markdown raíz; preserva el puntero canónico y no escapa."""
     path = PurePosixPath(raw)
     if path.is_absolute():
         raise UnsupportedRequestError(f"Ruta absoluta no permitida: {raw}")
     if ".." in path.parts:
         raise UnsupportedRequestError(f"Ruta con escape no permitida: {raw}")
-    if path.parts[:1] != ("docs",):
+    normalized = str(path)
+    if normalized in _IMMUTABLE_DOC_POINTERS:
         raise UnsupportedRequestError(
-            f"La ruta dorada v0 es documentation-only (docs/): {raw}"
+            f"El puntero canónico no se modifica; edita AGENTS.md: {raw}"
         )
-    return str(path)
+    under_docs = path.parts[:1] == ("docs",)
+    root_markdown = len(path.parts) == 1 and path.suffix == ".md"
+    if not (under_docs or root_markdown):
+        raise UnsupportedRequestError(
+            "La ruta dorada v0 es documentation-only (docs/ o Markdown raíz): "
+            f"{raw}"
+        )
+    return normalized
 
 
 def _validate_code_path(raw: str) -> str:
@@ -158,8 +168,9 @@ def plan_from_request(text: str) -> dict[str, str]:
         }
     raise UnsupportedRequestError(
         "La ruta dorada v0 solo sabe hacer esto: "
-        "'añade una línea al final de docs/<fichero>', "
-        "'añade la línea \"<contenido>\" al final de docs/<fichero>' o "
+        "'añade una línea al final de docs/<fichero|Markdown-raíz>', "
+        "'añade la línea \"<contenido>\" al final de "
+        "docs/<fichero|Markdown-raíz>' o "
         "'renombra <X> a <Y> en <fichero>'. "
         f"Petición recibida: {text!r}"
     )
@@ -243,11 +254,14 @@ class GoldenRouteSession:
         merkle: MerkleLogger,
         proposal: ColdUpdateProposal,
         plan: dict[str, str],
+        *,
+        task_id: str | None = None,
     ) -> None:
         self._manager = manager
         self._merkle = merkle
         self._proposal_id = proposal.id
         self.plan: dict[str, str] = plan
+        self._task_id = task_id
         self._approval: dict[str, str] | None = None
         self._soul_verdict: DevilAdvocateVerdict | None = None
 
@@ -320,11 +334,14 @@ class GoldenRouteSession:
                 "proposal_id": self._proposal_id,
                 "verdict": verdict.to_dict(),
             },
+            task_id=self._task_id,
         )
         return verdict
 
     def approve(self, *, actor: str, decision: str) -> None:
         """Ceremonia humana explícita, registrada en Merkle ANTES de actuar."""
+        if not actor.strip():
+            raise ValueError("actor de aprobación no puede estar vacío")
         if decision not in {"approve", "reject"}:
             raise ValueError("decision debe ser 'approve' o 'reject'")
         record = self._merkle.log(
@@ -341,6 +358,7 @@ class GoldenRouteSession:
                     self._soul_verdict.to_dict() if self._soul_verdict else None
                 ),
             },
+            task_id=self._task_id,
         )
         if decision == "approve":
             self._manager.approve(self._proposal_id)
@@ -386,6 +404,7 @@ class GoldenRouteSession:
                 "approved_by": self._approval["actor"],
                 "approval_ref": self._approval["audit_ref"],
             },
+            task_id=self._task_id,
         )
         return GoldenRouteResult(
             proposal_id=self._proposal_id,
@@ -422,7 +441,7 @@ class GoldenRoute:
         return cls(manager, merkle)
 
     def request(
-        self, text: str, *, risk: str = "low"
+        self, text: str, *, risk: str = "low", task_id: str | None = None,
     ) -> GoldenRouteSession:
         """Petición → plan → patch → propuesta real (worktree aislado)."""
         plan = plan_from_request(text)
@@ -472,5 +491,8 @@ class GoldenRoute:
             result="success",
             risk_level="high",
             payload={"proposal_id": proposal.id, "request": text, "plan": plan},
+            task_id=task_id,
         )
-        return GoldenRouteSession(self._manager, self._merkle, proposal, plan)
+        return GoldenRouteSession(
+            self._manager, self._merkle, proposal, plan, task_id=task_id,
+        )

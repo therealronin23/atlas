@@ -87,7 +87,10 @@ class TestAgenticDispatchProducesGradeableTranscript:
     ) -> None:
         import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
 
-        def fake_dispatch(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
+        def fake_dispatch(
+            name: str, arguments: str, *, cwd: Path, orch: Any,
+            task_id: str | None = None,
+        ) -> str:
             if name == "trunk_invoke_readonly":
                 return '{"target":"atlas.core.inference_hub","direct_importers":[]}'
             if name == "GoldenRoute":
@@ -98,6 +101,13 @@ class TestAgenticDispatchProducesGradeableTranscript:
             return "ok"
 
         monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+
+        class BoundRoute:
+            _manager = type("Manager", (), {"_root": tmp_path})()
+
+        class BoundOrchestrator:
+            def golden_route(self) -> BoundRoute:
+                return BoundRoute()
 
         hub = _ScriptedHub([
             _resp(tool_calls=[_tool_call(
@@ -111,7 +121,9 @@ class TestAgenticDispatchProducesGradeableTranscript:
             _resp(text=_FINAL_TEXT_ALL_MARKERS),
         ])
 
-        proc = dispatch_module.agentic_dispatch("prompt de prueba", tmp_path, hub=hub)
+        proc = dispatch_module.agentic_dispatch(
+            "prompt de prueba", tmp_path, hub=hub, orch=BoundOrchestrator(),
+        )
 
         assert isinstance(proc, subprocess.CompletedProcess)
         transcript = tmp_path / "transcript.txt"
@@ -145,6 +157,134 @@ class TestAgenticDispatchProducesGradeableTranscript:
 
         assert graded["item_2"] == "fail"
 
+    @pytest.mark.parametrize(
+        ("first_name", "first_arguments"),
+        [
+            (
+                "GoldenRoute",
+                {
+                    "text": (
+                        'añade la línea "F2.6 ejecutado" al final de '
+                        "docs/continuation/CONTINUATION_STATE.md"
+                    ),
+                },
+            ),
+            ("Bash", {"command": "sed -n 1,120p WORK_LEDGER.md"}),
+            ("trunk_invoke_readonly", {"tool": "graph_overview", "module": ""}),
+        ],
+    )
+    def test_full_f26_rejects_non_graph_first_batch_before_any_effect(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        first_name: str,
+        first_arguments: dict[str, str],
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        effects: list[str] = []
+
+        def fake_dispatch(name: str, _arguments: str, **_kwargs: Any) -> str:
+            effects.append(name)
+            return "unexpected effect"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _tool_call("first", first_name, **first_arguments),
+                _tool_call(
+                    "graph", "trunk_invoke_readonly",
+                    tool="graph_importers", module="atlas.core.inference_hub",
+                ),
+            ]),
+        ])
+
+        proc = dispatch_module.agentic_dispatch(
+            _REALISTIC_F26_PROMPT, tmp_path, hub=hub,
+            golden_route_approval_actor="operator",
+        )
+
+        assert proc.returncode == 1
+        assert effects == []
+        assert "first tool" in proc.stderr.casefold()
+        assert "trunk_invoke_readonly" in proc.stderr
+
+    def test_first_graph_plus_later_effects_rejected_before_graph(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        effects: list[str] = []
+
+        def fake_dispatch(name: str, _arguments: str, **_kwargs: Any) -> str:
+            effects.append(name)
+            if name == "trunk_invoke_readonly":
+                return "error: graph freshness is STALE"
+            return "unexpected mutation"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _tool_call(
+                    "graph", "trunk_invoke_readonly", tool="graph_importers",
+                    module="atlas.core.inference_hub",
+                ),
+                _tool_call(
+                    "golden", "GoldenRoute",
+                    text=(
+                        'añade la línea "F2.6 ejecutado" al final de '
+                        "docs/continuation/CONTINUATION_STATE.md"
+                    ),
+                ),
+            ]),
+        ])
+
+        proc = dispatch_module.agentic_dispatch(
+            _REALISTIC_F26_PROMPT, tmp_path, hub=hub,
+            golden_route_approval_actor="operator",
+        )
+
+        assert proc.returncode == 1
+        assert effects == []
+        assert "exactly one required graph call" in proc.stderr.casefold()
+
+    def test_first_graph_batch_rejects_additional_calls_before_any_effect(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        effects: list[str] = []
+
+        def fake_dispatch(name: str, _arguments: str, **_kwargs: Any) -> str:
+            effects.append(name)
+            if name == "trunk_invoke_readonly":
+                return '{"freshness":"FRESH","direct_importers":[]}'
+            return "applied only after graph result"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+        hub = _ScriptedHub([_resp(tool_calls=[
+            _tool_call(
+                "graph", "trunk_invoke_readonly", tool="graph_importers",
+                module="atlas.core.inference_hub",
+            ),
+            _tool_call(
+                "golden-too-early", "GoldenRoute",
+                text=(
+                    'añade la línea "F2.6 ejecutado" al final de '
+                    "docs/continuation/CONTINUATION_STATE.md"
+                ),
+            ),
+        ])])
+
+        proc = dispatch_module.agentic_dispatch(
+            _REALISTIC_F26_PROMPT, tmp_path, hub=hub,
+            golden_route_approval_actor="operator",
+        )
+
+        assert proc.returncode == 1
+        assert effects == []
+        assert "exactly one required graph call" in proc.stderr.casefold()
+
     def test_direct_edit_without_golden_route_fails_item_3(self, tmp_path: Path) -> None:
         from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
 
@@ -173,7 +313,10 @@ class TestAgenticDispatchProducesGradeableTranscript:
         harness debe devolverlo al lazo; nunca insertar tool_use ficticios."""
         import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
 
-        def fake_dispatch(name: str, arguments: str, *, cwd: Path, orch: Any) -> str:
+        def fake_dispatch(
+            name: str, arguments: str, *, cwd: Path, orch: Any,
+            task_id: str | None = None,
+        ) -> str:
             args = json.loads(arguments)
             if name == "trunk_invoke_readonly":
                 return '{"target":"atlas.core.inference_hub","blast_radius":[]}'
@@ -191,9 +334,18 @@ class TestAgenticDispatchProducesGradeableTranscript:
             return "error: evidencia inesperada"
 
         monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+
+        class BoundRoute:
+            _manager = type("Manager", (), {"_root": tmp_path})()
+
+        class BoundOrchestrator:
+            def golden_route(self) -> BoundRoute:
+                return BoundRoute()
+
         hub = _ScriptedHub([
             _resp(tool_calls=[_tool_call(
-                "1", "trunk_invoke_readonly", tool="graph_overview", module="",
+                "1", "trunk_invoke_readonly", tool="graph_importers",
+                module="atlas.core.inference_hub",
             )]),
             _resp(text="Ya leí WORK_LEDGER y usé GoldenRoute; terminé."),
             _resp(tool_calls=[_tool_call(
@@ -217,7 +369,7 @@ class TestAgenticDispatchProducesGradeableTranscript:
         ])
 
         proc = dispatch_module.agentic_dispatch(
-            _REALISTIC_F26_PROMPT, tmp_path, hub=hub, orch=object(),
+            _REALISTIC_F26_PROMPT, tmp_path, hub=hub, orch=BoundOrchestrator(),
         )
 
         assert proc.returncode == 0
@@ -275,7 +427,7 @@ class TestAgenticDispatchProducesGradeableTranscript:
         assert _tool_result_succeeded("\n(exit 1) command failed") is False
         assert len(_missing_f26_evidence(evidence)) == 5
 
-    def test_failed_required_tools_are_not_retried_after_the_model_reports_them(
+    def test_failed_graph_preflight_aborts_without_retrying_or_later_effects(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Una tool requerida puede fallar de verdad (grafo stale, validación
@@ -292,19 +444,10 @@ class TestAgenticDispatchProducesGradeableTranscript:
 
         monkeypatch.setattr(dispatch_module, "_dispatch_tool", failed_dispatch)
         hub = _ScriptedHub([
-            _resp(tool_calls=[
-                _tool_call(
-                    "graph", "trunk_invoke_readonly", tool="graph_importers",
-                    module="atlas.core.inference_hub",
-                ),
-                _tool_call("ledger", "Bash", command="sed -n 1,120p WORK_LEDGER.md"),
-                _tool_call(
-                    "golden", "GoldenRoute",
-                    text='añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
-                ),
-                _tool_call("roles", "Read", path="docs/design/actor_roles.md"),
-                _tool_call("handoff", "Read", path="docs/handoff/GENERATED/00_ESTADO.md"),
-            ]),
+            _resp(tool_calls=[_tool_call(
+                "graph", "trunk_invoke_readonly", tool="graph_importers",
+                module="atlas.core.inference_hub",
+            )]),
             _resp(text=_FINAL_TEXT_ALL_MARKERS),
         ])
 
@@ -313,19 +456,35 @@ class TestAgenticDispatchProducesGradeableTranscript:
         )
 
         assert proc.returncode == 0
-        assert len(hub.requests) == 2
+        assert len(hub.requests) == 1
+        assert proc.stderr == ""
+        assert "graph preflight failed" in proc.stdout.casefold()
         transcript = tmp_path / "failed-tools.txt"
         transcript.write_text(proc.stdout, encoding="utf-8")
         graded = grade_f26_transcript(transcript)
         assert graded["item_2"] == "fail"
         assert graded["item_3"] == "fail"
 
-    def test_out_of_schema_edit_is_rejected_before_execution(self, tmp_path: Path) -> None:
-        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+    def test_out_of_schema_edit_is_rejected_before_execution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        effects: list[str] = []
+
+        def fake_dispatch(name: str, _arguments: str, **_kwargs: Any) -> str:
+            effects.append(name)
+            return '{"direct_importers":[]}'
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
 
         victim = tmp_path / "victim.txt"
         victim.write_text("ORIGINAL\n", encoding="utf-8")
         hub = _ScriptedHub([
+            _resp(tool_calls=[_tool_call(
+                "graph", "trunk_invoke_readonly", tool="graph_importers",
+                module="atlas.core.inference_hub",
+            )]),
             _resp(tool_calls=[_tool_call(
                 "edit-outside-schema",
                 "Edit",
@@ -336,7 +495,7 @@ class TestAgenticDispatchProducesGradeableTranscript:
             _failed_resp("stop after denial"),
         ])
 
-        proc = agentic_dispatch(_REALISTIC_F26_PROMPT, tmp_path, hub=hub)
+        proc = dispatch_module.agentic_dispatch(_REALISTIC_F26_PROMPT, tmp_path, hub=hub)
 
         assert proc.returncode == 1
         assert victim.read_text(encoding="utf-8") == "ORIGINAL\n"
@@ -345,6 +504,7 @@ class TestAgenticDispatchProducesGradeableTranscript:
         }
         assert "Edit" not in first_tool_names
         assert "fuera de la superficie permitida" in proc.stdout
+        assert effects == ["trunk_invoke_readonly"]
 
     def test_explicit_approval_actor_runs_full_golden_route_lifecycle(self) -> None:
         from types import SimpleNamespace
@@ -376,8 +536,10 @@ class TestAgenticDispatchProducesGradeableTranscript:
                 )
 
         class FakeRoute:
-            def request(self, text: str) -> FakeSession:
-                calls.append(("request", text))
+            def request(
+                self, text: str, *, task_id: str | None = None,
+            ) -> FakeSession:
+                calls.append(("request", text, task_id))
                 return FakeSession()
 
         class FakeOrchestrator:
@@ -391,13 +553,16 @@ class TestAgenticDispatchProducesGradeableTranscript:
             'añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
             orch=FakeOrchestrator(),
             approval_permit=permit,
+            task_id="f26:test-run",
         )
         repeated = _tool_golden_route(
             'añade la línea "F2.6 ejecutado" al final de docs/continuation/CONTINUATION_STATE.md',
             orch=FakeOrchestrator(),
             approval_permit=permit,
+            task_id="f26:test-run",
         )
 
+        assert calls[0][2] == "f26:test-run"
         assert calls[1:] == [
             "execute",
             ("approve", "tomas:f26-explicit", "approve"),
@@ -409,9 +574,106 @@ class TestAgenticDispatchProducesGradeableTranscript:
         assert repeated.startswith("error:")
         assert calls.count("apply") == 1
 
+    def test_approval_permit_is_consumed_before_ambiguous_approve_failure(self) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import (
+            _F26ApprovalPermit,
+            _tool_golden_route,
+        )
+
+        approvals = 0
+
+        class FailingSession:
+            proposal_id = "P-ambiguous"
+            plan = {"path": "docs/continuation/CONTINUATION_STATE.md"}
+
+            def execute(self) -> dict[str, object]:
+                return {"passed": True}
+
+            def approve(self, *, actor: str, decision: str) -> None:
+                nonlocal approvals
+                del actor, decision
+                approvals += 1
+                raise RuntimeError("approval outcome ambiguous after receipt")
+
+        class FakeRoute:
+            def request(
+                self, text: str, *, task_id: str | None = None,
+            ) -> FailingSession:
+                del text, task_id
+                return FailingSession()
+
+        class FakeOrchestrator:
+            def golden_route(self) -> FakeRoute:
+                return FakeRoute()
+
+        permit = _F26ApprovalPermit(actor="operator", full_prompt_bound=True)
+        request = (
+            'añade la línea "F2.6 ejecutado" al final de '
+            "docs/continuation/CONTINUATION_STATE.md"
+        )
+
+        first = _tool_golden_route(
+            request, orch=FakeOrchestrator(), approval_permit=permit,
+        )
+        second = _tool_golden_route(
+            request, orch=FakeOrchestrator(), approval_permit=permit,
+        )
+
+        assert first.startswith("error:")
+        assert second.startswith("error:")
+        assert permit.consumed is True
+        assert approvals == 1
+
+    def test_default_orchestrator_with_wrong_repo_root_fails_before_request(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.orchestrator as orchestrator_module
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        requested = False
+
+        class Manager:
+            _root = tmp_path / "other-repo"
+
+        class Route:
+            _manager = Manager()
+
+            def request(self, _text: str, *, task_id: str | None = None) -> object:
+                nonlocal requested
+                del task_id
+                requested = True
+                raise AssertionError("request must not cross repository authority")
+
+        class WrongRootOrchestrator:
+            def golden_route(self) -> Route:
+                return Route()
+
+        monkeypatch.setattr(orchestrator_module, "Orchestrator", WrongRootOrchestrator)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[_tool_call(
+                "golden", "GoldenRoute",
+                text=(
+                    'añade la línea "F2.6 ejecutado" al final de '
+                    "docs/continuation/CONTINUATION_STATE.md"
+                ),
+            )]),
+            _resp(text="reporto el fallo de autoridad"),
+        ])
+
+        proc = dispatch_module.agentic_dispatch(
+            "prompt", tmp_path, hub=hub,
+            golden_route_approval_actor="operator",
+        )
+
+        assert proc.returncode == 0
+        assert requested is False
+        assert "repository authority mismatch" in proc.stdout
+
 
 class TestDispatchContract:
-    def test_return_value_matches_run_f26_dispatch_contract(self, tmp_path: Path) -> None:
+    def test_return_value_matches_run_f26_dispatch_contract(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         """Debe poder inyectarse en run_f26 sin cambiar su firma."""
         from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
         from atlas.core.self_maintenance.f26_gate import run_f26
@@ -422,6 +684,22 @@ class TestDispatchContract:
             "```bash\nclaude -p --model sonnet \"pregunta de prueba\"\n```\n",
             encoding="utf-8",
         )
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "atlas-tests@example.invalid"],
+            cwd=tmp_path, check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Atlas Tests"], cwd=tmp_path, check=True,
+        )
+        subprocess.run(["git", "add", "--", "doc.md"], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-q", "-m", "fixture: dispatch contract"],
+            cwd=tmp_path, check=True,
+        )
+        # Esta prueba llama ``run_f26`` directamente; su auditoría no debe tocar
+        # el ATLAS_HOME vivo del operador.
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas-home"))
         hub = _ScriptedHub([_resp(text=_FINAL_TEXT_ALL_MARKERS)])
 
         def dispatch(prompt: str, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -467,21 +745,68 @@ class TestGraphToolUsesTheActiveRepo:
         assert json.loads(result) == ["atlas.consumer"]
 
 
+class TestGrepToolTreatsProviderInputAsData:
+    def test_option_like_pattern_is_after_double_dash(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        captured: dict[str, object] = {}
+
+        def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            captured.update(argv=argv, kwargs=kwargs)
+            return subprocess.CompletedProcess(argv, returncode=1, stdout="", stderr="")
+
+        monkeypatch.setattr(dispatch_module.subprocess, "run", fake_run)
+
+        result = dispatch_module._tool_grep(
+            "--pre=/tmp/provider-controlled-command", cwd=tmp_path,
+        )
+
+        assert captured["argv"] == [
+            "rg", "--line-number", "--max-count", "20", "--",
+            "--pre=/tmp/provider-controlled-command", ".",
+        ]
+        assert result == "(sin resultados)"
+
+
 class TestBashToolIsSandboxedReadOnly:
-    def test_bash_tool_cannot_write_to_the_repo(self, tmp_path: Path) -> None:
-        pytest.importorskip("atlas.security.bwrap_jail")
-        from atlas.security.bwrap_jail import BwrapUnavailableError
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "touch should-not-exist.txt",
+            "cat marker.txt",
+            "curl https://example.invalid",
+            "python -c 'print(1)'",
+            "git push",
+            "git add -A",
+        ],
+    )
+    def test_bash_rejects_commands_outside_the_grader_allowlist_before_jail(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        command: str,
+    ) -> None:
+        import atlas.security.bwrap_jail as bwrap_module
 
         from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_bash
 
-        try:
-            result = _tool_bash("touch should-not-exist.txt", cwd=tmp_path)
-        except BwrapUnavailableError:
-            pytest.skip("bwrap no disponible en este host")
+        constructed = False
 
+        def forbidden_jail() -> object:
+            nonlocal constructed
+            constructed = True
+            raise AssertionError("unsafe argv reached the execution boundary")
+
+        monkeypatch.setattr(bwrap_module, "BwrapJail", forbidden_jail)
+
+        result = _tool_bash(command, cwd=tmp_path)
+
+        assert constructed is False
+        assert result.startswith("error:")
+        assert "allowlist" in result
         assert not (tmp_path / "should-not-exist.txt").exists()
-        assert "error" in result.lower() or "read-only" in result.lower() \
-            or "permission" in result.lower()
 
     def test_bash_tool_can_read(self, tmp_path: Path) -> None:
         pytest.importorskip("atlas.security.bwrap_jail")
@@ -489,16 +814,146 @@ class TestBashToolIsSandboxedReadOnly:
 
         from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_bash
 
-        (tmp_path / "marker.txt").write_text("hola\n", encoding="utf-8")
+        (tmp_path / "WORK_LEDGER.md").write_text("# WORK LEDGER\nhola\n", encoding="utf-8")
         try:
-            result = _tool_bash("cat marker.txt", cwd=tmp_path)
+            result = _tool_bash("sed -n 1,120p WORK_LEDGER.md", cwd=tmp_path)
         except BwrapUnavailableError:
             pytest.skip("bwrap no disponible en este host")
 
         assert "hola" in result
 
 
+class TestEditToolIsEvidenceOnly:
+    def test_edit_call_is_denied_without_mutating_bytes(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_edit
+
+        target = tmp_path / "tracked.md"
+        target.write_bytes(b"original\r\n")
+
+        result = _tool_edit(
+            "tracked.md", "original\r\n", "mutated\n", cwd=tmp_path,
+        )
+
+        assert result.startswith("error:")
+        assert "GoldenRoute" in result
+        assert target.read_bytes() == b"original\r\n"
+
+
+class TestToolExceptionBoundary:
+    def test_bash_tool_converts_bwrap_unavailable_to_error_result(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.security.bwrap_jail as bwrap_module
+        from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_bash
+        from atlas.security.bwrap_jail import BwrapUnavailableError
+
+        def unavailable_jail() -> object:
+            raise BwrapUnavailableError("bwrap no disponible")
+
+        monkeypatch.setattr(bwrap_module, "BwrapJail", unavailable_jail)
+
+        result = _tool_bash("git status --short", cwd=tmp_path)
+
+        assert result.startswith("error:")
+        assert "BwrapUnavailableError" in result
+        assert "bwrap no disponible" in result
+
+    @pytest.mark.parametrize("failure", [OSError("io roto"), RuntimeError("jail roto")])
+    def test_bash_tool_converts_runtime_failures_to_error_result(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        failure: Exception,
+    ) -> None:
+        import atlas.security.bwrap_jail as bwrap_module
+        from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_bash
+
+        class FailingJail:
+            def run_command(self, *_args: object, **_kwargs: object) -> object:
+                raise failure
+
+        monkeypatch.setattr(bwrap_module, "BwrapJail", FailingJail)
+
+        result = _tool_bash("git status --short", cwd=tmp_path)
+
+        assert result.startswith("error:")
+        assert type(failure).__name__ in result
+        assert str(failure) in result
+
+    @pytest.mark.parametrize("failure", [OSError("read roto"), RuntimeError("tool rota")])
+    def test_dispatch_tool_converts_helper_exceptions_to_error_result(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        failure: Exception,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        def failing_read(_path: str, *, cwd: Path) -> str:
+            del cwd
+            raise failure
+
+        monkeypatch.setattr(dispatch_module, "_tool_read", failing_read)
+
+        result = dispatch_module._dispatch_tool(
+            "Read", json.dumps({"path": "WORK_LEDGER.md"}),
+            cwd=tmp_path, orch=None,
+        )
+
+        assert result.startswith("error:")
+        assert type(failure).__name__ in result
+        assert str(failure) in result
+
+    def test_dispatch_exception_becomes_paired_tool_result_and_loop_continues(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        def crashing_dispatch(
+            _name: str, _arguments: str, **_kwargs: object,
+        ) -> str:
+            raise RuntimeError("frontera rota")
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", crashing_dispatch)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[_tool_call(
+                "bash-failure", "Bash", command="git status --short",
+            )]),
+            _resp(text="La herramienta falló y lo reporto."),
+        ])
+
+        proc = dispatch_module.agentic_dispatch("prompt", tmp_path, hub=hub)
+
+        assert proc.returncode == 0
+        events = [json.loads(line) for line in proc.stdout.splitlines()]
+        tool_result = events[1]["message"]["content"][0]
+        assert tool_result == {
+            "type": "tool_result",
+            "tool_use_id": "bash-failure",
+            "content": "error: RuntimeError: frontera rota",
+            "is_error": True,
+        }
+        assert len(hub.requests) == 2
+        assert hub.requests[1].messages[-1] == {
+            "role": "tool",
+            "tool_call_id": "bash-failure",
+            "content": "error: RuntimeError: frontera rota",
+        }
+
+    def test_negative_exit_code_is_a_failed_tool_result(self) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import (
+            _tool_result_succeeded,
+        )
+
+        assert _tool_result_succeeded("\n(exit -9) killed") is False
+
+
 class TestReadToolRespectsProtectedPaths:
+    @staticmethod
+    def _track(repo: Path, path: str) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "add", "-f", "--", path], cwd=repo, check=True)
+
     def test_refuses_protected_path(self, tmp_path: Path) -> None:
         from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_read
 
@@ -510,10 +965,61 @@ class TestReadToolRespectsProtectedPaths:
         from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_read
 
         (tmp_path / "x.md").write_text("contenido real\n", encoding="utf-8")
+        self._track(tmp_path, "x.md")
 
         result = _tool_read("x.md", cwd=tmp_path)
 
         assert "contenido real" in result
+
+    @pytest.mark.parametrize(
+        "relative_path",
+        [
+            ".codex/config.toml",
+            ".claude/settings.local.json",
+            ".agents/local.json",
+            ".env.production",
+        ],
+    )
+    def test_refuses_local_agent_config_even_if_git_tracked(
+        self, tmp_path: Path, relative_path: str,
+    ) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_read
+
+        target = tmp_path / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("MUST_NOT_LEAK=true\n", encoding="utf-8")
+        self._track(tmp_path, relative_path)
+
+        result = _tool_read(relative_path, cwd=tmp_path)
+
+        assert result.startswith("error:")
+        assert "MUST_NOT_LEAK" not in result
+
+    def test_refuses_untracked_file(self, tmp_path: Path) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_read
+
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+        (tmp_path / "local.txt").write_text("MUST_NOT_LEAK\n", encoding="utf-8")
+
+        result = _tool_read("local.txt", cwd=tmp_path)
+
+        assert result.startswith("error:")
+        assert "MUST_NOT_LEAK" not in result
+
+    def test_refuses_symlink_whose_resolved_target_is_protected(
+        self, tmp_path: Path,
+    ) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import _tool_read
+
+        secret = tmp_path / ".env"
+        secret.write_text("ATLAS_SECRET=must-not-leak\n", encoding="utf-8")
+        (tmp_path / "apparently-public.md").symlink_to(secret)
+        self._track(tmp_path, "apparently-public.md")
+
+        result = _tool_read("apparently-public.md", cwd=tmp_path)
+
+        assert result.startswith("error:")
+        assert "must-not-leak" not in result
 
 
 class TestGoldenRouteToolUsesSharedStore:
@@ -561,6 +1067,7 @@ class TestAgenticDispatchDefaultLevel:
         agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub)
 
         assert hub.requests[0].level == InferenceLevel.L2
+        assert hub.requests[0].preserve_malformed_tool_calls is True
 
     def test_explicit_level_override_still_respected(self, tmp_path: Path) -> None:
         from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
@@ -570,6 +1077,201 @@ class TestAgenticDispatchDefaultLevel:
         agentic_dispatch("pregunta cualquiera", tmp_path, hub=hub, level=InferenceLevel.L1)
 
         assert hub.requests[0].level == InferenceLevel.L1
+
+    def test_explicit_run_task_id_is_propagated_to_every_inference(
+        self, tmp_path: Path,
+    ) -> None:
+        from atlas.core.self_maintenance.f26_agentic_dispatch import agentic_dispatch
+
+        hub = _ScriptedHub([
+            _resp(tool_calls=[_tool_call("read", "Read", path="WORK_LEDGER.md")]),
+            _resp(text="respuesta final"),
+        ])
+
+        agentic_dispatch("prompt", tmp_path, hub=hub, task_id="f26:run-123")
+
+        assert {request.task_id for request in hub.requests} == {"f26:run-123"}
+
+
+class TestAgenticDispatchAuditBoundary:
+    def test_default_hub_receives_verified_merkle_logger(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+        from atlas.logging.merkle_logger import MerkleLogger
+
+        captured: dict[str, Any] = {}
+        scripted = _ScriptedHub([_resp(text="respuesta final")])
+
+        def fake_hub(*, mode: str, **kwargs: Any) -> _ScriptedHub:
+            captured.update(mode=mode, **kwargs)
+            return scripted
+
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas-home"))
+        monkeypatch.setattr(dispatch_module, "InferenceHub", fake_hub)
+
+        proc = dispatch_module.agentic_dispatch("prompt", tmp_path)
+
+        assert proc.returncode == 0
+        assert captured["mode"] == "auto"
+        assert isinstance(captured.get("merkle"), MerkleLogger)
+        assert captured["merkle"].verify_chain()[0] is True
+
+    def test_exact_provider_pin_builds_single_provider_hub(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        captured: dict[str, Any] = {}
+        scripted = _ScriptedHub([_resp(text="respuesta final")])
+
+        def fake_hub(*, mode: str, **kwargs: Any) -> _ScriptedHub:
+            captured.update(mode=mode, **kwargs)
+            return scripted
+
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas-home"))
+        monkeypatch.setattr(dispatch_module, "InferenceHub", fake_hub)
+
+        proc = dispatch_module.agentic_dispatch(
+            "prompt", tmp_path, level=InferenceLevel.L1,
+            provider_name="groq_llama_70b",
+        )
+
+        assert proc.returncode == 0
+        assert [provider.name for provider in captured["providers"]] == [
+            "groq_llama_70b",
+        ]
+
+    def test_unknown_provider_pin_stops_before_hub_or_inference(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        hub_constructed = False
+
+        def fake_hub(**_kwargs: Any) -> _ScriptedHub:
+            nonlocal hub_constructed
+            hub_constructed = True
+            return _ScriptedHub([_resp(text="no debe ejecutarse")])
+
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas-home"))
+        monkeypatch.setattr(dispatch_module, "InferenceHub", fake_hub)
+
+        proc = dispatch_module.agentic_dispatch(
+            "prompt", tmp_path, level=InferenceLevel.L1,
+            provider_name="provider_inexistente",
+        )
+
+        assert proc.returncode == 1
+        assert "provider" in proc.stderr.casefold()
+        assert hub_constructed is False
+
+    def test_provider_pin_rejects_level_mismatch_before_hub(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        hub_constructed = False
+
+        def fake_hub(**_kwargs: Any) -> _ScriptedHub:
+            nonlocal hub_constructed
+            hub_constructed = True
+            return _ScriptedHub([_resp(text="no debe ejecutarse")])
+
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas-home"))
+        monkeypatch.setattr(dispatch_module, "InferenceHub", fake_hub)
+
+        proc = dispatch_module.agentic_dispatch(
+            "prompt", tmp_path, level=InferenceLevel.L2,
+            provider_name="groq_llama_70b",
+        )
+
+        assert proc.returncode == 1
+        assert "L1" in proc.stderr
+        assert "L2" in proc.stderr
+        assert hub_constructed is False
+
+    def test_broken_merkle_chain_stops_before_inference(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        class _BrokenMerkle:
+            def __init__(self, _path: Path) -> None:
+                pass
+
+            def verify_chain(self) -> tuple[bool, str]:
+                return False, "hash mismatch"
+
+        hub_constructed = False
+
+        def fake_hub(**_kwargs: Any) -> _ScriptedHub:
+            nonlocal hub_constructed
+            hub_constructed = True
+            return _ScriptedHub([_resp(text="no debe ejecutarse")])
+
+        monkeypatch.setenv("ATLAS_HOME", str(tmp_path / "atlas-home"))
+        monkeypatch.setattr(dispatch_module, "MerkleLogger", _BrokenMerkle, raising=False)
+        monkeypatch.setattr(dispatch_module, "InferenceHub", fake_hub)
+
+        proc = dispatch_module.agentic_dispatch("prompt", tmp_path)
+
+        assert proc.returncode == 1
+        assert "merkle" in proc.stderr.casefold()
+        assert "hash mismatch" in proc.stderr
+        assert hub_constructed is False
+
+
+class TestAgenticDispatchRejectsAmbiguousToolCalls:
+    def test_duplicate_tool_ids_execute_no_tools(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        calls: list[str] = []
+
+        def fake_dispatch(name: str, _arguments: str, **_kwargs: Any) -> str:
+            calls.append(name)
+            return "ok"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+        hub = _ScriptedHub([
+            _resp(tool_calls=[
+                _tool_call("shared", "Read", path="WORK_LEDGER.md"),
+                _tool_call("shared", "Grep", pattern="F2.6"),
+            ]),
+            _resp(text="respuesta que no debe alcanzarse"),
+        ])
+
+        proc = dispatch_module.agentic_dispatch("prompt", tmp_path, hub=hub)
+
+        assert proc.returncode == 1
+        assert "duplicate" in proc.stderr.casefold()
+        assert calls == []
+
+    def test_malformed_tool_arguments_fail_closed_without_crashing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import atlas.core.self_maintenance.f26_agentic_dispatch as dispatch_module
+
+        calls: list[str] = []
+
+        def fake_dispatch(name: str, _arguments: str, **_kwargs: Any) -> str:
+            calls.append(name)
+            return "ok"
+
+        monkeypatch.setattr(dispatch_module, "_dispatch_tool", fake_dispatch)
+        hub = _ScriptedHub([_resp(tool_calls=[{
+            "id": "bad-json",
+            "name": "Read",
+            "arguments": "{",
+        }])])
+
+        proc = dispatch_module.agentic_dispatch("prompt", tmp_path, hub=hub)
+
+        assert proc.returncode == 1
+        assert "json" in proc.stderr.casefold()
+        assert calls == []
 
 
 class TestSystemPrefixRemindsLiveStateAuthority:

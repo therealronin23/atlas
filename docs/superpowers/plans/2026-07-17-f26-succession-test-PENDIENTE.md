@@ -21,16 +21,18 @@ el ítem GoldenRoute pasaba por defecto si no había Edit.
 
 El hardening no baja la rúbrica ni inserta eventos. Ahora el ítem 2 inspecciona
 el subcomando (`graph_importers|graph_blast_radius`), el ítem 3 exige una llamada
-GoldenRoute real, y el driver rechaza una respuesta final mientras falten tool
-calls exitosas de grafo, ledger acotado, GoldenRoute, `actor_roles.md` y el pack
-de handoff. El transcript nuevo conserva cada `tool_result` emparejado por ID;
+GoldenRoute real, y el driver rechaza una respuesta final mientras falten los
+intentos exactos de grafo, ledger acotado, GoldenRoute, `actor_roles.md` y el
+pack de handoff. El grader sólo concede cada ítem cuando el resultado emparejado
+también fue exitoso. El transcript nuevo conserva cada `tool_result` por ID;
 una propuesta pendiente ya no acredita “aprobación registrada”. El modo de
 aplicar queda desactivado por defecto y sólo una identidad de operador explícita
 puede autorizar validate → approve → apply de la petición literal F2.6; ninguna
 otra ruta o línea hereda esa autoridad. Regradeado con esas reglas, el transcript
-real es **2/6**. TDD: 101 tests focales verdes; mypy estricto limpio. Pendiente
-inmediato: commitear este hardening y repetir la rúbrica ENTERA desde ese SHA;
-sólo 6/6 cierra el gap.
+  real es **2/6**. TDD focal y mypy verificaron ese hardening en su corte.
+  Pendiente inmediato: repetir la rúbrica ENTERA desde un SHA limpio. Un 6/6
+  automático sólo crea `pending_review`; cerrar el gap exige además revisión
+  semántica del operador enlazada al mismo transcript y receipt.
 
 ## Estado 2026-07-22 (MAXIMUS Cycle 12) — mitad barata construida, NO es la
 ## solución definitiva; diseño real para sesión futura, abajo
@@ -48,8 +50,8 @@ repetir aquí — así que la otra mitad se deja diseñada, no parcheada:
 
 **Lo que hace falta para que sea definitivo, no otro parche:**
 
-1. **`atlas f26 run`** — comando real que DISPARA la ejecución (hoy no
-   existe ninguno). Construye el prompt de la rúbrica desde ESTE MISMO doc
+1. **`atlas f26 run`** — comando real que DISPARA la ejecución. Construye el
+   prompt de la rúbrica desde ESTE MISMO doc
    (fuente única, nunca copiado a mano) y despacha una sesión fría. El
    mecanismo validado en PRIME Cycle 6 (subagente Sonnet vía Agent tool,
    `model=sonnet`, cero contexto de la sesión lanzadora) es hoy más fiable
@@ -58,27 +60,27 @@ repetir aquí — así que la otra mitad se deja diseñada, no parcheada:
    un segundo paso (barato/determinista donde se pueda) que evalúe cada uno
    de los 6 ítems CONTRA el transcript real y produzca veredicto por ítem,
    no un "6/6" recordado de cabeza.
-3. **Auto-registro**: `atlas f26 run` debe llamar `record_f26_run()` él
-   mismo al terminar. Hoy es un paso manual separado — ahí es exactamente
-   donde se pierde en la práctica (se corre, nadie teclea el `record-run`,
-   el gate queda "due" para siempre pese a que sí se corrió).
+3. **Auto-registro**: `atlas f26 run` llama `record_f26_run()` al terminar.
+   Un FAIL queda registrado; un 6/6 automático queda `pending_review`, nunca
+   PASS. La confirmación semántica sí es un paso humano separado y enlazado.
 4. **Notificación accionable cuando está "due"** — la pieza final, no la
    primera: dado que disparar una sesión LLM real sigue siendo
    deliberadamente caro y nunca automático, encaja con el patrón `spawn_task`
    ya disponible en este entorno (chip visible, un gesto humano lo lanza).
    Construir esto ANTES que 1-3 sería precisamente el parche a evitar.
 
-**BLOQUEADOR DE CREDENCIAL RESUELTO (2026-07-29): F2.6 ya NO depende de
-Claude.** `atlas f26 run --driver agentic` corre la rúbrica con el bucle de
-tool-calling de `InferenceHub` sobre cualquier proveedor de `.env` con
-`supports_tools` — Groq/OpenRouter/Gemini/NVIDIA. Implementado en
-`src/atlas/core/self_maintenance/f26_agentic_dispatch.py`; el grading
-(`grade_f26_transcript`) NO cambió, porque sólo depende de la FORMA del
-transcript, no de quién lo generó.
+**BLOQUEADOR DE CREDENCIAL RESUELTO (2026-07-29; contrato endurecido
+2026-08-13): F2.6 ya NO depende de Claude.** `atlas f26 run` usa por defecto el
+driver agentic sobre `InferenceHub`; `--provider` puede fijar el asiento exacto
+y evitar fallback silencioso. Gemini ya no pertenece al catálogo por defecto.
+Claude queda como driver legacy, bloqueado salvo opt-in inseguro explícito; sus
+envelopes históricos no son compatibles con el grader fail-closed actual.
 
 Corrida real 2026-07-29 21:57 con `gemini_free`: **29,3 s, exit 0,
 auto-registrada** (`recorded: true`, `last_run_sha=ee8003d`). El gate pasó de
-`due` a `current`.
+`due` a `current` bajo el contrato antiguo. Esa transición quedó invalidada por
+el hardening posterior: hoy un FAIL permanece `due` y un 6/6 automático queda
+`pending_review`.
 
 **Estado**: EJECUTADO, **veredicto `fail` con score 2/6** — no un pase. El
 transcript real muestra que el modelo leyó dos ficheros con `Read` ANTES de
@@ -91,17 +93,26 @@ fallan y el 3 "pasa por defecto" sin intento real.
 capacidad agéntica que un free-tier pequeño. **No se tocó el prompt para
 forzar mejor nota** — sería el gaming de rúbrica que F2.6 existe para evitar.
 
-El driver `claude` sigue existiendo como default y sigue dando 401 desde
-2026-07-17 (credencial de la CLI revocada, `claude setup-token` la
-refrescaría). Ya no es un bloqueador del gate: es una vía alternativa.
+El driver `claude` sigue existiendo sólo como vía legacy explícita; no es el
+default y no debe producir evidencia F2.6 nueva sin una frontera preventiva
+equivalente a la agentic.
 
-**Qué es**: la métrica (d) del plan maestro §2.9 — un Sonnet FRÍO en sesión
-real debe poder operar Atlas 6/6. Rúbrica original: plan toasty F2.6
+**Qué es**: la métrica (d) del plan maestro §2.9 — históricamente formulada para
+un Sonnet frío, hoy aplicable a una sesión fría de proveedor capaz que pueda
+operar Atlas. Un 6/6 automático no basta sin revisión semántica. Rúbrica
+original: plan toasty F2.6
 (~/.claude/plans/toasty-hatching-pillow.md líneas ~216-227). Desde T0
 (2026-07-17) hay activos nuevos que el test debe aprovechar: el pack
 `docs/handoff/GENERATED/` y las memorias migradas al sustrato (`harness:*`).
 
 ## Cómo ejecutarlo (operador o driver con presupuesto)
+
+Comando operativo actual: `atlas f26 run --provider groq_llama_70b
+--approval-actor ACTOR --json`. La identidad autoriza una sola aplicación de
+la petición literal F2.6; sin ella el intento GoldenRoute queda propuesto y el
+ítem 3 no puede pasar.
+El bloque siguiente se conserva como **fuente canónica parseable del prompt**;
+es un envelope histórico y no debe ejecutarse directamente como driver legacy.
 
 ```bash
 cd ~/proyectos/atlas-core
@@ -131,10 +142,11 @@ claude -p --model sonnet "Sesión nueva. Sigue AGENTS.md. Después: \
    rúbrica original: si usa `atlas handoff --check` para validar frescura del
    pack, anotarlo como señal positiva extra.
 
-**Si pasa 6/6 a la primera**: revisar que la rúbrica no sea trivial (regla del
-plan toasty). Registrar el resultado en WORK_LEDGER + memoria
-succession-proofing (es la métrica (d) del plan maestro — número verde o no
-hay sucesión, doctrina §2.7).
+**Si el grader produce 6/6**: el gate queda `pending_review`, no `current`.
+Revisar semánticamente ítems 1/4/6 y que la rúbrica no sea trivial; confirmar
+PASS sólo contra el mismo transcript, estado automático y receipt. La evidencia
+de sesión se anota en WORK_LEDGER; cualquier cambio humano a memoria/documento
+raíz sigue GoldenRoute.
 
 ## Auditoría 2026-08-12 — un fallo de tool debe poder registrarse como FAIL
 
@@ -153,9 +165,34 @@ la misma identidad de checkout que usa `atlas reality`.
 
 Corrida de confirmación: `groq_llama_70b` demostró tool use en una sonda y
 ejecutó la rúbrica completa sobre `be800d1` (2026-08-12). Resultado registrado:
-**FAIL 4/6**. Item 1 falló porque el texto final no repitió la fecha que sí
+**FAIL, score automático reproducible 4/6**. No equivale a verificación
+semántica: los ítems 1/4/6 son heurística textual y el ítem 6 puede dar falsos
+positivos; en este transcript enumera tres ficheros donde la pregunta pedía
+tres memorias. Item 1 falló porque el texto final no repitió la fecha que sí
 aparecía en el resultado de `sed`; item 3 porque la validación GoldenRoute
-falló cerrada con 37 fallos ambientales dentro del jail candidato y no hubo
-approve/apply. El modelo afirmó luego que la línea se añadió; el grader no
-confundió esa frase con el `tool_result` fallido. Estado correcto: sucesión aún
-no demostrada.
+falló cerrada y no hubo approve/apply. El receipt confirma `pytest_exit=1` y
+`mypy_exit=0`; el detalle “37 fallos ambientales dentro del jail candidato”
+procede del stdout y queda reportado-sin-confirmar por ese receipt. El modelo
+afirmó luego que la línea se añadió; el grader no confundió esa frase con el
+`tool_result` fallido. Estado correcto: sucesión aún no demostrada.
+
+Errata/hardening 2026-08-12: el driver productivo crea ahora el
+`InferenceHub` sólo con una cadena Merkle verificada; un lote con IDs vacíos o
+duplicados, argumentos JSON inválidos o correlación ambigua falla antes de
+ejecutar tools. El CLI expone una identidad explícita y consumible una vez para
+la ruta GoldenRoute exacta. El run fija el SHA inicial; una transición de HEAD
+sólo es admisible si es el único commit hijo, está ligada al `proposal_id`
+aplicado y su único diff es el append literal F2.6. El JSON de resultado declara
+qué ítems son deterministas y cuáles heurísticos; sigue sin existir revisión
+semántica automática.
+
+Hardening 2026-08-13: `atlas f26 run` usa `agentic` y L1 por defecto; una
+corrida probatoria puede fijar `groq_llama_70b` y el hub se construye con ese
+único provider. El driver Claude implícito falla cerrado. Un 6/6 heurístico se
+persiste como `pending_review`; `pass/current` exige actor, transcript SHA,
+score 6/6 y enlace al último receipt automático pendiente. La metadata final
+se reemplaza atómicamente después de `session.ended`; un error posterior al
+dispatch ya no se reporta como fallo previo al efecto. El estado se fsynca en
+staging y sólo se publica después de un terminal Merkle verificado, bajo un
+lock global por `ATLAS_HOME`; `ATLAS_F26_STATE_PATH` permite compartir la misma
+autoridad de estado entre un checkout limpio y el checkout operativo.

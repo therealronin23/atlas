@@ -33,6 +33,19 @@ def test_plan_parses_quoted_line_request() -> None:
     assert plan["path"] == "docs/notes.md"
 
 
+@pytest.mark.parametrize("path", ["MEMORY.md", "README.md"])
+def test_plan_accepts_existing_root_markdown_authorities(path: str) -> None:
+    plan = plan_from_request(
+        f'añade la línea "Entrada gobernada" al final de {path}'
+    )
+
+    assert plan == {
+        "action": "append_line",
+        "path": path,
+        "line": "Entrada gobernada",
+    }
+
+
 def test_plan_rejects_unsupported_request() -> None:
     with pytest.raises(UnsupportedRequestError, match="v0 solo sabe"):
         plan_from_request("refactoriza el orchestrator entero")
@@ -43,6 +56,8 @@ def test_plan_rejects_unsupported_request() -> None:
     [
         "src/atlas/core/orchestrator.py",  # fuera de docs/ (v0 es doc-only)
         "config/governance.json",          # ruta protegida SIEMPRE
+        "NOTES.txt",                       # solo Markdown en la raíz
+        "agents.md",                       # puntero canónico, inmutable
         "/etc/passwd",                     # absoluta
         "docs/../src/atlas/cli.py",        # escape por ..
     ],
