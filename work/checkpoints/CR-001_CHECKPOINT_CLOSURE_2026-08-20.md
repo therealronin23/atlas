@@ -90,8 +90,12 @@ falló el gate y esta corrida no mide su impacto semántico.
 3. **REQUIRES_OPERATOR / CONTRADICTED:** ADC-WO-107. El bridge 7341 conserva
    POST mutantes fuera de la excepción acotada de ADR-080 frente a ADR-058 y
    ADR-071. No se invocó un POST mutante, ni se eligió una de las dos salidas.
-4. **HITL pendiente:** cuatro hallazgos MAJOR de Semgrep, sin reclasificar;
-   locator machine-readable: `work/checkpoints/CR-001_SEMGREP_MAJOR_FINDINGS.json`.
+4. **HITL pendiente:** cuatro hallazgos MAJOR de Semgrep:
+   `HISTORICAL_FINDING_PRESENT`, `RAW_EVIDENCE_NOT_RETAINED`,
+   `NOT_INDIVIDUALLY_TRIAGEABLE` y
+   `REQUIRES_FUTURE_RESCAN_WITH_RAW_RETENTION`. No se reconstruyeron ni
+   reclasificaron rule/path/line/fingerprint; locator machine-readable:
+   `work/checkpoints/CR-001_SEMGREP_MAJOR_FINDINGS.json`.
 5. **Deliberadamente cerrado, no reabierto:** Cut 2 / Wave 5 por ADC-WO-108.
    ADC-WO-109 y ADC-WO-110 continúan `READY`, ADC-WO-111 y ADC-WO-100 requieren
    operador, y ADC-WO-104 sigue `BLOCKED`.
@@ -111,8 +115,11 @@ falló el gate y esta corrida no mide su impacto semántico.
   read-only o aprobar una supersesión con contrato de mutación, identidad,
   auditoría y rollback por ruta.
 - Triage humano de los cuatro MAJOR Semgrep.
-- Clasificar/indexar la deriva documental sin un barrido narrativo y sin borrar
-  evidencia archivada por hacer verde el auditor.
+- `AUDITOR_SCOPE_REQUIRES_RECONCILIATION`: clasificar/indexar la deriva
+  documental sin un barrido narrativo ni borrar evidencia archivada por hacer
+  verde el auditor. El universo mezcla graveyard, material node_modules/vendor,
+  fixtures, schemas y documentos canónicos, que pueden requerir políticas de
+  indexación distintas.
 - Ejecutar los falsificadores ya registrados para ADR-057/058/069/078 antes de
   elevarlas de provisionales; medir Theia frente a CodeOSS sólo si se autoriza
   un corte de producto separado.

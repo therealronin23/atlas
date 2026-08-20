@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-08-20T21:20:48.578936+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-08-20T22:28:11.683038+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 ## WHERE
 
@@ -16,6 +16,13 @@
   completa `6023 passed, 6 skipped, 27 deselected` (exit 0), `27` computer-use
   (exit 0), mypy de 361 módulos, canon 2.118 y Merkle; `docs_index_audit
   --strict` sigue `FAIL` por 334 documentos sin indexar (deriva amplia previa).
+  **Semgrep CR-001:** `HISTORICAL_FINDING_PRESENT`,
+  `RAW_EVIDENCE_NOT_RETAINED`, `NOT_INDIVIDUALLY_TRIAGEABLE` y
+  `REQUIRES_FUTURE_RESCAN_WITH_RAW_RETENTION`; no se reconstruyeron ni
+  reclasificaron rule/path/line/fingerprint. **Docs index:**
+  `AUDITOR_SCOPE_REQUIRES_RECONCILIATION`: graveyard, material
+  node_modules/vendor, fixtures, schemas y documentos canónicos pueden
+  requerir políticas de indexación distintas.
   **Próxima acción:** Frontier Reconciliation decide proveedor/presupuesto y
   repetir F2.6 completa sólo en checkout limpio; no reinterpretar el 1/6 como
   aprobación.
