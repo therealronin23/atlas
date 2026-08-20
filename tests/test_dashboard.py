@@ -150,7 +150,7 @@ class TestDashboardRoutes:
         r = client.get("/providers")
         assert r.status_code == 200
         # Debe mostrar los proveedores de DEFAULT_PROVIDERS
-        assert b"groq_llama_70b" in r.content
+        assert b"groq_gpt_oss_120b" in r.content
 
 
 # ---------------------------------------------------------------------------
@@ -199,7 +199,7 @@ class TestDashboardAPI:
         monkeypatch.delenv("GROQ_API_KEY", raising=False)
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
         providers = client.get("/api/providers").json()
-        groq = next((p for p in providers if p["name"] == "groq_llama_70b"), None)
+        groq = next((p for p in providers if p["name"] == "groq_gpt_oss_120b"), None)
         assert groq is not None
         assert groq["has_key"] is False
 
