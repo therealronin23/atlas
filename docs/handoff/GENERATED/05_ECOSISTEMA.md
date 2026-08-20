@@ -1,4 +1,4 @@
-<!-- GENERADO por atlas handoff 2026-08-20T18:41:53.390489+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
+<!-- GENERADO por atlas handoff 2026-08-20T19:37:08.030914+00:00 — NO EDITAR A MANO; regenerar con: atlas handoff -->
 
 # Mapa del ecosistema — resumen
 
@@ -7,7 +7,7 @@
 - ACTIVO: 33
 - PENDIENTE: 6
 - SELLADO: 5
-- ACTIVO parcial: 3
+- ACTIVO parcial: 4
 - CONTRADICTED: 2
 - MURO: 1
 - PENDIENTE (scheduling) / ACTIVO (substrate): 1
