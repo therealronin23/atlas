@@ -193,7 +193,7 @@ class Provider:
     level: InferenceLevel
     base_url: str
     model_id: str
-    litellm_model: str = ""           # ej "groq/llama-3.3-70b-versatile"
+    litellm_model: str = ""           # ej "groq/openai/gpt-oss-120b"
     api_key_env: str | None = None    # ej "GROQ_API_KEY"; None para Ollama
     free_tier: bool = True
     rpm_limit: int = 30
@@ -379,7 +379,7 @@ def budget_family(provider_name: str) -> str:
     """Familia de vendor a la que se le imputa el gasto de un proveedor.
 
     `scripts/token-tracker.sh` presupuesta por VENDOR (`groq`, `openrouter`,
-    `nvidia`...), no por entrada del catálogo (`groq_llama_70b`,
+    `nvidia`...), no por entrada del catálogo (`groq_gpt_oss_120b`,
     `groq_qwen3`...) — que es lo correcto: la cuota la impone el vendor, no
     el modelo. El call site pasaba el nombre de entrada, el tracker
     contestaba `unknown provider` (exit 64) y el hub lo trataba como error de
@@ -410,14 +410,14 @@ def token_tracker_path() -> Path:
 
 
 DEFAULT_PROVIDERS: list[Provider] = [
-    # L1 — Groq (rate-limit gratis para siempre; verificar IDs en console.groq.com/docs/models)
-    # 2026-06-27: gpt-oss-120b devuelve contenido vacío → revertido a llama-3.3-70b-versatile
+    # L1 — Groq. Llama 3.3 70B se retiró para los tiers free/developer el
+    # 2026-08-16; Groq recomienda GPT-OSS 120B como reemplazo.
     Provider(
-        name="groq_llama_70b",
+        name="groq_gpt_oss_120b",
         level=InferenceLevel.L1,
         base_url="https://api.groq.com",
-        model_id="llama-3.3-70b-versatile",
-        litellm_model="groq/llama-3.3-70b-versatile",
+        model_id="openai/gpt-oss-120b",
+        litellm_model="groq/openai/gpt-oss-120b",
         api_key_env="GROQ_API_KEY",
         rpm_limit=30,
         context_tokens=128000,

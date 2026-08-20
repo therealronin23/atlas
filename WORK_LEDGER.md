@@ -8,6 +8,18 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-20 — L1 Groq migrado tras retirada de Llama 3.3; F2.6 sigue due
+  hasta transcript válido.** Groq retiró `llama-3.3-70b-versatile` para los
+  tiers free/developer (error directo `model_not_found`); el catálogo y sus
+  callers pasan a `groq_gpt_oss_120b` / `openai/gpt-oss-120b`, reemplazo
+  oficial. Tres dispatches F2.6 anteriores dejaron receipts honestos pero
+  transcript vacío: Llama retirado; Qwen era L0 frente a una rúbrica L1; y
+  Hermes/OpenRouter no ofrecía endpoint de tool use. **Verificado:** 62 tests
+  de gate/council/workbench, exit 0; 65 tests ColdUpdate/SelfBuild, exit 0.
+  **Próxima acción:** commit acotado, reiniciar el servicio y ejecutar una
+  única F2.6 con `--provider groq_gpt_oss_120b` sobre checkout limpio; sólo un
+  transcript gradeable puede mover el gate.
+
 - **2026-08-13 — GoldenRoute admite Markdown raíz sin abrir una autoridad
   genérica sobre el root.** Request→ColdUpdate permite modificar un fichero
   `*.md` raíz sólo si ya existe, es regular, no es symlink y ambos lados del
@@ -27,7 +39,8 @@ de escribir: `atlas reality --json`.
 
 - **2026-08-13 — F2.6 endurecido sin convertir heurística en sucesión.** El
   driver CLI por defecto es ahora `agentic`; Claude legacy exige opt-in inseguro
-  explícito. `--level` y `--provider` permiten fijar `groq_llama_70b`; el hub
+  explícito. `--level` y `--provider` permitían fijar el entonces disponible
+  `groq_llama_70b`; el hub
   queda con un único provider y sin fallback, tras verificar Merkle. Read sólo
   admite ficheros regulares tracked (no symlinks/config local), Grep trata input
   como dato, Bash comparte la allowlist del grader, los lotes de tool calls se
@@ -47,7 +60,8 @@ de escribir: `atlas reality --json`.
   (2.118 registros), Merkle y diff-check, todos exit 0. **No verificado aún:**
   grafo post-commit y corrida live final. **Próxima acción:** commit acotado sin
   los cinco paths del usuario, reconstruir grafo/handoff y sólo entonces correr
-  una F2.6 autorizada en checkout limpio con `--provider groq_llama_70b
+  una F2.6 autorizada en checkout limpio con un proveedor L1 actualmente
+  servido (en ese momento, `groq_llama_70b`)
   --approval-actor tomas:f26-explicit`; nunca forzar PASS.
 
 - **2026-08-12 — ciclo 6: oversight/transparencia/MCP investigados y visión

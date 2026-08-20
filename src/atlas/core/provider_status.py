@@ -288,7 +288,7 @@ def check_provider_status(
     rss_get: Callable[..., Any] | None = None,
 ) -> list[StatusResult]:
     """Un `StatusResult` por VENDOR distinto entre `providers` (deduplicado:
-    varios providers del mismo vendor -- ej. groq_llama_70b/groq_compound/
+    varios providers del mismo vendor -- ej. groq_gpt_oss_120b/groq_compound/
     groq_qwen3 -- comparten una sola llamada, la página de estado es del
     vendor, no del modelo). Vendors sin página de estado pública fiable
     (`status_vendor` -> None que SÍ es un vendor externo conocido: nvidia) se

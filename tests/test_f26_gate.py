@@ -660,7 +660,7 @@ class TestNotification:
         notification = f26_gate_notification(status)
 
         assert notification is not None
-        assert "--provider groq_llama_70b" in notification["prompt"]
+        assert "--provider groq_gpt_oss_120b" in notification["prompt"]
         assert "--approval-actor ACTOR" in notification["prompt"]
 
     @pytest.mark.parametrize("status_value", ["current", "never_run", "unknown"])

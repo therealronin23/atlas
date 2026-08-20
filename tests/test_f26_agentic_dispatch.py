@@ -1134,12 +1134,12 @@ class TestAgenticDispatchAuditBoundary:
 
         proc = dispatch_module.agentic_dispatch(
             "prompt", tmp_path, level=InferenceLevel.L1,
-            provider_name="groq_llama_70b",
+            provider_name="groq_gpt_oss_120b",
         )
 
         assert proc.returncode == 0
         assert [provider.name for provider in captured["providers"]] == [
-            "groq_llama_70b",
+            "groq_gpt_oss_120b",
         ]
 
     def test_unknown_provider_pin_stops_before_hub_or_inference(
@@ -1183,7 +1183,7 @@ class TestAgenticDispatchAuditBoundary:
 
         proc = dispatch_module.agentic_dispatch(
             "prompt", tmp_path, level=InferenceLevel.L2,
-            provider_name="groq_llama_70b",
+            provider_name="groq_gpt_oss_120b",
         )
 
         assert proc.returncode == 1

@@ -226,7 +226,7 @@ class CouncilSeat:
 # INFER_REQUEST_TIMEOUT_S, no la multiplica por asiento. Riesgo conocido y
 # aceptado, no arreglado aquí (fuera de alcance de este rediseño).
 COUNCIL_ROLES: tuple[CouncilSeat, ...] = (
-    CouncilSeat("contrarian", _HOSTILE_PROMPT, ("groq_llama_70b",)),
+    CouncilSeat("contrarian", _HOSTILE_PROMPT, ("groq_gpt_oss_120b",)),
     CouncilSeat(
         "first_principles", _FIRST_PRINCIPLES_PROMPT,
         ("openrouter_mistral_large", "nvidia_mistral_medium"),

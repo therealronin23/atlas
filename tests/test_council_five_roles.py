@@ -116,7 +116,7 @@ class TestBuildCouncilReviewers:
         reviewers = build_council_reviewers(providers=pool)
         provs = {r.provider for r in reviewers}
         assert "groq_qwen3" not in provs      # el asiento Alibaba desaparece
-        assert "groq_llama_70b" in provs      # los demás no se tocan
+        assert "groq_gpt_oss_120b" in provs   # los demás no se tocan
         assert not any(r.reviewer_id.startswith("executor:") for r in reviewers)
 
 

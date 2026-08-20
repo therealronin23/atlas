@@ -55,7 +55,7 @@ def gemini_probe_infer_fn(hub: Any) -> Callable[[str], str | None]:
     pago, así que un fallo aquí jamás gasta presupuesto de otro proveedor."""
     from atlas.core.inference_hub import DEFAULT_PROVIDERS, InferenceRequest
 
-    gemini = next((p for p in DEFAULT_PROVIDERS if p.name in {"gemini_free", "groq_llama_70b"}), None)
+    gemini = next((p for p in DEFAULT_PROVIDERS if p.name in {"gemini_free", "groq_gpt_oss_120b"}), None)
 
     def _call(prompt: str) -> str | None:
         if gemini is None:

@@ -136,7 +136,7 @@ def _build_evolution_gate() -> Any | None:
     return EvolutionGate(
         api_base="https://api.groq.com/openai/v1",
         api_key=api_key,
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         iterations=5,
     )
 

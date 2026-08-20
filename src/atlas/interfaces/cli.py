@@ -1262,7 +1262,7 @@ def f26_status(as_json: bool) -> None:
     "--level", type=click.Choice(["L1", "L2"]), default="L1", show_default=True,
     help=(
         "Nivel de InferenceHub para el driver agentic. L1 prioriza "
-        "groq_llama_70b; el hub aún puede usar su cadena de fallback y cada "
+        "groq_gpt_oss_120b; el hub aún puede usar su cadena de fallback y cada "
         "model.called queda registrado."
     ),
 )
@@ -1270,7 +1270,7 @@ def f26_status(as_json: bool) -> None:
     "--provider", default=None,
     help=(
         "Fija un provider exacto del catálogo para impedir fallback silencioso "
-        "(para la evidencia actual: groq_llama_70b). Sin esta opción, el nivel "
+        "(para la evidencia actual: groq_gpt_oss_120b). Sin esta opción, el nivel "
         "usa la cadena normal de InferenceHub."
     ),
 )
