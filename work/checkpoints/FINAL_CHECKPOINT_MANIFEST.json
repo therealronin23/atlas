@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "checkpoint_id": "CR-001",
+  "version": "0.12.0",
+  "final_head_sha": null,
+  "final_head_sha_status": "RESOLVED_AFTER_COMMIT_FROM_REFS_HEADS_MAIN; a tracked Git blob cannot stably embed the SHA of the commit that contains it.",
+  "audited_source_sha": "22ff7e3255a6e32dc774f06920b20f16c49642e1",
+  "local_branch": "main",
+  "remote_main_sha": "918cbdf0b5aac237e8094de2e22198a4f8184610",
+  "published": false,
+  "publication_evidence": "git merge-base --is-ancestor HEAD origin/main exited 1; local main was 105 commits ahead before the final seal commit, so no remote CI can exist for the local HEAD.",
+  "test_results": {
+    "pytest_core": {"status": "PASS", "evidence": "6023 passed, 6 skipped, 27 deselected, 1 warning; 576.84s"},
+    "pytest_computer_use": {"status": "PASS", "evidence": "27 passed, 6029 deselected; 88.29s"},
+    "mypy": {"status": "PASS", "evidence": "Success: no issues found in 361 source files"}
+  },
+  "gate_results": {
+    "canon": {"status": "PASS", "evidence": "2118 JSONL records"},
+    "merkle": {"status": "PASS", "evidence": "atlas audit --verify: cadena Merkle integra"},
+    "diff_check": {"status": "PASS", "evidence": "git diff --check"},
+    "docs_index": {"status": "FAIL", "classification": "PREEXISTING", "evidence": "334 unindexed paths; locator below"},
+    "remote_ci_for_local_head": {"status": "NOT_EXECUTED_UNPUBLISHED", "classification": "NOT_A_FAILURE", "evidence": "local HEAD has not been published"}
+  },
+  "runtime_state": {
+    "reality_at_audited_source": "repo clean; graph FRESH; Merkle ok; daemon active and not behind HEAD",
+    "browser": "DEGRADED: playwright package missing",
+    "cold_update": "DEGRADED: last validation failed historically"
+  },
+  "f26_execution_result": {
+    "execution_outcome": "FAIL",
+    "automatic_grade": "1/6",
+    "status": "due",
+    "run_sha": "90864f77c320e2454409c6e770e4078553f73f00",
+    "transcript": "workspace/self_build/f26_runs/f26_run_20260820T195303959278+0000.txt"
+  },
+  "f26_measurement_validity": {
+    "status": "INCONCLUSIVE",
+    "reasons": [
+      "The evaluated execution began with graph status STALE.",
+      "No linked independent semantic review exists."
+    ],
+    "non_interpretation": "This does not erase or convert the execution FAIL into PASS."
+  },
+  "known_failures": [
+    "F2.6 execution FAIL 1/6 and remains due.",
+    "docs index strict validation FAIL: 334 paths unindexed.",
+    "ColdUpdate historical validation is degraded."
+  ],
+  "known_unknowns": [
+    "FastEmbed mean-pooling warning semantic impact.",
+    "Individual rule/path/line/fingerprint values for the four historical candidate-level Semgrep MAJOR reports were not retained."
+  ],
+  "contradictions": [
+    "ADC-WO-107 remains CONTRADICTED and requires operator choice; it was not closed."
+  ],
+  "provisional_ADRs": ["ADR-057", "ADR-058", "ADR-069", "ADR-078"],
+  "semgrep_findings_locator": "work/checkpoints/CR-001_SEMGREP_MAJOR_FINDINGS.json",
+  "docs_drift_locator": "work/checkpoints/CR-001_DOCS_INDEX_DRIFT.json",
+  "excluded_stashes": [
+    "stash@{2026-08-20 21:07:44 +0200} c0b924af1c38966b8109959093dd8203e6e6e990",
+    "stash@{2026-08-20 21:06:41 +0200} 2ce666f617821b9ce50376452d76db9ab972a4f2"
+  ],
+  "transferred_frontiers": [
+    "Independent semantic review and a valid repeat of F2.6 only when an authorized capable provider is available.",
+    "ADC-WO-107 operator decision.",
+    "HITL triage of four Semgrep MAJOR candidate reports.",
+    "Documentation index classification of the recorded drift.",
+    "Falsifiers for provisional ADR-057/058/069/078 and any separately authorized UI/UX fork work."
+  ]
+}

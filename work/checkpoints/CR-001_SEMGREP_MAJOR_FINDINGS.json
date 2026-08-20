@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "checkpoint_id": "CR-001",
+  "artifact": "candidate-level Semgrep MAJOR finding locators",
+  "source_report": "docs/design/mcp_catalog_stage2_report.jsonl",
+  "source_report_sha256": "c5633722ef9e314236463c191601bccc4408c15c1c4f0eefb0b81dfd478314af",
+  "source_report_evidence": "The Stage 2 report retains candidate-level count and worst severity, not individual Semgrep event records. Null locator fields are intentional and must not be inferred or backfilled without preserved raw output.",
+  "findings": [
+    {
+      "candidate": "ai.adeu/adeu",
+      "rule_id": null,
+      "path": null,
+      "line_range": null,
+      "fingerprint": null,
+      "severity": "MAJOR",
+      "status": "HITL_PENDING_RAW_EVIDENCE_NOT_RETAINED",
+      "source_report_line": 1,
+      "historical_finding_count": 7,
+      "entrypoint": "adeu.server"
+    },
+    {
+      "candidate": "com.arcself/arc-security",
+      "rule_id": null,
+      "path": null,
+      "line_range": null,
+      "fingerprint": null,
+      "severity": "MAJOR",
+      "status": "HITL_PENDING_RAW_EVIDENCE_NOT_RETAINED",
+      "source_report_line": 161,
+      "historical_finding_count": 4,
+      "entrypoint": "./bin/arc-security-mcp.js"
+    },
+    {
+      "candidate": "com.atagon/kogiqa-mcp",
+      "rule_id": null,
+      "path": null,
+      "line_range": null,
+      "fingerprint": null,
+      "severity": "MAJOR",
+      "status": "HITL_PENDING_RAW_EVIDENCE_NOT_RETAINED",
+      "source_report_line": 164,
+      "historical_finding_count": 4,
+      "entrypoint": "index.js"
+    },
+    {
+      "candidate": "com.gitkraken/gk-cli",
+      "rule_id": null,
+      "path": null,
+      "line_range": null,
+      "fingerprint": null,
+      "severity": "MAJOR",
+      "status": "HITL_PENDING_RAW_EVIDENCE_NOT_RETAINED",
+      "source_report_line": 223,
+      "historical_finding_count": 1,
+      "entrypoint": "run-gk.js"
+    }
+  ],
+  "non_actions": [
+    "No Semgrep finding was fixed, reclassified, or dismissed.",
+    "A current scanner result must not overwrite this historical candidate-level evidence without an explicit HITL decision and preserved raw results."
+  ]
+}

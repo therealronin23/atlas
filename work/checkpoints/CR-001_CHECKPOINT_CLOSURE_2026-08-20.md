@@ -9,18 +9,19 @@ no acepta producto, arquitectura nueva ni una decisión pendiente.
 
 | Campo | Evidencia |
 | --- | --- |
-| Rama | `main` |
-| SHA fuente auditada | `90864f77c320e2454409c6e770e4078553f73f00` |
+| Rama local | `main` |
+| SHA fuente auditada | `22ff7e3255a6e32dc774f06920b20f16c49642e1` |
 | Base remota (`origin/main`) | `918cbdf0b5aac237e8094de2e22198a4f8184610` |
+| Publicación del HEAD local | no publicado (`git merge-base --is-ancestor HEAD origin/main` → exit 1) |
 | Baseline CR-001 | `1d71eaa372072923305e46eee1793dd494dca0d9` (`cr001-baseline-20260815`) |
-| Delta respecto a `origin/main` | 103 commits en `origin/main..90864f7`; no equivale a aceptación de producto |
+| Delta respecto a `origin/main` | 105 commits en `origin/main..22ff7e3`; no equivale a aceptación de producto |
 | Delta desde baseline CR-001 | `49523fa`, `d9ce16d`, `90864f7` |
 | Árbol antes del cierre documental | limpio; sin staged ni unstaged |
 
-La corrección de cierre añadida a este árbol sólo actualiza dos expectativas de
-Dashboard al identificador ya migrado y registra este checkpoint. El SHA final
-que contiene este documento se comunica en el handoff/entrega, porque un
-archivo no puede auto-incluir de forma estable el hash del commit que lo crea.
+El SHA final del sellado se resuelve desde `refs/heads/main` después del commit:
+un blob versionado no puede auto-incluir de forma estable el hash del commit que
+lo contiene. El manifiesto conserva esta limitación explícita en vez de fingir
+un SHA.
 
 ### A. Trabajo que ya pertenecía al checkpoint
 
@@ -51,18 +52,21 @@ archivo no puede auto-incluir de forma estable el hash del commit que lo crea.
 | `scripts/check_canon.py --root .` | PASS — 2.118 JSONL records | verificado |
 | `atlas audit --verify` | PASS — cadena Merkle íntegra | verificado |
 | `git diff --check` | PASS | verificado |
-| `atlas handoff --check` | PASS en `90864f7` antes del cierre documental | verificado en SHA fuente |
-| `atlas reality --json` | graph `FRESH`, Merkle `ok`, daemon activo/no atrasado en `90864f7` | verificado en SHA fuente |
+| `atlas handoff --check` | PASS en `22ff7e3` antes del sellado | verificado en SHA fuente |
+| `atlas reality --json` | graph `FRESH`, Merkle `ok`, daemon activo/no atrasado en `22ff7e3` | verificado en SHA fuente |
 | `docs_index_audit.py --strict` | FAIL — 334 sin índice: 246 en `docs/archive/_graveyard`, 88 en otras rutas | PREEXISTING respecto al baseline CR-001; no resuelto |
-| CI remoto | no existe run para `90864f7`; último run visible falla en `918cbdf` (2026-08-05) | PREEXISTING / no representa este árbol |
+| CI remoto del HEAD local | no ejecutado: el HEAD local no está publicado | `NOT_EXECUTED_UNPUBLISHED`, no es un FAIL preexistente |
 
 El warning de FastEmbed sobre mean pooling se conserva como **UNKNOWN**: no
 falló el gate y esta corrida no mide su impacto semántico.
 
 ## F2.6 y evidencia de runtime
 
-- Estado vivo: `due`; último resultado automático `fail` 1/6 en
-  `90864f7`. No existe revisión semántica independiente ni `current`.
+- `execution_outcome`: **FAIL**, resultado automático **1/6** en
+  `90864f7`; el gate permanece `due`.
+- `measurement_validity`: **INCONCLUSIVE**. La ejecución evaluada comenzó con
+  grafo `STALE` y no existe revisión semántica independiente enlazada. Esta
+  invalidez de medición no borra, suaviza ni convierte el FAIL en PASS.
 - Transcript conservado:
   `workspace/self_build/f26_runs/f26_run_20260820T195303959278+0000.txt`.
   El transcript registra como primera consulta de grafo una respuesta `STALE`.
@@ -86,8 +90,8 @@ falló el gate y esta corrida no mide su impacto semántico.
 3. **REQUIRES_OPERATOR / CONTRADICTED:** ADC-WO-107. El bridge 7341 conserva
    POST mutantes fuera de la excepción acotada de ADR-080 frente a ADR-058 y
    ADR-071. No se invocó un POST mutante, ni se eligió una de las dos salidas.
-4. **HITL pendiente:** cuatro hallazgos MAJOR de Semgrep, registrados en el
-   ledger; no se reclasificaron.
+4. **HITL pendiente:** cuatro hallazgos MAJOR de Semgrep, sin reclasificar;
+   locator machine-readable: `work/checkpoints/CR-001_SEMGREP_MAJOR_FINDINGS.json`.
 5. **Deliberadamente cerrado, no reabierto:** Cut 2 / Wave 5 por ADC-WO-108.
    ADC-WO-109 y ADC-WO-110 continúan `READY`, ADC-WO-111 y ADC-WO-100 requieren
    operador, y ADC-WO-104 sigue `BLOCKED`.
@@ -120,6 +124,9 @@ falló el gate y esta corrida no mide su impacto semántico.
 - `tests/test_dashboard.py`
 - `WORK_LEDGER.md`
 - `work/checkpoints/CR-001_CHECKPOINT_CLOSURE_2026-08-20.md`
+- `work/checkpoints/CR-001_SEMGREP_MAJOR_FINDINGS.json`
+- `work/checkpoints/CR-001_DOCS_INDEX_DRIFT.json`
+- `work/checkpoints/FINAL_CHECKPOINT_MANIFEST.json`
 
 No se abrió ninguna línea funcional nueva. Este cierre documenta límites,
 reproduce gates y transfiere lo pendiente; no lo declara resuelto.
