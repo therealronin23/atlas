@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "claim": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "contradiction_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "counterevidence": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      ]
+    },
+    "evidence_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "frontier_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "origin": {
+      "enum": [
+        "CURRENT_AUDIT",
+        "CURRENT_COMPONENT_AUTHORITY_AUDIT",
+        "FRONTIER_PACK",
+        "SELF_REVIEW"
+      ],
+      "type": "string"
+    },
+    "resolution": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "resolution_status": {
+      "enum": [
+        "OPEN",
+        "CLOSED",
+        "SUPERSEDED_BY_SELF_REVIEW"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "superseded_by_self_review": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "contradiction_id",
+    "claim",
+    "counterevidence",
+    "status",
+    "origin",
+    "frontier_ids",
+    "evidence_ids",
+    "resolution",
+    "resolution_status",
+    "confidence",
+    "independence_key"
+  ],
+  "title": "FR-000/FR-001 contradiction",
+  "type": "object"
+}

@@ -1,0 +1,310 @@
+{
+  "phase": "FR-001_DECISION_GRAPH_AUDIT",
+  "audited_commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+  "audit_scope": "tracked decision records, explicit decision relations, and bounded source/test evidence only",
+  "method": {
+    "graph_first": {
+      "locator": "work/frontier_reconciliation/fr000_fr001/phase_records/graph_first_queries.json",
+      "freshness": "FRESH",
+      "graph_commit_sha": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+      "epistemic_limits": [
+        "Graph freshness establishes structural recency, not runtime execution or product acceptance.",
+        "Import edges do not prove behavioral invocation."
+      ]
+    },
+    "record_rule": "Supersession is reported only where an explicit tracked relation says so; chronology is never used as a substitute.",
+    "validation": "JSON parse required; no implementation, migration, test run, F2.6 run, commit, or decision resolution performed."
+  },
+  "PRESERVED_CONSTRAINTS": {
+    "f26": {
+      "execution_outcome": "FAIL",
+      "automatic_grade": "1/6",
+      "status": "due",
+      "measurement_validity": "INCONCLUSIVE",
+      "reason": [
+        "The evaluated run began with graph status STALE.",
+        "No linked independent semantic review exists.",
+        "Measurement invalidity does not erase or promote the FAIL."
+      ],
+      "locator": "work/checkpoints/FINAL_CHECKPOINT_MANIFEST.json"
+    },
+    "decision_authority": "No contradiction was resolved and no record status was changed by this audit.",
+    "external_execution": "No third-party executable, mutating HTTP route, or provider inference was invoked."
+  },
+  "full_inventory": {
+    "canonical_decision_registry": {
+      "locator": "docs/canon/decision_registry.jsonl",
+      "sha256": "e8129da2ce960b652653acd22db24034d99f0fcd12a576338fa91a8b0d845e98",
+      "record_count": 222,
+      "record_fields_captured_by_source": [
+        "id",
+        "title",
+        "date",
+        "status",
+        "authority",
+        "sources.locator",
+        "implementation",
+        "program_primary",
+        "evidence_qualification",
+        "proposed_disposition"
+      ],
+      "types": {
+        "repository_adr_disposition": 63,
+        "decision": 151,
+        "atomic_decision": 8
+      },
+      "status_summary": {
+        "ACCEPTED": 55,
+        "ACCEPTED_CLAIM_REQUIRES_SOURCE_REVALIDATION": 55,
+        "PROPOSED": 49,
+        "OBSERVED_OR_UNKNOWN": 29,
+        "PARKED": 7,
+        "OPERATOR_EXPLICIT_FOR_COMPILER_RUN": 5,
+        "other_explicit_statuses": 14,
+        "null_stated_status": 8
+      },
+      "compact_index": "Every one of the 222 records is enumerated by its canonical JSONL row. The 63 current-repository ADR dispositions and the 151 recovered/program decision rows retain their exact locator/title/date/status there; this audit does not duplicate a second authority inventory. Focused records and all non-DONE work orders are repeated below."
+    },
+    "repository_adrs": {
+      "locator_pattern": "docs/decisions/adr/adr_*.md",
+      "canonical_status_locator": "docs/canon/decision_registry.jsonl",
+      "ids": [
+        "ADR-013B", "ADR-016", "ADR-019", "ADR-024", "ADR-025", "ADR-026", "ADR-027", "ADR-028", "ADR-029", "ADR-030", "ADR-031", "ADR-032", "ADR-033", "ADR-034", "ADR-035", "ADR-036", "ADR-037", "ADR-038", "ADR-039", "ADR-040", "ADR-041", "ADR-042", "ADR-043", "ADR-044", "ADR-045", "ADR-046", "ADR-047", "ADR-048", "ADR-049", "ADR-051", "ADR-052", "ADR-053", "ADR-054", "ADR-055", "ADR-056", "ADR-057", "ADR-058", "ADR-059", "ADR-060", "ADR-061", "ADR-062", "ADR-063", "ADR-065", "ADR-066", "ADR-067", "ADR-068", "ADR-069", "ADR-070", "ADR-071", "ADR-072", "ADR-073", "ADR-074", "ADR-075", "ADR-076", "ADR-077", "ADR-078", "ADR-079", "ADR-080", "ADR-081", "ADR-082", "ADR-083", "ADR-084", "ADR-085"
+      ],
+      "explicit_nonstandard_statuses": [
+        {"id": "ADR-047", "title": "Adversarial verification and grounding", "date": "2026-07-27", "status": "PROPOSED"},
+        {"id": "ADR-051", "title": "Compliance Gateway", "date": "2026-07-27", "status": "PROPOSED"},
+        {"id": "ADR-052", "title": "Odysseus assimilation", "date": "2026-07-27", "status": "PROPOSED"},
+        {"id": "ADR-054", "title": "Defense in depth deception", "date": "2026-07-27", "status": "PROPOSED"},
+        {"id": "ADR-059", "title": "Atlas OS UI web-first", "date": "2026-07-27", "status": "PARTIALLY_SUPERSEDED"},
+        {"id": "ADR-066", "title": "Visual Orchestrator and Territories", "date": "2026-07-27", "status": "ACCEPTED_PARKED"},
+        {"id": "ADR-076", "title": "Continuous MCP discovery and governed auto-adoption", "date": "2026-07-27", "status": "PARTIAL_SPLIT_DECISION"},
+        {"id": "ADR-077", "title": "Universal Security Council gate and escalation", "date": "2026-07-27", "status": "ACCEPTED_SPLIT_IMPLEMENTATION"}
+      ]
+    },
+    "decision_dossiers": [
+      {"id": "ADC-WO-107", "title": "Atlas API bridge (7341) mutation boundary", "date": "2026-07-31; reopened 2026-08-12", "stated_status": "PROVISIONAL / CONTRADICTED", "locator": "docs/canon/decision_dossiers/EDR-ADC-WO-107-bridge-mutation-boundary.md", "program": "P08"},
+      {"id": "ADC-WO-124", "title": "Admisión de computer-control-mcp", "date": "2026-07-31", "stated_status": "PROVISIONAL", "locator": "docs/canon/decision_dossiers/EDR-ADC-WO-124-desktop-mcp-admission.md", "program": "P08"},
+      {"id": "ADR-057", "title": "Memory promotion and provenance", "date": "2026-07-31; revalidated 2026-08-12", "stated_status": "PROVISIONAL", "locator": "docs/canon/decision_dossiers/EDR-ADR-057-memory-promotion.md", "program": "P04"},
+      {"id": "ADR-058", "title": "Query projection and governed command plane", "date": "2026-07-31; revalidated 2026-08-12", "stated_status": "PROVISIONAL", "locator": "docs/canon/decision_dossiers/EDR-ADR-058-control-plane.md", "program": "P01"},
+      {"id": "ADR-069", "title": "Durable Mission, Task and effect recovery", "date": "2026-07-31; corrected 2026-08-12", "stated_status": "PROVISIONAL", "locator": "docs/canon/decision_dossiers/EDR-ADR-069-durable-work.md", "program": "P06"},
+      {"id": "ADR-078", "title": "Engineering Workbench lineage assimilation", "date": "2026-07-31; revalidated 2026-08-12", "stated_status": "PROVISIONAL", "locator": "docs/canon/decision_dossiers/EDR-ADR-078-workbench-lineage.md", "program": "P08"}
+    ],
+    "adc_work_orders": {
+      "locator": "docs/canon/implementation_registry.yaml",
+      "sha256": "ba20e7365c13b403395b12e69d34727d6c7d71a596626f84830ec93076782285",
+      "id_index": [
+        "ADC-WO-000", "ADC-WO-001", "ADC-WO-002", "ADC-WO-003", "ADC-WO-004", "ADC-WO-005", "ADC-WO-006", "ADC-WO-007", "ADC-WO-008", "ADC-WO-009", "ADC-WO-010", "ADC-WO-100", "ADC-WO-101", "ADC-WO-102", "ADC-WO-103", "ADC-WO-104", "ADC-WO-105", "ADC-WO-106", "ADC-WO-107", "ADC-WO-108", "ADC-WO-109", "ADC-WO-110", "ADC-WO-111", "ADC-WO-112", "ADC-WO-113", "ADC-WO-114", "ADC-WO-115", "ADC-WO-116", "ADC-WO-117", "ADC-WO-118", "ADC-WO-119", "ADC-WO-120", "ADC-WO-121", "ADC-WO-122", "ADC-WO-123", "ADC-WO-124"
+      ],
+      "non_done_or_decision_gated": [
+        {"id": "ADC-WO-100", "title": "Re-establish and live-verify Hermes pairing", "status": "REQUIRES_OPERATOR", "program": "P10"},
+        {"id": "ADC-WO-104", "title": "Authorize Wave 5 Native substrate work", "status": "BLOCKED", "program": "P11"},
+        {"id": "ADC-WO-105", "title": "Select the Membrane and Osmosis enforcement profile", "status": "REQUIRES_OPERATOR", "program": "P12"},
+        {"id": "ADC-WO-106", "title": "Implement autonomous adoption of remote executable MCP packages", "status": "REJECTED", "program": "P07"},
+        {"id": "ADC-WO-107", "title": "Resolve the Atlas API bridge mutation boundary", "status": "REQUIRES_OPERATOR / CONTRADICTED", "program": "P08"},
+        {"id": "ADC-WO-109", "title": "Execute comprehensive CodeOSS/VSCodium/Void Workbench convergence", "status": "READY", "program": "P08"},
+        {"id": "ADC-WO-110", "title": "Assimilate compatible Zed ACP capabilities and interaction patterns", "status": "READY", "program": "P08"},
+        {"id": "ADC-WO-111", "title": "Select and implement the dedicated Android Workbench projection", "status": "REQUIRES_OPERATOR (parked by note)", "program": "P08"}
+      ]
+    },
+    "program_decisions": {
+      "locator": "PROGRAMS.md",
+      "date": "undated current program document",
+      "stated_status": "current/target separation; P00-P12",
+      "ids": ["P00", "P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P09", "P10", "P11", "P12"],
+      "relevant_current_statements": [
+        {"id": "P08", "title": "Product OS and UI/UX", "status": "bridge POST mutation boundary requires operator decision; desktop admission remains non-live until evidence is fresh"},
+        {"id": "P04", "title": "Memory and Continuity", "status": "promotion and deletion require traceability; current implementation is not an automatic promotion authority"},
+        {"id": "P06", "title": "Self-Build and Foundry", "status": "approval and rollback precede apply; a change class needs repeated evidence before automation"},
+        {"id": "P09", "title": "Security, Evaluation, Operations and Recovery", "status": "release cannot treat unresolved blocking/major evidence as closed"}
+      ]
+    },
+    "explicit_superseding_design_records": {
+      "locator": "docs/canon/supersession_registry.jsonl",
+      "sha256": "7516dcd640923f0ab19380eb3af10bea0110e70308b3999e0b97c14b18d8196c",
+      "relations": [
+        {"id": "SUP-ADR-040-ADR-032-033", "relation": "PARTIALLY_SUPERSEDES", "previous": "ADR-032 and ADR-033", "new": "ADR-040", "scope": "direct approval coupling at the decision seam"},
+        {"id": "SUP-ADR-068-ADR-066", "relation": "SUPERSEDES_FRAMING", "previous": "ADR-066", "new": "ADR-068", "scope": "F5/F6 self-construction framing"},
+        {"id": "SUP-ADR-070-ADR-011", "relation": "RETIRES", "previous": "ADR-011", "new": "ADR-070", "scope": "HermesRestAdapter transport"},
+        {"id": "SUP-ADR-071-ADR-059", "relation": "SUPERSEDES", "previous": "ADR-059", "new": "ADR-071", "scope": "final product UX only"},
+        {"id": "SUP-ADR-078-ADR-071-DESKTOP-HOST", "relation": "REFINES", "previous": "ADR-071 shell-selection placeholder", "new": "ADR-078", "scope": "desktop host chain and first product"},
+        {"id": "SUP-ADR-080-ADR-058-071-READONLY", "relation": "PARTIALLY_SUPERSEDES", "previous": "ADR-058 and ADR-071", "new": "ADR-080", "scope": "only the Fase 15 Product OS mutation surface"}
+      ],
+      "explicit_non_supersession": [
+        {"id": "SUP-ADR-077-ADR-076-C", "relation": "DOES_NOT_SUPERSEDE", "previous": "ADR-076 C", "new": "ADR-077"},
+        {"id": "SUP-ADR-077-CONSTITUTIONAL-RULE-4", "relation": "DOES_NOT_AMEND", "previous": "constitutional rule 4", "new": "ADR-077"}
+      ]
+    }
+  },
+  "focused_revalidation": [
+    {
+      "id": "ADC-WO-107",
+      "title": "Atlas API bridge mutation boundary",
+      "stated_status": "REQUIRES_OPERATOR / CONTRADICTED",
+      "for_status": [
+        {"evidence": "ADR-058 explicitly defines the 7341 bridge as read-only over Core and forbids Orchestrator instantiation.", "locator": "docs/decisions/adr/adr_058_atlas_os_event_kernel_bridge.md:17-25"},
+        {"evidence": "ADR-071 is an accepted dedicated-apps decision whose read-only bridge boundary is only partially superseded by ADR-080.", "locator": "docs/canon/supersession_registry.jsonl:SUP-ADR-080-ADR-058-071-READONLY"},
+        {"evidence": "The sealed code declares POST mission approval and rejection. Approval invokes `atlas update approve` then may invoke `atlas update apply`; rejection invokes `atlas update reject`.", "locator": "src/atlas/api/server.py:769-785"},
+        {"evidence": "HTTP middleware records `request.state.auth_identity`, but these mission handler signatures do not accept or pass it to the CLI.", "locator": "src/atlas/api/server.py:609-621,769-785"},
+        {"evidence": "The dossier reopens the prior closure because the two mission routes lie outside ADR-080's Product OS exception and records missing identity propagation, idempotency, HTTP receipt, and ambiguous-result recovery tests.", "locator": "docs/canon/decision_dossiers/EDR-ADC-WO-107-bridge-mutation-boundary.md:145-198"}
+      ],
+      "against_or_limiting_evidence": [
+        {"evidence": "ADR-080 is an explicit operator decision, not merely chronology. It partially supersedes the blanket read-only claim for the Fase 15 product_routes mutation surface and adds Merkle receipt coverage for Business Core activate/reject.", "locator": "docs/decisions/adr/adr_080_product_os_mutation_scoped_exception.md:1-67"},
+        {"evidence": "Product receipt tests exist for Business Core activate/reject, so that limited path is not evidence that every mutating route lacks audit evidence.", "locator": "tests/test_os_product_api.py:261-419"},
+        {"evidence": "The mission routes use a subprocess rather than instantiate Orchestrator in the bridge; this preserves one ADR-058 constraint but does not authorize the mutation boundary.", "locator": "src/atlas/api/server.py:769-785"}
+      ],
+      "explicit_relations": {"superseded_by": null, "contradicts": ["ADR-058", "ADR-071"], "depends_on": ["explicit operator API-boundary decision"], "implemented_by": ["src/atlas/api/server.py", "src/atlas/api/product_routes.py"], "tested_by": ["tests/test_os_api.py:571-635", "tests/test_os_product_api.py:261-419"], "runtime_evidence": "Historical 2026-08-12 listener/OPTIONS evidence only; no mutating POST was run in this audit.", "falsifier": "If all 13 historical/currently mutating routes are shown inactive behind flags or demo-only, restoring strict read-only becomes materially cheaper."},
+      "finding": "ACTIVE_INCOMPATIBLE_DECISION_AND_CODE_MISMATCH",
+      "confidence": "HIGH",
+      "resolution": "NOT_RESOLVED"
+    },
+    {
+      "id": "ADR-057",
+      "title": "Memory canonical by use case / governed promotion",
+      "stated_status": "ACCEPTED decision; evidence qualification PROVISIONAL",
+      "for_status": [
+        {"evidence": "The ADR accepts separate memory authorities rather than premature fusion.", "locator": "docs/decisions/adr/adr_057_memory_canonical_by_use_case.md:1-25"},
+        {"evidence": "The dossier recommends provenance-, sensitivity-, corroboration-, and benchmark-gated promotion rather than an unsupported bridge.", "locator": "docs/canon/decision_evidence_matrix.jsonl:DEM-ADR-057-MEMORY-PROMOTION"}
+      ],
+      "against_or_limiting_evidence": [
+        {"evidence": "The authority map says the dossier accepts direction, not an automatic promoter, and says no verifiable test proves private data cannot reach a shareable graph.", "locator": "docs/canon/implementation_registry.yaml:ADC-WO-103 status_note"},
+        {"evidence": "The dossier's falsifier has not been run as a promotion experiment.", "locator": "docs/canon/decision_evidence_matrix.jsonl:DEM-ADR-057-MEMORY-PROMOTION.falsifiers"}
+      ],
+      "explicit_relations": {"supersedes": [], "superseded_by": [], "contradicts": [], "depends_on": ["promotion governance and benchmark gates"], "implemented_by": ["authority map/guards only"], "tested_by": ["not a test of an automatic promoter"], "runtime_evidence": "none fresh in this audit", "falsifier": "Automatic low/medium promotion degrades temporal correctness or privacy lineage in a reproducible Atlas benchmark."},
+      "finding": "ACCEPTED_BUT_UNIMPLEMENTED_PROMOTION_AUTHORITY",
+      "confidence": "HIGH",
+      "resolution": "NOT_RESOLVED"
+    },
+    {
+      "id": "ADR-058",
+      "title": "Atlas OS event canon projection and read-only bridge",
+      "stated_status": "ACCEPTED decision; evidence qualification PROVISIONAL",
+      "for_status": [
+        {"evidence": "The ADR explicitly selects a read-only Core bridge and a separate app/process boundary.", "locator": "docs/decisions/adr/adr_058_atlas_os_event_kernel_bridge.md:17-30"},
+        {"evidence": "The dossier recommends a separately governed, authenticated, idempotent command contract rather than treating 7341 mutation as authoritative.", "locator": "docs/canon/decision_evidence_matrix.jsonl:DEM-ADR-058-CONTROL-PLANE"}
+      ],
+      "against_or_limiting_evidence": [
+        {"evidence": "ADR-080 explicitly and narrowly changes the read-only boundary for Product OS routes; that relation is scoped, not a blanket reversal.", "locator": "docs/canon/supersession_registry.jsonl:SUP-ADR-080-ADR-058-071-READONLY"},
+        {"evidence": "Core mission mutation routes remain outside that scope and are present in sealed code.", "locator": "src/atlas/api/server.py:769-785"}
+      ],
+      "explicit_relations": {"supersedes": [], "superseded_by": ["ADR-080 only for Fase 15 Product OS mutation surface"], "contradicts": ["ADC-WO-107"], "depends_on": ["authenticated command-plane design"], "implemented_by": ["src/atlas/api/server.py", "src/atlas/events/core_bridge.py"], "tested_by": ["tests/test_os_api.py:571-635"], "runtime_evidence": "historical listener/OPTIONS only", "falsifier": "A local IPC command implementation cannot preserve authenticated identity, idempotency, and approval receipts for the desktop host."},
+      "finding": "PROVISIONAL_WITH_ACTIVE_SCOPE_BREACH",
+      "confidence": "HIGH",
+      "resolution": "NOT_RESOLVED"
+    },
+    {
+      "id": "ADR-069",
+      "title": "Mission Layer v0 / selective durable history",
+      "stated_status": "ACCEPTED decision; evidence qualification PROVISIONAL",
+      "for_status": [
+        {"evidence": "ADR-069 accurately limits v0 to pure read-only Mission projection and deterministic radar; it states that its historic live counts are not current liveness.", "locator": "docs/decisions/adr/adr_069_mission_layer_v0_foundry.md:14-20,34-48,71-82"},
+        {"evidence": "Existing task-persistence recovery tests prove a file-backed task snapshot survives a process boundary.", "locator": "docs/canon/decision_dossiers/EDR-ADR-069-durable-work.md:Confidence and limits"}
+      ],
+      "against_or_limiting_evidence": [
+        {"evidence": "The proposed selective Mission→Task→command→approval→effect journal does not exist; the stated dossier falsifier was not run because the existing tests do not create it.", "locator": "docs/canon/decision_dossiers/EDR-ADR-069-durable-work.md:Confidence and limits"},
+        {"evidence": "Mission approval/rejection POSTs add a mutating bridge path inconsistent with the v0 projection-only statement, but do not by themselves supersede ADR-069.", "locator": "src/atlas/api/server.py:769-785; docs/decisions/adr/adr_069_mission_layer_v0_foundry.md:34-48"}
+      ],
+      "explicit_relations": {"supersedes": [], "superseded_by": [], "contradicts": ["ADC-WO-107 boundary evidence"], "depends_on": ["durable-history implementation"], "implemented_by": ["src/atlas/api/missions.py", "schemas/mission.schema.json", "src/atlas/missions/golden_route.py"], "tested_by": ["tests/test_os_missions.py", "tests/test_task_persistence_recovery.py", "tests/test_golden_route.py"], "runtime_evidence": "historic observations expressly not promoted", "falsifier": "A recovery test shows a selective journal cannot reconstruct an approved task without hidden mutable state."},
+      "finding": "ACCEPTED_V0_IMPLEMENTED_BUT_DURABLE_HISTORY_UNIMPLEMENTED",
+      "confidence": "HIGH",
+      "resolution": "NOT_RESOLVED"
+    },
+    {
+      "id": "ADR-078",
+      "title": "Engineering Workbench lineage convergence",
+      "stated_status": "ACCEPTED / ACCEPTED_DESIGN; evidence qualification PROVISIONAL",
+      "for_status": [
+        {"evidence": "The ADR explicitly selects selective assimilation and keeps Atlas Core authoritative; it does not claim product completion.", "locator": "docs/decisions/adr/adr_078_atlas_workbench_lineage_convergence.md:46-56,87-99"},
+        {"evidence": "The dossier documents an explicit operator decision for Code OSS host, VSCodium build discipline, Void donor, and ACP/Zed boundary.", "locator": "docs/canon/decision_dossiers/EDR-ADR-078-workbench-lineage.md:Question through Recommendation"}
+      ],
+      "against_or_limiting_evidence": [
+        {"evidence": "No host was imported or declared product complete by the dossier.", "locator": "docs/canon/decision_dossiers/EDR-ADR-078-workbench-lineage.md:Recommendation"},
+        {"evidence": "Neither stated falsifier executed; the local Code OSS spike is narrower than all required contracts and current upstream seam evidence is reported rather than reproducible from checkout.", "locator": "docs/canon/decision_dossiers/EDR-ADR-078-workbench-lineage.md:Revalidation against Theia — 2026-08-12"}
+      ],
+      "explicit_relations": {"supersedes": [], "superseded_by": [], "refines": ["ADR-071 shell-selection placeholder"], "contradicts": [], "depends_on": ["ADC-WO-109", "ADC-WO-110", "license/integration baseline"], "implemented_by": ["no current Atlas Workbench host port asserted"], "tested_by": ["no full host baseline asserted"], "runtime_evidence": "none fresh in this audit", "falsifier": "A pinned Code OSS baseline cannot host required contracts, or a required donor capability cannot be isolated or lawfully reimplemented."},
+      "finding": "ACCEPTED_DESIGN_NOT_PRODUCT_IMPLEMENTATION",
+      "confidence": "HIGH",
+      "resolution": "NOT_RESOLVED"
+    }
+  ],
+  "duplicate_records": {
+    "decision_registry_duplicate_ids": [],
+    "decision_dossier_duplicate_ids": [],
+    "work_order_id_collision": "not found by static inventory; canonical validator has duplicate-ID checks but was not run in this audit",
+    "duplicate_source_warning": "The canonical registry contains derived records whose source_occurrence_count may exceed unique_content_hash_count. That is duplicated provenance, not evidence independence and not an ID collision.",
+    "confidence": "HIGH for decision_registry IDs; MEDIUM for work-order parser non-execution"
+  },
+  "active_incompatible_decisions": [
+    {
+      "id": "INC-001",
+      "records": ["ADR-058", "ADR-071", "ADR-080", "ADC-WO-107"],
+      "statement": "ADR-080 explicitly permits only a Product OS mutation scope, but sealed core Mission approve/reject routes mutate ColdUpdate through CLI outside that scope.",
+      "evidence": ["docs/canon/supersession_registry.jsonl:SUP-ADR-080-ADR-058-071-READONLY", "src/atlas/api/server.py:769-785", "docs/canon/implementation_registry.yaml:ADC-WO-107"],
+      "status": "CONTRADICTED / REQUIRES_OPERATOR",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "INC-002",
+      "records": ["ADC-WO-124", "docs/design/atlas_ecosystem_map.md"],
+      "statement": "The implementation registry records ADC-WO-124 DONE and describes admitted artifact/E2E claims, while the current ecosystem map calls desktop-control CONTRADICTED and says Sentinel quarantines the third-party executable pending operator admission and fresh E2E evidence.",
+      "evidence": ["docs/canon/implementation_registry.yaml:53-157", "docs/design/atlas_ecosystem_map.md:52"],
+      "status": "DOCUMENTARY_STATE_CONFLICT; not resolved here",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "accepted_but_unimplemented_claims": [
+    {"id": "ADR-057", "claim": "automatic governed promoter", "evidence": "authority-map status note says it does not exist or have authorization", "confidence": "HIGH"},
+    {"id": "ADR-058", "claim": "separate authenticated/idempotent governed command plane", "evidence": "dossier recommends it; no such contract is evidenced by this audit", "confidence": "HIGH"},
+    {"id": "ADR-069", "claim": "selective durable Mission/Task/command/effect history and reconstruction", "evidence": "dossier says minimal journal and falsifier are absent", "confidence": "HIGH"},
+    {"id": "ADR-078", "claim": "complete Atlas Workbench host/product", "evidence": "ADR and dossier expressly deny CODE_PRESENT/WIRED/PRODUCT_ACCEPTED claim", "confidence": "HIGH"}
+  ],
+  "code_governed_by_superseded_decisions": {
+    "proven_instances": [],
+    "reason": "No implementation was classified solely from chronology. Product-route mutation code has an explicit ADR-080 scoped relation; core Mission POST code instead falls outside that scope and is reported as a contradiction, not as code governed by a superseded decision.",
+    "confidence": "MEDIUM"
+  },
+  "decision_code_mismatches": [
+    {
+      "id": "DCM-001",
+      "decision": "ADR-058 / ADR-071 read-only bridge, with ADR-080 only scoped Product OS exception",
+      "code": "src/atlas/api/server.py:769-785",
+      "mismatch": "Mission approval/rejection mutates ColdUpdate through CLI outside the stated exception; authenticated request identity is not propagated.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "DCM-002",
+      "decision": "ADR-069 Mission v0 pure read-only projection",
+      "code": "src/atlas/api/server.py:769-785",
+      "mismatch": "The bridge now exposes Mission mutation controls; this does not establish a supersession of ADR-069 and must remain governed by ADC-WO-107.",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "DCM-003",
+      "decision": "ADC-WO-124 DONE claim in implementation registry",
+      "code_or_runtime_claim": "desktop-control admission/E2E status",
+      "mismatch": "The ecosystem map retains a contradicted, quarantined current state. The audit did not execute the executable, so neither claim is promoted.",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "NEW_EVIDENCE": [
+    "At sealed df4fbe7, source inspection confirms the Mission approve/reject POST handlers and their CLI commands.",
+    "At sealed df4fbe7, source inspection confirms middleware sets HTTP identity while those handlers do not accept it.",
+    "The graph-first record is fresh for the sealed commit; its limit remains that structure does not prove runtime invocation."
+  ],
+  "INVALIDATED_CLAIMS": [
+    "The blanket claim that port 7341 remains read-only over Core is invalidated for the sealed source by Mission approve/reject POST handlers; ADR-080 does not explicitly supersede this additional scope.",
+    "A DONE implementation-registry row alone cannot establish current desktop-control runtime admission when the current ecosystem map says the capability remains contradicted/quarantined."
+  ],
+  "NEW_UNKNOWNS": [
+    "Whether any supported production client depends on each mutating 7341 route.",
+    "Whether the Mission CLI path has identity propagation, idempotency, durable decision receipts, timeout/retry semantics, or ambiguous-result recovery beyond the inspected handlers/tests.",
+    "Whether the ADC-WO-124 admitted-artifact claims remain true in the runtime corresponding to sealed df4fbe7; no third-party execution was authorized or run.",
+    "Whether any provisional ADR falsifier now passes or fails; none was run by this audit."
+  ],
+  "NEW_CONTRADICTIONS": [
+    "ADC-WO-107 remains an active explicit contradiction, not a resolved historical one.",
+    "ADC-WO-124 has a cross-document state conflict between DONE/admitted implementation text and contradicted/quarantined ecosystem text."
+  ],
+  "UNCLASSIFIED_COUNT": 0,
+  "unclassified_definition": "Detected decision artifacts not assigned to a canonical inventory source or a focused finding. Eight registry rows have null stated status, but they are classified as registry records rather than unclassified artifacts."
+}

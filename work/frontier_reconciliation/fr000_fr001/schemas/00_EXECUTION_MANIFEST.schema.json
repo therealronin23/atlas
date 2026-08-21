@@ -1,0 +1,648 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "INVALIDATED_CLAIMS": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "NEW_CONTRADICTIONS": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "NEW_EVIDENCE": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "NEW_UNKNOWNS": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "PRESERVED_CONSTRAINTS": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "UNCLASSIFIED_COUNT": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "baseline": {
+      "additionalProperties": true,
+      "properties": {
+        "checkpoint": {
+          "const": "CR-001"
+        },
+        "identity_verified": {
+          "const": true
+        },
+        "peeled_commit": {
+          "const": "df4fbe7a96c70507094c24c7bf553efd297cc80a"
+        },
+        "tag": {
+          "const": "atlas-n-cr001-20260820"
+        },
+        "tag_object": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "tag_semantics_note": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "tree": {
+          "const": "b790640b12ebff8eb100939f9f7a92f02de0b502"
+        },
+        "version": {
+          "const": "Atlas 0.12.0"
+        }
+      },
+      "required": [
+        "version",
+        "checkpoint",
+        "tag",
+        "tag_object",
+        "peeled_commit",
+        "tree",
+        "identity_verified"
+      ],
+      "type": "object"
+    },
+    "commit_created": {
+      "type": "boolean"
+    },
+    "coverage_report": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": true,
+      "properties": {
+        "CURRENT_COMPONENT_COVERAGE": {
+          "additionalProperties": false,
+          "properties": {
+            "denominator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "numerator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "percent": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            "ratio": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator",
+            "ratio",
+            "percent"
+          ],
+          "type": "object"
+        },
+        "CURRENT_DECISION_COVERAGE": {
+          "additionalProperties": false,
+          "properties": {
+            "denominator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "numerator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "percent": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            "ratio": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator",
+            "ratio",
+            "percent"
+          ],
+          "type": "object"
+        },
+        "CURRENT_FRONTIER_MAPPING_COVERAGE": {
+          "additionalProperties": false,
+          "properties": {
+            "denominator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "numerator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "percent": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            "ratio": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator",
+            "ratio",
+            "percent"
+          ],
+          "type": "object"
+        },
+        "CURRENT_SOURCE_COVERAGE": {
+          "additionalProperties": false,
+          "properties": {
+            "denominator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "numerator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "percent": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            "ratio": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator",
+            "ratio",
+            "percent"
+          ],
+          "type": "object"
+        },
+        "all_decisions_classified": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "all_decisions_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "all_tracked_sources_classified": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "all_tracked_sources_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "baseline": {
+          "additionalProperties": false,
+          "properties": {
+            "commit": {
+              "const": "df4fbe7a96c70507094c24c7bf553efd297cc80a"
+            },
+            "tag": {
+              "const": "atlas-n-cr001-20260820"
+            },
+            "tree": {
+              "const": "b790640b12ebff8eb100939f9f7a92f02de0b502"
+            }
+          },
+          "required": [
+            "tag",
+            "commit",
+            "tree"
+          ],
+          "type": "object"
+        },
+        "candidate_new_frontiers": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "classification_note": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "contradictions": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "current_components_mapped": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "current_components_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "current_decisions_classified": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "current_decisions_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "current_sources_classified": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "current_sources_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "denominator_definitions": {
+          "additionalProperties": true,
+          "properties": {
+            "components": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "decisions": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "frontiers": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "source_universe": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "source_universe",
+            "components",
+            "decisions",
+            "frontiers"
+          ],
+          "type": "object"
+        },
+        "frontier_r0_examined": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "frontier_r0_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "historical_decisions_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mapping_status_counts": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "merge_candidate_frontier_rows": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "merge_candidate_groups": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "resolution_ratios_by_dimension": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "denominator": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "numerator": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "percent": {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "number"
+              },
+              "ratio": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "numerator",
+              "denominator",
+              "ratio",
+              "percent"
+            ],
+            "type": "object"
+          },
+          "type": "object"
+        },
+        "split_candidate_frontier_rows": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "split_candidate_groups": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "stop_conditions": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "minProperties": 10,
+          "type": "object"
+        },
+        "unclassified_current": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unknown_classifications_by_dimension": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "unknown_classifications_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unknowns": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "baseline",
+        "denominator_definitions",
+        "all_tracked_sources_total",
+        "all_tracked_sources_classified",
+        "current_sources_total",
+        "current_sources_classified",
+        "current_components_total",
+        "current_components_mapped",
+        "all_decisions_total",
+        "all_decisions_classified",
+        "historical_decisions_total",
+        "current_decisions_total",
+        "current_decisions_classified",
+        "frontier_r0_total",
+        "frontier_r0_examined",
+        "candidate_new_frontiers",
+        "merge_candidate_groups",
+        "merge_candidate_frontier_rows",
+        "split_candidate_groups",
+        "split_candidate_frontier_rows",
+        "contradictions",
+        "unknowns",
+        "unclassified_current",
+        "CURRENT_SOURCE_COVERAGE",
+        "CURRENT_COMPONENT_COVERAGE",
+        "CURRENT_DECISION_COVERAGE",
+        "CURRENT_FRONTIER_MAPPING_COVERAGE",
+        "mapping_status_counts",
+        "unknown_classifications_by_dimension",
+        "unknown_classifications_total",
+        "resolution_ratios_by_dimension",
+        "stop_conditions",
+        "classification_note"
+      ],
+      "title": "FR-000/FR-001 coverage report",
+      "type": "object"
+    },
+    "docs_index_modified": {
+      "const": false
+    },
+    "execution_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "f26": {
+      "additionalProperties": true,
+      "properties": {
+        "automatic_grade": {
+          "const": "1/6"
+        },
+        "execution_outcome": {
+          "const": "FAIL"
+        },
+        "measurement_validity": {
+          "const": "INCONCLUSIVE"
+        },
+        "notification_surface": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "rerun_in_this_audit": {
+          "const": false
+        }
+      },
+      "required": [
+        "execution_outcome",
+        "automatic_grade",
+        "measurement_validity",
+        "rerun_in_this_audit"
+      ],
+      "type": "object"
+    },
+    "functional_code_modified": {
+      "const": false
+    },
+    "generated_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "graph": {
+      "additionalProperties": true,
+      "properties": {
+        "bitemporal_nodes": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "import_edges": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "limit": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "modules_latest": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "raw_queries": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "FRESH",
+            "STALE",
+            "UNKNOWN"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "commit",
+        "modules_latest",
+        "raw_queries",
+        "limit"
+      ],
+      "type": "object"
+    },
+    "phase_records": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "prohibited_actions_performed": {
+      "maxItems": 0,
+      "type": "array"
+    },
+    "required_files": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 21,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "semgrep": {
+      "additionalProperties": true,
+      "properties": {
+        "classification": {
+          "contains": {
+            "const": "RAW_EVIDENCE_NOT_RETAINED"
+          },
+          "minContains": 1,
+          "type": "array"
+        },
+        "rescanned": {
+          "const": false
+        }
+      },
+      "required": [
+        "rescanned",
+        "classification"
+      ],
+      "type": "object"
+    },
+    "skill_installation": {
+      "type": "object"
+    },
+    "staged": {
+      "type": "boolean"
+    },
+    "state_categories": {
+      "additionalProperties": false,
+      "properties": {
+        "GENERATED_AUDIT_OUTPUT": {
+          "minProperties": 2,
+          "type": "object"
+        },
+        "OPERATOR_INPUT": {
+          "minProperties": 3,
+          "type": "object"
+        },
+        "TRACKED_ATLAS_N": {
+          "minProperties": 2,
+          "type": "object"
+        },
+        "UNRELATED_LOCAL_STATE": {
+          "minProperties": 1,
+          "type": "object"
+        }
+      },
+      "required": [
+        "TRACKED_ATLAS_N",
+        "OPERATOR_INPUT",
+        "GENERATED_AUDIT_OUTPUT",
+        "UNRELATED_LOCAL_STATE"
+      ],
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "READY_FOR_EXTERNAL_ADVERSARIAL_REVIEW",
+        "INCOMPLETE",
+        "CHECKPOINT_IDENTITY_MISMATCH",
+        "BLOCKED"
+      ],
+      "type": "string"
+    },
+    "tests": {
+      "minProperties": 1,
+      "type": "object"
+    }
+  },
+  "required": [
+    "execution_id",
+    "generated_at",
+    "status",
+    "baseline",
+    "state_categories",
+    "graph",
+    "tests",
+    "f26",
+    "semgrep",
+    "required_files",
+    "phase_records",
+    "coverage_report",
+    "functional_code_modified",
+    "docs_index_modified",
+    "commit_created",
+    "staged",
+    "prohibited_actions_performed",
+    "PRESERVED_CONSTRAINTS",
+    "NEW_EVIDENCE",
+    "INVALIDATED_CLAIMS",
+    "NEW_UNKNOWNS",
+    "NEW_CONTRADICTIONS",
+    "UNCLASSIFIED_COUNT"
+  ],
+  "title": "FR-000/FR-001 execution manifest",
+  "type": "object"
+}

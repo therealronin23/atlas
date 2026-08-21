@@ -1,0 +1,47 @@
+{
+  "phase": "EXTERNAL_LINEAGE_REVALIDATION",
+  "recorded_at": "2026-08-21",
+  "checkout": "/home/ronin/proyectos/atlas-codeoss-1.129.1",
+  "commands": [
+    "git branch --show-current",
+    "git rev-parse HEAD",
+    "git status --porcelain=v1",
+    "node -p require('./package.json').version"
+  ],
+  "observed": {
+    "branch": "spike/pin-1.132.0",
+    "head": "f7c27192aa938d42ac186bc2ca0e9a83cc06a29c",
+    "clean": true,
+    "package_version": "1.132.0"
+  },
+  "tracked_claims_in_atlas_n": {
+    "forks_readme_branch": "spike/atlas-codeoss-1.129.1",
+    "forks_readme_head_prefix": "8a7abeba",
+    "lineage_registry_branch": "spike/atlas-codeoss-1.129.1",
+    "lineage_registry_head": "8a7abeba6e03ea3af87bfbce9a1b7e48fed567b8",
+    "implementation_registry_contains_pin_bump_claim": true,
+    "implementation_registry_also_contains_stale_or_retracted_state_claims": true
+  },
+  "classification": "EXTERNAL_STATE_CONTRADICTS_TRACKED_LINEAGE_AND_EXPOSES_INTERNAL_WORK_ORDER_DRIFT",
+  "raw_preserved": true,
+  "reproducible": true,
+  "independently_verifiable": true,
+  "measurement_validity": "VALID_FOR_CURRENT_CHECKOUT_IDENTITY_ONLY",
+  "PRESERVED_CONSTRAINTS": [
+    "The external checkout was inspected read-only and is not part of Atlas N's sealed tree.",
+    "Historical build/runtime claims were not rerun."
+  ],
+  "NEW_EVIDENCE": [
+    "The external Code OSS checkout currently identifies 1.132.0 at f7c27192 on spike/pin-1.132.0."
+  ],
+  "INVALIDATED_CLAIMS": [
+    "The tracked lineage rows describe the current external checkout branch/head."
+  ],
+  "NEW_UNKNOWNS": [
+    "Which historical build/runtime receipts remain attributable to the current f7c27192 checkout without a fresh retained execution."
+  ],
+  "NEW_CONTRADICTIONS": [
+    "ADC-WO-109 contains compiled/running and pin-bump evidence alongside a stale current_state/status_note and a retracted tsgo claim; tracked lineage still pins the older branch/head."
+  ],
+  "UNCLASSIFIED_COUNT": 0
+}

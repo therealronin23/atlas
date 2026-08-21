@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "anomaly_id": {
+      "minLength": 2,
+      "pattern": "^[^\\s].*[^\\s]$|^[^\\s]$",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "finding": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "audit-bypass",
+        "audit-gap",
+        "authority-duplication",
+        "budget-semantics",
+        "bypass",
+        "caller-gap",
+        "error-swallow",
+        "graph-coverage",
+        "legacy/mock-gap",
+        "mocked-vs-real-gap",
+        "multiple-writers",
+        "runtime-gap",
+        "secrets-boundary",
+        "untraced-caller",
+        "writer-gap"
+      ],
+      "type": "string"
+    },
+    "resolution": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "OPEN",
+        "CLOSED",
+        "SUPERSEDED_BY_SELF_REVIEW"
+      ],
+      "type": "string"
+    },
+    "superseded_by_self_review": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "anomaly_id",
+    "kind",
+    "severity",
+    "finding",
+    "evidence",
+    "status",
+    "resolution",
+    "independence_key"
+  ],
+  "title": "FR-000 caller/writer anomaly",
+  "type": "object"
+}

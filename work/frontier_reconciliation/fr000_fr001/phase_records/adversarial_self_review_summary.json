@@ -1,0 +1,30 @@
+{
+  "INVALIDATED_CLAIMS": [
+    "329 Python modules were an exhaustive component denominator.",
+    "Mission had no real caller.",
+    "Pack-internal merge/split similarity warranted high confidence.",
+    "Summary retention implied raw F2.6 or Semgrep evidence retention.",
+    "Semantic companion decision records were independent decisions.",
+    "Generic caller labels were sufficient evidence for WIRED maturity."
+  ],
+  "NEW_CONTRADICTIONS": [
+    "ADC-WO-109 and tracked lineage conflict with the current external Code OSS checkout and with their own embedded state claims."
+  ],
+  "NEW_EVIDENCE": [
+    "Independent 471-unit denominator reconstruction.",
+    "Read-only Code OSS checkout identity.",
+    "Separate cross-model review and reconciliation.",
+    "Static schemas and non-tautological population checks."
+  ],
+  "NEW_UNKNOWNS": [
+    "Thousands of source/component/decision/frontier mapping dimensions remain explicitly UNKNOWN even though all records are classified.",
+    "No fresh Code OSS build/runtime receipt is attributable to the current external checkout."
+  ],
+  "PRESERVED_CONSTRAINTS": [
+    "Sealed tag/commit/tree remain unchanged.",
+    "No functional code, tests, canon, docs index, F2.6, or Semgrep behavior was changed.",
+    "Original erroneous audit findings remain locatable and are marked superseded rather than erased."
+  ],
+  "UNCLASSIFIED_COUNT": 0,
+  "phase": "ADVERSARIAL_SELF_REVIEW"
+}

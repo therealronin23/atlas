@@ -1,0 +1,70 @@
+{
+  "phase": "FRONTIER_PACK_INTAKE",
+  "recorded_at": "2026-08-21T01:08:07+02:00",
+  "PRESERVED_CONSTRAINTS": [
+    "The pack is an external hypothesis set, not canon or checkpoint history.",
+    "No pack claim can promote an Atlas capability or decision without higher-authority evidence.",
+    "Pack tooling may write only to an isolated temporary directory and may not execute repository code."
+  ],
+  "NEW_EVIDENCE": [
+    {
+      "claim": "The ZIP contained 25 entries: 24 manifest-listed payload files plus its root directory entry.",
+      "locator": "zipinfo -h and zipinfo -1 on the operator ZIP",
+      "source_hash": "e7aacd2b0dfaaaa0281eb2e27f01c0368d4e13198f57acf7fcc7bf6370329011"
+    },
+    {
+      "claim": "All 24 manifest-listed payload files matched declared byte sizes and SHA-256 values.",
+      "locator": "OPERATOR_INPUT:MANIFEST.json",
+      "measurement_validity": "VALID_FOR_INTERNAL_PACK_INTEGRITY_ONLY"
+    },
+    {
+      "claim": "The pack inventory contains 109 unique frontier IDs and 24 unique research IDs with no dangling references.",
+      "locator": "OPERATOR_INPUT:inventory/frontier_inventory.jsonl; OPERATOR_INPUT:research/research_registry.jsonl",
+      "measurement_validity": "VALID_FOR_INTERNAL_PACK_CONSISTENCY_ONLY"
+    },
+    {
+      "claim": "The pack itself labels every frontier WORKING_RECONSTRUCTION_NOT_APPROVED_CANON.",
+      "locator": "OPERATOR_INPUT:inventory/frontier_inventory.jsonl"
+    },
+    {
+      "claim": "The pack contains 12 contradiction records and 7 unknown records.",
+      "locator": "OPERATOR_INPUT:inventory/contradictions.jsonl; OPERATOR_INPUT:inventory/unknowns.jsonl"
+    },
+    {
+      "claim": "A P00 context slice was generated outside Atlas using the pack-provided tool.",
+      "locator": "/tmp/atlas-frontier-slice.70RuQS/p00.md",
+      "source_hash": "169d8b1c5d3a95e79a21846cda6d8036e685184b1c62f7d7756ddb2217e778e5",
+      "frontier_count": 8,
+      "research_ref_count": 0
+    }
+  ],
+  "INVALIDATED_CLAIMS": [
+    {
+      "claim": "The pack validator proves full pack integrity.",
+      "reason": "It checks the fixed 109 count, frontier ID uniqueness, and referenced research-ID existence, but not manifest hashes, JSON Schema conformance, program-index parity, or research-ID uniqueness."
+    },
+    {
+      "claim": "109 is the demonstrated final unique frontier taxonomy.",
+      "reason": "Pack unknown UNK-001 leaves the final unique-frontier count open; 109 is the R0 working inventory only."
+    }
+  ],
+  "NEW_UNKNOWNS": [
+    "How many R0 frontiers survive independent reconstruction unchanged.",
+    "Which current Atlas sources and components do not fit any R0 frontier.",
+    "Whether semantic and decision duplicates materially reduce or split the 109-row inventory."
+  ],
+  "NEW_CONTRADICTIONS": [
+    {
+      "claim_a": "The pack supplies a 109-frontier working map.",
+      "claim_b": "The pack explicitly says the final unique-frontier count is unknown.",
+      "status": "PRESERVED_AS_METHOD_CONSTRAINT"
+    }
+  ],
+  "UNCLASSIFIED_COUNT": 0,
+  "pack_counts": {
+    "frontiers": 109,
+    "research_records": 24,
+    "contradictions": 12,
+    "unknowns": 7
+  }
+}

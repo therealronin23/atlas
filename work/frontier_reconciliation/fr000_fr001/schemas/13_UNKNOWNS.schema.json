@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "classification": {
+      "const": "UNKNOWN"
+    },
+    "closure_condition": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "confidence_that_unknown_is_real": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "evidence_ids_or_locators": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "origin": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "question": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "OPEN",
+        "CLOSED"
+      ],
+      "type": "string"
+    },
+    "unknown_id": {
+      "pattern": "^UNK-[0-9A-F]{8,}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "unknown_id",
+    "question",
+    "status",
+    "origin",
+    "closure_condition",
+    "evidence_ids_or_locators",
+    "classification",
+    "confidence_that_unknown_is_real",
+    "independence_key"
+  ],
+  "title": "FR-000/FR-001 explicit unknown",
+  "type": "object"
+}

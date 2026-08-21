@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "current": {
+      "const": true
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "locator": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      ]
+    },
+    "reason": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "record_kind": {
+      "enum": [
+        "SOURCE",
+        "COMPONENT",
+        "DECISION",
+        "FRONTIER",
+        "OTHER"
+      ],
+      "type": "string"
+    },
+    "unclassified_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "unclassified_id",
+    "record_kind",
+    "locator",
+    "reason",
+    "current",
+    "independence_key"
+  ],
+  "title": "FR-000/FR-001 unclassified-current registry entry",
+  "type": "object"
+}

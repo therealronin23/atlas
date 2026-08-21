@@ -1,0 +1,265 @@
+{
+  "phase": "FR-000_SOURCE_DOCS_CENSUS",
+  "audit_scope": {
+    "repository": "/home/ronin/proyectos/atlas-frontier-fr000-fr001",
+    "sealed_head": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "sealed_tree": "b790640b12ebff8eb100939f9f7a92f02de0b502",
+    "method": "All population counts are from git ls-tree -r --name-only HEAD, except the docs-index reproduction, whose implementation intentionally scans the working filesystem. The graph-first record was read before source inspection.",
+    "graph_first_locator": "work/frontier_reconciliation/fr000_fr001/phase_records/graph_first_queries.json",
+    "graph_evidence": {
+      "freshness": "FRESH",
+      "graph_commit_sha": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+      "source_tree_dirty_at_graph_record": false
+    }
+  },
+  "commands": [
+    "git rev-parse HEAD",
+    "git ls-tree -r --name-only HEAD | wc -l",
+    "git ls-tree -r --name-only HEAD | awk -F/ '{print $1}' | sort | uniq -c",
+    "git ls-tree -r --name-only HEAD -- docs/archive/_graveyard",
+    "python3 scripts/docs_index_audit.py --strict",
+    "python3 -c '<import scripts.docs_index_audit; report=validate(); classify report by exact path family>'",
+    "sha256sum scripts/docs_index_audit.py",
+    "git grep -n -E 'CR-001|334[[:space:]]*=[[:space:]]*246|246[[:space:]]+graveyard|88[[:space:]]+non-graveyard' HEAD -- . ':!docs/archive/_graveyard/**'"
+  ],
+  "tracked_tree_census": {
+    "tracked_file_count": 2344,
+    "by_top_level": {
+      "docs": 1123,
+      "tests": 474,
+      "src": 371,
+      "scripts": 113,
+      "fixtures": 70,
+      "prototypes": 44,
+      "schemas": 35,
+      "mission_console": 26,
+      "work": 23,
+      "workspace": 21,
+      "memory": 3,
+      "config": 3,
+      ".githooks": 3,
+      ".claude": 2,
+      ".cursor": 2,
+      "single_file_top_level_entries": 74
+    },
+    "single_file_top_level_entries_note": "The 74 count is the sum of every top-level name with one tracked file, including root governance/docs/configuration files and one-file directories (.github, .codex, atlas-experiments, forks, knowledge-src). The full exact top-level list is reproducible with the stated git command; grouped counts above sum to 2344.",
+    "semantic_heuristic_counts": {
+      "runtime_source": 371,
+      "test_suite": 474,
+      "automation_scripts": 113,
+      "test_fixture_payload": 70,
+      "schema_contract": 35,
+      "documentation_or_doc_adjacent": 391,
+      "documentation_fixture_payload": 71,
+      "archived_documentation": 40,
+      "archived_code_and_historical_material": 48,
+      "historical_handoff": 565,
+      "generated_handoff": 8,
+      "prototype_or_auxiliary_app": 91,
+      "work_evidence_or_external_input": 29,
+      "configuration": 3,
+      "repository_control_or_root_document": 35,
+      "total": 2344
+    },
+    "classification_rule": "Classify first by exact tracked path family (not extension): src/tests/scripts/fixtures/schemas; docs/archive/_graveyard; docs/archive; docs/fixtures; docs/handoff/GENERATED; docs/handoff; remaining docs; prototypes|mission_console|workspace; work|memory|knowledge-src|atlas-experiments|forks; config; root/control. Use extension only as a second-level signal, never to infer ownership.",
+    "residual_ambiguous_path_families": [
+      "docs/canon/schemas/**: YAML lives under docs but is a machine schema contract; whether it should receive a documentation index entry is a policy decision.",
+      "docs/fixtures/**: payloads include JSON, Markdown and text; the name and runtime/test usage indicate fixtures, but the auditor currently treats allowed suffixes as docs.",
+      "docs/knowledge/**/*.json and docs/handoff/**: data/snapshots can be human-readable evidence, not necessarily current documentation.",
+      "docs/archive/_graveyard/**: mixed historical prose, archived authored source, package manifests, one third-party binary and generated result artifacts; path lifecycle is decisive rather than suffix."
+    ]
+  },
+  "ownership_and_lifecycle": {
+    "project_owned": {
+      "evidence": "Every current tree path was obtained from git at the sealed HEAD. Path naming identifies Atlas source, tests, docs, fixtures, schemas and archived snapshots; this is ownership classification, not a copyright assertion.",
+      "active_project_code_and_tests": 845,
+      "project_automation": 113,
+      "project_fixtures_and_schemas": 105,
+      "project_docs_and_historical_records": 1123,
+      "prototype_or_auxiliary_project_material": 91,
+      "work_evidence_or_external_input": 29,
+      "root_control_and_configuration": 38
+    },
+    "vendor_or_generated": {
+      "tracked_node_modules_path_segments": 0,
+      "tracked_vendor_path_segments": 0,
+      "tracked_docs_archive_graveyard_node_modules": 0,
+      "tracked_docs_archive_graveyard_vendor": 0,
+      "tracked_generated_handoff_files": 8,
+      "known_third_party_binary_in_graveyard": "docs/archive/_graveyard/ui_micropocs_pre_adr085/compose_micropoc/gradle/wrapper/gradle-wrapper.jar",
+      "known_generated_result_or_build_metadata_in_graveyard": [
+        "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/public/atlas_graph.json",
+        "docs/archive/_graveyard/ui_micropocs_pre_adr085/compose_micropoc/ui_quality_gate_results.json",
+        "docs/archive/_graveyard/ui_micropocs_pre_adr085/qt_micropoc/ui_quality_gate_results.json",
+        "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/package-lock.json"
+      ],
+      "conclusion": "The current sealed tree contains no node_modules or vendor subtree. The graveyard's 48 files are principally project-owned archived UI/prototype source and historical material, with the listed dependency/build artifacts; it is not a 246-file vendor tree at this HEAD."
+    }
+  },
+  "docs_lifecycle_census": {
+    "tracked_docs_files": 1123,
+    "indexable_by_current_implementation": 1026,
+    "docs_index_entries": 929,
+    "current_indexable_indexed": 929,
+    "current_indexable_missing": 97,
+    "current_indexable_orphans": 0,
+    "current_indexable_expired": 0,
+    "all_docs_by_path_lifecycle": {
+      "indexable_active_or_other": 347,
+      "historical_handoff": 565,
+      "generated_handoff": 8,
+      "archived": 40,
+      "archived_graveyard": 48,
+      "fixture_payload": 71,
+      "inbox_untriaged": 3,
+      "index_control_file": 1,
+      "non_indexable_other": 40
+    },
+    "indexed_statuses": {
+      "vigente": 229,
+      "historico": 596,
+      "superseded": 9,
+      "propuesto": 95
+    },
+    "indexed_types": {
+      "conocimiento": 668,
+      "design": 88,
+      "decision": 73,
+      "historia": 42,
+      "evidencia": 24,
+      "compliance": 18,
+      "difusion": 8,
+      "operacion": 6,
+      "norma": 2
+    }
+  },
+  "docs_index_auditor": {
+    "implementation": "scripts/docs_index_audit.py",
+    "implementation_blob": "f4fcfdf42bbeedb859283f8c82cc7190206cffa4",
+    "implementation_sha256": "1dcf64688a0a5c8bd3958a99dce15098f5fd947f3c898604b6117c5907cb1b41",
+    "explicit_contract": {
+      "locator": "scripts/docs_index_audit.py:1-31, 54-77, 166-189",
+      "claim": "It declares every document under docs/ with type/status/verified; reports a tree document without index entry, an orphaned entry, and stale vigente verification. It explicitly excludes docs/inbox, self_audit_*, root audit_complete_latest.json, __pycache__, and suffixes outside .md/.yaml/.yml/.json/.txt/.html/.bib/.bbl/.py. Audits under docs/audits remain indexable."
+    },
+    "implicit_scope_contract": {
+      "locator": "scripts/docs_index_audit.py:98-105; tests/test_docs_index_audit.py:27-75,118-136; scripts/docs_triage.py:69-85; scripts/docs_graph.py:82-97",
+      "claim": "scan_tree uses Path.rglob over the physical docs directory, not git-tracked paths, then filters only by path exceptions and suffix. Its scan is reused by the index writer, docs triage and docs graph. Tests establish inbox/root-runtime-snapshot/handoff behavior but do not test node_modules, vendor, dist/build, fixtures, schemas, archived source trees or ignored/untracked files."
+    },
+    "read_only_reproduction": {
+      "command": "python3 scripts/docs_index_audit.py --strict",
+      "date": "2026-08-21",
+      "strict_exit_code": 1,
+      "missing": 97,
+      "orphans": 0,
+      "expired": 0,
+      "note": "No --write action was run. This command observes the present filesystem by implementation design; the classification below independently constrains the population to the sealed tracked tree where relevant."
+    },
+    "current_missing_path_classification": {
+      "true_document_drift": {
+        "count": 20,
+        "paths": [
+          "docs/audits/reports/fitness_2026-08-11.md",
+          "docs/canon/decision_dossiers/EDR-ADC-WO-107-bridge-mutation-boundary.md",
+          "docs/canon/decision_dossiers/EDR-ADC-WO-124-desktop-mcp-admission.md",
+          "docs/decisions/adr/adr_080_product_os_mutation_scoped_exception.md",
+          "docs/decisions/adr/adr_081_hermes_corrective_kanban_actions.md",
+          "docs/decisions/adr/adr_082_mission_console_native_stack_selection.md",
+          "docs/decisions/adr/adr_083_visual_orchestrator_conclave.md",
+          "docs/decisions/adr/adr_084_osmosis_enforcement_profile.md",
+          "docs/decisions/adr/adr_085_flutter_ui_scope_reduction.md",
+          "docs/design/authority_map_memory.md",
+          "docs/design/authority_map_mission_task.md",
+          "docs/design/cut2_codeoss_drift_measurement_2026-08-01.md",
+          "docs/design/cut2_product_scope_2026-08-11.md",
+          "docs/design/cut2_scope_recommendation_2026-08-10.md",
+          "docs/design/ui/research/2026-07-30-t21-micropoc-compose-resultados.md",
+          "docs/design/ui/research/2026-07-30-t21-micropoc-qt-resultados.md",
+          "docs/superpowers/plans/2026-08-02-atlas-canonical-decision-repair.md",
+          "docs/superpowers/plans/2026-08-02-atlas-runtime-recovery.md",
+          "docs/superpowers/plans/2026-08-02-atlas-trust-boundary-recovery.md",
+          "docs/superpowers/specs/2026-08-02-atlas-integrity-recovery-program-design.md"
+        ]
+      },
+      "schema_contract_not_ordinary_document": {
+        "count": 3,
+        "paths": [
+          "docs/canon/schemas/claim.schema.yaml",
+          "docs/canon/schemas/decision.schema.yaml",
+          "docs/canon/schemas/mission.schema.yaml"
+        ]
+      },
+      "fixture_payload_not_ordinary_document": {
+        "count": 65,
+        "exhaustive_path_family": "docs/fixtures/**",
+        "subfamilies_and_counts": {
+          "business_core": 9,
+          "connection_recipes": 10,
+          "connector_packs": 5,
+          "connectors": 5,
+          "fastembed_compatibility_cases": 1,
+          "governance": 1,
+          "graph": 1,
+          "imports": 1,
+          "legal": 1,
+          "objectives": 2,
+          "question_packs": 5,
+          "sectors": 5,
+          "security": 19
+        }
+      },
+      "archived_code_or_build_metadata_not_current_document": {
+        "count": 9,
+        "paths": [
+          "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/README.md",
+          "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/index.html",
+          "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/package-lock.json",
+          "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/package.json",
+          "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/public/atlas_graph.json",
+          "docs/archive/_graveyard/ui_atlas-shell_pre_adr085/tsconfig.json",
+          "docs/archive/_graveyard/ui_micropocs_pre_adr085/compose_micropoc/ui_quality_gate_results.json",
+          "docs/archive/_graveyard/ui_micropocs_pre_adr085/qt_micropoc/CMakeLists.txt",
+          "docs/archive/_graveyard/ui_micropocs_pre_adr085/qt_micropoc/ui_quality_gate_results.json"
+        ]
+      },
+      "classification_total": 97
+    },
+    "scope_defect": "The implementation does not use a tracked-file allowlist and has no exclusions for fixture, schema, graveyard-source, node_modules, vendor or build/dist families. Thus allowed extensions make non-document artifacts gate-visible; this is an auditor scope defect.",
+    "verdict": "MIXED",
+    "verdict_evidence_for": [
+      "20/97 current missing paths are ordinary audit, decision, ADR, design/research, plan or specification documents in intended documentation namespaces.",
+      "The current script's stated rule says a document in the tree without an index entry is missing, and these 20 satisfy that ordinary-language rule."
+    ],
+    "verdict_evidence_against_pure_document_drift": [
+      "77/97 current findings are 65 fixture payloads, 3 schemas, or 9 graveyard code/build artifacts rather than ordinary current documentation.",
+      "The historical 246 graveyard paths were dominated by ignored/untracked node_modules/dist material, whereas the sealed tracked tree now has 0 node_modules and 0 vendor path segments."
+    ]
+  },
+  "PRESERVED_CONSTRAINTS": [
+    "Read graph_first_queries.json before source inspection; it reports a fresh graph at the sealed HEAD.",
+    "Do not alter docs/INDEX.yaml, source, tests, documentation, or commit history.",
+    "Keep CR-001's historical claim as historical evidence, never replace it with a current count.",
+    "Only output owned by this task is this JSON record."
+  ],
+  "NEW_EVIDENCE": [
+    "Current sealed tracked population is 2344 files; docs/archive/_graveyard is 48 tracked files, of which 9 are presently emitted by the suffix-based auditor.",
+    "Current auditor reproduction is 97 missing, 0 orphans, 0 expired; a family-complete classification produces 20 true documents, 3 schemas, 65 fixtures and 9 archived artifacts.",
+    "The exact current audit-script SHA-256 is the same value stored by CR-001: 1dcf64688a0a5c8bd3958a99dce15098f5fd947f3c898604b6117c5907cb1b41. The population change is therefore explained by filesystem scope, not a changed script."
+  ],
+  "INVALIDATED_CLAIMS": [
+    "As a claim about the sealed tracked HEAD, '246 graveyard unindexed files' is false: git reports 48 graveyard files total, not 246. It remains preserved as an observation of CR-001's then-current physical working tree."
+  ],
+  "NEW_UNKNOWNS": [
+    "Whether the three docs/canon/schemas YAML contracts should be indexed as human documentation or deliberately excluded needs an explicit policy/test; this audit classifies them outside ordinary document drift without changing policy.",
+    "Whether the 20 ordinary documents were intentionally withheld pending triage cannot be inferred from path and current index alone; none are in docs/inbox.",
+    "The exact ignored/untracked filesystem state that produced CR-001's 246 node_modules/dist findings cannot be reconstructed from a git-only sealed tree."
+  ],
+  "NEW_CONTRADICTIONS": [
+    "CR-001's artifact says 334 = 246 graveyard + 88 non-graveyard at 2026-08-20T21:19:13Z, while current same-script execution says 97 = 9 graveyard + 88 non-graveyard. The non-graveyard population is unchanged; the graveyard difference is 237 paths and corresponds to physical-tree dependency/build material absent from the sealed tracked tree.",
+    "The auditor's prose says 'cada documento' but its operational predicate accepts generic .json/.html/.py/.txt under any non-excluded docs subtree, including fixtures and archived source metadata."
+  ],
+  "UNCLASSIFIED_COUNT": 0,
+  "validation": {
+    "required_check": "python3 -m json.tool work/frontier_reconciliation/fr000_fr001/phase_records/source_docs_findings.json",
+    "status": "PASS"
+  }
+}

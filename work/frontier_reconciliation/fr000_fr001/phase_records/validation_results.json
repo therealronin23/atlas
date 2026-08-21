@@ -1,0 +1,31 @@
+{
+  "checks": {
+    "anomaly_rows": 13,
+    "artifact_mapping_rows": 3091,
+    "candidate_fit_assessments": 23,
+    "canonical_relation_atomic_pairs": 18,
+    "claim_rows": 65,
+    "contradiction_rows": 22,
+    "critical_authority_rows": 31,
+    "current_decision_authority_records": 134,
+    "current_decision_independent_subjects": 126,
+    "decision_rows": 276,
+    "evidence_rows": 41,
+    "explicit_unknown_dimensions": 3036,
+    "frontier_rows": 109,
+    "git_diff_check": true,
+    "git_scope": true,
+    "implementation_units": 471,
+    "negative_evidence_rows": 16,
+    "relation_records": 17,
+    "required_and_supplemental_files": 36,
+    "schema_validated_records": 6457,
+    "sealed_tag_commit_tree": true,
+    "self_review_rows": 16,
+    "semantic_unknown_rows": 24,
+    "tracked_source_paths_and_hashes": 2344,
+    "unclassified_current": 0
+  },
+  "status": "PASS",
+  "validated_at": "2026-08-21"
+}

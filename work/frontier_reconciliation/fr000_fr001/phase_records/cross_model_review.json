@@ -1,0 +1,42 @@
+{
+  "phase": "CROSS_MODEL_ADVERSARIAL_REVIEW",
+  "recorded_at": "2026-08-21T06:46:40.940252+00:00",
+  "command": "/home/ronin/.local/bin/codex exec --ephemeral --ignore-user-config --sandbox read-only -C /home/ronin/proyectos/atlas-frontier-fr000-fr001 -m gpt-5.5 - < /tmp/fr000-fr001-cross-model-prompt.md",
+  "model": "gpt-5.5",
+  "sandbox": "read-only",
+  "session_id": "01a0230e-3b03-79f1-8381-4143532a7df5",
+  "exit_code": 0,
+  "full_tool_transcript_preserved": false,
+  "final_response_preserved": true,
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "finding": "The reviewer treated the separately authorized user-level agent-skills installation as a prohibited Atlas dependency/effect."
+    },
+    {
+      "severity": "HIGH",
+      "finding": "Reports claimed readiness while tasks/todo.md and self-review retention remained incomplete."
+    },
+    {
+      "severity": "HIGH",
+      "finding": "The reviewer requested explicit provenance/authority fields beyond the source contract's required authority_relevance field and found the schema too weak."
+    },
+    {
+      "severity": "HIGH",
+      "finding": "Focused ADR-057/058/069/078 revalidation did not expose material supporting and counterevidence records separately."
+    },
+    {
+      "severity": "MEDIUM",
+      "finding": "MerkleLogger was promoted LIVE_VERIFIED from structural fan-in without retained runtime evidence."
+    },
+    {
+      "severity": "MEDIUM",
+      "finding": "MCP trunk LIVE_VERIFIED locator described structural consumers instead of the actual successful live trunk calls."
+    }
+  ],
+  "measurement_validity": "PARTIAL",
+  "contamination": [
+    "The first finding omitted the user's explicit, separate instruction to install agent-skills outside Atlas.",
+    "The source contract did not require fields literally named provenance or authority; it required authority_relevance and the other enumerated fields."
+  ]
+}

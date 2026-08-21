@@ -1,0 +1,50 @@
+{
+  "phase": "CURRENT_RUNTIME_SCOPE_OBSERVATION",
+  "recorded_at": "2026-08-21T06:41:47.136850+00:00",
+  "command": "PYTHONPATH=src /home/ronin/proyectos/atlas-core/.venv/bin/atlas reality --json",
+  "cwd": "/home/ronin/proyectos/atlas-frontier-fr000-fr001",
+  "audited_commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+  "normalized_observation": {
+    "repo_branch": "frontier/fr000-fr001-atlas-n",
+    "repo_dirty_only_generated_audit_output": true,
+    "graph_status": "FRESH",
+    "graph_commit_sha": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "daemon_active": false,
+    "merkle_status": "ok",
+    "browser_status": "ready",
+    "computer_use_tests_status": "unknown",
+    "hermes_mode": "mock",
+    "hermes_configured": false,
+    "hermes_live_verified": false,
+    "mcp_status": "configured",
+    "mcp_enabled_count": 2,
+    "bubblewrap_available": true,
+    "f26_gate_status": "unknown"
+  },
+  "raw_preserved": false,
+  "reproducible": true,
+  "measurement_validity": "PARTIAL",
+  "contamination": [
+    "Runtime workspace /home/ronin/atlas is external to the sealed Git tree.",
+    "The isolated worktree intentionally has no operator .env, so provider and Hermes configuration differs from the dirty operator checkout.",
+    "Only normalized fields needed by the audit were retained; full stdout was not persisted."
+  ],
+  "PRESERVED_CONSTRAINTS": [
+    "No live provider, Hermes delegation, browser action, F2.6, or mutation was executed.",
+    "Configuration/reachability observations do not establish product acceptance."
+  ],
+  "NEW_EVIDENCE": [
+    "The reality command itself executed at the sealed commit.",
+    "The project graph was fresh and bubblewrap was present in this audit scope."
+  ],
+  "INVALIDATED_CLAIMS": [
+    "The earlier component phase claim that Hermes was live cannot be generalized to the isolated audit worktree."
+  ],
+  "NEW_UNKNOWNS": [
+    "Which environment scope should own provider/Hermes/F2.6 state across worktrees."
+  ],
+  "NEW_CONTRADICTIONS": [
+    "Original checkout and isolated worktree resolve different environment-backed states at the same code commit."
+  ],
+  "UNCLASSIFIED_COUNT": 0
+}

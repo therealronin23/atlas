@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "contamination": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "contradicts": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "derived_from_evidence_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "evidence_id": {
+      "pattern": "^EV-[A-Z0-9-]+$",
+      "type": "string"
+    },
+    "freshness": {
+      "enum": [
+        "current",
+        "historical",
+        "unknown"
+      ],
+      "type": "string"
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "independently_verifiable": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "const": "unknown"
+        }
+      ]
+    },
+    "locator": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "minProperties": 1,
+          "type": "object"
+        }
+      ]
+    },
+    "measurement_validity": {
+      "enum": [
+        "VALID",
+        "PARTIAL",
+        "INCONCLUSIVE",
+        "INVALID",
+        "NOT_APPLICABLE"
+      ],
+      "type": "string"
+    },
+    "observation": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "raw_preserved": {
+      "type": "boolean"
+    },
+    "reproducible": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "const": "unknown"
+        }
+      ]
+    },
+    "source_hash": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "minLength": 1,
+          "type": "string"
+        }
+      ]
+    },
+    "supports": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "type": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "type",
+    "locator",
+    "source_hash",
+    "raw_preserved",
+    "reproducible",
+    "independently_verifiable",
+    "freshness",
+    "measurement_validity",
+    "contamination",
+    "independence_key",
+    "supports",
+    "contradicts",
+    "confidence",
+    "observation"
+  ],
+  "title": "FR-000/FR-001 evidence quality record",
+  "type": "object"
+}

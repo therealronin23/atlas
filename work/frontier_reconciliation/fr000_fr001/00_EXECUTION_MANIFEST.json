@@ -1,0 +1,349 @@
+{
+  "INVALIDATED_CLAIMS": [
+    "As a claim about the sealed tracked HEAD, '246 graveyard unindexed files' is false: git reports 48 graveyard files total, not 246. It remains preserved as an observation of CR-001's then-current physical working tree.",
+    "The blanket claim that port 7341 remains read-only over Core is invalidated for the sealed source by Mission approve/reject POST handlers; ADR-080 does not explicitly supersede this additional scope.",
+    "A DONE implementation-registry row alone cannot establish current desktop-control runtime admission when the current ecosystem map says the capability remains contradicted/quarantined."
+  ],
+  "NEW_CONTRADICTIONS": 22,
+  "NEW_EVIDENCE": [
+    "Exhaustive 2,344-blob source census and 471-unit implementation census.",
+    "Fresh sealed-commit graph and 6,016-passing default test selection.",
+    "Explicit decision/supersession and critical authority reconstructions."
+  ],
+  "NEW_UNKNOWNS": 24,
+  "PRESERVED_CONSTRAINTS": [
+    "Checkpoint identity and history remain immutable.",
+    "Evidence authority order applied; pack remains hypothesis input.",
+    "F2.6 and Semgrep were not rerun.",
+    "UNKNOWN classifications were not narratively promoted."
+  ],
+  "UNCLASSIFIED_COUNT": 0,
+  "baseline": {
+    "checkpoint": "CR-001",
+    "identity_verified": true,
+    "peeled_commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "tag": "atlas-n-cr001-20260820",
+    "tag_object": "c5652f6317cc8ad71033edad876fe4da40d7a3ce",
+    "tag_semantics_note": "git rev-parse <tag> returns the annotated tag object; <tag>^{commit} is the required baseline commit.",
+    "tree": "b790640b12ebff8eb100939f9f7a92f02de0b502",
+    "version": "Atlas 0.12.0"
+  },
+  "commit_created": false,
+  "coverage_report": {
+    "CRITICAL_CAPABILITY_AUTHORITY_COVERAGE": {
+      "denominator": 20,
+      "numerator": 20,
+      "percent": 100.0,
+      "ratio": 1.0
+    },
+    "CURRENT_COMPONENT_COVERAGE": {
+      "denominator": 471,
+      "numerator": 471,
+      "percent": 100.0,
+      "ratio": 1.0
+    },
+    "CURRENT_DECISION_COVERAGE": {
+      "denominator": 126,
+      "numerator": 126,
+      "percent": 100.0,
+      "ratio": 1.0
+    },
+    "CURRENT_FRONTIER_MAPPING_COVERAGE": {
+      "denominator": 109,
+      "numerator": 109,
+      "percent": 100.0,
+      "ratio": 1.0
+    },
+    "CURRENT_SOURCE_COVERAGE": {
+      "denominator": 1571,
+      "numerator": 1571,
+      "percent": 100.0,
+      "ratio": 1.0
+    },
+    "MAPPING_RESOLUTION_EXCLUDING_EXPLICIT_UNKNOWN": {
+      "COMPONENT": {
+        "denominator": 471,
+        "numerator": 47,
+        "percent": 9.9788,
+        "ratio": 0.09978769
+      },
+      "DECISION": {
+        "denominator": 276,
+        "numerator": 158,
+        "percent": 57.2464,
+        "ratio": 0.57246377
+      },
+      "FRONTIER_R0": {
+        "denominator": 109,
+        "numerator": 39,
+        "percent": 35.7798,
+        "ratio": 0.35779817
+      },
+      "SOURCE": {
+        "denominator": 2344,
+        "numerator": 1037,
+        "percent": 44.2406,
+        "ratio": 0.44240614
+      }
+    },
+    "all_decision_records_classified": 276,
+    "all_decision_records_total": 276,
+    "all_decisions_classified": 268,
+    "all_decisions_total": 268,
+    "all_tracked_sources_classified": 2344,
+    "all_tracked_sources_total": 2344,
+    "baseline": {
+      "commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+      "tag": "atlas-n-cr001-20260820",
+      "tree": "b790640b12ebff8eb100939f9f7a92f02de0b502"
+    },
+    "candidate_frontier_fit_assessments": 23,
+    "candidate_new_frontiers": 0,
+    "canonical_supersession_atomic_pairs": 18,
+    "canonical_supersession_source_records": 15,
+    "classification_note": "UNKNOWN is an explicit classification. Absence is not. Frontier/artifact mapping UNKNOWN does not increase unclassified_current.",
+    "contradictions": 22,
+    "current_components_mapped": 471,
+    "current_components_total": 471,
+    "current_decision_denominator_partition": {
+      "adc_work_orders": 36,
+      "canonical_current_authority": 77,
+      "graph_endpoints_excluded": 5,
+      "program_decisions": 13,
+      "semantic_duplicate_records_excluded": 8
+    },
+    "current_decision_record_partition": {
+      "adc_work_order_records": 36,
+      "canonical_current_authority_records": 85,
+      "program_decision_records": 13
+    },
+    "current_decision_records_classified": 134,
+    "current_decision_records_total": 134,
+    "current_decision_semantic_duplicates": 8,
+    "current_decisions_classified": 126,
+    "current_decisions_total": 126,
+    "current_sources_classified": 1571,
+    "current_sources_total": 1571,
+    "denominator_definitions": {
+      "components": "471 reproducible current code-bearing implementation units: 329 ordinary Python modules, 16 substantive package initializers, 8 Jinja templates, 93 current tooling programs/hooks, 11 Mission Console product units, and 14 prototype units. Semantic capabilities remain separate authority overlays.",
+      "decisions": "276 classified records collapse to 268 independent decision subjects through decision_subject_key. Current authority contains 134 records, of which 8 are semantic companion aliases, yielding 126 independent current subjects: 77 canonical + 36 work orders + 13 programs. Graph endpoints are excluded from current authority.",
+      "frontiers": "All 109 R0 working hypotheses from the external Frontier Pack; examined does not mean confirmed.",
+      "source_universe": "Every tracked blob in the sealed Git tree; current_sources is the subset with lifecycle CURRENT."
+    },
+    "frontier_r0_examined": 109,
+    "frontier_r0_total": 109,
+    "historical_decisions_total": 136,
+    "mapping_status_counts": {
+      "DUPLICATE": 36,
+      "HISTORICAL": 874,
+      "IRRELEVANT": 168,
+      "MAPPED": 154,
+      "MERGE_CANDIDATE": 2,
+      "NEW_EVIDENCE": 35,
+      "REFORMULATE": 1,
+      "SPLIT_CANDIDATE": 1,
+      "SUPERSEDED": 10,
+      "UNKNOWN": 1919
+    },
+    "merge_candidate_frontier_rows": 2,
+    "merge_candidate_groups": 1,
+    "non_current_decisions_total": 142,
+    "ready_for_external_adversarial_review": true,
+    "resolution_ratios_by_dimension": {
+      "COMPONENT": {
+        "denominator": 471,
+        "numerator": 47,
+        "percent": 9.9788,
+        "ratio": 0.09978769
+      },
+      "DECISION": {
+        "denominator": 276,
+        "numerator": 158,
+        "percent": 57.2464,
+        "ratio": 0.57246377
+      },
+      "FRONTIER_R0": {
+        "denominator": 109,
+        "numerator": 39,
+        "percent": 35.7798,
+        "ratio": 0.35779817
+      },
+      "SOURCE": {
+        "denominator": 2344,
+        "numerator": 1037,
+        "percent": 44.2406,
+        "ratio": 0.44240614
+      }
+    },
+    "split_candidate_frontier_rows": 1,
+    "split_candidate_groups": 1,
+    "stop_conditions": {
+      "all_current_classified_or_explicit_unknown": true,
+      "candidate_frontier_fit_assessed": true,
+      "contradictions_preserved": true,
+      "coverage_calculated": true,
+      "critical_authority_callers_mapped": true,
+      "current_components_classified": true,
+      "current_decisions_classified": true,
+      "frontier_r0_cross_mapped": true,
+      "source_universe_censused": true,
+      "supersession_graph_exists": true,
+      "unknowns_preserved": true
+    },
+    "supersession_relation_records": 17,
+    "unclassified_current": 0,
+    "unknown_classifications_by_dimension": {
+      "component_frontier_mapping_unknown": 424,
+      "component_maturity_unknown": 0,
+      "component_program_unknown": 188,
+      "decision_frontier_mapping_unknown": 118,
+      "decision_program_unknown": 8,
+      "decision_status_unknown": 1,
+      "frontier_assessment_unknown": 70,
+      "semantic_unknown_registry": 24,
+      "source_frontier_mapping_unknown": 1307,
+      "source_lifecycle_unknown": 0,
+      "source_program_unknown": 896
+    },
+    "unknown_classifications_total": 3036,
+    "unknown_registry_records": 24,
+    "unknowns": 24
+  },
+  "docs_index_modified": false,
+  "execution_id": "FR-000-FR-001-ATLAS-N-20260821",
+  "f26": {
+    "automatic_grade": "1/6",
+    "execution_outcome": "FAIL",
+    "measurement_validity": "INCONCLUSIVE",
+    "notification_surface": "required spawn_task capability was not exposed; trunk invocation rejected unknown tool",
+    "rerun_in_this_audit": false
+  },
+  "functional_code_modified": false,
+  "generated_at": "2026-08-21T07:32:31.675640+00:00",
+  "graph": {
+    "bitemporal_nodes": 3290,
+    "commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "import_edges": 8855,
+    "limit": "structural edges are not behavioral calls",
+    "modules_latest": 329,
+    "raw_queries": "phase_records/graph_first_queries.json",
+    "status": "FRESH"
+  },
+  "phase_records": [
+    "phase_records/adversarial_self_review.jsonl",
+    "phase_records/adversarial_self_review_summary.json",
+    "phase_records/candidate_new_frontier_fit_assessment.jsonl",
+    "phase_records/claim_registry.jsonl",
+    "phase_records/codeoss_external_state.json",
+    "phase_records/component_authority_findings.json",
+    "phase_records/cross_model_review.json",
+    "phase_records/decision_findings.json",
+    "phase_records/graph_first_queries.json",
+    "phase_records/phase_00_preflight.json",
+    "phase_records/phase_01_pack_intake.json",
+    "phase_records/reality_snapshot_20260821.json",
+    "phase_records/review_reconciliation.jsonl",
+    "phase_records/source_docs_findings.json",
+    "phase_records/test_results.json",
+    "phase_records/validation_results.json"
+  ],
+  "prohibited_actions_performed": [],
+  "required_files": [
+    "00_EXECUTION_MANIFEST.json",
+    "01_SOURCE_COVERAGE_REGISTRY.jsonl",
+    "02_SOURCE_CLASSIFICATION_SUMMARY.md",
+    "03_CURRENT_COMPONENT_MAP.jsonl",
+    "04_AUTHORITY_MAP.jsonl",
+    "05_CALLER_WRITER_ANOMALIES.jsonl",
+    "06_SUPERSESSION_GRAPH.jsonl",
+    "07_DECISION_REALITY_MAP.jsonl",
+    "08_FRONTIER_MAPPING.jsonl",
+    "09_CANDIDATE_NEW_FRONTIERS.jsonl",
+    "10_CONTRADICTIONS.jsonl",
+    "11_NEGATIVE_EVIDENCE.jsonl",
+    "12_EVIDENCE_REGISTRY.jsonl",
+    "13_UNKNOWNS.jsonl",
+    "14_UNCLASSIFIED.jsonl",
+    "15_DOCS_INDEX_AUDITOR_AUDIT.md",
+    "16_EVIDENCE_RETENTION_GAPS.md",
+    "17_FR000_REPORT.md",
+    "18_FR001_REPORT.md",
+    "19_HANDOFF_TO_RECONCILIATION.md",
+    "20_COVERAGE_REPORT.json"
+  ],
+  "semgrep": {
+    "classification": [
+      "HISTORICAL_FINDING_PRESENT",
+      "RAW_EVIDENCE_NOT_RETAINED",
+      "NOT_INDIVIDUALLY_TRIAGEABLE",
+      "REQUIRES_RESCAN_WITH_RAW_RETENTION"
+    ],
+    "rescanned": false
+  },
+  "skill_installation": {
+    "atlas_dependency_adopted": false,
+    "destination": "/home/ronin/.codex/skills",
+    "hooks_or_plugins_installed": false,
+    "installed_count": 24,
+    "source": "https://github.com/addyosmani/agent-skills",
+    "source_commit": "df1edb2e05487d0aa6d93c747141e0aed1187f25"
+  },
+  "staged": false,
+  "state_categories": {
+    "GENERATED_AUDIT_OUTPUT": {
+      "authorized_scope_only": true,
+      "later_publication_authorized": true,
+      "path": "work/frontier_reconciliation/fr000_fr001",
+      "tracked_at_generation": false
+    },
+    "OPERATOR_INPUT": {
+      "canon": false,
+      "committed": false,
+      "path": "/home/ronin/proyectos/atlas-core/atlas-frontier-context-pack-r0-2026-08-20.zip",
+      "sha256": "e7aacd2b0dfaaaa0281eb2e27f01c0368d4e13198f57acf7fcc7bf6370329011"
+    },
+    "TRACKED_ATLAS_N": {
+      "tracked_blob_count": 2344,
+      "tree": "b790640b12ebff8eb100939f9f7a92f02de0b502"
+    },
+    "UNRELATED_LOCAL_STATE": {
+      "classification": "outside sealed Git tree; used only for scope-labelled runtime observation",
+      "local_env_file": "/home/ronin/proyectos/atlas-core/.env",
+      "original_checkout": "/home/ronin/proyectos/atlas-core",
+      "shared_runtime_workspace": "/home/ronin/atlas"
+    }
+  },
+  "status": "READY_FOR_EXTERNAL_ADVERSARIAL_REVIEW",
+  "tests": {
+    "INVALIDATED_CLAIMS": [],
+    "NEW_CONTRADICTIONS": [],
+    "NEW_EVIDENCE": [
+      "The sealed tree's configured default test selection passes in the current audit environment."
+    ],
+    "NEW_UNKNOWNS": [
+      "The 27 deselected computer_use tests and live external-provider paths remain unverified by this command."
+    ],
+    "PRESERVED_CONSTRAINTS": [
+      "No tests were relaxed or edited.",
+      "F2.6 was not run.",
+      "Semgrep was not run."
+    ],
+    "UNCLASSIFIED_COUNT": 0,
+    "audited_commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "command": "PYTHONPATH=src /home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q",
+    "deselected": 27,
+    "duration_seconds": 523.37,
+    "epistemic_limit": "A passing repository suite supports only the tested properties. It does not prove production wiring, non-mocked integration, live reachability, reliability, or product acceptance. Deselected computer_use tests were not run.",
+    "exit_code": 0,
+    "measurement_validity": "PARTIAL",
+    "passed": 6016,
+    "phase": "CURRENT_TEST_REPRODUCTION",
+    "raw_preserved": false,
+    "reproducible": true,
+    "skipped": 13,
+    "started_from": "/home/ronin/proyectos/atlas-frontier-fr000-fr001",
+    "status": "PASS",
+    "warning_summary": "FastEmbed multilingual MiniLM pooling changed from CLS to mean; this warning is not repaired in FR-000/FR-001.",
+    "warnings": 1
+  }
+}

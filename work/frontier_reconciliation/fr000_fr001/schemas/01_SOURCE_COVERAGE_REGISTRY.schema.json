@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "apparent_owner": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "authority_relevance": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "NONE",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "canonical_content_copy": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "category": {
+      "enum": [
+        "CODE",
+        "TEST",
+        "ADR",
+        "CANON",
+        "SPEC",
+        "PLAN",
+        "DESIGN",
+        "RESEARCH",
+        "BENCHMARK",
+        "FIXTURE",
+        "RUNTIME_CONFIG",
+        "CI",
+        "PRODUCT",
+        "PROTOTYPE",
+        "GENERATED",
+        "HISTORICAL",
+        "TOOLING",
+        "SCHEMA",
+        "EVIDENCE",
+        "OTHER"
+      ],
+      "type": "string"
+    },
+    "conceptual_entity": {
+      "type": "boolean"
+    },
+    "confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "content_duplicate_count": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "evidence_relevance": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "NONE",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "generated_from": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "git_blob_sha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "git_mode": {
+      "pattern": "^[0-7]{6}$",
+      "type": "string"
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "lifecycle": {
+      "enum": [
+        "CURRENT",
+        "HISTORICAL",
+        "ARCHIVED",
+        "SUPERSEDED",
+        "GENERATED",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "lifecycle_basis": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "path": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "program": {
+      "enum": [
+        "P00",
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P12",
+        "P04P05",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "project_owned": {
+      "type": "boolean"
+    },
+    "related_frontier_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "runtime_relevance": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "NONE",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "semantic_duplicate_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "semantic_normalization_hash": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      ]
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "size_bytes": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "source_family_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_id": {
+      "pattern": "^SRC-[0-9A-F]{8,}$",
+      "type": "string"
+    },
+    "superseded_by": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "third_party_or_vendor": {
+      "type": "boolean"
+    },
+    "tracked_atlas_n": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "source_id",
+    "path",
+    "sha256",
+    "content_hash",
+    "git_blob_sha",
+    "git_mode",
+    "size_bytes",
+    "category",
+    "lifecycle",
+    "lifecycle_basis",
+    "apparent_owner",
+    "program",
+    "related_frontier_ids",
+    "authority_relevance",
+    "runtime_relevance",
+    "evidence_relevance",
+    "generated_from",
+    "superseded_by",
+    "project_owned",
+    "third_party_or_vendor",
+    "tracked_atlas_n",
+    "conceptual_entity",
+    "canonical_content_copy",
+    "content_duplicate_count",
+    "semantic_duplicate_count",
+    "semantic_normalization_hash",
+    "source_family_id",
+    "confidence",
+    "independence_key"
+  ],
+  "title": "FR-000 source coverage record",
+  "type": "object"
+}

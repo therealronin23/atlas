@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "oneOf": [
+    {
+      "properties": {
+        "record_kind": {
+          "const": "COMPONENT_AUTHORITY"
+        }
+      },
+      "required": [
+        "component",
+        "owner",
+        "program",
+        "callers",
+        "writers",
+        "state_owner",
+        "read_paths",
+        "write_paths",
+        "alternative_paths",
+        "bypasses",
+        "public_ports",
+        "mutation_boundaries",
+        "failure_semantics",
+        "source_paths",
+        "public_contracts",
+        "observed_maturity_claim",
+        "related_frontier_ids",
+        "epistemic_limit"
+      ]
+    },
+    {
+      "properties": {
+        "record_kind": {
+          "const": "STATE_DOMAIN_AUTHORITY"
+        }
+      },
+      "required": [
+        "domain",
+        "canonical_owner",
+        "writers",
+        "risk",
+        "multiple_writers"
+      ]
+    }
+  ],
+  "properties": {
+    "alternative_paths": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "authority_id": {
+      "pattern": "^AUTH(?:-DOMAIN)?-[0-9A-F]{8,}$",
+      "type": "string"
+    },
+    "bypasses": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "callers": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "canonical_owner": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "component": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "domain": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "epistemic_limit": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "failure_semantics": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "multiple_writers": {
+      "type": "boolean"
+    },
+    "mutation_boundaries": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "observed_maturity_claim": {
+      "additionalProperties": true,
+      "properties": {
+        "evidence": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "level": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "test_present": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 0,
+          "type": "array"
+        }
+      },
+      "required": [
+        "level",
+        "evidence",
+        "test_present"
+      ],
+      "type": "object"
+    },
+    "owner": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "program": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "public_contracts": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "public_ports": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "read_paths": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "record_kind": {
+      "enum": [
+        "COMPONENT_AUTHORITY",
+        "STATE_DOMAIN_AUTHORITY"
+      ],
+      "type": "string"
+    },
+    "related_frontier_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "risk": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_paths": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "state_owner": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "write_paths": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "writers": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "record_kind",
+    "authority_id",
+    "confidence"
+  ],
+  "title": "FR-000 caller/writer/authority record",
+  "type": "object"
+}

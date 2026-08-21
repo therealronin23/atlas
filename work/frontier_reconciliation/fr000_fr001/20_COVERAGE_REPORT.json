@@ -1,0 +1,180 @@
+{
+  "CRITICAL_CAPABILITY_AUTHORITY_COVERAGE": {
+    "denominator": 20,
+    "numerator": 20,
+    "percent": 100.0,
+    "ratio": 1.0
+  },
+  "CURRENT_COMPONENT_COVERAGE": {
+    "denominator": 471,
+    "numerator": 471,
+    "percent": 100.0,
+    "ratio": 1.0
+  },
+  "CURRENT_DECISION_COVERAGE": {
+    "denominator": 126,
+    "numerator": 126,
+    "percent": 100.0,
+    "ratio": 1.0
+  },
+  "CURRENT_FRONTIER_MAPPING_COVERAGE": {
+    "denominator": 109,
+    "numerator": 109,
+    "percent": 100.0,
+    "ratio": 1.0
+  },
+  "CURRENT_SOURCE_COVERAGE": {
+    "denominator": 1571,
+    "numerator": 1571,
+    "percent": 100.0,
+    "ratio": 1.0
+  },
+  "MAPPING_RESOLUTION_EXCLUDING_EXPLICIT_UNKNOWN": {
+    "COMPONENT": {
+      "denominator": 471,
+      "numerator": 47,
+      "percent": 9.9788,
+      "ratio": 0.09978769
+    },
+    "DECISION": {
+      "denominator": 276,
+      "numerator": 158,
+      "percent": 57.2464,
+      "ratio": 0.57246377
+    },
+    "FRONTIER_R0": {
+      "denominator": 109,
+      "numerator": 39,
+      "percent": 35.7798,
+      "ratio": 0.35779817
+    },
+    "SOURCE": {
+      "denominator": 2344,
+      "numerator": 1037,
+      "percent": 44.2406,
+      "ratio": 0.44240614
+    }
+  },
+  "all_decision_records_classified": 276,
+  "all_decision_records_total": 276,
+  "all_decisions_classified": 268,
+  "all_decisions_total": 268,
+  "all_tracked_sources_classified": 2344,
+  "all_tracked_sources_total": 2344,
+  "baseline": {
+    "commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "tag": "atlas-n-cr001-20260820",
+    "tree": "b790640b12ebff8eb100939f9f7a92f02de0b502"
+  },
+  "candidate_frontier_fit_assessments": 23,
+  "candidate_new_frontiers": 0,
+  "canonical_supersession_atomic_pairs": 18,
+  "canonical_supersession_source_records": 15,
+  "classification_note": "UNKNOWN is an explicit classification. Absence is not. Frontier/artifact mapping UNKNOWN does not increase unclassified_current.",
+  "contradictions": 22,
+  "current_components_mapped": 471,
+  "current_components_total": 471,
+  "current_decision_denominator_partition": {
+    "adc_work_orders": 36,
+    "canonical_current_authority": 77,
+    "graph_endpoints_excluded": 5,
+    "program_decisions": 13,
+    "semantic_duplicate_records_excluded": 8
+  },
+  "current_decision_record_partition": {
+    "adc_work_order_records": 36,
+    "canonical_current_authority_records": 85,
+    "program_decision_records": 13
+  },
+  "current_decision_records_classified": 134,
+  "current_decision_records_total": 134,
+  "current_decision_semantic_duplicates": 8,
+  "current_decisions_classified": 126,
+  "current_decisions_total": 126,
+  "current_sources_classified": 1571,
+  "current_sources_total": 1571,
+  "denominator_definitions": {
+    "components": "471 reproducible current code-bearing implementation units: 329 ordinary Python modules, 16 substantive package initializers, 8 Jinja templates, 93 current tooling programs/hooks, 11 Mission Console product units, and 14 prototype units. Semantic capabilities remain separate authority overlays.",
+    "decisions": "276 classified records collapse to 268 independent decision subjects through decision_subject_key. Current authority contains 134 records, of which 8 are semantic companion aliases, yielding 126 independent current subjects: 77 canonical + 36 work orders + 13 programs. Graph endpoints are excluded from current authority.",
+    "frontiers": "All 109 R0 working hypotheses from the external Frontier Pack; examined does not mean confirmed.",
+    "source_universe": "Every tracked blob in the sealed Git tree; current_sources is the subset with lifecycle CURRENT."
+  },
+  "frontier_r0_examined": 109,
+  "frontier_r0_total": 109,
+  "historical_decisions_total": 136,
+  "mapping_status_counts": {
+    "DUPLICATE": 36,
+    "HISTORICAL": 874,
+    "IRRELEVANT": 168,
+    "MAPPED": 154,
+    "MERGE_CANDIDATE": 2,
+    "NEW_EVIDENCE": 35,
+    "REFORMULATE": 1,
+    "SPLIT_CANDIDATE": 1,
+    "SUPERSEDED": 10,
+    "UNKNOWN": 1919
+  },
+  "merge_candidate_frontier_rows": 2,
+  "merge_candidate_groups": 1,
+  "non_current_decisions_total": 142,
+  "ready_for_external_adversarial_review": true,
+  "resolution_ratios_by_dimension": {
+    "COMPONENT": {
+      "denominator": 471,
+      "numerator": 47,
+      "percent": 9.9788,
+      "ratio": 0.09978769
+    },
+    "DECISION": {
+      "denominator": 276,
+      "numerator": 158,
+      "percent": 57.2464,
+      "ratio": 0.57246377
+    },
+    "FRONTIER_R0": {
+      "denominator": 109,
+      "numerator": 39,
+      "percent": 35.7798,
+      "ratio": 0.35779817
+    },
+    "SOURCE": {
+      "denominator": 2344,
+      "numerator": 1037,
+      "percent": 44.2406,
+      "ratio": 0.44240614
+    }
+  },
+  "split_candidate_frontier_rows": 1,
+  "split_candidate_groups": 1,
+  "stop_conditions": {
+    "all_current_classified_or_explicit_unknown": true,
+    "candidate_frontier_fit_assessed": true,
+    "contradictions_preserved": true,
+    "coverage_calculated": true,
+    "critical_authority_callers_mapped": true,
+    "current_components_classified": true,
+    "current_decisions_classified": true,
+    "frontier_r0_cross_mapped": true,
+    "source_universe_censused": true,
+    "supersession_graph_exists": true,
+    "unknowns_preserved": true
+  },
+  "supersession_relation_records": 17,
+  "unclassified_current": 0,
+  "unknown_classifications_by_dimension": {
+    "component_frontier_mapping_unknown": 424,
+    "component_maturity_unknown": 0,
+    "component_program_unknown": 188,
+    "decision_frontier_mapping_unknown": 118,
+    "decision_program_unknown": 8,
+    "decision_status_unknown": 1,
+    "frontier_assessment_unknown": 70,
+    "semantic_unknown_registry": 24,
+    "source_frontier_mapping_unknown": 1307,
+    "source_lifecycle_unknown": 0,
+    "source_program_unknown": 896
+  },
+  "unknown_classifications_total": 3036,
+  "unknown_registry_records": 24,
+  "unknowns": 24
+}

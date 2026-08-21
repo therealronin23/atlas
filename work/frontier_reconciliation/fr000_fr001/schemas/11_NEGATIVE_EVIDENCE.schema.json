@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "caveat": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "claim_examined": {
+      "pattern": "^CLAIM-[A-Z0-9-]+$",
+      "type": "string"
+    },
+    "confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "effect_on_claim": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "locator": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      ]
+    },
+    "negative_evidence_id": {
+      "pattern": "^NEG-[0-9A-F]{8,}$",
+      "type": "string"
+    },
+    "observed_absence": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "search_scope": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      ]
+    },
+    "supports": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "negative_evidence_id",
+    "claim_examined",
+    "observed_absence",
+    "search_scope",
+    "locator",
+    "caveat",
+    "effect_on_claim",
+    "confidence",
+    "independence_key"
+  ],
+  "title": "FR-000/FR-001 bounded negative evidence",
+  "type": "object"
+}

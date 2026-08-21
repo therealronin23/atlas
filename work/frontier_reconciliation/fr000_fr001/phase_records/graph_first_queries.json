@@ -1,0 +1,430 @@
+{
+  "phase": "GRAPH_FIRST",
+  "recorded_at": "2026-08-20T23:18:10.453Z",
+  "graph_rebuild": {
+    "status": "ran",
+    "head": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+    "metrics": {
+      "bitemporal_nodes": 3290,
+      "imports_edges": 8855,
+      "vault_notes": 29283,
+      "vault_links": 131554,
+      "vault_unresolved": 61,
+      "callgraph_symbols": 4677,
+      "callgraph_calls": 12967,
+      "callgraph_files": 773
+    },
+    "failed_attempts": [
+      {
+        "root": "/home/ronin/proyectos/atlas-frontier-fr000-fr001",
+        "outcome": "Graphify AST cache unavailable",
+        "publication_occurred": false
+      }
+    ]
+  },
+  "graph_overview": {
+    "isError": false,
+    "content": [
+      "{\n  \"commits_ingested\": [\n    \"f1ee888fad1823941beb0657870f4e34c14bf945\",\n    \"9de47995c61f982d37732afb092a31db7ffbce89\",\n    \"35ff1924b8471a20ceabf0aace5bd0e1109c538b\",\n    \"5d6ca1d140f58118165cf4e36b21d2c556e922f2\",\n    \"5746235ef3e75882337e980ec6a36416822fef30\",\n    \"67afd8438ae6ac2c7ae8a6c71b7c3699dbab9e55\",\n    \"582ae6b1dc3e9b49427a64ea0a5123e79bc3b748\",\n    \"91848354ffa2e5d4601e88ba0b74cc4717a769d4\",\n    \"ee7ccd7260f2e73d61a4b673e0132f151ddc1dc5\",\n    \"04385427f905e2cae9d75d9dbbe5e3ce28841e8a\",\n    \"859d68e8b0606bcd7a6506958cf83750975f56cd\",\n    \"ce8930435c9526f32bd0aa64d8f267f220a9a0e9\",\n    \"b42e941c6ad7b3ded5822043999907098eddf1db\",\n    \"6f1174bd88e66bc1b0361cd59a0fc5ff8083b3c5\",\n    \"32a44503b09cadf7cedec401acba785fc035ce44\",\n    \"499a8f348c356c67b5b48ac7e50cdac5a14ee342\",\n    \"bd6f21d088fb14e1cb867a506d0155164fdeb305\",\n    \"eb69b77693cd0be7d63410c63963b272a4c646af\",\n    \"d03a592482d0576d2508d7ebae150d9788ade3c7\",\n    \"662c0ad851e8a622ed0586ca5693a61944891729\",\n    \"a2da9995b8a1165f133db426b0a50bfb6c4703d7\",\n    \"950ee54ab663675448f9f903f156bbe0d289106c\",\n    \"425253eb6c5ec3fa29d32016698c21f2c516e3f8\",\n    \"0bf0347e1d016d8cfa41d0f4235acfe7613ab8e7\",\n    \"46dbba2398e4fa8b0824d03097ff4163aad7b300\",\n    \"505c4079918f780637fba06821fa66f6c796c8b9\",\n    \"80e9a449b9407ccb121c05560c3e7c1d4eb6453c\",\n    \"aeb15e8de0bffae4a41a7ab677875d1655327180\",\n    \"5c13d9e4adc0f79f4ec13e041c1a5ae2a4ada806\",\n    \"936848aa385f99bacc28da0bdeaac68e95330a91\",\n    \"08781f1d37ea9206f7e2b839dc4134fbe3bd2532\",\n    \"80373f877711617f2aa244267ec9bba6e1b44d55\",\n    \"22a8743e68449d7eefe41204411afdef73ab4f63\",\n    \"1b94fe4f68f84b0cb9f9dee534c9029bb8378766\",\n    \"5bd078ea209c1d9d1554628795808a870cfb12f8\",\n    \"fedbf050de5d739c5c9ae54e282e917e694caac7\",\n    \"ad60a9935cb57d37b5b899245a661f7d211afc3e\",\n    \"8662dd4bdaf944a2058974e76e1ff09844d32217\",\n    \"1646f922c12512b0c7071502e2a0e5e735eb5617\",\n    \"96a97f8d9ac28520a75830971086bc7b89d4171f\",\n    \"73f4902affcbe17ebe10c67948cca99c11c906d1\",\n    \"b9ee522af89d3491271087d57061ec6cd670ab9b\",\n    \"18f0ea6af461bbfbff401684fbf9a6c47a077435\",\n    \"bf62b007d6bda210786186f3f34835a76f9d2247\",\n    \"366985f7d4548fe23dda06fddfe149f31457730c\",\n    \"c100b1dc5151add3941ddef7164a31c735390a4b\",\n    \"d854914a0642a80e7caf2808b127d4c7648a0a21\",\n    \"c0e05985a81b2751deef015990aad9b2b14701a2\",\n    \"3fa27277da3f97b75fde937dbe2c386711b06817\",\n    \"6977d8c5607777ab9f80b02e27a2936dcb509a9a\",\n    \"01a632adbffe0c26efa3bf5a578cc0b2e35a3ef2\",\n    \"b5e38313d4c0dd0c0cc5e3c6e7b8eb2cdcbcc475\",\n    \"a5676603d4ea2291550461e47dec6c223dc561a7\",\n    \"c6f0f2092522256b8ab903072112e4d16baaf9cf\",\n    \"e2a52c7869d6a30078aec011e2310708fe733e78\",\n    \"1d77455109429898f8821cf16b28605ebd7a8844\",\n    \"a05a6f69accad94fd871095daed34fe57d752ea6\",\n    \"50409d6a6d8de5e11b1442cfacb68a19b62eca2d\",\n    \"ff0726396caac2274f780fb73edef65343276624\",\n    \"a32ffe76021be5994c53223cd0b69335da2ff653\",\n    \"797cce737754646370cba3fbcd4dc6d4ccff11ee\",\n    \"3c2e3276fa259f38dbb6975a7add6624c099c153\",\n    \"9660284aec39abae3ede6a5e59223ed0fbf7b392\",\n    \"dad4d89e0700d31d243a3cdf7a4041eacbf52adb\",\n    \"067573fb3fcbb98e8aafedb27ad9537a3c411732\",\n    \"84deea886db54e142b519fdd76da19f455119a73\",\n    \"82b1fcab512c2e314dc7dd3c13d0c8debf70df94\",\n    \"d7262a700d607a2a53361c3ceefa6b44b5c0f4e6\",\n    \"d9a807639f7f09db64a1899e907e7e6d828620c3\",\n    \"545bcd5c67f8e7e7a782f6834f76536059fd6d14\",\n    \"03877fd96dcee3678ed020ec42675ab2323f32be\",\n    \"0e2ec27adf058162e5c601c0a74d74f53715b5b8\",\n    \"dc4a72c9ca1247f4d46c291e46bc8f8b55619fe3\",\n    \"103d3eef37c9c1a5a8eeec360738c79020826cca\",\n    \"50f92ecfd8fe902e2c0861344e3800e60d0d570c\",\n    \"52a9bd227d807aa2f433cf78da58522d775b5dd2\",\n    \"4deaa39ac65f1f001c9de67a4f248edff90b8abb\",\n    \"6682ee6efb9b5b2561e9dc53cd15dbd8d4485e23\",\n    \"365381430313e20bf56712e7972f0b92c8f4d680\",\n    \"be800d14e01137dff54a1da4b847aa5bb82959c8\",\n    \"4e058058ee446be17d490791c2468cd102a6e597\",\n    \"4fab36687728c487788ed8db00aa2ab204469ca5\",\n    \"1d71eaa372072923305e46eee1793dd494dca0d9\",\n    \"8c5c52cd45cbea5c4b46ca734703d8563c41ffb5\",\n    \"3c3c82c0143bf6bcf91bddf3511d8bfcf4ba4ed4\",\n    \"05d6ef33caf8e0d57cba35804e3a778a8f946766\",\n    \"b238e61babbe0c566e88b1228e330d16f8ee3a1c\",\n    \"24b784bf7b3a86f80d3271b03ed46a3dd9c41851\",\n    \"b257bc8448f29a6d4df6b553419a5f70defd1c35\",\n    \"2467f5c82431c47aea6c6cc259613aa4fb1a4c47\",\n    \"1ed605754f070838f7d29372483d6c5863826493\",\n    \"36e0bb0f931fddbd045364a71eae331835d30577\",\n    \"07473b0c9fc22d1fdedc8a460d3baa90b48b2932\",\n    \"49523fad7e7e11e17f84c79db5c5217008ef8601\",\n    \"d9ce16dbac9211c5a6a1cd5950609a65ca93cd4e\",\n    \"90864f77c320e2454409c6e770e4078553f73f00\",\n    \"41e21c5236c5077717a2433e5568a33d6d326c3e\",\n    \"22ff7e3255a6e32dc774f06920b20f16c49642e1\",\n    \"8fce11d871e43a3679cdad3e00ed9bfa68d983d0\",\n    \"84c549f9c08ba0640cb05167ffe82e246e26400f\",\n    \"df4fbe7a96c70507094c24c7bf553efd297cc80a\"\n  ],\n  \"graph_commit_sha\": \"df4fbe7a96c70507094c24c7bf553efd297cc80a\",\n  \"head_sha\": \"df4fbe7a96c70507094c24c7bf553efd297cc80a\",\n  \"server_started_head_sha\": \"df4fbe7a96c70507094c24c7bf553efd297cc80a\",\n  \"freshness\": \"FRESH\",\n  \"source_tree_dirty\": false,\n  \"modules_latest\": 329,\n  \"top_hubs_by_fan_in\": [\n    {\n      \"module\": \"atlas.logging.merkle_logger\",\n      \"fan_in\": 52\n    },\n    {\n      \"module\": \"atlas.core.inference_hub\",\n      \"fan_in\": 37\n    },\n    {\n      \"module\": \"atlas.core.contracts\",\n      \"fan_in\": 28\n    },\n    {\n      \"module\": \"atlas.core.verify\",\n      \"fan_in\": 26\n    },\n    {\n      \"module\": \"atlas.security.ssrf_bridge\",\n      \"fan_in\": 21\n    },\n    {\n      \"module\": \"atlas.events.schemas\",\n      \"fan_in\": 20\n    },\n    {\n      \"module\": \"atlas.core.git_env\",\n      \"fan_in\": 17\n    },\n    {\n      \"module\": \"atlas.memory.embeddings\",\n      \"fan_in\": 17\n    },\n    {\n      \"module\": \"atlas.core.lesson_store\",\n      \"fan_in\": 16\n    },\n    {\n      \"module\": \"atlas.mcp.catalog\",\n      \"fan_in\": 15\n    }\n  ]\n}"
+    ],
+    "structuredContent": null
+  },
+  "graph_churn": {
+    "isError": false,
+    "content": [
+      "{\n  \"module\": \"atlas.core.orchestrator_parts.maintenance_facade\",\n  \"times_modified\": 8\n}\n{\n  \"module\": \"atlas.core.inference_hub\",\n  \"times_modified\": 6\n}\n{\n  \"module\": \"atlas.core.self_maintenance.fitness_solvers\",\n  \"times_modified\": 5\n}\n{\n  \"module\": \"atlas.interfaces.cli\",\n  \"times_modified\": 3\n}\n{\n  \"module\": \"atlas.core.orchestrator\",\n  \"times_modified\": 3\n}\n{\n  \"module\": \"atlas.core.reality\",\n  \"times_modified\": 3\n}\n{\n  \"module\": \"atlas.core.self_maintenance.f26_agentic_dispatch\",\n  \"times_modified\": 3\n}\n{\n  \"module\": \"atlas.core.self_maintenance.preflight_gate\",\n  \"times_modified\": 3\n}\n{\n  \"module\": \"atlas.runtime.service_runner\",\n  \"times_modified\": 2\n}\n{\n  \"module\": \"atlas.core.self_maintenance.f26_gate\",\n  \"times_modified\": 2\n}"
+    ],
+    "structuredContent": null
+  },
+  "module_queries": [
+    {
+      "module": "atlas.core.orchestrator",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator_parts.agentic_executor\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.interfaces.cli\natlas.interfaces.dashboard\natlas.runtime.service_runner"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator_parts.classifier\natlas.memory.block_memory\natlas.memory.distiller\natlas.core.orchestrator_parts.agentic_helpers\natlas.memory.memory_system\natlas.core.lesson_store\natlas.router.classifier\natlas.security.capabilities\natlas.fabric.policy\natlas.security.shadow_model\natlas.core.swarm_cycle\natlas.knowledge.sources\natlas.knowledge.artifact\natlas.core.verify\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.gate_h\natlas.knowledge.self_improvement\natlas.security.generated_code_policy\natlas.mcp.plugin_activator\natlas.core.orchestrator_parts.agentic_executor\natlas.core.cold_update_manager\natlas.runtime_paths\natlas.core.decider.security_council_gate\natlas.core.self_audit\natlas.core.orchestrator_parts.gate_f_executor\natlas.core.orchestrator_parts.approvals\natlas.router.cascade\natlas.core.timetravel\natlas.immunity.lesson_recaller\natlas.router.slm_classifier\natlas.hermes.hermes\natlas.memory.embeddings\natlas.security.drift\natlas.logging.observability\natlas.memory.vector_store\natlas.transparency.log\natlas.core.orchestrator_parts.task_persistence\natlas.immunity.teacher_debate\natlas.core.patch_generator\natlas.missions.golden_route\natlas.thermal.desktop_alert\natlas.security.sandbox\natlas.transparency.gateway\natlas.security.ssrf_bridge\natlas.immunity.live_loop\natlas.core.self_maintenance.root_cause_classifier\natlas.core.decider.security_council_mcp_scan\natlas.transparency.key_store\natlas.core.event_bus\natlas.core.decider.security_council_escalation\natlas.security.authorization\natlas.interfaces.orchestrator_ops\natlas.core.orchestrator_parts.gate_f_parser\natlas.transparency.client_cosign\natlas.core.offline_monitor\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.deliberation_council\natlas.engineering.cold_update_bridge\natlas.core.contracts\natlas.governance.permission_profile\natlas.security.pii_surrogate\natlas.security.executor\natlas.mcp.plugin_receipt_broker\natlas.interfaces.telegram_bot\natlas.governance.governance_l0\natlas.core.swarm_audit\natlas.security.ast_guard\natlas.core.ghost_replay\natlas.core.inference_hub\natlas.core.orchestrator_parts.git_read_tools\natlas.core.adversarial_panel\natlas.core.decider.security_council_registry\natlas.logging.merkle_logger\natlas.security.sentinel_gate"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.runtime.service_runner\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.core.code_cycle\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.core.tool_coder"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.core.inference_hub",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.acp.server\natlas.api.coding_server\natlas.core.atlas_coder\natlas.core.code_cycle\natlas.core.decider.security_council_gate\natlas.core.deliberation_council\natlas.core.orchestrator\natlas.core.orchestrator_parts.agentic_executor\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.parallel_coder\natlas.core.provider_discovery\natlas.core.provider_preflight\natlas.core.provider_status\natlas.core.reality\natlas.core.self_maintenance.analyst\natlas.core.self_maintenance.batch_premortem\natlas.core.self_maintenance.dep_analyst\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.fitness_solvers\natlas.core.self_maintenance.mcp_discovery_quality_gate\natlas.core.self_maintenance.model_catalog_drift\natlas.core.self_maintenance.provider_smoke\natlas.core.self_maintenance.root_cause_classifier\natlas.core.self_maintenance.self_build_runner\natlas.core.self_maintenance.topic_expander\natlas.core.tool_coder\natlas.immunity.live_loop\natlas.interfaces.cli\natlas.interfaces.dashboard\natlas.mcp.workbench_synthesis\natlas.missions.souls.devil_advocate\natlas.router.cascade\natlas.router.slm_classifier\natlas.security.pii_surrogate\natlas.tools.browser_use.browser_planner\natlas.tools.computer_use.desktop_planner\natlas.tools.terminal_planner"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.transparency.gateway\natlas.transparency.client_cosign\natlas.core.provider_errors\natlas.logging.merkle_logger"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.api.coding_server\natlas.api.server\natlas.core.code_cycle\natlas.core.decider.security_council_mcp_scan\natlas.core.orchestrator_parts.agentic_executor\natlas.core.provider_discovery\natlas.core.self_maintenance.analyst\natlas.core.self_maintenance.dep_analyst\natlas.core.self_maintenance.fitness_solvers\natlas.core.swarm_cycle\natlas.tools.computer_use.desktop_planner\natlas.core.decider.security_council_gate\natlas.core.deliberation_council\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.self_maintenance.batch_premortem\natlas.core.swarm_reconcile\natlas.core.verified_producer\natlas.mcp.workbench_synthesis\natlas.core.atlas_coder\natlas.core.decider.security_council_escalation\natlas.core.incremental_coder\natlas.core.maintenance_scout\natlas.core.orchestrator_parts.gate_f_executor\natlas.interfaces.cli\natlas.mcp.candidate_static_scan\natlas.router.cascade\natlas.tools.browser_use.browser_planner\natlas.core.parallel_coder\natlas.core.reality\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.provider_smoke\natlas.core.self_maintenance.self_build_runner\natlas.core.swarm\natlas.interfaces.dashboard\natlas.core.adversarial_panel\natlas.core.decider.security_council_registry\natlas.core.deterministic_producer\natlas.core.maintenance_worker\natlas.core.provider_preflight\natlas.core.provider_status\natlas.mcp.candidate_triage\natlas.router.slm_classifier\natlas.acp.server\natlas.immunity.live_loop\natlas.mcp.candidate_stage2\natlas.missions.golden_route\natlas.runtime.service_runner\natlas.security.pii_surrogate\natlas.core.orchestrator_parts.classifier\natlas.core.tool_coder\natlas.tools.terminal_planner\natlas.core.llm_producer\natlas.core.self_maintenance.mcp_discovery_quality_gate\natlas.core.self_maintenance.model_catalog_drift\natlas.core.self_maintenance.root_cause_classifier\natlas.core.self_maintenance.topic_expander\natlas.missions.souls.devil_advocate"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.core.contracts",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.event_bus\natlas.core.gate_h\natlas.core.offline_monitor\natlas.core.orchestrator\natlas.core.orchestrator_parts.agentic_executor\natlas.core.orchestrator_parts.approvals\natlas.core.orchestrator_parts.classifier\natlas.core.orchestrator_parts.gate_f_executor\natlas.core.orchestrator_parts.git_read_tools\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.orchestrator_parts.task_persistence\natlas.core.result_auditor\natlas.core.self_maintenance.adopter\natlas.engineering.events\natlas.events.core_bridge\natlas.hermes.hermes\natlas.interfaces.cli\natlas.interfaces.dashboard\natlas.interfaces.exec_api\natlas.interfaces.hermes_webhook\natlas.interfaces.voice\natlas.memory.memory_system\natlas.router.classifier\natlas.router.slm_classifier\natlas.runtime.service_runner\natlas.security.sandbox\natlas.thermal.watchdog"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "{\"content\": [], \"structuredContent\": {\"result\": []}, \"isError\": false}"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.gate_h\natlas.core.lesson_store\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.engineering.hypotheses\natlas.events.core_bridge\natlas.interfaces.dashboard\natlas.router.classifier\natlas.core.deterministic_producer\natlas.core.maintenance_worker\natlas.knowledge.corpus_semantic_classifier\natlas.mcp.engineering_trunk\natlas.memory.memory_abstractor\natlas.router.slm_classifier\natlas.thermal.watchdog\natlas.tools.editor\natlas.core.orchestrator_parts.approvals\natlas.engineering.events\natlas.immunity.lesson_recaller\natlas.immunity.live_loop\natlas.mcp.trunk_server\natlas.runtime.service_runner\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.core.maintenance_scout\natlas.core.orchestrator_parts.gate_f_executor\natlas.core.result_auditor\natlas.interfaces.cli\natlas.memory.memory_system\natlas.memory.pattern_abstractor\natlas.security.executor\natlas.transparency.appeal\natlas.core.code_cycle\natlas.core.lesson_runner\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.swarm_cycle\natlas.hermes.hermes\natlas.interfaces.voice\natlas.mcp.engineering_server\natlas.core.deliberation_council\natlas.core.event_bus\natlas.core.orchestrator\natlas.core.orchestrator_parts.git_read_tools\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.orchestrator_parts.task_persistence\natlas.core.self_maintenance.batch_premortem\natlas.interfaces.exec_api\natlas.security.sandbox\natlas.core.offline_monitor\natlas.core.orchestrator_parts.classifier\natlas.core.tool_coder\natlas.memory.lesson_index\natlas.core.llm_producer\natlas.core.self_maintenance.adopter\natlas.immunity.teacher_debate\natlas.interfaces.hermes_webhook\natlas.memory.memory_index\natlas.transparency.gateway"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.core.reality",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.api.server\natlas.interfaces.cli"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.hermes.kanban_bridge\natlas.core.self_maintenance.self_build_pause\natlas.memory.project_graph\natlas.core.inference_hub\natlas.logging.merkle_logger\natlas.core.reality_live\natlas.core.self_maintenance.f26_gate\natlas.core.accretion"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.api.server\natlas.interfaces.cli"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.core.cold_update_manager",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.cold_update_batcher\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.self_maintenance.self_build_runner\natlas.missions.golden_route"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.git_env\natlas.core.validation_runner\natlas.security.bwrap_jail\natlas.logging.merkle_logger\natlas.core.decider.decider"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.code_cycle\natlas.core.cold_update_batcher\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.missions.golden_route\natlas.runtime.service_runner\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.core.tool_coder"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.memory.memory_system",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.gate_h\natlas.core.lesson_store\natlas.core.orchestrator\natlas.core.result_auditor\natlas.interfaces.dashboard"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.contracts\natlas.memory.vector_store\natlas.logging.merkle_logger"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.deliberation_council\natlas.core.inference_hub\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.self_maintenance.batch_premortem\natlas.mcp.memory_server\natlas.core.tool_coder\natlas.memory.lesson_index\natlas.core.gate_h\natlas.core.lesson_store\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.engineering.hypotheses\natlas.interfaces.dashboard\natlas.core.code_cycle\natlas.core.decider.memory_decision_sink\natlas.core.lesson_runner\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.swarm_cycle\natlas.mcp.engineering_server\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.core.maintenance_scout\natlas.core.result_auditor\natlas.interfaces.cli\natlas.memory.pattern_abstractor\natlas.transparency.appeal\natlas.immunity.lesson_recaller\natlas.immunity.live_loop\natlas.mcp.memory_trunk\natlas.mcp.trunk_server\natlas.runtime.service_runner\natlas.core.deterministic_producer\natlas.core.handoff\natlas.core.maintenance_worker\natlas.knowledge.corpus_semantic_classifier\natlas.mcp.engineering_trunk\natlas.memory.memory_abstractor\natlas.core.llm_producer\natlas.immunity.teacher_debate\natlas.memory.memory_index\natlas.transparency.gateway"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.memory.project_graph",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.api.server\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.reality\natlas.core.self_maintenance.component_wiring_drift\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.mcp.engineering_trunk\natlas.mcp.graph_server"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.graphs\natlas.memory.obsidian_to_kuzu\natlas.core.git_env\natlas.memory.embeddings\natlas.memory.kuzu_runtime\natlas.security.writer_lock"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.parallel_coder\natlas.core.reality\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.engineering.hypotheses\natlas.interfaces.dashboard\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.api.server\natlas.core.code_cycle\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.mcp.engineering_server\natlas.core.tool_coder\natlas.mcp.engineering_trunk\natlas.runtime.service_runner\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.self_maintenance.component_wiring_drift\natlas.mcp.graph_server"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.logging.merkle_logger",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.api.product_routes\natlas.api.server\natlas.core.cold_update_batcher\natlas.core.cold_update_manager\natlas.core.gate_h\natlas.core.git_checkpoint\natlas.core.inference_hub\natlas.core.lesson_store\natlas.core.orchestrator\natlas.core.orchestrator_parts.approvals\natlas.core.orchestrator_parts.classifier\natlas.core.orchestrator_parts.git_read_tools\natlas.core.orchestrator_parts.task_persistence\natlas.core.reality\natlas.core.self_audit\natlas.core.self_maintenance.adopter\natlas.core.self_maintenance.analyst\natlas.core.self_maintenance.codegen_proposer\natlas.core.self_maintenance.community_scout\natlas.core.self_maintenance.dep_proposer\natlas.core.self_maintenance.dep_scout\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.f26_gate\natlas.core.self_maintenance.panorama_scout\natlas.core.self_maintenance.registry_scout\natlas.core.self_maintenance.scheduler\natlas.core.self_maintenance.scout\natlas.core.swarm\natlas.core.timetravel\natlas.engineering.events\natlas.interfaces.cli\natlas.logging.microledger\natlas.logging.observability\natlas.mcp.plugin_activator\natlas.mcp.plugin_receipt_broker\natlas.mcp.trunk_server\natlas.memory.block_memory\natlas.memory.lesson_index\natlas.memory.memory_index\natlas.memory.memory_system\natlas.missions.golden_route\natlas.runtime.watchdog\natlas.security.executor\natlas.tools.browser\natlas.tools.claude_code_tool\natlas.tools.computer_use.vision_loop\natlas.tools.crawler\natlas.tools.editor\natlas.tools.home_assistant_tool\natlas.tools.image_gen_tool\natlas.tools.stirling_pdf_tool\natlas.tools.video_gen_tool"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.security.authorization"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.api.coding_server\natlas.api.server\natlas.core.code_cycle\natlas.core.cold_update_batcher\natlas.core.cold_update_manager\natlas.core.decider.memory_decision_sink\natlas.core.decider.security_council_mcp_scan\natlas.core.lesson_runner\natlas.core.orchestrator_parts.agentic_executor\natlas.core.provider_discovery\natlas.core.self_maintenance.analyst\natlas.core.self_maintenance.dep_analyst\natlas.core.self_maintenance.fitness_solvers\natlas.core.swarm_cycle\natlas.discovery.triage\natlas.mcp.engineering_server\natlas.tools.browser\natlas.tools.computer_use.desktop_planner\natlas.core.llm_producer\natlas.core.self_maintenance.adopter\natlas.core.self_maintenance.curated_sources\natlas.core.self_maintenance.mcp_discovery_quality_gate\natlas.core.self_maintenance.model_catalog_drift\natlas.core.self_maintenance.root_cause_classifier\natlas.core.self_maintenance.topic_expander\natlas.immunity.teacher_debate\natlas.memory.memory_index\natlas.missions.souls.devil_advocate\natlas.tools.claude_code_tool\natlas.tools.image_gen_tool\natlas.transparency.gateway\natlas.core.gate_h\natlas.core.lesson_store\natlas.core.parallel_coder\natlas.core.reality\natlas.core.self_maintenance.dep_scout\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.panorama_scout\natlas.core.self_maintenance.provider_smoke\natlas.core.self_maintenance.self_build_runner\natlas.core.swarm\natlas.engineering.hypotheses\natlas.interfaces.dashboard\natlas.core.decider.security_council_gate\natlas.core.deliberation_council\natlas.core.inference_hub\natlas.core.orchestrator\natlas.core.orchestrator_parts.git_read_tools\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.orchestrator_parts.task_persistence\natlas.core.patch_generator\natlas.core.self_maintenance.batch_premortem\natlas.core.swarm_reconcile\natlas.core.verified_producer\natlas.engineering.reproduction\natlas.logging.observability\natlas.mcp.memory_server\natlas.mcp.workbench_synthesis\natlas.memory.knowledge_ingest\natlas.runtime.watchdog\natlas.tools.computer_use.vision_loop\natlas.tools.video_gen_tool\natlas.core.atlas_coder\natlas.core.decider.security_council_escalation\natlas.core.incremental_coder\natlas.core.maintenance_scout\natlas.core.orchestrator_parts.gate_f_executor\natlas.core.result_auditor\natlas.core.self_audit\natlas.core.self_maintenance.dep_proposer\natlas.interfaces.cli\natlas.mcp.candidate_static_scan\natlas.mcp.plugin_activator\natlas.memory.memory_system\natlas.memory.pattern_abstractor\natlas.router.cascade\natlas.security.executor\natlas.tools.browser_use.browser_planner\natlas.transparency.appeal\natlas.acp.server\natlas.api.product_routes\natlas.core.git_checkpoint\natlas.core.orchestrator_parts.approvals\natlas.core.self_maintenance.codegen_proposer\natlas.core.self_maintenance.community_scout\natlas.core.self_maintenance.f26_gate\natlas.engineering.events\natlas.immunity.lesson_recaller\natlas.immunity.live_loop\natlas.mcp.candidate_stage2\natlas.mcp.memory_trunk\natlas.mcp.plugin_receipt_broker\natlas.mcp.trunk_server\natlas.missions.golden_route\natlas.runtime.service_runner\natlas.security.pii_surrogate\natlas.core.adversarial_panel\natlas.core.decider.security_council_registry\natlas.core.deterministic_producer\natlas.core.handoff\natlas.core.maintenance_worker\natlas.core.provider_preflight\natlas.core.provider_status\natlas.core.self_maintenance.registry_scout\natlas.core.self_maintenance.scheduler\natlas.core.self_maintenance.scout\natlas.core.timetravel\natlas.knowledge.corpus_semantic_classifier\natlas.mcp.candidate_triage\natlas.mcp.engineering_trunk\natlas.memory.memory_abstractor\natlas.router.slm_classifier\natlas.tools.crawler\natlas.tools.editor\natlas.tools.stirling_pdf_tool\natlas.core.orchestrator_parts.classifier\natlas.core.tool_coder\natlas.logging.microledger\natlas.memory.block_memory\natlas.memory.lesson_index\natlas.tools.home_assistant_tool\natlas.tools.terminal_planner"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.governance.governance_l0",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator\natlas.core.orchestrator_parts.pipeline_runner\natlas.router.classifier"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "{\"content\": [], \"structuredContent\": {\"result\": []}, \"isError\": false}"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.runtime.service_runner\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.router.classifier\natlas.core.orchestrator_parts.classifier\natlas.core.tool_coder"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.security.sandbox",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator\natlas.core.orchestrator_parts.gate_f_executor\natlas.security.executor\natlas.tools.editor"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.security.pending_store\natlas.security.ast_guard\natlas.core.contracts\natlas.security.process_hardening\natlas.security.bwrap_jail"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.tools.editor\natlas.runtime.service_runner\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.core.orchestrator_parts.gate_f_executor\natlas.interfaces.cli\natlas.security.executor\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.core.tool_coder"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.core.self_maintenance.self_build_runner",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator_parts.maintenance_facade"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.tool_coder\natlas.engineering.fast_precheck\natlas.core.git_env\natlas.core.cold_update_manager\natlas.core.provider_preflight\natlas.core.self_maintenance.backlog\natlas.core.inference_hub"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.tool_coder\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.code_cycle\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.runtime.service_runner"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.mcp.catalog",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator_parts.maintenance_facade\natlas.core.self_maintenance.mcp_discovery_quality_gate\natlas.core.self_maintenance.research_digest\natlas.core.trunk_preflight\natlas.mcp.adapter_registry\natlas.mcp.capability_router\natlas.mcp.catalog_resources\natlas.mcp.installer\natlas.mcp.spawn_trial\natlas.mcp.trial_gate\natlas.mcp.trunk_aggregator\natlas.mcp.trunk_capabilities\natlas.mcp.trunk_prepare\natlas.mcp.trunk_server\natlas.mcp.workbench_resources"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "{\"content\": [], \"structuredContent\": {\"result\": []}, \"isError\": false}"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.mcp.spawn_trial\natlas.mcp.trunk_aggregator\natlas.core.code_cycle\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.mcp.adapter_registry\natlas.mcp.router_telemetry\natlas.mcp.workbench_compliance\natlas.mcp.workbench_resources\natlas.core.self_maintenance.research_digest\natlas.mcp.trunk_prepare\natlas.mcp.trunk_server\natlas.runtime.service_runner\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.mcp.capability_router\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.core.trunk_preflight\natlas.interfaces.dashboard\natlas.mcp.trial_gate\natlas.mcp.trunk_capabilities\natlas.core.tool_coder\natlas.core.self_maintenance.mcp_discovery_quality_gate\natlas.mcp.catalog_resources\natlas.mcp.installer"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.interfaces.orchestrator_ops",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "{\"content\": [], \"structuredContent\": {\"result\": []}, \"isError\": false}"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.runtime.service_runner\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.core.tool_coder"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.hermes.hermes",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.contracts\natlas.hermes.kanban_bridge"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.atlas_coder\natlas.core.incremental_coder\natlas.interfaces.cli\natlas.runtime.service_runner\natlas.core.orchestrator_parts.agentic_executor\natlas.core.self_maintenance.fitness_solvers\natlas.core.orchestrator\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.parallel_coder\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.self_build_runner\natlas.interfaces.dashboard\natlas.core.tool_coder"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.security.authorization",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator\natlas.logging.merkle_logger\natlas.security.node_identity\natlas.transparency.attestation\natlas.transparency.client_cosign\natlas.transparency.gateway\natlas.transparency.key_store\natlas.transparency.log"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.core.verify"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.core.orchestrator_parts.classifier\natlas.core.tool_coder\natlas.logging.microledger\natlas.memory.block_memory\natlas.memory.lesson_index\natlas.tools.home_assistant_tool\natlas.tools.terminal_planner\natlas.core.gate_h\natlas.core.lesson_store\natlas.core.parallel_coder\natlas.core.reality\natlas.core.self_maintenance.dep_scout\natlas.core.self_maintenance.f26_agentic_dispatch\natlas.core.self_maintenance.panorama_scout\natlas.core.self_maintenance.provider_smoke\natlas.core.self_maintenance.self_build_runner\natlas.core.swarm\natlas.engineering.hypotheses\natlas.interfaces.dashboard\natlas.logging.merkle_logger\natlas.security.behavioral\natlas.transparency.attestation\natlas.transparency.client_cosign\natlas.core.decider.security_council_gate\natlas.core.deliberation_council\natlas.core.inference_hub\natlas.core.orchestrator\natlas.core.orchestrator_parts.git_read_tools\natlas.core.orchestrator_parts.maintenance_facade\natlas.core.orchestrator_parts.pipeline_runner\natlas.core.orchestrator_parts.task_persistence\natlas.core.patch_generator\natlas.core.self_maintenance.batch_premortem\natlas.core.swarm_reconcile\natlas.core.verified_producer\natlas.engineering.reproduction\natlas.interfaces.exec_api\natlas.logging.observability\natlas.mcp.memory_server\natlas.mcp.workbench_synthesis\natlas.memory.knowledge_ingest\natlas.runtime.watchdog\natlas.tools.computer_use.vision_loop\natlas.tools.video_gen_tool\natlas.api.coding_server\natlas.api.server\natlas.core.code_cycle\natlas.core.cold_update_batcher\natlas.core.cold_update_manager\natlas.core.decider.memory_decision_sink\natlas.core.decider.security_council_mcp_scan\natlas.core.lesson_runner\natlas.core.orchestrator_parts.agentic_executor\natlas.core.provider_discovery\natlas.core.self_maintenance.analyst\natlas.core.self_maintenance.dep_analyst\natlas.core.self_maintenance.fitness_solvers\natlas.core.swarm_cycle\natlas.discovery.triage\natlas.mcp.engineering_server\natlas.tools.browser\natlas.tools.computer_use.desktop_planner\natlas.core.atlas_coder\natlas.core.decider.security_council_escalation\natlas.core.incremental_coder\natlas.core.maintenance_scout\natlas.core.orchestrator_parts.gate_f_executor\natlas.core.result_auditor\natlas.core.self_audit\natlas.core.self_maintenance.dep_proposer\natlas.interfaces.cli\natlas.mcp.plugin_activator\natlas.memory.memory_system\natlas.memory.pattern_abstractor\natlas.router.cascade\natlas.security.executor\natlas.tools.browser_use.browser_planner\natlas.transparency.appeal\natlas.transparency.key_store\natlas.transparency.scoped_inspector\natlas.acp.server\natlas.api.product_routes\natlas.core.git_checkpoint\natlas.core.orchestrator_parts.approvals\natlas.core.self_maintenance.codegen_proposer\natlas.core.self_maintenance.community_scout\natlas.core.self_maintenance.f26_gate\natlas.engineering.events\natlas.immunity.lesson_recaller\natlas.immunity.live_loop\natlas.mcp.memory_trunk\natlas.mcp.plugin_receipt_broker\natlas.mcp.trunk_server\natlas.missions.golden_route\natlas.runtime.service_runner\natlas.security.node_identity\natlas.security.pii_surrogate\natlas.transparency.log\natlas.core.adversarial_panel\natlas.core.decider.security_council_registry\natlas.core.deterministic_producer\natlas.core.handoff\natlas.core.maintenance_worker\natlas.core.provider_preflight\natlas.core.provider_status\natlas.core.self_maintenance.registry_scout\natlas.core.self_maintenance.scheduler\natlas.core.self_maintenance.scout\natlas.core.timetravel\natlas.knowledge.corpus_semantic_classifier\natlas.mcp.engineering_trunk\natlas.memory.memory_abstractor\natlas.router.slm_classifier\natlas.tools.crawler\natlas.tools.editor\natlas.tools.stirling_pdf_tool\natlas.core.llm_producer\natlas.core.self_maintenance.adopter\natlas.core.self_maintenance.curated_sources\natlas.core.self_maintenance.mcp_discovery_quality_gate\natlas.core.self_maintenance.model_catalog_drift\natlas.core.self_maintenance.root_cause_classifier\natlas.core.self_maintenance.topic_expander\natlas.immunity.teacher_debate\natlas.memory.memory_index\natlas.missions.souls.devil_advocate\natlas.tools.claude_code_tool\natlas.tools.image_gen_tool\natlas.transparency.gateway"
+        ],
+        "structuredContent": null
+      }
+    },
+    {
+      "module": "atlas.api.server",
+      "importers": {
+        "isError": false,
+        "content": [
+          "atlas.interfaces.cli"
+        ],
+        "structuredContent": null
+      },
+      "imports_of": {
+        "isError": false,
+        "content": [
+          "atlas.api.missions\natlas.runtime_paths\natlas.core.graphs\natlas.api.tailnet_identity\natlas.memory.project_graph\natlas.fabric.policy\natlas.events.player\natlas.events.store\natlas.api.models\natlas.core.reality\natlas.api.product_routes\natlas.fabric.capabilities\natlas.core.self_maintenance.ecosystem_drift\natlas.security.pending_store\natlas.engineering.findings\natlas.mcp.graph_server\natlas.api.conversation_import\natlas.logging.merkle_logger\natlas.events.schemas"
+        ],
+        "structuredContent": null
+      },
+      "blast_radius": {
+        "isError": false,
+        "content": [
+          "atlas.interfaces.cli"
+        ],
+        "structuredContent": null
+      }
+    }
+  ],
+  "epistemic_limits": [
+    "Graph freshness establishes structural recency for the sealed commit, not runtime execution or product acceptance.",
+    "Import edges do not by themselves prove behavioral invocation.",
+    "Blast radius is a graph-derived dependency projection and must be cross-checked for critical claims."
+  ]
+}

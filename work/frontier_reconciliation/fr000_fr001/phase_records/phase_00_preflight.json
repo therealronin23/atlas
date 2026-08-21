@@ -1,0 +1,86 @@
+{
+  "phase": "PRE_FLIGHT_AND_ISOLATION",
+  "recorded_at": "2026-08-21T00:56:06+02:00",
+  "PRESERVED_CONSTRAINTS": [
+    "Atlas N tag and history remain immutable.",
+    "No feature implementation, refactor, migration, bug fix, Semgrep rescan, or F2.6 run is permitted.",
+    "The Frontier Pack is OPERATOR_INPUT and not checkpoint evidence.",
+    "Only work/frontier_reconciliation/fr000_fr001/ may receive tracked audit output.",
+    "No commit, push, PR, or tag will be created without later explicit authorization."
+  ],
+  "NEW_EVIDENCE": [
+    {
+      "claim": "The named ref is an annotated tag object.",
+      "locator": "git cat-file -t atlas-n-cr001-20260820",
+      "observed": "tag",
+      "tag_object_sha": "c5652f6317cc8ad71033edad876fe4da40d7a3ce"
+    },
+    {
+      "claim": "The annotated tag peels to the sealed commit.",
+      "locator": "git rev-parse atlas-n-cr001-20260820^{commit}",
+      "observed": "df4fbe7a96c70507094c24c7bf553efd297cc80a"
+    },
+    {
+      "claim": "The sealed commit has the expected tree.",
+      "locator": "git rev-parse atlas-n-cr001-20260820^{tree}",
+      "observed": "b790640b12ebff8eb100939f9f7a92f02de0b502"
+    },
+    {
+      "claim": "The audit branch starts at the sealed commit.",
+      "locator": "/home/ronin/proyectos/atlas-frontier-fr000-fr001",
+      "observed": "frontier/fr000-fr001-atlas-n @ df4fbe7a96c70507094c24c7bf553efd297cc80a"
+    },
+    {
+      "claim": "The only pre-existing untracked path in the operator checkout was the Frontier Pack ZIP.",
+      "locator": "git status --short --branch in /home/ronin/proyectos/atlas-core",
+      "observed": "?? atlas-frontier-context-pack-r0-2026-08-20.zip",
+      "classification": "OPERATOR_INPUT"
+    },
+    {
+      "claim": "The external ZIP hash was observed before extraction.",
+      "locator": "/home/ronin/proyectos/atlas-core/atlas-frontier-context-pack-r0-2026-08-20.zip",
+      "observed": "e7aacd2b0dfaaaa0281eb2e27f01c0368d4e13198f57acf7fcc7bf6370329011"
+    },
+    {
+      "claim": "Atlas reality reported the project graph stale at preflight.",
+      "locator": "PYTHONPATH=src atlas reality --json",
+      "observed": {
+        "graph_commit_sha": "84c549f9c08ba0640cb05167ffe82e246e26400f",
+        "head_sha": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+        "status": "STALE"
+      }
+    },
+    {
+      "claim": "The locally recorded Groq ledger was above the critical threshold.",
+      "locator": "./scripts/token-tracker.sh report",
+      "observed": "969750/1000000 (96%); local records only, not provider billing"
+    }
+  ],
+  "INVALIDATED_CLAIMS": [
+    {
+      "claim": "git rev-parse <tag> directly returns the checkpoint commit SHA",
+      "reason": "The ref is annotated, so the direct resolution returns the tag object; identity requires peeling with ^{commit}."
+    }
+  ],
+  "NEW_UNKNOWNS": [
+    "Whether the project-graph rebuild can complete using only artifacts present in the isolated worktree.",
+    "Whether the UI-visible spawn_task capability required by the F2.6 notification protocol is available through any connected Atlas root."
+  ],
+  "NEW_CONTRADICTIONS": [
+    {
+      "claim_a": "The operating protocol requires calling spawn_task when F2.6 is due.",
+      "claim_b": "The connected trunk rejects spawn_task as an unknown tool.",
+      "status": "OPEN"
+    }
+  ],
+  "UNCLASSIFIED_COUNT": 0,
+  "f26": {
+    "status_observed": "due",
+    "run_executed": false,
+    "notification_attempted": true,
+    "notification_result": "trunk tool unknown",
+    "execution_outcome_preserved": "FAIL",
+    "automatic_grade_preserved": "1/6",
+    "measurement_validity_preserved": "INCONCLUSIVE"
+  }
+}

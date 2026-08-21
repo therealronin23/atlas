@@ -1,0 +1,32 @@
+{
+  "phase": "CURRENT_TEST_REPRODUCTION",
+  "command": "PYTHONPATH=src /home/ronin/proyectos/atlas-core/.venv/bin/python -m pytest tests/ -q",
+  "audited_commit": "df4fbe7a96c70507094c24c7bf553efd297cc80a",
+  "started_from": "/home/ronin/proyectos/atlas-frontier-fr000-fr001",
+  "status": "PASS",
+  "exit_code": 0,
+  "passed": 6016,
+  "skipped": 13,
+  "deselected": 27,
+  "warnings": 1,
+  "duration_seconds": 523.37,
+  "warning_summary": "FastEmbed multilingual MiniLM pooling changed from CLS to mean; this warning is not repaired in FR-000/FR-001.",
+  "raw_preserved": false,
+  "reproducible": true,
+  "measurement_validity": "PARTIAL",
+  "epistemic_limit": "A passing repository suite supports only the tested properties. It does not prove production wiring, non-mocked integration, live reachability, reliability, or product acceptance. Deselected computer_use tests were not run.",
+  "PRESERVED_CONSTRAINTS": [
+    "No tests were relaxed or edited.",
+    "F2.6 was not run.",
+    "Semgrep was not run."
+  ],
+  "NEW_EVIDENCE": [
+    "The sealed tree's configured default test selection passes in the current audit environment."
+  ],
+  "INVALIDATED_CLAIMS": [],
+  "NEW_UNKNOWNS": [
+    "The 27 deselected computer_use tests and live external-provider paths remain unverified by this command."
+  ],
+  "NEW_CONTRADICTIONS": [],
+  "UNCLASSIFIED_COUNT": 0
+}

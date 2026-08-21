@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "annulled": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "authority": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chronology_inferred": {
+      "const": false
+    },
+    "confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "edge_id": {
+      "minLength": 2,
+      "pattern": "^[^\\s].*[^\\s]$|^[^\\s]$",
+      "type": "string"
+    },
+    "explicit": {
+      "const": true
+    },
+    "from": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "from_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "independence_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "preserved": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 0,
+      "type": "array"
+    },
+    "relation": {
+      "enum": [
+        "CONTRADICTS",
+        "DOES_NOT_AMEND",
+        "DOES_NOT_SUPERSEDE",
+        "EXTENDS",
+        "EXTENDS_PARTIALLY",
+        "PARTIALLY_SUPERSEDES",
+        "PROMOTES_SLICE",
+        "REFINES",
+        "RESOLVES_SCOPE",
+        "RETIRES",
+        "REVISES",
+        "SUPERSEDES",
+        "SUPERSEDES_FRAMING"
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "to": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "to_ids": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "edge_id",
+    "relation",
+    "from_ids",
+    "to_ids",
+    "from",
+    "to",
+    "scope",
+    "source",
+    "explicit",
+    "chronology_inferred",
+    "confidence",
+    "independence_key"
+  ],
+  "title": "FR-001 explicit decision relation",
+  "type": "object"
+}

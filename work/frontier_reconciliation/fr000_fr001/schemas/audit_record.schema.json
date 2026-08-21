@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "Artifact-to-static-schema routing. Contracts are authored independently in schema_contracts.py.",
+  "properties": {
+    "00_EXECUTION_MANIFEST.json": {
+      "const": "00_EXECUTION_MANIFEST.schema.json"
+    },
+    "01_SOURCE_COVERAGE_REGISTRY.jsonl": {
+      "const": "01_SOURCE_COVERAGE_REGISTRY.schema.json"
+    },
+    "03_CURRENT_COMPONENT_MAP.jsonl": {
+      "const": "03_CURRENT_COMPONENT_MAP.schema.json"
+    },
+    "04_AUTHORITY_MAP.jsonl": {
+      "const": "04_AUTHORITY_MAP.schema.json"
+    },
+    "05_CALLER_WRITER_ANOMALIES.jsonl": {
+      "const": "05_CALLER_WRITER_ANOMALIES.schema.json"
+    },
+    "06_SUPERSESSION_GRAPH.jsonl": {
+      "const": "06_SUPERSESSION_GRAPH.schema.json"
+    },
+    "07_DECISION_REALITY_MAP.jsonl": {
+      "const": "07_DECISION_REALITY_MAP.schema.json"
+    },
+    "08_FRONTIER_MAPPING.jsonl": {
+      "const": "08_FRONTIER_MAPPING.schema.json"
+    },
+    "09_CANDIDATE_NEW_FRONTIERS.jsonl": {
+      "const": "09_CANDIDATE_NEW_FRONTIERS.schema.json"
+    },
+    "10_CONTRADICTIONS.jsonl": {
+      "const": "10_CONTRADICTIONS.schema.json"
+    },
+    "11_NEGATIVE_EVIDENCE.jsonl": {
+      "const": "11_NEGATIVE_EVIDENCE.schema.json"
+    },
+    "12_EVIDENCE_REGISTRY.jsonl": {
+      "const": "12_EVIDENCE_REGISTRY.schema.json"
+    },
+    "13_UNKNOWNS.jsonl": {
+      "const": "13_UNKNOWNS.schema.json"
+    },
+    "14_UNCLASSIFIED.jsonl": {
+      "const": "14_UNCLASSIFIED.schema.json"
+    },
+    "20_COVERAGE_REPORT.json": {
+      "const": "20_COVERAGE_REPORT.schema.json"
+    }
+  },
+  "required": [
+    "00_EXECUTION_MANIFEST.json",
+    "01_SOURCE_COVERAGE_REGISTRY.jsonl",
+    "03_CURRENT_COMPONENT_MAP.jsonl",
+    "04_AUTHORITY_MAP.jsonl",
+    "05_CALLER_WRITER_ANOMALIES.jsonl",
+    "06_SUPERSESSION_GRAPH.jsonl",
+    "07_DECISION_REALITY_MAP.jsonl",
+    "08_FRONTIER_MAPPING.jsonl",
+    "09_CANDIDATE_NEW_FRONTIERS.jsonl",
+    "10_CONTRADICTIONS.jsonl",
+    "11_NEGATIVE_EVIDENCE.jsonl",
+    "12_EVIDENCE_REGISTRY.jsonl",
+    "13_UNKNOWNS.jsonl",
+    "14_UNCLASSIFIED.jsonl",
+    "20_COVERAGE_REPORT.json"
+  ],
+  "title": "Atlas FR-000/FR-001 schema catalog",
+  "type": "object"
+}
