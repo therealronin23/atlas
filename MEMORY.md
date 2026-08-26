@@ -1,5 +1,10 @@
 # MEMORY
 
+- `frozen-schema-core-does-not-own-downstream-semantics`: un paquete base de
+  evidencia puede fijar vocabulario, identidad, envelope y procedencia sin
+  absorber persistencia, independencia, inyección de fallos ni agregación. Si
+  el Design Freeze separa esos paquetes, mantener también separadas sus APIs y
+  pruebas evita convertir un seam habilitador en autoridad implícita.
 - `failed-tool-is-gradeable-evidence`: una llamada exacta que falla no acredita
   la capacidad, pero sí acredita el intento y debe poder cerrar una evaluación
   como FAIL. Repetir automáticamente efectos caros hasta agotar el proveedor

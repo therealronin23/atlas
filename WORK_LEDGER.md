@@ -8,6 +8,28 @@ de escribir: `atlas reality --json`.
 
 ## WHERE
 
+- **2026-08-26 — Atlas N+1 `WP-EH-CORE` verified from the exact frozen
+  baseline; final independent-audit verdict remains pending.** The new
+  isolated `atlas.acceptance` seam implements only contract registry metadata,
+  exact A0–A6/result vocabularies, the CC005 receipt envelope and provenance
+  binding. The eight external authorities passed outer and internal manifest
+  verification; the definitive FR003A3 hash is `e6f1e271…93824`. A structural
+  `NOT_RUN` audit loaded 684 unique CC005R1 contract identities without making
+  a semantic PASS claim. Focused pytest and mypy are green. No runtime wiring,
+  authority/state change, aggregation, migration, deletion, merge or
+  cherry-pick occurred. `OBS-N1-20260826-001` remains
+  `REQUIRES_EXPLICIT_RECONCILIATION` and untouched outside this WP. Full pytest
+  passes with only the two explicitly deselected MCP subprocess failures, both
+  reproduced on the exact frozen baseline: startup reaches a shared incomplete
+  FastEmbed cache. That is `OBS-N1-20260826-002 —
+  REQUIRES_EXPLICIT_RECONCILIATION`, with no attempted fix here.
+  `OBS-N1-20260826-003 — REQUIRES_EXPLICIT_RECONCILIATION` records the stale
+  generated handoff pack at the baseline; it is outside this WP and untouched.
+  A separate adversarial audit found and this WP corrected bounded schema
+  failures, but its final re-audit exhausted execution quota before a verdict.
+  **Próxima acción:** obtain an independent final verdict; do not start another
+  work package.
+
 - **2026-08-20 — CR-001: L1 Groq migrado; F2.6 sigue `due`, sin PASS
   forzado.** Groq retiró `llama-3.3-70b-versatile` para los tiers
   free/developer (error directo `model_not_found`); el catálogo y sus callers
