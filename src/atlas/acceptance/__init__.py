@@ -16,6 +16,13 @@ from atlas.acceptance.core import (
     TimestampOrder,
     UnknownAcceptanceContractError,
 )
+from atlas.acceptance.identity import (
+    DuplicateVerifierIdentityError,
+    TrustDomainComparison,
+    UnknownVerifierIdentityError,
+    VerifierIdentityMetadata,
+    VerifierIdentityRegistry,
+)
 
 __all__ = [
     "AcceptanceContract",
@@ -27,9 +34,14 @@ __all__ = [
     "BoundAcceptanceEvidence",
     "ContractProvenance",
     "DuplicateAcceptanceContractError",
+    "DuplicateVerifierIdentityError",
     "EvidenceLocator",
     "IndependenceClass",
     "ReceiptEnvelopeAdapter",
     "TimestampOrder",
+    "TrustDomainComparison",
     "UnknownAcceptanceContractError",
+    "UnknownVerifierIdentityError",
+    "VerifierIdentityMetadata",
+    "VerifierIdentityRegistry",
 ]
