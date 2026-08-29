@@ -35,6 +35,11 @@ from atlas.acceptance.identity import (
     VerifierIdentityMetadata,
     VerifierIdentityRegistry,
 )
+from atlas.acceptance.receipts import (
+    CapturedAcceptanceReceipt,
+    RECEIPT_RETENTION_METADATA,
+    ReceiptCaptureAdapter,
+)
 
 __all__ = [
     "AcceptanceContract",
@@ -44,6 +49,7 @@ __all__ = [
     "AcceptanceLevelMismatchError",
     "AcceptanceResult",
     "BoundAcceptanceEvidence",
+    "CapturedAcceptanceReceipt",
     "CanonicalIndependentWitnessRequirement",
     "CanonicalVerifierMismatchError",
     "ContractProvenance",
@@ -59,6 +65,8 @@ __all__ = [
     "IndependentWitnessValidator",
     "MaterialActorMismatchError",
     "ReceiptEnvelopeAdapter",
+    "RECEIPT_RETENTION_METADATA",
+    "ReceiptCaptureAdapter",
     "TimestampOrder",
     "SelfVerifierError",
     "TrustDomainComparison",
