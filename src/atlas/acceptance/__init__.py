@@ -1,5 +1,11 @@
 """Public primitives for the Atlas N+1 acceptance evidence harness."""
 
+from atlas.acceptance.aggregation import (
+    ACCEPTANCE_AGGREGATION_RULE_ID,
+    AcceptanceAggregation,
+    AcceptanceResultAggregator,
+    ContractAggregationTrace,
+)
 from atlas.acceptance.anti_self import (
     CanonicalIndependentWitnessRequirement,
     CanonicalVerifierMismatchError,
@@ -42,18 +48,22 @@ from atlas.acceptance.receipts import (
 )
 
 __all__ = [
+    "ACCEPTANCE_AGGREGATION_RULE_ID",
+    "AcceptanceAggregation",
     "AcceptanceContract",
     "AcceptanceContractRegistry",
     "AcceptanceEvidenceReceipt",
     "AcceptanceLevel",
     "AcceptanceLevelMismatchError",
     "AcceptanceResult",
+    "AcceptanceResultAggregator",
     "BoundAcceptanceEvidence",
     "CapturedAcceptanceReceipt",
     "CanonicalIndependentWitnessRequirement",
     "CanonicalVerifierMismatchError",
     "ContractProvenance",
     "ContractIdentityMismatchError",
+    "ContractAggregationTrace",
     "DuplicateAcceptanceContractError",
     "DuplicateVerifierIdentityError",
     "EvidenceLocator",
