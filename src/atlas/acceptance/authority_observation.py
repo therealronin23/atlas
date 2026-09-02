@@ -44,6 +44,32 @@ class AuthorityDecisionKind(str, Enum):
     EXPIRY = "EXPIRY"
 
 
+class AuthorityLineageContextState(str, Enum):
+    """Completeness of the supplied read-only authority lineage evidence."""
+
+    COMPLETE = "COMPLETE"
+    INCOMPLETE = "INCOMPLETE"
+    UNKNOWN = "UNKNOWN"
+
+
+class ObservedGrantState(str, Enum):
+    """State evidenced for the specifically referenced decision at consumption."""
+
+    ACTIVE = "ACTIVE"
+    REVOKED = "REVOKED"
+    EXPIRED = "EXPIRED"
+    DENIED = "DENIED"
+    UNKNOWN = "UNKNOWN"
+
+
+class ConsumptionTemporalValidity(str, Enum):
+    """Temporal relation only; not an authority or acceptance verdict."""
+
+    VALID = "VALID"
+    INVALID = "INVALID"
+    UNKNOWN = "UNKNOWN"
+
+
 _TERMINAL_GRANT_KINDS = frozenset(
     {AuthorityDecisionKind.REVOKE, AuthorityDecisionKind.EXPIRY}
 )
@@ -89,9 +115,11 @@ class AuthorityDecisionLineageEvidence(_FrozenStrictModel):
     """A complete supplied decision trace, not a current-authority verdict."""
 
     lineage_id: _OpaqueId
+    observations: tuple[AuthorityDecisionObservation, ...]
     decision_ids: tuple[_OpaqueId, ...]
     kinds: tuple[AuthorityDecisionKind, ...]
     observed_authorizer_identity: Literal["ARC-C04"]
+    context_state: AuthorityLineageContextState
     lineage_bound: Literal[True] = True
 
 
@@ -111,11 +139,35 @@ class GrantConsumptionObservation(_FrozenStrictModel):
 
 
 class GrantConsumptionEvidenceBinding(_FrozenStrictModel):
-    """A structural grant-to-consumption evidence binding."""
+    """Causal consumption assessment; affirmative only for known active grants."""
 
-    grant: AuthorityDecisionObservation
+    lineage: AuthorityDecisionLineageEvidence
+    referenced_decision: AuthorityDecisionObservation | None
     consumption: GrantConsumptionObservation
-    lineage_bound: Literal[True] = True
+    grant_state: ObservedGrantState
+    temporal_validity: ConsumptionTemporalValidity
+    lineage_bound: bool
+
+    @model_validator(mode="after")
+    def _require_affirmative_state_consistency(self) -> Self:
+        should_be_affirmative = (
+            self.lineage.context_state is AuthorityLineageContextState.COMPLETE
+            and self.grant_state is ObservedGrantState.ACTIVE
+            and self.temporal_validity is ConsumptionTemporalValidity.VALID
+        )
+        if self.lineage_bound != should_be_affirmative:
+            raise ValueError("lineage_bound contradicts causal grant state")
+        if self.grant_state is ObservedGrantState.ACTIVE and (
+            self.referenced_decision is None
+            or self.referenced_decision.kind is not AuthorityDecisionKind.GRANT
+        ):
+            raise ValueError("ACTIVE state requires the referenced GRANT decision")
+        if self.grant_state is ObservedGrantState.DENIED and (
+            self.referenced_decision is None
+            or self.referenced_decision.kind is not AuthorityDecisionKind.DENY
+        ):
+            raise ValueError("DENIED state requires the referenced DENY decision")
+        return self
 
 
 class AuthorityDecisionCaptureAdapter:
@@ -161,9 +213,13 @@ class AuthorityDecisionLineageChecker:
     def trace(
         self,
         observations: Iterable[AuthorityDecisionObservation],
+        *,
+        context_state: AuthorityLineageContextState,
     ) -> AuthorityDecisionLineageEvidence:
         if isinstance(observations, (str, bytes)):
             raise ValueError("observations must be an iterable")
+        if not isinstance(context_state, AuthorityLineageContextState):
+            raise TypeError("context_state must be AuthorityLineageContextState")
         validated = tuple(
             AuthorityDecisionObservation.model_validate(item)
             for item in observations
@@ -184,25 +240,44 @@ class AuthorityDecisionLineageChecker:
             )
 
         root = validated[0]
-        seen_grants: set[str] = set()
+        seen_grants: dict[str, AuthorityDecisionObservation] = {}
+        previous: AuthorityDecisionObservation | None = None
         for item in validated:
             if not _same_lineage_binding(root, item):
                 raise AuthorityLineageMismatchError(
                     "decision changed lineage, principal, effect, scope, or authorizer"
                 )
+            if previous is not None and not _is_strictly_later(
+                item.timestamp_order,
+                previous.timestamp_order,
+            ):
+                raise AuthorityDecisionOrderError(
+                    "each tuple decision must be causally later in TimestampOrder"
+                )
             if item.kind in _TERMINAL_GRANT_KINDS:
-                if item.grant_decision_id not in seen_grants:
+                referenced_grant = seen_grants.get(item.grant_decision_id or "")
+                if referenced_grant is None:
                     raise MissingGrantLineageError(
                         "REVOKE or EXPIRY must reference a preceding GRANT decision"
                     )
+                if not _is_strictly_later(
+                    item.timestamp_order,
+                    referenced_grant.timestamp_order,
+                ):
+                    raise AuthorityDecisionOrderError(
+                        "REVOKE or EXPIRY must be causally later than its GRANT"
+                    )
             elif item.kind is AuthorityDecisionKind.GRANT:
-                seen_grants.add(item.decision_id)
+                seen_grants[item.decision_id] = item
+            previous = item
 
         return AuthorityDecisionLineageEvidence(
             lineage_id=root.lineage_id,
+            observations=validated,
             decision_ids=decision_ids,
             kinds=tuple(item.kind for item in validated),
             observed_authorizer_identity="ARC-C04",
+            context_state=context_state,
             lineage_bound=True,
         )
 
@@ -211,11 +286,30 @@ def _is_strictly_later(
     current: TimestampOrder,
     previous: TimestampOrder,
 ) -> bool:
-    if current.timestamp > previous.timestamp:
-        return True
     if current.timestamp < previous.timestamp:
         return False
-    return current.run_id == previous.run_id and current.sequence > previous.sequence
+    if current.run_id == previous.run_id:
+        return current.sequence > previous.sequence
+    return current.timestamp > previous.timestamp
+
+
+def _consumption_matches_decision(
+    decision: AuthorityDecisionObservation,
+    consumption: GrantConsumptionObservation,
+) -> bool:
+    return (
+        decision.decision_id,
+        decision.lineage_id,
+        decision.principal_identity,
+        decision.effect_identity,
+        decision.scope_sha256,
+    ) == (
+        consumption.grant_decision_id,
+        consumption.lineage_id,
+        consumption.principal_identity,
+        consumption.effect_identity,
+        consumption.scope_sha256,
+    )
 
 
 class GrantConsumptionEvidenceChecker:
@@ -225,42 +319,123 @@ class GrantConsumptionEvidenceChecker:
 
     def bind(
         self,
-        grant: AuthorityDecisionObservation,
+        lineage: AuthorityDecisionLineageEvidence,
         consumption: GrantConsumptionObservation,
     ) -> GrantConsumptionEvidenceBinding:
-        validated_grant = AuthorityDecisionObservation.model_validate(grant)
-        validated_consumption = GrantConsumptionObservation.model_validate(consumption)
-        if validated_grant.kind is not AuthorityDecisionKind.GRANT:
-            raise MissingGrantLineageError(
-                "grant consumption evidence must reference a GRANT decision"
+        if not isinstance(lineage, AuthorityDecisionLineageEvidence):
+            raise TypeError("lineage evidence from trace() is required")
+        validated_lineage = AuthorityDecisionLineageEvidence.model_validate(lineage)
+        reconstructed_lineage = AuthorityDecisionLineageChecker().trace(
+            validated_lineage.observations,
+            context_state=validated_lineage.context_state,
+        )
+        if reconstructed_lineage != validated_lineage:
+            raise AuthorityLineageMismatchError(
+                "lineage summary does not match its decision observations"
             )
-        grant_binding = (
-            validated_grant.decision_id,
-            validated_grant.lineage_id,
-            validated_grant.principal_identity,
-            validated_grant.effect_identity,
-            validated_grant.scope_sha256,
+        validated_consumption = GrantConsumptionObservation.model_validate(consumption)
+        referenced_decision = next(
+            (
+                item
+                for item in validated_lineage.observations
+                if item.decision_id == validated_consumption.grant_decision_id
+            ),
+            None,
         )
-        consumption_binding = (
-            validated_consumption.grant_decision_id,
-            validated_consumption.lineage_id,
-            validated_consumption.principal_identity,
-            validated_consumption.effect_identity,
-            validated_consumption.scope_sha256,
-        )
-        if consumption_binding != grant_binding:
+        if referenced_decision is None:
+            if validated_lineage.context_state is AuthorityLineageContextState.COMPLETE:
+                raise AuthorityLineageMismatchError(
+                    "consumption names no decision in the complete lineage"
+                )
+            return GrantConsumptionEvidenceBinding(
+                lineage=validated_lineage,
+                referenced_decision=None,
+                consumption=validated_consumption,
+                grant_state=ObservedGrantState.UNKNOWN,
+                temporal_validity=ConsumptionTemporalValidity.UNKNOWN,
+                lineage_bound=False,
+            )
+        if not _consumption_matches_decision(
+            referenced_decision,
+            validated_consumption,
+        ):
             raise AuthorityLineageMismatchError(
                 "consumption changed grant identity, lineage, principal, effect, or scope"
             )
+
+        if referenced_decision.kind is AuthorityDecisionKind.DENY:
+            return GrantConsumptionEvidenceBinding(
+                lineage=validated_lineage,
+                referenced_decision=referenced_decision,
+                consumption=validated_consumption,
+                grant_state=ObservedGrantState.DENIED,
+                temporal_validity=ConsumptionTemporalValidity.INVALID,
+                lineage_bound=False,
+            )
+        if referenced_decision.kind is not AuthorityDecisionKind.GRANT:
+            raise MissingGrantLineageError(
+                "grant consumption evidence must reference a GRANT decision"
+            )
+
         if not _is_strictly_later(
             validated_consumption.timestamp_order,
-            validated_grant.timestamp_order,
+            referenced_decision.timestamp_order,
         ):
-            raise AuthorityDecisionOrderError(
-                "grant consumption evidence must be later than its GRANT"
+            grant_state = (
+                ObservedGrantState.ACTIVE
+                if validated_lineage.context_state
+                is AuthorityLineageContextState.COMPLETE
+                else ObservedGrantState.UNKNOWN
             )
+            return GrantConsumptionEvidenceBinding(
+                lineage=validated_lineage,
+                referenced_decision=referenced_decision,
+                consumption=validated_consumption,
+                grant_state=grant_state,
+                temporal_validity=ConsumptionTemporalValidity.INVALID,
+                lineage_bound=False,
+            )
+
+        terminal_decisions = tuple(
+            item
+            for item in validated_lineage.observations
+            if item.kind in _TERMINAL_GRANT_KINDS
+            and item.grant_decision_id == referenced_decision.decision_id
+        )
+        for terminal in terminal_decisions:
+            if not _is_strictly_later(
+                terminal.timestamp_order,
+                validated_consumption.timestamp_order,
+            ):
+                terminal_state = (
+                    ObservedGrantState.REVOKED
+                    if terminal.kind is AuthorityDecisionKind.REVOKE
+                    else ObservedGrantState.EXPIRED
+                )
+                return GrantConsumptionEvidenceBinding(
+                    lineage=validated_lineage,
+                    referenced_decision=referenced_decision,
+                    consumption=validated_consumption,
+                    grant_state=terminal_state,
+                    temporal_validity=ConsumptionTemporalValidity.INVALID,
+                    lineage_bound=False,
+                )
+
+        if validated_lineage.context_state is not AuthorityLineageContextState.COMPLETE:
+            return GrantConsumptionEvidenceBinding(
+                lineage=validated_lineage,
+                referenced_decision=referenced_decision,
+                consumption=validated_consumption,
+                grant_state=ObservedGrantState.UNKNOWN,
+                temporal_validity=ConsumptionTemporalValidity.UNKNOWN,
+                lineage_bound=False,
+            )
+
         return GrantConsumptionEvidenceBinding(
-            grant=validated_grant,
+            lineage=validated_lineage,
+            referenced_decision=referenced_decision,
             consumption=validated_consumption,
+            grant_state=ObservedGrantState.ACTIVE,
+            temporal_validity=ConsumptionTemporalValidity.VALID,
             lineage_bound=True,
         )
