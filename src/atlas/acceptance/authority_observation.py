@@ -8,6 +8,8 @@ grants, widens, revokes, expires, persists, or executes authority.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Iterable, Mapping
 from enum import Enum
 from typing import Literal, Self
@@ -111,8 +113,161 @@ class AuthorityDecisionObservation(_FrozenStrictModel):
         return self
 
 
+def _canonical_sha256(payload: Mapping[str, object]) -> str:
+    canonical = json.dumps(
+        payload,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _observations_sha256(
+    observations: tuple[AuthorityDecisionObservation, ...],
+) -> str:
+    return _canonical_sha256(
+        {
+            "binding_schema": "WP-EH-AUTHOBS-OBSERVATIONS-v1",
+            "observations": tuple(
+                item.model_dump(mode="json") for item in observations
+            ),
+        }
+    )
+
+
+def _context_evidence_sha256(
+    *,
+    evidence_reference: str,
+    lineage_id: str,
+    context_state: AuthorityLineageContextState,
+    covered_decision_ids: tuple[str, ...],
+    covered_observations_sha256: str,
+    context_unresolved_reason: str | None,
+) -> str:
+    return _canonical_sha256(
+        {
+            "binding_schema": "WP-EH-AUTHOBS-CONTEXT-EVIDENCE-v1",
+            "evidence_reference": evidence_reference,
+            "lineage_id": lineage_id,
+            "context_state": context_state.value,
+            "covered_decision_ids": covered_decision_ids,
+            "covered_observations_sha256": covered_observations_sha256,
+            "context_unresolved_reason": context_unresolved_reason,
+        }
+    )
+
+
+class AuthorityLineageContextEvidence(_FrozenStrictModel):
+    """Content-addressed context claim; never proof of external completeness truth."""
+
+    evidence_reference: _NonEmptyText
+    lineage_id: _OpaqueId
+    context_state: AuthorityLineageContextState
+    covered_decision_ids: tuple[_OpaqueId, ...]
+    covered_observations_sha256: _Sha256
+    context_unresolved_reason: _NonEmptyText | None
+    context_evidence_sha256: _Sha256
+
+    @classmethod
+    def from_observations(
+        cls,
+        observations: Iterable[AuthorityDecisionObservation],
+        *,
+        context_state: AuthorityLineageContextState,
+        evidence_reference: str,
+        context_unresolved_reason: str | None,
+    ) -> AuthorityLineageContextEvidence:
+        """Record caller-supplied provenance without authenticating its truth."""
+
+        if isinstance(observations, (str, bytes)):
+            raise ValueError("context observations must be an iterable")
+        if not isinstance(context_state, AuthorityLineageContextState):
+            raise TypeError("context_state must be AuthorityLineageContextState")
+        validated = tuple(
+            AuthorityDecisionObservation.model_validate(item)
+            for item in observations
+        )
+        if not validated:
+            raise ValueError("context evidence requires at least one observation")
+        lineage_id = validated[0].lineage_id
+        decision_ids = tuple(item.decision_id for item in validated)
+        observations_sha256 = _observations_sha256(validated)
+        evidence_sha256 = _context_evidence_sha256(
+            evidence_reference=evidence_reference,
+            lineage_id=lineage_id,
+            context_state=context_state,
+            covered_decision_ids=decision_ids,
+            covered_observations_sha256=observations_sha256,
+            context_unresolved_reason=context_unresolved_reason,
+        )
+        return cls(
+            evidence_reference=evidence_reference,
+            lineage_id=lineage_id,
+            context_state=context_state,
+            covered_decision_ids=decision_ids,
+            covered_observations_sha256=observations_sha256,
+            context_unresolved_reason=context_unresolved_reason,
+            context_evidence_sha256=evidence_sha256,
+        )
+
+    @field_validator("covered_decision_ids")
+    @classmethod
+    def _require_unique_covered_decisions(
+        cls,
+        value: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        if not value:
+            raise ValueError("context evidence must cover at least one decision")
+        if len(set(value)) != len(value):
+            raise ValueError("covered decision identities must be unique")
+        return value
+
+    @model_validator(mode="after")
+    def _require_bound_context_claim(self) -> Self:
+        if self.context_state is AuthorityLineageContextState.COMPLETE:
+            if self.context_unresolved_reason is not None:
+                raise ValueError(
+                    "COMPLETE context must not carry an unresolved reason"
+                )
+        elif self.context_unresolved_reason is None:
+            raise ValueError(
+                "INCOMPLETE or UNKNOWN context requires an unresolved reason"
+            )
+
+        expected_sha256 = _context_evidence_sha256(
+            evidence_reference=self.evidence_reference,
+            lineage_id=self.lineage_id,
+            context_state=self.context_state,
+            covered_decision_ids=self.covered_decision_ids,
+            covered_observations_sha256=self.covered_observations_sha256,
+            context_unresolved_reason=self.context_unresolved_reason,
+        )
+        if self.context_evidence_sha256 != expected_sha256:
+            raise ValueError("context evidence content binding is inconsistent")
+        return self
+
+
+def _context_binding_sha256(
+    observations: tuple[AuthorityDecisionObservation, ...],
+    context_evidence: AuthorityLineageContextEvidence,
+) -> str:
+    """Bind an evidence identity to observations without authenticating it."""
+
+    return _canonical_sha256(
+        {
+            "binding_schema": "WP-EH-AUTHOBS-CONTEXT-v2",
+            "observations": tuple(
+                item.model_dump(mode="json") for item in observations
+            ),
+            "context_evidence": context_evidence.model_dump(mode="json"),
+        }
+    )
+
+
 class AuthorityDecisionLineageEvidence(_FrozenStrictModel):
-    """A complete supplied decision trace, not a current-authority verdict."""
+    """A supplied decision trace with context provenance, not an authority verdict."""
 
     lineage_id: _OpaqueId
     observations: tuple[AuthorityDecisionObservation, ...]
@@ -120,7 +275,36 @@ class AuthorityDecisionLineageEvidence(_FrozenStrictModel):
     kinds: tuple[AuthorityDecisionKind, ...]
     observed_authorizer_identity: Literal["ARC-C04"]
     context_state: AuthorityLineageContextState
+    context_evidence: AuthorityLineageContextEvidence
+    context_binding_sha256: _Sha256
     lineage_bound: Literal[True] = True
+
+    @model_validator(mode="after")
+    def _require_bound_context_evidence(self) -> Self:
+        decision_ids = tuple(item.decision_id for item in self.observations)
+        kinds = tuple(item.kind for item in self.observations)
+        if self.decision_ids != decision_ids or self.kinds != kinds:
+            raise ValueError("lineage summary does not match its observations")
+        if self.context_state is not self.context_evidence.context_state:
+            raise ValueError("context state summary contradicts context evidence")
+        if self.lineage_id != self.context_evidence.lineage_id:
+            raise ValueError("lineage identity contradicts context evidence")
+        if self.context_evidence.covered_decision_ids != decision_ids:
+            raise ValueError("context evidence does not cover the supplied decisions")
+        if self.context_evidence.covered_observations_sha256 != (
+            _observations_sha256(self.observations)
+        ):
+            raise ValueError("context evidence does not cover supplied observations")
+
+        expected_binding = _context_binding_sha256(
+            self.observations,
+            self.context_evidence,
+        )
+        if self.context_binding_sha256 != expected_binding:
+            raise ValueError(
+                "context binding does not match observations and context evidence"
+            )
+        return self
 
 
 class GrantConsumptionObservation(_FrozenStrictModel):
@@ -214,18 +398,19 @@ class AuthorityDecisionLineageChecker:
         self,
         observations: Iterable[AuthorityDecisionObservation],
         *,
-        context_state: AuthorityLineageContextState,
+        context_evidence: AuthorityLineageContextEvidence,
     ) -> AuthorityDecisionLineageEvidence:
         if isinstance(observations, (str, bytes)):
             raise ValueError("observations must be an iterable")
-        if not isinstance(context_state, AuthorityLineageContextState):
-            raise TypeError("context_state must be AuthorityLineageContextState")
         validated = tuple(
             AuthorityDecisionObservation.model_validate(item)
             for item in observations
         )
         if not validated:
             raise ValueError("authority lineage requires at least one decision")
+        validated_context = AuthorityLineageContextEvidence.model_validate(
+            context_evidence
+        )
 
         decision_ids = tuple(item.decision_id for item in validated)
         if len(set(decision_ids)) != len(decision_ids):
@@ -271,13 +456,34 @@ class AuthorityDecisionLineageChecker:
                 seen_grants[item.decision_id] = item
             previous = item
 
+        kinds = tuple(item.kind for item in validated)
+        if validated_context.lineage_id != root.lineage_id:
+            raise AuthorityLineageMismatchError(
+                "context evidence changed authority lineage identity"
+            )
+        if validated_context.covered_decision_ids != decision_ids:
+            raise AuthorityLineageMismatchError(
+                "context evidence does not cover the traced decision identities"
+            )
+        if validated_context.covered_observations_sha256 != _observations_sha256(
+            validated
+        ):
+            raise AuthorityLineageMismatchError(
+                "context evidence does not cover the traced observations"
+            )
+        context_binding_sha256 = _context_binding_sha256(
+            validated,
+            validated_context,
+        )
         return AuthorityDecisionLineageEvidence(
             lineage_id=root.lineage_id,
             observations=validated,
             decision_ids=decision_ids,
-            kinds=tuple(item.kind for item in validated),
+            kinds=kinds,
             observed_authorizer_identity="ARC-C04",
-            context_state=context_state,
+            context_state=validated_context.context_state,
+            context_evidence=validated_context,
+            context_binding_sha256=context_binding_sha256,
             lineage_bound=True,
         )
 
@@ -327,7 +533,7 @@ class GrantConsumptionEvidenceChecker:
         validated_lineage = AuthorityDecisionLineageEvidence.model_validate(lineage)
         reconstructed_lineage = AuthorityDecisionLineageChecker().trace(
             validated_lineage.observations,
-            context_state=validated_lineage.context_state,
+            context_evidence=validated_lineage.context_evidence,
         )
         if reconstructed_lineage != validated_lineage:
             raise AuthorityLineageMismatchError(
