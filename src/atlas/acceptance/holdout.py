@@ -68,6 +68,42 @@ class HoldoutContaminationEpistemicState(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class HoldoutInspectionEvidence(_FrozenStrictModel):
+    """Identity-bound evidence that one contamination inspection was attempted."""
+
+    inspection_id: _OpaqueId
+    holdout_id: _OpaqueId
+    corpus_version: _NonEmptyText
+    content_sha256: _Sha256
+    inspection_status: HoldoutInspectionStatus
+    evidence_reference: _NonEmptyText | None
+    unresolved_reason: _NonEmptyText | None = None
+
+    @model_validator(mode="after")
+    def _require_status_evidence_consistency(self) -> Self:
+        if self.inspection_status is HoldoutInspectionStatus.INSPECTED:
+            if self.evidence_reference is None:
+                raise ValueError(
+                    "INSPECTED requires an explicit inspection evidence_reference"
+                )
+            if self.unresolved_reason is not None:
+                raise ValueError("INSPECTED must not carry an unresolved_reason")
+            return self
+
+        if self.unresolved_reason is None:
+            raise ValueError(
+                f"{self.inspection_status.value} requires an unresolved_reason"
+            )
+        if (
+            self.inspection_status is HoldoutInspectionStatus.NOT_INSPECTED
+            and self.evidence_reference is not None
+        ):
+            raise ValueError(
+                "NOT_INSPECTED must not carry an inspection evidence_reference"
+            )
+        return self
+
+
 _DIRECT_CANDIDATE_CONTAMINATION_KINDS = frozenset(
     {
         HoldoutContaminationKind.CANDIDATE_TRAINING_OR_TUNING,
@@ -290,11 +326,32 @@ class HoldoutContaminationFinding(_FrozenStrictModel):
     evidence_reference: _NonEmptyText
 
 
+def _inspection_binding_sha256(inspection: HoldoutInspectionEvidence) -> str:
+    """Bind inspection identity/provenance; this digest is not authenticity proof."""
+
+    payload = {
+        "binding_schema": "WP-EH-HOLDOUT-INSPECTION-v1",
+        "inspection": inspection.model_dump(mode="json"),
+    }
+    canonical = json.dumps(
+        payload,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
 class HoldoutContaminationAssessment(_FrozenStrictModel):
     """A retained contamination state, not a PASS/FAIL acceptance decision."""
 
     holdout_id: _OpaqueId
+    corpus_version: _NonEmptyText
+    content_sha256: _Sha256
     inspection_status: HoldoutInspectionStatus
+    inspection_evidence: HoldoutInspectionEvidence
+    inspection_binding_sha256: _Sha256
     epistemic_state: HoldoutContaminationEpistemicState
     finding_ids: tuple[_OpaqueId, ...]
     finding_kinds: tuple[HoldoutContaminationKind, ...]
@@ -305,6 +362,22 @@ class HoldoutContaminationAssessment(_FrozenStrictModel):
 
     @model_validator(mode="after")
     def _require_consistent_contamination_flags(self) -> Self:
+        if self.inspection_status is not self.inspection_evidence.inspection_status:
+            raise ValueError("inspection status summary contradicts inspection evidence")
+        if (
+            self.holdout_id,
+            self.corpus_version,
+            self.content_sha256,
+        ) != (
+            self.inspection_evidence.holdout_id,
+            self.inspection_evidence.corpus_version,
+            self.inspection_evidence.content_sha256,
+        ):
+            raise ValueError("assessment corpus does not match inspection evidence")
+        if self.inspection_binding_sha256 != _inspection_binding_sha256(
+            self.inspection_evidence
+        ):
+            raise ValueError("inspection binding does not match inspection evidence")
         if len(set(self.finding_ids)) != len(self.finding_ids):
             raise ValueError("contamination finding identities must be unique")
         if len(self.finding_ids) != len(self.finding_kinds):
@@ -395,15 +468,28 @@ class HoldoutContaminationChecker:
         holdout: ProtectedHoldoutFixture,
         findings: Iterable[HoldoutContaminationFinding],
         *,
-        inspection_status: HoldoutInspectionStatus,
+        inspection_evidence: HoldoutInspectionEvidence,
     ) -> HoldoutContaminationAssessment:
         """Preserve findings/history and never infer clean from an empty vector."""
 
         if isinstance(findings, (str, bytes)):
             raise ValueError("findings must be an iterable of contamination findings")
-        if not isinstance(inspection_status, HoldoutInspectionStatus):
-            raise TypeError("inspection_status must be HoldoutInspectionStatus")
         validated_holdout = ProtectedHoldoutFixture.model_validate(holdout)
+        validated_inspection = HoldoutInspectionEvidence.model_validate(
+            inspection_evidence
+        )
+        if validated_inspection.holdout_id != validated_holdout.holdout_id:
+            raise ValueError("inspection holdout identity must match protected holdout")
+        if (
+            validated_inspection.corpus_version
+            != validated_holdout.provenance.corpus_version
+        ):
+            raise ValueError("inspection corpus version must match protected holdout")
+        if (
+            validated_inspection.content_sha256
+            != validated_holdout.provenance.content_sha256
+        ):
+            raise ValueError("inspection content hash must match protected holdout")
         validated_findings = tuple(
             HoldoutContaminationFinding.model_validate(item) for item in findings
         )
@@ -424,13 +510,19 @@ class HoldoutContaminationChecker:
             public_familiarity,
             revalidation_required,
         ) = _derive_contamination_state(
-            inspection_status=inspection_status,
+            inspection_status=validated_inspection.inspection_status,
             finding_kinds=finding_kinds,
             contamination_history=contamination_history,
         )
         return HoldoutContaminationAssessment(
             holdout_id=validated_holdout.holdout_id,
-            inspection_status=inspection_status,
+            corpus_version=validated_holdout.provenance.corpus_version,
+            content_sha256=validated_holdout.provenance.content_sha256,
+            inspection_status=validated_inspection.inspection_status,
+            inspection_evidence=validated_inspection,
+            inspection_binding_sha256=_inspection_binding_sha256(
+                validated_inspection
+            ),
             epistemic_state=epistemic_state,
             finding_ids=finding_ids,
             finding_kinds=finding_kinds,

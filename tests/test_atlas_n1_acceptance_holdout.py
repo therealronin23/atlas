@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from atlas.acceptance.holdout import (
     HOLDOUT_RETENTION_METADATA,
+    CandidateHoldoutAccessDenial,
     CandidateHoldoutRequest,
     CandidateIdentityMismatchError,
     EvaluatorIsolationPolicy,
@@ -16,6 +17,7 @@ from atlas.acceptance.holdout import (
     HoldoutContaminationEpistemicState,
     HoldoutContaminationFinding,
     HoldoutContaminationKind,
+    HoldoutInspectionEvidence,
     HoldoutInspectionStatus,
     HoldoutProvenance,
     ProtectedHoldoutAccessBoundary,
@@ -80,11 +82,31 @@ def _request(
     return CandidateHoldoutRequest.model_validate(payload)
 
 
+def _inspection(
+    inspection_status: HoldoutInspectionStatus = HoldoutInspectionStatus.INSPECTED,
+    **updates: object,
+) -> HoldoutInspectionEvidence:
+    payload: dict[str, object] = {
+        "inspection_id": "holdout-inspection-001",
+        "holdout_id": "holdout-001",
+        "corpus_version": "CORPUS-HOLDOUT:sha256:fixture-v1",
+        "content_sha256": "a" * 64,
+        "inspection_status": inspection_status,
+        "evidence_reference": "evidence:holdout-inspection-001",
+        "unresolved_reason": None,
+    }
+    if inspection_status is not HoldoutInspectionStatus.INSPECTED:
+        payload["evidence_reference"] = None
+        payload["unresolved_reason"] = "inspection is not complete"
+    payload.update(updates)
+    return HoldoutInspectionEvidence.model_validate(payload)
+
+
 def _deny(
     *,
     policy: EvaluatorIsolationPolicy | None = None,
     holdout: ProtectedHoldoutFixture | None = None,
-):
+) -> CandidateHoldoutAccessDenial:
     return ProtectedHoldoutAccessBoundary(
         policy or _policy(),
         holdout or _holdout(),
@@ -251,7 +273,7 @@ def test_holdout_provenance_is_immutable_versioned_and_has_no_case_payload() -> 
     assert provenance.retention_metadata == HOLDOUT_RETENTION_METADATA
     assert "raw_case_payload" not in type(provenance).model_fields
     with pytest.raises(ValidationError):
-        provenance.corpus_version = "different-version"  # type: ignore[misc]
+        provenance.corpus_version = "different-version"
 
 
 def test_corrected_holdout_requires_complete_supersession_provenance() -> None:
@@ -287,7 +309,7 @@ def test_direct_contamination_requires_revalidation_without_promotion() -> None:
     assessment = HoldoutContaminationChecker().assess(
         _holdout(),
         (finding,),
-        inspection_status=HoldoutInspectionStatus.INSPECTED,
+        inspection_evidence=_inspection(),
     )
 
     assert assessment.direct_candidate_exposure_detected is True
@@ -310,7 +332,7 @@ def test_public_familiarity_is_retained_as_risk_not_silently_ignored() -> None:
     assessment = HoldoutContaminationChecker().assess(
         _holdout(),
         (finding,),
-        inspection_status=HoldoutInspectionStatus.INSPECTED,
+        inspection_evidence=_inspection(),
     )
 
     assert assessment.direct_candidate_exposure_detected is False
@@ -329,7 +351,7 @@ def test_historical_contamination_without_new_findings_is_not_clean() -> None:
     assessment = HoldoutContaminationChecker().assess(
         contaminated,
         (),
-        inspection_status=HoldoutInspectionStatus.NOT_INSPECTED,
+        inspection_evidence=_inspection(HoldoutInspectionStatus.NOT_INSPECTED),
     )
 
     assert assessment.epistemic_state is (
@@ -358,7 +380,7 @@ def test_unresolved_inspection_remains_unknown(
     assessment = HoldoutContaminationChecker().assess(
         _holdout(),
         (),
-        inspection_status=inspection_status,
+        inspection_evidence=_inspection(inspection_status),
     )
 
     assert assessment.epistemic_state is HoldoutContaminationEpistemicState.UNKNOWN
@@ -371,7 +393,7 @@ def test_complete_inspection_can_record_evidence_backed_clear_state() -> None:
     assessment = HoldoutContaminationChecker().assess(
         _holdout(),
         (),
-        inspection_status=HoldoutInspectionStatus.INSPECTED,
+        inspection_evidence=_inspection(),
     )
 
     assert assessment.epistemic_state is (
@@ -384,7 +406,7 @@ def test_complete_inspection_can_record_evidence_backed_clear_state() -> None:
     assert assessment.revalidation_required is False
 
 
-def test_inspection_status_is_required_instead_of_defaulting_empty_to_clean() -> None:
+def test_inspection_evidence_is_required_instead_of_defaulting_empty_to_clean() -> None:
     with pytest.raises(TypeError):
         HoldoutContaminationChecker().assess(_holdout(), ())  # type: ignore[call-arg]
 
@@ -403,7 +425,9 @@ def test_inspection_status_is_required_instead_of_defaulting_empty_to_clean() ->
             ),
         },
         {
-            "inspection_status": HoldoutInspectionStatus.NOT_INSPECTED,
+            "inspection_evidence": _inspection(
+                HoldoutInspectionStatus.NOT_INSPECTED
+            ).model_dump(),
             "epistemic_state": HoldoutContaminationEpistemicState.UNKNOWN,
         },
     ),
@@ -411,17 +435,12 @@ def test_inspection_status_is_required_instead_of_defaulting_empty_to_clean() ->
 def test_forged_epistemic_combinations_fail_closed(
     updates: dict[str, object],
 ) -> None:
-    payload: dict[str, object] = {
-        "holdout_id": "holdout-001",
-        "inspection_status": HoldoutInspectionStatus.INSPECTED,
-        "epistemic_state": HoldoutContaminationEpistemicState.KNOWN_CLEAR,
-        "finding_ids": (),
-        "finding_kinds": (),
-        "contamination_history": (),
-        "direct_candidate_exposure_detected": False,
-        "public_familiarity_risk_recorded": False,
-        "revalidation_required": False,
-    }
+    clear = HoldoutContaminationChecker().assess(
+        _holdout(),
+        (),
+        inspection_evidence=_inspection(),
+    )
+    payload: dict[str, object] = clear.model_dump()
     payload.update(updates)
 
     with pytest.raises(ValidationError, match="epistemic|derived|inspection"):
@@ -445,7 +464,7 @@ def test_contamination_preserves_input_order_and_rejects_cross_holdout() -> None
     assessment = HoldoutContaminationChecker().assess(
         _holdout(),
         (first, second),
-        inspection_status=HoldoutInspectionStatus.INSPECTED,
+        inspection_evidence=_inspection(),
     )
 
     assert assessment.finding_ids == ("finding-first-001", "finding-second-001")
@@ -456,7 +475,7 @@ def test_contamination_preserves_input_order_and_rejects_cross_holdout() -> None
         HoldoutContaminationChecker().assess(
             _holdout(),
             (mismatched,),
-            inspection_status=HoldoutInspectionStatus.INSPECTED,
+            inspection_evidence=_inspection(),
         )
 
 
@@ -465,7 +484,7 @@ def test_boundary_exposes_no_holdout_authority_or_result_promotion_surface() -> 
     assessment = HoldoutContaminationChecker().assess(
         _holdout(),
         (),
-        inspection_status=HoldoutInspectionStatus.INSPECTED,
+        inspection_evidence=_inspection(),
     )
 
     assert ProtectedHoldoutAccessBoundary.__slots__ == (
@@ -481,3 +500,206 @@ def test_boundary_exposes_no_holdout_authority_or_result_promotion_surface() -> 
     assert not hasattr(HoldoutContaminationChecker(), "authorize")
     assert not hasattr(HoldoutContaminationChecker(), "promote")
     assert "result" not in type(assessment).model_fields
+
+
+def test_r2_distinct_inspections_of_same_corpus_are_distinguishable() -> None:
+    checker = HoldoutContaminationChecker()
+    holdout = _holdout()
+    evidence_a = _inspection(
+        inspection_id="holdout-inspection-a",
+        evidence_reference="evidence:inspection-review-a",
+    )
+    evidence_b = _inspection(
+        inspection_id="holdout-inspection-b",
+        evidence_reference="evidence:inspection-review-b",
+    )
+
+    inspection_a = checker.assess(
+        holdout,
+        (),
+        inspection_evidence=evidence_a,
+    )
+    inspection_b = checker.assess(
+        holdout,
+        (),
+        inspection_evidence=evidence_b,
+    )
+
+    assert inspection_a.holdout_id == inspection_b.holdout_id == "holdout-001"
+    assert inspection_a.corpus_version == inspection_b.corpus_version
+    assert inspection_a.content_sha256 == inspection_b.content_sha256
+    assert inspection_a.epistemic_state is (
+        HoldoutContaminationEpistemicState.KNOWN_CLEAR
+    )
+    assert inspection_b.epistemic_state is (
+        HoldoutContaminationEpistemicState.KNOWN_CLEAR
+    )
+    assert inspection_a.inspection_evidence == evidence_a
+    assert inspection_b.inspection_evidence == evidence_b
+    assert inspection_a.inspection_binding_sha256 != (
+        inspection_b.inspection_binding_sha256
+    )
+    assert inspection_a != inspection_b
+
+
+def test_r2_inspected_requires_immutable_evidence_identity_and_reference() -> None:
+    missing_identity = _inspection().model_dump()
+    missing_identity.pop("inspection_id")
+    with pytest.raises(ValidationError, match="inspection_id"):
+        HoldoutInspectionEvidence.model_validate(missing_identity)
+
+    with pytest.raises(ValidationError, match="evidence_reference"):
+        _inspection(evidence_reference=None)
+
+    evidence = _inspection()
+    with pytest.raises(ValidationError):
+        evidence.inspection_id = "holdout-inspection-substituted"
+
+
+def test_r2_not_inspected_rejects_fabricated_inspection_evidence() -> None:
+    with pytest.raises(ValidationError, match="evidence_reference|NOT_INSPECTED"):
+        _inspection(
+            HoldoutInspectionStatus.NOT_INSPECTED,
+            evidence_reference="evidence:fabricated-inspection",
+        )
+
+
+@pytest.mark.parametrize(
+    "inspection_status",
+    (
+        HoldoutInspectionStatus.INCOMPLETE,
+        HoldoutInspectionStatus.UNRESOLVED,
+    ),
+)
+def test_r2_non_complete_inspection_never_produces_known_clear(
+    inspection_status: HoldoutInspectionStatus,
+) -> None:
+    assessment = HoldoutContaminationChecker().assess(
+        _holdout(),
+        (),
+        inspection_evidence=_inspection(inspection_status),
+    )
+
+    assert assessment.inspection_evidence.inspection_status is inspection_status
+    assert assessment.epistemic_state is HoldoutContaminationEpistemicState.UNKNOWN
+    assert assessment.direct_candidate_exposure_detected is None
+    assert assessment.public_familiarity_risk_recorded is None
+    assert assessment.revalidation_required is None
+
+
+def test_r2_contamination_history_blocks_false_clean_after_complete_inspection() -> None:
+    contaminated = _holdout(
+        provenance=_provenance(
+            contamination_history=("evidence:historical-contamination-r2",)
+        )
+    )
+
+    assessment = HoldoutContaminationChecker().assess(
+        contaminated,
+        (),
+        inspection_evidence=_inspection(),
+    )
+
+    assert assessment.epistemic_state is (
+        HoldoutContaminationEpistemicState.KNOWN_CONTAMINATED
+    )
+    assert assessment.contamination_history == (
+        "evidence:historical-contamination-r2",
+    )
+
+
+@pytest.mark.parametrize(
+    "inspection_updates",
+    (
+        {"inspection_id": "holdout-inspection-substituted"},
+        {"evidence_reference": "evidence:inspection-review-substituted"},
+    ),
+)
+def test_r2_assessment_revalidation_rejects_model_copy_inspection_substitution(
+    inspection_updates: dict[str, object],
+) -> None:
+    clear = HoldoutContaminationChecker().assess(
+        _holdout(),
+        (),
+        inspection_evidence=_inspection(),
+    )
+    substituted_evidence = clear.inspection_evidence.model_copy(
+        update=inspection_updates
+    )
+    substituted = clear.model_copy(
+        update={"inspection_evidence": substituted_evidence}
+    )
+
+    with pytest.raises(ValidationError, match="binding|inspection"):
+        HoldoutContaminationAssessment.model_validate(substituted)
+
+
+def test_r2_model_construct_cannot_forge_known_clear_without_inspection_binding() -> None:
+    unknown = HoldoutContaminationChecker().assess(
+        _holdout(),
+        (),
+        inspection_evidence=_inspection(HoldoutInspectionStatus.NOT_INSPECTED),
+    )
+    payload = unknown.model_dump()
+    payload.pop("inspection_binding_sha256")
+    payload.update(
+        {
+            "epistemic_state": HoldoutContaminationEpistemicState.KNOWN_CLEAR,
+            "direct_candidate_exposure_detected": False,
+            "public_familiarity_risk_recorded": False,
+            "revalidation_required": False,
+        }
+    )
+    forged = HoldoutContaminationAssessment.model_construct(**payload)
+
+    with pytest.raises(ValidationError, match="binding|epistemic|inspection"):
+        HoldoutContaminationAssessment.model_validate(forged)
+
+
+def test_r2_inspection_evidence_must_match_the_bound_holdout_corpus() -> None:
+    checker = HoldoutContaminationChecker()
+
+    with pytest.raises(ValueError, match="holdout|inspection"):
+        checker.assess(
+            _holdout(),
+            (),
+            inspection_evidence=_inspection(holdout_id="holdout-002"),
+        )
+    with pytest.raises(ValueError, match="corpus|inspection"):
+        checker.assess(
+            _holdout(),
+            (),
+            inspection_evidence=_inspection(
+                corpus_version="CORPUS-HOLDOUT:sha256:fixture-v2"
+            ),
+        )
+    with pytest.raises(ValueError, match="content|inspection"):
+        checker.assess(
+            _holdout(),
+            (),
+            inspection_evidence=_inspection(content_sha256="b" * 64),
+        )
+
+
+def test_r2_regression_r1_denial_boundary_binding_remains_distinguishable() -> None:
+    baseline = _deny()
+    substituted = _deny(
+        policy=_policy(
+            policy_id="holdout-policy-r2-regression",
+            evaluator_identity="evaluator-r2-regression",
+            evaluator_criteria_owner_identity="evaluator-r2-regression",
+            evaluator_verdict_state_owner_identity="evaluator-r2-regression",
+        ),
+        holdout=_holdout(
+            holdout_id="holdout-r2-regression",
+            provenance=_provenance(
+                corpus_version="CORPUS-HOLDOUT:sha256:r2-regression",
+                content_sha256="c" * 64,
+                import_source="r2-regression-fixture",
+            ),
+        ),
+    )
+
+    assert baseline.boundary_binding_sha256 != substituted.boundary_binding_sha256
+    assert baseline != substituted
+    assert "raw_case_payload" not in substituted.model_dump()
