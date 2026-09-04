@@ -18,11 +18,13 @@ from atlas.acceptance.authority_observation import (
     AuthorityDecisionOrderError,
     AuthorityLineageMismatchError,
     ConsumptionTemporalValidity,
+    GrantConsumptionEvidenceBinding,
     GrantConsumptionEvidenceChecker,
     GrantConsumptionObservation,
     MissingGrantLineageError,
     ObservedGrantState,
     _context_binding_sha256,
+    _context_evidence_sha256,
 )
 from atlas.acceptance.core import TimestampOrder
 
@@ -373,9 +375,9 @@ def test_grant_consumption_evidence_binds_arc_c12_without_executing() -> None:
     assert binding.referenced_decision.kind is AuthorityDecisionKind.GRANT
     assert binding.consumption.grant_consumer_identity == "ARC-C12"
     assert binding.consumption.harness_effect_execution_performed is False
-    assert binding.grant_state is ObservedGrantState.ACTIVE
-    assert binding.temporal_validity is ConsumptionTemporalValidity.VALID
-    assert binding.lineage_bound is True
+    assert binding.grant_state is ObservedGrantState.UNKNOWN
+    assert binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert binding.lineage_bound is False
 
 
 def test_consumption_selects_the_exact_grant_in_a_multiple_grant_lineage() -> None:
@@ -393,7 +395,7 @@ def test_consumption_selects_the_exact_grant_in_a_multiple_grant_lineage() -> No
     )
     lineage = _trace((grant_a, grant_b, revoke_a))
 
-    active_binding = GrantConsumptionEvidenceChecker().bind(
+    nonterminal_binding = GrantConsumptionEvidenceChecker().bind(
         lineage,
         _consumption(
             consumption_observation_id="grant-consumption-002",
@@ -406,9 +408,12 @@ def test_consumption_selects_the_exact_grant_in_a_multiple_grant_lineage() -> No
         _consumption(timestamp_order=_order(4)),
     )
 
-    assert active_binding.referenced_decision == grant_b
-    assert active_binding.grant_state is ObservedGrantState.ACTIVE
-    assert active_binding.lineage_bound is True
+    assert nonterminal_binding.referenced_decision == grant_b
+    assert nonterminal_binding.grant_state is ObservedGrantState.UNKNOWN
+    assert nonterminal_binding.temporal_validity is (
+        ConsumptionTemporalValidity.UNKNOWN
+    )
+    assert nonterminal_binding.lineage_bound is False
     assert revoked_binding.referenced_decision == grant_a
     assert revoked_binding.grant_state is ObservedGrantState.REVOKED
     assert revoked_binding.lineage_bound is False
@@ -493,7 +498,7 @@ def test_terminalized_grant_cannot_produce_affirmative_consumption_binding(
     assert binding.lineage_bound is False
 
 
-def test_terminal_after_consumption_does_not_retroactively_invalidate_it() -> None:
+def test_terminal_after_consumption_is_known_without_affirming_prior_validity() -> None:
     later_revoke = _decision(
         AuthorityDecisionKind.REVOKE,
         "revoke-decision-001",
@@ -506,9 +511,9 @@ def test_terminal_after_consumption_does_not_retroactively_invalidate_it() -> No
         _consumption(timestamp_order=_order(2)),
     )
 
-    assert binding.grant_state is ObservedGrantState.ACTIVE
-    assert binding.temporal_validity is ConsumptionTemporalValidity.VALID
-    assert binding.lineage_bound is True
+    assert binding.grant_state is ObservedGrantState.REVOKED
+    assert binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert binding.lineage_bound is False
 
 
 def test_terminal_at_same_order_as_consumption_fails_closed() -> None:
@@ -754,7 +759,7 @@ def test_r2_terminal_cannot_be_stripped_while_reusing_completeness_evidence() ->
     _assert_rejected_or_nonaffirmative(stripped)
 
 
-def test_r2_valid_complete_context_with_coherent_evidence_is_affirmative() -> None:
+def test_r3_caller_coherent_complete_context_remains_nonaffirmative() -> None:
     lineage = _trace(
         (_grant(),),
         context_evidence_reference=_COMPLETE_CONTEXT_EVIDENCE_REFERENCE,
@@ -770,9 +775,9 @@ def test_r2_valid_complete_context_with_coherent_evidence_is_affirmative() -> No
     assert len(lineage.context_binding_sha256) == 64
 
     binding = GrantConsumptionEvidenceChecker().bind(lineage, _consumption())
-    assert binding.grant_state is ObservedGrantState.ACTIVE
-    assert binding.temporal_validity is ConsumptionTemporalValidity.VALID
-    assert binding.lineage_bound is True
+    assert binding.grant_state is ObservedGrantState.UNKNOWN
+    assert binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert binding.lineage_bound is False
 
 
 @pytest.mark.parametrize(
@@ -849,3 +854,247 @@ def test_authority_observation_seam_has_no_authorize_grant_revoke_or_execute_api
         assert not hasattr(candidate, "revoke")
         assert not hasattr(candidate, "execute")
         assert not hasattr(candidate, "persist")
+
+
+def _r3_recomputed_complete_context(
+    lineage: AuthorityDecisionLineageEvidence,
+    *,
+    evidence_reference: str,
+) -> AuthorityLineageContextEvidence:
+    """Recompute every caller-controlled context field over a selected subset."""
+
+    payload = lineage.context_evidence.model_dump(mode="json")
+    payload.update(
+        {
+            "evidence_reference": evidence_reference,
+            "context_state": AuthorityLineageContextState.COMPLETE.value,
+            "context_unresolved_reason": None,
+        }
+    )
+    payload["context_evidence_sha256"] = _context_evidence_sha256(
+        evidence_reference=evidence_reference,
+        lineage_id=payload["lineage_id"],
+        context_state=AuthorityLineageContextState.COMPLETE,
+        covered_decision_ids=tuple(payload["covered_decision_ids"]),
+        covered_observations_sha256=payload["covered_observations_sha256"],
+        context_unresolved_reason=None,
+    )
+    return AuthorityLineageContextEvidence.model_validate(payload)
+
+
+@pytest.mark.parametrize("reference_route", ("same", "new"))
+def test_r3_fresh_complete_context_cannot_self_promote_unknown(
+    reference_route: str,
+) -> None:
+    unknown = _trace(
+        (_grant(),),
+        context_state=AuthorityLineageContextState.UNKNOWN,
+        context_evidence_reference=_PARTIAL_CONTEXT_EVIDENCE_REFERENCE,
+        context_unresolved_reason=_UNRESOLVED_CONTEXT_REASON,
+    )
+    reference = (
+        unknown.context_evidence.evidence_reference
+        if reference_route == "same"
+        else "evidence:caller-selected-fresh-complete"
+    )
+    fabricated = AuthorityLineageContextEvidence.from_observations(
+        unknown.observations,
+        context_state=AuthorityLineageContextState.COMPLETE,
+        evidence_reference=reference,
+        context_unresolved_reason=None,
+    )
+    promoted = AuthorityDecisionLineageChecker().trace(
+        unknown.observations,
+        context_evidence=fabricated,
+    )
+
+    binding = GrantConsumptionEvidenceChecker().bind(promoted, _consumption())
+
+    assert binding.referenced_decision == _grant()
+    assert binding.grant_state is ObservedGrantState.UNKNOWN
+    assert binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert binding.lineage_bound is False
+
+
+@pytest.mark.parametrize(
+    "construction_route",
+    ("model_copy", "model_construct", "model_dump_validate"),
+)
+def test_r3_recomputed_inner_and_outer_context_never_affirms(
+    construction_route: str,
+) -> None:
+    unknown = _trace(
+        (_grant(),),
+        context_state=AuthorityLineageContextState.UNKNOWN,
+        context_evidence_reference=_PARTIAL_CONTEXT_EVIDENCE_REFERENCE,
+        context_unresolved_reason=_UNRESOLVED_CONTEXT_REASON,
+    )
+    fabricated_context = _r3_recomputed_complete_context(
+        unknown,
+        evidence_reference=unknown.context_evidence.evidence_reference,
+    )
+    promoted = AuthorityDecisionLineageChecker().trace(
+        unknown.observations,
+        context_evidence=fabricated_context,
+    )
+    if construction_route == "model_copy":
+        candidate = promoted.model_copy()
+    elif construction_route == "model_construct":
+        candidate = AuthorityDecisionLineageEvidence.model_construct(
+            **{
+                field_name: getattr(promoted, field_name)
+                for field_name in AuthorityDecisionLineageEvidence.model_fields
+            }
+        )
+    else:
+        candidate = AuthorityDecisionLineageEvidence.model_validate(
+            promoted.model_dump(mode="json")
+        )
+
+    binding = GrantConsumptionEvidenceChecker().bind(candidate, _consumption())
+
+    assert binding.grant_state is ObservedGrantState.UNKNOWN
+    assert binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert binding.lineage_bound is False
+
+
+@pytest.mark.parametrize(
+    "terminal_kind",
+    (AuthorityDecisionKind.REVOKE, AuthorityDecisionKind.EXPIRY),
+)
+@pytest.mark.parametrize("reference_route", ("same", "new"))
+def test_r3_terminal_stripping_with_fresh_complete_context_degrades_to_unknown(
+    terminal_kind: AuthorityDecisionKind,
+    reference_route: str,
+) -> None:
+    terminal = _decision(
+        terminal_kind,
+        f"{terminal_kind.value.lower()}-decision-r3-strip",
+        2,
+    )
+    original = _trace(
+        (_grant(), terminal),
+        context_evidence_reference=_COMPLETE_CONTEXT_EVIDENCE_REFERENCE,
+    )
+    original_binding = GrantConsumptionEvidenceChecker().bind(
+        original,
+        _consumption(timestamp_order=_order(3)),
+    )
+    stripped_observations = (original.observations[0],)
+    reference = (
+        original.context_evidence.evidence_reference
+        if reference_route == "same"
+        else "evidence:caller-selected-terminal-stripped"
+    )
+    fabricated = AuthorityLineageContextEvidence.from_observations(
+        stripped_observations,
+        context_state=AuthorityLineageContextState.COMPLETE,
+        evidence_reference=reference,
+        context_unresolved_reason=None,
+    )
+    stripped = AuthorityDecisionLineageChecker().trace(
+        stripped_observations,
+        context_evidence=fabricated,
+    )
+
+    stripped_binding = GrantConsumptionEvidenceChecker().bind(
+        stripped,
+        _consumption(timestamp_order=_order(3)),
+    )
+
+    assert original_binding.grant_state is (
+        ObservedGrantState.REVOKED
+        if terminal_kind is AuthorityDecisionKind.REVOKE
+        else ObservedGrantState.EXPIRED
+    )
+    assert original_binding.lineage_bound is False
+    assert stripped_binding.grant_state is ObservedGrantState.UNKNOWN
+    assert stripped_binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert stripped_binding.lineage_bound is False
+
+
+@pytest.mark.parametrize(
+    ("terminal_kind", "expected_state"),
+    (
+        (AuthorityDecisionKind.REVOKE, ObservedGrantState.REVOKED),
+        (AuthorityDecisionKind.EXPIRY, ObservedGrantState.EXPIRED),
+    ),
+)
+def test_r3_terminal_observed_after_consumption_remains_known_but_nonaffirmative(
+    terminal_kind: AuthorityDecisionKind,
+    expected_state: ObservedGrantState,
+) -> None:
+    terminal = _decision(
+        terminal_kind,
+        f"{terminal_kind.value.lower()}-decision-r3-after",
+        3,
+    )
+    lineage = _trace((_grant(), terminal))
+
+    binding = GrantConsumptionEvidenceChecker().bind(
+        lineage,
+        _consumption(timestamp_order=_order(2)),
+    )
+
+    assert binding.grant_state is expected_state
+    assert binding.temporal_validity is ConsumptionTemporalValidity.UNKNOWN
+    assert binding.lineage_bound is False
+
+
+def test_r3_direct_affirmative_binding_claim_is_rejected() -> None:
+    lineage = _trace((_grant(),))
+
+    with pytest.raises(ValidationError, match="affirmative"):
+        GrantConsumptionEvidenceBinding(
+            lineage=lineage,
+            referenced_decision=_grant(),
+            consumption=_consumption(),
+            grant_state=ObservedGrantState.ACTIVE,
+            temporal_validity=ConsumptionTemporalValidity.VALID,
+            lineage_bound=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "construction_route",
+    ("model_copy", "model_construct", "model_dump_validate"),
+)
+def test_r3_affirmative_binding_bypasses_fail_revalidation(
+    construction_route: str,
+) -> None:
+    observed = GrantConsumptionEvidenceChecker().bind(
+        _trace((_grant(),)),
+        _consumption(),
+    )
+    affirmative_update = {
+        "grant_state": ObservedGrantState.ACTIVE,
+        "temporal_validity": ConsumptionTemporalValidity.VALID,
+        "lineage_bound": True,
+    }
+    if construction_route == "model_copy":
+        forged = observed.model_copy(update=affirmative_update)
+    elif construction_route == "model_construct":
+        forged = GrantConsumptionEvidenceBinding.model_construct(
+            **{
+                **{
+                    field_name: getattr(observed, field_name)
+                    for field_name in GrantConsumptionEvidenceBinding.model_fields
+                },
+                **affirmative_update,
+            }
+        )
+    else:
+        payload = observed.model_dump(mode="json")
+        payload.update(
+            {
+                "grant_state": ObservedGrantState.ACTIVE.value,
+                "temporal_validity": ConsumptionTemporalValidity.VALID.value,
+                "lineage_bound": True,
+            }
+        )
+        with pytest.raises(ValidationError, match="affirmative"):
+            GrantConsumptionEvidenceBinding.model_validate(payload)
+        return
+
+    with pytest.raises(ValidationError, match="affirmative"):
+        GrantConsumptionEvidenceBinding.model_validate(forged)

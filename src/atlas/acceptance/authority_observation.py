@@ -47,7 +47,7 @@ class AuthorityDecisionKind(str, Enum):
 
 
 class AuthorityLineageContextState(str, Enum):
-    """Completeness of the supplied read-only authority lineage evidence."""
+    """Caller-declared coverage state; never proof of global exhaustivity."""
 
     COMPLETE = "COMPLETE"
     INCOMPLETE = "INCOMPLETE"
@@ -323,7 +323,7 @@ class GrantConsumptionObservation(_FrozenStrictModel):
 
 
 class GrantConsumptionEvidenceBinding(_FrozenStrictModel):
-    """Causal consumption assessment; affirmative only for known active grants."""
+    """Causal observation binding without an affirmative authority conclusion."""
 
     lineage: AuthorityDecisionLineageEvidence
     referenced_decision: AuthorityDecisionObservation | None
@@ -333,19 +333,16 @@ class GrantConsumptionEvidenceBinding(_FrozenStrictModel):
     lineage_bound: bool
 
     @model_validator(mode="after")
-    def _require_affirmative_state_consistency(self) -> Self:
-        should_be_affirmative = (
-            self.lineage.context_state is AuthorityLineageContextState.COMPLETE
-            and self.grant_state is ObservedGrantState.ACTIVE
-            and self.temporal_validity is ConsumptionTemporalValidity.VALID
-        )
-        if self.lineage_bound != should_be_affirmative:
-            raise ValueError("lineage_bound contradicts causal grant state")
-        if self.grant_state is ObservedGrantState.ACTIVE and (
-            self.referenced_decision is None
-            or self.referenced_decision.kind is not AuthorityDecisionKind.GRANT
+    def _reject_unsupported_affirmative_claim(self) -> Self:
+        if (
+            self.grant_state is ObservedGrantState.ACTIVE
+            or self.temporal_validity is ConsumptionTemporalValidity.VALID
+            or self.lineage_bound
         ):
-            raise ValueError("ACTIVE state requires the referenced GRANT decision")
+            raise ValueError(
+                "affirmative consumption binding requires distinct external "
+                "completeness evidence unavailable in this observation seam"
+            )
         if self.grant_state is ObservedGrantState.DENIED and (
             self.referenced_decision is None
             or self.referenced_decision.kind is not AuthorityDecisionKind.DENY
@@ -587,17 +584,11 @@ class GrantConsumptionEvidenceChecker:
             validated_consumption.timestamp_order,
             referenced_decision.timestamp_order,
         ):
-            grant_state = (
-                ObservedGrantState.ACTIVE
-                if validated_lineage.context_state
-                is AuthorityLineageContextState.COMPLETE
-                else ObservedGrantState.UNKNOWN
-            )
             return GrantConsumptionEvidenceBinding(
                 lineage=validated_lineage,
                 referenced_decision=referenced_decision,
                 consumption=validated_consumption,
-                grant_state=grant_state,
+                grant_state=ObservedGrantState.UNKNOWN,
                 temporal_validity=ConsumptionTemporalValidity.INVALID,
                 lineage_bound=False,
             )
@@ -608,40 +599,38 @@ class GrantConsumptionEvidenceChecker:
             if item.kind in _TERMINAL_GRANT_KINDS
             and item.grant_decision_id == referenced_decision.decision_id
         )
-        for terminal in terminal_decisions:
-            if not _is_strictly_later(
-                terminal.timestamp_order,
-                validated_consumption.timestamp_order,
-            ):
-                terminal_state = (
-                    ObservedGrantState.REVOKED
-                    if terminal.kind is AuthorityDecisionKind.REVOKE
-                    else ObservedGrantState.EXPIRED
+        if terminal_decisions:
+            terminal = terminal_decisions[0]
+            terminal_state = (
+                ObservedGrantState.REVOKED
+                if terminal.kind is AuthorityDecisionKind.REVOKE
+                else ObservedGrantState.EXPIRED
+            )
+            temporal_validity = (
+                ConsumptionTemporalValidity.UNKNOWN
+                if _is_strictly_later(
+                    terminal.timestamp_order,
+                    validated_consumption.timestamp_order,
                 )
-                return GrantConsumptionEvidenceBinding(
-                    lineage=validated_lineage,
-                    referenced_decision=referenced_decision,
-                    consumption=validated_consumption,
-                    grant_state=terminal_state,
-                    temporal_validity=ConsumptionTemporalValidity.INVALID,
-                    lineage_bound=False,
-                )
-
-        if validated_lineage.context_state is not AuthorityLineageContextState.COMPLETE:
+                else ConsumptionTemporalValidity.INVALID
+            )
             return GrantConsumptionEvidenceBinding(
                 lineage=validated_lineage,
                 referenced_decision=referenced_decision,
                 consumption=validated_consumption,
-                grant_state=ObservedGrantState.UNKNOWN,
-                temporal_validity=ConsumptionTemporalValidity.UNKNOWN,
+                grant_state=terminal_state,
+                temporal_validity=temporal_validity,
                 lineage_bound=False,
             )
 
+        # A caller-selected tuple cannot prove that no terminal decision exists.
+        # Context flags and content hashes bind the supplied bytes but do not
+        # establish exhaustive global lineage.
         return GrantConsumptionEvidenceBinding(
             lineage=validated_lineage,
             referenced_decision=referenced_decision,
             consumption=validated_consumption,
-            grant_state=ObservedGrantState.ACTIVE,
-            temporal_validity=ConsumptionTemporalValidity.VALID,
-            lineage_bound=True,
+            grant_state=ObservedGrantState.UNKNOWN,
+            temporal_validity=ConsumptionTemporalValidity.UNKNOWN,
+            lineage_bound=False,
         )
